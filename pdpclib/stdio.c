@@ -560,10 +560,6 @@ static void osfopen(void)
             p++;
         }
         p = myfile->pdsmem;
-        /* hack until I get the aopen to work with the find
-           macro */
-        memcpy(myfile->ddname, myfile->pdsmem, 8);
-        p = NULL;
     }
     myfile->hfile = 
         __aopen(myfile->ddname, mode, &myfile->recfm, &myfile->lrecl, p);

@@ -123,6 +123,7 @@ static char *cwd;
 static int lastrc;
 static int lba;
 static unsigned long psector; /* partition sector offset */
+static int attr;
 
 #define MAXFILES 40
 static struct {
@@ -802,16 +803,20 @@ static void int21handler(union REGS *regsin,
              
         case 0x4e:
 #ifdef __32BIT__        
-             regsout->x.ax = PosFindFirst(SUBADDRFIX(regsin->d.edx),
-                                          regsin->x.cx);
+             regsout->d.eax = PosFindFirst(SUBADDRFIX(regsin->d.edx),
+                                           regsin->x.cx);
+             if (regsout->d.eax != 0)
+             {
+                 regsout->x.cflag = 1;
+             }
 #else
              regsout->x.ax = PosFindFirst(MK_FP(sregs->ds, regsin->x.dx),
                                           regsin->x.cx);
-#endif                                          
              if (regsout->x.ax != 0)
              {
                  regsout->x.cflag = 1;
              }
+#endif                                          
              break;
              
         case 0x4f:
@@ -972,6 +977,10 @@ int PosChangeDir(char *to)
         {
             strcpy(cwd, "");
         }
+    }
+    else if (to[0] == '\\')
+    {
+        strcpy(cwd, to + 1);
     }
     else
     {
@@ -1216,6 +1225,7 @@ int PosFindFirst(char *pat, int attrib)
 {
     int ret;
     
+    attr = attrib;
     make_ff(pat);
     ff_handle = fileOpen(ff_path);
     if (ff_handle < 0)
@@ -1402,7 +1412,9 @@ static int ff_search(void)
             {
                 *p-- = '\0';
             }
-            if (patmat(file, ff_pat))
+            if (patmat(file, ff_pat) 
+                && (((buf[0x0b] & 0x10) == 0)
+                    || ((attr & 0x10) != 0)))
             {
                 if ((p != NULL) && (*p == '.')) *p = '\0';
                 dta[0x15] = buf[0x0b]; /* attribute */

@@ -50,13 +50,7 @@ SUBPOOL  EQU   0
          L     R5,8(R1)         R5 POINTS TO RECFM
          L     R8,12(R1)        R8 POINTS TO LRECL
          L     R9,16(R1)        R9 POINTS TO MEMBER NAME (OF PDS)
-         AIF   ('&SYSPARM' NE 'IFOX00').BELOW
-* CAN'T USE "BELOW" ON MVS 3.8
          GETMAIN RU,LV=ZDCBLEN,SP=SUBPOOL
-         AGO   .CHKBLWE
-.BELOW   ANOP
-         GETMAIN RU,LV=ZDCBLEN,SP=SUBPOOL,LOC=BELOW
-.CHKBLWE ANOP
          LR    R2,R1
 * THIS LINE IS FOR GCC
          LR    R6,R4
@@ -283,7 +277,13 @@ CLOSEMLN EQU   *-CLOSEMAC
 * THIS LINE IS FOR C/370
 *         L     R3,0(R2)
          A     R3,=F'16'
+         AIF   ('&SYSPARM' NE 'IFOX00').ANYCHKY
+* CAN'T USE "ANY" ON MVS 3.8
          GETMAIN RU,LV=(R3),SP=SUBPOOL
+         AGO   .ANYCHKE
+.ANYCHKY ANOP
+         GETMAIN RU,LV=(R3),SP=SUBPOOL,LOC=ANY
+.ANYCHKE ANOP
          ST    R3,0(R1)
          A     R1,=F'16'
          LR    R15,R1

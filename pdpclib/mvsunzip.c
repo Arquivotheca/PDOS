@@ -148,6 +148,7 @@ static int fasc(int asc)
   {
     case 0x09 : return('\t');
     case 0x0a : return('\n');
+    case 0x0c : return('\f');
     case 0x0d : return('\r');
     case 0x20 : return(' ');
     case 0x21 : return('!');

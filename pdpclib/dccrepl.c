@@ -116,8 +116,7 @@ int main(int argc, char **argv)
             strcpy(d, "RETURN (14,12),RC=(15)\n");
             tprintf("%s", buf);
         }
-        else if ((strncmp(buf, "@FRAMESIZE_", 11) == 0)
-                 && (strstr(buf, "'") == NULL))
+        else if (strncmp(buf, "@FRAMESIZE_", 11) == 0)
         {
             tprintf("*");
             buf[10] = '@';

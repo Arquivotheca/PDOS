@@ -2754,6 +2754,8 @@ char *fgets(char *s, int n, FILE *stream)
     {
         if (__aread(stream->hfile, &dptr) != 0)
         {
+            stream->eofInd = 1;
+            stream->quickText = 0;
             return (NULL);
         }
         len = ((dptr[0] << 8) | dptr[1]) - 4;
@@ -3110,11 +3112,17 @@ size_t fread(void *ptr, size_t size, size_t nmemb, FILE *stream)
         {
             if (__aread(stream->hfile, &dptr) != 0)
             {
+                stream->eofInd = 1;
+                stream->quickBin = 0;
                 return (0);
             }
             memcpy(ptr, dptr, read);
             return (1);
         }
+    }
+    if (stream->eofInd)
+    {
+        return (0);
     }
     switch (stream->style)
     {

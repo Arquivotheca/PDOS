@@ -218,6 +218,20 @@ size_t memmgrMaxSize(MEMMGR *memmgr)
 int memmgrRealloc(MEMMGR *memmgr, void *ptr, size_t newsize)
 {
     MEMMGRN *p, *n, *z;
+    size_t oldbytes = newsize;
+    
+    if ((newsize % MEMMGR_ALIGN) != 0)
+    {
+        newsize += (MEMMGR_ALIGN - newsize % MEMMGR_ALIGN);
+    }
+
+    /* if they have exceeded the limits of the data type,
+       bail out now. */    
+    if (newsize < oldbytes)
+    {
+        return (-1);
+    }
+    
 
     ptr = (char *)ptr - MEMMGRN_SZ;
     

@@ -417,6 +417,13 @@ memory for protected mode applications (code & data)
 200000
   unused for 32-bit, presumably will hold 16-bit device drivers
 
+110000
+  area of memory still addressable by 16-bit programs,
+  giving an extra 64k for any application that knows
+  how to do that.  Unused by PDOS itself.
+100000
+  used by i/o devices and bios on IBM PC, 640k limit
+  being created by the a0000 starting address.
 a0000
   space for application code
 

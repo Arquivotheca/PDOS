@@ -50,7 +50,9 @@ unsigned char *__envptr;
 char *__vidptr;
 #endif
 
-#if defined(__MVS__)
+#if defined(__VM__)
+int __start(char *p, char *pgmname)
+#elif defined(__MVS__)
 int __start(char *p, char *pgmname, int tso)
 #elif defined(__PDOS__)
 int __start(int *i1, int *i2, int *i3, POS_EPARMS *exep)
@@ -148,6 +150,52 @@ int CTYP __start(char *p)
     stdin = fopen("dd:SYSIN", "r");
     stdout = fopen("dd:SYSPRINT", "w");
     stderr = stdout;
+#if defined(__VM__)
+    /* if no parameters are provided, the tokenized
+       plist will start with x'ff' */
+    if (p[0] == 0xff)
+    {
+        parmLen = 0;
+    }
+    else if ((p[0] == '?') && (p[1] == ' '))
+    {
+        /* if the user starts the program with a single '?'
+           then that is a signal to read the parameter string
+           from dd:SYSPARM */
+        FILE *pf;
+        
+        pf = fopen("dd:SYSPARM", "r");
+        if (pf != NULL)
+        {
+            fgets(parmbuf + 2, sizeof parmbuf - 2, pf);
+            fclose(pf);
+            p = strchr(parmbuf + 2, '\n');
+            if (p != NULL)
+            {
+                *p = '\0';
+            }
+            parmLen = strlen(parmbuf + 2);
+        }
+        else
+        {
+            parmLen = 0;
+        }
+    }
+    else
+    {
+        /* copy across the tokenized plist, which
+           consists of 8 character chunks, space-padded,
+           and terminated by x'ff' */
+        for (x = 0; x < sizeof parmbuf / 9 - 1; x++)
+        {
+            if (p[x * 8] == 0xff) break;
+            memcpy(parmbuf + 2 + x * 9, p + x * 8, 8);
+            parmbuf[2 + x * 9 + 8] = ' ';
+        }
+        parmbuf[2 + x * 9] = '\0';
+        parmLen = strlen(parmbuf + 2);
+    }
+#else
     parmLen = ((unsigned int)p[0] << 8) | (unsigned int)p[1];
     if (parmLen >= sizeof parmbuf - 2)
     {
@@ -156,8 +204,9 @@ int CTYP __start(char *p)
     /* We copy the parameter into our own area because
        the caller hasn't necessarily allocated room for
        a terminating NUL, nor is it necessarily correct
-       to clobber the caller's are with NULs. */
+       to clobber the caller's area with NULs. */
     memcpy(parmbuf, p, parmLen + 2);
+#endif
     p = parmbuf;
     if ((parmLen > 0) && (p[2] == 0))     /* assume TSO */
     {
@@ -263,6 +312,7 @@ int CTYP __start(char *p)
                 *p = '\0';
                 p++;
                 while (*p == ' ') p++;
+                if (*p == '\0') break; /* strip trailing blanks */
             }
         }
         argv[x] = NULL;

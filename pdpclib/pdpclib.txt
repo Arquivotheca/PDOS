@@ -1,8 +1,8 @@
             Public Domain C runtime library
             -------------------------------
             
-Version : 0.73
-Released: 1998-04-07
+Version : 0.8
+Released: 2004-03-17
 
 Written by Paul Edwards.
 Released to the public domain.
@@ -19,7 +19,12 @@ conforms to ISO/IEC 9899:1990.  It is expected to be highly OS-specific,
 but hopefully not too compiler-specific.  It is the job of C library 
 developers to make unportable but fast code, not that of the application 
 developers.  Anyone wishing to contribute to this project, please contact 
-Paul Edwards at avon@matra.com.au.
+Paul Edwards at kerravon@w3.to.
+
+The official method for obtaining PDPCLIB is going to
+http://sourceforge.net/projects/pdos
+and using CVS and checking out via appropriate tag.
+
 
 
 MAIN DESIGN GOALS
@@ -49,6 +54,7 @@ Watcom C++ 10.0b
 
 MVS for:
 IBM C/370 v2r1m0
+GCCMVS 3.2
 
 PDOS for:
 EMX 0.9b
@@ -221,6 +227,8 @@ HISTORY
 
 0.73  Revamped interface to PDOS.
 
+0.80  Many changes to work with GCC (MVS port).
+
 
 CREDITS
 -------
@@ -233,3 +241,4 @@ Ray Gardner for making his date routines public domain, plus
 Jim Nutt and Rob Duff for releasing strftime to the public domain.
 Rowan Crowe for some mods to memcpy.
 Matthew Parker for getting the program name under MSDOS.
+Phil Roberts for helping to debug the MVS port.

@@ -74,6 +74,13 @@ SUBPOOL  EQU   0
          USING IEZJSCB,R2
          MVC   PGMNAME,JSCBPGMN
 *
+* THIS SECTION OF CODE SHOULD USE MACROS INSTEAD OF HARDCODING
+         L     R2,540
+         L     R2,0(R2)
+         L     R2,12(R2)
+         LA    R2,8(R2)
+         MVC   PGMNAME,0(R2)
+*
          LH    R2,JSCBTJID
          ST    R2,TYPE
          L     R2,0(R1)

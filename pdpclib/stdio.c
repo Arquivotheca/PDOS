@@ -2740,9 +2740,11 @@ fgets: if variable record + no remainder
 #ifdef __MVS__
 char *fgets(char *s, int n, FILE *stream)
 {
-    char *dptr;
-    char *eptr;
+    unsigned char *dptr;
+    unsigned char *eptr;
     size_t len;
+    int cnt;
+    int c;
 
     if (stream->quickText)
     {
@@ -2759,33 +2761,55 @@ char *fgets(char *s, int n, FILE *stream)
         }
         else
         {
-            stream->fbuf = dptr + 4;
-            stream->upto = dptr + 4;
+            memcpy(stream->fbuf, dptr + 4, len);
+            stream->upto = stream->fbuf;
             stream->endbuf = stream->fbuf + len;
+            *(stream->endbuf++) = '\n';
             stream->quickText = 0;
         }
     }
+
     switch (stream->style)
     {
         case FIXED_TEXT:
-            /* +++ need logic for partial read */
-            if (__aread(stream->hfile, &dptr) != 0)
+            if ((stream->endbuf == stream->fbuf)
+                && (n > (stream->lrecl + 2)))
             {
-                return (NULL);
+                if (__aread(stream->hfile, &dptr) != 0)
+                {
+                    return (NULL);
+                }
+                eptr = dptr + stream->lrecl - 1;
+                while ((*eptr == ' ') && (eptr >= dptr))
+                {
+                    eptr--;
+                }
+                memcpy(s, dptr, eptr + 1 - dptr);
+                memcpy(s + (eptr + 1 - dptr), "\n", 2);
+                return (s);
             }
-            eptr = dptr + stream->lrecl - 1;
-            while ((*eptr == ' ') && (eptr >= dptr))
-            {
-                eptr--;
-            }
-            memcpy(s, dptr, eptr + 1 - dptr);
-            memcpy(s + (eptr + 1 - dptr), "\n", 2);
             break;
 
-        case VARIABLE_TEXT:
-            /* +++ need logic */
+        default:
             break;
+
     }
+    
+    /* Ok, the obvious optimizations have been done,
+       so now we switch to the slow generic version */
+    
+    n--;
+    cnt = 0;
+    while (cnt < n)
+    {
+        c = getc(stream);
+        if (c == EOF) break;
+        s[cnt] = c;
+        if (c == '\n') break;
+        cnt++;
+    }
+    if (cnt < n) s[cnt++] = '\n';
+    s[cnt] = '\0';
     return (s);
 }
 
@@ -3088,20 +3112,17 @@ size_t fread(void *ptr, size_t size, size_t nmemb, FILE *stream)
     {
         case FIXED_TEXT:
             bytes = nmemb * size;
-            read = stream->upto - stream->fbuf;
+            read = stream->endbuf - stream->upto;
             if (read > bytes)
             {
-                memcpy(ptr, stream->fbuf, bytes);
-                memmove(stream->fbuf,
-                        stream->upto + bytes,
-                        read - bytes);
-                stream->upto = stream->fbuf + (read - bytes);
+                memcpy(ptr, stream->upto, bytes);
+                stream->upto += bytes;
                 totalread = bytes;
             }
             else
             {
-                memcpy(ptr, stream->fbuf, read);
-                stream->upto = stream->fbuf;
+                memcpy(ptr, stream->upto, read);
+                stream->upto = stream->endbuf = stream->fbuf;
                 totalread = read;
             }
 
@@ -3126,8 +3147,8 @@ size_t fread(void *ptr, size_t size, size_t nmemb, FILE *stream)
                     extra = bytes - (totalread + read);
                     read -= extra;
                     memcpy(stream->fbuf, dptr + read, extra);
-                    stream->upto = stream->fbuf + extra;
-                    *stream->upto++ = '\n';
+                    stream->endbuf = stream->fbuf + extra;
+                    *stream->endbuf++ = '\n';
                 }
                 
                 memcpy((char *)ptr + totalread, dptr, read);
@@ -3143,20 +3164,17 @@ size_t fread(void *ptr, size_t size, size_t nmemb, FILE *stream)
 
         case FIXED_BINARY:
             bytes = nmemb * size;
-            read = stream->upto - stream->fbuf;
+            read = stream->endbuf - stream->upto;
             if (read > bytes)
             {
-                memcpy(ptr, stream->fbuf, bytes);
-                memmove(stream->fbuf,
-                        stream->upto + bytes,
-                        read - bytes);
-                stream->upto = stream->fbuf + (read - bytes);
+                memcpy(ptr, stream->upto, bytes);
+                stream->upto += bytes;
                 totalread = bytes;
             }
             else
             {
-                memcpy(ptr, stream->fbuf, read);
-                stream->upto = stream->fbuf;
+                memcpy(ptr, stream->upto, read);
+                stream->upto = stream->endbuf = stream->fbuf;
                 totalread = read;
             }
 
@@ -3175,7 +3193,7 @@ size_t fread(void *ptr, size_t size, size_t nmemb, FILE *stream)
                     extra = bytes - (totalread + read);
                     read -= extra;
                     memcpy(stream->fbuf, dptr + read, extra);
-                    stream->upto = stream->fbuf + extra;
+                    stream->endbuf = stream->fbuf + extra;
                 }
                 
                 memcpy((char *)ptr + totalread, dptr, read);
@@ -3186,20 +3204,17 @@ size_t fread(void *ptr, size_t size, size_t nmemb, FILE *stream)
 
         case VARIABLE_TEXT:
             bytes = nmemb * size;
-            read = stream->upto - stream->fbuf;
+            read = stream->endbuf - stream->upto;
             if (read > bytes)
             {
-                memcpy(ptr, stream->fbuf, bytes);
-                memmove(stream->fbuf,
-                        stream->upto + bytes,
-                        read - bytes);
-                stream->upto = stream->fbuf + (read - bytes);
+                memcpy(ptr, stream->upto, bytes);
+                stream->upto += bytes;
                 totalread = bytes;
             }
             else
             {
-                memcpy(ptr, stream->fbuf, read);
-                stream->upto = stream->fbuf;
+                memcpy(ptr, stream->upto, read);
+                stream->upto = stream->endbuf = stream->fbuf;
                 totalread = read;
             }
 
@@ -3212,6 +3227,7 @@ size_t fread(void *ptr, size_t size, size_t nmemb, FILE *stream)
                 }
                 
                 read = (dptr[0] << 8) | dptr[1];
+                read -= 4;
                 dptr += 4;
                 
                 if ((totalread + read) >= bytes)
@@ -3219,8 +3235,8 @@ size_t fread(void *ptr, size_t size, size_t nmemb, FILE *stream)
                     extra = bytes - (totalread + read);
                     read -= extra;
                     memcpy(stream->fbuf, dptr + read, extra);
-                    stream->upto = stream->fbuf + extra;
-                    *stream->upto++ = '\n';
+                    stream->endbuf = stream->fbuf + extra;
+                    *stream->endbuf++ = '\n';
                 }
                 
                 memcpy((char *)ptr + totalread, dptr, read);
@@ -3236,20 +3252,17 @@ size_t fread(void *ptr, size_t size, size_t nmemb, FILE *stream)
 
         case VARIABLE_BINARY:
             bytes = nmemb * size;
-            read = stream->upto - stream->fbuf;
+            read = stream->endbuf - stream->upto;
             if (read > bytes)
             {
-                memcpy(ptr, stream->fbuf, bytes);
-                memmove(stream->fbuf,
-                        stream->upto + bytes,
-                        read - bytes);
-                stream->upto = stream->fbuf + (read - bytes);
+                memcpy(ptr, stream->upto, bytes);
+                stream->upto += bytes;
                 totalread = bytes;
             }
             else
             {
-                memcpy(ptr, stream->fbuf, read);
-                stream->upto = stream->fbuf;
+                memcpy(ptr, stream->upto, read);
+                stream->upto = stream->endbuf = stream->fbuf;
                 totalread = read;
             }
 
@@ -3262,14 +3275,13 @@ size_t fread(void *ptr, size_t size, size_t nmemb, FILE *stream)
                 }
                 
                 read = (dptr[0] << 8) | dptr[1];
-                read += 4;
                 
                 if ((totalread + read) > bytes)
                 {
                     extra = bytes - (totalread + read);
                     read -= extra;
                     memcpy(stream->fbuf, dptr + read, extra);
-                    stream->upto = stream->fbuf + extra;
+                    stream->endbuf = stream->fbuf + extra;
                 }
                 
                 memcpy((char *)ptr + totalread, dptr, read);

@@ -191,7 +191,13 @@ void pdosRun(void)
 #if (!defined(USING_EXE) && !defined(__32BIT__))
     instint();
 #endif
-    printf("welcome to PDOS\n");
+    printf("welcome to PDOS-"
+#ifdef __32BIT__
+           "32"
+#else
+           "16"
+#endif
+           "\n");
  
 #ifndef __32BIT__
     bootBPB = (unsigned char *)ABSADDR(0x7c00 + 11);
@@ -555,7 +561,7 @@ static void int21handler(union REGS *regsin,
 
         case 0x1a:
 #ifdef __32BIT__
-            tempdta = SUBADDRFIX(regsin->d.edx)
+            tempdta = SUBADDRFIX(regsin->d.edx);
 #else                        
             tempdta = MK_FP(sregs->ds, regsin->x.dx);
 #endif            
@@ -908,7 +914,7 @@ void PosDisplayOutput(int ch)
             
 void PosDisplayString(const char *buf)
 {
-    char *p;
+    const char *p;
 
     p = memchr(buf, '$', (size_t)-1);
     if (p == NULL) p = buf;
@@ -1165,7 +1171,7 @@ int PosReallocPages(void *ptr, unsigned int newpages, unsigned int *maxp)
 {
     int ret;
     
-    ret = memmgrRealloc(&memmgr, ptr, newpages * 16, 0);
+    ret = memmgrRealloc(&memmgr, ptr, newpages * 16);
     if (ret != 0)
     {
         *maxp = memmgrMaxSize(&memmgr) / 16;

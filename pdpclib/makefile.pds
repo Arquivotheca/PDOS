@@ -1,5 +1,5 @@
 CC=gcc
-COPTS=-c -s -O -I. -I..\pdos -D__PDOS__
+COPTS=-c -s -O -I. -I..\src -D__PDOS__
 
 pdptest.exe: pdosst32.o pdptest.o stdio.o string.o stdlib.o \
        start.o time.o errno.o assert.o signal.o locale.o \
@@ -13,11 +13,11 @@ pdptest.exe: pdosst32.o pdptest.o stdio.o string.o stdlib.o \
   if exist pdptest.exe del pdptest.exe
   ren pdptest pdptest.exe
   
-pos.o: ..\pdos\pos.c
-  $(CC) $(COPTS) ..\pdos\pos.c
+pos.o: ..\src\pos.c
+  $(CC) $(COPTS) ..\src\pos.c
 
-support.o: ..\pdos\support.s
-  $(CC) $(COPTS) ..\pdos\support.s
+support.o: ..\src\support.s
+  $(CC) $(COPTS) ..\src\support.s
 
 .c.o:
   $(CC) $(COPTS) $<

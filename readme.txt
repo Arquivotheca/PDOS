@@ -118,12 +118,20 @@ Open Watcom.
 MSDOS 5.0
 Borland C++ 3.1 for DOS
 TASM 3.1 for DOS
-EMX 0.9b
+EMX 0.9b (which includes GCC 2.7.2)
 raread/rawrite (unknown origin)
 
 
 RECOMPILING
 -----------
+
+If you have the above software, you can just type "build"
+and it will rebuild the two DSK files used in the shipment.
+Note that you need to edit build.bat and put the proper
+paths in before that will actually work.
+
+The step by step guide is below...
+
 
 To compile 16-bit version using Borland C++ 3.1:
 

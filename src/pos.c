@@ -439,7 +439,7 @@ void *PosAllocMemPages(unsigned int pages, unsigned int *maxpages)
     }
     if (maxpages != NULL)
     {
-        *maxpages = regsout.d.ebx);
+        *maxpages = regsout.d.ebx;
     }
     return ((void *)regsout.d.eax);
 #else

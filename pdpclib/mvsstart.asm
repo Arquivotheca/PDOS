@@ -138,9 +138,12 @@ CEESG003 CSECT
          ENTRY @@EXITA
 @@EXITA  CSECT
 *         L     R14,0(R12)
-         L     R15,0(R1)
+*         L     R15,0(R1)
 * FOR GCC, WE HAVE TO USE OUR SAVED R13
+         DROP  R10
+         USING @@EXITA,R15
          L     R13,=A(SAVER13)
+         L     R15,0(R1)
          RETURN (14,12),RC=(15)
 *         BR    R14
          END

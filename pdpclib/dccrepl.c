@@ -26,6 +26,7 @@ int main(void)
     char *f;
     int frame;
     int cindex;
+    int csects = 0;
 
     while (fgets(buf, sizeof buf, stdin) != NULL)
     {
@@ -52,22 +53,22 @@ int main(void)
                 if (p != NULL)
                 {
                     *p = '\0';
-                    printf("\t%s\tENTRY\n", buf);
+                    printf("\tENTRY\t%s\n", buf);
                     *p = '\t';
                 }
             }
             strcpy(d, "CSECT\n");
             fputs(buf, stdout);
-            printf("\tUSING\t*,12,7,8,9\n");
+            printf("\tUSING\t*,12\n"); /*,7,8,9\n");*/
             printf("\tSAVE\t(14,12)\n");
             printf("\tLR\t12,15\n");
             
-            printf("\tLA\t7,2048(12)\n");
+/*            printf("\tLA\t7,2048(12)\n");
             printf("\tLA\t7,2048(7)\n");
             printf("\tLA\t8,2048(7)\n");
             printf("\tLA\t8,2048(8)\n");
             printf("\tLA\t9,2048(8)\n");
-            printf("\tLA\t9,2048(9)\n");
+            printf("\tLA\t9,2048(9)\n"); */
             
             printf("\tL\t15,76(13)\n");
             printf("\tST\t15,4(15)\n");
@@ -86,6 +87,16 @@ int main(void)
         {
             printf("*");
             buf[10] = '@';
+            fputs(buf, stdout);
+        }
+        else if ((strstr(buf, "CSECT") != NULL)
+                 && (strchr("@$", buf[0]) != NULL))
+        {
+            csects++;
+            if (csects > 2)
+            {
+                printf("*");
+            }
             fputs(buf, stdout);
         }
         else

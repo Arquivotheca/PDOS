@@ -81,6 +81,10 @@ SUBPOOL  EQU   0
          LA    R2,PGMNAME
          ST    R2,PGMNPTR
 *
+* FOR GCC WE NEED TO BE ABLE TO RESTORE R13
+         L     R5,SAVEAREA+4
+         ST    R5,SAVER13
+*
 *         LA    R2,=V(@@MVSTRT)
 *         CSVQUERY INADDR=(R2),OUTMJNM=PGMNAME,MF=(E,CSVQC)
 *
@@ -95,6 +99,7 @@ RETURN   DS    0H
          FREEMAIN RU,LV=STACKLEN,A=(R1),SP=SUBPOOL
          LR    R15,R14
          RETURN (14,12),RC=(15)
+SAVER13  DS    F
          LTORG
          CVT   DSECT=YES
          IKJTCB
@@ -132,7 +137,10 @@ CEESG003 CSECT
 *@@EXITA  RMODE ANY
          ENTRY @@EXITA
 @@EXITA  CSECT
-         L     R14,0(R12)
+*         L     R14,0(R12)
          L     R15,0(R1)
-         BR    R14
+* FOR GCC, WE HAVE TO USE OUR SAVED R13
+         L     R13,=A(SAVER13)
+         RETURN (14,12),RC=(15)
+*         BR    R14
          END

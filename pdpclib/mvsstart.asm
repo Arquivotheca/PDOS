@@ -6,11 +6,18 @@
 **********************************************************************
 **********************************************************************
 *                                                                    *
-*  MVSSTART - STARTUP ROUTINES FOR MVS                               *
+*  MVSSTART - STARTUP ROUTINES FOR MVS FOR USE WITH C/370.           *
+*                                                                    *
+*  NOTE THAT THE AMODE/RMODE AND CSVQUERY HAVE BEEN COMMENTED        *
+*  OUT IN ORDER TO BE COMPATIBLE WITH IFOX (OS/360).  ON OS/370      *
+*  AND ABOVE THE AMODE/RMODE CAN BE GIVEN AT ASSEMBLY AND LINK       *
+*  TIME INSTEAD.  WITHOUT CSVQUERY, WHEN RUN UNDER TSO, THE          *
+*  PROGRAM NAME WILL BE IKJEFT01 INSTEAD OF THE NORMAL NAME, BUT     *
+*  THAT WILL NOT AFFECT PROGRAM FUNCTIONALITY.                       *
 *                                                                    *
 **********************************************************************
-@@MVSTRT AMODE 31
-@@MVSTRT RMODE ANY
+*@@MVSTRT AMODE 31
+*@@MVSTRT RMODE ANY
 @@MVSTRT CSECT
          PRINT NOGEN
          YREGS
@@ -55,8 +62,8 @@ SUBPOOL  EQU   0
          LA    R2,PGMNAME
          ST    R2,PGMNPTR
 *
-         LA    R2,=V(@@MVSTRT)
-         CSVQUERY INADDR=(R2),OUTMJNM=PGMNAME,MF=(E,CSVQC)
+*         LA    R2,=V(@@MVSTRT)
+*         CSVQUERY INADDR=(R2),OUTMJNM=PGMNAME,MF=(E,CSVQC)
 *
          LA    R1,PARMLIST
          CALL  @@START
@@ -86,18 +93,18 @@ PGMNAMEN DS    C                 NUL BYTE FOR C
 ANCHOR   DS    0F
 EXITADDR DS    F
          DS    49F
-         CSVQUERY MF=(L,CSVQC)
+*         CSVQUERY MF=(L,CSVQC)
 MAINSTK  DS    4000F
 MAINLEN  EQU   *-MAINSTK
 STACKLEN EQU   *-STACK
-CEESTART AMODE 31
-CEESTART RMODE ANY
+*CEESTART AMODE 31
+*CEESTART RMODE ANY
 CEESTART CSECT
-CEESG003 AMODE 31
-CEESG003 RMODE ANY
+*CEESG003 AMODE 31
+*CEESG003 RMODE ANY
 CEESG003 CSECT
-@@EXITA  AMODE 31
-@@EXITA  RMODE ANY
+*@@EXITA  AMODE 31
+*@@EXITA  RMODE ANY
 @@EXITA  CSECT
          L     R14,0(R12)
          L     R15,0(R1)

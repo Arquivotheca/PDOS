@@ -134,6 +134,13 @@ OUTDCBLN EQU   *-OUTDCB
          SAVE  (14,12),,@@AREAD_&SYSDATE
          LR    R12,R15
          USING @@AREAD,R12
+         LR    R11,R1
+         GETMAIN RU,LV=WORKLEN,SP=SUBPOOL
+         ST    R13,4(R1)
+         ST    R1,8(R13)
+         LR    R13,R1
+         LR    R1,R11
+         USING WORKAREA,R13
 *
          L     R2,0(R1)         R2 CONTAINS HANDLE
          L     R3,4(R1)         R3 POINTS TO BUF POINTER
@@ -144,6 +151,11 @@ OUTDCBLN EQU   *-OUTDCB
          B     RETURN2
 *
 RETURN2  DS    0H
+         LR    R1,R13
+         L     R13,SAVEAREA+4
+         LR    R14,R15
+         FREEMAIN RU,LV=WORKLEN,A=(R1),SP=SUBPOOL
+         LR    R15,R14
          RETURN (14,12),RC=(15)
 *
 *
@@ -156,6 +168,13 @@ RETURN2  DS    0H
          SAVE  (14,12),,@@AWRITE_&SYSDATE
          LR    R12,R15
          USING @@AWRITE,R12
+         LR    R11,R1
+         GETMAIN RU,LV=WORKLEN,SP=SUBPOOL
+         ST    R13,4(R1)
+         ST    R1,8(R13)
+         LR    R13,R1
+         LR    R1,R11
+         USING WORKAREA,R13
 *
          L     R2,0(R1)         R2 CONTAINS HANDLE
          L     R3,4(R1)         R3 POINTS TO BUF POINTER
@@ -165,6 +184,11 @@ RETURN2  DS    0H
          B     RETURNWR
 *
 RETURNWR DS    0H
+         LR    R1,R13
+         L     R13,SAVEAREA+4
+         LR    R14,R15
+         FREEMAIN RU,LV=WORKLEN,A=(R1),SP=SUBPOOL
+         LR    R15,R14
          RETURN (14,12),RC=(15)
 *
 *

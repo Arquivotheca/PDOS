@@ -147,6 +147,10 @@ static void freadSlowB(void *ptr,
 static int examine(const char **formt, FILE *fq, char *s, va_list *arg,
                    int chcount);
 
+#ifdef __VM__
+static void filedef(char *fdddname, char *fnm, int mymode);
+#endif
+
 int printf(const char *format, ...)
 {
     va_list arg;
@@ -481,7 +485,7 @@ static void osfopen(void)
 #ifdef __MSDOS__
     int mode;
     int errind;
-
+     
     if ((modeType == 1) || (modeType == 4))
     {
         mode = 0;
@@ -505,6 +509,10 @@ static void osfopen(void)
     int mode;
     char *p;
     int len;
+#ifdef __VM__
+    char tmpdd[9];
+#endif
+
 
     if ((modeType == 1) || (modeType == 4))
     {
@@ -518,6 +526,8 @@ static void osfopen(void)
     {
         mode = 2;
     }
+/* dw */
+/* This code needs changing for VM */
     p = strchr(fnm, ':');
     if ((p != NULL) 
         && ((strncmp(fnm, "dd", 2) == 0)
@@ -526,9 +536,26 @@ static void osfopen(void)
         p++;
     }
     else
+/* if we are in here then there is no "dd:" on front of file */ 
+/* if its VM generate a ddname and issue a filedef for the file */
+#ifdef __VM__
+    {
+/* create a DD from the handle number */
+        p = fnm;
+        while (*p != '\0')
+        {
+                *p = toupper(*p);
+                p++;
+        }
+        sprintf(tmpdd,"GCC%03dHD",spareSpot);
+        filedef(tmpdd,fnm,mode);
+        p  = tmpdd;
+    }
+#else
     {
         p = (char *)fnm;
     }
+#endif
     strcpy(myfile->ddname, "        ");
     len = strcspn(p, "(");
     if (len > 8)
@@ -542,6 +569,7 @@ static void osfopen(void)
         *p = toupper(*p);
         p++;
     }
+
     p = strchr(fnm, '(');
     if (p != NULL)
     {
@@ -563,6 +591,12 @@ static void osfopen(void)
     }
     myfile->hfile = 
         __aopen(myfile->ddname, mode, &myfile->recfm, &myfile->lrecl, p);
+/* dw mod to return error on open fail */
+    if(myfile->hfile == NULL){
+       err = 1;
+       return;
+    }
+/* dw end of mod */
     if ((modeType == 4) || (modeType == 5))
     {
         myfile->style = 0; /* binary */
@@ -2792,7 +2826,6 @@ char *fgets(char *s, int n, FILE *stream)
     size_t len;
     int cnt;
     int c;
-
     if (stream->quickText)
     {
         if (__aread(stream->hfile, &dptr) != 0)
@@ -3076,11 +3109,22 @@ size_t fwrite(const void *ptr, size_t size, size_t nmemb, FILE *stream)
                         sz = stream->lrecl;
                     }
                     __awrite(stream->hfile, &dptr);
-                    dptr[0] = sz >> 8;
-                    dptr[1] = sz & 0xff;
-                    dptr[2] = 0;
-                    dptr[3] = 0;
-                    memcpy(dptr + 4, ptr, sz);
+                    if(sz == 0)
+                    {
+                        dptr[0] = 0;
+                        dptr[1] = 5;
+                        dptr[2] = 0;
+                        dptr[3] = 0;
+                        dptr[4] = ' ';
+                    }
+                    else 
+                    {
+                        dptr[0] = (sz + 4) >> 8;
+                        dptr[1] = (sz + 4) & 0xff;
+                        dptr[2] = 0;
+                        dptr[3] = 0;
+                        memcpy(dptr + 4, ptr, sz);
+                    }
                 }
                 else
                 {
@@ -3091,11 +3135,22 @@ size_t fwrite(const void *ptr, size_t size, size_t nmemb, FILE *stream)
                     memcpy(stream->upto, p, sz);
                     sz += (stream->upto - stream->fbuf);
                     __awrite(stream->hfile, &dptr);
-                    dptr[0] = sz >> 8;
-                    dptr[1] = sz & 0xff;
-                    dptr[2] = 0;
-                    dptr[3] = 0;
-                    memcpy(dptr + 4, stream->fbuf, sz);
+                    if(sz == 0)
+                    {
+                        dptr[0] = 0;
+                        dptr[1] = 5;
+                        dptr[2] = 0;
+                        dptr[3] = 0;
+                        dptr[4] = ' ';
+                    }
+                    else
+                    {  
+                        dptr[0] = ( sz + 4) >> 8;
+                        dptr[1] = ( sz + 4) & 0xff;
+                        dptr[2] = 0;
+                        dptr[3] = 0;
+                        memcpy(dptr + 4, stream->fbuf, sz);
+                    }
                     stream->upto = stream->fbuf;
                 }
                 ptr = (char *)p + 1;
@@ -3111,11 +3166,22 @@ size_t fwrite(const void *ptr, size_t size, size_t nmemb, FILE *stream)
                             sz = stream->lrecl;
                         }
                         __awrite(stream->hfile, &dptr);
-                        dptr[0] = sz >> 8;
-                        dptr[1] = sz & 0xff;
-                        dptr[2] = 0;
-                        dptr[3] = 0;
-                        memcpy(dptr + 4, ptr, sz);
+                        if(sz == 0)
+                        {
+                            dptr[0] = 0;
+                            dptr[1] = 5;
+                            dptr[2] = 0;
+                            dptr[3] = 0;
+                            dptr[4] = ' ';
+                        }
+                        else 
+                        {
+                            dptr[0] = (sz + 4) >> 8;
+                            dptr[1] = (sz + 4) & 0xff;
+                            dptr[2] = 0;
+                            dptr[3] = 0;
+                            memcpy(dptr + 4, ptr, sz);
+                        }
                         ptr = p + 1;
                         p = memchr(ptr, '\n', bytes);
                     }
@@ -3365,4 +3431,75 @@ size_t fread(void *ptr, size_t size, size_t nmemb, FILE *stream)
     return (0);
 }
 
+#endif
+
+/* 
+   Following code issues a FILEDEF for VM
+*/
+
+#ifdef __VM__
+static void filedef(char *fdddname, char *fnm, int mymode)
+{
+    char s202parm [800];
+
+    int code;
+    int parm;
+    char *fname;
+    char *ftype;
+    char *fmode;
+    char *p;
+
+/*
+    first parse the file name
+*/
+    while ( p = strchr(fnm, '.') ) *p=' '; /*  replace all . with blank */
+    fname =  strtok(fnm, " ");
+    ftype =  strtok(NULL, " ");
+    if (ftype == NULL) ftype = "TYPE";
+    fmode =  strtok(NULL, " ");  
+
+/*
+ Now build the SVC 202 string
+*/
+    memcpy ( &s202parm[0] , "FILEDEF ", 8);
+    memcpy ( &s202parm[8] , fdddname, 8);
+    memcpy ( &s202parm[16] , "DISK    ", 8);
+/* 
+  Clear PARMS area
+*/
+    memcpy ( &s202parm[24] , "        " , 8);
+    memcpy ( &s202parm[32] , "        " , 8);
+    if (mymode)
+    {
+        memcpy ( &s202parm[40] , "A1      " , 8);
+    }
+    else
+    {
+        memcpy ( &s202parm[40] , "*       " , 8);
+    }
+
+    memcpy ( &s202parm[24] , fname , 
+             ( strlen(fname) > 8 ) ? 8 : strlen(fname)  );
+    memcpy ( &s202parm[32] , ftype , 
+             ( strlen(ftype) >8 ) ? 8 : strlen(ftype) );
+/*  memcpy ( &s202parm[40] , fmode , strlen(fmode) ); */
+
+   if ( mymode ) 
+   {
+        memcpy ( &s202parm[48] , "(       " , 8 );
+        memcpy ( &s202parm[56] , "RECFM   " , 8 );
+        memcpy ( &s202parm[64] , "V       " , 8 );
+        memcpy ( &s202parm[72] , "LRECL   " , 8 );
+        memcpy ( &s202parm[80] , "2000    " , 8 );
+        s202parm[88]=s202parm[89]=s202parm[90]=s202parm[91]=
+            s202parm[92]=s202parm[93]=s202parm[94]=s202parm[95]=0xff;
+   }
+   else
+   {
+        s202parm[48]=s202parm[49]=s202parm[50]=s202parm[51]=
+            s202parm[52]=s202parm[53]=s202parm[54]=s202parm[55]=0xff;
+   }
+
+   _SVC202_ ( s202parm, &code, &parm );
+}
 #endif

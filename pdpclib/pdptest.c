@@ -37,9 +37,10 @@ int main(int argc, char **argv)
     fclose(fq);
 #endif    
     printf("hello there\n");
+    printf("argc = %d\n" , argc);
     for (x = 0; x < argc; x++)
     {
-        printf("arg %d is %s\n", x, argv[x]);
+        printf("arg %d is <%s>\n", x, argv[x]);
     }
     return (6);
 #if 0

@@ -515,7 +515,9 @@ static void osfopen(void)
         mode = 2;
     }
     p = strchr(fnm, ':');
-    if ((p != NULL) && (strncmp(fnm, "dd", 2) == 0))
+    if ((p != NULL) 
+        && ((strncmp(fnm, "dd", 2) == 0)
+            || (strncmp(fnm, "DD", 2) == 0)))
     {
         p++;
     }

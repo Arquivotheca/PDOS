@@ -29,6 +29,7 @@ R13      EQU   13
 R14      EQU   14
 R15      EQU   15
 SUBPOOL  EQU   0
+         CSECT
 *@@AOPEN  AMODE 31
 *@@AOPEN  RMODE ANY
 @@AOPEN  ENTRY

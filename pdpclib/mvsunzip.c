@@ -25,7 +25,6 @@ static char *outn;
 int main(int argc, char **argv)
 {
     FILE *infile;
-    int c;
 
     if (argc <= 2)
     {
@@ -112,7 +111,7 @@ static int onefile(FILE *infile)
     while (strchr(fnm, '_') != NULL) *strchr(fnm, '_') = '@';
     sprintf(newfnm, "%s(%s)", outn, fnm);
     newf = fopen(newfnm, "w");
-    fwrite(buf, size, 1, newf);
+    fwrite(buf, strlen(buf), 1, newf);
     fclose(newf);
     return (1);
 }
@@ -120,13 +119,26 @@ static int onefile(FILE *infile)
 static char *ascii2l(char *buf)
 {
     char *p;
+    char *q;
+    int c;
 
     p = buf;
+    q = buf;
     while (*p != '\0')
     {
-        *p = fasc(*p);
+        c = fasc(*p);
+        if (c == '\0')
+        {
+            printf("error translating %x\n", *p);
+            exit(0);
+        }
+        if (c != '\r')
+        {
+            *q++ = (char)c;
+        }
         p++;
     }
+    *q = '\0';
     return (buf);
 }
 
@@ -134,6 +146,7 @@ static int fasc(int asc)
 {
   switch (asc)
   {
+    case 0x09 : return('\t');
     case 0x0a : return('\n');
     case 0x0d : return('\r');
     case 0x20 : return(' ');

@@ -61,7 +61,7 @@ int main(void)
             printf("\tST\t15,4(15)\n");
             printf("\tST\t15,8(13)\n");
             printf("\tLR\t13,15\n");
-            printf("\tA\t15,@FRAMESIZE@%d\n", cindex);
+            printf("\tA\t15,=F'%d'\n", frame);
             printf("\tST\t15,76(13)\n");
         }
         else if ((d = strstr(buf, "DCCEPIL")) != NULL)
@@ -72,7 +72,8 @@ int main(void)
         }
         else if (strncmp(buf, "@FRAMESIZE_", 11) == 0)
         {
-            memcpy(buf, "@FRAMESIZE@", 11);
+            printf("*");
+            buf[10] = '@';
             fputs(buf, stdout);
         }
         else

@@ -38,6 +38,7 @@ int main(int argc, char **argv)
     while (fgets(buf, sizeof buf, stdin) != NULL)
     {
         d = strstr(buf, "DCCPRLG");
+        if (strstr(buf, "'") != NULL) d = NULL;
         if (d != NULL)
         {
             frame = 0;
@@ -108,13 +109,15 @@ int main(int argc, char **argv)
             tprintf("\tA\t15,=F'%d'\n", frame);
             tprintf("\tST\t15,76(13)\n");
         }
-        else if ((d = strstr(buf, "DCCEPIL")) != NULL)
+        else if (((d = strstr(buf, "DCCEPIL")) != NULL)
+                 && (strstr(buf, "'") == NULL))
         {
             tprintf("\tL\t13,4(13)\n");
             strcpy(d, "RETURN (14,12),RC=(15)\n");
             tprintf("%s", buf);
         }
-        else if (strncmp(buf, "@FRAMESIZE_", 11) == 0)
+        else if ((strncmp(buf, "@FRAMESIZE_", 11) == 0)
+                 && (strstr(buf, "'") == NULL))
         {
             tprintf("*");
             buf[10] = '@';

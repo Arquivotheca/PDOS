@@ -106,6 +106,9 @@ static void pdos16MemmgrFree(MEMMGR *memmgr, void *ptr);
 static void *pdos16MemmgrAllocate(MEMMGR *memmgr, size_t bytes, int id);
 static void *pdos16MemmgrAllocPages(MEMMGR *memmgr, size_t pages, int id);
 static void pdos16MemmgrFreePages(MEMMGR *memmgr, size_t page);
+static int pdos16MemmgrReallocPages(MEMMGR *memmgr, 
+                                    void *ptr,
+                                    size_t newpages);
 #endif
 
 #define MAXDISKS 20
@@ -747,10 +750,26 @@ static void int21handler(union REGS *regsin,
         
         case 0x49:
 #ifdef __32BIT__
-            regsout->x.ax = PosFreeMem(SUBADDRFIX(regsin->d.ebx));
+            regsout->d.eax = PosFreeMem(SUBADDRFIX(regsin->d.ebx));
 #else
             regsout->x.ax = PosFreeMem(MK_FP(sregs->es, 0));
 #endif            
+            if (regsout->x.ax != 0)
+            {
+                regsout->x.cflag = 1;
+            }
+            break;
+            
+        case 0x4a:
+#ifdef __32BIT__
+            regsout->d.eax = PosReallocPages(SUBADDRFIX(regsin->d.ecx),
+                                             regsin->d.ebx,
+                                             &regsout->d.ebx);
+#else
+            regsout->x.ax = PosReallocPages(MK_FP(sregs->es, 0),
+                                            regsin->x.bx,
+                                            &regsout->x.bx);
+#endif
             if (regsout->x.ax != 0)
             {
                 regsout->x.cflag = 1;
@@ -1100,19 +1119,7 @@ void *PosAllocMem(unsigned int size)
     return (memmgrAllocate(&memmgr, size, 0)); 
 }
 
-#ifndef __32BIT__
-void *PosAllocMemPages(unsigned int pages, unsigned int *maxpages)
-{
-    void *p;
-    
-    p = pdos16MemmgrAllocPages(&memmgr, pages, 0);
-    if (p == NULL)
-    {
-        *maxpages = memmgrMaxSize(&memmgr);
-    }
-    return (p);
-}
-#else
+#ifdef __32BIT__
 void *PosAllocMemPages(unsigned int pages, unsigned int *maxpages)
 {
     void *p;
@@ -1124,6 +1131,18 @@ void *PosAllocMemPages(unsigned int pages, unsigned int *maxpages)
     }
     return (p);
 }
+#else
+void *PosAllocMemPages(unsigned int pages, unsigned int *maxpages)
+{
+    void *p;
+    
+    p = pdos16MemmgrAllocPages(&memmgr, pages, 0);
+    if (p == NULL)
+    {
+        *maxpages = memmgrMaxSize(&memmgr);
+    }
+    return (p);
+}
 #endif
 
 int PosFreeMem(void *ptr)
@@ -1131,6 +1150,34 @@ int PosFreeMem(void *ptr)
     memmgrFree(&memmgr, ptr);
     return (0);
 }
+
+#ifdef __32BIT__
+int PosReallocPages(void *ptr, unsigned int newpages, unsigned int *maxp)
+{
+    int ret;
+    
+    ret = memmgrRealloc(&memmgr, ptr, newpages * 16, 0);
+    if (ret != 0)
+    {
+        *maxp = memmgrMaxSize(&memmgr) / 16;
+        ret = 8;
+    }
+    return (ret);
+}
+#else
+int PosReallocPages(void *ptr, unsigned int newpages, unsigned int *maxp)
+{
+    int ret;
+    
+    ret = pdos16MemmgrReallocPages(&memmgr, ptr, newpages);
+    if (ret != 0)
+    {
+        *maxp = memmgrMaxSize(&memmgr);
+        ret = 8;
+    }
+    return (ret);
+}
+#endif
 
 void PosExec(char *prog, void *parmblock)
 {
@@ -2091,6 +2138,29 @@ static void pdos16MemmgrFreePages(MEMMGR *memmgr, size_t page)
     ptr = MK_FP(page, 0);
     pdos16MemmgrFree(memmgr, ptr);
     return;
+}
+
+static int pdos16MemmgrReallocPages(MEMMGR *memmgr, 
+                                    void *ptr,
+                                    size_t newpages)
+{
+    unsigned long abs;
+    int ret;
+
+    abs = ADDR2ABS(ptr);
+    abs -= 0x10000UL;
+    abs -= (unsigned long)PDOS16_MEMSTART * 16;
+    abs /= 16;
+    /* ignore strange realloc requests */
+    if (abs > 0x6000U)
+    {
+        printf("ignoring strange realloc\n");
+        return(-1);
+    }
+    abs += (unsigned long)PDOS16_MEMSTART * 16;
+    ptr = ABS2ADDR(abs);
+    ret = (memmgrRealloc)(memmgr, ptr, newpages);
+    return (ret);
 }
 
 #endif

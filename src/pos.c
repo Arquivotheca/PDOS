@@ -475,6 +475,33 @@ int PosFreeMem(void *ptr)
     return (regsout.x.ax);
 }
 
+int PosReallocMem(void *ptr, unsigned int newpages, unsigned int *maxp)
+{
+    union REGS regsin;
+    union REGS regsout;
+    struct SREGS sregs;
+    
+    regsin.h.ah = 0x4a;
+#ifdef __32BIT__
+    regsin.d.ecx = (int)ptr;
+    regsin.d.ebx = newpages;
+#else        
+    sregs.es = FP_SEG(ptr);
+    regsin.x.bx = newpages;
+#endif
+    int86x(0x21, &regsin, &regsout, &sregs);
+    if (!regsout.x.cflag)
+    {
+        regsout.x.ax = 0;
+#ifdef __32BIT__
+        *maxp = regsout.d.ebx;
+#else
+        *maxp = regsout.x.bx;
+#endif
+    }
+    return (regsout.x.ax);
+}
+
 void PosExec(char *prog, void *parmblock)
 {
     union REGS regsin;

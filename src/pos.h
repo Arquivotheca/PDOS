@@ -84,6 +84,9 @@ void *PosAllocMemPages(unsigned int pages, unsigned int *maxpages);
 
 int PosFreeMem(void *ptr); /* func 49 */
 
+/* func 4a */
+int PosReallocPages(void *ptr, unsigned int newpages, unsigned int *maxp);
+
 void PosExec(char *prog, void *parmblock); /* func 4b */
 
 void PosTerminate(int rc); /* func 4c */

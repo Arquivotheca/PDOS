@@ -38,6 +38,6 @@ void *memmgrAllocate(MEMMGR *memmgr, size_t bytes, int id);
 void memmgrFree(MEMMGR *memmgr, void *ptr);
 void memmgrFreeId(MEMMGR *memmgr, int id);
 size_t memmgrMaxSize(MEMMGR *memmgr);
-int memmgrResize(MEMMGR *memmgr, void *ptr, size_t newsize);
+int memmgrRealloc(MEMMGR *memmgr, void *ptr, size_t newsize);
 
 #endif

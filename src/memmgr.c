@@ -215,7 +215,7 @@ size_t memmgrMaxSize(MEMMGR *memmgr)
 /* resize a memory block */
 /* note that the size in the control block is the
    size available for data */
-int memmgrResize(MEMMGR *memmgr, void *ptr, size_t newsize)
+int memmgrRealloc(MEMMGR *memmgr, void *ptr, size_t newsize)
 {
     MEMMGRN *p, *n, *z;
 

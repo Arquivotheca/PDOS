@@ -3168,6 +3168,10 @@ size_t fread(void *ptr, size_t size, size_t nmemb, FILE *stream)
             memcpy(ptr, dptr, read);
             return (1);
         }
+        else
+        {
+            stream->quickBin = 0;
+        }
     }
     if (stream->eofInd)
     {

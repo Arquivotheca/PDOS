@@ -3183,7 +3183,7 @@ size_t fread(void *ptr, size_t size, size_t nmemb, FILE *stream)
                 
                 if ((totalread + read) >= bytes)
                 {
-                    extra = bytes - (totalread + read);
+                    extra = (totalread + read) - bytes;
                     read -= extra;
                     memcpy(stream->fbuf, dptr + read, extra);
                     stream->endbuf = stream->fbuf + extra;
@@ -3229,7 +3229,7 @@ size_t fread(void *ptr, size_t size, size_t nmemb, FILE *stream)
                 
                 if ((totalread + read) > bytes)
                 {
-                    extra = bytes - (totalread + read);
+                    extra = (totalread + read) - bytes;
                     read -= extra;
                     memcpy(stream->fbuf, dptr + read, extra);
                     stream->endbuf = stream->fbuf + extra;
@@ -3271,7 +3271,7 @@ size_t fread(void *ptr, size_t size, size_t nmemb, FILE *stream)
                 
                 if ((totalread + read) >= bytes)
                 {
-                    extra = bytes - (totalread + read);
+                    extra = (totalread + read) - bytes;
                     read -= extra;
                     memcpy(stream->fbuf, dptr + read, extra);
                     stream->endbuf = stream->fbuf + extra;
@@ -3317,7 +3317,7 @@ size_t fread(void *ptr, size_t size, size_t nmemb, FILE *stream)
                 
                 if ((totalread + read) > bytes)
                 {
-                    extra = bytes - (totalread + read);
+                    extra = (totalread + read) - bytes;
                     read -= extra;
                     memcpy(stream->fbuf, dptr + read, extra);
                     stream->endbuf = stream->fbuf + extra;

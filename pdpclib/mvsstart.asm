@@ -6,7 +6,7 @@
 **********************************************************************
 **********************************************************************
 *                                                                    *
-*  MVSSTART - STARTUP ROUTINES FOR MVS FOR USE WITH C/370.           *
+*  MVSSTART - STARTUP ROUTINES FOR MVS FOR USE WITH GCC.             *
 *                                                                    *
 *  NOTE THAT THE AMODE/RMODE AND CSVQUERY HAVE BEEN COMMENTED        *
 *  OUT IN ORDER TO BE COMPATIBLE WITH IFOX (OS/360).  ON OS/370      *

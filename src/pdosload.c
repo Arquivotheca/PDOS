@@ -95,6 +95,15 @@ void pdosload(void)
     callfar(start);
 #endif    
     fatTerm(&gfat);
+    
+    /* If the OS has returned to us, do an INT 19H to
+       move on to the next bootable disk, as some BIOSes
+       have as a feature.  E.g. on a formatted disk that
+       has no OS, the boot sector code does an INT 19H
+       after saying "press any key", and the BIOS knows
+       that if the floppy hasn't been changed, boot off
+       the hard disk instead. */
+    BosSystemWarmBoot();
     return;
 }
 

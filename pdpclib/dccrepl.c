@@ -37,27 +37,37 @@ int main(void)
             {
                 frame = atoi(f + 6);
             }
+#if 0
             if (e != NULL)
             {
-                strcpy(d, "ENTRY\n");
+                char *p;
+                
+                p = strchr(buf, '\t');
+                if (p != NULL)
+                {
+                    *p = '\0';
+                    printf("\tENTRY\t%s\n", buf);
+                }
             }
             else
+#endif
             {
                 strcpy(d, "EQU\t*\n");
             }
             fputs(buf, stdout);
-            printf("\tUSING\t*,15\n");
+            printf("\tUSING\t*,12\n");
             printf("\tSAVE\t(14,12)\n");
-            printf("\tL\t12,76(13)\n");
-            printf("\tST\t13,4(12)\n");
-            printf("\tST\t12,8(13)\n");
-            printf("\tLR\t13,12\n");
-            printf("\tA\t12,=F'%d'\n", frame);
-            printf("\tST\t12,76(13)\n");
+            printf("\tLR\t12,15\n");
+            printf("\tL\t15,76(13)\n");
+            printf("\tST\t15,4(15)\n");
+            printf("\tST\t15,8(13)\n");
+            printf("\tLR\t13,15\n");
+            printf("\tA\t15,=F'%d'\n", frame);
+            printf("\tST\t15,76(13)\n");
         }
         else if ((d = strstr(buf, "DCCEPIL")) != NULL)
         {
-            strcpy(d, "RETURN (12,14),RC=(15)\n");
+            strcpy(d, "RETURN (14,12),RC=(15)\n");
             fputs(buf, stdout);
         }
         else

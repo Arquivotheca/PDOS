@@ -36,9 +36,11 @@ int main(int argc, char **argv);
 void __exit(int status);
 void CTYP __exita(int status);
 
+#ifndef __MVS__
 static char buffer1[BUFSIZ + 8];
 static char buffer2[BUFSIZ + 8];
 static char buffer3[BUFSIZ + 8];
+#endif
 
 #ifdef __PDOS__
 #include <support.h>

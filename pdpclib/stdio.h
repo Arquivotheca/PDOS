@@ -156,7 +156,7 @@ int ferror(FILE *stream);
 #endif
 
 #define getchar() (getc(stdin))
-#define putchar(c) (putc((c), stdout)
+#define putchar(c) (putc((c), stdout))
 #define getc(stream) (fgetc((stream)))
 #define putc(c, stream) (fputc((c), (stream)))
 #define feof(stream) ((stream)->eofInd)

@@ -143,7 +143,9 @@ CEESG003 CSECT
          DROP  R10
          USING @@EXITA,R15
          L     R13,=A(SAVER13)
+         L     R13,0(R13)
          L     R15,0(R1)
          RETURN (14,12),RC=(15)
 *         BR    R14
+         LTORG
          END

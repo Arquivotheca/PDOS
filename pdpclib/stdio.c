@@ -2816,7 +2816,8 @@ int fputs(const char *s, FILE *stream)
             {
                 len--;
                 if (((strchr(s, '\n') - s) == len)
-                    && (stream->upto == stream->fbuf))
+                    && (stream->upto == stream->fbuf)
+                    && (len <= stream->lrecl))
                 {
                     __awrite(stream->hfile, &dptr);
                     memcpy(dptr, s, len);
@@ -2927,7 +2928,7 @@ size_t fwrite(const void *ptr, size_t size, size_t nmemb, FILE *stream)
                     sz += (stream->upto - stream->fbuf);
                     __awrite(stream->hfile, &dptr);
                     memcpy(dptr, stream->fbuf, sz);
-                    memset(dptr + sz, ' ', stream->szfbuf - sz);
+                    memset(dptr + sz, ' ', stream->lrecl - sz);
                     stream->upto = stream->fbuf;
                 }
                 ptr = (char *)p + 1;

@@ -76,6 +76,7 @@ SUBPOOL  EQU   0
          LH    R2,JSCBTJID
          ST    R2,TYPE
          L     R2,0(R1)
+         LA    R2,0(R2)
          ST    R2,ARGPTR
          LA    R2,PGMNAME
          ST    R2,PGMNPTR

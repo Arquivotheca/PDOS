@@ -530,7 +530,7 @@ static void osfopen(void)
         p = (char *)fnm;
     }
     strcpy(myfile->ddname, "        ");
-    len = strlen(p);
+    len = strcspn(p, "(");
     if (len > 8)
     {
         len = 8;
@@ -542,8 +542,31 @@ static void osfopen(void)
         *p = toupper(*p);
         p++;
     }
+    p = strchr(fnm, '(');
+    if (p != NULL)
+    {
+        p++;
+        strcpy(myfile->pdsmem, "        ");
+        len = strcspn(p, ")");
+        if (len > 8)
+        {
+            len = 8;
+        }
+        memcpy(myfile->pdsmem, p, len);
+        p = myfile->pdsmem;
+        while (*p != '\0')
+        {
+            *p = toupper(*p);
+            p++;
+        }
+        p = myfile->pdsmem;
+        /* hack until I get the aopen to work with the find
+           macro */
+        memcpy(myfile->ddname, myfile->pdsmem, 8);
+        p = NULL;
+    }
     myfile->hfile = 
-        __aopen(myfile->ddname, mode, &myfile->recfm, &myfile->lrecl);
+        __aopen(myfile->ddname, mode, &myfile->recfm, &myfile->lrecl, p);
     if ((modeType == 4) || (modeType == 5))
     {
         myfile->style = 0; /* binary */

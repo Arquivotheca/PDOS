@@ -33,7 +33,7 @@ int main(void)
         if (d != NULL)
         {
             frame = 0;
-            e = strstr(buf, "ENTRY");
+            e = strstr(buf, "ENTRY=YES");
             f = strstr(buf, "FRAME");
             if (f != NULL)
             {
@@ -47,6 +47,14 @@ int main(void)
             }
             if (e != NULL)
             {
+                char *p;
+                p = strchr(buf, '\t');
+                if (p != NULL)
+                {
+                    *p = '\0';
+                    printf("\t%s\tENTRY\n", buf);
+                    *p = '\t';
+                }
                 strcpy(d, "CSECT\n");
             }
             else

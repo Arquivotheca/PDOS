@@ -27,6 +27,14 @@ int main(int argc, char **argv)
     FILE *infile;
     int c;
 
+    if (argc <= 2)
+    {
+        printf("usage: mvsunzip <infile> <outfile>\n");
+        printf("where infile is a sequential file\n");
+        printf("and outfile is a PDS\n");
+        printf("e.g. mvsunzip dd:input dd:output\n");
+        return (0);
+    }
     outn = *(argv+2);
     infile = fopen(*(argv+1), "rb");
     while (onefile(infile)) ;

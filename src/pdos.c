@@ -882,7 +882,7 @@ static void int21handler(union REGS *regsin,
             break;
 
         default:
-             /*printf("unimplemented dos call %x\n", regsout->x.ax);*/
+             /*printf("unimplemented dos call %x\n", regsin->x.ax);*/
              break;
              
     }

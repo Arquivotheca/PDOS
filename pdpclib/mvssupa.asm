@@ -9,6 +9,12 @@
 *  MVSSUPA - SUPPORT ROUTINES FOR PDPCLIB UNDER MVS                  *
 *                                                                    *
 **********************************************************************
+         AIF ('&SYSPARM' EQ 'IFOX00').NOMODE
+         AMODE ANY
+* SEARCH FOR "LOC=RES" TO FIND OUT WHY THIS IS BEING
+* HELD BACK AT RMODE 24
+         RMODE 24
+.NOMODE ANOP
          PRINT NOGEN
 * YREGS IS NOT AVAILABLE WITH IFOX
 *         YREGS

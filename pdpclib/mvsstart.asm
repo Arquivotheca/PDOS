@@ -16,6 +16,10 @@
 *  THAT WILL NOT AFFECT PROGRAM FUNCTIONALITY.                       *
 *                                                                    *
 **********************************************************************
+         AIF ('&SYSPARM' EQ 'IFOX00').NOMODE
+         AMODE ANY
+         RMODE ANY
+.NOMODE ANOP
          PRINT NOGEN
 * YREGS IS NOT AVAILABLE WITH IFOX
 *         YREGS

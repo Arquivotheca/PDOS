@@ -8,9 +8,6 @@
 *                                                                    *
 *  MVSSUPA - SUPPORT ROUTINES FOR PDPCLIB UNDER MVS                  *
 *                                                                    *
-*  NOTE - IF USING 31-BIT ADDRESSING, YOU NEED TO REINSTATE          *
-*  THE ONE LINE THAT HAS "LOC=BELOW" IN IT.                          *
-*                                                                    *
 **********************************************************************
          PRINT NOGEN
 * YREGS IS NOT AVAILABLE WITH IFOX
@@ -53,9 +50,12 @@ SUBPOOL  EQU   0
          L     R5,8(R1)         R5 POINTS TO RECFM
          L     R8,12(R1)        R8 POINTS TO LRECL
          L     R9,16(R1)        R9 POINTS TO MEMBER NAME (OF PDS)
-*         GETMAIN RU,LV=ZDCBLEN,SP=SUBPOOL,LOC=BELOW
+         AIF   ('&SYSPARM' NE 'IFOX00').BELOW
 * CAN'T USE "BELOW" ON MVS 3.8
          GETMAIN RU,LV=ZDCBLEN,SP=SUBPOOL
+         AGO   .AIFEND
+BELOW    GETMAIN RU,LV=ZDCBLEN,SP=SUBPOOL,LOC=BELOW
+AIFEND   ANOP
          LR    R2,R1
 * THIS LINE IS FOR GCC
          LR    R6,R4

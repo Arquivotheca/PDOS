@@ -11,6 +11,7 @@
 **********************************************************************
 *@@AOPEN  AMODE 31
 *@@AOPEN  RMODE ANY
+         ENTRY @@AOPEN
 @@AOPEN  CSECT
          PRINT NOGEN
 * YREGS IS NOT AVAILABLE WITH IFOX
@@ -124,6 +125,7 @@ OUTDCBLN EQU   *-OUTDCB
 *
 *@@AREAD  AMODE 31
 *@@AREAD  RMODE ANY
+         ENTRY @@AREAD
 @@AREAD  CSECT
          PRINT NOGEN
          SAVE  (14,12),,@@AREAD_&SYSDATE
@@ -157,6 +159,7 @@ RETURN2  DS    0H
 *
 *@@AWRITE AMODE 31
 *@@AWRITE RMODE ANY
+         ENTRY @@AWRITE
 @@AWRITE CSECT
          PRINT NOGEN
          SAVE  (14,12),,@@AWRITE_&SYSDATE
@@ -189,6 +192,7 @@ RETURNWR DS    0H
 *
 *@@ACLOSE AMODE 31
 *@@ACLOSE RMODE ANY
+         ENTRY @@ACLOSE
 @@ACLOSE CSECT
          PRINT NOGEN
          SAVE  (14,12),,@@ACLOSE_&SYSDATE
@@ -234,6 +238,7 @@ CLOSEMLN EQU   *-CLOSEMAC
 **********************************************************************
 *@@GETM   AMODE 31
 *@@GETM   RMODE ANY
+         ENTRY @@GETM
 @@GETM   CSECT
          PRINT NOGEN
          SAVE  (14,12),,@@GETM_&SYSDATE
@@ -261,6 +266,7 @@ RETURNGM DS    0H
 **********************************************************************
 *@@FREEM  AMODE 31
 *@@FREEM  RMODE ANY
+         ENTRY @@FREEM
 @@FREEM  CSECT
          PRINT NOGEN
          SAVE  (14,12),,@@FREEM_&SYSDATE
@@ -292,6 +298,7 @@ RETURNFM DS    0H
 **********************************************************************
 *@@GETCLK AMODE 31
 *@@GETCLK RMODE ANY
+         ENTRY @@GETCLK
 @@GETCLK CSECT
          PRINT NOGEN
          SAVE  (14,12),,@@GETCLK_&SYSDATE

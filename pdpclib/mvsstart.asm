@@ -18,6 +18,7 @@
 **********************************************************************
 *@@MVSTRT AMODE 31
 *@@MVSTRT RMODE ANY
+         ENTRY @@MVSTRT
 @@MVSTRT CSECT
          PRINT NOGEN
 * YREGS IS NOT AVAILABLE WITH IFOX
@@ -120,11 +121,13 @@ CEESTART CSECT
 *CEESG003 AMODE 31
 *CEESG003 RMODE ANY
 CEESG003 CSECT
-*@CRT0 AMODE 31
-*@CRT0 RMODE ANY
-@CRT0 CSECT
+*@CRT0    AMODE 31
+*@CRT0    RMODE ANY
+         ENTRY @CRT0
+@CRT0    CSECT
 *@@EXITA  AMODE 31
 *@@EXITA  RMODE ANY
+         ENTRY @@EXITA
 @@EXITA  CSECT
          L     R14,0(R12)
          L     R15,0(R1)

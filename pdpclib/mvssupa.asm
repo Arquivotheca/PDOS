@@ -308,7 +308,7 @@ CLOSEMLN EQU   *-CLOSEMAC
 .ANYCHKY ANOP
          GETMAIN RU,LV=(R3),SP=SUBPOOL,LOC=ANY
 .ANYCHKE ANOP
-         
+*
          ST    R3,0(R1)
          A     R1,=F'16'
          LR    R15,R1

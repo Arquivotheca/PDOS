@@ -86,7 +86,7 @@ typedef unsigned long fpos_t;
 
 #define NULL ((void *)0)
 #define FILENAME_MAX 260
-#define FOPEN_MAX 40
+#define FOPEN_MAX 256
 #define _IOFBF 1
 #define _IOLBF 2
 #define _IONBF 3

@@ -26,7 +26,7 @@ int main(int argc, char **argv)
     int c;
     time_t tt;
 
-#if 1
+#if 0
     fq = fopen("dd:outfile", "w");
     fgets(buf, sizeof buf, stdin);
     fputs(buf, fq);
@@ -36,6 +36,7 @@ int main(int argc, char **argv)
     fputs(buf, fq);
     fclose(fq);
 #endif    
+    printf("hello there\n");
     for (x = 0; x < argc; x++)
     {
         printf("arg %d is %s\n", x, argv[x]);

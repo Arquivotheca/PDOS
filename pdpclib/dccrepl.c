@@ -24,6 +24,7 @@ int main(void)
     char *d;
     char *e;
     char *f;
+    char *p;
     int frame;
     int cindex;
     int csects = 0;
@@ -48,7 +49,6 @@ int main(void)
             }
             if (e != NULL)
             {
-                char *p;
                 p = strchr(buf, '\t');
                 if (p != NULL)
                 {
@@ -60,7 +60,15 @@ int main(void)
             strcpy(d, "CSECT\n");
             fputs(buf, stdout);
             printf("\tUSING\t*,12\n"); /*,7,8,9\n");*/
-            printf("\tSAVE\t(14,12)\n");
+            printf("\tSAVE\t(14,12)");
+            p = strchr(buf, '\t');
+            if (p != NULL)
+            {
+                *p = '\0';
+                printf(",,%s_&SYSDATE", buf);
+                *p = '\t';
+            }
+            printf("\n");
             printf("\tLR\t12,15\n");
             
 /*            printf("\tLA\t7,2048(12)\n");

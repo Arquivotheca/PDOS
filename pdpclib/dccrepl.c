@@ -50,18 +50,11 @@ int main(int argc, char **argv)
             }
             if (e != NULL)
             {
-                p = strchr(buf, '\t');
-                if (p != NULL)
-                {
-                    *p = '\0';
-                    /*tprintf("\tENTRY\t%s\n", buf);*/
-                    *p = '\t';
-                }
                 strcpy(d, "CSECT\n");
             }
             else
             {
-                strcpy(d, "EQU *\n");
+                strcpy(d, "EQU\t*\n");
             }
             tprintf("%s", buf);
             tprintf("\tUSING\t*,12");

@@ -34,7 +34,7 @@ SUBPOOL  EQU   0
 *@@AOPEN  RMODE ANY
          ENTRY @@AOPEN
 @@AOPEN  EQU   *
-         SAVE  (14,12),,@@AOPEN_&SYSDATE
+         SAVE  (14,12),,@@AOPEN
          LR    R12,R15
          USING @@AOPEN,R12
          LR    R11,R1
@@ -135,7 +135,7 @@ OUTDCBLN EQU   *-OUTDCB
 *@@AREAD  RMODE ANY
          ENTRY @@AREAD
 @@AREAD  EQU   *
-         SAVE  (14,12),,@@AREAD_&SYSDATE
+         SAVE  (14,12),,@@AREAD
          LR    R12,R15
          USING @@AREAD,R12
          LR    R11,R1
@@ -168,7 +168,7 @@ RETURN2  DS    0H
 *@@AWRITE RMODE ANY
          ENTRY @@AWRITE
 @@AWRITE EQU   *
-         SAVE  (14,12),,@@AWRITE_&SYSDATE
+         SAVE  (14,12),,@@AWRITE
          LR    R12,R15
          USING @@AWRITE,R12
          LR    R11,R1
@@ -200,7 +200,7 @@ RETURNWR DS    0H
 *@@ACLOSE RMODE ANY
          ENTRY @@ACLOSE
 @@ACLOSE EQU   *
-         SAVE  (14,12),,@@ACLOSE_&SYSDATE
+         SAVE  (14,12),,@@ACLOSE
          LR    R12,R15
          USING @@ACLOSE,R12
          LR    R11,R1
@@ -245,7 +245,7 @@ CLOSEMLN EQU   *-CLOSEMAC
 *@@GETM   RMODE ANY
          ENTRY @@GETM
 @@GETM   EQU   *
-         SAVE  (14,12),,@@GETM_&SYSDATE
+         SAVE  (14,12),,@@GETM
          LR    R12,R15
          USING @@GETM,R12
 *
@@ -275,7 +275,7 @@ RETURNGM DS    0H
 *@@FREEM  RMODE ANY
          ENTRY @@FREEM
 @@FREEM  EQU   *
-         SAVE  (14,12),,@@FREEM_&SYSDATE
+         SAVE  (14,12),,@@FREEM
          LR    R12,R15
          USING @@FREEM,R12
 *
@@ -306,7 +306,7 @@ RETURNFM DS    0H
 *@@GETCLK RMODE ANY
          ENTRY @@GETCLK
 @@GETCLK EQU   *
-         SAVE  (14,12),,@@GETCLK_&SYSDATE
+         SAVE  (14,12),,@@GETCLK
          LR    R12,R15
          USING @@GETCLK,R12
 *

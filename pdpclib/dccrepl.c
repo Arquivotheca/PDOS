@@ -79,7 +79,7 @@ int main(int argc, char **argv)
             if (p != NULL)
             {
                 *p = '\0';
-                tprintf(",,%s_&SYSDATE", buf);
+                tprintf(",,%s", buf);
                 *p = '\t';
             }
             tprintf("\n");

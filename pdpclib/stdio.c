@@ -2448,6 +2448,7 @@ FILE *freopen(const char *filename, const char *mode, FILE *stream)
 
 int fflush(FILE *stream)
 {
+#ifndef __MVS__
 #ifdef __OS2__
     APIRET rc;
     ULONG actualWritten;
@@ -2483,11 +2484,10 @@ int fflush(FILE *stream)
             return (EOF);
         }
 #endif
-#ifndef __MVS__
         stream->bufStartR += actualWritten;
         stream->upto = stream->fbuf;
-#endif
     }
+#endif
     return (0);
 }
 

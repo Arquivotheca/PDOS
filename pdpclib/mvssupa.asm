@@ -9,7 +9,7 @@
 *  MVSSUPA - SUPPORT ROUTINES FOR PDPCLIB UNDER MVS                  *
 *                                                                    *
 **********************************************************************
-         PRINT NOGEN
+         PRINT GEN
 * YREGS IS NOT AVAILABLE WITH IFOX
 *         YREGS
 R0       EQU   0
@@ -64,17 +64,26 @@ SUBPOOL  EQU   0
          USING ZDCBAREA,R2
          MVC   ZDCBAREA(INDCBLN),INDCB
          MVC   EOFR24(EOFRLEN),ENDFILE
+         LA    R10,JFCB
+         IC    R10,=X'87'  EXIT TYPE 07 + 80 (END OF LIST INDICATOR)
+         ST    R10,JFCBPTR
+         LA    R10,JFCBPTR
          LA    R4,EOFR24
          USING IHADCB,R2
+         STCM  R4,B'0111',DCBEODA
+         STCM  R10,B'0111',DCBEXLSA
          MVC   DCBDDNAM,0(R3)
          MVC   OPENMB,OPENMAC
-         STCM  R4,B'0111',DCBEODA
-*         OPEN  ((R2),INPUT),MF=(E,OPENMB),MODE=31
-* CAN'T USE MODE=31 ON MVS 3.8
-         OPEN  ((R2),INPUT),MF=(E,OPENMB)
+         RDJFCB (R2)
          LTR   R9,R9
-         BZ    DONEOPEN
-         FIND  (R2),(R9),D
+         BZ    NOMEM
+         USING ZDCBAREA,R2
+         MVC   JFCBELNM,0(R9)
+         OI    JFCBIND1,JFCPDS
+NOMEM    DS    0H
+*         OPEN  ((R2),INPUT),MF=(E,OPENMB),MODE=31,TYPE=J
+* CAN'T USE MODE=31 ON MVS 3.8
+         OPEN  ((R2),INPUT),MF=(E,OPENMB),TYPE=J
          B     DONEOPEN
 WRITING  DS    0H
          USING ZDCBAREA,R2
@@ -118,14 +127,15 @@ RETURN   DS    0H
          LTORG
 * OPENMAC  OPEN  (,INPUT),MF=L,MODE=31
 * CAN'T USE MODE=31 ON MVS 3.8
-OPENMAC  OPEN  (,INPUT),MF=L
+OPENMAC  OPEN  (,INPUT),MF=L,TYPE=J
 OPENMLN  EQU   *-OPENMAC
 * WOPENMAC OPEN  (,OUTPUT),MF=L,MODE=31
 * CAN'T USE MODE=31 ON MVS 3.8
 WOPENMAC OPEN  (,OUTPUT),MF=L
 WOPENMLN EQU   *-WOPENMAC
-INDCB    DCB   MACRF=GL,DSORG=PS,EODAD=ENDFILE
+INDCB    DCB   MACRF=GL,DSORG=PS,EODAD=ENDFILE,EXLST=JPTR
 INDCBLN  EQU   *-INDCB
+JPTR     DS    F
 OUTDCB   DCB   MACRF=PL,DSORG=PS
 OUTDCBLN EQU   *-OUTDCB
 *
@@ -337,6 +347,9 @@ ZDCBAREA DSECT
          DS    CL(OUTDCBLN)
          DS    0H
 EOFR24   DS    CL(EOFRLEN)
+JFCBPTR  DS    F
+JFCB     DS    0F
+         IEFJFCBN
 ZDCBLEN  EQU   *-ZDCBAREA
          DCBD  DSORG=PS
          END

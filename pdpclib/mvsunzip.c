@@ -97,8 +97,8 @@ static int onefile(FILE *infile)
     extra = c;
     c = fgetc(infile);
     extra = (c << 8) | extra;
-    fread(fnm, fnmlen, 1, infile);
     if (fnmlen == 0) return (0);
+    fread(fnm, fnmlen, 1, infile);
     fnm[fnmlen] = '\0';
     fread(buf, extra, 1, infile);
     ascii2l(fnm);

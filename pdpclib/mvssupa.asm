@@ -9,7 +9,7 @@
 *  MVSSUPA - SUPPORT ROUTINES FOR PDPCLIB UNDER MVS                  *
 *                                                                    *
 **********************************************************************
-         PRINT GEN
+         PRINT NOGEN
 * YREGS IS NOT AVAILABLE WITH IFOX
 *         YREGS
 R0       EQU   0

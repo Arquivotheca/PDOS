@@ -44,6 +44,7 @@ static void dodir(char *pattern);
 static void changedir(char *to);
 static void changedisk(int drive);
 static int ins_strcmp(char *one, char *two);
+static int ins_strncmp(char *one, char *two, size_t len);
 static void readAutoExec(void);
 
 int main(int argc, char **argv)
@@ -159,6 +160,14 @@ static void processInput(void)
     else if (ins_strcmp(buf, "cd") == 0)
     {
         changedir(p);
+    }
+    else if (ins_strncmp(buf, "cd.", 3) == 0)
+    {
+        changedir(buf + 2);
+    }
+    else if (ins_strncmp(buf, "cd\\", 3) == 0)
+    {
+        changedir(buf + 2);
     }
     else if (ins_strcmp(buf, "reboot") == 0)
     {
@@ -280,6 +289,25 @@ static int ins_strcmp(char *one, char *two)
         return (-1);
     }
     return (1);
+}
+
+static int ins_strncmp(char *one, char *two, size_t len)
+{
+    size_t x = 0;
+    
+    if (len == 0) return (0);
+    while ((x < len) && (toupper(*one) == toupper(*two)))
+    {
+        if (*one == '\0')
+        {
+            return (0);
+        }
+        one++;
+        two++;
+        x++;
+    }
+    if (x == len) return (0);
+    return (toupper(*one) - toupper(*two));
 }
 
 static void readAutoExec(void)

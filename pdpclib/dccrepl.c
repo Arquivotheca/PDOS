@@ -71,7 +71,7 @@ int main(void)
             printf("\tLA\t9,2048(9)\n"); */
             
             printf("\tL\t15,76(13)\n");
-            printf("\tST\t15,4(15)\n");
+            printf("\tST\t13,4(15)\n");
             printf("\tST\t15,8(13)\n");
             printf("\tLR\t13,15\n");
             printf("\tA\t15,=F'%d'\n", frame);

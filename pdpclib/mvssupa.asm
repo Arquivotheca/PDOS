@@ -53,9 +53,9 @@ SUBPOOL  EQU   0
 * CAN'T USE "BELOW" ON MVS 3.8
          GETMAIN RU,LV=ZDCBLEN,SP=SUBPOOL
          LR    R2,R1
-* THIS LINE IS FOR GCC         
+* THIS LINE IS FOR GCC
          LR    R6,R4
-* THIS LINE IS FOR C/370         
+* THIS LINE IS FOR C/370
 *         L     R6,0(R4)
          LTR   R6,R6
          BNZ   WRITING
@@ -246,7 +246,7 @@ CLOSEMLN EQU   *-CLOSEMAC
          USING @@GETM,R12
 *
          L     R2,0(R1)
-* THIS LINE IS FOR GCC         
+* THIS LINE IS FOR GCC
          LR    R3,R2
 * THIS LINE IS FOR C/370
 *         L     R3,0(R2)

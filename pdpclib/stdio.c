@@ -1447,6 +1447,7 @@ static int vvprintf(const char *format, va_list arg, FILE *fq, char *s)
 {
     int fin = 0;
     int vint;
+    unsigned int uvint;
     char *vcptr;
     int chcount = 0;
     size_t len;
@@ -1464,21 +1465,22 @@ static int vvprintf(const char *format, va_list arg, FILE *fq, char *s)
             format++;
             if (*format == 'd')
             {
-                int neg = 0;
-
                 vint = va_arg(arg, int);
                 if (vint < 0)
                 {
-                    neg = 1;
-                    vint = -vint;
+                    uvint = -vint;
+                }
+                else
+                {
+                    uvint = vint;
                 }
                 nptr = numbuf;
                 do
                 {
-                    *nptr++ = (char)('0' + vint % 10);
-                    vint /= 10;
-                } while (vint > 0);
-                if (neg)
+                    *nptr++ = (char)('0' + uvint % 10);
+                    uvint /= 10;
+                } while (uvint > 0);
+                if (vint < 0)
                 {
                     *nptr++ = '-';
                 }

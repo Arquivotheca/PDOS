@@ -51,6 +51,7 @@ static int onefile(FILE *infile)
     static char *buf = NULL;
     char newfnm[FILENAME_MAX];
     FILE *newf;
+    int extra;
 
     if (buf == NULL)
     {
@@ -93,10 +94,14 @@ static int onefile(FILE *infile)
     fnmlen = c;
     c = fgetc(infile);
     fnmlen = (c << 8) | fnmlen;
-    fgetc(infile);
-    fgetc(infile);
+    c = fgetc(infile);
+    extra = c;
+    c = fgetc(infile);
+    extra = (c << 8) | extra;
     fread(fnm, fnmlen, 1, infile);
+    if (fnmlen == 0) return (0);
     fnm[fnmlen] = '\0';
+    fread(buf, extra, 1, infile);
     ascii2l(fnm);
     printf("fnm is %s\n", fnm);
     fread(buf, size, 1, infile);

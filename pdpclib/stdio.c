@@ -2797,6 +2797,11 @@ char *fgets(char *s, int n, FILE *stream)
             stream->quickText = 0;
         }
     }
+    
+    if (stream->eofInd)
+    {
+        return (NULL);
+    }
 
     switch (stream->style)
     {
@@ -2806,6 +2811,7 @@ char *fgets(char *s, int n, FILE *stream)
             {
                 if (__aread(stream->hfile, &dptr) != 0)
                 {
+                    stream->eofInd = 1;
                     return (NULL);
                 }
                 eptr = dptr + stream->lrecl - 1;

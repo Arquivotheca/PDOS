@@ -48,7 +48,7 @@ version of PDOS available, which you may find more
 convenient to use for testing purposes, since any DOS 
 C compiler can be used to write programs for it, while
 the only compiler I know that works for the 32-bit 
-version is EMX 0.9b.
+version is EMX 0.9d.
 
 
 The package more accurately contains multiple,
@@ -119,10 +119,8 @@ MSDOS 5.0
 Borland C++ 3.1 for DOS
 TASM 3.1 for DOS
 
-EMX 0.9b (which includes GCC 2.7.2)
-A newer (0.9d) version can be obtained from:
+EMX 0.9d (which includes GCC 2.8.1) can be obtained from:
 http://hobbes.nmsu.edu/cgi-bin/h-browse?dir=/pub/os2/dev/emx/v0.9d
-I don't know where to get 0.9b
 
 raread/rawrite (unknown origin)
 
@@ -146,7 +144,7 @@ Then type "bcc -c -ml -I..\pdpclib world.c"
 then ...
 tlink -x ..\pdpclib\dosstart.obj+world.obj,world.exe,,..\pdpclib\borland.lib,
 
-To compile 32-bit version using EMX 0.9b and Borland C++ 3.1:
+To compile 32-bit version using EMX 0.9d and Borland C++ 3.1:
 
 Go to pdpclib and type "compp"
 Go to src and type "comp4" then "comp5" then "comp6".

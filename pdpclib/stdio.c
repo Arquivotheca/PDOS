@@ -606,6 +606,24 @@ int fclose(FILE *stream)
     __close(stream->hfile);
 #endif
 #ifdef __MVS__
+    if ((myfile->mode == __WRITE_MODE) && (stream->upto != stream->fbuf))
+    {
+        if (stream->textMode)
+        {
+            putc('\n', stream);
+        }
+        else
+        {
+            size_t remain;
+            size_t x;
+            
+            remain = stream->endbuf - stream->upto;
+            for (x = 0; x < remain; x++)
+            {
+                putc(0x00, stream);
+            }
+        }
+    }
     __aclose(stream->hfile);
 #endif
     __userFiles[stream->intFno] = NULL;

@@ -49,6 +49,7 @@ SUBPOOL  EQU   0
          L     R4,4(R1)         R4 POINTS TO MODE
          L     R5,8(R1)         R5 POINTS TO RECFM
          L     R8,12(R1)        R8 POINTS TO LRECL
+         L     R9,16(R1)        R9 POINTS TO MEMBER NAME (OF PDS)
 *         GETMAIN RU,LV=ZDCBLEN,SP=SUBPOOL,LOC=BELOW
 * CAN'T USE "BELOW" ON MVS 3.8
          GETMAIN RU,LV=ZDCBLEN,SP=SUBPOOL
@@ -71,6 +72,9 @@ SUBPOOL  EQU   0
 *         OPEN  ((R2),INPUT),MF=(E,OPENMB),MODE=31
 * CAN'T USE MODE=31 ON MVS 3.8
          OPEN  ((R2),INPUT),MF=(E,OPENMB)
+         LTR   R9,R9
+         BZ    DONEOPEN
+         FIND  (R2),(R9),D
          B     DONEOPEN
 WRITING  DS    0H
          USING ZDCBAREA,R2

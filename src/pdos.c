@@ -2151,12 +2151,6 @@ static int pdos16MemmgrReallocPages(MEMMGR *memmgr,
     abs -= 0x10000UL;
     abs -= (unsigned long)PDOS16_MEMSTART * 16;
     abs /= 16;
-    /* ignore strange realloc requests */
-    if (abs > 0x6000U)
-    {
-        printf("ignoring strange realloc\n");
-        return(-1);
-    }
     abs += (unsigned long)PDOS16_MEMSTART * 16;
     ptr = ABS2ADDR(abs);
     ret = (memmgrRealloc)(memmgr, ptr, newpages);

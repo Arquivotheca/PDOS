@@ -3065,8 +3065,12 @@ size_t fwrite(const void *ptr, size_t size, size_t nmemb, FILE *stream)
 
 size_t fread(void *ptr, size_t size, size_t nmemb, FILE *stream)
 {
+    size_t bytes;
     size_t read;
+    size_t totalread;
     char *p;
+    char *dptr;
+    char *eptr;
 
     if (stream->quickBin)
     {
@@ -3079,6 +3083,68 @@ size_t fread(void *ptr, size_t size, size_t nmemb, FILE *stream)
             memcpy(ptr, p, read);
             return (1);
         }
+    }
+    switch (stream->style)
+    {
+        case FIXED_TEXT:
+            bytes = nmemb * size;
+            read = stream->upto - stream->fbuf;
+            if (read > bytes)
+            {
+                memcpy(ptr, stream->fbuf, bytes);
+                memmove(stream->fbuf,
+                        stream->upto + bytes,
+                        read - bytes);
+                stream->upto = stream->fbuf + (read - bytes);
+                totalread = bytes;
+            }
+            else
+            {
+                memcpy(ptr, stream->fbuf, read);
+                stream->upto = stream->fbuf;
+                totalread = read;
+            }
+
+            while (totalread < bytes)
+            {
+                if (__aread(stream->hfile, &dptr) != 0)
+                {
+                    stream->eofInd = 1;
+                    break;
+                }
+                
+                eptr = dptr + stream->lrecl - 1;
+                while ((*eptr == ' ') && (eptr >= dptr))
+                {
+                    eptr--;
+                }
+    
+                read = eptr + 1 - dptr;
+                
+                if ((totalread + read) >= bytes)
+                {
+                    size_t extra;
+                    
+                    extra = bytes - (totalread + read);
+                    read -= extra;
+                    memcpy(stream->fbuf, dptr + read, extra);
+                    stream->upto = stream->fbuf + extra;
+                    *stream->upto++ = '\n';
+                }
+                
+                memcpy((char *)ptr + totalread, dptr, read);
+                totalread += read;
+                if (totalread < bytes)
+                {
+                    *((char *)ptr + totalread) = '\n';
+                    totalread++;
+                }
+            }
+            return (totalread / size);
+            break;
+
+        default:
+            break;
     }
     return (0);
 }

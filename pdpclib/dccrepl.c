@@ -54,11 +54,15 @@ int main(int argc, char **argv)
                 if (p != NULL)
                 {
                     *p = '\0';
-                    tprintf("\tENTRY\t%s\n", buf);
+                    /*tprintf("\tENTRY\t%s\n", buf);*/
                     *p = '\t';
                 }
+                strcpy(d, "CSECT\n");
             }
-            strcpy(d, "CSECT\n");
+            else
+            {
+                strcpy(d, "EQU *\n");
+            }
             tprintf("%s", buf);
             tprintf("\tUSING\t*,12");
             if (numregs > 1)

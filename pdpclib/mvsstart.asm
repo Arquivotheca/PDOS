@@ -39,7 +39,7 @@ SUBPOOL  EQU   0
          CSECT
 *@@MVSTRT AMODE 31
 *@@MVSTRT RMODE ANY
-@@MVSTRT ENTRY
+         ENTRY @@MVSTRT
 @@MVSTRT EQU   *
          SAVE  (14,12),,@@MVSTRT_&SYSDATE
          LR    R10,R15
@@ -102,6 +102,34 @@ RETURN   DS    0H
          RETURN (14,12),RC=(15)
 SAVER13  DS    F
          LTORG
+*CEESTART AMODE 31
+*CEESTART RMODE ANY
+         ENTRY CEESTART 
+CEESTART EQU   *
+*CEESG003 AMODE 31
+*CEESG003 RMODE ANY
+         ENTRY CEESG003
+CEESG003 EQU   *
+*@CRT0    AMODE 31
+*@CRT0    RMODE ANY
+         ENTRY @CRT0
+@CRT0    EQU   *
+*@@EXITA  AMODE 31
+*@@EXITA  RMODE ANY
+         ENTRY @@EXITA
+@@EXITA  EQU   *
+*         L     R14,0(R12)
+*         L     R15,0(R1)
+* FOR GCC, WE HAVE TO USE OUR SAVED R13
+         DROP  R10
+         USING @@EXITA,R15
+         L     R13,=A(SAVER13)
+         L     R13,0(R13)
+         L     R15,0(R1)
+         RETURN (14,12),RC=(15)
+*         BR    R14
+         LTORG
+*
          CVT   DSECT=YES
          IKJTCB
          IEZJSCB
@@ -122,31 +150,4 @@ EXITADDR DS    F
 MAINSTK  DS    4000F
 MAINLEN  EQU   *-MAINSTK
 STACKLEN EQU   *-STACK
-*CEESTART AMODE 31
-*CEESTART RMODE ANY
-CEESTART ENTRY
-CEESTART EQU   *
-*CEESG003 AMODE 31
-*CEESG003 RMODE ANY
-CEESG003 ENTRY
-CEESG003 EQU   *
-*@CRT0    AMODE 31
-*@CRT0    RMODE ANY
-@CRT0    ENTRY
-@CRT0    EQU   *
-*@@EXITA  AMODE 31
-*@@EXITA  RMODE ANY
-@@EXITA  ENTRY
-@@EXITA  EQU   *
-*         L     R14,0(R12)
-*         L     R15,0(R1)
-* FOR GCC, WE HAVE TO USE OUR SAVED R13
-         DROP  R10
-         USING @@EXITA,R15
-         L     R13,=A(SAVER13)
-         L     R13,0(R13)
-         L     R15,0(R1)
-         RETURN (14,12),RC=(15)
-*         BR    R14
-         LTORG
          END

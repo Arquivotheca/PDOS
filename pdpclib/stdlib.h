@@ -31,7 +31,11 @@ typedef struct { long int quot; long int rem; } ldiv_t;
 
 #define NULL ((void *)0)
 #define EXIT_SUCCESS 0
+#ifdef __MVS__
+#define EXIT_FAILURE 12
+#else
 #define EXIT_FAILURE 1
+#endif
 #define RAND_MAX 32767
 #define MB_CUR_MAX 1
 #define __NATEXIT 32

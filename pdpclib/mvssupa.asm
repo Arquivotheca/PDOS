@@ -119,11 +119,8 @@ DONEOPEN DS    0H
          SR    R6,R6
          LH    R6,DCBLRECL
          ST    R6,0(R8)
-         SR    R6,R6
-         IC    R6,DCBRECFM
-         LA    R7,DCBRECF
-         NR    R6,R7
-         BZ    VARIABLE
+         TM    DCBRECFM,DCBRECF
+         BNO   VARIABLE
          L     R6,=F'0'
          B     DONESET
 VARIABLE DS    0H

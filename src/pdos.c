@@ -524,7 +524,7 @@ static void int21handler(union REGS *regsin,
     void *q;
     long readbytes;
     int ret;
-    void *dta;
+    void *tempdta;
     PARMBLOCK *pb;
 
 #if 0
@@ -555,11 +555,11 @@ static void int21handler(union REGS *regsin,
 
         case 0x1a:
 #ifdef __32BIT__
-            dta = SUBADDRFIX(regsin->d.edx)
+            tempdta = SUBADDRFIX(regsin->d.edx)
 #else                        
-            dta = MK_FP(sregs->ds, regsin->x.dx);
+            tempdta = MK_FP(sregs->ds, regsin->x.dx);
 #endif            
-            PosSetDTA(dta);
+            PosSetDTA(tempdta);
             break;
 
         case 0x2a:
@@ -587,12 +587,12 @@ static void int21handler(union REGS *regsin,
             break;
 
         case 0x2f:
-            dta = PosGetDTA();
+            tempdta = PosGetDTA();
 #ifdef __32BIT__
-            regsout->d.ebx = (int)ADDRFIXSUB(dta);
+            regsout->d.ebx = (int)ADDRFIXSUB(tempdta);
 #else                        
-            regsout->x.bx = FP_OFF(dta);
-            sregs->es = FP_SEG(dta);
+            regsout->x.bx = FP_OFF(tempdta);
+            sregs->es = FP_SEG(tempdta);
 #endif            
             break;
 
@@ -1226,6 +1226,7 @@ int PosFindFirst(char *pat, int attrib)
     int ret;
     
     attr = attrib;
+    memset(dta, '\0', 0x15); /* clear out reserved area */
     make_ff(pat);
     ff_handle = fileOpen(ff_path);
     if (ff_handle < 0)
@@ -1233,7 +1234,7 @@ int PosFindFirst(char *pat, int attrib)
         return (3);
     }
     ret = ff_search();
-    if (ret == 12)
+    if (ret == 0x12)
     {
         ret = 2;
     }
@@ -1391,6 +1392,7 @@ static int ff_search(void)
     ret = fileRead(ff_handle, buf, sizeof buf);
     while ((ret == sizeof buf) && (buf[0] != '\0'))
     {
+        /*(*(int *)(dta + 0x0d))++;*/ /* count position in directory */
         if (buf[0] != 0xe5)
         {
             memcpy(file, buf, 8);
@@ -1431,7 +1433,8 @@ static int ff_search(void)
         ret = fileRead(ff_handle, buf, sizeof buf);
     }
     fileClose(ff_handle);
-    return (12);
+    /*(*(int *)(dta + 0x0d)) = 0;*/ /* count position in directory */
+    return (0x12);
 }
 
 #ifdef __32BIT__

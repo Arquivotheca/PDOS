@@ -136,6 +136,7 @@ static struct {
 static char ff_path[FILENAME_MAX];
 static char ff_pat[FILENAME_MAX];
 
+static char shell[100] = "";
 static int ff_handle;
 static char origdta[128];
 static char *dta = origdta;
@@ -170,6 +171,7 @@ static char *sbrk_end;
 int main(void)
 {
     pdosRun();
+    dumpbuf("\r\nNo command processor - system halted\r\n", 40);
     return (0);
 }
 #endif
@@ -284,10 +286,6 @@ void pdosRun(void)
 #endif
 #ifndef USING_EXE
     loadPcomm();
-#ifndef CONTINUOUS_LOOP    
-    dumpbuf("\r\nNo command processor - system halted\r\n", 40);
-    for (;;) ;
-#endif    
     memmgrTerm(&memmgr);
 #endif    
     return;
@@ -1420,8 +1418,18 @@ static int ff_search(void)
                 *p-- = '\0';
             }
             if (patmat(file, ff_pat) 
+            
+                /* if it is not a directory, or they asked for
+                   directories, then that is OK */
                 && (((buf[0x0b] & 0x10) == 0)
-                    || ((attr & 0x10) != 0)))
+                    || ((attr & 0x10) != 0))
+                    
+                /* if it is not a volume label, or they asked
+                   for volume labels, then that is OK */
+                && (((buf[0x0b] & 0x08) == 0)
+                    || ((attr & 0x08) != 0))
+                    
+               )
             {
                 if ((p != NULL) && (*p == '.')) *p = '\0';
                 dta[0x15] = buf[0x0b]; /* attribute */
@@ -1522,6 +1530,18 @@ static void loadConfig(void)
             ret = fileRead(fh, buf, sizeof buf);
             for (x = 0; x < ret; x++)
             {
+                if (memcmp(buf, "SHELL=", 6) == 0)
+                {
+                    char *p;
+                    
+                    memcpy(shell, buf + 6, sizeof shell);
+                    shell[sizeof shell - 1] = '\0';
+                    p = strchr(shell, '\r');
+                    if (p != NULL)
+                    {
+                        *p = '\0';
+                    }
+                }
                 BosWriteText(0, buf[x], 0);
             }
         } while (ret == 0x200);
@@ -1533,8 +1553,16 @@ static void loadConfig(void)
 static void loadPcomm(void)
 {
     static PARMBLOCK p = { 0, "\x2/p\r", NULL, NULL };
+    static PARMBLOCK altp = { 0, "\x0\r", NULL, NULL };
 
-    loadExe("COMMAND.COM", &p);
+    if (strcmp(shell, "") == 0)
+    {
+        loadExe("COMMAND.COM", &p);
+    }
+    else
+    {
+        loadExe(shell, &altp);
+    }
     return;
 }
 

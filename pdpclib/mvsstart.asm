@@ -67,19 +67,29 @@ SUBPOOL  EQU   0
 *
          L     R2,CVTPTR
          USING CVT,R2
-         L     R2,CVTTCBP
-         L     R2,4(R2)
+         L     R2,CVTTCBP  THIS GETS ADDRESS OF PSATNEW
+         L     R2,4(R2)  THIS GETS CONTENTS OF PSATOLD
          USING TCB,R2
          L     R2,TCBJSCB
          USING IEZJSCB,R2
-         MVC   PGMNAME,JSCBPGMN
+*        MVC   PGMNAME,JSCBPGMN
 *
 * THIS SECTION OF CODE SHOULD USE MACROS INSTEAD OF HARDCODING
-         L     R2,540
-         L     R2,0(R2)
-         L     R2,12(R2)
-         LA    R2,8(R2)
-         MVC   PGMNAME,0(R2)
+*        L     R2,540 (PSATOLD)
+*        L     R2,0(R2)
+*        L     R2,12(R2)
+*        LA    R2,8(R2)
+*        MVC   PGMNAME,0(R2)
+*
+         USING PSA,R0
+         L     R7,PSATOLD
+         USING TCB,R7
+         L     R7,TCBRBP
+         USING RBBASIC,R7
+         LA    R8,0
+         ICM   R8,B'0111',RBCDE1
+         USING CDENTRY,R8
+         MVC   PGMNAME,CDNAME
 *
          LH    R2,JSCBTJID
          ST    R2,TYPE
@@ -140,6 +150,9 @@ SAVER13  DS    F
          CVT   DSECT=YES
          IKJTCB
          IEZJSCB
+         IHAPSA
+         IHARB
+         IHACDE
 STACK    DSECT
 SAVEAREA DS    18F
 DUMMYPTR DS    F

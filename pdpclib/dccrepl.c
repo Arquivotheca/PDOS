@@ -23,13 +23,11 @@ static int tprintf(const char *format, ...);
 int main(void)
 {
     char buf[200];
-    char *c;
     char *d;
     char *e;
     char *f;
     char *p;
     int frame;
-    int cindex;
     int csects = 0;
 
     while (fgets(buf, sizeof buf, stdin) != NULL)
@@ -43,12 +41,6 @@ int main(void)
             if (f != NULL)
             {
                 frame = atoi(f + 6);
-            }
-            cindex = 0;
-            c = strstr(buf, "CINDEX");
-            if (c != NULL)
-            {
-                cindex = atoi(c + 7);
             }
             if (e != NULL)
             {

@@ -55,12 +55,8 @@ int main(void)
                     printf("\t%s\tENTRY\n", buf);
                     *p = '\t';
                 }
-                strcpy(d, "CSECT\n");
             }
-            else
-            {
-                strcpy(d, "EQU\t*\n");
-            }
+            strcpy(d, "CSECT\n");
             fputs(buf, stdout);
             printf("\tUSING\t*,12,7,8,9\n");
             printf("\tSAVE\t(14,12)\n");

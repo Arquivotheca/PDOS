@@ -54,6 +54,7 @@ int main(int argc, char **argv)
             }
             else
             {
+                tprintf("\tCSECT\n");
                 strcpy(d, "EQU\t*\n");
             }
             tprintf("%s", buf);

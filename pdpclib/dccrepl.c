@@ -101,11 +101,12 @@ int main(void)
                  && (strchr("@$", buf[0]) != NULL))
         {
             csects++;
-            if (csects > 2)
-            {
-                printf("*");
-            }
+            printf("*");
             fputs(buf, stdout);
+            if (csects == 1)
+            {
+                printf("\tCSECT\n");
+            }
         }
         else
         {

@@ -65,25 +65,9 @@ SUBPOOL  EQU   0
          ST    R2,116(R12)       ADDR OF MEMORY ALLOCATION ROUTINE
          ST    R2,ARGPTR
 *
-         L     R2,CVTPTR
-         USING CVT,R2
-         L     R2,CVTTCBP  THIS GETS ADDRESS OF PSATNEW
-         L     R2,4(R2)  THIS GETS CONTENTS OF PSATOLD
-         USING TCB,R2
-         L     R2,TCBJSCB
-         USING IEZJSCB,R2
-*        MVC   PGMNAME,JSCBPGMN
-*
-* THIS SECTION OF CODE SHOULD USE MACROS INSTEAD OF HARDCODING
-*        L     R2,540 (PSATOLD)
-*        L     R2,0(R2)
-*        L     R2,12(R2)
-*        LA    R2,8(R2)
-*        MVC   PGMNAME,0(R2)
-*
          USING PSA,R0
-         L     R7,PSATOLD
-         USING TCB,R7
+         L     R2,PSATOLD
+         USING TCB,R2
          L     R7,TCBRBP
          USING RBBASIC,R7
          LA    R8,0
@@ -91,6 +75,8 @@ SUBPOOL  EQU   0
          USING CDENTRY,R8
          MVC   PGMNAME,CDNAME
 *
+         L     R2,TCBJSCB
+         USING IEZJSCB,R2
          LH    R2,JSCBTJID
          ST    R2,TYPE
          L     R2,0(R1)
@@ -102,9 +88,6 @@ SUBPOOL  EQU   0
 * FOR GCC WE NEED TO BE ABLE TO RESTORE R13
          L     R5,SAVEAREA+4
          ST    R5,SAVER13
-*
-*         LA    R2,=V(@@MVSTRT)
-*         CSVQUERY INADDR=(R2),OUTMJNM=PGMNAME,MF=(E,CSVQC)
 *
          LA    R1,PARMLIST
          CALL  @@START
@@ -166,7 +149,6 @@ PGMNAMEN DS    C                 NUL BYTE FOR C
 ANCHOR   DS    0F
 EXITADDR DS    F
          DS    49F
-*         CSVQUERY MF=(L,CSVQC)
 MAINSTK  DS    8000F
 MAINLEN  EQU   *-MAINSTK
 STACKLEN EQU   *-STACK

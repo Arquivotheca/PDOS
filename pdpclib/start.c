@@ -75,7 +75,7 @@ int CTYP __start(char *p)
 #ifdef __MVS__
     int parmLen;
     int progLen;
-    char mybuf[50];
+    char parmbuf[300];
 #endif
 
 #ifdef __PDOS__
@@ -149,6 +149,16 @@ int CTYP __start(char *p)
     stdout = fopen("dd:SYSPRINT", "w");
     stderr = stdout;
     parmLen = ((unsigned int)p[0] << 8) | (unsigned int)p[1];
+    if (parmLen >= sizeof parmbuf - 2)
+    {
+        parmLen = sizeof parmbuf - 1 - 2;
+    }
+    /* We copy the parameter into our own area because
+       the caller hasn't necessarily allocated room for
+       a terminating NUL, nor is it necessarily correct
+       to clobber the caller's are with NULs. */
+    memcpy(parmbuf, p, parmLen + 2);
+    p = parmbuf;
     if ((parmLen > 0) && (p[2] == 0))     /* assume TSO */
     {
         progLen = ((unsigned int)p[2] << 8) | (unsigned int)p[3];

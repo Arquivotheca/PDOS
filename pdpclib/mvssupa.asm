@@ -130,7 +130,6 @@ OUTDCBLN EQU   *-OUTDCB
 *@@AREAD  RMODE ANY
          ENTRY @@AREAD
 @@AREAD  CSECT
-         PRINT NOGEN
          SAVE  (14,12),,@@AREAD_&SYSDATE
          LR    R12,R15
          USING @@AREAD,R12
@@ -164,7 +163,6 @@ RETURN2  DS    0H
 *@@AWRITE RMODE ANY
          ENTRY @@AWRITE
 @@AWRITE CSECT
-         PRINT NOGEN
          SAVE  (14,12),,@@AWRITE_&SYSDATE
          LR    R12,R15
          USING @@AWRITE,R12
@@ -197,7 +195,6 @@ RETURNWR DS    0H
 *@@ACLOSE RMODE ANY
          ENTRY @@ACLOSE
 @@ACLOSE CSECT
-         PRINT NOGEN
          SAVE  (14,12),,@@ACLOSE_&SYSDATE
          LR    R12,R15
          USING @@ACLOSE,R12
@@ -243,7 +240,6 @@ CLOSEMLN EQU   *-CLOSEMAC
 *@@GETM   RMODE ANY
          ENTRY @@GETM
 @@GETM   CSECT
-         PRINT NOGEN
          SAVE  (14,12),,@@GETM_&SYSDATE
          LR    R12,R15
          USING @@GETM,R12
@@ -274,7 +270,6 @@ RETURNGM DS    0H
 *@@FREEM  RMODE ANY
          ENTRY @@FREEM
 @@FREEM  CSECT
-         PRINT NOGEN
          SAVE  (14,12),,@@FREEM_&SYSDATE
          LR    R12,R15
          USING @@FREEM,R12
@@ -306,7 +301,6 @@ RETURNFM DS    0H
 *@@GETCLK RMODE ANY
          ENTRY @@GETCLK
 @@GETCLK CSECT
-         PRINT NOGEN
          SAVE  (14,12),,@@GETCLK_&SYSDATE
          LR    R12,R15
          USING @@GETCLK,R12

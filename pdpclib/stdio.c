@@ -2381,6 +2381,11 @@ int setvbuf(FILE *stream, char *buf, int mode, size_t size)
 {
     char *mybuf;
 
+#ifdef __MVS__
+    /* don't allow mucking around with buffers on MVS */
+    return (0);
+#endif
+
     if (mode == _IONBF)
     {
         stream->bufTech = mode;

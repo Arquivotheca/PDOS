@@ -92,7 +92,12 @@ typedef unsigned long fpos_t;
 /*#define BUFSIZ 409600*/
 /* #define BUFSIZ 8192 */
 /*#define BUFSIZ 5120*/
+#ifdef __MVS__
+/* set it to maximum possible LRECL to simplify processing */
+#define BUFSIZ 32768
+#else
 #define BUFSIZ 6144
+#endif
 /* #define BUFSIZ 10 */
 /* #define BUFSIZ 512 */
 #define EOF -1

@@ -61,12 +61,18 @@ int main(void)
             printf("\tST\t15,4(15)\n");
             printf("\tST\t15,8(13)\n");
             printf("\tLR\t13,15\n");
-            printf("\tA\t15,@FRAMESIZE_%d\n", cindex);
+            printf("\tA\t15,@FRAMESIZE@%d\n", cindex);
             printf("\tST\t15,76(13)\n");
         }
         else if ((d = strstr(buf, "DCCEPIL")) != NULL)
         {
+            printf("\tL\t13,4(13)\n");
             strcpy(d, "RETURN (14,12),RC=(15)\n");
+            fputs(buf, stdout);
+        }
+        else if (strncmp(buf, "@FRAMESIZE_", 11) == 0)
+        {
+            memcpy(buf, "@FRAMESIZE@", 11);
             fputs(buf, stdout);
         }
         else

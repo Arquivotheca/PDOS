@@ -10,7 +10,9 @@
 *                                                                    *
 **********************************************************************
          AIF ('&SYSPARM' EQ 'IFOX00').NOMODE
-         AMODE ANY
+* BECAUSE OF THE "LOC=ABOVE", WE NEED TO FORCE 31
+* SEARCH FOR "LOC=RES" TO FIND OUT HOW TO FIX
+         AMODE 31
 * SEARCH FOR "LOC=RES" TO FIND OUT WHY THIS IS BEING
 * HELD BACK AT RMODE 24
          RMODE 24

@@ -108,7 +108,12 @@ void *realloc(void *ptr, size_t size)
     }
     if (ptr != NULL)
     {
+#ifdef __MVS__    
+        oldsize = *(size_t *)((char *)ptr - 16);
+        oldsize -= 16;
+#else
         oldsize = *(size_t *)((char *)ptr - 4);
+#endif
         if (oldsize < size)
         {
             size = oldsize;

@@ -9,7 +9,7 @@
 *  MVSSUPA - SUPPORT ROUTINES FOR PDPCLIB UNDER MVS                  *
 *                                                                    *
 *  NOTE - IF USING 31-BIT ADDRESSING, YOU NEED TO REINSTATE          *
-*  THE LINE THAT HAS "LOC=BELOW" IN IT.                              *
+*  THE ONE LINE THAT HAS "LOC=BELOW" IN IT.                          *
 *                                                                    *
 **********************************************************************
          PRINT NOGEN
@@ -87,19 +87,34 @@ SUBPOOL  EQU   0
          OI    JFCBIND1,JFCPDS
 NOMEM    DS    0H
 *         OPEN  ((R2),INPUT),MF=(E,OPENMB),MODE=31,TYPE=J
-* CAN'T USE MODE=31 ON MVS 3.8
+* CAN'T USE MODE=31 ON MVS 3.8, OR WITH TYPE=J
          OPEN  ((R2),INPUT),MF=(E,OPENMB),TYPE=J
          B     DONEOPEN
 WRITING  DS    0H
          USING ZDCBAREA,R2
          MVC   ZDCBAREA(OUTDCBLN),OUTDCB
+         LA    R10,JFCB
+* EXIT TYPE 07 + 80 (END OF LIST INDICATOR)
+         ICM   R10,B'1000',=X'87'
+         ST    R10,JFCBPTR
+         LA    R10,JFCBPTR
          USING IHADCB,R2
+         STCM  R10,B'0111',DCBEXLSA
          MVC   DCBDDNAM,0(R3)
          MVC   WOPENMB,WOPENMAC
-*         OPEN  ((R2),OUTPUT),MF=(E,WOPENMB),MODE=31
-* CAN'T USE MODE=31 ON MVS 3.8
-         OPEN  ((R2),OUTPUT),MF=(E,WOPENMB)
+* NOTE THAT THIS IS CURRENTLY NOT REENTRANT AND SHOULD BE MADE SO
+         RDJFCB ((R2),OUTPUT)
+         LTR   R9,R9
+         BZ    WNOMEM
+         USING ZDCBAREA,R2
+         MVC   JFCBELNM,0(R9)
+         OI    JFCBIND1,JFCPDS
+WNOMEM   DS    0H
+*         OPEN  ((R2),OUTPUT),MF=(E,WOPENMB),MODE=31,TYPE=J
+* CAN'T USE MODE=31 ON MVS 3.8, OR WITH TYPE=J
+         OPEN  ((R2),OUTPUT),MF=(E,WOPENMB),TYPE=J
 DONEOPEN DS    0H
+         USING IHADCB,R2
          SR    R6,R6
          LH    R6,DCBLRECL
          ST    R6,0(R8)

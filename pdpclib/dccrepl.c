@@ -54,9 +54,17 @@ int main(void)
                 strcpy(d, "EQU\t*\n");
             }
             fputs(buf, stdout);
-            printf("\tUSING\t*,12\n");
+            printf("\tUSING\t*,12,7,8,9\n");
             printf("\tSAVE\t(14,12)\n");
             printf("\tLR\t12,15\n");
+            
+            printf("\tLA\t7,2048(12)\n");
+            printf("\tLA\t7,2048(7)\n");
+            printf("\tLA\t8,2048(7)\n");
+            printf("\tLA\t8,2048(8)\n");
+            printf("\tLA\t9,2048(8)\n");
+            printf("\tLA\t9,2048(9)\n");
+            
             printf("\tL\t15,76(13)\n");
             printf("\tST\t15,4(15)\n");
             printf("\tST\t15,8(13)\n");

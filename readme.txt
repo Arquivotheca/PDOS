@@ -73,30 +73,21 @@ incompatible boot sector.
 RECOMPILING
 -----------
 
-Extract at the same level in your directory hierarchy the following
-things:
-
-PDOS
-PDPCLIB
-OZPD
-
 To compile 16-bit version using Borland C++ 3.1:
 
-Go to PDPCLIB and type "compile"
-Go to PDOS and type "comp1" then "comp2" then "comp3".
-Go to OZPD and type "bcc -c -ml -I..\pdpclib world.c"
+Go to pdpclib and type "compile"
+Go to src and type "comp1" then "comp2" then "comp3".
+Then type "bcc -c -ml -I..\pdpclib world.c"
 then ...
 tlink -x ..\pdpclib\dosstart.obj+world.obj,world.exe,,..\pdpclib\borland.lib,
 
 To compile 32-bit version using EMX 0.9b and Borland C++ 3.1:
 
-Go to PDPCLIB and type "compp"
-Go to PDOS and type "comp4" then "comp5" then "comp6".
-Go to OZPD and type "gcc -s -c -I../pdpclib world.c"
+Go to pdpclib and type "compp"
+Go to src and type "comp4" then "comp5" then "comp6".
+Then type "gcc -s -c -I../pdpclib world.c"
 then "ld -s -o world ../pdpclib/pdosst32.o world.o ../pdpclib/pdos.a
 then "ren world world.exe"
-
-Note: I compiled PDOS using PDPCLIB version 0.73 and OZPD0007.
 
 Run comp0 and then doinst (after editing it!!!) 
 to install it.

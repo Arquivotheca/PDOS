@@ -245,6 +245,7 @@ static void fopen3(void)
 #ifdef __MVS__
         myfile->upto = myfile->fbuf;
         myfile->szfbuf = myfile->lrecl;
+        myfile->endbuf = myfile->fbuf; /* for read only */
 #else
         myfile->upto = myfile->endbuf;
 #endif
@@ -277,6 +278,9 @@ static void fopen3(void)
                 myfile->bufStartR = 0;
                 myfile->upto = myfile->fbuf;
                 myfile->mode = __WRITE_MODE;
+#ifdef __MVS__
+                myfile->endbuf = myfile->fbuf + myfile->szfbuf;
+#endif
                 break;
         }
         switch (modeType)
@@ -2825,6 +2829,10 @@ int fputs(const char *s, FILE *stream)
         if (p != NULL)
         {
             len = p - s;
+            if (len > stream->lrecl)
+            {
+                len = stream->lrecl;
+            }
             __awrite(stream->hfile, &dptr);
             memcpy(dptr + 4, s, len);
             dptr[0] = (len + 4) >> 8;

@@ -2958,18 +2958,12 @@ size_t fwrite(const void *ptr, size_t size, size_t nmemb, FILE *stream)
             }
             else /* p == NULL */
             {
-                if ((stream->endbuf - stream->upto) > bytes)
+                if (((stream->upto - stream->fbuf) + bytes) > stream->lrecl)
                 {
-                    memcpy(stream->upto, ptr, bytes);
-                    stream->upto += bytes;
+                    bytes = stream->lrecl - (stream->upto - stream->fbuf);
                 }
-                else
-                {
-                    memcpy(stream->upto, ptr, stream->endbuf - stream->upto);
-                    stream->upto = stream->endbuf;
-                }
-                ptr = (char *)ptr + bytes;
-                bytes = 0;
+                memcpy(stream->upto, ptr, bytes);
+                stream->upto += bytes;
             }
             break;
 
@@ -3045,18 +3039,12 @@ size_t fwrite(const void *ptr, size_t size, size_t nmemb, FILE *stream)
             }
             else /* p == NULL */
             {
-                if ((stream->endbuf - stream->upto) > bytes)
+                if (((stream->upto - stream->fbuf) + bytes) > stream->lrecl)
                 {
-                    memcpy(stream->upto, ptr, bytes);
-                    stream->upto += bytes;
+                    bytes = stream->lrecl - (stream->upto - stream->fbuf);
                 }
-                else
-                {
-                    memcpy(stream->upto, ptr, stream->endbuf - stream->upto);
-                    stream->upto = stream->endbuf;
-                }
-                ptr = (char *)ptr + bytes;
-                bytes = 0;
+                memcpy(stream->upto, ptr, bytes);
+                stream->upto += bytes;
             }
             break;
     }

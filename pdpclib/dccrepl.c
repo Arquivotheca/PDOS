@@ -53,7 +53,7 @@ int main(void)
                 }
             }
             strcpy(d, "CSECT\n");
-            tprintf(buf);
+            tprintf("%s", buf);
             tprintf("\tUSING\t*,12\n"); /*,7,8,9\n");*/
             tprintf("\tSAVE\t(14,12)");
             p = strchr(buf, '\t');
@@ -77,20 +77,20 @@ int main(void)
         {
             tprintf("\tL\t13,4(13)\n");
             strcpy(d, "RETURN (14,12),RC=(15)\n");
-            tprintf(buf);
+            tprintf("%s", buf);
         }
         else if (strncmp(buf, "@FRAMESIZE_", 11) == 0)
         {
             tprintf("*");
             buf[10] = '@';
-            tprintf(buf);
+            tprintf("%s", buf);
         }
         else if ((strstr(buf, "CSECT") != NULL)
                  && (strchr("@$", buf[0]) != NULL))
         {
             csects++;
             tprintf("*");
-            tprintf(buf);
+            tprintf("%s", buf);
             if (csects == 1)
             {
                 tprintf("\tCSECT\n");
@@ -98,7 +98,7 @@ int main(void)
         }
         else
         {
-            tprintf(buf);
+            tprintf("%s", buf);
         }
     }
     return (0);

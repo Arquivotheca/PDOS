@@ -580,6 +580,10 @@ static void osfopen(void)
     {
         myfile->quickText = 1;
     }
+    else
+    {
+        myfile->quickText = 0;
+    }
     if (myfile->style == FIXED_BINARY)
     {
         myfile->quickBin = 1;

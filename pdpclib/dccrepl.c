@@ -20,7 +20,7 @@
 
 static int tprintf(const char *format, ...);
 
-int main(void)
+int main(int argc, char **argv)
 {
     char buf[200];
     char *d;
@@ -29,7 +29,12 @@ int main(void)
     char *p;
     int frame;
     int csects = 0;
+    int numregs = 1;
 
+    if (argc > 1)
+    {
+        numregs = atoi(*(argv + 1));
+    }
     while (fgets(buf, sizeof buf, stdin) != NULL)
     {
         d = strstr(buf, "DCCPRLG");
@@ -54,7 +59,20 @@ int main(void)
             }
             strcpy(d, "CSECT\n");
             tprintf("%s", buf);
-            tprintf("\tUSING\t*,12\n"); /*,7,8,9\n");*/
+            tprintf("\tUSING\t*,12");
+            if (numregs > 1)
+            {
+                tprintf(",7");
+            }
+            if (numregs > 2)
+            {
+                tprintf(",8");
+            }
+            if (numregs > 3)
+            {
+                tprintf(",9");
+            }
+            tprintf("\n");
             tprintf("\tSAVE\t(14,12)");
             p = strchr(buf, '\t');
             if (p != NULL)
@@ -65,6 +83,23 @@ int main(void)
             }
             tprintf("\n");
             tprintf("\tLR\t12,15\n");
+            
+            if (numregs > 1)
+            {
+                tprintf("\tLR\t7,12\n");
+                tprintf("\tLA\t7,2048(7)\n");
+                tprintf("\tLA\t7,2048(7)\n");
+            }
+            if (numregs > 2)
+            {
+                tprintf("\tLA\t8,2048(7)\n");
+                tprintf("\tLA\t8,2048(8)\n");
+            }
+            if (numregs > 3)
+            {
+                tprintf("\tLA\t9,2048(8)\n");
+                tprintf("\tLA\t9,2048(9)\n");
+            }
             
             tprintf("\tL\t15,76(13)\n");
             tprintf("\tST\t13,4(15)\n");

@@ -526,6 +526,13 @@ int BosReadKeyboardCharacter(int *scancode, int *ascii)
     return (0);
 }
 
+/* BosSystemWarmBoot - BIOS Int 19h */
+
+void BosSystemWarmBoot(void)
+{
+    int86n(0x19);
+    return;
+}
 
 /* int86n - do an interrupt with no registers */
 

@@ -293,8 +293,7 @@ void __exit(int status)
 #ifdef __MVS__
     fclose(stdin);
     fclose(stdout);
-#else
-    __exita(status);
 #endif        
+    __exita(status);
     return;
 }

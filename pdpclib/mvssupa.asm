@@ -8,6 +8,9 @@
 *                                                                    *
 *  MVSSUPA - SUPPORT ROUTINES FOR PDPCLIB UNDER MVS                  *
 *                                                                    *
+*  NOTE - IF USING 31-BIT ADDRESSING, YOU NEED TO REINSTATE          *
+*  THE LINE THAT HAS "LOC=BELOW" IN IT.                              *
+*                                                                    *
 **********************************************************************
          PRINT NOGEN
 * YREGS IS NOT AVAILABLE WITH IFOX

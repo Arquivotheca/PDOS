@@ -238,7 +238,7 @@ int CTYP __start(char *p)
     p[*p + 1] = '\0';
     p++;
 #endif
-    if (*p == ' ')
+    while (*p == ' ')
     {
         p++;
     }
@@ -262,6 +262,7 @@ int CTYP __start(char *p)
             {
                 *p = '\0';
                 p++;
+                while (*p == ' ') p++;
             }
         }
         argv[x] = NULL;

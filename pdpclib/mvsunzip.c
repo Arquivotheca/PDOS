@@ -15,7 +15,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define MAXBUF 500000
+#define MAXBUF 2000000
 
 static int fasc(int asc);
 static int onefile(FILE *infile);
@@ -55,6 +55,11 @@ static int onefile(FILE *infile)
     if (buf == NULL)
     {
         buf = malloc(MAXBUF);
+        if (buf == NULL)
+        {
+            printf("out of memory error\n");
+            exit(EXIT_FAILURE);
+        }
     }
     if (fgetc(infile) != 0x50)
     {

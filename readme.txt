@@ -34,18 +34,55 @@ a bootable floppy using CD burner software.
 system as you are likely to find if you want to see what
 the requirements are to write an operating system.  It is
 the 32-bit version that I am most interested in.  It is
-32-bit from both a user's point of view and a programmer's 
-point of view.  Prior to reaching version 1.00 the internals 
-are subject to change, pending any suggestions YOU may have 
-on technical issues.  I am mainly concerned about the
-programming interface, the rest (e.g. task protection, virtual
-memory) can change quietly.  I do not profess to be an operating
-system expert or even a DOS expert.  I have spent most of my life 
-avoiding anything that falls out of the scope of strictly conforming 
-ISO C code.  There is also a 16-bit version of PDOS available, which 
-you may find more convenient to use for testing purposes, since any 
-DOS C compiler can be used to write programs for it, whilst the only 
-compiler I know that works for the 32-bit version is EMX 0.9b.
+32-bit from both a user's point of view and a 
+programmer's point of view.  Prior to reaching version 
+1.00 the internals are subject to change, pending any 
+suggestions anyone may have on technical issues.  I am 
+mainly concerned about the programming interface, the 
+rest (e.g. task protection, virtual memory) can change 
+quietly.  I do not profess to be an operating system 
+expert or even a DOS expert.  I have spent most of my 
+life avoiding anything that falls out of the scope of 
+strictly conforming ISO C code.  There is also a 16-bit 
+version of PDOS available, which you may find more 
+convenient to use for testing purposes, since any DOS 
+C compiler can be used to write programs for it, while
+the only compiler I know that works for the 32-bit 
+version is EMX 0.9b.
+
+
+The package more accurately contains multiple,
+mostly independent things:
+
+1. BOS application programming interface, for 
+standardized access to the BIOS.
+
+2. POS application programming interface, for 
+standardized access to MSDOS interrupts.
+
+3. PDPCLIB, a C runtime library, for multiple
+environments, e.g. MVS, MSDOS and any POS-compliant
+operating system (e.g. MSDOS and PDOS are both
+POS-compliant).
+
+4. PDOS-16, an operating system which can be
+considered a clone of MSDOS.
+
+5. PDOS-32, a 32-bit operating system, which
+can't be considered a clone of any existing
+operating system (that I know of, anyway).
+It shares similarities with MSDOS, except it 
+is 32-bit.  It shares similarities with DOS 
+extenders, except the API is different, and
+it doesn't require an OS for support.  It shares
+similarities with Unix (the executable format),
+except it doesn't support the Posix API.  So all
+in all, it's a new operating system which thus
+necessitates all applications to be recompiled,
+although not necessarily rewritten.  At a later
+stage, it may support the Windows NT API so that
+32-bit console mode executables can be run
+unchanged.
 
 
 INSTALLING
@@ -57,7 +94,7 @@ internet and then follow the instructions to get
 pdos16.dsk onto a 1.44 MB floppy disk.  pdos32.dsk
 will give you the 32-bit version, but it is a lot
 less useful unless you're planning on rewriting
-your software.
+(or maybe recompiling) your software.
 
 To install on hard disk, you need MSDOS (I tested
 with version 5.0) to format a FAT-16 partition,
@@ -68,6 +105,21 @@ it on.  PDOS will happily run from a logical
 partition.  You can't use Win98 or Freedos to do
 this work, because the "sys" command produces an
 incompatible boot sector.
+
+
+DEVELOPMENT ENVIRONMENT
+-----------------------
+
+I use the following bits of software.  I hope that
+in the future I can eliminate the commercial software
+to make it more easily accessible, probably using
+Open Watcom.
+
+MSDOS 5.0
+Borland C++ 3.1 for DOS
+TASM 3.1 for DOS
+EMX 0.9b
+raread/rawrite (unknown origin)
 
 
 RECOMPILING
@@ -364,8 +416,21 @@ memory map:
 memory for protected mode applications (code & data)
 200000
   unused for 32-bit, presumably will hold 16-bit device drivers
+
+a0000
+  space for application code
+
+40000
+  64k completely wasted for memory chain control
+  blocks, to avoid having to drop the flat memory
+  model coding in the memory management class. (16-bit only)
+
+30000
+  unused I suppose (16-bit only)
+  
 30700 (approx)
   MSDOS.SYS data & stack (32-bit only)
+  
 20700
   MSDOS.SYS
 10700
@@ -510,15 +575,17 @@ look at minimizing code that is authorized to hang system.
 
 OBTAINING
 ---------
-The latest version currently resides at www.kerravon.w3.to.
+The latest version currently resides at
+http://sourceforge.net/projects/pdos
 
 
 CONTACTING THE AUTHOR
 ---------------------
 
-If you have any enhancements to PDOS, please send the code changes to
-the email address listed above.
-Please ensure that your code changes are public domain, if you create
-a new source file, include an explicit PD notice.  It is my intention
-to build up a completely public domain system for use by EVERYONE,
+If you have any enhancements to PDOS, please send 
+the code changes to the email address listed above.
+Please ensure that your code changes are public 
+domain, if you create a new source file, include 
+an explicit PD notice.  It is my intention to build 
+up a completely public domain system for use by EVERYONE,
 including commercial vendors of operating systems.

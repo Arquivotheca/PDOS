@@ -52,6 +52,7 @@ typedef struct
     int style;
     int lrecl;
     char ddname[9];
+    char pdsmem[9];
 #endif
     int quickBin;  /* 1 = do DosRead NOW!!!! */
     int quickText; /* 1 = quick text mode */

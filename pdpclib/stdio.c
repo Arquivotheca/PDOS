@@ -3068,19 +3068,19 @@ size_t fread(void *ptr, size_t size, size_t nmemb, FILE *stream)
     size_t bytes;
     size_t read;
     size_t totalread;
-    char *p;
-    char *dptr;
-    char *eptr;
+    size_t extra;
+    unsigned char *dptr;
+    unsigned char *eptr;
 
     if (stream->quickBin)
     {
         if ((nmemb == 1) && (size == stream->lrecl))
         {
-            if (__aread(stream->hfile, &p) != 0)
+            if (__aread(stream->hfile, &dptr) != 0)
             {
                 return (0);
             }
-            memcpy(ptr, p, read);
+            memcpy(ptr, dptr, read);
             return (1);
         }
     }
@@ -3123,8 +3123,6 @@ size_t fread(void *ptr, size_t size, size_t nmemb, FILE *stream)
                 
                 if ((totalread + read) >= bytes)
                 {
-                    size_t extra;
-                    
                     extra = bytes - (totalread + read);
                     read -= extra;
                     memcpy(stream->fbuf, dptr + read, extra);
@@ -3139,6 +3137,143 @@ size_t fread(void *ptr, size_t size, size_t nmemb, FILE *stream)
                     *((char *)ptr + totalread) = '\n';
                     totalread++;
                 }
+            }
+            return (totalread / size);
+            break;
+
+        case FIXED_BINARY:
+            bytes = nmemb * size;
+            read = stream->upto - stream->fbuf;
+            if (read > bytes)
+            {
+                memcpy(ptr, stream->fbuf, bytes);
+                memmove(stream->fbuf,
+                        stream->upto + bytes,
+                        read - bytes);
+                stream->upto = stream->fbuf + (read - bytes);
+                totalread = bytes;
+            }
+            else
+            {
+                memcpy(ptr, stream->fbuf, read);
+                stream->upto = stream->fbuf;
+                totalread = read;
+            }
+
+            while (totalread < bytes)
+            {
+                if (__aread(stream->hfile, &dptr) != 0)
+                {
+                    stream->eofInd = 1;
+                    break;
+                }
+                
+                read = stream->lrecl;
+                
+                if ((totalread + read) > bytes)
+                {
+                    extra = bytes - (totalread + read);
+                    read -= extra;
+                    memcpy(stream->fbuf, dptr + read, extra);
+                    stream->upto = stream->fbuf + extra;
+                }
+                
+                memcpy((char *)ptr + totalread, dptr, read);
+                totalread += read;
+            }
+            return (totalread / size);
+            break;
+
+        case VARIABLE_TEXT:
+            bytes = nmemb * size;
+            read = stream->upto - stream->fbuf;
+            if (read > bytes)
+            {
+                memcpy(ptr, stream->fbuf, bytes);
+                memmove(stream->fbuf,
+                        stream->upto + bytes,
+                        read - bytes);
+                stream->upto = stream->fbuf + (read - bytes);
+                totalread = bytes;
+            }
+            else
+            {
+                memcpy(ptr, stream->fbuf, read);
+                stream->upto = stream->fbuf;
+                totalread = read;
+            }
+
+            while (totalread < bytes)
+            {
+                if (__aread(stream->hfile, &dptr) != 0)
+                {
+                    stream->eofInd = 1;
+                    break;
+                }
+                
+                read = (dptr[0] << 8) | dptr[1];
+                dptr += 4;
+                
+                if ((totalread + read) >= bytes)
+                {
+                    extra = bytes - (totalread + read);
+                    read -= extra;
+                    memcpy(stream->fbuf, dptr + read, extra);
+                    stream->upto = stream->fbuf + extra;
+                    *stream->upto++ = '\n';
+                }
+                
+                memcpy((char *)ptr + totalread, dptr, read);
+                totalread += read;
+                if (totalread < bytes)
+                {
+                    *((char *)ptr + totalread) = '\n';
+                    totalread++;
+                }
+            }
+            return (totalread / size);
+            break;
+
+        case VARIABLE_BINARY:
+            bytes = nmemb * size;
+            read = stream->upto - stream->fbuf;
+            if (read > bytes)
+            {
+                memcpy(ptr, stream->fbuf, bytes);
+                memmove(stream->fbuf,
+                        stream->upto + bytes,
+                        read - bytes);
+                stream->upto = stream->fbuf + (read - bytes);
+                totalread = bytes;
+            }
+            else
+            {
+                memcpy(ptr, stream->fbuf, read);
+                stream->upto = stream->fbuf;
+                totalread = read;
+            }
+
+            while (totalread < bytes)
+            {
+                if (__aread(stream->hfile, &dptr) != 0)
+                {
+                    stream->eofInd = 1;
+                    break;
+                }
+                
+                read = (dptr[0] << 8) | dptr[1];
+                read += 4;
+                
+                if ((totalread + read) > bytes)
+                {
+                    extra = bytes - (totalread + read);
+                    read -= extra;
+                    memcpy(stream->fbuf, dptr + read, extra);
+                    stream->upto = stream->fbuf + extra;
+                }
+                
+                memcpy((char *)ptr + totalread, dptr, read);
+                totalread += read;
             }
             return (totalread / size);
             break;

@@ -118,7 +118,12 @@ Open Watcom.
 MSDOS 5.0
 Borland C++ 3.1 for DOS
 TASM 3.1 for DOS
+
 EMX 0.9b (which includes GCC 2.7.2)
+A newer (0.9d) version can be obtained from:
+http://hobbes.nmsu.edu/cgi-bin/h-browse?dir=/pub/os2/dev/emx/v0.9d
+I don't know where to get 0.9b
+
 raread/rawrite (unknown origin)
 
 

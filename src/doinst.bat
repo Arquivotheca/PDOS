@@ -1,4 +1,4 @@
-set loc=e:\devel\pdos
+set loc=e:\devel\pdos\src
 set drive=e
 
 copy %loc%\pload.com %loc%\io.sys

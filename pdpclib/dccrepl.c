@@ -96,6 +96,11 @@ int main(void)
                 tprintf("\tCSECT\n");
             }
         }
+        else if (buf[0] == '*')
+        {
+            strcpy(buf + 60, "\n");
+            tprintf("%s", buf);
+        }
         else
         {
             tprintf("%s", buf);

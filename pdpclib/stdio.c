@@ -1465,6 +1465,10 @@ static int vvprintf(const char *format, va_list arg, FILE *fq, char *s)
             else if (*format == 's')
             {
                 vcptr = va_arg(arg, char *);
+                if (vcptr == NULL)
+                {
+                    vcptr = "(null)";
+                }
                 if (fq == NULL)
                 {
                     len = strlen(vcptr);

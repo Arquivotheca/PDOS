@@ -16,10 +16,6 @@
 *  THAT WILL NOT AFFECT PROGRAM FUNCTIONALITY.                       *
 *                                                                    *
 **********************************************************************
-*@@MVSTRT AMODE 31
-*@@MVSTRT RMODE ANY
-         ENTRY @@MVSTRT
-@@MVSTRT CSECT
          PRINT NOGEN
 * YREGS IS NOT AVAILABLE WITH IFOX
 *         YREGS
@@ -40,6 +36,10 @@ R13      EQU   13
 R14      EQU   14
 R15      EQU   15
 SUBPOOL  EQU   0
+*@@MVSTRT AMODE 31
+*@@MVSTRT RMODE ANY
+         ENTRY @@MVSTRT
+@@MVSTRT CSECT
          SAVE  (14,12),,@@MVSTRT_&SYSDATE
          LR    R10,R15
          USING @@MVSTRT,R10

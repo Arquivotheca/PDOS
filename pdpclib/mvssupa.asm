@@ -9,8 +9,8 @@
 *  MVSSUPA - SUPPORT ROUTINES FOR PDPCLIB UNDER MVS                  *
 *                                                                    *
 **********************************************************************
-@@AOPEN  AMODE 31
-@@AOPEN  RMODE ANY
+*@@AOPEN  AMODE 31
+*@@AOPEN  RMODE ANY
 @@AOPEN  CSECT
          PRINT NOGEN
          YREGS
@@ -95,8 +95,8 @@ OUTDCBLN EQU   *-OUTDCB
 *
 *
 *
-@@AREAD  AMODE 31
-@@AREAD  RMODE ANY
+*@@AREAD  AMODE 31
+*@@AREAD  RMODE ANY
 @@AREAD  CSECT
          PRINT NOGEN
          SAVE  (14,12),,@@AREAD_&SYSDATE
@@ -128,8 +128,8 @@ RETURN2  DS    0H
 *
 *
 *
-@@AWRITE AMODE 31
-@@AWRITE RMODE ANY
+*@@AWRITE AMODE 31
+*@@AWRITE RMODE ANY
 @@AWRITE CSECT
          PRINT NOGEN
          SAVE  (14,12),,@@AWRITE_&SYSDATE
@@ -160,8 +160,8 @@ RETURNWR DS    0H
 *
 *
 *
-@@ACLOSE AMODE 31
-@@ACLOSE RMODE ANY
+*@@ACLOSE AMODE 31
+*@@ACLOSE RMODE ANY
 @@ACLOSE CSECT
          PRINT NOGEN
          SAVE  (14,12),,@@ACLOSE_&SYSDATE
@@ -201,8 +201,8 @@ CLOSEMLN EQU   *-CLOSEMAC
 *  GETM - GET MEMORY                                                 *
 *                                                                    *
 **********************************************************************
-@@GETM   AMODE 31
-@@GETM   RMODE ANY
+*@@GETM   AMODE 31
+*@@GETM   RMODE ANY
 @@GETM   CSECT
          PRINT NOGEN
          SAVE  (14,12),,@@GETM_&SYSDATE
@@ -228,8 +228,8 @@ RETURNGM DS    0H
 *  FREEM - FREE MEMORY                                               *
 *                                                                    *
 **********************************************************************
-@@FREEM  AMODE 31
-@@FREEM  RMODE ANY
+*@@FREEM  AMODE 31
+*@@FREEM  RMODE ANY
 @@FREEM  CSECT
          PRINT NOGEN
          SAVE  (14,12),,@@FREEM_&SYSDATE
@@ -259,8 +259,8 @@ RETURNFM DS    0H
 *  BY USING SOME EMPERICALLY-DERIVED MAGIC NUMBERS                   *
 *                                                                    *
 **********************************************************************
-@@GETCLK AMODE 31
-@@GETCLK RMODE ANY
+*@@GETCLK AMODE 31
+*@@GETCLK RMODE ANY
 @@GETCLK CSECT
          PRINT NOGEN
          SAVE  (14,12),,@@GETCLK_&SYSDATE

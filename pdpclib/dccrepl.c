@@ -16,6 +16,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdarg.h>
+
+static int tprintf(const char *format, ...);
 
 int main(void)
 {
@@ -53,65 +56,102 @@ int main(void)
                 if (p != NULL)
                 {
                     *p = '\0';
-                    printf("\tENTRY\t%s\n", buf);
+                    tprintf("\tENTRY\t%s\n", buf);
                     *p = '\t';
                 }
             }
             strcpy(d, "CSECT\n");
-            fputs(buf, stdout);
-            printf("\tUSING\t*,12\n"); /*,7,8,9\n");*/
-            printf("\tSAVE\t(14,12)");
+            tprintf(buf);
+            tprintf("\tUSING\t*,12\n"); /*,7,8,9\n");*/
+            tprintf("\tSAVE\t(14,12)");
             p = strchr(buf, '\t');
             if (p != NULL)
             {
                 *p = '\0';
-                printf(",,%s_&SYSDATE", buf);
+                tprintf(",,%s_&SYSDATE", buf);
                 *p = '\t';
             }
-            printf("\n");
-            printf("\tLR\t12,15\n");
+            tprintf("\n");
+            tprintf("\tLR\t12,15\n");
             
-/*            printf("\tLA\t7,2048(12)\n");
-            printf("\tLA\t7,2048(7)\n");
-            printf("\tLA\t8,2048(7)\n");
-            printf("\tLA\t8,2048(8)\n");
-            printf("\tLA\t9,2048(8)\n");
-            printf("\tLA\t9,2048(9)\n"); */
-            
-            printf("\tL\t15,76(13)\n");
-            printf("\tST\t13,4(15)\n");
-            printf("\tST\t15,8(13)\n");
-            printf("\tLR\t13,15\n");
-            printf("\tA\t15,=F'%d'\n", frame);
-            printf("\tST\t15,76(13)\n");
+            tprintf("\tL\t15,76(13)\n");
+            tprintf("\tST\t13,4(15)\n");
+            tprintf("\tST\t15,8(13)\n");
+            tprintf("\tLR\t13,15\n");
+            tprintf("\tA\t15,=F'%d'\n", frame);
+            tprintf("\tST\t15,76(13)\n");
         }
         else if ((d = strstr(buf, "DCCEPIL")) != NULL)
         {
-            printf("\tL\t13,4(13)\n");
+            tprintf("\tL\t13,4(13)\n");
             strcpy(d, "RETURN (14,12),RC=(15)\n");
-            fputs(buf, stdout);
+            tprintf(buf);
         }
         else if (strncmp(buf, "@FRAMESIZE_", 11) == 0)
         {
-            printf("*");
+            tprintf("*");
             buf[10] = '@';
-            fputs(buf, stdout);
+            tprintf(buf);
         }
         else if ((strstr(buf, "CSECT") != NULL)
                  && (strchr("@$", buf[0]) != NULL))
         {
             csects++;
-            printf("*");
-            fputs(buf, stdout);
+            tprintf("*");
+            tprintf(buf);
             if (csects == 1)
             {
-                printf("\tCSECT\n");
+                tprintf("\tCSECT\n");
             }
         }
         else
         {
-            fputs(buf, stdout);
+            tprintf(buf);
         }
     }
     return (0);
+}
+
+static int tprintf(const char *format, ...)
+{
+    va_list arg;
+    char buf[300];
+    size_t icnt;
+    size_t ocnt;
+
+    va_start(arg, format);
+    vsprintf(buf, format, arg);
+    va_end(arg);
+    ocnt = icnt = 0;
+    while (buf[icnt] != '\0')
+    {
+        if (buf[icnt] == '\t')
+        {
+            if (ocnt < 9)
+            {
+                for (; ocnt < 9; ocnt++)
+                {
+                    putchar(' ');
+                }
+            }
+            else if (ocnt < 15)
+            {
+                for (; ocnt < 15; ocnt++)
+                {
+                    putchar(' ');
+                }
+            }
+            else
+            {
+                putchar(' ');
+            }
+        }
+        else
+        {
+            putchar(buf[icnt]);
+            ocnt++;
+        }
+        icnt++;
+    }
+    return (ocnt);
 }

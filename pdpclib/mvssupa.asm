@@ -32,7 +32,7 @@ SUBPOOL  EQU   0
          CSECT
 *@@AOPEN  AMODE 31
 *@@AOPEN  RMODE ANY
-@@AOPEN  ENTRY
+         ENTRY @@AOPEN
 @@AOPEN  EQU   *
          SAVE  (14,12),,@@AOPEN_&SYSDATE
          LR    R12,R15
@@ -129,7 +129,7 @@ OUTDCBLN EQU   *-OUTDCB
 *
 *@@AREAD  AMODE 31
 *@@AREAD  RMODE ANY
-@@AREAD  ENTRY
+         ENTRY @@AREAD
 @@AREAD  EQU   *
          SAVE  (14,12),,@@AREAD_&SYSDATE
          LR    R12,R15
@@ -162,7 +162,7 @@ RETURN2  DS    0H
 *
 *@@AWRITE AMODE 31
 *@@AWRITE RMODE ANY
-@@AWRITE ENTRY
+         ENTRY @@AWRITE
 @@AWRITE EQU   *
          SAVE  (14,12),,@@AWRITE_&SYSDATE
          LR    R12,R15
@@ -194,7 +194,7 @@ RETURNWR DS    0H
 *
 *@@ACLOSE AMODE 31
 *@@ACLOSE RMODE ANY
-@@ACLOSE ENTRY
+         ENTRY @@ACLOSE
 @@ACLOSE EQU   *
          SAVE  (14,12),,@@ACLOSE_&SYSDATE
          LR    R12,R15
@@ -239,7 +239,7 @@ CLOSEMLN EQU   *-CLOSEMAC
 **********************************************************************
 *@@GETM   AMODE 31
 *@@GETM   RMODE ANY
-@@GETM   ENTRY
+         ENTRY @@GETM
 @@GETM   EQU   *
          SAVE  (14,12),,@@GETM_&SYSDATE
          LR    R12,R15
@@ -269,7 +269,7 @@ RETURNGM DS    0H
 **********************************************************************
 *@@FREEM  AMODE 31
 *@@FREEM  RMODE ANY
-@@FREEM  ENTRY
+         ENTRY @@FREEM
 @@FREEM  EQU   *
          SAVE  (14,12),,@@FREEM_&SYSDATE
          LR    R12,R15
@@ -300,7 +300,7 @@ RETURNFM DS    0H
 **********************************************************************
 *@@GETCLK AMODE 31
 *@@GETCLK RMODE ANY
-@@GETCLK ENTRY
+         ENTRY @@GETCLK
 @@GETCLK EQU   *
          SAVE  (14,12),,@@GETCLK_&SYSDATE
          LR    R12,R15

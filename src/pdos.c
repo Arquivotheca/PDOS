@@ -1392,7 +1392,6 @@ static int ff_search(void)
     ret = fileRead(ff_handle, buf, sizeof buf);
     while ((ret == sizeof buf) && (buf[0] != '\0'))
     {
-        /*(*(int *)(dta + 0x0d))++;*/ /* count position in directory */
         if (buf[0] != 0xe5)
         {
             memcpy(file, buf, 8);
@@ -1433,7 +1432,6 @@ static int ff_search(void)
         ret = fileRead(ff_handle, buf, sizeof buf);
     }
     fileClose(ff_handle);
-    /*(*(int *)(dta + 0x0d)) = 0;*/ /* count position in directory */
     return (0x12);
 }
 

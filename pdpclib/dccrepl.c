@@ -98,7 +98,10 @@ int main(void)
         }
         else if (buf[0] == '*')
         {
-            strcpy(buf + 60, "\n");
+            if (strlen(buf) > 65)
+            {
+                strcpy(buf + 60, "\n");
+            }
             tprintf("%s", buf);
         }
         else

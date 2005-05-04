@@ -14,6 +14,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <errno.h>
 
 #define MAXBUF 2000000
 
@@ -35,7 +36,8 @@ int main(int argc, char **argv)
     }
 /*  outn = *(argv+2); */
     infile = fopen(*(argv+1), "rb");
-    if (infile == null){
+    if (infile == NULL)
+    {
        printf("Open Failed code %d\n", errno);
        return (-1);
     }

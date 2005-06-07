@@ -56,6 +56,14 @@ SUBPOOL  EQU   0
          LR    R1,R11
          USING STACK,R13
 *
+*DW* SAVE STACK POINTER FOR SETJMP/LONGJMP          
+         EXTRN @MANSTK@                             
+         L     R3,=V(@MANSTK@)                      
+         ST    R13,0(R3)                            
+         L     R2,=A(STACKLEN)                      
+         ST    R2,4(R3)                             
+*DW END OF MOD
+*
          LA    R2,0
          ST    R2,DUMMYPTR       WHO KNOWS WHAT THIS IS USED FOR
          LA    R2,MAINSTK

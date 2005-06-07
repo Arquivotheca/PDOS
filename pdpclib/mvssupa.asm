@@ -376,6 +376,83 @@ RETURNFM DS    0H
 RETURNGC DS    0H
          RETURN (14,12),RC=(15)
          LTORG
+*
+*
+*
+**********************************************************************
+*                                                                    *
+*  SAVER - SAVE REGISTERS AND PSW INTO ENV_BUF                       *
+*                                                                    *
+**********************************************************************
+*@@SAVER AMODE 31
+*@@SAVER RMODE ANY
+         ENTRY @@SAVER
+@@SAVER EQU   *
+*
+         SAVE  (14,12),,SETJMP     * SAVE REGS AS NORMAL
+         LR    R12,R15
+         USING @@SAVER,12
+         L     R1,0(R1)            * ADDRESS OF ENV TO R1
+         L     R2,@MANSTK@         * R2 POINTS TO START OF STACK
+         L     R3,@MANSTK@+4       * R3 HAS LENGTH OF STACK
+         LR    R5,R3               * AND R5
+         LR    R9,R1               * R9 NOW CONATINS ADDRESS OF ENV
+         GETMAIN R,LV=(R3),SP=SUBPOOL    * GET A SAVE AREA
+         ST    R1,0(R9)            * SAVE IT IN FIRST WORK OF ENV
+         ST    R5,4(R9)            * SAVE LENGTH IN SECOND WORD OF ENV
+         ST    R2,8(R9)            * NOTE WHERE WE GOT IT FROM
+         ST    R13,12(R9)          * AND R13
+         LR    R4,R1               * AND R4
+         MVCL  R4,R2               * COPY SETJMP'S SAVE AREA TO ENV
+*        STM   R0,R15,0(R1)               SAVE REGISTERS
+*        BALR  R15,0                     GET PSW INTO R15
+*        ST    R15,64(R1)                 SAVE PSW
+*
+RETURNSR DS    0H
+         SR    R15,R15              * CLEAR RETURN CODE
+         RETURN (14,12),RC=(15)
+         ENTRY   @MANSTK@
+@MANSTK@ DS    2F
+         LTORG
+*
+*
+*
+**********************************************************************
+*                                                                    *
+*  LOADR - LOAD REGISTERS AND PSW FROM ENV_BUF                       *
+*                                                                    *
+**********************************************************************
+*@@LOADR AMODE 31
+*@@LOADR RMODE ANY
+         ENTRY @@LOADR
+@@LOADR EQU   *
+*
+         BALR  R12,R0
+         USING *,12
+         L     R1,0(R1)           * R1 POINTS TO ENV
+         L     R2,8(R1)           * R2 POINTS TO STACK
+         L     R3,4(R1)           * R3 HAS HOW LONG
+         LR    R5,R3              * AS DOES R5
+         L     R6,24(R1)          * R6 HAS RETURN CODE
+         L     R4,0(R1)           * OUR SAVE AREA
+         L     R13,12(R1)         * GET OLD STACK POINTER
+         MVCL  R2,R4              * AND RESTORE STACK
+         ST    R6,24(R1)          * SAVE VAL IN ENV
+         L     R6,=F'1'
+         ST    R6,20(R1)          * AND SET LONGJ TO 1.
+*        L     R14,16(R1)          * AND RETURN ADDRESS
+*        B     RETURNSR            * AND BACK INTO SETJMP
+*        L     R15,64(R1)                 RESTORE PSW
+*        LM    R0,R15,0(R1)               RESTORE REGISTERS
+*        BR    R15                        JUMP TO SAVED PSW
+*
+RETURNLR DS    0H
+         SR    R15,R15            * CLEAR RETURN CODE
+         RETURN (14,12),RC=(15)
+         LTORG
+*
+*
+*
 WORKAREA DSECT
 SAVEAREA DS    18F
          DS    0F

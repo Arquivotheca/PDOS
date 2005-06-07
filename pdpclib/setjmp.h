@@ -14,10 +14,19 @@
 #define __SETJMP_INCLUDED
 
 typedef struct {
+#ifdef __MVS__
+    int saveptr;   /* pointer to stack savearea */
+    int savelng;  /* length of save area */
+    int savestk;  /* where to put it */
+    int saver13; /* Where to leave it pointing to */
+    int saver14; /* and return address */
+#else
     int eax;
     int ebx;
     int ecx;
+#endif
     int longj;
+    int ret;
 } jmp_buf[1];
 
 int setjmp(jmp_buf env);

@@ -147,7 +147,7 @@ static void freadSlowB(void *ptr,
 static int examine(const char **formt, FILE *fq, char *s, va_list *arg,
                    int chcount);
 
-#ifdef __VM__
+#ifdef __CMS__
 static void filedef(char *fdddname, char *fnm, int mymode);
 #endif
 
@@ -509,7 +509,7 @@ static void osfopen(void)
     int mode;
     char *p;
     int len;
-#ifdef __VM__
+#ifdef __CMS__
     char tmpdd[9];
 #endif
 
@@ -537,8 +537,8 @@ static void osfopen(void)
     }
     else
 /* if we are in here then there is no "dd:" on front of file */ 
-/* if its VM generate a ddname and issue a filedef for the file */
-#ifdef __VM__
+/* if its CMS generate a ddname and issue a filedef for the file */
+#ifdef __CMS__
     {
 /* create a DD from the handle number */
         p = fnm;
@@ -3434,10 +3434,10 @@ size_t fread(void *ptr, size_t size, size_t nmemb, FILE *stream)
 #endif
 
 /* 
-   Following code issues a FILEDEF for VM
+   Following code issues a FILEDEF for CMS
 */
 
-#ifdef __VM__
+#ifdef __CMS__
 static void filedef(char *fdddname, char *fnm, int mymode)
 {
     char s202parm [800];

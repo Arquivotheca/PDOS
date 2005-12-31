@@ -50,7 +50,7 @@ unsigned char *__envptr;
 char *__vidptr;
 #endif
 
-#if defined(__VM__)
+#if defined(__CMS__)
 int __start(char *p, char *pgmname)
 #elif defined(__MVS__)
 int __start(char *p, char *pgmname, int tso)
@@ -150,7 +150,7 @@ int CTYP __start(char *p)
     stdin = fopen("dd:SYSIN", "r");
     stdout = fopen("dd:SYSPRINT", "w");
     stderr = stdout;
-#if defined(__VM__)
+#if defined(__CMS__)
     /* if no parameters are provided, the tokenized
        plist will start with x'ff' */
     if (p[0] == 0xff)

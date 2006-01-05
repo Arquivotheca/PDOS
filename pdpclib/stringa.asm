@@ -1,6 +1,6 @@
 ; stringa.asm - string assembler functions
 ; 
-; This program written by Paul Edwards, Fidonet 3:711/934
+; This program written by Paul Edwards, kerravon@w3.to
 ; Released to the public domain
 ;
 ; Mods by Rowan Crowe

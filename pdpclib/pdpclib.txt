@@ -229,6 +229,9 @@ HISTORY
 
 0.80  Many changes to work with GCC (MVS port).
 
+0.81  Now works for CMS as well, and both CMS and MVS
+      have a working setjmp/longjmp.
+
 
 CREDITS
 -------

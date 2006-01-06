@@ -245,3 +245,4 @@ Jim Nutt and Rob Duff for releasing strftime to the public domain.
 Rowan Crowe for some mods to memcpy.
 Matthew Parker for getting the program name under MSDOS.
 Phil Roberts for helping to debug the MVS port.
+Dave Wade for doing the CMS port.

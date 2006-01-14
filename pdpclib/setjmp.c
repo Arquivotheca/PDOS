@@ -12,14 +12,14 @@
                                                                        
 #include "setjmp.h"                                                    
                                                                        
-#ifdef __MVS__                                                         
+#if defined(__MVS__) || defined(__CMS__)
 int __saver(jmp_buf env);                                              
 int __loadr(jmp_buf env);                                              
 #endif                                                                 
                                                                        
 int setjmp(jmp_buf env)                                                
 {                                                                      
-#ifdef __MVS__                                                         
+#if defined(__MVS__) || defined(__CMS__)
     env[0].longj = 0;                                                  
     __saver(env);                                                      
 #else                                                                  
@@ -48,7 +48,7 @@ void longjmp(jmp_buf env, int val)
     env[0].longj = 1;                                                  
     env[0].ret = val;                                                  
     /* load regs */                                                    
-#ifdef __MVS__                                                         
+#if defined(__MVS__) || defined(__CMS__)
     __loadr(env);                                                      
 #endif                                                                 
     return;                                                            

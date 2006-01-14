@@ -15,7 +15,8 @@
 
 #ifndef __SIZE_T_DEFINED
 #define __SIZE_T_DEFINED
-#if (defined(__OS2__) || defined(__32BIT__) || defined(__MVS__))
+#if (defined(__OS2__) || defined(__32BIT__) || defined(__MVS__) \
+    || defined(__CMS__))
 typedef unsigned long size_t;
 #endif
 #if (defined(__MSDOS__) || defined(__DOS__) || defined(__POWERC))
@@ -31,7 +32,7 @@ typedef struct { long int quot; long int rem; } ldiv_t;
 
 #define NULL ((void *)0)
 #define EXIT_SUCCESS 0
-#ifdef __MVS__
+#if defined(__MVS__) || defined(__CMS__)
 #define EXIT_FAILURE 12
 #else
 #define EXIT_FAILURE 1

@@ -14,7 +14,7 @@
 #define __SETJMP_INCLUDED
 
 typedef struct {
-#ifdef __MVS__
+#if defined(__MVS__) || defined(__CMS__)
     int saveptr;   /* pointer to stack savearea */
     int savelng;  /* length of save area */
     int savestk;  /* where to put it */

@@ -87,7 +87,7 @@ extern void CTYP __rename(const char *old, const char *new);
 #include <os2.h>
 #endif
 
-#ifdef __MVS__
+#if defined(__MVS__) || defined(__CMS__)
 #include "mvssupa.h"
 #define FIXED_BINARY 0
 #define VARIABLE_BINARY 1
@@ -240,13 +240,13 @@ static void fopen3(void)
         *myfile->fbuf++ = '\0';
         *myfile->fbuf++ = '\0';
         myfile->szfbuf = BUFSIZ;
-#ifndef __MVS__
+#if !defined(__MVS__) && !defined(__CMS__)
         myfile->quickText = 0;
 #endif
         myfile->noNl = 0;
         myfile->endbuf = myfile->fbuf + myfile->szfbuf;
         *myfile->endbuf = '\n';
-#ifdef __MVS__
+#if defined(__MVS__) || defined(__CMS__)
         myfile->upto = myfile->fbuf;
         myfile->szfbuf = myfile->lrecl;
         myfile->endbuf = myfile->fbuf; /* for read only */
@@ -258,7 +258,7 @@ static void fopen3(void)
         myfile->eofInd = 0;
         myfile->ungetCh = -1;
         myfile->update = 0;
-#ifndef __MVS__
+#if !defined(__MVS__) && !defined(__CMS__)
         if (!myfile->textMode)
         {
             myfile->quickBin = 1;
@@ -282,7 +282,7 @@ static void fopen3(void)
                 myfile->bufStartR = 0;
                 myfile->upto = myfile->fbuf;
                 myfile->mode = __WRITE_MODE;
-#ifdef __MVS__
+#if defined(__MVS__) || defined(__CMS__)
                 myfile->endbuf = myfile->fbuf + myfile->szfbuf;
 #endif
                 break;
@@ -505,7 +505,7 @@ static void osfopen(void)
         errno = myfile->hfile;
     }
 #endif
-#ifdef __MVS__
+#if defined(__MVS__) || defined(__CMS__)
     int mode;
     char *p;
     int len;
@@ -639,7 +639,7 @@ int fclose(FILE *stream)
 #ifdef __MSDOS__
     __close(stream->hfile);
 #endif
-#ifdef __MVS__
+#if defined(__MVS__) || defined(__CMS__)
     if ((myfile->mode == __WRITE_MODE) && (stream->upto != stream->fbuf))
     {
         if (stream->textMode)
@@ -676,7 +676,7 @@ int fclose(FILE *stream)
     return (0);
 }
 
-#ifndef __MVS__
+#if !defined(__MVS__) && !defined(__CMS__)
 size_t fread(void *ptr, size_t size, size_t nmemb, FILE *stream)
 {
     size_t toread;
@@ -1024,7 +1024,7 @@ static void freadSlowB(void *ptr,
 }
 #endif
 
-#ifndef __MVS__
+#if !defined(__MVS__) && !defined(__CMS__)
 size_t fwrite(const void *ptr, size_t size, size_t nmemb, FILE *stream)
 {
     size_t towrite;
@@ -1908,7 +1908,7 @@ int fputc(int c, FILE *stream)
 {
     char buf[1];
 
-#ifndef __MVS__
+#if !defined(__MVS__) && !defined(__CMS__)
     stream->quickBin = 0;
     if ((stream->upto < (stream->endbuf - 2))
         && (stream->bufTech != _IONBF))
@@ -1953,7 +1953,7 @@ int fputc(int c, FILE *stream)
     return (c);
 }
 
-#ifndef __MVS__
+#if !defined(__MVS__) && !defined(__CMS__)
 int fputs(const char *s, FILE *stream)
 {
     size_t len;
@@ -2048,7 +2048,7 @@ In fgets, we have the following possibilites...
 3. we hit the '\n' sentinel.
 
 */
-#ifndef __MVS__
+#if !defined(__MVS__) && !defined(__CMS__)
 char *fgets(char *s, int n, FILE *stream)
 {
     char *p;
@@ -2468,8 +2468,8 @@ int setvbuf(FILE *stream, char *buf, int mode, size_t size)
 {
     char *mybuf;
 
-#ifdef __MVS__
-    /* don't allow mucking around with buffers on MVS */
+#if defined(__MVS__) || defined(__CMS__)
+    /* don't allow mucking around with buffers on MVS or CMS */
     return (0);
 #endif
 
@@ -2540,7 +2540,7 @@ FILE *freopen(const char *filename, const char *mode, FILE *stream)
 
 int fflush(FILE *stream)
 {
-#ifndef __MVS__
+#if !defined(__MVS__) && !defined(__CMS__)
 #ifdef __OS2__
     APIRET rc;
     ULONG actualWritten;
@@ -2818,7 +2818,7 @@ fgets: if variable record + no remainder
        if buffer > record size, copy + add newline
 #endif
 
-#ifdef __MVS__
+#if defined(__MVS__) || defined(__CMS__)
 char *fgets(char *s, int n, FILE *stream)
 {
     unsigned char *dptr;

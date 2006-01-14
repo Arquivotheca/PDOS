@@ -19,7 +19,7 @@
 #define __MSDOS__
 #endif
 
-#ifdef __MVS__
+#if defined(__MVS__) || defined(__CMS__)
 #include "mvssupa.h"
 #endif
 #ifdef __OS2__
@@ -101,7 +101,7 @@ time_t time(time_t *timer)
     DATETIME dt;
     APIRET rc;
 #endif    
-#if (defined(__MSDOS__) || defined(__MVS__))
+#if (defined(__MSDOS__) || defined(__MVS__) || defined(__CMS__))
     struct {
         int year;
         int month;
@@ -112,7 +112,7 @@ time_t time(time_t *timer)
         int hundredths;
     } dt;
 #endif
-#ifdef __MVS__
+#if defined(__MVS__) || defined(__CMS__)
     unsigned int clk[2];
 #endif    
 
@@ -127,7 +127,7 @@ time_t time(time_t *timer)
 #ifdef __MSDOS__
     __datetime(&dt);
 #endif
-#ifdef __MVS__
+#if defined(__MVS__) || defined(__CMS__)
     tt = __getclk(clk);
 #else
 

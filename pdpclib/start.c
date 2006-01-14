@@ -36,7 +36,7 @@ int main(int argc, char **argv);
 void __exit(int status);
 void CTYP __exita(int status);
 
-#ifndef __MVS__
+#if !defined(__MVS__) && !defined(__CMS__)
 static char buffer1[BUFSIZ + 8];
 static char buffer2[BUFSIZ + 8];
 static char buffer3[BUFSIZ + 8];
@@ -74,7 +74,7 @@ int CTYP __start(char *p)
 #ifdef __MSDOS__
     unsigned char *env;
 #endif
-#ifdef __MVS__
+#if defined(__MVS__) || defined(__CMS__)
     int parmLen;
     int progLen;
     char parmbuf[300];
@@ -85,7 +85,7 @@ int CTYP __start(char *p)
     __abscor = exep->abscor;
     __vidptr = ABSADDR(0xb8000);
 #endif    
-#ifndef __MVS__
+#if !defined(__MVS__) && !defined(__CMS__)
     stdin->hfile = 0;
     stdout->hfile = 1;
     stderr->hfile = 2;
@@ -351,7 +351,7 @@ void __exit(int status)
     }
     fflush(stdout);
     fflush(stderr);
-#ifdef __MVS__
+#if defined(__MVS__) || defined(__CMS__)
     fclose(stdin);
     fclose(stdout);
 #endif        

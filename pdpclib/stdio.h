@@ -15,7 +15,8 @@
 
 #ifndef __SIZE_T_DEFINED
 #define __SIZE_T_DEFINED
-#if (defined(__OS2__) || defined(__32BIT__) || defined(__MVS__))
+#if (defined(__OS2__) || defined(__32BIT__) || defined(__MVS__) \
+    || defined(__CMS__))
 typedef unsigned long size_t;
 #endif
 #if (defined(__MSDOS__) || defined(__DOS__) || defined(__POWERC))
@@ -46,7 +47,7 @@ typedef struct
 #if (defined(__MSDOS__) || defined(__DOS__) || defined(__POWERC))
     int hfile; /* dos file handle */
 #endif
-#if (defined(__MVS__))
+#if (defined(__MVS__) || defined(__CMS__))
     void *hfile;
     int recfm;
     int style;
@@ -93,7 +94,7 @@ typedef unsigned long fpos_t;
 /*#define BUFSIZ 409600*/
 /* #define BUFSIZ 8192 */
 /*#define BUFSIZ 5120*/
-#ifdef __MVS__
+#if defined(__MVS__) || defined(__CMS__)
 /* set it to maximum possible LRECL to simplify processing */
 #define BUFSIZ 32768
 #else

@@ -26,7 +26,7 @@
 #include <os2.h>
 #endif
 
-#ifdef __MVS__
+#if defined(__MVS__) || defined(__CMS__)
 #include "mvssupa.h"
 #endif
 
@@ -66,7 +66,7 @@ void *malloc(size_t size)
     __allocmem(size, &ptr);
     return (ptr);
 #endif
-#ifdef __MVS__
+#if defined(__MVS__) || defined(__CMS__)
     return (__getm(size));
 #endif    
 }
@@ -108,7 +108,7 @@ void *realloc(void *ptr, size_t size)
     }
     if (ptr != NULL)
     {
-#ifdef __MVS__    
+#if defined(__MVS__) || defined(__CMS__)    
         oldsize = *(size_t *)((char *)ptr - 16);
         oldsize -= 16;
 #else
@@ -139,7 +139,7 @@ void free(void *ptr)
         __freemem(ptr);
     }
 #endif
-#ifdef __MVS__
+#if defined(__MVS__) || defined(__CMS__)
     if (ptr != NULL)
     {
         __freem(ptr);

@@ -232,6 +232,9 @@ HISTORY
 0.81  Now works for CMS as well, and both CMS and MVS
       have a working setjmp/longjmp.
 
+0.82  Made __CMS__ independent of __MVS__. Also fixed
+      a bug.
+
 
 CREDITS
 -------

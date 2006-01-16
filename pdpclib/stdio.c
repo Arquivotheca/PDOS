@@ -640,7 +640,7 @@ int fclose(FILE *stream)
     __close(stream->hfile);
 #endif
 #if defined(__MVS__) || defined(__CMS__)
-    if ((myfile->mode == __WRITE_MODE) && (stream->upto != stream->fbuf))
+    if ((stream->mode == __WRITE_MODE) && (stream->upto != stream->fbuf))
     {
         if (stream->textMode)
         {

@@ -1,8 +1,8 @@
             Public Domain C runtime library
             -------------------------------
             
-Version : 0.81
-Released: 2006-01-06
+Version : 0.82
+Released: 2006-01-20
 
 Written by Paul Edwards.
 Released to the public domain.

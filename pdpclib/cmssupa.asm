@@ -5,7 +5,7 @@
 *                                                                    *
 **********************************************************************
 *
-* MODS FOR DAVE WADE
+* MODS BY DAVE WADE
 *
 *
 *   1 - CHANGE REQUEST TYPE FROM RU TO R ON ALL GETMAIN/FREEMAIN
@@ -623,4 +623,3 @@ RECUV    EQU   X'40'                   U OR V RECORD FORMAT
 RECUF    EQU   X'80'                   U OR F RECORD FORMAT
          NUCON
          END
-

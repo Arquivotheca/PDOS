@@ -1,8 +1,8 @@
             Public Domain C runtime library
             -------------------------------
             
-Version : 0.82
-Released: 2006-01-20
+Version : 0.83
+Released: 2006-03-04
 
 Written by Paul Edwards.
 Released to the public domain.
@@ -235,6 +235,7 @@ HISTORY
 0.82  Made __CMS__ independent of __MVS__. Also fixed
       a bug.
 
+0.83  Whitespace change required to avoid assembly error.
 
 CREDITS
 -------

@@ -147,6 +147,77 @@ int CTYP __start(char *p)
     stderr->update = 0;
     stderr->theirBuffer = 0;
 #else
+#if defined(__CMS__)
+/*
+  This code checks to see if DDs exist for SYSIN & SYSPRINT
+  if not it issues FD to the terminal
+*/
+    char s202parm [800]; /* svc 202 buffer */
+    int code;
+    int parm;
+    int ret;
+/*
+ Now build the SVC 202 string
+*/
+    memcpy ( &s202parm[0] ,  "FILEDEF ", 8);
+    memcpy ( &s202parm[8] ,  "SYSIN   ", 8);
+    memcpy ( &s202parm[16] , "(       ", 8);
+    memcpy ( &s202parm[24] , "NOCHANGE", 8);
+    s202parm[32]=s202parm[33]=s202parm[34]=s202parm[35]=
+        s202parm[36]=s202parm[37]=s202parm[38]=s202parm[39]=0xff;
+/*
+  and issue the SVC
+*/
+    ret = _SVC202_ ( s202parm, &code, &parm );
+/*
+    report findings
+*/
+/*  printf(" SVC 202 returned <%d>\n",ret); */
+    if (ret == 24)
+    { /* we need to issue filedef */
+        memcpy ( &s202parm[16] , "TERM    ", 8);
+        memcpy ( &s202parm[24] , "(       ", 8);
+        memcpy ( &s202parm[32] , "LRECL   ", 8);
+        memcpy ( &s202parm[40] , "80      ", 8);
+        memcpy ( &s202parm[48] , "RECFM   ", 8);
+        memcpy ( &s202parm[56] , "F       ", 8);
+        s202parm[64]=s202parm[65]=s202parm[66]=s202parm[67]=
+            s202parm[68]=s202parm[69]=s202parm[70]=s202parm[71]=0xff;
+
+        ret = _SVC202_ ( s202parm, &code, &parm );
+    }
+/* now for sysprint */
+/*
+ Now build the SVC 202 string
+*/
+    memcpy ( &s202parm[0] ,  "FILEDEF ", 8);
+    memcpy ( &s202parm[8] ,  "SYSPRINT", 8);
+    memcpy ( &s202parm[16] , "(       ", 8);
+    memcpy ( &s202parm[24] , "NOCHANGE", 8);
+    s202parm[32]=s202parm[33]=s202parm[34]=s202parm[35]=
+        s202parm[36]=s202parm[37]=s202parm[38]=s202parm[39]=0xff;
+/*
+  and issue the SVC
+*/
+    ret = _SVC202_ ( s202parm, &code, &parm );
+/*
+    report findings
+*/
+/*    printf(" SVC 202 returned <%d>\n",ret); */
+    if(ret == 24)
+    { /* we need to issue filedef */
+        memcpy ( &s202parm[16] , "TERM    ", 8);
+        memcpy ( &s202parm[24] , "(       ", 8);
+        memcpy ( &s202parm[32] , "LRECL   ", 8);
+        memcpy ( &s202parm[40] , "80      ", 8);
+        memcpy ( &s202parm[48] , "RECFM   ", 8);
+        memcpy ( &s202parm[56] , "F       ", 8);
+        s202parm[64]=s202parm[65]=s202parm[66]=s202parm[67]=
+            s202parm[68]=s202parm[69]=s202parm[70]=s202parm[71]=0xff;
+
+        ret = _SVC202_ ( s202parm, &code, &parm );
+    }
+#endif
     stdin = fopen("dd:SYSIN", "r");
     stdout = fopen("dd:SYSPRINT", "w");
     stderr = stdout;

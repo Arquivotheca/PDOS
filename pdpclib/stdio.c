@@ -115,6 +115,8 @@ static const char *fnm;
 static const char *modus;
 static int modeType;
 
+static void dblcvt(double num, char cnvtype, size_t nwidth,
+                   size_t nprecision, char *result);
 static int vvprintf(const char *format, va_list arg, FILE *fq, char *s);
 static int vvscanf(const char *format, va_list arg, FILE *fp, const char *s);
 static void fopen2(void);
@@ -1499,6 +1501,7 @@ static int vvprintf(const char *format, va_list arg, FILE *fq, char *s)
 {
     int fin = 0;
     int vint;
+    double vdbl;
     unsigned int uvint;
     char *vcptr;
     int chcount = 0;
@@ -1542,6 +1545,24 @@ static int vvprintf(const char *format, va_list arg, FILE *fq, char *s)
                     outch(*nptr);
                     chcount++;
                 } while (nptr != numbuf);
+            }
+            else if (*format == 'e' || *format == 'E' )
+            {
+                vdbl = va_arg(arg, double);
+                dblcvt(vdbl , *format  , 0 ,  6 , numbuf);
+                fputs(numbuf , fq);
+            }
+            else if (*format == 'g' || *format == 'G' )
+            {
+                vdbl = va_arg(arg, double);
+                dblcvt(vdbl , *format  , 0 ,  6 , numbuf);
+                fputs(numbuf , fq);
+            }
+            else if (*format == 'f' || *format == 'F' )
+            {
+                vdbl = va_arg(arg, double);
+                dblcvt(vdbl , *format  , 0 ,  6 , numbuf);
+                fputs(numbuf , fq);
             }
             else if (*format == 's')
             {
@@ -1613,6 +1634,7 @@ static int examine(const char **formt, FILE *fq, char *s, va_list *arg,
     int fin;
     long lvalue;
     unsigned long ulvalue;
+    double vdbl;
     char *svalue;
     char work[50];
     int x;
@@ -1849,6 +1871,24 @@ static int examine(const char **formt, FILE *fq, char *s, va_list *arg,
                 y++;
             }
         }
+    }
+    else if (specifier == 'e' || specifier == 'E' )
+    {
+        vdbl = va_arg(*arg, double);
+        dblcvt(vdbl , specifier  , width,  precision , work );
+        fputs(work , fq);
+    }
+    else if (specifier == 'g' || specifier == 'G' )
+    {
+        vdbl = va_arg(*arg, double);
+        dblcvt(vdbl , specifier  , width ,  precision , work );
+        fputs(work , fq);
+    }
+    else if (specifier == 'f' || specifier == 'F' )
+    {
+        vdbl = va_arg(*arg, double);
+        dblcvt(vdbl , specifier  , width ,  precision , work );
+        fputs(work , fq);
     }
     else if (specifier == 's')
     {
@@ -3503,3 +3543,228 @@ static void filedef(char *fdddname, char *fnm, int mymode)
    _SVC202_ ( s202parm, &code, &parm );
 }
 #endif
+
+
+/*
+
+ The truely cludged piece of code was concocted by Dave Wade
+
+ His erstwhile tutors are probably turning in their graves.
+
+ It is however placed in the Public Domain so that any one 
+ who wishes to improve is free to do so
+
+*/ 
+
+void dblcvt(double num, char cnvtype, size_t nwidth,
+            size_t nprecision, char *result)
+{
+    double b;
+    int i,exp,pdigits,format;
+    char sign, work[45];
+
+    /* save original data & set sign */
+
+    if ( num < 0 )
+    {
+        b = -num;
+        sign = '-';
+    }
+    else
+    {
+        b = num;
+        sign = ' ';
+    }
+
+    /*
+      Now scale to get exponent
+    */
+
+    exp = 0;
+    if( b > 1.0 )
+    {
+        while(b >= 10.0)
+        {
+            ++exp;
+            b=b / 10.0;
+        }
+    }
+    else if ( b == 0.0 )
+    {
+        exp=0;
+    }
+    else if ( b < 1.0 )
+    {
+        while(b < 1.0)
+        {
+            --exp;
+            b=b*10.0;
+        }
+    }
+
+    /*
+      now decide how to print and save in FORMAT.
+         -1 => we need leading digits
+          0 => print in exp
+         +1 => we have digits before dp.
+    */
+
+    switch (cnvtype)
+    {
+        case 'E':
+        case 'e':
+            format = 0;
+            break;
+        case 'f':
+        case 'F':
+            if ( exp >= 0 ) format = 1; else format = -1;
+            break;
+        default: 
+            /* Style e is used if the exponent from its 
+               conversion is less than -4 or greater than 
+               or equal to the precision.
+            */
+            if ( exp >= 0 )
+            {
+                if ( nprecision > exp )
+                {
+                    format=1;
+                }
+                else
+                {
+                    format=0;
+                }
+            }
+            else
+            {
+                /*  if ( nprecision > (-(exp+1) ) ) { */
+                if ( exp >= -4)
+                {
+                    format=-1;
+                }
+                else
+                {
+                    format=0;
+                }
+            }
+            break;
+    }
+    /*
+       Now extract the requisite number of digits
+    */
+
+    if (format==-1)
+    {
+        /*
+             Number < 1.0 so we need to print the "0." 
+             and the leading zeros...
+        */
+        result[0]=sign;
+        result[1]='0';
+        result[2]='.';
+        result[3]=0x00;
+        while (++exp)
+        {
+            --nprecision;
+            strcat(result,"0");
+        }
+        i=b;
+        --nprecision;
+        work[0] = (char)('0' + i % 10);
+        work[1] = 0x00;
+        strcat(result,work);
+
+        pdigits = nprecision;
+
+        while (pdigits-- > 0)
+        {
+            b = b - i;
+            b = b * 10.0;
+            i = b;
+            work[0] = (char)('0' + i % 10);
+            work[1] = 0x00;
+            strcat(result,work);
+        }
+    }
+    /*
+       Number >= 1.0 just print the first digit
+    */
+    else if (format==+1)
+    {
+        i = b;
+        result[0] = sign;
+        result[1] = '\0';
+        work[0] = (char)('0' + i % 10);
+        work[1] = 0x00;
+        strcat(result,work);
+        nprecision = nprecision + exp;
+        pdigits = nprecision ;
+
+        while (pdigits-- > 0)
+        {
+            if ( ((nprecision-pdigits-1)==exp)  )
+            {
+                strcat(result,".");
+            }
+            b = b - i;
+            b = b * 10.0;
+            /* the following test needs to be adjusted to 
+               allow for numeric fuzz */
+            if ( ( (nprecision-pdigits-1) > exp) && (b < 0.1E-15 ) )
+            { 
+                break;
+            }
+            i = b;
+            work[0] = (char)('0' + i % 10);
+            work[1] = 0x00;
+            strcat(result,work);
+        }
+    }
+    /*
+       printing in standard form
+    */
+    else
+    {
+        i = b;
+        result[0] = sign;
+        result[1] = '\0';
+        work[0] = (char)('0' + i % 10);
+        work[1] = 0x00;
+        strcat(result,work);
+        strcat(result,".");
+ 
+        pdigits = nprecision;
+
+        while (pdigits-- > 0)
+        {
+            b = b - i;
+            b = b * 10.0;
+            i = b;
+            work[0] = (char)('0' + i % 10);
+            work[1] = 0x00;
+            strcat(result,work);
+        }
+    }
+
+    if (format==0)
+    { /* exp format - put exp on end */
+        work[0] = 'E';
+        if ( exp < 0 )
+        {
+            exp = -exp;
+            work[1]= '-';
+        }
+        else
+        {
+            work[1]= '+';
+        }      
+        work[2] = (char)('0' + (exp/10) % 10);
+        work[3] = (char)('0' + exp % 10);     
+        work[4] = 0x00;
+        strcat(result, work);
+    }
+    /* printf(" Final Answer = <%s> fprintf goves=%g\n", 
+                result,num); */
+    return;
+}
+

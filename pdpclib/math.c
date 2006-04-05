@@ -3,6 +3,32 @@
 /*  This Program Written by Paul Edwards, 3:711/934@fidonet.         */
 /*  Released to the Public Domain                                    */
 /*                                                                   */
+/*  2-April-2006                                                     */
+/*                                                                   */
+/*  D.Wade added code for the :-				     */
+/*	acos(double x);						     */
+/*	asin(double x);						     */
+/*  	atan(double x);						     */
+/*	cos(double x);						     */
+/*	sin(double x);						     */
+/*	tan(double x);						     */
+/*	cosh(double x);						     */
+/*	sinh(double x);						     */
+/*	tanh(double x);						     */
+/*      exp(double x);						     */
+/*	frexp(double value, int *exp);				     */
+/*	ldexp(double x, int exp);				     */
+/*	log(double x);						     */
+/*	log10(double x);					     */
+/*	modf(double value, double *iptr);	           	     */
+/*	pow(double x, double y);				     */
+/*      sqrt(double x);                          		     */
+/*                                                                   */
+/* Note:-                                                            */
+/*  In order to avoide Copyright these functions are generally       */
+/*  implemented using Taylor Series. As a result they are a little   */
+/*  slower that the equivalents in many maths packages.              */
+/*                                                                   */
 /*********************************************************************/
 /*********************************************************************/
 /*                                                                   */
@@ -12,10 +38,17 @@
 
 #include "math.h"
 
+/*
+  Some constants to make life easier elsewhere
+*/
+const double pi   = 3.1415926535897932384626433832795;
+const double ln10 = 2.3025850929940456840179914546844;
+#define HUGE_VALUE 99E72
+
 double ceil(double x)
 {
     int y;
-    
+
     y = (int)x;
     if ((double)y < x)
     {
@@ -39,7 +72,7 @@ double fabs(double x)
 double floor(double x)
 {
     int y;
-    
+
     if (x < 0.0)
     {
         y = (int)fabs(x);
@@ -135,29 +168,163 @@ static double i_sqrt(double x)
     return (sqrt(x));
 }
 
+
 #ifdef acos
 #undef acos
 #endif
-double acos(double x)
-{
-    return (i_acos(x));
+/*
+
+  For cos just use (sin(x)**2 + cos(x)**2)=1
+  Note:- asin(x) decides which taylor series to use to ensure quickest convergence.
+
+*/
+double acos(double x){
+
+    if ( x > 1 ) return (0.0); /* should set error */
+    if ( x < 0 ) return ( pi - acos(-x) ) ;
+
+    return ( asin ( sqrt(1.0 - x*x) ) );
+
 }
 
 #ifdef asin
 #undef asin
 #endif
-double asin(double x)
-{
-    return (i_asin(x));
+/*
+
+   This routines Calculate arcsin(x) & arccos(x).
+
+   Note if "x" is close to "1" the series converges slowly.
+   To avoid this we use (sin(x)**2 + cos(x)**2)=1
+   and fact cos(x)=sin(x+pi/2)
+
+*/
+
+double asin (double y){
+    int i,scale;
+    double term,answer,work,x,powx,coef;
+     x = y;
+
+/*
+  if arg is -ve then we want "-asin(-x)"
+*/
+
+    if (x <0.0 ) return ( -asin(-x) );
+
+/*
+     If arg is > 1.0 we can't calculate
+     (note also < -1.0 but previous statement removes this case)
+*/
+     if ( x > 1.0 ) return (0.0); /* need error in here */
+
+/*
+ now check for large(ish) x > 0.6
+*/
+
+     if( x > 0.75 && x < 1.0) {
+              x = ( sqrt(1.0 - (x*x) ) );
+             printf(" did sqrt <%f>\n",x);
+             return((pi/2.0)-sin(x));
+   }
+
+/*
+     arcsin(x) = x + 1/2 (x^3/3) + (1/2)(3/4)(x^5/5) +  (1/2)(3/4)(5/6)(x^7/7) + ...
+*/
+     i=1;
+     answer=x;
+     term = 1;
+     coef = 1;
+     powx = x;
+
+     while (1)
+     {
+          work = i;
+          coef = (coef * work)/(work+1);
+          powx = powx * x * x;
+	  term =  coef * powx / (work + 2.0);
+	  if ( answer == (answer + term) )break;
+          answer = answer + (term);
+	  i+=2;
+     }
+
+     return(answer);
 }
+
 
 #ifdef atan
 #undef atan
 #endif
-double atan(double x)
-{
-    return (i_atan(x));
+/*
+
+     Because atan(x) is valid for large values of "x" &
+     the taylor series converges more slowly for large "X" whe use the following
+
+     1. Reduce to the first octant by using :-
+
+        atan(-x)=-atan(x),
+        atan(1/x)=PI/2-atan(x)
+
+     2. Reduce further so that |x| less than tan(PI/12)
+
+        atan(x)=pi/6+atan((X*sqrt(3)-1)/(x+sqrt(3)))
+
+     3. Then use the taylor series
+
+        atan(x) = x - x**3 + x**5 - x**7
+                      ----   ----   ----
+                        3      5      7
+
+*/
+
+double atan (double x){
+    int i,scale;
+    double term,answer,work,powx,coef;
+
+/*
+  if arg is -ve then we want "-atan(-x)"
+*/
+
+    if ( x<0.0 ) return ( -atan(-x) );
+
+/*
+ If arg is large we can't calculate
+ use atan(1/x)=PI/2-atan(x)
+*/
+
+    if ( x > 1.0 ) return ((pi/2) - atan(1.0/x));
+
+/*
+ now check for large(ish) x > tan(15) (0.26794919243112)
+ if so use atan(x)=pi/6+atan((X*SQRT3-1)/(X+SQRT3))
+*/
+
+    if( x > 0.26794919243112) return( (pi/6.0) + atan( ( x * sqrt(3.0)-1.0 ) / (x + sqrt(3.0) ) ) );
+
+/*
+*       atan(x) = x - x**3 + x**5 - x**7
+*                     ----   ----   ----
+*                       3      5      7
+*/
+
+    i=1;
+    answer=x;
+    term = 1;
+    powx = x;
+
+    while (1)
+    {
+        work = i;
+        powx = powx * x * x;
+	term = powx / (work + 2.0);
+	if ( answer == (answer + term) )break;
+        answer = answer + (term);
+        i+=2;
+    }
+
+    return(answer);
+
 }
+
 
 double atan2(double y, double x)
 {
@@ -169,7 +336,43 @@ double atan2(double y, double x)
 #endif
 double cos(double x)
 {
-    return (i_cos(x));
+/*
+
+   Calculate COS using Taylor series.
+
+   sin(x) = 1 - x**2  +  x**4  - x**6 + x**8
+                ====     ====    ====   ====    .........
+                  2!       4!      6!     8!
+
+   Note whilst this is accurate it can be slow for large values of "X" so we scale
+
+*/
+
+    int i;
+    double term,answer,work,x1;
+
+/*
+    Scale arguments to be in range 1 => pi
+*/
+
+    i = x/pi;
+    x1 =  x - (i * pi);
+
+    i=1;
+    term=answer=1;
+
+
+    while (1)
+    {
+	work = i;
+	term = -(term * x1 * x1)/(work * (work + 1.0));
+	if ( answer == (answer + term) )break;
+        answer = answer + term;
+        i += 2;
+    }
+
+return(answer);
+
 }
 
 #ifdef sin
@@ -177,56 +380,273 @@ double cos(double x)
 #endif
 double sin(double x)
 {
-    return (i_sin(x));
+/*
+
+   Calculate SIN using Taylor series.
+
+   sin(x) = x - x**3  +  x**5  - x**7 + x**9
+                ====     ====    ====   ====
+                  3!       5!      7!     9!
+
+   Note whilst this is accurate it can be slow for large values of "X" so we scale
+
+*/
+
+    int i;
+    double term,answer,work,x1;
+
+/*
+  scale so series converges pretty quickly
+*/
+    i = x/pi;
+    x1 =  x - (i * pi);
+
+/*
+ set up initial term
+*/
+    i=1;
+    term=answer=x1;
+/*
+ loop until no more changes
+*/
+    while (1)
+    {
+	work = i+1;
+	term = -(term * x1 * x1)/(work * (work + 1.0));
+	if ( answer == (answer + term) )break;
+        answer = answer + term;
+        i = i+2;
+
+    }
+
+    return(answer);
+
 }
 
 #ifdef tan
 #undef tan
 #endif
-double tan(double x)
-{
-    return (i_tan(x));
+double tan (double x){
+/*
+
+  use tan = sin(x)/cos(x)
+  if cos(x) is 0 then return HUGE_VALUE else return sin/cos
+
+  *** need to set ERROR for overflow ***
+
+*/
+    double temp;
+
+    temp=cos(x);
+    if (temp == 0.0 ) return (HUGE_VALUE); /* need to set error here */
+    return ( sin(x)/cos(x) );
 }
 
-double cosh(double x)
-{
-    return (i_cosh(x));
+/*
+
+  Hyperbolic functions
+
+  SINH(X) = (E**X-E**(-1))/2
+  COSH(X) = (E**X+E**(-1))/2
+
+*/
+double cosh(double x){
+    double dexpx;
+
+    dexpx = exp(x);
+
+    return( 0.5 * (dexpx + (1.0/dexpx) ) );
+
 }
 
-double sinh(double x)
-{
-    return (i_sinh(x));
+double sinh(double x){
+    double dexpx;
+
+    dexpx = exp(x);
+
+    return( 0.5 * (dexpx - (1.0/dexpx) ) );
 }
 
-double tanh(double x)
-{
-    return (i_tanh(x));
+/*
+
+    tanh returns the hyperbolic area tangent of floating point argument x.
+
+*/
+
+double tanh(double x){
+
+    double y;
+    double dexp2;
+
+
+    if ( (x <= -1.0 ) || (x >= 1.0) ) return(0.0); /* need to set an error here */
+
+    dexp2 = exp( -2.0 * x);
+    return ( (1.0  - dexp2) /  (1.0 + dexp2) );
+
 }
 
-double exp(double x)
-{
-    return (i_exp(x));
+/*
+
+exp(x) = 1 + x + x2/2 + x3/6 + x4/24 + x5/120 + ... + xn/n! + ...
+
+*/
+double exp (double x){
+    int i;
+    double term,answer,work;
+
+    i=1;
+    term=answer=1;
+
+    while (1)
+    {
+	work = i;
+	term =  (term * x)/work;
+	if ( answer == (answer + term) )break;
+        answer = answer + (term);
+        i++;
+    }
+
+    return(answer);
 }
 
-double log(double x)
-{
-    return (i_log(x));
+/*
+
+   Calculate LOG using Taylor series.
+
+   log(1+ x) = x - x**2  +  x**3  - x**4 + x**5
+                   ====     ====    ====   ====    .........
+                    2         3       4     8
+
+   Note this only works for small x so we scale....
+
+*/
+double log (double x){
+    int i,scale;
+    double term,answer,work,xs;
+
+    if (x <= 0 )
+    {
+        /* need to set signal */
+        return (HUGE_VALUE);
+    }
+
+/*
+  Scale arguments to be in range 1 < x <= 10
+*/
+
+    scale = 0;
+    xs = x;
+    while ( xs > 1.0 ) { scale ++; xs=xs/10.0;}
+    while ( xs < 0.1 ) { scale --; xs=xs*10.0;}
+
+
+    xs = xs - 1;
+
+    i=2;
+    term=answer=xs;
+
+    while (1)
+    {
+	work = i;
+	term = - (term * xs);
+	if ( answer == (answer + (term/work)) )break;
+        answer = answer + (term/work);
+        i++;
+    }
+
+    answer = answer + (double)scale * ln10;
+    return(answer);
 }
+
 
 double log10(double x)
 {
-    return (i_log10(x));
+
+    return ( log(x) / ln10 );
+
 }
 
-double pow(double x, double y)
+
+/*
+
+   This code uses log and exp to calculate x to the power y.
+   If
+
+*/
+
+double pow(double x,double y)
 {
-    return (i_pow(x, y));
+
+    if (x < 0.0) return(0.0); /* need error here */
+    if (y == 0.0) return (1.0);
+
+    return (exp(y*log(x)));
+
+
 }
 
 #ifdef sqrt
 #undef sqrt
 #endif
+/*
+
+   pretty tivial code here.
+
+     1) Scale x such that 1 <= x <= 4.0
+
+     2) Use newton Raphson to claculate root.
+
+     4) multiply back up.
+
+   Becasue we only scale by "4" this is pretty slow....
+
+*/
+
 double sqrt(double x)
 {
-    return (i_sqrt(x));
+
+    double xs,yn,ynn;
+    double pow1;
+
+    if (x < 0.0) return(0.0); /* need error here */
+    if (x == 0.0) return (0.0);
+
+/*
+
+  Scale argument 1 <= x <= 4
+
+*/
+
+    xs=x;
+    pow1=1;
+
+    while(xs<1.0){xs=xs*4.0;pow1=pow1/2.0;}
+    while(xs>4.0){xs=xs/4.0;pow1=pow1*2.0;}
+
+/*
+  calculate using Newton raphson
+  use x0 = x/2.0
+*/
+
+    yn = xs/2.0;
+    ynn = 0;
+    while(1)
+    {
+	ynn = (yn + xs/yn)*0.5;
+        if ( ynn == yn ) break; else yn=ynn;
+    }
+    return (ynn*pow1);
 }
+
+
+
+
+
+
+
+
+
+
+
+

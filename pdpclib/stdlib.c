@@ -62,20 +62,20 @@ void *malloc(size_t size)
 #endif
 #ifdef __MSDOS__
     void *ptr;
-    
+
     __allocmem(size, &ptr);
     return (ptr);
 #endif
 #if defined(__MVS__) || defined(__CMS__)
     return (__getm(size));
-#endif    
+#endif
 }
 
 void *calloc(size_t nmemb, size_t size)
 {
     void *ptr;
     size_t total;
-    
+
     if (nmemb == 1)
     {
         total = size;
@@ -100,7 +100,7 @@ void *realloc(void *ptr, size_t size)
 {
     char *newptr;
     size_t oldsize;
-    
+
     newptr = malloc(size);
     if (newptr == NULL)
     {
@@ -108,7 +108,7 @@ void *realloc(void *ptr, size_t size)
     }
     if (ptr != NULL)
     {
-#if defined(__MVS__) || defined(__CMS__)    
+#if defined(__MVS__) || defined(__CMS__)
         oldsize = *(size_t *)((char *)ptr - 16);
         oldsize -= 16;
 #else
@@ -132,7 +132,7 @@ void free(void *ptr)
         ptr = (char *)ptr - sizeof(size_t);
         DosFreeMem((PVOID)ptr);
     }
-#endif    
+#endif
 #ifdef __MSDOS__
     if (ptr != NULL)
     {
@@ -144,7 +144,7 @@ void free(void *ptr)
     {
         __freem(ptr);
     }
-#endif    
+#endif
     return;
 }
 
@@ -154,7 +154,7 @@ void abort(void)
     exit(EXIT_FAILURE);
 #ifndef __EMX__
     return;
-#endif        
+#endif
 }
 
 #ifndef __EMX__
@@ -168,7 +168,7 @@ void exit(int status)
     __exit(status);
 #ifndef __EMX__
     return;
-#endif        
+#endif
 }
 
 /******************************************************************/
@@ -330,7 +330,7 @@ void srand(unsigned int seed)
 int rand(void)
 {
     int ret;
-    
+
     myseed = myseed * 1103515245UL + 12345;
     ret = (int)((myseed >> 16) & 0x8fff);
     return (ret);
@@ -344,12 +344,32 @@ double atof(const char *nptr)
 double strtod(const char *nptr, char **endptr)
 {
     double x = 0.0;
-    
+    double xf = 0.0;
+    double xd = 1.0;
+
     while (1)
     {
         if (isdigit(*nptr))
         {
             x = x * 10 + (*nptr - '0');
+        }
+        else if ( *nptr == '.' )
+        {
+            nptr ++;
+            while (1)
+            {
+                if (isdigit(*nptr))
+                {
+                    xf = xf * 10 + (*nptr - '0');
+                    xd = xd * 10;
+                }
+                else
+                {
+                    x = x + xf/xd;
+                    break;
+                }
+                nptr++;
+            }
         }
         else
         {
@@ -378,7 +398,7 @@ long int strtol(const char *nptr, char **endptr, int base)
 {
     long x = 0;
     int undecided = 0;
-    
+
     if (base == 0)
     {
         undecided = 1;
@@ -437,7 +457,7 @@ long int strtol(const char *nptr, char **endptr, int base)
 unsigned long int strtoul(const char *nptr, char **endptr, int base)
 {
     unsigned long x = 0;
-    
+
     while (1)
     {
         if (isdigit(*nptr))
@@ -463,7 +483,7 @@ unsigned long int strtoul(const char *nptr, char **endptr, int base)
 }
 
 int mblen(const char *s, size_t n)
-{   
+{
     if (s == NULL)
     {
         return (0);
@@ -546,7 +566,7 @@ int abs(int j)
 div_t div(int numer, int denom)
 {
     div_t x;
-    
+
     x.quot = numer / denom;
     x.rem = numer % denom;
     return (x);
@@ -567,7 +587,7 @@ long int labs(long int j)
 ldiv_t ldiv(long int numer, long int denom)
 {
     ldiv_t x;
-    
+
     x.quot = numer / denom;
     x.rem = numer % denom;
     return (x);
@@ -576,7 +596,7 @@ ldiv_t ldiv(long int numer, long int denom)
 int atexit(void (*func)(void))
 {
     int x;
-    
+
     for (x = 0; x < __NATEXIT; x++)
     {
         if (__userExit[x] == 0)
@@ -592,7 +612,7 @@ char *getenv(const char *name)
 {
 #ifdef __OS2__
     PSZ result;
-    
+
     if (DosScanEnv((void *)name, (void *)&result) == 0)
     {
         return ((char *)result);
@@ -601,7 +621,7 @@ char *getenv(const char *name)
 #ifdef __MSDOS__
     char *env;
     size_t lenn;
-    
+
     env = (char *)__envptr;
     lenn = strlen(name);
     while (*env != '\0')
@@ -622,10 +642,10 @@ char *getenv(const char *name)
 /* The following code was taken from Paul Markham's "EXEC" program,
    and adapted to create a system() function.  The code is all
    public domain */
-   
+
 int system(const char *string)
 {
-#ifdef __OS2__    
+#ifdef __OS2__
     char err_obj[100];
 	APIRET rc;
 	RESULTCODES results;
@@ -652,7 +672,7 @@ int system(const char *string)
     } parmblock = { 0, cmdt, NULL, NULL };
     size_t len;
     char *cmd;
-    
+
     len = strlen(string);
     cmdt[0] = (unsigned char)(len + 3);
     memcpy(&cmdt[1], "/c ", 3);
@@ -675,10 +695,10 @@ void *bsearch(const void *key, const void *base,
     size_t try;
     int res;
     const void *ptr;
-    
+
     while (nmemb > 0)
     {
-        try = nmemb / 2;    
+        try = nmemb / 2;
         ptr = (void *)((char *)base + try * size);
         res = compar(ptr, key);
         if (res == 0)

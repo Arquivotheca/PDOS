@@ -3,9 +3,15 @@
 /*  This Program Written by Paul Edwards, 3:711/934@fidonet.         */
 /*  Released to the Public Domain                                    */
 /*                                                                   */
-/*  2-April-2006                                                     */
+/*  9-April-2006 D.Wade						     */
+/*      Moved definitions for HUGE_VALUE to math.h		     */
+/*      Inserted argument rang checks in :-			     */
+/*       acos                                                        */
 /*                                                                   */
-/*  D.Wade added code for the :-				     */
+/*                                                                   */
+/*                                                                   */
+/*  2-April-2006 D.Wade added code for the :-                        */
+/*                                                                   */
 /*	acos(double x);						     */
 /*	asin(double x);						     */
 /*  	atan(double x);						     */
@@ -37,13 +43,17 @@
 /*********************************************************************/
 
 #include "math.h"
+#include "errno.h"
 
 /*
+
   Some constants to make life easier elsewhere
+  (These should I guess be in math.h)
+
 */
 const double pi   = 3.1415926535897932384626433832795;
 const double ln10 = 2.3025850929940456840179914546844;
-#define HUGE_VALUE 99E72
+
 
 double ceil(double x)
 {
@@ -175,12 +185,19 @@ static double i_sqrt(double x)
 /*
 
   For cos just use (sin(x)**2 + cos(x)**2)=1
-  Note:- asin(x) decides which taylor series to use to ensure quickest convergence.
+  Note:- asin(x) decides which taylor series
+  to use to ensure quickest convergence.
 
 */
 double acos(double x){
 
-    if ( x > 1 ) return (0.0); /* should set error */
+/*
+
+    if ( x > 1 ) /* is argument out of range */
+    {
+        errno=EDOM;
+        return (HUGE_VALUE);
+    }
     if ( x < 0 ) return ( pi - acos(-x) ) ;
 
     return ( asin ( sqrt(1.0 - x*x) ) );
@@ -215,7 +232,11 @@ double asin (double y){
      If arg is > 1.0 we can't calculate
      (note also < -1.0 but previous statement removes this case)
 */
-     if ( x > 1.0 ) return (0.0); /* need error in here */
+     if ( x > 1.0 )
+     {
+         errno=EDOM;
+         return(HUGE_VALUE);
+     }
 
 /*
  now check for large(ish) x > 0.6
@@ -438,7 +459,11 @@ double tan (double x){
     double temp;
 
     temp=cos(x);
-    if (temp == 0.0 ) return (HUGE_VALUE); /* need to set error here */
+    if (temp == 0.0 )
+    {
+        /* errno=EDOM; don't seem to return an error here */
+        return (HUGE_VALUE); /* need to set error here */
+    }
     return ( sin(x)/cos(x) );
 }
 
@@ -528,6 +553,7 @@ double log (double x){
     if (x <= 0 )
     {
         /* need to set signal */
+        errno=EDOM;
         return (HUGE_VALUE);
     }
 
@@ -578,7 +604,11 @@ double log10(double x)
 double pow(double x,double y)
 {
 
-    if (x < 0.0) return(0.0); /* need error here */
+    if (x < 0.0)
+    {
+         errno=EDOM;
+	 return(0.0);
+    }
     if (y == 0.0) return (1.0);
 
     return (exp(y*log(x)));
@@ -609,7 +639,11 @@ double sqrt(double x)
     double xs,yn,ynn;
     double pow1;
 
-    if (x < 0.0) return(0.0); /* need error here */
+    if (x < 0.0)
+    {
+	errno=EDOM;
+        return(0.0);
+    }
     if (x == 0.0) return (0.0);
 
 /*
@@ -638,15 +672,63 @@ double sqrt(double x)
     }
     return (ynn*pow1);
 }
-
-
-
-
-
-
-
-
-
-
-
-
+double frexp(double x, int *exp)
+{
+/*
+  split float into fraction and mantissa
+  note this is not so easy for IBM as it uses HEX float
+*/
+    double xf;
+    union dblhex
+    {
+        double d;
+        unsigned short s[4];
+    };
+    union dblhex split;
+    split.d = x;
+    *exp = (((split.s[0] >> 8) & 0x007f)-64) * 4;
+    split.s[0] = split.s[0] & 0x80ff;
+    split.s[0] = split.s[0] | 0x4000;
+    /* following code adjust for fact IBM has hex float */
+    while ( fabs(split.d) < 0.5 )
+        {
+        split.d = split.d * 2;
+        *exp =( *exp ) - 1;
+        }
+    /*    */
+    return(split.d);
+}
+double ldexp(double x, int exp)
+{
+/*
+  note this is not so easy for IBM as it uses HEX float
+*/
+    double xf;
+    int bin_exp,hex_exp,adj_exp;
+    union dblhex
+    {
+        double d;
+        unsigned short s[4];
+    };
+    union dblhex split;
+/*
+    note "X" mauy already ahev an exponent => exrtract it
+*/
+    split.d = frexp(x,&bin_exp);
+    bin_exp = bin_exp + exp;  /* add in from caller */
+/* need to test for sensible value here */
+    hex_exp =  (bin_exp / 4); /* convert back to HEX */
+    adj_exp =  bin_exp - (hex_exp * 4);
+    if (adj_exp < 0){ hex_exp=hex_exp -1; adj_exp = 4 + adj_exp;}
+    split.s[0] = split.s[0] & 0x80ff;
+    split.s[0] = split.s[0] | (((hex_exp+64)  << 8) & 0x7f00);
+    /* following code adjust for fact IBM has hex float */
+    /* well it will I have done */
+    while ( adj_exp > 0 )
+        {
+        split.d = split.d * 2;
+        --adj_exp;
+        }
+    /**/
+    return(split.d);
+}

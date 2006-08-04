@@ -1997,10 +1997,12 @@ int fputc(int c, FILE *stream)
 int fputs(const char *s, FILE *stream)
 {
     size_t len;
+    size_t ret;
 
     len = strlen(s);
-    fwrite(s, len, 1, stream);
-    return (0);
+    ret = fwrite(s, len, 1, stream);
+    if (ret != 1) return (EOF)
+    else return (0);
 }
 #endif
 

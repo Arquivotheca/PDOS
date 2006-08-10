@@ -12,6 +12,16 @@
 
 #ifndef __MATH_INCLUDED
 #define __MATH_INCLUDED
+/*
+  Some constants - at present these are only defined for IBM
+*/
+#if defined(__MVS__) || defined (__CMS__)
+/*
+ This is about the nearest thing we can get to inf wthout
+*/
+#define HUGE_VALUE 9.999999999999999999999E72
+
+#endif
 
 double ceil(double x);
 double fabs(double x);
@@ -20,10 +30,21 @@ double fmod(double x, double y);
 
 /* unimplemented: */
 
+
+double atan2(double y, double x);
+double frexp(double value, int *exp);
+double ldexp(double x, int exp);
+double modf(double value, double *iptr);
+
+/*
+  Implemented by d.wade - April 2006
+*/
+
+double pow(double x, double y);
+double sqrt(double x);
 double acos(double x);
 double asin(double x);
 double atan(double x);
-double atan2(double y, double x);
 double cos(double x);
 double sin(double x);
 double tan(double x);
@@ -31,13 +52,9 @@ double cosh(double x);
 double sinh(double x);
 double tanh(double x);
 double exp(double x);
-double frexp(double value, int *exp);
-double ldexp(double x, int exp);
 double log(double x);
 double log10(double x);
-double modf(double value, double *iptr);
-double pow(double x, double y);
-double sqrt(double x);
+
 
 #ifdef __WATCOMC__
 #pragma intrinsic(cos, sin, tan, exp, log, log10, sqrt)

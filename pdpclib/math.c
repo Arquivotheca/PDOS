@@ -249,7 +249,8 @@ double asin (double y){
    }
 
 /*
-     arcsin(x) = x + 1/2 (x^3/3) + (1/2)(3/4)(x^5/5) +  (1/2)(3/4)(5/6)(x^7/7) + ...
+     arcsin(x) = x + 1/2 (x^3/3) + (1/2)(3/4)(x^5/5) +  
+        (1/2)(3/4)(5/6)(x^7/7) + ...
 */
      i=1;
      answer=x;
@@ -278,7 +279,8 @@ double asin (double y){
 /*
 
      Because atan(x) is valid for large values of "x" &
-     the taylor series converges more slowly for large "X" whe use the following
+     the taylor series converges more slowly for large "X" 
+     we use the following
 
      1. Reduce to the first octant by using :-
 
@@ -319,7 +321,8 @@ double atan (double x){
  if so use atan(x)=pi/6+atan((X*SQRT3-1)/(X+SQRT3))
 */
 
-    if( x > 0.26794919243112) return( (pi/6.0) + atan( ( x * sqrt(3.0)-1.0 ) / (x + sqrt(3.0) ) ) );
+    if( x > 0.26794919243112) 
+    return( (pi/6.0) + atan( ( x * sqrt(3.0)-1.0 ) / (x + sqrt(3.0) ) ) );
 
 /*
 *       atan(x) = x - x**3 + x**5 - x**7
@@ -365,7 +368,8 @@ double cos(double x)
                 ====     ====    ====   ====    .........
                   2!       4!      6!     8!
 
-   Note whilst this is accurate it can be slow for large values of "X" so we scale
+   Note whilst this is accurate it can be slow for large 
+   values of "X" so we scale
 
 */
 
@@ -409,7 +413,8 @@ double sin(double x)
                 ====     ====    ====   ====
                   3!       5!      7!     9!
 
-   Note whilst this is accurate it can be slow for large values of "X" so we scale
+   Note whilst this is accurate it can be slow for large values 
+   of "X" so we scale
 
 */
 
@@ -504,7 +509,8 @@ double tanh(double x){
     double dexp2;
 
 
-    if ( (x <= -1.0 ) || (x >= 1.0) ) return(0.0); /* need to set an error here */
+    if ( (x <= -1.0 ) || (x >= 1.0) ) return(0.0); /* need 
+                                   to set an error here */
 
     dexp2 = exp( -2.0 * x);
     return ( (1.0  - dexp2) /  (1.0 + dexp2) );

@@ -109,6 +109,7 @@ RETURN   DS    0H
          RETURN (14,12),RC=(15)
 SAVER13  DS    F
          LTORG
+* REQUIRED FOR C/370
 *         ENTRY CEESTART 
 *CEESTART EQU   *
 *         ENTRY CEESG003
@@ -117,8 +118,11 @@ SAVER13  DS    F
 @@CRT0   EQU   *
          ENTRY @@EXITA
 @@EXITA  EQU   *
+* THIS WAS THE C/370 CODE BUT I DON'T KNOW WHETHER
+* THE GCC REPLACEMENT CODE IS GOOD ENOUGH.
 *         L     R14,0(R12)
 *         L     R15,0(R1)
+*         BR    R14
 * FOR GCC, WE HAVE TO USE OUR SAVED R13
          DROP  R10
          USING @@EXITA,R15
@@ -126,7 +130,6 @@ SAVER13  DS    F
          L     R13,0(R13)
          L     R15,0(R1)
          RETURN (14,12),RC=(15)
-*         BR    R14
          LTORG
 *
          CVT   DSECT=YES

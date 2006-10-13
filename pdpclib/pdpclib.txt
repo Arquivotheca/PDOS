@@ -40,7 +40,14 @@ MAIN DESIGN GOALS
 CURRENT STATUS
 --------------
 
-A substantial, but still incomplete version under 
+All routines have been implemented, but some are not
+fully functional, specifically the format specifiers
+in scanf() and printf() and file update, append and
+random access in fopen() etc, plus longjmp/setjmp
+for environments besides the mainframe. The DOS
+version doesn't do full long arithmetic.
+
+The following environments have been used:
 
 OS/2 for:
 EMX 0.9b
@@ -54,7 +61,10 @@ Watcom C++ 10.0b
 
 MVS for:
 IBM C/370 v2r1m0
-GCCMVS 3.2
+GCCMVS 3.2.3
+
+CMS for:
+GCCCMS 3.2.3
 
 PDOS for:
 EMX 0.9b
@@ -91,6 +101,8 @@ to the best of my knowledge, on any platform.
 
 6. People who have ISO text-processing programs that want a significant
 speed improvement.
+
+7. Mainframe users who don't have any other choice.
 
 
 USAGE
@@ -175,16 +187,6 @@ wcc = Watcom 10.0b
 p* = PDPCLIB compiled with one of the above compilers.
 
 
-KNOWN LIMITATIONS
------------------
-
-Not all printf and scanf formats are supported.
-No maths library.
-No floating point support.
-Minimal testing.
-DOS version doesn't do full long arithmetic.
-
-
 HISTORY
 -------
 
@@ -237,6 +239,17 @@ HISTORY
 
 0.83  Whitespace change required to avoid assembly error.
 
+1.00  All math functions have been implemented, meaning
+      every function has now been implemented, although
+      some still have limitations. This is a significant
+      milestone and mainframe users are actually using it,
+      with GCC, so I thought it was time to create a 1.00
+      even though it still isn't 100% conforming. Although
+      on the mainframe it must be pretty close, as the
+      limited file operations don't actually mean it is
+      non-conforming.
+      
+
 CREDITS
 -------
 
@@ -249,4 +262,5 @@ Jim Nutt and Rob Duff for releasing strftime to the public domain.
 Rowan Crowe for some mods to memcpy.
 Matthew Parker for getting the program name under MSDOS.
 Phil Roberts for helping to debug the MVS port.
-Dave Wade for doing the CMS port.
+Dave Wade for doing the CMS port, the maths functions
+  and getting floating point supported.

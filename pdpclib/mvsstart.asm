@@ -6,14 +6,11 @@
 **********************************************************************
 **********************************************************************
 *                                                                    *
-*  MVSSTART - STARTUP ROUTINES FOR MVS FOR USE WITH GCC.             *
-*                                                                    *
-*  NOTE THAT THE AMODE/RMODE AND CSVQUERY HAVE BEEN COMMENTED        *
-*  OUT IN ORDER TO BE COMPATIBLE WITH IFOX (OS/360).  ON OS/370      *
-*  AND ABOVE THE AMODE/RMODE CAN BE GIVEN AT ASSEMBLY AND LINK       *
-*  TIME INSTEAD.  WITHOUT CSVQUERY, WHEN RUN UNDER TSO, THE          *
-*  PROGRAM NAME WILL BE IKJEFT01 INSTEAD OF THE NORMAL NAME, BUT     *
-*  THAT WILL NOT AFFECT PROGRAM FUNCTIONALITY.                       *
+*  MVSSTART - STARTUP ROUTINES FOR MVS.                              *
+*  IT IS CURRENTLY CODED TO WORK WITH GCC, BUT THE C/370             *
+*  FUNCTIONALITY IS STILL THERE, IT JUST NEEDS TO BE                 *
+*  UNCOMMENTED. I DON'T KNOW HOW TO DO CONDITIONAL ASSEMBLY SO       *
+*  THAT I CAN PASS A PARAMETER TO CHOOSE BETWEEN GCC AND C/370.      *
 *                                                                    *
 **********************************************************************
          AIF ('&SYSPARM' EQ 'IFOX00').NOMODE

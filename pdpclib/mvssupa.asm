@@ -38,8 +38,6 @@ R14      EQU   14
 R15      EQU   15
 SUBPOOL  EQU   0
          CSECT
-*@@AOPEN  AMODE 31
-*@@AOPEN  RMODE ANY
          ENTRY @@AOPEN
 @@AOPEN  EQU   *
          SAVE  (14,12),,@@AOPEN
@@ -169,8 +167,6 @@ OUTDCBLN EQU   *-OUTDCB
 *
 *
 *
-*@@AREAD  AMODE 31
-*@@AREAD  RMODE ANY
          ENTRY @@AREAD
 @@AREAD  EQU   *
          SAVE  (14,12),,@@AREAD
@@ -202,8 +198,6 @@ RETURN2  DS    0H
 *
 *
 *
-*@@AWRITE AMODE 31
-*@@AWRITE RMODE ANY
          ENTRY @@AWRITE
 @@AWRITE EQU   *
          SAVE  (14,12),,@@AWRITE
@@ -234,8 +228,6 @@ RETURNWR DS    0H
 *
 *
 *
-*@@ACLOSE AMODE 31
-*@@ACLOSE RMODE ANY
          ENTRY @@ACLOSE
 @@ACLOSE EQU   *
          SAVE  (14,12),,@@ACLOSE
@@ -279,8 +271,6 @@ CLOSEMLN EQU   *-CLOSEMAC
 *  GETM - GET MEMORY                                                 *
 *                                                                    *
 **********************************************************************
-*@@GETM   AMODE 31
-*@@GETM   RMODE ANY
          ENTRY @@GETM
 @@GETM   EQU   *
          SAVE  (14,12),,@@GETM
@@ -324,8 +314,6 @@ RETURNGM DS    0H
 *  FREEM - FREE MEMORY                                               *
 *                                                                    *
 **********************************************************************
-*@@FREEM  AMODE 31
-*@@FREEM  RMODE ANY
          ENTRY @@FREEM
 @@FREEM  EQU   *
          SAVE  (14,12),,@@FREEM
@@ -355,8 +343,6 @@ RETURNFM DS    0H
 *  BY USING SOME EMPERICALLY-DERIVED MAGIC NUMBERS                   *
 *                                                                    *
 **********************************************************************
-*@@GETCLK AMODE 31
-*@@GETCLK RMODE ANY
          ENTRY @@GETCLK
 @@GETCLK EQU   *
          SAVE  (14,12),,@@GETCLK
@@ -384,8 +370,6 @@ RETURNGC DS    0H
 *  SAVER - SAVE REGISTERS AND PSW INTO ENV_BUF                       *
 *                                                                    *
 **********************************************************************
-*@@SAVER AMODE 31
-*@@SAVER RMODE ANY
          ENTRY @@SAVER
 @@SAVER EQU   *
 *
@@ -422,8 +406,6 @@ RETURNSR DS    0H
 *  LOADR - LOAD REGISTERS AND PSW FROM ENV_BUF                       *
 *                                                                    *
 **********************************************************************
-*@@LOADR AMODE 31
-*@@LOADR RMODE ANY
          ENTRY @@LOADR
 @@LOADR EQU   *
 *

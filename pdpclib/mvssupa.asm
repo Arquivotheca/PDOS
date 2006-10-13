@@ -8,6 +8,10 @@
 *                                                                    *
 *  MVSSUPA - SUPPORT ROUTINES FOR PDPCLIB UNDER MVS                  *
 *                                                                    *
+*  IT IS CURRENTLY CODED FOR GCC, BUT C/370 FUNCTIONALITY IS         *
+*  STILL THERE, IT'S JUST COMMENTED OUT. I DON'T KNOW HOW TO DO      *
+*  CONDITIONAL COMPILATION OF THAT.                                  *
+*                                                                    *
 **********************************************************************
          AIF ('&SYSPARM' EQ 'IFOX00').NOMODE
 * BECAUSE OF THE "LOC=ABOVE", WE NEED TO FORCE 31

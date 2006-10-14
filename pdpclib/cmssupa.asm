@@ -520,8 +520,8 @@ RETURNGC DS    0H
          LR    R12,R15
          USING @@SAVER,12
          L     R1,0(R1)            * ADDRESS OF ENV TO R1
-         L     R2,@MANSTK@         * R2 POINTS TO START OF STACK
-         L     R3,@MANSTK@+4       * R3 HAS LENGTH OF STACK
+         L     R2,@@MANSTK         * R2 POINTS TO START OF STACK
+         L     R3,@@MANSTK+4       * R3 HAS LENGTH OF STACK
          LR    R5,R3               * AND R5
          LR    R9,R1               * R9 NOW CONATINS ADDRESS OF ENV
          GETMAIN R,LV=(R3),SP=SUBPOOL    * GET A SAVE AREA
@@ -538,8 +538,8 @@ RETURNGC DS    0H
 RETURNSR DS    0H
          SR    R15,R15              * CLEAR RETURN CODE
          RETURN (14,12),RC=(15)
-         ENTRY   @MANSTK@
-@MANSTK@ DS    2F
+         ENTRY   @@MANSTK
+@@MANSTK DS    2F
          LTORG
 *
 *

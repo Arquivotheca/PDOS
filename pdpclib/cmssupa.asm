@@ -410,7 +410,7 @@ SV202ER  EQU    *
 *
 *  @@ATTN@@ - ISSUES AN SVC 202 CALL TO STACK A LINE
 *
-*  E.G. @SVC202@(LINE,LEN,ORDER)
+*  E.G. @@ATTN@@(LINE,LEN,ORDER)
 *
 * WHERE :-
 *
@@ -418,7 +418,7 @@ SV202ER  EQU    *
 *
 *  LEN IS THE NUMBER OF CHARACTERS. (<256)
 *
-*  ORDER IS POINTER TO EITHER FIFO OR LIFI
+*  ORDER IS POINTER TO EITHER FIFO OR LIFO
 *
 **********************************************************************
          ENTRY @@ATTN@@

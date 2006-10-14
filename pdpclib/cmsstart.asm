@@ -34,8 +34,6 @@ R14      EQU   14
 R15      EQU   15
 SUBPOOL  EQU   0
          CSECT
-*@@MVSTRT AMODE 31
-*@@MVSTRT RMODE ANY
          ENTRY @@MVSTRT
 @@MVSTRT EQU   *
          SAVE  (14,12),,@@MVSTRT
@@ -95,24 +93,19 @@ RETURN   DS    0H
          RETURN (14,12),RC=(15)
 SAVER13  DS    F
          LTORG
-*CEESTART AMODE 31
-*CEESTART RMODE ANY
 *         ENTRY CEESTART
 *CEESTART EQU   *
-*CEESG003 AMODE 31
-*CEESG003 RMODE ANY
 *         ENTRY CEESG003
 *CEESG003 EQU   *
-*@@CRT0    AMODE 31
-*@@CRT0    RMODE ANY
          ENTRY @@CRT0
 @@CRT0   EQU   *
-*@@EXITA  AMODE 31
-*@@EXITA  RMODE ANY
          ENTRY @@EXITA
 @@EXITA  EQU   *
+* THIS WAS FOR C/370. THE GCC CODE MAY OR MAY NOT BE
+* SUITABLE FOR C/370.
 *         L     R14,0(R12)
 *         L     R15,0(R1)
+*         BR    R14
 * FOR GCC, WE HAVE TO USE OUR SAVED R13
          DROP  R10
          USING @@EXITA,R15
@@ -120,7 +113,6 @@ SAVER13  DS    F
          L     R13,0(R13)
          L     R15,0(R1)
          RETURN (14,12),RC=(15)
-*         BR    R14
          LTORG
 *
 STACK    DSECT

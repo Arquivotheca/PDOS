@@ -368,9 +368,9 @@ RETURNFM DS    0H
 *
 **********************************************************************
 *
-*  @SVC202@ - ISSUES AN SVC 202 CALL
+*  @@SVC202 - ISSUES AN SVC 202 CALL
 *
-*  E.G. @SVC202@(PARMS,CODE,ERROR)
+*  E.G. @@SVC202(PARMS,CODE,ERROR)
 *
 * WHERE :-
 *
@@ -381,11 +381,11 @@ RETURNFM DS    0H
 * AND ERROR IS SET TO -1
 *
 **********************************************************************
-         ENTRY @SVC202@
-@SVC202@ EQU *
-         SAVE  (14,12),,@SVC202@
+         ENTRY @@SVC202
+@@SVC202 EQU *
+         SAVE  (14,12),,@@SVC202
          LR    R12,R15
-         USING @SVC202@,R12
+         USING @@SVC202,R12
          LR    R11,R1           NEED TO RESTORE R1 FOR C
          L     R3,0(R1)         R3 POINTS TO SVC202 PARM LIST
          L     R4,4(R1)         R4 POINTS TO CODE
@@ -457,9 +457,9 @@ ATTNAD   DC   AL3(ATTNAD)    ADDRESS OF LINE TO BE STACKED
 *
 **********************************************************************
 *
-*  @STACKN@ - RETURNS THE NUMBER OF LINES ON THE CONSOLE STACK
+*  @@STACKN - RETURNS THE NUMBER OF LINES ON THE CONSOLE STACK
 *
-*  E.G. @STACKN@(COUNT)
+*  E.G. @@STACKN(COUNT)
 *
 * WHERE :-
 *
@@ -467,11 +467,11 @@ ATTNAD   DC   AL3(ATTNAD)    ADDRESS OF LINE TO BE STACKED
 *
 *
 **********************************************************************
-         ENTRY @STACKN@
-@STACKN@ EQU *
-         SAVE  (14,12),,@STACKN@
+         ENTRY @@STACKN
+@@STACKN EQU *
+         SAVE  (14,12),,@@STACKN
          LR    R12,R15
-         USING @STACKN@,R12
+         USING @@STACKN,R12
          USING NUCON,R0
          LR    R11,R1           NEED TO RESTORE R1 FOR C
          L     R3,0(R1)         R3 POINTS TO COUNT

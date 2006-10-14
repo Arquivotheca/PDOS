@@ -168,7 +168,7 @@ int CTYP __start(char *p)
 /*
   and issue the SVC
 */
-    ret = _SVC202_ ( s202parm, &code, &parm );
+    ret = __SVC202 ( s202parm, &code, &parm );
 /*
     report findings
 */
@@ -184,7 +184,7 @@ int CTYP __start(char *p)
         s202parm[64]=s202parm[65]=s202parm[66]=s202parm[67]=
             s202parm[68]=s202parm[69]=s202parm[70]=s202parm[71]=0xff;
 
-        ret = _SVC202_ ( s202parm, &code, &parm );
+        ret = __SVC202 ( s202parm, &code, &parm );
     }
 /* now for sysprint */
 /*
@@ -199,7 +199,7 @@ int CTYP __start(char *p)
 /*
   and issue the SVC
 */
-    ret = _SVC202_ ( s202parm, &code, &parm );
+    ret = __SVC202 ( s202parm, &code, &parm );
 /*
     report findings
 */
@@ -215,7 +215,7 @@ int CTYP __start(char *p)
         s202parm[64]=s202parm[65]=s202parm[66]=s202parm[67]=
             s202parm[68]=s202parm[69]=s202parm[70]=s202parm[71]=0xff;
 
-        ret = _SVC202_ ( s202parm, &code, &parm );
+        ret = __SVC202 ( s202parm, &code, &parm );
     }
 #endif
     stdin = fopen("dd:SYSIN", "r");

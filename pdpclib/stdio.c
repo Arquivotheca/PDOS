@@ -3542,7 +3542,7 @@ static void filedef(char *fdddname, char *fnm, int mymode)
             s202parm[52]=s202parm[53]=s202parm[54]=s202parm[55]=0xff;
    }
 
-   _SVC202_ ( s202parm, &code, &parm );
+   __SVC202 ( s202parm, &code, &parm );
 }
 #endif
 

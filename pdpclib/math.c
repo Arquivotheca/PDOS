@@ -244,7 +244,7 @@ double asin (double y){
 
      if( x > 0.75 && x < 1.0) {
               x = ( sqrt(1.0 - (x*x) ) );
-             printf(" did sqrt <%f>\n",x);
+             /*printf(" did sqrt <%f>\n",x);*/
              return((pi/2.0)-sin(x));
    }
 

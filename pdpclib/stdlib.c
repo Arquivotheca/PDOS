@@ -723,6 +723,10 @@ int system(const char *string)
     size_t len;
     char *cmd;
 
+    if (string == NULL)
+    {
+        return (1);
+    }
     len = strlen(string);
     cmdt[0] = (unsigned char)(len + 3);
     memcpy(&cmdt[1], "/c ", 3);
@@ -736,7 +740,10 @@ int system(const char *string)
     __exec(cmd, &parmblock);
     return (0);
 #endif
-    return (1);
+#if defined(__MVS__) || defined(__CMS__)
+    /* not implemented yet */
+    return (0);
+#endif
 }
 
 void *bsearch(const void *key, const void *base,

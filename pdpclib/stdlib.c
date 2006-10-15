@@ -371,10 +371,10 @@ double strtod(const char *nptr, char **endptr)
             break;
         }
     }
-    if ( *nptr == '.' )
+    if (*nptr == '.')
     {
-        dp=1;
-        nptr ++;
+        dp = 1;
+        nptr++;
         while (1)
         {
             if (isdigit(*nptr))
@@ -384,21 +384,21 @@ double strtod(const char *nptr, char **endptr)
             }
             else
             {
-                x = x + xs*(xf/xd);
+                x = x + xs * (xf / xd);
                 break;
             }
             nptr++;
         }
     }
-    if ( (*nptr == 'e') | (*nptr == 'E') )
+    if ((*nptr == 'e') || (*nptr == 'E'))
     {
-        nptr ++;
-        if(*nptr == '-')
+        nptr++;
+        if (*nptr == '-')
         {
             es = -1;
             nptr++;
         }
-        dp=0;
+        dp = 0;
         xd = 1;
         xf = 0;
         while (1)
@@ -412,16 +412,16 @@ double strtod(const char *nptr, char **endptr)
             {
                 while (xf > 0)
                 {
-                    xd *=10;
+                    xd *= 10;
                     xf--;
                 }
-                if ( es < 0.0 )
+                if (es < 0.0)
                 {
-                    x=x/xd;
+                    x = x / xd;
                 }
                 else
                 {
-                    x=x*xd;
+                    x = x * xd;
                 }
                 break;
             }

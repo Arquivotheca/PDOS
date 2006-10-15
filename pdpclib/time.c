@@ -101,7 +101,7 @@ time_t time(time_t *timer)
     DATETIME dt;
     APIRET rc;
 #endif    
-#if (defined(__MSDOS__) || defined(__MVS__) || defined(__CMS__))
+#if defined(__MSDOS__)
     struct {
         int year;
         int month;

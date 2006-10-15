@@ -14,6 +14,8 @@
 #include "stdlib.h"
 #include "string.h"
 
+#define MAXPARMS 19 /* maximum number of arguments we can handle */
+
 #ifdef __OS2__
 #define INCL_DOS
 #include <os2.h>
@@ -65,7 +67,7 @@ int CTYP __start(char *p)
 #endif    
     int x;
     int argc;
-    static char *argv[20];
+    static char *argv[MAXPARMS + 1];
     int rc;
 #ifdef __OS2__
     ULONG maxFH;
@@ -369,7 +371,7 @@ int CTYP __start(char *p)
     }
     else
     {
-        for (x = 1; x < 19; )
+        for (x = 1; x < MAXPARMS; )
         {
             argv[x] = p;
             x++;

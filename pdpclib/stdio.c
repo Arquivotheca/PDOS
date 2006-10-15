@@ -550,7 +550,7 @@ static void osfopen(void)
         p = fnm;
         while (*p != '\0')
         {
-                *p = toupper(*p);
+                *p = toupper((unsigned char)*p);
                 p++;
         }
         sprintf(tmpdd,"GCC%03dHD",spareSpot);
@@ -572,7 +572,7 @@ static void osfopen(void)
     p = myfile->ddname;
     while (*p != '\0')
     {
-        *p = toupper((unsigned)*p);
+        *p = toupper((unsigned char)*p);
         p++;
     }
 
@@ -590,7 +590,7 @@ static void osfopen(void)
         p = myfile->pdsmem;
         while (*p != '\0')
         {
-            *p = toupper((unsigned)*p);
+            *p = toupper((unsigned char)*p);
             p++;
         }
         p = myfile->pdsmem;
@@ -1853,7 +1853,7 @@ static int examine(const char **formt, FILE *fq, char *s, va_list *arg,
                 y++;
             }
         }
-        if (flagHash && (toupper(specifier) == 'X'))
+        if (flagHash && (toupper((unsigned char)specifier) == 'X'))
         {
             outch('0');
             outch('x');

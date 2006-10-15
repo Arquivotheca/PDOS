@@ -360,7 +360,7 @@ double strtod(const char *nptr, char **endptr)
 
     while (1)
     {
-        if (isdigit((unsigned)*nptr))
+        if (isdigit((unsigned char)*nptr))
         {
             x = x * 10 + (*nptr - '0');
             nptr++;
@@ -377,7 +377,7 @@ double strtod(const char *nptr, char **endptr)
         nptr++;
         while (1)
         {
-            if (isdigit((unsigned)*nptr))
+            if (isdigit((unsigned char)*nptr))
             {
                 xf = xf * 10 + (*nptr - '0');
                 xd = xd * 10;
@@ -403,7 +403,7 @@ double strtod(const char *nptr, char **endptr)
         xf = 0;
         while (1)
         {
-            if (isdigit((unsigned)*nptr))
+            if (isdigit((unsigned char)*nptr))
             {
                 xf = xf * 10 + (*nptr - '0');
                 nptr++;
@@ -455,7 +455,7 @@ long int strtol(const char *nptr, char **endptr, int base)
     }
     while (1)
     {
-        if (isdigit((unsigned)*nptr))
+        if (isdigit((unsigned char)*nptr))
         {
             if (base == 0)
             {
@@ -472,7 +472,7 @@ long int strtol(const char *nptr, char **endptr, int base)
             x = x * base + (*nptr - '0');
             nptr++;
         }
-        else if (isalpha((unsigned)*nptr))
+        else if (isalpha((unsigned char)*nptr))
         {
             if ((*nptr == 'X') || (*nptr == 'x'))
             {
@@ -488,7 +488,7 @@ long int strtol(const char *nptr, char **endptr, int base)
             }
             else
             {
-                x = x * base + (toupper((unsigned)*nptr) - 'A') + 10;
+                x = x * base + (toupper((unsigned char)*nptr) - 'A') + 10;
                 nptr++;
             }
         }
@@ -510,14 +510,14 @@ unsigned long int strtoul(const char *nptr, char **endptr, int base)
 
     while (1)
     {
-        if (isdigit((unsigned)*nptr))
+        if (isdigit((unsigned char)*nptr))
         {
             x = x * base + (*nptr - '0');
             nptr++;
         }
-        else if (isalpha((unsigned)*nptr) && (base > 10))
+        else if (isalpha((unsigned char)*nptr) && (base > 10))
         {
-            x = x * base + (toupper((unsigned)*nptr) - 'A') + 10;
+            x = x * base + (toupper((unsigned char)*nptr) - 'A') + 10;
             nptr++;
         }
         else

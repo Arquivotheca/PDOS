@@ -373,9 +373,16 @@ int CTYP __start(char *p)
     {
         for (x = 1; x < MAXPARMS; )
         {
+            char srch = ' ';
+            
+            if (*p == '"')
+            {
+                p++;
+                srch = '"';
+            }
             argv[x] = p;
             x++;
-            p = strchr(p, ' ');
+            p = strchr(p, srch);
             if (p == NULL)
             {
                 break;

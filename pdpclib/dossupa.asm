@@ -10,10 +10,12 @@ extrn ___modulo:proc
 
 public fidrqq
 public fiwrqq
+public fierqq
 
 _DATA   segment word public 'DATA'
 fidrqq  dw  ?
 fiwrqq  dw  ?
+fierqq  dw  ?
 _DATA   ends
 _BSS    segment word public 'BSS'
 _BSS    ends

@@ -21,6 +21,10 @@
 */
 #define HUGE_VALUE 9.999999999999999999999E72
 
+#else
+
+#define HUGE_VALUE 9.999999999999999999999E72
+
 #endif
 
 double ceil(double x);

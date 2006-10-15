@@ -124,6 +124,8 @@ static void fopen3(void);
 static void findSpareSpot(void);
 static void checkMode(void);
 static void osfopen(void);
+
+#if !defined(__MVS__) && !defined(__CMS__)
 static void fwriteSlow(const void *ptr,
                        size_t size,
                        size_t nmemb,
@@ -146,6 +148,8 @@ static void freadSlowB(void *ptr,
                        FILE *stream,
                        size_t toread,
                        size_t *actualRead);
+#endif
+
 static int examine(const char **formt, FILE *fq, char *s, va_list *arg,
                    int chcount);
 
@@ -568,7 +572,7 @@ static void osfopen(void)
     p = myfile->ddname;
     while (*p != '\0')
     {
-        *p = toupper(*p);
+        *p = toupper((unsigned)*p);
         p++;
     }
 
@@ -586,7 +590,7 @@ static void osfopen(void)
         p = myfile->pdsmem;
         while (*p != '\0')
         {
-            *p = toupper(*p);
+            *p = toupper((unsigned)*p);
             p++;
         }
         p = myfile->pdsmem;
@@ -2484,7 +2488,7 @@ void perror(const char *s)
 {
     if ((s != NULL) && (*s != '\0'))
     {
-        printf("%s: ");
+        printf("%s: ", s);
     }
     if (errno == 0)
     {

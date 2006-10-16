@@ -1766,6 +1766,12 @@ static int examine(const char **formt, FILE *fq, char *s, va_list *arg,
         {
             neg = 0;
         }
+#if defined(__MSDOS__)
+        if (!lng)
+        {
+            ulvalue &= 0xffff;
+        }
+#endif
         if ((specifier == 'X') || (specifier == 'x') || (specifier == 'p'))
         {
             base = 16;

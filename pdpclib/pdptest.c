@@ -24,6 +24,7 @@ int main(int argc, char **argv)
     char buf[5000];
     size_t x;
     int c;
+    int i;
     time_t tt;
 
 #if 0
@@ -38,9 +39,9 @@ int main(int argc, char **argv)
 #endif    
     printf("hello there\n");
     printf("argc = %d\n" , argc);
-    for (x = 0; x < argc; x++)
+    for (i = 0; i < argc; i++)
     {
-        printf("arg %d is <%s>\n", x, argv[x]);
+        printf("arg %d is <%s>\n", i, argv[i]);
     }
     return (6);
 #if 0

@@ -101,6 +101,11 @@ void *realloc(void *ptr, size_t size)
     char *newptr;
     size_t oldsize;
 
+    if (size == 0)
+    {
+        free(ptr);
+        return (NULL);
+    }
     newptr = malloc(size);
     if (newptr == NULL)
     {

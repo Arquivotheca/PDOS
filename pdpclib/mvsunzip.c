@@ -51,6 +51,7 @@ static int onefile(FILE *infile)
     char newfnm[FILENAME_MAX];
     FILE *newf;
     int extra;
+    char *p;
 
     if (buf == NULL)
     {
@@ -109,7 +110,16 @@ static int onefile(FILE *infile)
     if (strchr(fnm, '.') != NULL) *strchr(fnm, '.') = '\0';
     while (strchr(fnm, '-') != NULL) *strchr(fnm, '-') = '@';
     while (strchr(fnm, '_') != NULL) *strchr(fnm, '_') = '@';
-    sprintf(newfnm, "%s(%s)", outn, fnm);
+    p = strrchr(fnm, '/');
+    if (p != NULL)
+    {
+        p++;
+    }
+    else
+    {
+        p = fnm;
+    }
+    sprintf(newfnm, "%s(%s)", outn, p);
     newf = fopen(newfnm, "w");
     fwrite(buf, strlen(buf), 1, newf);
     fclose(newf);

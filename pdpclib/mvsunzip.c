@@ -107,9 +107,6 @@ static int onefile(FILE *infile)
     fread(buf, size, 1, infile);
     buf[size] = '\0';
     ascii2l(buf);
-    if (strchr(fnm, '.') != NULL) *strchr(fnm, '.') = '\0';
-    while (strchr(fnm, '-') != NULL) *strchr(fnm, '-') = '@';
-    while (strchr(fnm, '_') != NULL) *strchr(fnm, '_') = '@';
     p = strrchr(fnm, '/');
     if (p != NULL)
     {
@@ -119,6 +116,9 @@ static int onefile(FILE *infile)
     {
         p = fnm;
     }
+    if (strchr(p, '.') != NULL) *strchr(p, '.') = '\0';
+    while (strchr(p, '-') != NULL) *strchr(p, '-') = '@';
+    while (strchr(p, '_') != NULL) *strchr(p, '_') = '@';
     sprintf(newfnm, "%s(%s)", outn, p);
     newf = fopen(newfnm, "w");
     fwrite(buf, strlen(buf), 1, newf);

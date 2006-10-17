@@ -163,7 +163,7 @@ VARIABLE DS    0H
 DONESET  DS    0H
          ST    R6,0(R5)
          LR    R15,R2
-         B     RETURN
+         B     RETURNOP
 *
 * THIS IS NOT EXECUTED DIRECTLY, BUT COPIED INTO 24-BIT STORAGE
 ENDFILE  LA    R6,1
@@ -175,7 +175,7 @@ ENDFILE  LA    R6,1
          BR    R14
 EOFRLEN  EQU   *-ENDFILE
 *
-RETURN   DS    0H
+RETURNOP DS    0H
          LR    R1,R13
          L     R13,SAVEAREA+4
          LR    R14,R15
@@ -222,9 +222,8 @@ OUTDCBLN EQU   *-OUTDCB
          ST    R1,0(R3)
 *        LR    R15,R6
          L     R15,RDEOF
-         B     RETURN2
 *
-RETURN2  DS    0H
+RETURNAR DS    0H
          LR    R1,R13
          L     R13,SAVEAREA+4
          LR    R14,R15
@@ -252,9 +251,8 @@ RETURN2  DS    0H
          PUT   (R2)
          ST    R1,0(R3)
          LA    R15,0
-         B     RETURNWR
 *
-RETURNWR DS    0H
+RETURNAW DS    0H
          LR    R1,R13
          L     R13,SAVEAREA+4
          LR    R14,R15
@@ -285,9 +283,8 @@ RETURNWR DS    0H
          FREEPOOL ((R2))
          FREEMAIN R,LV=ZDCBLEN,A=(R2),SP=SUBPOOL
          LA    R15,0
-         B     RETURN3
 *
-RETURN3  DS    0H
+RETURNAC DS    0H
          LR    R1,R13
          L     R13,SAVEAREA+4
          LR    R14,R15

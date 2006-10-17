@@ -82,9 +82,8 @@ SUBPOOL  EQU   0
 *
          LA    R1,PARMLIST
          CALL  @@START
-         B     RETURN
 *
-RETURN   DS    0H
+RETURNMS DS    0H
          LR    R1,R13
          L     R13,SAVEAREA+4
          LR    R14,R15

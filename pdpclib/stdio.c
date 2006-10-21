@@ -264,6 +264,8 @@ static void fopen3(void)
         myfile->eofInd = 0;
         myfile->ungetCh = -1;
         myfile->update = 0;
+        myfile->permfile = 0;
+        myfile->isopen = 1;
 #if !defined(__MVS__) && !defined(__CMS__)
         if (!myfile->textMode)
         {
@@ -638,6 +640,10 @@ int fclose(FILE *stream)
     APIRET rc;
 #endif
 
+    if (!stream->isopen)
+    {
+        return (EOF);
+    }
     fflush(stream);
 #ifdef __OS2__
     rc = DosClose(stream->hfile);
@@ -671,7 +677,14 @@ int fclose(FILE *stream)
     {
         free(stream->intBuffer);
     }
-    free(stream);
+    if (!stream->permfile)
+    {
+        free(stream);
+    }
+    else
+    {
+        stream->isopen = 0;
+    }
 #ifdef __OS2__
     if (rc != 0)
     {

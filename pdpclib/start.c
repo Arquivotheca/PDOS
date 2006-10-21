@@ -112,6 +112,8 @@ int CTYP __start(char *p)
     stdin->ungetCh = -1;
     stdin->update = 0;
     stdin->theirBuffer = 0;
+    stdin->permfile = 1;
+    stdin->isopen = 1;
 
     stdout->quickBin = 0;
     stdout->quickText = 0;
@@ -130,6 +132,8 @@ int CTYP __start(char *p)
     stdout->mode = __WRITE_MODE;
     stdout->update = 0;
     stdout->theirBuffer = 0;
+    stdout->permfile = 1;
+    stdout->isopen = 1;
 
     stderr->quickBin = 0;
     stderr->quickText = 0;
@@ -148,6 +152,8 @@ int CTYP __start(char *p)
     stderr->mode = __WRITE_MODE;
     stderr->update = 0;
     stderr->theirBuffer = 0;
+    stderr->permfile = 1;
+    stderr->isopen = 1;
 #else
 #if defined(__CMS__)
 /*
@@ -221,7 +227,9 @@ int CTYP __start(char *p)
     }
 #endif
     stdin = fopen("dd:SYSIN", "r");
+    stdin->permfile = 1;
     stdout = fopen("dd:SYSPRINT", "w");
+    stdout->permfile = 1;
     stderr = stdout;
 #if defined(__CMS__)
     /* if no parameters are provided, the tokenized

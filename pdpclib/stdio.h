@@ -81,6 +81,8 @@ typedef struct
     int mode;       /* __WRITE_MODE or __READ_MODE */
     int update;     /* Is file update (read + write)? */
     int theirBuffer; /* Is the buffer supplied by them? */
+    int permfile;   /* Is this stdin/stdout/stderr? */
+    int isopen;     /* Is this file open? */
 } FILE;
 
 typedef unsigned long fpos_t;

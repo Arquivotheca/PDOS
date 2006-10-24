@@ -2402,6 +2402,7 @@ int ungetc(int c, FILE *stream)
     }
     stream->ungetCh = (unsigned char)c;
     stream->quickText = 0;
+    stream->quickBin = 0;
     return ((unsigned char)c);
 }
 
@@ -3308,6 +3309,16 @@ size_t fread(void *ptr, size_t size, size_t nmemb, FILE *stream)
     {
         return (0);
     }
+    
+    /* If we have an unget character, then write it into
+       the buffer in advance */
+    if (stream->ungetCh != -1)
+    {
+        stream->upto--;
+        *stream->upto = stream->ungetCh;
+        stream->ungetCh = -1;
+    }
+
     switch (stream->style)
     {
         case FIXED_TEXT:

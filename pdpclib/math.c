@@ -737,3 +737,24 @@ double ldexp(double x, int exp)
     /**/
     return(split.d);
 }
+
+double modf(double value, double *iptr)
+{
+    int neg = 0;
+    long i;
+    
+    if (value < 0)
+    {
+        neg = 1;
+        value = -value;
+    }
+    i = (long)value;
+    value -= i;
+    if (neg)
+    {
+        value = -value;
+        i = -i;
+    }    
+    *iptr = i;
+    return (value);
+}

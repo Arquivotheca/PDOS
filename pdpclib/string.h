@@ -85,6 +85,25 @@ void * _Builtin __memmove(void *s1, const void *s2, size_t n);
 #define memmove(s1,s2,n) (__memmove((s1),(s2),(n)))
 #endif
 
+#if 0 /* defined (__GNUC__) && __GNUC__ >= 3 */
+#define strcat(s1,s2) (__builtin_strcat((s1),(s2)))
+#define strchr(s,c) (__builtin_strchr((s),(c)))
+#define strcmp(s1,s2) (__builtin_strcmp((s1),(s2)))
+#define strcpy(s1,s2) (__builtin_strcpy((s1),(s2)))
+#define strlen(s) (__builtin_strlen((s)))
+#define strncat(s1,s2,n) (__builtin_strncat((s1),(s2),(n)))
+#define strncmp(s1,s2,n) (__builtin_strncmp((s1),(s2),(n)))
+#define strncpy(s1,s2,n) (__builtin_strncpy((s1),(s2),(n)))
+#define strrchr(s,c) (__builtin_strrchr((s),(c)))
+#define memcpy(a,b,c) (__builtin_memcpy((a),(b),(c)))
+#define memcmp(s1,s2,n) (__builtin_memcmp((s1),(s2),(n)))
+#define memset(s,c,n) (__builtin_memset((s),(c),(n)))
+#define strstr(s1,s2) (__builtin_strstr((s1),(s2)))
+#define strpbrk(s1,s2) (__builtin_strpbrk((s1),(s2)))
+#define strspn(s1,s2) (__builtin_strspn((s1),(s2)))
+#define strcspn(s1,s2) (__builtin_strcspn((s1),(s2)))
+#endif
+
 #ifdef __BORLANDC__
 #ifdef __INLINE_FUNCTIONS__
 void *__memcpy__(void *s1, const void *s2, size_t n);

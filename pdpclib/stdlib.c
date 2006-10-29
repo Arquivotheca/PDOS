@@ -157,12 +157,12 @@ void abort(void)
 {
     raise(SIGABRT);
     exit(EXIT_FAILURE);
-#ifndef __EMX__
+#if !defined(__EMX__) && !defined(__GCC__)
     return;
 #endif
 }
 
-#ifndef __EMX__
+#if !defined(__EMX__) && !defined(__GCC__)
 void __exit(int status);
 #else
 void __exit(int status) __attribute__((noreturn));
@@ -171,7 +171,7 @@ void __exit(int status) __attribute__((noreturn));
 void exit(int status)
 {
     __exit(status);
-#ifndef __EMX__
+#if !defined(__EMX__) && !defined(__GCC__)
     return;
 #endif
 }

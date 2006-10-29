@@ -153,7 +153,10 @@ int strcmp(const char *s1, const char *s2)
     if (*p2 == '\0') return (0);
     else return (-1);
 }
-    
+
+#ifdef strcoll
+#undef strcoll
+#endif
 int strcoll(const char *s1, const char *s2)
 {
     return (strcmp(s1, s2));
@@ -180,6 +183,9 @@ int strncmp(const char *s1, const char *s2, size_t n)
     return (0);
 }
 
+#ifdef strxfrm
+#undef strxfrm
+#endif
 size_t strxfrm(char *s1, const char *s2, size_t n)
 {
     size_t oldlen;
@@ -225,6 +231,9 @@ char *strchr(const char *s, int c)
     return (NULL);
 }
 
+#ifdef strcspn
+#undef strcspn
+#endif
 size_t strcspn(const char *s1, const char *s2)
 {
     const char *p1;
@@ -244,6 +253,9 @@ size_t strcspn(const char *s1, const char *s2)
     return ((size_t)(p1 - s1));
 }
 
+#ifdef strpbrk
+#undef strpbrk
+#endif
 char *strpbrk(const char *s1, const char *s2)
 {
     const char *p1;
@@ -279,6 +291,9 @@ char *strrchr(const char *s, int c)
     return (NULL);
 }
 
+#ifdef strspn
+#undef strspn
+#endif
 size_t strspn(const char *s1, const char *s2)
 {
     const char *p1;
@@ -303,6 +318,9 @@ size_t strspn(const char *s1, const char *s2)
 /* strstr by Frank Adam */
 /* modified by Paul Edwards */
 
+#ifdef strstr
+#undef strstr
+#endif
 char *strstr(const char *s1, const char *s2)
 {
     const char *p = s1, *p1, *p2 = s2;
@@ -324,6 +342,9 @@ char *strstr(const char *s1, const char *s2)
     return NULL;
 }
 
+#ifdef strtok
+#undef strtok
+#endif
 char *strtok(char *s1, const char *s2)
 {
     static char *old = NULL;
@@ -360,6 +381,9 @@ void *memset(void *s, int c, size_t n)
     return (s);
 }
 
+#ifdef strerror
+#undef strerror
+#endif
 char *strerror(int errnum)
 {
     if (errnum == 0) return ("No error has occurred\n");
@@ -433,7 +457,5 @@ void *memcpy(void *s1, const void *s2, size_t n)
     }
     return (s1);
 }
-#endif
-#endif
-
-
+#endif /* 32BIT */
+#endif /* USE_ASSEMBLER */

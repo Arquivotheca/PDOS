@@ -6,14 +6,16 @@
 /*********************************************************************/
 /*********************************************************************/
 /*                                                                   */
-/*  mvsunzip - unzip files for use by pdpclib                        */
+/*  mvsunzip - unzip files compressed with -0                        */
 /*  e.g. mvsunzip pdpclib.czip pdpclib.c                             */
+/*  or on cms, just "mvsunzip pdpclib.czip".                         */
 /*                                                                   */
 /*********************************************************************/
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <errno.h>
 
 #define MAXBUF 2000000
 
@@ -26,16 +28,33 @@ int main(int argc, char **argv)
 {
     FILE *infile;
 
+#ifdef __CMS__
+    if (argc <= 1)
+#else
     if (argc <= 2)
+#endif
     {
+#ifdef __CMS__
+        printf("usage: mvsunzip <infile>\n");
+        printf("where infile is a sequential file\n");
+        printf("e.g. mvsunzip dd:input\n");
+#else
         printf("usage: mvsunzip <infile> <outfile>\n");
         printf("where infile is a sequential file\n");
         printf("and outfile is a PDS\n");
         printf("e.g. mvsunzip dd:input dd:output\n");
+#endif
         return (0);
     }
+#ifndef __CMS__
     outn = *(argv+2);
+#endif
     infile = fopen(*(argv+1), "rb");
+    if (infile == NULL)
+    {
+       printf("Open Failed code %d\n", errno);
+       return (EXIT_FAILURE);
+    }
     while (onefile(infile)) ;
     return (0);
 }
@@ -116,10 +135,19 @@ static int onefile(FILE *infile)
     {
         p = fnm;
     }
+
+#ifndef __CMS__
     if (strchr(p, '.') != NULL) *strchr(p, '.') = '\0';
     while (strchr(p, '-') != NULL) *strchr(p, '-') = '@';
     while (strchr(p, '_') != NULL) *strchr(p, '_') = '@';
+#endif
+
+#ifdef __CMS__
+    sprintf(newfnm, "%s", p);
+#else
     sprintf(newfnm, "%s(%s)", outn, p);
+#endif
+
     newf = fopen(newfnm, "w");
     fwrite(buf, strlen(buf), 1, newf);
     fclose(newf);

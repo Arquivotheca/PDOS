@@ -85,7 +85,7 @@ void * _Builtin __memmove(void *s1, const void *s2, size_t n);
 #define memmove(s1,s2,n) (__memmove((s1),(s2),(n)))
 #endif
 
-#if 0 /* defined (__GNUC__) && __GNUC__ >= 3 */
+#if defined (__GNUC__) && __GNUC__ >= 3
 #define strcat(s1,s2) (__builtin_strcat((s1),(s2)))
 #define strchr(s,c) (__builtin_strchr((s),(c)))
 #define strcmp(s1,s2) (__builtin_strcmp((s1),(s2)))

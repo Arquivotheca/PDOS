@@ -136,6 +136,11 @@ static int onefile(FILE *infile)
         p = fnm;
     }
 
+    if (strrchr(p, '\\') != NULL)
+    {
+        p = strrchr(p, '\\') + 1;
+    }
+
 #ifndef __CMS__
     if (strchr(p, '.') != NULL) *strchr(p, '.') = '\0';
     while (strchr(p, '-') != NULL) *strchr(p, '-') = '@';

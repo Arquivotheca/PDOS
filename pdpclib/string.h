@@ -86,6 +86,13 @@ void * _Builtin __memmove(void *s1, const void *s2, size_t n);
 #endif
 
 #if defined (__GNUC__) && __GNUC__ >= 3
+#define memcpy(a,b,c) (__builtin_memcpy((a),(b),(c)))
+#endif
+
+/* One or more of these seems to generate bad code
+   on MVS, because it is stopping gcc from compiling
+   itself */
+#if 0
 #define strcat(s1,s2) (__builtin_strcat((s1),(s2)))
 #define strchr(s,c) (__builtin_strchr((s),(c)))
 #define strcmp(s1,s2) (__builtin_strcmp((s1),(s2)))
@@ -95,7 +102,6 @@ void * _Builtin __memmove(void *s1, const void *s2, size_t n);
 #define strncmp(s1,s2,n) (__builtin_strncmp((s1),(s2),(n)))
 #define strncpy(s1,s2,n) (__builtin_strncpy((s1),(s2),(n)))
 #define strrchr(s,c) (__builtin_strrchr((s),(c)))
-#define memcpy(a,b,c) (__builtin_memcpy((a),(b),(c)))
 #define memcmp(s1,s2,n) (__builtin_memcmp((s1),(s2),(n)))
 #define memset(s,c,n) (__builtin_memset((s),(c),(n)))
 #define strstr(s1,s2) (__builtin_strstr((s1),(s2)))

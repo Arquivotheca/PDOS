@@ -548,16 +548,19 @@ static void osfopen(void)
 /* if its CMS generate a ddname and issue a filedef for the file */
 #ifdef __CMS__
     {
+        char newfnm[FILENAME_MAX];
+        
 /* create a DD from the handle number */
-        p = fnm;
+        strcpy(newfnm, fnm);
+        p = newfnm;
         while (*p != '\0')
         {
-                *p = toupper((unsigned char)*p);
-                p++;
+            *p = toupper((unsigned char)*p);
+            p++;
         }
-        sprintf(tmpdd,"GCC%03dHD",spareSpot);
-        filedef(tmpdd,fnm,mode);
-        p  = tmpdd;
+        sprintf(tmpdd, "GCC%03dHD", spareSpot);
+        filedef(tmpdd, newfnm, mode);
+        p = tmpdd;
     }
 #else
     {
@@ -600,9 +603,10 @@ static void osfopen(void)
     myfile->hfile = 
         __aopen(myfile->ddname, mode, &myfile->recfm, &myfile->lrecl, p);
 /* dw mod to return error on open fail */
-    if(myfile->hfile == NULL){
-       err = 1;
-       return;
+    if(myfile->hfile == NULL)
+    {
+        err = 1;
+        return;
     }
 /* dw end of mod */
     if ((modeType == 4) || (modeType == 5))

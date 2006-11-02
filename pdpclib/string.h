@@ -90,9 +90,10 @@ void * _Builtin __memmove(void *s1, const void *s2, size_t n);
 #define memcmp(s1,s2,n) (__builtin_memcmp((s1),(s2),(n)))
 #endif
 
-/* These functions do not appear to be implemented on
-   MVS and actually generate worse code than not using
-   it, so we don't activate them. */
+/* We don't activate these builtins, because they
+   normally resort to a call to the normal function,
+   and when they do, they generate slightly worse
+   code! Also, they appear to be buggy on MVS. */
 #if 0
 #define strcat(s1,s2) (__builtin_strcat((s1),(s2)))
 #define strchr(s,c) (__builtin_strchr((s),(c)))

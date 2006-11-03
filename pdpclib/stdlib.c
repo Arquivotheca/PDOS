@@ -30,6 +30,13 @@
 #include "mvssupa.h"
 #endif
 
+#if 0 /* ++++ */
+#include "memmgr.h"
+extern MEMMGR __memmgr;
+#define MAX_CHUNK 900000 /* maximum size we will store in memmgr */
+#define REQ_CHUNK 1000000 /* size that we request from OS */
+#endif
+
 #ifdef __MSDOS__
 #ifdef __WATCOMC__
 #define CTYP __cdecl
@@ -67,6 +74,31 @@ void *malloc(size_t size)
     return (ptr);
 #endif
 #if defined(__MVS__) || defined(__CMS__)
+#if 0 /* ++++ */
+    void *ptr;
+
+    if (size > MAX_CHUNK)
+    {
+        ptr = __getm(size);
+    }
+    else
+    {
+        ptr = memmgrAllocate(&__memmgr, size, 0);
+        if (ptr == NULL)
+        {
+            void *ptr2;
+            
+            ptr2 = __getm(REQ_CHUNK);
+            if (ptr2 == NULL)
+            {
+                return (NULL);
+            }
+            memmgrSupply(&__memmgr, ptr2, size);
+            ptr = memmgrAllocate(&__memmgr, size, 0);
+        }
+    }
+    return (ptr);
+#endif
     return (__getm(size));
 #endif
 }
@@ -106,6 +138,12 @@ void *realloc(void *ptr, size_t size)
         free(ptr);
         return (NULL);
     }
+#if 0 /* ++++ */
+    if (memmgrResize(&__memmgr, ptr, size) == 0)
+    {
+        return (ptr);
+    }
+#endif
     newptr = malloc(size);
     if (newptr == NULL)
     {
@@ -145,6 +183,22 @@ void free(void *ptr)
     }
 #endif
 #if defined(__MVS__) || defined(__CMS__)
+#if 0 /* ++++ */
+    if (ptr != NULL)
+    {
+        size_t size;
+        
+        size = *((size_t *)ptr - 1);
+        if (size > MAX_CHUNK)
+        {
+            __freem(ptr);
+        }
+        else
+        {
+            memmgrFree(&__memmgr, ptr);
+        }
+    }
+#endif
     if (ptr != NULL)
     {
         __freem(ptr);

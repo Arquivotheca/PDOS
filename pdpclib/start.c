@@ -14,6 +14,10 @@
 #include "stdlib.h"
 #include "string.h"
 
+#if 0 /* +++ */
+#include "memmgr.h"
+#endif
+
 #define MAXPARMS 19 /* maximum number of arguments we can handle */
 
 #ifdef __OS2__
@@ -31,6 +35,10 @@
 /* Must be unsigned as it is used for array index */
 extern unsigned char *__envptr;
 extern unsigned short __osver;
+#endif
+
+#if 0 /* ++++ */
+MEMMGR __memmgr;
 #endif
 
 int main(int argc, char **argv);
@@ -225,6 +233,10 @@ int CTYP __start(char *p)
 
         ret = __SVC202 ( s202parm, &code, &parm );
     }
+#endif
+#if 0 /* ++++ */
+    memmgrDefaults(&__memmgr);
+    memmgrInit(&__memmgr);
 #endif
     stdin = fopen("dd:SYSIN", "r");
     stdin->permfile = 1;
@@ -442,7 +454,10 @@ void __exit(int status)
 #if defined(__MVS__) || defined(__CMS__)
     fclose(stdin);
     fclose(stdout);
-#endif        
+#endif
+#if 0 /* ++++ */
+    memmgrTerm(&__memmgr);
+#endif
     __exita(status);
     return;
 }

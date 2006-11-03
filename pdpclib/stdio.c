@@ -3596,7 +3596,7 @@ static void filedef(char *fdddname, char *fnm, int mymode)
 
 */ 
 
-void dblcvt(double num, char cnvtype, size_t nwidth,
+static void dblcvt(double num, char cnvtype, size_t nwidth,
             size_t nprecision, char *result)
 {
     double b;
@@ -3807,4 +3807,3 @@ void dblcvt(double num, char cnvtype, size_t nwidth,
                 result,num); */
     return;
 }
-

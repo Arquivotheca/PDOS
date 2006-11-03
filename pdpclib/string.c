@@ -151,7 +151,13 @@ int strcmp(const char *s1, const char *s2)
         p2++;
     }
     if (*p2 == '\0') return (0);
+#if defined(__MVS__) || defined(__CMS__)
+    /* this is a hack that should be removed. It is to get
+       around a bug in the gcc 3.2.3 MVS stage 101 optimizer. */
+    else if (*p2 != '\0') return (-1);
+#else
     else return (-1);
+#endif
 }
 
 #ifdef strcoll

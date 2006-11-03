@@ -1813,7 +1813,13 @@ static int examine(const char **formt, FILE *fq, char *s, va_list *arg,
         x = 0;
         while (ulvalue > 0)
         {
+#if defined(__MVS__) || defined(__CMS__)
+            /* this is a hack that should be removed. It is to get
+               around a bug in the gcc 3.2.3 MVS stage 101 optimizer. */
+            rem = (int)(ulvalue - (ulvalue / base) * base);
+#else
             rem = (int)(ulvalue % base);
+#endif
             if (rem < 10)
             {
                 work[x] = (char)('0' + rem);

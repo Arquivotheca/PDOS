@@ -85,16 +85,19 @@ void * _Builtin __memmove(void *s1, const void *s2, size_t n);
 #define memmove(s1,s2,n) (__memmove((s1),(s2),(n)))
 #endif
 
-#if defined (__GNUC__) && __GNUC__ >= 3
-#define memcpy(a,b,c) (__builtin_memcpy((a),(b),(c)))
-#define memcmp(s1,s2,n) (__builtin_memcmp((s1),(s2),(n)))
-#endif
+#if 0 /* defined (__GNUC__) && __GNUC__ >= 3 */
 
-/* We don't activate these builtins, because they
+/* We don't activate these GCC builtins, because they
    normally resort to a call to the normal function,
    and when they do, they generate slightly worse
-   code! Also, they appear to be buggy on MVS. */
-#if 0
+   code! Also, they appear to be buggy on MVS.
+   Although if you are not doing cross-compiling,
+   memcpy() and memcmp() should work. If you do
+   cross-compiling they are generating ASCII strings
+   for an EBCDIC target. */
+
+#define memcpy(a,b,c) (__builtin_memcpy((a),(b),(c)))
+#define memcmp(s1,s2,n) (__builtin_memcmp((s1),(s2),(n)))
 #define strcat(s1,s2) (__builtin_strcat((s1),(s2)))
 #define strchr(s,c) (__builtin_strchr((s),(c)))
 #define strcmp(s1,s2) (__builtin_strcmp((s1),(s2)))

@@ -14,7 +14,13 @@
 #include "stdlib.h"
 #include "string.h"
 
-#if 0 /* +++ */
+#if defined(__MVS__) || defined(__CMS__)
+#define USE_MEMMGR 1
+#else
+#define USE_MEMMGR 0
+#endif
+
+#if USE_MEMMGR
 #include "memmgr.h"
 #endif
 
@@ -37,7 +43,7 @@ extern unsigned char *__envptr;
 extern unsigned short __osver;
 #endif
 
-#if 0 /* ++++ */
+#if USE_MEMMGR
 MEMMGR __memmgr;
 #endif
 
@@ -234,7 +240,7 @@ int CTYP __start(char *p)
         ret = __SVC202 ( s202parm, &code, &parm );
     }
 #endif
-#if 0 /* ++++ */
+#if USE_MEMMGR
     memmgrDefaults(&__memmgr);
     memmgrInit(&__memmgr);
 #endif
@@ -455,7 +461,7 @@ void __exit(int status)
     fclose(stdin);
     fclose(stdout);
 #endif
-#if 0 /* ++++ */
+#if USE_MEMMGR
     memmgrTerm(&__memmgr);
 #endif
     __exita(status);

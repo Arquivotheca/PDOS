@@ -30,7 +30,13 @@
 #include "mvssupa.h"
 #endif
 
-#if 0 /* ++++ */
+#if defined(__MVS__) || defined(__CMS__)
+#define USE_MEMMGR 1
+#else
+#define USE_MEMMGR 0
+#endif
+
+#if USE_MEMMGR
 #include "memmgr.h"
 extern MEMMGR __memmgr;
 #define MAX_CHUNK 900000 /* maximum size we will store in memmgr */
@@ -74,7 +80,7 @@ void *malloc(size_t size)
     return (ptr);
 #endif
 #if defined(__MVS__) || defined(__CMS__)
-#if 0 /* ++++ */
+#if USE_MEMMGR
     void *ptr;
 
     if (size > MAX_CHUNK)
@@ -93,13 +99,14 @@ void *malloc(size_t size)
             {
                 return (NULL);
             }
-            memmgrSupply(&__memmgr, ptr2, size);
+            memmgrSupply(&__memmgr, ptr2, REQ_CHUNK);
             ptr = memmgrAllocate(&__memmgr, size, 0);
         }
     }
     return (ptr);
-#endif
+#else
     return (__getm(size));
+#endif
 #endif
 }
 

@@ -15,7 +15,7 @@
 #include "string.h"
 
 #if defined(__MVS__) || defined(__CMS__)
-#define USE_MEMMGR 1
+#define USE_MEMMGR 0
 #else
 #define USE_MEMMGR 0
 #endif

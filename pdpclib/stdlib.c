@@ -31,7 +31,7 @@
 #endif
 
 #if defined(__MVS__) || defined(__CMS__)
-#define USE_MEMMGR 1
+#define USE_MEMMGR 0
 #else
 #define USE_MEMMGR 0
 #endif
@@ -39,7 +39,7 @@
 #if USE_MEMMGR
 #include "memmgr.h"
 extern MEMMGR __memmgr;
-#define MAX_CHUNK 900000 /* maximum size we will store in memmgr */
+#define MAX_CHUNK 950000 /* maximum size we will store in memmgr */
 #define REQ_CHUNK 1000000 /* size that we request from OS */
 #endif
 
@@ -145,8 +145,8 @@ void *realloc(void *ptr, size_t size)
         free(ptr);
         return (NULL);
     }
-#if 0 /* ++++ */
-    if (memmgrResize(&__memmgr, ptr, size) == 0)
+#if USE_MEMMGR
+    if (memmgrRealloc(&__memmgr, ptr, size) == 0)
     {
         return (ptr);
     }
@@ -158,12 +158,7 @@ void *realloc(void *ptr, size_t size)
     }
     if (ptr != NULL)
     {
-#if defined(__MVS__) || defined(__CMS__)
-        oldsize = *(size_t *)((char *)ptr - 16);
-        oldsize -= 16;
-#else
-        oldsize = *(size_t *)((char *)ptr - 4);
-#endif
+        oldsize = *((size_t *)ptr - 1);
         if (oldsize < size)
         {
             size = oldsize;
@@ -190,7 +185,7 @@ void free(void *ptr)
     }
 #endif
 #if defined(__MVS__) || defined(__CMS__)
-#if 0 /* ++++ */
+#if USE_MEMMGR
     if (ptr != NULL)
     {
         size_t size;
@@ -205,11 +200,12 @@ void free(void *ptr)
             memmgrFree(&__memmgr, ptr);
         }
     }
-#endif
+#else
     if (ptr != NULL)
     {
         __freem(ptr);
     }
+#endif
 #endif
     return;
 }

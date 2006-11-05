@@ -85,7 +85,12 @@ void * _Builtin __memmove(void *s1, const void *s2, size_t n);
 #define memmove(s1,s2,n) (__memmove((s1),(s2),(n)))
 #endif
 
-#if 0 /* defined (__GNUC__) && __GNUC__ >= 3 */
+/* This should only be activated on an EBCDIC host */
+#define __ACTIVATE 0
+#if defined (__GNUC__) && __GNUC__ >= 3 && __ACTIVATE
+#define memcpy(a,b,c) (__builtin_memcpy((a),(b),(c)))
+#define memcmp(s1,s2,n) (__builtin_memcmp((s1),(s2),(n)))
+#endif
 
 /* We don't activate these GCC builtins, because they
    normally resort to a call to the normal function,
@@ -96,8 +101,7 @@ void * _Builtin __memmove(void *s1, const void *s2, size_t n);
    cross-compiling they are generating ASCII strings
    for an EBCDIC target. */
 
-#define memcpy(a,b,c) (__builtin_memcpy((a),(b),(c)))
-#define memcmp(s1,s2,n) (__builtin_memcmp((s1),(s2),(n)))
+#if 0
 #define strcat(s1,s2) (__builtin_strcat((s1),(s2)))
 #define strchr(s,c) (__builtin_strchr((s),(c)))
 #define strcmp(s1,s2) (__builtin_strcmp((s1),(s2)))

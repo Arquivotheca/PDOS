@@ -3,32 +3,32 @@
 /*  This Program Written by Paul Edwards.                            */
 /*  Released to the Public Domain                                    */
 /*                                                                   */
-/*  9-April-2006 D.Wade						     */
-/*      Moved definitions for HUGE_VALUE to math.h		     */
-/*      Inserted argument rang checks in :-			     */
+/*  9-April-2006 D.Wade                                              */
+/*      Moved definitions for HUGE_VALUE to math.h                   */
+/*      Inserted argument rang checks in :-                          */
 /*       acos                                                        */
 /*                                                                   */
 /*                                                                   */
 /*                                                                   */
 /*  2-April-2006 D.Wade added code for the :-                        */
 /*                                                                   */
-/*	acos(double x);						     */
-/*	asin(double x);						     */
-/*  	atan(double x);						     */
-/*	cos(double x);						     */
-/*	sin(double x);						     */
-/*	tan(double x);						     */
-/*	cosh(double x);						     */
-/*	sinh(double x);						     */
-/*	tanh(double x);						     */
-/*      exp(double x);						     */
-/*	frexp(double value, int *exp);				     */
-/*	ldexp(double x, int exp);				     */
-/*	log(double x);						     */
-/*	log10(double x);					     */
-/*	modf(double value, double *iptr);	           	     */
-/*	pow(double x, double y);				     */
-/*      sqrt(double x);                          		     */
+/*      acos(double x);                                              */
+/*      asin(double x);                                              */
+/*      atan(double x);                                              */
+/*      cos(double x);                                               */
+/*      sin(double x);                                               */
+/*      tan(double x);                                               */
+/*      cosh(double x);                                              */
+/*      sinh(double x);                                              */
+/*      tanh(double x);                                              */
+/*      exp(double x);                                               */
+/*      frexp(double value, int *exp);                               */
+/*      ldexp(double x, int exp);                                    */
+/*      log(double x);                                               */
+/*      log10(double x);                                             */
+/*      modf(double value, double *iptr);                            */
+/*      pow(double x, double y);                                     */
+/*      sqrt(double x);                                              */
 /*                                                                   */
 /* Note:-                                                            */
 /*  In order to avoide Copyright these functions are generally       */
@@ -103,82 +103,6 @@ double fmod(double x, double y)
     return (x / y);
 }
 
-static double i_acos(double x)
-{
-    return (acos(x));
-}
-
-static double i_asin(double x)
-{
-    return (asin(x));
-}
-
-static double i_atan(double x)
-{
-    return (atan(x));
-}
-
-static double i_atan2(double y, double x)
-{
-    return (atan2(y,x));
-}
-
-static double i_cos(double x)
-{
-    return (cos(x));
-}
-
-static double i_sin(double x)
-{
-    return (sin(x));
-}
-
-static double i_tan(double x)
-{
-    return (tan(x));
-}
-
-static double i_cosh(double x)
-{
-    return (cosh(x));
-}
-
-static double i_sinh(double x)
-{
-    return (sinh(x));
-}
-
-static double i_tanh(double x)
-{
-    return (tanh(x));
-}
-
-static double i_exp(double x)
-{
-    return (exp(x));
-}
-
-static double i_log(double x)
-{
-    return (log(x));
-}
-
-static double i_log10(double x)
-{
-    return (log10(x));
-}
-
-static double i_pow(double x, double y)
-{
-    return (pow(x, y));
-}
-
-static double i_sqrt(double x)
-{
-    return (sqrt(x));
-}
-
-
 #ifdef acos
 #undef acos
 #endif
@@ -189,7 +113,8 @@ static double i_sqrt(double x)
   to use to ensure quickest convergence.
 
 */
-double acos(double x){
+double acos(double x)
+{
 
 /*
 
@@ -217,10 +142,12 @@ double acos(double x){
 
 */
 
-double asin (double y){
+double asin (double y)
+{
     int i,scale;
     double term,answer,work,x,powx,coef;
-     x = y;
+
+    x = y;
 
 /*
   if arg is -ve then we want "-asin(-x)"
@@ -229,46 +156,47 @@ double asin (double y){
     if (x <0.0 ) return ( -asin(-x) );
 
 /*
-     If arg is > 1.0 we can't calculate
-     (note also < -1.0 but previous statement removes this case)
+    If arg is > 1.0 we can't calculate
+    (note also < -1.0 but previous statement removes this case)
 */
-     if ( x > 1.0 )
-     {
-         errno=EDOM;
-         return(HUGE_VALUE);
-     }
+    if ( x > 1.0 )
+    {
+        errno=EDOM;
+        return(HUGE_VALUE);
+    }
 
 /*
  now check for large(ish) x > 0.6
 */
 
-     if( x > 0.75 && x < 1.0) {
-              x = ( sqrt(1.0 - (x*x) ) );
-             return((pi/2.0)-sin(x));
-   }
+    if( x > 0.75 && x < 1.0)
+    {
+        x = ( sqrt(1.0 - (x*x) ) );
+        return((pi/2.0)-sin(x));
+    }
 
 /*
      arcsin(x) = x + 1/2 (x^3/3) + (1/2)(3/4)(x^5/5) +  
         (1/2)(3/4)(5/6)(x^7/7) + ...
 */
-     i=1;
-     answer=x;
-     term = 1;
-     coef = 1;
-     powx = x;
+    i=1;
+    answer=x;
+    term = 1;
+    coef = 1;
+    powx = x;
 
-     while (1)
-     {
-          work = i;
-          coef = (coef * work)/(work+1);
-          powx = powx * x * x;
-	  term =  coef * powx / (work + 2.0);
-	  if ( answer == (answer + term) )break;
-          answer = answer + (term);
-	  i+=2;
-     }
+    while (1)
+    {
+        work = i;
+        coef = (coef * work)/(work+1);
+        powx = powx * x * x;
+        term =  coef * powx / (work + 2.0);
+        if ( answer == (answer + term) )break;
+        answer = answer + (term);
+        i+=2;
+    }
 
-     return(answer);
+    return(answer);
 }
 
 
@@ -298,7 +226,8 @@ double asin (double y){
 
 */
 
-double atan (double x){
+double atan (double x)
+{
     int i,scale;
     double term,answer,work,powx,coef;
 
@@ -338,8 +267,8 @@ double atan (double x){
     {
         work = i;
         powx = powx * x * x;
-	term = powx / (work + 2.0);
-	if ( answer == (answer + term) )break;
+        term = powx / (work + 2.0);
+        if ( answer == (answer + term) )break;
         answer = answer + (term);
         i+=2;
     }
@@ -351,7 +280,7 @@ double atan (double x){
 
 double atan2(double y, double x)
 {
-    return (i_atan2(y, x));
+    return (0.0);
 }
 
 #ifdef cos
@@ -388,14 +317,14 @@ double cos(double x)
 
     while (1)
     {
-	work = i;
-	term = -(term * x1 * x1)/(work * (work + 1.0));
-	if ( answer == (answer + term) )break;
+        work = i;
+        term = -(term * x1 * x1)/(work * (work + 1.0));
+        if ( answer == (answer + term) )break;
         answer = answer + term;
         i += 2;
     }
 
-return(answer);
+    return(answer);
 
 }
 
@@ -436,22 +365,21 @@ double sin(double x)
 */
     while (1)
     {
-	work = i+1;
-	term = -(term * x1 * x1)/(work * (work + 1.0));
-	if ( answer == (answer + term) )break;
+        work = i+1;
+        term = -(term * x1 * x1)/(work * (work + 1.0));
+        if ( answer == (answer + term) )break;
         answer = answer + term;
         i = i+2;
-
     }
 
     return(answer);
-
 }
 
 #ifdef tan
 #undef tan
 #endif
-double tan (double x){
+double tan (double x)
+{
 /*
 
   use tan = sin(x)/cos(x)
@@ -479,7 +407,8 @@ double tan (double x){
   COSH(X) = (E**X+E**(-1))/2
 
 */
-double cosh(double x){
+double cosh(double x)
+{
     double dexpx;
 
     dexpx = exp(x);
@@ -488,7 +417,8 @@ double cosh(double x){
 
 }
 
-double sinh(double x){
+double sinh(double x)
+{
     double dexpx;
 
     dexpx = exp(x);
@@ -502,18 +432,16 @@ double sinh(double x){
 
 */
 
-double tanh(double x){
-
+double tanh(double x)
+{
     double y;
     double dexp2;
-
 
     if ( (x <= -1.0 ) || (x >= 1.0) ) return(0.0); /* need 
                                    to set an error here */
 
     dexp2 = exp( -2.0 * x);
     return ( (1.0  - dexp2) /  (1.0 + dexp2) );
-
 }
 
 /*
@@ -521,7 +449,8 @@ double tanh(double x){
 exp(x) = 1 + x + x2/2 + x3/6 + x4/24 + x5/120 + ... + xn/n! + ...
 
 */
-double exp (double x){
+double exp (double x)
+{
     int i;
     double term,answer,work;
 
@@ -530,9 +459,9 @@ double exp (double x){
 
     while (1)
     {
-	work = i;
-	term =  (term * x)/work;
-	if ( answer == (answer + term) )break;
+        work = i;
+        term =  (term * x)/work;
+        if ( answer == (answer + term) )break;
         answer = answer + (term);
         i++;
     }
@@ -551,7 +480,8 @@ double exp (double x){
    Note this only works for small x so we scale....
 
 */
-double log (double x){
+double log (double x)
+{
     int i,scale;
     double term,answer,work,xs;
 
@@ -571,7 +501,6 @@ double log (double x){
     while ( xs > 1.0 ) { scale ++; xs=xs/10.0;}
     while ( xs < 0.1 ) { scale --; xs=xs*10.0;}
 
-
     xs = xs - 1;
 
     i=2;
@@ -579,9 +508,9 @@ double log (double x){
 
     while (1)
     {
-	work = i;
-	term = - (term * xs);
-	if ( answer == (answer + (term/work)) )break;
+        work = i;
+        term = - (term * xs);
+        if ( answer == (answer + (term/work)) )break;
         answer = answer + (term/work);
         i++;
     }
@@ -593,9 +522,7 @@ double log (double x){
 
 double log10(double x)
 {
-
     return ( log(x) / ln10 );
-
 }
 
 
@@ -608,17 +535,14 @@ double log10(double x)
 
 double pow(double x,double y)
 {
-
     if (x < 0.0)
     {
          errno=EDOM;
-	 return(0.0);
+         return(0.0);
     }
     if (y == 0.0) return (1.0);
 
     return (exp(y*log(x)));
-
-
 }
 
 #ifdef sqrt
@@ -630,23 +554,22 @@ double pow(double x,double y)
 
      1) Scale x such that 1 <= x <= 4.0
 
-     2) Use newton Raphson to claculate root.
+     2) Use newton Raphson to calculate root.
 
      4) multiply back up.
 
-   Becasue we only scale by "4" this is pretty slow....
+   Because we only scale by "4" this is pretty slow....
 
 */
 
 double sqrt(double x)
 {
-
     double xs,yn,ynn;
     double pow1;
 
     if (x < 0.0)
     {
-	errno=EDOM;
+        errno=EDOM;
         return(0.0);
     }
     if (x == 0.0) return (0.0);
@@ -672,11 +595,13 @@ double sqrt(double x)
     ynn = 0;
     while(1)
     {
-	ynn = (yn + xs/yn)*0.5;
+        ynn = (yn + xs/yn)*0.5;
         if ( ynn == yn ) break; else yn=ynn;
     }
     return (ynn*pow1);
 }
+
+
 double frexp(double x, int *exp)
 {
 /*
@@ -690,16 +615,17 @@ double frexp(double x, int *exp)
         unsigned short s[4];
     };
     union dblhex split;
+
     split.d = x;
     *exp = (((split.s[0] >> 8) & 0x007f)-64) * 4;
     split.s[0] = split.s[0] & 0x80ff;
     split.s[0] = split.s[0] | 0x4000;
     /* following code adjust for fact IBM has hex float */
     while ( fabs(split.d) < 0.5 )
-        {
+    {
         split.d = split.d * 2;
         *exp =( *exp ) - 1;
-        }
+    }
     /*    */
     return(split.d);
 }
@@ -717,7 +643,7 @@ double ldexp(double x, int exp)
     };
     union dblhex split;
 /*
-    note "X" mauy already ahev an exponent => exrtract it
+    note "X" mauy already have an exponent => extract it
 */
     split.d = frexp(x,&bin_exp);
     bin_exp = bin_exp + exp;  /* add in from caller */
@@ -730,10 +656,10 @@ double ldexp(double x, int exp)
     /* following code adjust for fact IBM has hex float */
     /* well it will I have done */
     while ( adj_exp > 0 )
-        {
+    {
         split.d = split.d * 2;
         --adj_exp;
-        }
+    }
     /**/
     return(split.d);
 }

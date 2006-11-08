@@ -2610,8 +2610,31 @@ int setbuf(FILE *stream, char *buf)
 
 FILE *freopen(const char *filename, const char *mode, FILE *stream)
 {
-    fclose(stream);
-    return (fopen(filename, mode));
+    FILE *oldstream;
+    FILE *newstream;
+
+    newstream = fopen(filename, mode);
+    if (newstream == NULL)
+    {
+        return (NULL);
+    }
+    newstream->permfile = stream->permfile;
+
+    oldstream = malloc(sizeof(FILE));
+    if (oldstream != NULL)
+    {
+        *oldstream = *stream;
+        oldstream->permfile = 0;
+        oldstream->intFno = newstream->intFno;
+        fclose(oldstream);
+    }
+    
+    newstream->intFno = stream->intFno;
+    
+    *stream = *newstream;
+    free(newstream);
+
+    return (stream);
 }
 
 int fflush(FILE *stream)

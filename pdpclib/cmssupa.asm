@@ -515,6 +515,11 @@ RETURNGC DS    0H
          RETURN (14,12),RC=(15)
          LTORG
 *
+**********************************************************************
+*                                                                    *
+*  SAVER - SAVE REGISTERS AND PSW INTO ENV_BUF                       *
+*                                                                    *
+**********************************************************************
          ENTRY @@SAVER
 @@SAVER EQU   *
 *
@@ -525,7 +530,7 @@ RETURNGC DS    0H
          L     R2,@@MANSTK         * R2 POINTS TO START OF STACK
          L     R3,@@MANSTK+4       * R3 HAS LENGTH OF STACK
          LR    R5,R3               * AND R5
-         LR    R9,R1               * R9 NOW CONATINS ADDRESS OF ENV
+         LR    R9,R1               * R9 NOW CONTAINS ADDRESS OF ENV
          GETMAIN R,LV=(R3),SP=SUBPOOL    * GET A SAVE AREA
          ST    R1,0(R9)            * SAVE IT IN FIRST WORK OF ENV
          ST    R5,4(R9)            * SAVE LENGTH IN SECOND WORD OF ENV
@@ -548,7 +553,7 @@ RETURNSR DS    0H
 *
 **********************************************************************
 *                                                                    *
-*  LOADREGS - LOAD REGISTERS AND PSW FROM ENV_BUF                    *
+*  LOADR - LOAD REGISTERS AND PSW FROM ENV_BUF                       *
 *                                                                    *
 **********************************************************************
          ENTRY @@LOADR

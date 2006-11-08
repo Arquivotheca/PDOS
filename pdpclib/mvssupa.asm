@@ -379,7 +379,7 @@ RETURNGC DS    0H
          ENTRY @@SAVER
 @@SAVER EQU   *
 *
-         SAVE  (14,12),,SETJMP     * SAVE REGS AS NORMAL
+         SAVE  (14,12),,@@SAVER    * SAVE REGS AS NORMAL
          LR    R12,R15
          USING @@SAVER,12
          L     R1,0(R1)            * ADDRESS OF ENV TO R1
@@ -387,7 +387,14 @@ RETURNGC DS    0H
          L     R3,@@MANSTK+4       * R3 HAS LENGTH OF STACK
          LR    R5,R3               * AND R5
          LR    R9,R1               * R9 NOW CONTAINS ADDRESS OF ENV
-         GETMAIN R,LV=(R3),SP=SUBPOOL    * GET A SAVE AREA
+* GET A SAVE AREA
+         AIF   ('&SYSPARM' NE 'IFOX00').ANYY
+* CAN'T USE "ANY" ON MVS 3.8
+         GETMAIN RU,LV=(R3),SP=SUBPOOL
+         AGO   .ANYE
+.ANYY    ANOP
+         GETMAIN RU,LV=(R3),SP=SUBPOOL,LOC=ANY
+.ANYE    ANOP
          ST    R1,0(R9)            * SAVE IT IN FIRST WORK OF ENV
          ST    R5,4(R9)            * SAVE LENGTH IN SECOND WORD OF ENV
          ST    R2,8(R9)            * NOTE WHERE WE GOT IT FROM
@@ -428,6 +435,7 @@ RETURNSR DS    0H
          ST    R6,24(R1)          * SAVE VAL IN ENV
          L     R6,=F'1'
          ST    R6,20(R1)          * AND SET LONGJ TO 1.
+         FREEMAIN RU,LV=(R3),A=(R4),SP=SUBPOOL
 *        L     R14,16(R1)          * AND RETURN ADDRESS
 *        B     RETURNSR            * AND BACK INTO SETJMP
 *        L     R15,64(R1)                 RESTORE PSW

@@ -523,7 +523,7 @@ RETURNGC DS    0H
          ENTRY @@SAVER
 @@SAVER EQU   *
 *
-         SAVE  (14,12),,SETJMP     * SAVE REGS AS NORMAL
+         SAVE  (14,12),,@@SAVER    * SAVE REGS AS NORMAL
          LR    R12,R15
          USING @@SAVER,12
          L     R1,0(R1)            * ADDRESS OF ENV TO R1

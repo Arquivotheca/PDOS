@@ -676,13 +676,13 @@ int fclose(FILE *stream)
     }
     __aclose(stream->hfile);
 #endif
-    __userFiles[stream->intFno] = NULL;
     if (!stream->theirBuffer)
     {
         free(stream->intBuffer);
     }
     if (!stream->permfile)
     {
+        __userFiles[stream->intFno] = NULL;
         free(stream);
     }
     else

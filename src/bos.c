@@ -26,6 +26,8 @@ int BosPrintScreen(void)
 
 
 /* BosSetVideoMode - BIOS Int 10h Function 00h */
+/* Mode 03h = text mode */
+/*      13h = 320*200 graphics mode, location 0xa0000 */
 
 int BosSetVideoMode(unsigned int mode)
 {

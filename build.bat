@@ -15,7 +15,7 @@ call comp0
 call comp1
 call comp2
 call comp3
-bcc -c -ml -I..\pdpclib world.c
+tcc -c -ml -I..\pdpclib world.c
 tlink -x ..\pdpclib\dosstart.obj+world.obj,world.exe,,..\pdpclib\borland.lib,
 copy %loc%\pload.com %loc%\io.sys
 copy %loc%\pdos.exe %loc%\msdos.sys

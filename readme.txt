@@ -117,7 +117,24 @@ Open Watcom.
 
 MSDOS 5.0
 Borland C++ 3.1 for DOS
+
+Turbo C++ 1.01
+http://bdn.borland.com/article/0,1410,21751,00.html
+
 TASM 3.1 for DOS
+
+Not used:
+Arrowsoft Assembler 1.00d
+ftp://ftp.simtel.net/pub/simtelnet/msdos/asmutl/valarrow.zip
+
+Not used:
+NASM 0.98:
+http://sourceforge.net/projects/nasm
+
+Not used:
+MASM 6.15:
+http://msdn.microsoft.com/vstudio/downloads/tools/ppack/download.aspx
+
 
 EMX 0.9d (which includes GCC 2.8.1) can be obtained from:
 http://hobbes.nmsu.edu/cgi-bin/h-browse?dir=/pub/os2/dev/emx/v0.9d

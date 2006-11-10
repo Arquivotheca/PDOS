@@ -1,1 +1,1 @@
-bcc patchver.c
+tcc patchver.c

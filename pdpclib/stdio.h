@@ -83,6 +83,7 @@ typedef struct
     int theirBuffer; /* Is the buffer supplied by them? */
     int permfile;   /* Is this stdin/stdout/stderr? */
     int isopen;     /* Is this file open? */
+    char modeStr[4]; /* 2nd parameter to fopen */
 } FILE;
 
 typedef unsigned long fpos_t;

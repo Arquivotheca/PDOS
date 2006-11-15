@@ -27,9 +27,9 @@
 /*  the position in the file that the first character in the buffer  */
 /*  is at.  This is only updated when a new buffer is read in.       */
 /*                                                                   */
-/*  After file open, for a file being read, bufstartR will actually  */
+/*  After file open, for a file being read, bufStartR will actually  */
 /*  be a negative number, which if added to the position of upto     */
-/*  will get to 0.  On a file being written, bufstartR will be set   */
+/*  will get to 0.  On a file being written, bufStartR will be set   */
 /*  to 0, and upto will point to the start of the buffer.  The       */
 /*  reason for the difference on the read is in order to tell the    */
 /*  difference between an empty buffer and a buffer with data in it, */
@@ -221,6 +221,7 @@ static void fopen2(void)
     checkMode();
     if (!err)
     {
+        strcpy(myfile->modeStr, modus);
         osfopen();
         if (!err)
         {
@@ -2471,11 +2472,22 @@ int fseek(FILE *stream, long int offset, int whence)
             stream->bufStartR = newpos - stream->szfbuf;
         }
 #endif
-#ifdef __MSDOS
+#ifdef __MSDOS__
         __seek(stream->hfile, newpos, whence);
         stream->endbuf = stream->fbuf + stream->szfbuf;
         stream->upto = stream->endbuf;
         stream->bufStartR = newpos - stream->szfbuf;
+#endif
+#if defined(__MVS__) || defined(__CMS__)
+        char fnm[FILENAME_MAX];
+        
+        strcpy(fnm, "dd:");
+        strcat(fnm, stream->ddname);
+        freopen(fnm, stream->modeStr, stream);
+        while (newpos-- > 0)
+        {
+            getc(stream);
+        }
 #endif
     }
     stream->quickBin = 0;
@@ -2610,30 +2622,28 @@ int setbuf(FILE *stream, char *buf)
 
 FILE *freopen(const char *filename, const char *mode, FILE *stream)
 {
-    FILE *oldstream;
-    FILE *newstream;
+    int perm;
 
-    newstream = fopen(filename, mode);
-    if (newstream == NULL)
+    perm = stream->permfile;
+    stream->permfile = 1;
+    fclose(stream);
+    
+    myfile = stream;
+    fnm = filename;
+    modus = mode;
+    err = 0;
+    spareSpot = stream->intFno;
+    fopen2();
+    if (err && !perm)
+    {
+        __userFiles[stream->intFno] = NULL;
+        free(stream);
+    }
+    stream->permfile = perm;
+    if (err)
     {
         return (NULL);
     }
-    newstream->permfile = stream->permfile;
-
-    oldstream = malloc(sizeof(FILE));
-    if (oldstream != NULL)
-    {
-        *oldstream = *stream;
-        oldstream->permfile = 0;
-        oldstream->intFno = newstream->intFno;
-        fclose(oldstream);
-    }
-    
-    newstream->intFno = stream->intFno;
-    
-    *stream = *newstream;
-    free(newstream);
-
     return (stream);
 }
 
@@ -2938,6 +2948,7 @@ char *fgets(char *s, int n, FILE *stream)
         {
             memcpy(s, dptr + 4, len);
             memcpy(s + len, "\n", 2);
+            stream->bufStartR += len + 1;
             return (s);
         }
         else
@@ -2971,8 +2982,10 @@ char *fgets(char *s, int n, FILE *stream)
                 {
                     eptr--;
                 }
-                memcpy(s, dptr, eptr + 1 - dptr);
-                memcpy(s + (eptr + 1 - dptr), "\n", 2);
+                eptr++;
+                memcpy(s, dptr, eptr - dptr);
+                memcpy(s + (eptr - dptr), "\n", 2);
+                stream->bufStartR += (eptr - dptr) + 1;
                 return (s);
             }
             break;
@@ -3022,6 +3035,7 @@ int fputs(const char *s, FILE *stream)
             dptr[1] = (len + 4) & 0xff;
             dptr[2] = 0;
             dptr[3] = 0;
+            stream->bufStartR += (len + 1);
             if (*(p + 1) == '\0')
             {
                 return (len + 1);
@@ -3043,6 +3057,7 @@ int fputs(const char *s, FILE *stream)
                     __awrite(stream->hfile, &dptr);
                     memcpy(dptr, s, len);
                     memset(dptr + len, ' ', stream->szfbuf - len);
+                    stream->bufStartR += len;
                 }
                 else
                 {
@@ -3072,6 +3087,7 @@ size_t fwrite(const void *ptr, size_t size, size_t nmemb, FILE *stream)
         {
             __awrite(stream->hfile, &dptr);
             memcpy(dptr, ptr, size);
+            stream->bufStartR += size;
             return (1);
         }
         else
@@ -3095,15 +3111,19 @@ size_t fwrite(const void *ptr, size_t size, size_t nmemb, FILE *stream)
                     memcpy(stream->upto, ptr, sz);
                     ptr = (char *)ptr + sz;
                     bytes -= sz;
-                    __awrite(stream->hfile, stream->fbuf);
+                    __awrite(stream->hfile, &dptr);
+                    memcpy(dptr, stream->fbuf, sz);
                     stream->upto = stream->fbuf;
+                    stream->bufStartR += sz;
                 }
             }
             while (bytes > stream->szfbuf)
             {
-                __awrite(stream->hfile, ptr);
+                __awrite(stream->hfile, &dptr);
+                memcpy(dptr, ptr, stream->szfbuf);
                 ptr = (char *)ptr + stream->szfbuf;
                 bytes -= stream->szfbuf;
+                stream->bufStartR += stream->szfbuf;
             }
             memcpy(stream->upto, ptr, bytes);
             stream->upto += bytes;
@@ -3117,8 +3137,10 @@ size_t fwrite(const void *ptr, size_t size, size_t nmemb, FILE *stream)
                 stream->fbuf[1] = (size + 4) & 0xff;
                 stream->fbuf[2] = 0;
                 stream->fbuf[3] = 0;
-                __awrite(stream->hfile, ptr);
+                __awrite(stream->hfile, &dptr);
+                memcpy(dptr, stream->fbuf, size + 4);
                 ptr = (char *)ptr + size;
+                stream->bufStartR += size;
             }
             break;
 
@@ -3138,6 +3160,7 @@ size_t fwrite(const void *ptr, size_t size, size_t nmemb, FILE *stream)
                     __awrite(stream->hfile, &dptr);
                     memcpy(dptr, ptr, sz);
                     memset(dptr + sz, ' ', stream->szfbuf - sz);
+                    stream->bufStartR += sz;
                 }
                 else
                 {
@@ -3150,6 +3173,7 @@ size_t fwrite(const void *ptr, size_t size, size_t nmemb, FILE *stream)
                     __awrite(stream->hfile, &dptr);
                     memcpy(dptr, stream->fbuf, sz);
                     memset(dptr + sz, ' ', stream->lrecl - sz);
+                    stream->bufStartR += sz;
                     stream->upto = stream->fbuf;
                 }
                 ptr = (char *)p + 1;
@@ -3167,6 +3191,7 @@ size_t fwrite(const void *ptr, size_t size, size_t nmemb, FILE *stream)
                         __awrite(stream->hfile, &dptr);
                         memcpy(dptr, ptr, sz);
                         memset(dptr + sz, ' ', stream->szfbuf - sz);
+                        stream->bufStartR += sz;
                         ptr = p + 1;
                         p = memchr(ptr, '\n', bytes);
                     }
@@ -3215,6 +3240,7 @@ size_t fwrite(const void *ptr, size_t size, size_t nmemb, FILE *stream)
                         dptr[2] = 0;
                         dptr[3] = 0;
                         dptr[4] = ' ';
+                        stream->bufStartR += 2;
                     }
                     else 
                     {
@@ -3223,6 +3249,7 @@ size_t fwrite(const void *ptr, size_t size, size_t nmemb, FILE *stream)
                         dptr[2] = 0;
                         dptr[3] = 0;
                         memcpy(dptr + 4, ptr, sz);
+                        stream->bufStartR += (sz + 1);
                     }
                 }
                 else
@@ -3241,14 +3268,16 @@ size_t fwrite(const void *ptr, size_t size, size_t nmemb, FILE *stream)
                         dptr[2] = 0;
                         dptr[3] = 0;
                         dptr[4] = ' ';
+                        stream->bufStartR += 2;
                     }
                     else
                     {  
-                        dptr[0] = ( sz + 4) >> 8;
-                        dptr[1] = ( sz + 4) & 0xff;
+                        dptr[0] = (sz + 4) >> 8;
+                        dptr[1] = (sz + 4) & 0xff;
                         dptr[2] = 0;
                         dptr[3] = 0;
                         memcpy(dptr + 4, stream->fbuf, sz);
+                        stream->bufStartR += (sz + 1);
                     }
                     stream->upto = stream->fbuf;
                 }
@@ -3272,6 +3301,7 @@ size_t fwrite(const void *ptr, size_t size, size_t nmemb, FILE *stream)
                             dptr[2] = 0;
                             dptr[3] = 0;
                             dptr[4] = ' ';
+                            stream->bufStartR += 2;
                         }
                         else 
                         {
@@ -3280,6 +3310,7 @@ size_t fwrite(const void *ptr, size_t size, size_t nmemb, FILE *stream)
                             dptr[2] = 0;
                             dptr[3] = 0;
                             memcpy(dptr + 4, ptr, sz);
+                            stream->bufStartR += (sz + 1);
                         }
                         ptr = p + 1;
                         p = memchr(ptr, '\n', bytes);
@@ -3397,10 +3428,12 @@ size_t fread(void *ptr, size_t size, size_t nmemb, FILE *stream)
                 
                 memcpy((char *)ptr + totalread, dptr, read);
                 totalread += read;
+                stream->bufStartR += read;
                 if (totalread < bytes)
                 {
                     *((char *)ptr + totalread) = '\n';
                     totalread++;
+                    stream->bufStartR++;
                 }
             }
             return (totalread / size);
@@ -3442,6 +3475,7 @@ size_t fread(void *ptr, size_t size, size_t nmemb, FILE *stream)
                 
                 memcpy((char *)ptr + totalread, dptr, read);
                 totalread += read;
+                stream->bufStartR += read;
             }
             return (totalread / size);
             break;
@@ -3485,10 +3519,12 @@ size_t fread(void *ptr, size_t size, size_t nmemb, FILE *stream)
                 
                 memcpy((char *)ptr + totalread, dptr, read);
                 totalread += read;
+                stream->bufStartR += read;
                 if (totalread < bytes)
                 {
                     *((char *)ptr + totalread) = '\n';
                     totalread++;
+                    stream->bufStartR++;
                 }
             }
             return (totalread / size);
@@ -3530,6 +3566,7 @@ size_t fread(void *ptr, size_t size, size_t nmemb, FILE *stream)
                 
                 memcpy((char *)ptr + totalread, dptr, read);
                 totalread += read;
+                stream->bufStartR += read;
             }
             return (totalread / size);
             break;

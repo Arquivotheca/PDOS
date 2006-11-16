@@ -1,6 +1,6 @@
 ; osstart.asm - startup code for C programs
 ; 
-; This program written by Paul Edwards, Fidonet 3:711/934
+; This program written by Paul Edwards
 ; Released to the public domain
 ; w/mods by Matthew Parker
 

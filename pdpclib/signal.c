@@ -13,7 +13,8 @@
 #include "signal.h"
 #include "stdlib.h"
 
-static void (*handlers[6])(int) = {
+static void (*handlers[])(int) = {
+    __sigdfl,
     __sigdfl,
     __sigdfl,
     __sigdfl,

@@ -264,7 +264,11 @@ static void fopen3(void)
 #else
         myfile->upto = myfile->endbuf;
 #endif
+#if defined(__MVS__) || defined(__CMS__)
+        myfile->bufStartR = 0;
+#else
         myfile->bufStartR = -(long)myfile->szfbuf;
+#endif
         myfile->errorInd = 0;
         myfile->eofInd = 0;
         myfile->ungetCh = -1;
@@ -1430,7 +1434,7 @@ static void fwriteSlowT(const void *ptr,
             }
         }
         rem = (size_t)(stream->endbuf - stream->upto);
-        if (rem < 2)
+        if (rem < 3)
         {
 #ifdef __OS2__
             rc = DosWrite(stream->hfile,
@@ -2790,7 +2794,7 @@ int fseek(FILE *stream, long int offset, int whence)
 #endif
 #if defined(__MVS__) || defined(__CMS__)
         char fnm[FILENAME_MAX];
-        
+
         strcpy(fnm, "dd:");
         strcat(fnm, stream->ddname);
         freopen(fnm, stream->modeStr, stream);
@@ -3262,6 +3266,7 @@ char *fgets(char *s, int n, FILE *stream)
     size_t len;
     int cnt;
     int c;
+
     if (stream->quickText)
     {
         if (__aread(stream->hfile, &dptr) != 0)
@@ -3724,6 +3729,7 @@ size_t fread(void *ptr, size_t size, size_t nmemb, FILE *stream)
             else
             {
                 memcpy(ptr, stream->upto, read);
+                stream->bufStartR += (stream->endbuf - stream->fbuf);
                 stream->upto = stream->endbuf = stream->fbuf;
                 totalread = read;
             }
@@ -3778,6 +3784,7 @@ size_t fread(void *ptr, size_t size, size_t nmemb, FILE *stream)
             else
             {
                 memcpy(ptr, stream->upto, read);
+                stream->bufStartR += (stream->endbuf - stream->fbuf);
                 stream->upto = stream->endbuf = stream->fbuf;
                 totalread = read;
             }
@@ -3819,6 +3826,7 @@ size_t fread(void *ptr, size_t size, size_t nmemb, FILE *stream)
             else
             {
                 memcpy(ptr, stream->upto, read);
+                stream->bufStartR += (stream->endbuf - stream->fbuf);
                 stream->upto = stream->endbuf = stream->fbuf;
                 totalread = read;
             }
@@ -3869,6 +3877,7 @@ size_t fread(void *ptr, size_t size, size_t nmemb, FILE *stream)
             else
             {
                 memcpy(ptr, stream->upto, read);
+                stream->bufStartR += (stream->endbuf - stream->fbuf);
                 stream->upto = stream->endbuf = stream->fbuf;
                 totalread = read;
             }

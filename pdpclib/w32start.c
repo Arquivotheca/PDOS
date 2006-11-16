@@ -25,7 +25,10 @@ void __main(void)
     return;
 }
 
+/* This function is insufficient to replace the GNU function */
+#if 0
 void *_alloca(int size)
 {
     return (malloc(size));
 }
+#endif

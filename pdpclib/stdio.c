@@ -774,6 +774,10 @@ size_t fread(void *ptr, size_t size, size_t nmemb, FILE *stream)
     APIRET rc;
     ULONG tempRead;
 #endif
+#ifdef _WIN32
+    BOOL rc;
+    DWORD tempRead;
+#endif
 #ifdef __MSDOS__
     int errind;
     size_t tempRead;
@@ -850,6 +854,23 @@ size_t fread(void *ptr, size_t size, size_t nmemb, FILE *stream)
             actualRead = tempRead;
         }
 #endif
+#ifdef _WIN32
+        rc = ReadFile(stream->hfile,
+                      ptr,
+                      toread,
+                      &tempRead,
+                      NULL);
+        if (!rc)
+        {
+            actualRead = 0;
+            stream->errorInd = 1;
+            errno = GetLastError();
+        }
+        else
+        {
+            actualRead = tempRead;
+        }
+#endif
 #ifdef __MSDOS__
         tempRead = __read(stream->hfile, ptr, toread, &errind);
         if (errind)
@@ -918,13 +939,13 @@ static void freadSlowT(void *ptr,
     ULONG tempRead;
     APIRET rc;
 #endif
-#ifdef __MSDOS__
-    size_t tempRead;
-    int errind;
-#endif
 #ifdef _WIN32
     DWORD tempRead;
     BOOL rc;
+#endif
+#ifdef __MSDOS__
+    size_t tempRead;
+    int errind;
 #endif
 
     *actualRead = 0;
@@ -1033,13 +1054,13 @@ static void freadSlowB(void *ptr,
     ULONG tempRead;
     APIRET rc;
 #endif
-#ifdef __MSDOS__
-    size_t tempRead;
-    int errind;
-#endif
 #ifdef _WIN32
     DWORD tempRead;
     BOOL rc;
+#endif
+#ifdef __MSDOS__
+    size_t tempRead;
+    int errind;
 #endif
 
     avail = (size_t)(stream->endbuf - stream->upto);
@@ -2029,7 +2050,7 @@ static int examine(const char **formt, FILE *fq, char *s, va_list *arg,
         }
         if (specifier == 'p')
         {
-#if defined(__OS2__) || defined(__PDOS__)
+#if defined(__OS2__) || defined(__PDOS__) || defined(_WIN32)
             precision = 8;
 #endif
 #if defined(__MSDOS__) && !defined(__PDOS__)
@@ -2271,6 +2292,9 @@ int remove(const char *filename)
 #ifdef __OS2__
     APIRET rc;
 #endif
+#ifdef _WIN32
+    BOOL rc;
+#endif
 
 #ifdef __OS2__
     rc = DosDelete((PSZ)filename);
@@ -2278,6 +2302,18 @@ int remove(const char *filename)
     {
         ret = 1;
         errno = rc;
+    }
+    else
+    {
+        ret = 0;
+    }
+#endif
+#ifdef _WIN32
+    rc = DeleteFile(filename);
+    if (!rc)
+    {
+        ret = 1;
+        errno = GetLastError();
     }
     else
     {
@@ -2297,6 +2333,9 @@ int rename(const char *old, const char *new)
 #ifdef __OS2__
     APIRET rc;
 #endif
+#ifdef _WIN32
+    BOOL rc;
+#endif
 
 #ifdef __OS2__
     rc = DosMove((PSZ)old, (PSZ)new);
@@ -2304,6 +2343,18 @@ int rename(const char *old, const char *new)
     {
         ret = 1;
         errno = rc;
+    }
+    else
+    {
+        ret = 0;
+    }
+#endif
+#ifdef _WIN32
+    rc = MoveFile(old, new);
+    if (!rc)
+    {
+        ret = 1;
+        errno = GetLastError();
     }
     else
     {
@@ -2679,6 +2730,9 @@ int fseek(FILE *stream, long int offset, int whence)
     ULONG retpos;
     APIRET rc;
 #endif
+#ifdef _WIN32
+    DWORD retpos;
+#endif
 
     if (stream->mode == __WRITE_MODE)
     {
@@ -2705,6 +2759,20 @@ int fseek(FILE *stream, long int offset, int whence)
         if ((rc != 0) || (retpos != newpos))
         {
             errno = rc;
+            return (-1);
+        }
+        else
+        {
+            stream->endbuf = stream->fbuf + stream->szfbuf;
+            stream->upto = stream->endbuf;
+            stream->bufStartR = newpos - stream->szfbuf;
+        }
+#endif
+#ifdef _WIN32
+        retpos = SetFilePointer(stream->hfile, newpos, NULL, FILE_BEGIN);
+        if (retpos != newpos)
+        {
+            errno = GetLastError();
             return (-1);
         }
         else

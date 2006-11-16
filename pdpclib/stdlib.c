@@ -80,7 +80,12 @@ void *malloc(size_t size)
 #ifdef _WIN32
     void *p;
     
-    p = GlobalAlloc(0, size);
+    p = GlobalAlloc(0, size + sizeof(size_t));
+    if (p != NULL)
+    {
+        *(size_t *)p = size;
+        p = (char *)p + sizeof(size_t);
+    }
     return (p);
 #endif
 #ifdef __MSDOS__

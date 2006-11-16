@@ -753,11 +753,15 @@ char *getenv(const char *name)
         return ((char *)result);
     }
 #endif
-#ifdef __MSDOS__
+#if defined(__MSDOS__) || defined(_WIN32)
     char *env;
     size_t lenn;
 
+#ifdef _WIN32
+    env = GetEnvironmentStrings();
+#else
     env = (char *)__envptr;
+#endif
     lenn = strlen(name);
     while (*env != '\0')
     {
@@ -782,8 +786,8 @@ int system(const char *string)
 {
 #ifdef __OS2__
     char err_obj[100];
-	APIRET rc;
-	RESULTCODES results;
+    APIRET rc;
+    RESULTCODES results;
 
     if (string == NULL)
     {
@@ -796,6 +800,31 @@ int system(const char *string)
         return (rc);
     }
     return ((int)results.codeResult);
+#endif
+#ifdef _WIN32
+    BOOL rc;
+    PROCESS_INFORMATION pi;
+    DWORD ExitCode;
+    
+    rc = CreateProcess(NULL,
+                       (char *)string,
+                       NULL,
+                       NULL,
+                       FALSE,
+                       0,
+                       NULL,
+                       NULL,
+                       NULL,
+                       &pi);
+    if (!rc)
+    {
+        return (GetLastError());
+    }
+    WaitForSingleObject(pi.hProcess, INFINITE);
+    GetExitCodeProcess(pi.hProcess, &ExitCode);
+    CloseHandle(pi.hProcess);
+    CloseHandle(pi.hThread);
+    return (ExitCode);
 #endif
 #ifdef __MSDOS__
     static unsigned char cmdt[140];

@@ -26,6 +26,10 @@
 #include <os2.h>
 #endif
 
+#ifdef _WIN32
+#include <windows.h>
+#endif
+
 #if defined(__MVS__) || defined(__CMS__)
 #include "mvssupa.h"
 #endif
@@ -72,6 +76,12 @@ void *malloc(size_t size)
     *(size_t *)BaseAddress = size;
     BaseAddress = (char *)BaseAddress + sizeof(size_t);
     return ((void *)BaseAddress);
+#endif
+#ifdef _WIN32
+    void *p;
+    
+    p = GlobalAlloc(0, size);
+    return (p);
 #endif
 #ifdef __MSDOS__
     void *ptr;
@@ -176,6 +186,12 @@ void free(void *ptr)
     {
         ptr = (char *)ptr - sizeof(size_t);
         DosFreeMem((PVOID)ptr);
+    }
+#endif
+#ifdef _WIN32
+    if (ptr != NULL)
+    {
+        GlobalFree(ptr);
     }
 #endif
 #ifdef __MSDOS__

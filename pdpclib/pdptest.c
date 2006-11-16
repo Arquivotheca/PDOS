@@ -19,7 +19,7 @@
 
 int main(int argc, char **argv)
 {
-#if 0
+#if 1
     FILE *fp;
     FILE *fq;
     char buf[5000];

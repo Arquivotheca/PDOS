@@ -22,3 +22,8 @@ void __main(void)
 {
     return;
 }
+
+void *_alloca(int size)
+{
+    return (0);
+}

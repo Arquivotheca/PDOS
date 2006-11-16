@@ -520,7 +520,8 @@ static void osfopen(void)
     {
         dwDesiredAccess = GENERIC_READ;
     }
-    else if ((modeType == 2) || (modeType == 5))
+    else if ((modeType == 2) || (modeType == 3) || (modeType == 5)
+             || (modeType == 6))
     {
         dwDesiredAccess = GENERIC_WRITE;
     }
@@ -535,7 +536,7 @@ static void osfopen(void)
                                dwCreationDisposition,
                                dwFlagsAndAttributes,
                                NULL);
-    if (myfile->hfile = INVALID_HANDLE_VALUE)
+    if (myfile->hfile == INVALID_HANDLE_VALUE)
     {
         err = 1;
         errno = GetLastError();

@@ -12,6 +12,8 @@
 
 /* This is the main entry point of a console mode executable */
 
+#include <stdlib.h>
+
 void mainCRTStartup(void)
 {
     __start(0);
@@ -25,5 +27,5 @@ void __main(void)
 
 void *_alloca(int size)
 {
-    return (0);
+    return (malloc(size));
 }

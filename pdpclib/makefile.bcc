@@ -1,11 +1,11 @@
 CC=bcc
 COPTS=-w -c -I. -u- -O2
 
-pdptest.exe: startup.obj pdptest.obj stdio.obj string.obj stdlib.obj \
+pdptest.exe: osstart.obj pdptest.obj stdio.obj string.obj stdlib.obj \
        start.obj time.obj errno.obj assert.obj signal.obj locale.obj \
        ctype.obj setjmp.obj math.obj fpfuncsb.obj
   if exist borland.lib del borland.lib
-  tlib borland +startup.obj 
+  tlib borland +osstart.obj 
   tlib borland +stdio.obj 
   tlib borland +string.obj 
   tlib borland +stdlib.obj
@@ -21,8 +21,8 @@ pdptest.exe: startup.obj pdptest.obj stdio.obj string.obj stdlib.obj \
   tlib borland +fpfuncsb.obj
   tlink pdptest,pdptest.exe,nul.map,borland.lib+e:\bcos2\lib\os2.lib
   
-startup.obj: startup.asm
-  tasm -mx -w2 startup.asm
+osstart.obj: osstart.asm
+  tasm -mx -w2 osstart.asm
 
 start.obj: start.c
   $(CC) $(COPTS) start.c

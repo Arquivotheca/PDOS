@@ -1,19 +1,19 @@
 CC=bcc
 COPTS=-w -c -I. -I\bcos2\include -u- -O2 
 
-pdptest.exe: startup.obj pdptest.obj stdio.obj string.obj stdlib.obj \
+pdptest.exe: osstart.obj pdptest.obj stdio.obj string.obj stdlib.obj \
        start.obj time.obj errno.obj assert.obj signal.obj locale.obj \
        ctype.obj setjmp.obj math.obj fpfuncsb.obj
-  link386 /nologo /pm:vio startup+pdptest+stdio+string+stdlib+start\
+  link386 /nologo /pm:vio osstart+pdptest+stdio+string+stdlib+start\
        +time+errno+assert+signal+locale+ctype+setjmp+math+fpfuncsb,\
        pdptest.exe,nul.map,os2386.lib,nul.def
   if exist borland.lib del borland.lib
-  tlib borland +startup.obj +stdio.obj +string.obj +stdlib.obj \
+  tlib borland +osstart.obj +stdio.obj +string.obj +stdlib.obj \
        +start.obj +time.obj +errno.obj +assert.obj +signal.obj +locale.obj \
        +ctype.obj +setjmp.obj +math.obj +fpfuncsb.obj
   
-startup.obj: startup.asm
-  tasm -oi -mx -w2 -DLINK386_FIX startup.asm
+osstart.obj: osstart.asm
+  tasm -oi -mx -w2 -DLINK386_FIX osstart.asm
 
 start.obj: start.c
   $(CC) $(COPTS) start.c

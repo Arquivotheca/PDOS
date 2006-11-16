@@ -1,19 +1,19 @@
 CC=gcc
 COPTS=-c -Zomf -I. -O -DUSE_ASSEMBLER -D__OS2__
 
-pdptest.exe: startup.obj pdptest.obj stdio.obj string.obj stdlib.obj \
+pdptest.exe: osstart.obj pdptest.obj stdio.obj string.obj stdlib.obj \
        start.obj time.obj errno.obj assert.obj signal.obj locale.obj \
        ctype.obj setjmp.obj math.obj stringa.obj
-  link386 /nologo /pm:vio startup+pdptest+stdio+string+stdlib+start\
+  link386 /nologo /pm:vio osstart+pdptest+stdio+string+stdlib+start\
        +time+errno+assert+signal+locale+ctype+setjmp+math+stringa,\
        pdptest.exe,nul.map,os2386.lib,nul.def
   rm -f emx.lib
-  lib /nologo emx startup.obj stdio.obj string.obj stdlib.obj \
+  lib /nologo emx osstart.obj stdio.obj string.obj stdlib.obj \
        start.obj time.obj errno.obj assert.obj signal.obj locale.obj \
        ctype.obj setjmp.obj math.obj stringa.obj,,
   
-startup.obj: startup.asm
-  wasm -zq startup.asm
+osstart.obj: osstart.asm
+  wasm -zq osstart.asm
 
 stringa.obj: stringa.asm
   wasm -zq stringa.asm

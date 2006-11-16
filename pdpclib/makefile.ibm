@@ -1,19 +1,19 @@
 CC=icc
 COPTS=-c -Xc -I. -Gn -Tl- -Q -Gi -O -Oi500
 
-pdptest.exe: startup.obj pdptest.obj stdio.obj string.obj stdlib.obj \
+pdptest.exe: osstart.obj pdptest.obj stdio.obj string.obj stdlib.obj \
        start.obj time.obj errno.obj assert.obj signal.obj locale.obj \
        ctype.obj setjmp.obj math.obj fpfuncsc.obj
-  link386 /nologo /pm:vio startup+pdptest+stdio+string+stdlib+start\
+  link386 /nologo /pm:vio osstart+pdptest+stdio+string+stdlib+start\
        +time+errno+assert+signal+locale+ctype+setjmp+math+fpfuncsc,\
        pdptest.exe,nul.map,os2386.lib,nul.def
   if exist cset.lib del cset.lib
-  lib /nologo cset startup.obj stdio.obj string.obj stdlib.obj \
+  lib /nologo cset osstart.obj stdio.obj string.obj stdlib.obj \
        start.obj time.obj errno.obj assert.obj signal.obj locale.obj \
        ctype.obj setjmp.obj math.obj fpfuncsc.obj,,
   
-startup.obj: startup.asm
-  wasm -zq startup.asm
+osstart.obj: osstart.asm
+  wasm -zq osstart.asm
 
 start.obj: start.c
   $(CC) $(COPTS) start.c

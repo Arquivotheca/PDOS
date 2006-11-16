@@ -495,6 +495,52 @@ static void osfopen(void)
         errno = rc;
     }
 #endif
+#ifdef _WIN32
+    DWORD dwDesiredAccess = 0;
+    DWORD dwShareMode = FILE_SHARE_READ;
+    DWORD dwCreationDisposition = 0;
+    DWORD dwFlagsAndAttributes = FILE_ATTRIBUTE_NORMAL;
+
+    if ((modeType == 1) || (modeType == 4) || (modeType == 7)
+        || (modeType == 10))
+    {
+        dwCreationDisposition = OPEN_EXISTING;
+    }
+    else if ((modeType == 2) || (modeType == 5) || (modeType == 8)
+             || (modeType == 11))
+    {
+        dwCreationDisposition = CREATE_ALWAYS;
+    }
+    else if ((modeType == 3) || (modeType == 6) || (modeType == 9)
+             || (modeType == 12))
+    {
+        dwCreationDisposition = CREATE_ALWAYS;
+    }
+    if ((modeType == 1) || (modeType == 4))
+    {
+        dwDesiredAccess = GENERIC_READ;
+    }
+    else if ((modeType == 2) || (modeType == 5))
+    {
+        dwDesiredAccess = GENERIC_WRITE;
+    }
+    else
+    {
+        dwDesiredAccess = GENERIC_READ | GENERIC_WRITE;
+    }
+    myfile->hfile = CreateFile(fnm,
+                               dwDesiredAccess,
+                               dwShareMode,
+                               NULL,
+                               dwCreationDisposition,
+                               dwFlagsAndAttributes,
+                               NULL);
+    if (myfile->hfile = INVALID_HANDLE_VALUE)
+    {
+        err = 1;
+        errno = GetLastError();
+    }
+#endif
 #ifdef __MSDOS__
     int mode;
     int errind;
@@ -648,6 +694,9 @@ int fclose(FILE *stream)
 #ifdef __OS2__
     APIRET rc;
 #endif
+#ifdef _WIN32
+    BOOL rc;
+#endif
 
     if (!stream->isopen)
     {
@@ -656,6 +705,9 @@ int fclose(FILE *stream)
     fflush(stream);
 #ifdef __OS2__
     rc = DosClose(stream->hfile);
+#endif
+#ifdef _WIN32
+    rc = CloseHandle(stream->hfile);
 #endif
 #ifdef __MSDOS__
     __close(stream->hfile);
@@ -698,6 +750,13 @@ int fclose(FILE *stream)
     if (rc != 0)
     {
         errno = rc;
+        return (EOF);
+    }
+#endif
+#ifdef _WIN32
+    if (!rc)
+    {
+        errno = GetLastError();
         return (EOF);
     }
 #endif

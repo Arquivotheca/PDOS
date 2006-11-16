@@ -112,7 +112,9 @@ int CTYP __start(char *p)
 
 #if !defined(__MVS__) && !defined(__CMS__)
 #ifdef _WIN32
+    stdin->hfile = GetStdHandle(STD_INPUT_HANDLE);
     stdout->hfile = GetStdHandle(STD_OUTPUT_HANDLE);
+    stderr->hfile = GetStdHandle(STD_ERROR_HANDLE);
 #else
     stdin->hfile = 0;
     stdout->hfile = 1;

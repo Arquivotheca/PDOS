@@ -6,8 +6,8 @@
 /*********************************************************************/
 /*********************************************************************/
 /*                                                                   */
-/*  fpfuncsb.c - some support routines for floating point work       */
-/*  for Borland C++ for OS/2                                         */
+/*  dossupc.c - some support routines for floating point work        */
+/*  for MSDOS                                                        */
 /*                                                                   */
 /*********************************************************************/
 

@@ -804,8 +804,12 @@ int system(const char *string)
 #ifdef _WIN32
     BOOL rc;
     PROCESS_INFORMATION pi;
-    DWORD ExitCode;
+    STARTUPINFO si;
+    DWORD ExitCode;    
     
+    memset(&si, 0, sizeof si);
+    si.cb = sizeof si;
+    memset(&pi, 0, sizeof pi);
     rc = CreateProcess(NULL,
                        (char *)string,
                        NULL,
@@ -814,7 +818,7 @@ int system(const char *string)
                        0,
                        NULL,
                        NULL,
-                       NULL,
+                       &si,
                        &pi);
     if (!rc)
     {

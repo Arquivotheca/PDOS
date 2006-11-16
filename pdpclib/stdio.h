@@ -19,7 +19,8 @@
     || defined(__CMS__))
 typedef unsigned long size_t;
 #endif
-#if (defined(__MSDOS__) || defined(__DOS__) || defined(__POWERC))
+#if (defined(__MSDOS__) || defined(__DOS__) || defined(__POWERC) \
+    || defined(_WIN32))
 typedef unsigned int size_t;
 #endif
 #endif
@@ -46,6 +47,9 @@ typedef struct
 #endif
 #if (defined(__MSDOS__) || defined(__DOS__) || defined(__POWERC))
     int hfile; /* dos file handle */
+#endif
+#if defined(_WIN32)
+    void *hfile;
 #endif
 #if (defined(__MVS__) || defined(__CMS__))
     void *hfile;

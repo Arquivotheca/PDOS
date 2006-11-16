@@ -19,13 +19,15 @@
 
 int main(int argc, char **argv)
 {
+#if 0
     FILE *fp;
     FILE *fq;
     char buf[5000];
     size_t x;
     int c;
-    int i;
     time_t tt;
+#endif
+    int i;
 
 #if 0
     fq = fopen("dd:outfile", "w");

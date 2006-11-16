@@ -25,6 +25,9 @@
 #ifdef __OS2__
 #include <os2.h>
 #endif
+#ifdef _WIN32
+#include <windows.h>
+#endif
 #ifdef __MSDOS__
 #ifdef __WATCOMC__
 #define CTYP __cdecl
@@ -101,6 +104,9 @@ time_t time(time_t *timer)
     DATETIME dt;
     APIRET rc;
 #endif    
+#ifdef _WIN32
+    SYSTEMTIME dt;
+#endif    
 #if defined(__MSDOS__)
     struct {
         int year;
@@ -124,12 +130,20 @@ time_t time(time_t *timer)
     }
     else
 #endif    
+#ifdef _WIN32
+    GetSystemTime(&dt);
+    tt = ymd_to_scalar(dt.wYear, dt.wMonth, dt.wDay) 
+         - ymd_to_scalar(1970, 1, 1);
+    tt = tt * 24 + dt.wHour;
+    tt = tt * 60 + dt.wMinute;
+    tt = tt * 60 + dt.wSecond;
+#endif    
 #ifdef __MSDOS__
     __datetime(&dt);
 #endif
 #if defined(__MVS__) || defined(__CMS__)
     tt = __getclk(clk);
-#else
+#elif !defined(_WIN32)
 
     {
         tt = ymd_to_scalar(dt.year, dt.month, dt.day) 

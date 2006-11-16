@@ -19,7 +19,8 @@
     || defined(__CMS__))
 typedef unsigned long size_t;
 #endif
-#if (defined(__MSDOS__) || defined(__DOS__) || defined(__POWERC))
+#if (defined(__MSDOS__) || defined(__DOS__) || defined(__POWERC) \
+    || defined(_WIN32))
 typedef unsigned int size_t;
 #endif
 #endif

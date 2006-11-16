@@ -31,6 +31,10 @@
 #include <os2.h>
 #endif
 
+#ifdef _WIN32
+#include <windows.h>
+#endif
+
 #if (defined(__MSDOS__) && defined(__WATCOMC__))
 #define CTYP __cdecl
 #else
@@ -100,11 +104,20 @@ int CTYP __start(char *p)
     p = exep->psp;
     __abscor = exep->abscor;
     __vidptr = ABSADDR(0xb8000);
-#endif    
+#endif
+
+#ifdef _WIN32
+    p = GetCommandLine();
+#endif
+
 #if !defined(__MVS__) && !defined(__CMS__)
+#ifdef _WIN32
+    stdout->hfile = GetStdHandle(STD_OUTPUT_HANDLE);
+#else
     stdin->hfile = 0;
     stdout->hfile = 1;
     stderr->hfile = 2;
+#endif
 
     stdin->quickBin = 0;
     stdin->quickText = 0;
@@ -362,6 +375,19 @@ int CTYP __start(char *p)
     argv[0] = p;
     p += strlen(p) + 1;
 #endif
+#ifdef _WIN32
+    argv[0] = p;
+    p = strchr(p, ' ');
+    if (p == NULL)
+    {
+        p = "";
+    }
+    else
+    {
+        *p = '\0';
+        p++;
+    }
+#endif
 #if defined(__MSDOS__) || defined(__PDOS__)
     argv[0] = "";
 
@@ -464,6 +490,10 @@ void __exit(int status)
 #if USE_MEMMGR
     memmgrTerm(&__memmgr);
 #endif
+#ifdef _WIN32
+    ExitProcess(status);
+#else
     __exita(status);
+#endif
     return;
 }

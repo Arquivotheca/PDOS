@@ -87,6 +87,10 @@ extern void CTYP __rename(const char *old, const char *new);
 #include <os2.h>
 #endif
 
+#ifdef _WIN32
+#include <windows.h>
+#endif
+
 #if defined(__MVS__) || defined(__CMS__)
 #include "mvssupa.h"
 #define FIXED_BINARY 0
@@ -858,6 +862,10 @@ static void freadSlowT(void *ptr,
     size_t tempRead;
     int errind;
 #endif
+#ifdef _WIN32
+    DWORD tempRead;
+    BOOL rc;
+#endif
 
     *actualRead = 0;
     while (!finReading)
@@ -875,6 +883,19 @@ static void freadSlowT(void *ptr,
                 tempRead = 0;
                 stream->errorInd = 1;
                 errno = rc;
+            }
+#endif
+#ifdef _WIN32
+            rc = ReadFile(stream->hfile,
+                          stream->fbuf,
+                          stream->szfbuf,
+                          &tempRead,
+                          NULL);
+            if (!rc)
+            {
+                tempRead = 0;
+                stream->errorInd = 1;
+                errno = GetLastError();
             }
 #endif
 #ifdef __MSDOS__
@@ -956,6 +977,10 @@ static void freadSlowB(void *ptr,
     size_t tempRead;
     int errind;
 #endif
+#ifdef _WIN32
+    DWORD tempRead;
+    BOOL rc;
+#endif
 
     avail = (size_t)(stream->endbuf - stream->upto);
     memcpy(ptr, stream->upto, avail);
@@ -976,6 +1001,19 @@ static void freadSlowB(void *ptr,
             stream->errorInd = 1;
             errno = rc;
         }
+#endif
+#ifdef _WIN32
+            rc = ReadFile(stream->hfile,
+                          (char *)ptr + *actualRead,
+                          toread - *actualRead,
+                          &tempRead,
+                          NULL);
+            if (!rc)
+            {
+                tempRead = 0;
+                stream->errorInd = 1;
+                errno = GetLastError();
+            }
 #endif
 #ifdef __MSDOS__
         tempRead = __read(stream->hfile,
@@ -1012,6 +1050,20 @@ static void freadSlowB(void *ptr,
             tempRead = 0;
             stream->errorInd = 1;
             errno = rc;
+        }
+#endif
+#ifdef _WIN32
+        rc = ReadFile(stream->hfile,
+                      stream->fbuf,
+                      stream->szfbuf,
+                      &tempRead,
+                      NULL);
+        left = toread - *actualRead;
+        if (!rc)
+        {
+            tempRead = 0;
+            stream->errorInd = 1;
+            errno = GetLastError();
         }
 #endif
 #ifdef __MSDOS__
@@ -1057,6 +1109,10 @@ size_t fwrite(const void *ptr, size_t size, size_t nmemb, FILE *stream)
     ULONG actualWritten;
     APIRET rc;
 #endif
+#ifdef _WIN32
+    DWORD actualWritten;
+    BOOL rc;
+#endif
 #ifdef __MSDOS__
     size_t actualWritten;
     int errind;
@@ -1096,6 +1152,15 @@ size_t fwrite(const void *ptr, size_t size, size_t nmemb, FILE *stream)
             stream->errorInd = 1;
             actualWritten = 0;
             errno = rc;
+        }
+#endif
+#ifdef _WIN32
+        rc = WriteFile(stream->hfile, ptr, towrite, &actualWritten, NULL);
+        if (!rc)
+        {
+            stream->errorInd = 1;
+            actualWritten = 0;
+            errno = GetLastError();
         }
 #endif
 #ifdef __MSDOS__
@@ -1206,6 +1271,10 @@ static void fwriteSlowT(const void *ptr,
     ULONG tempWritten;
     APIRET rc;
 #endif
+#ifdef _WIN32
+    DWORD tempWritten;
+    BOOL rc;
+#endif
 #ifdef __MSDOS__
     size_t tempWritten;
     int errind;
@@ -1243,6 +1312,20 @@ static void fwriteSlowT(const void *ptr,
                 if (rc != 0)
                 {
                     stream->errorInd = 1;
+                    errno = rc;
+                    return;
+                }
+#endif
+#ifdef _WIN32
+                rc = WriteFile(stream->hfile,
+                               stream->fbuf,
+                               stream->szfbuf,
+                               &tempWritten,
+                               NULL);
+                if (!rc)
+                {
+                    stream->errorInd = 1;
+                    errno = GetLastError();
                     return;
                 }
 #endif
@@ -1277,6 +1360,19 @@ static void fwriteSlowT(const void *ptr,
             {
                 stream->errorInd = 1;
                 errno = rc;
+                return;
+            }
+#endif
+#ifdef _WIN32
+            rc = WriteFile(stream->hfile,
+                           stream->fbuf,
+                           (size_t)(stream->upto - stream->fbuf),
+                           &tempWritten,
+                           NULL);
+            if (!rc)
+            {
+                stream->errorInd = 1;
+                errno = GetLastError();
                 return;
             }
 #endif
@@ -1326,6 +1422,19 @@ static void fwriteSlowT(const void *ptr,
             return;
         }
 #endif
+#ifdef _WIN32
+        rc = WriteFile(stream->hfile,
+                       stream->fbuf,
+                       (size_t)(stream->upto - stream->fbuf),
+                       &tempWritten,
+                       NULL);
+        if (!rc)
+        {
+            stream->errorInd = 1;
+            errno = GetLastError();
+            return;
+        }
+#endif
 #ifdef __MSDOS__
         tempWritten = __write(stream->hfile,
                               stream->fbuf,
@@ -1367,6 +1476,19 @@ static void fwriteSlowT(const void *ptr,
                 return;
             }
 #endif
+#ifdef _WIN32
+            rc = WriteFile(stream->hfile,
+                           stream->fbuf,
+                           stream->szfbuf,
+                           &tempWritten,
+                           NULL);
+            if (!rc)
+            {
+                stream->errorInd = 1;
+                errno = GetLastError();
+                return;
+            }
+#endif
 #ifdef __MSDOS__
             tempWritten = __write(stream->hfile,
                                   stream->fbuf,
@@ -1404,6 +1526,19 @@ static void fwriteSlowT(const void *ptr,
             return;
         }
 #endif
+#ifdef _WIN32
+        rc = WriteFile(stream->hfile,
+                       stream->fbuf,
+                       (size_t)(stream->upto - stream->fbuf),
+                       &tempWritten,
+                       NULL);
+        if (!rc)
+        {
+            stream->errorInd = 1;
+            errno = GetLastError();
+            return;
+        }
+#endif
 #ifdef __MSDOS__
         tempWritten = __write(stream->hfile,
                               stream->fbuf,
@@ -1435,6 +1570,10 @@ static void fwriteSlowB(const void *ptr,
     ULONG tempWritten;
     APIRET rc;
 #endif
+#ifdef _WIN32
+    DWORD tempWritten;
+    BOOL rc;
+#endif
 #ifdef __MSDOS__
     size_t tempWritten;
     int errind;
@@ -1458,6 +1597,19 @@ static void fwriteSlowB(const void *ptr,
     {
         stream->errorInd = 1;
         errno = rc;
+        return;
+    }
+#endif
+#ifdef _WIN32
+    rc = WriteFile(stream->hfile,
+                   stream->fbuf,
+                   stream->szfbuf,
+                   &tempWritten,
+                   NULL);
+    if (!rc)
+    {
+        stream->errorInd = 1;
+        errno = GetLastError();
         return;
     }
 #endif
@@ -1488,6 +1640,19 @@ static void fwriteSlowB(const void *ptr,
         {
             stream->errorInd = 1;
             errno = rc;
+            return;
+        }
+#endif
+#ifdef _WIN32
+        rc = WriteFile(stream->hfile,
+                       (char *)ptr + *actualWritten,
+                       towrite - *actualWritten,
+                       &tempWritten,
+                       NULL);
+        if (!rc)
+        {
+            stream->errorInd = 1;
+            errno = GetLastError();
             return;
         }
 #endif
@@ -2136,6 +2301,10 @@ char *fgets(char *s, int n, FILE *stream)
     ULONG actualRead;
     APIRET rc;
 #endif
+#ifdef _WIN32
+    DWORD actualRead;
+    BOOL rc;
+#endif
 #ifdef __MSDOS__
     size_t actualRead;
     int errind;
@@ -2654,6 +2823,10 @@ int fflush(FILE *stream)
     APIRET rc;
     ULONG actualWritten;
 #endif
+#ifdef _WIN32
+    BOOL rc;
+    DWORD actualWritten;
+#endif
 #ifdef __MSDOS__
     int errind;
     size_t actualWritten;
@@ -2670,6 +2843,19 @@ int fflush(FILE *stream)
         {
             stream->errorInd = 1;
             errno = rc;
+            return (EOF);
+        }
+#endif
+#ifdef _WIN32
+        rc = WriteFile(stream->hfile,
+                       stream->fbuf,
+                       (size_t)(stream->upto - stream->fbuf),
+                       &actualWritten,
+                       NULL);
+        if (!rc)
+        {
+            stream->errorInd = 1;
+            errno = GetLastError();
             return (EOF);
         }
 #endif

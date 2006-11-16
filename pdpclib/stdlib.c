@@ -214,12 +214,12 @@ void abort(void)
 {
     raise(SIGABRT);
     exit(EXIT_FAILURE);
-#if !defined(__EMX__) && !defined(__GCC__)
+#if !defined(__EMX__) && !defined(__GCC__) && !defined(_WIN32)
     return;
 #endif
 }
 
-#if !defined(__EMX__) && !defined(__GCC__)
+#if !defined(__EMX__) && !defined(__GCC__) && !defined(_WIN32)
 void __exit(int status);
 #else
 void __exit(int status) __attribute__((noreturn));
@@ -228,7 +228,7 @@ void __exit(int status) __attribute__((noreturn));
 void exit(int status)
 {
     __exit(status);
-#if !defined(__EMX__) && !defined(__GCC__)
+#if !defined(__EMX__) && !defined(__GCC__) && !defined(_WIN32)
     return;
 #endif
 }

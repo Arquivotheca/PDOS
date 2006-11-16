@@ -2378,12 +2378,12 @@ char *fgets(char *s, int n, FILE *stream)
         {
             c = *p;
             *p = '\n';
-#ifdef __OS2__
+#if defined(__OS2__) || defined(_WIN32)
             if (n < 8)
             {
 #endif
                 while ((*u++ = *t++) != '\n') ; /* tight inner loop */
-#ifdef __OS2__
+#if defined(__OS2__) || defined(_WIN32)
             }
             else
             {
@@ -2600,6 +2600,19 @@ char *fgets(char *s, int n, FILE *stream)
             actualRead = 0;
             stream->errorInd = 1;
             errno = rc;
+        }
+#endif
+#ifdef _WIN32
+        rc = ReadFile(stream->hfile,
+                      stream->fbuf,
+                      stream->szfbuf,
+                      &actualRead,
+                      NULL);
+        if (!rc)
+        {
+            actualRead = 0;
+            stream->errorInd = 1;
+            errno = GetLastError();
         }
 #endif
 #ifdef __MSDOS__

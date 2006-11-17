@@ -3036,9 +3036,17 @@ int fflush(FILE *stream)
 
 char *tmpnam(char *s)
 {
+#if defined(__MVS__) || defined(__CMS__)
+    static char buf[] = "dd:ZZZZZZZA";
+#else
     static char buf[] = "ZZZZZZZA.$$$";
+#endif
 
+#if defined(__MVS__) || defined(__CMS__)
+    buf[10]++;
+#else
     buf[7]++;
+#endif
     if (s == NULL)
     {
         return (buf);
@@ -3049,7 +3057,11 @@ char *tmpnam(char *s)
 
 FILE *tmpfile(void)
 {
+#if defined(__MVS__) || defined(__CMS__)
+    return (fopen("dd:ZZZZZZZA", "wb+"));
+#else
     return (fopen("ZZZZZZZA.$$$", "wb+"));
+#endif
 }
 
 int fscanf(FILE *stream, const char *format, ...)

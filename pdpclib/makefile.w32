@@ -8,7 +8,7 @@ pdptest.exe: w32start.o pdptest.o stdio.o string.o stdlib.o \
   ar r pdpwin32.a w32start.o stdio.o string.o stdlib.o
   ar r pdpwin32.a start.o time.o errno.o assert.o signal.o 
   ar r pdpwin32.a locale.o ctype.o setjmp.o math.o
-  ld -o pdptest.exe w32start.o pdptest.o pdpwin32.a libkernel32.a libgcc.a
+  gcc -nostdlib -o pdptest.exe w32start.o pdptest.o pdpwin32.a libkernel32.a libgcc.a
   
 .c.o:
   $(CC) $(COPTS) $<

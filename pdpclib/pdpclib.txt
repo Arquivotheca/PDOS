@@ -21,9 +21,8 @@ developers to make unportable but fast code, not that of the application
 developers.  Anyone wishing to contribute to this project, please contact 
 Paul Edwards at kerravon@w3.to.
 
-The official method for obtaining PDPCLIB is going to
+The official method for obtaining PDPCLIB is to download it from:
 http://sourceforge.net/projects/pdos
-and using CVS and checking out via appropriate tag.
 
 
 
@@ -48,6 +47,9 @@ for environments besides the mainframe. The DOS
 version doesn't do full long arithmetic.
 
 The following environments have been used:
+
+Win32 for:
+gcc 2.91.57
 
 OS/2 for:
 EMX 0.9b
@@ -239,15 +241,11 @@ HISTORY
 
 0.83  Whitespace change required to avoid assembly error.
 
-1.00  All math functions have been implemented, meaning
-      every function has now been implemented, although
-      some still have limitations. This is a significant
-      milestone and mainframe users are actually using it,
-      with GCC, so I thought it was time to create a 1.00
-      even though it still isn't 100% conforming. Although
-      on the mainframe it must be pretty close, as the
-      limited file operations don't actually mean it is
-      non-conforming.
+0.84  Almost all math functions have been implemented, meaning
+      nearly every function has now been implemented, although
+      some still have limitations. Also, Win32 support has been
+      added so you can use PDPCLIB in combination with gcc to
+      create console mode applications.
       
 
 CREDITS

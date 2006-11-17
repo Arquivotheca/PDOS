@@ -1024,13 +1024,14 @@ static void freadSlowT(void *ptr,
                 if (*(stream->upto - 1) == '\r')
                 {
                     *((char *)ptr + *actualRead - 1) = '\n';
+                    stream->upto++;
                 }
-                else
+                else if (need != got)
                 {
                     *((char *)ptr + *actualRead) = '\n';
                     *actualRead += 1;
+                    stream->upto++;
                 }
-                stream->upto++;
             }
             else
             {

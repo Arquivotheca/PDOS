@@ -2903,7 +2903,10 @@ int setvbuf(FILE *stream, char *buf, int mode, size_t size)
         stream->theirBuffer = 1;
         size -= 8;
     }
-    free(stream->intBuffer);
+    if (!stream->permfile)
+    {
+        free(stream->intBuffer);
+    }
     stream->intBuffer = mybuf;
     stream->fbuf = stream->intBuffer + 2;
     *stream->fbuf++ = '\0';
@@ -2911,7 +2914,14 @@ int setvbuf(FILE *stream, char *buf, int mode, size_t size)
     stream->szfbuf = size;
     stream->endbuf = stream->fbuf + stream->szfbuf;
     *stream->endbuf = '\n';
-    stream->upto = stream->endbuf;
+    if (stream->mode == __WRITE_MODE)
+    {
+        stream->upto = stream->fbuf;
+    }
+    else
+    {
+        stream->upto = stream->endbuf;
+    }
     stream->bufTech = mode;
     if (!stream->textMode && (stream->bufTech == _IOLBF))
     {

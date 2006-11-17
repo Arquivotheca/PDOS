@@ -39,7 +39,8 @@ MAIN DESIGN GOALS
 CURRENT STATUS
 --------------
 
-All routines have been implemented, but some are not
+Almost all routines have been implemented (atan2
+and modf are the exceptions), but some are not
 fully functional, specifically the format specifiers
 in scanf() and printf() and file update, append and
 random access in fopen() etc, plus longjmp/setjmp
@@ -113,7 +114,8 @@ USAGE
 There are makefiles for all the different compilers supported.  Choose
 the one you want, and compile it, creating a library if you want, and
 then compiling your programs in the same way that the "pdptest" program
-is compiled.
+is compiled.  Note that code that refers to __32BIT__ is for compiling
+programs using EMX 0.9d for DOS.
 
 
 

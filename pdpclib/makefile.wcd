@@ -1,31 +1,29 @@
 CC=wcl
-COPTS=-w -c -I. -ml -zl -D__MSDOS__ -fpi87 -s -d2 -zdp -zu
+COPTS=-q -w -c -I. -ml -zl -D__MSDOS__ -fpi87 -s -zdp -zu
 
 pdptest.exe: dosstart.obj pdptest.obj stdio.obj string.obj stdlib.obj \
        start.obj time.obj errno.obj assert.obj signal.obj locale.obj \
-       ctype.obj setjmp.obj math.obj fpfuncsb.obj
-#  wlink dosstart+pdptest+stdio+string+stdlib+start+time+errno\
-#        +assert+signal+locale+ctype+setjmp+math+fpfuncsb,\
-#        pdptest.exe,nul.map,,
+       ctype.obj setjmp.obj math.obj dossupc.obj dossupa.obj
   if exist watcom.lib del watcom.lib
-  wlib -b watcom +dosstart.obj 
-  wlib -b watcom +stdio.obj 
-  wlib -b watcom +string.obj 
-  wlib -b watcom +stdlib.obj
-  wlib -b watcom +start.obj 
-  wlib -b watcom +time.obj 
-  wlib -b watcom +errno.obj 
-  wlib -b watcom +assert.obj 
-  wlib -b watcom +signal.obj 
-  wlib -b watcom +locale.obj
-  wlib -b watcom +ctype.obj 
-  wlib -b watcom +setjmp.obj 
-  wlib -b watcom +math.obj 
-  wlib -b watcom +fpfuncsb.obj
-  wlink File pdptest.obj Name pdptest.exe Library watcom.lib
+  wlib -b -q watcom +dosstart.obj 
+  wlib -b -q watcom +stdio.obj 
+  wlib -b -q watcom +string.obj 
+  wlib -b -q watcom +stdlib.obj
+  wlib -b -q watcom +start.obj 
+  wlib -b -q watcom +time.obj 
+  wlib -b -q watcom +errno.obj 
+  wlib -b -q watcom +assert.obj 
+  wlib -b -q watcom +signal.obj 
+  wlib -b -q watcom +locale.obj
+  wlib -b -q watcom +ctype.obj 
+  wlib -b -q watcom +setjmp.obj 
+  wlib -b -q watcom +math.obj 
+  wlib -b -q watcom +dossupc.obj
+  wlib -b -q watcom +dossupa.obj
+  wlink File pdptest.obj Name pdptest.exe Form dos Library watcom.lib
   
 dosstart.obj: dosstart.asm
-  wasm -DWATCOM dosstart.asm
+  wasm -q -DWATCOM dosstart.asm
 
 start.obj: start.c
   $(CC) $(COPTS) start.c
@@ -66,8 +64,10 @@ setjmp.obj: setjmp.c
 math.obj: math.c
   $(CC) $(COPTS) math.c
   
-fpfuncsb.obj: fpfuncsb.c
-  $(CC) $(COPTS) fpfuncsb.c
+dossupc.obj: dossupc.c
+  $(CC) $(COPTS) dossupc.c
   
+dossupa.obj: dossupa.asm
+  wasm -q -DWATCOM dossupa.asm
 
 

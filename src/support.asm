@@ -3,7 +3,11 @@
 ; This program written by Paul Edwards
 ; Released to the public domain
 
+ifdef WATCOM
+.model memodel, c
+else
 % .model memodel, c
+endif
 
 assume cs:_TEXT, ds:DGROUP
 
@@ -15,8 +19,8 @@ _BSS    ends
 _TEXT segment word public 'CODE'
 
 public int86
-int86 proc intnum:word, regsin:ptr, regsout:ptr
-             uses ax, bx, cx, dx, si, di, ds, es
+int86 proc uses ax bx cx dx si di ds es, \
+           intnum:word, regsin:ptr, regsout:ptr
 
 if @DataSize
   lds si, regsin
@@ -105,8 +109,8 @@ int86 endp
 
 
 public int86x
-int86x proc intnum:word, regsin:ptr, regsout:ptr, sregs:ptr
-              uses ax, bx, cx, dx, si, di, ds, es
+int86x proc uses ax bx cx dx si di ds es, \
+            intnum:word, regsin:ptr, regsout:ptr, sregs:ptr
 
 push ds; for restoration after interrupt
 

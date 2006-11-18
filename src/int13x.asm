@@ -10,8 +10,8 @@ assume cs:_TEXT
 _TEXT segment word public 'CODE'
 
 public int13x
-int13x proc regsin:ptr, regsout:ptr, sregs:ptr
-              uses ax, bx, cx, dx, si, di, ds, es
+int13x proc uses ax bx cx dx si di ds es, \
+            regsin:ptr, regsout:ptr, sregs:ptr
 
 push ds; for restoration after interrupt
 

@@ -131,12 +131,12 @@ n_lxlsh@ endp
 
 ; multiply cx:bx by dx:ax, result in dx:ax
 
-public n_lxmul@
 public __I4M
-public __U4M
-n_lxmul@ proc
 __I4M:
+public __U4M
 __U4M:
+public n_lxmul@
+n_lxmul@ proc
 push bp
 mov bp,sp
 push cx

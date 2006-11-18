@@ -31,7 +31,7 @@
 #include <os2.h>
 #endif
 
-#ifdef _WIN32
+#ifdef __WIN32__
 #include <windows.h>
 #endif
 
@@ -106,12 +106,12 @@ int CTYP __start(char *p)
     __vidptr = ABSADDR(0xb8000);
 #endif
 
-#ifdef _WIN32
+#ifdef __WIN32__
     p = GetCommandLine();
 #endif
 
 #if !defined(__MVS__) && !defined(__CMS__)
-#ifdef _WIN32
+#ifdef __WIN32__
     stdin->hfile = GetStdHandle(STD_INPUT_HANDLE);
     stdout->hfile = GetStdHandle(STD_OUTPUT_HANDLE);
     stderr->hfile = GetStdHandle(STD_ERROR_HANDLE);
@@ -377,7 +377,7 @@ int CTYP __start(char *p)
     argv[0] = p;
     p += strlen(p) + 1;
 #endif
-#ifdef _WIN32
+#ifdef __WIN32__
     argv[0] = p;
     p = strchr(p, ' ');
     if (p == NULL)
@@ -492,7 +492,7 @@ void __exit(int status)
 #if USE_MEMMGR
     memmgrTerm(&__memmgr);
 #endif
-#ifdef _WIN32
+#ifdef __WIN32__
     ExitProcess(status);
 #else
     __exita(status);

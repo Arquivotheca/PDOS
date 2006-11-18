@@ -26,7 +26,7 @@
 #include <os2.h>
 #endif
 
-#ifdef _WIN32
+#ifdef __WIN32__
 #include <windows.h>
 #endif
 
@@ -77,7 +77,7 @@ void *malloc(size_t size)
     BaseAddress = (char *)BaseAddress + sizeof(size_t);
     return ((void *)BaseAddress);
 #endif
-#ifdef _WIN32
+#ifdef __WIN32__
     void *p;
     
     p = GlobalAlloc(0, size + sizeof(size_t));
@@ -193,7 +193,7 @@ void free(void *ptr)
         DosFreeMem((PVOID)ptr);
     }
 #endif
-#ifdef _WIN32
+#ifdef __WIN32__
     if (ptr != NULL)
     {
         GlobalFree(ptr);
@@ -235,12 +235,12 @@ void abort(void)
 {
     raise(SIGABRT);
     exit(EXIT_FAILURE);
-#if !defined(__EMX__) && !defined(__GCC__) && !defined(_WIN32)
+#if !defined(__EMX__) && !defined(__GCC__) && !defined(__WIN32__)
     return;
 #endif
 }
 
-#if !defined(__EMX__) && !defined(__GCC__) && !defined(_WIN32)
+#if !defined(__EMX__) && !defined(__GCC__) && !defined(__WIN32__)
 void __exit(int status);
 #else
 void __exit(int status) __attribute__((noreturn));
@@ -249,7 +249,7 @@ void __exit(int status) __attribute__((noreturn));
 void exit(int status)
 {
     __exit(status);
-#if !defined(__EMX__) && !defined(__GCC__) && !defined(_WIN32)
+#if !defined(__EMX__) && !defined(__GCC__) && !defined(__WIN32__)
     return;
 #endif
 }
@@ -758,11 +758,11 @@ char *getenv(const char *name)
         return ((char *)result);
     }
 #endif
-#if defined(__MSDOS__) || defined(_WIN32)
+#if defined(__MSDOS__) || defined(__WIN32__)
     char *env;
     size_t lenn;
 
-#ifdef _WIN32
+#ifdef __WIN32__
     env = GetEnvironmentStrings();
 #else
     env = (char *)__envptr;
@@ -806,7 +806,7 @@ int system(const char *string)
     }
     return ((int)results.codeResult);
 #endif
-#ifdef _WIN32
+#ifdef __WIN32__
     BOOL rc;
     PROCESS_INFORMATION pi;
     STARTUPINFO si;

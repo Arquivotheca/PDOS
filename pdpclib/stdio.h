@@ -20,7 +20,7 @@
 typedef unsigned long size_t;
 #endif
 #if (defined(__MSDOS__) || defined(__DOS__) || defined(__POWERC) \
-    || defined(_WIN32))
+    || defined(__WIN32__))
 typedef unsigned int size_t;
 #endif
 #endif
@@ -48,7 +48,7 @@ typedef struct
 #if (defined(__MSDOS__) || defined(__DOS__) || defined(__POWERC))
     int hfile; /* dos file handle */
 #endif
-#if defined(_WIN32)
+#if defined(__WIN32__)
     void *hfile;
 #endif
 #if (defined(__MVS__) || defined(__CMS__))

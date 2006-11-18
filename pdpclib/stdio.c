@@ -87,7 +87,7 @@ extern void CTYP __rename(const char *old, const char *new);
 #include <os2.h>
 #endif
 
-#ifdef _WIN32
+#ifdef __WIN32__
 #include <windows.h>
 #endif
 
@@ -499,7 +499,7 @@ static void osfopen(void)
         errno = rc;
     }
 #endif
-#ifdef _WIN32
+#ifdef __WIN32__
     DWORD dwDesiredAccess = 0;
     DWORD dwShareMode = FILE_SHARE_READ;
     DWORD dwCreationDisposition = 0;
@@ -699,7 +699,7 @@ int fclose(FILE *stream)
 #ifdef __OS2__
     APIRET rc;
 #endif
-#ifdef _WIN32
+#ifdef __WIN32__
     BOOL rc;
 #endif
 
@@ -711,7 +711,7 @@ int fclose(FILE *stream)
 #ifdef __OS2__
     rc = DosClose(stream->hfile);
 #endif
-#ifdef _WIN32
+#ifdef __WIN32__
     rc = CloseHandle(stream->hfile);
 #endif
 #ifdef __MSDOS__
@@ -758,7 +758,7 @@ int fclose(FILE *stream)
         return (EOF);
     }
 #endif
-#ifdef _WIN32
+#ifdef __WIN32__
     if (!rc)
     {
         errno = GetLastError();
@@ -778,7 +778,7 @@ size_t fread(void *ptr, size_t size, size_t nmemb, FILE *stream)
     APIRET rc;
     ULONG tempRead;
 #endif
-#ifdef _WIN32
+#ifdef __WIN32__
     BOOL rc;
     DWORD tempRead;
 #endif
@@ -858,7 +858,7 @@ size_t fread(void *ptr, size_t size, size_t nmemb, FILE *stream)
             actualRead = tempRead;
         }
 #endif
-#ifdef _WIN32
+#ifdef __WIN32__
         rc = ReadFile(stream->hfile,
                       ptr,
                       toread,
@@ -943,7 +943,7 @@ static void freadSlowT(void *ptr,
     ULONG tempRead;
     APIRET rc;
 #endif
-#ifdef _WIN32
+#ifdef __WIN32__
     DWORD tempRead;
     BOOL rc;
 #endif
@@ -970,7 +970,7 @@ static void freadSlowT(void *ptr,
                 errno = rc;
             }
 #endif
-#ifdef _WIN32
+#ifdef __WIN32__
             rc = ReadFile(stream->hfile,
                           stream->fbuf,
                           stream->szfbuf,
@@ -1059,7 +1059,7 @@ static void freadSlowB(void *ptr,
     ULONG tempRead;
     APIRET rc;
 #endif
-#ifdef _WIN32
+#ifdef __WIN32__
     DWORD tempRead;
     BOOL rc;
 #endif
@@ -1088,7 +1088,7 @@ static void freadSlowB(void *ptr,
             errno = rc;
         }
 #endif
-#ifdef _WIN32
+#ifdef __WIN32__
             rc = ReadFile(stream->hfile,
                           (char *)ptr + *actualRead,
                           toread - *actualRead,
@@ -1138,7 +1138,7 @@ static void freadSlowB(void *ptr,
             errno = rc;
         }
 #endif
-#ifdef _WIN32
+#ifdef __WIN32__
         rc = ReadFile(stream->hfile,
                       stream->fbuf,
                       stream->szfbuf,
@@ -1195,7 +1195,7 @@ size_t fwrite(const void *ptr, size_t size, size_t nmemb, FILE *stream)
     ULONG actualWritten;
     APIRET rc;
 #endif
-#ifdef _WIN32
+#ifdef __WIN32__
     DWORD actualWritten;
     BOOL rc;
 #endif
@@ -1240,7 +1240,7 @@ size_t fwrite(const void *ptr, size_t size, size_t nmemb, FILE *stream)
             errno = rc;
         }
 #endif
-#ifdef _WIN32
+#ifdef __WIN32__
         rc = WriteFile(stream->hfile, ptr, towrite, &actualWritten, NULL);
         if (!rc)
         {
@@ -1357,7 +1357,7 @@ static void fwriteSlowT(const void *ptr,
     ULONG tempWritten;
     APIRET rc;
 #endif
-#ifdef _WIN32
+#ifdef __WIN32__
     DWORD tempWritten;
     BOOL rc;
 #endif
@@ -1402,7 +1402,7 @@ static void fwriteSlowT(const void *ptr,
                     return;
                 }
 #endif
-#ifdef _WIN32
+#ifdef __WIN32__
                 rc = WriteFile(stream->hfile,
                                stream->fbuf,
                                stream->szfbuf,
@@ -1449,7 +1449,7 @@ static void fwriteSlowT(const void *ptr,
                 return;
             }
 #endif
-#ifdef _WIN32
+#ifdef __WIN32__
             rc = WriteFile(stream->hfile,
                            stream->fbuf,
                            (size_t)(stream->upto - stream->fbuf),
@@ -1508,7 +1508,7 @@ static void fwriteSlowT(const void *ptr,
             return;
         }
 #endif
-#ifdef _WIN32
+#ifdef __WIN32__
         rc = WriteFile(stream->hfile,
                        stream->fbuf,
                        (size_t)(stream->upto - stream->fbuf),
@@ -1562,7 +1562,7 @@ static void fwriteSlowT(const void *ptr,
                 return;
             }
 #endif
-#ifdef _WIN32
+#ifdef __WIN32__
             rc = WriteFile(stream->hfile,
                            stream->fbuf,
                            stream->szfbuf,
@@ -1612,7 +1612,7 @@ static void fwriteSlowT(const void *ptr,
             return;
         }
 #endif
-#ifdef _WIN32
+#ifdef __WIN32__
         rc = WriteFile(stream->hfile,
                        stream->fbuf,
                        (size_t)(stream->upto - stream->fbuf),
@@ -1656,7 +1656,7 @@ static void fwriteSlowB(const void *ptr,
     ULONG tempWritten;
     APIRET rc;
 #endif
-#ifdef _WIN32
+#ifdef __WIN32__
     DWORD tempWritten;
     BOOL rc;
 #endif
@@ -1686,7 +1686,7 @@ static void fwriteSlowB(const void *ptr,
         return;
     }
 #endif
-#ifdef _WIN32
+#ifdef __WIN32__
     rc = WriteFile(stream->hfile,
                    stream->fbuf,
                    stream->szfbuf,
@@ -1729,7 +1729,7 @@ static void fwriteSlowB(const void *ptr,
             return;
         }
 #endif
-#ifdef _WIN32
+#ifdef __WIN32__
         rc = WriteFile(stream->hfile,
                        (char *)ptr + *actualWritten,
                        towrite - *actualWritten,
@@ -2055,7 +2055,7 @@ static int examine(const char **formt, FILE *fq, char *s, va_list *arg,
         }
         if (specifier == 'p')
         {
-#if defined(__OS2__) || defined(__PDOS__) || defined(_WIN32)
+#if defined(__OS2__) || defined(__PDOS__) || defined(__WIN32__)
             precision = 8;
 #endif
 #if defined(__MSDOS__) && !defined(__PDOS__)
@@ -2297,7 +2297,7 @@ int remove(const char *filename)
 #ifdef __OS2__
     APIRET rc;
 #endif
-#ifdef _WIN32
+#ifdef __WIN32__
     BOOL rc;
 #endif
 
@@ -2313,7 +2313,7 @@ int remove(const char *filename)
         ret = 0;
     }
 #endif
-#ifdef _WIN32
+#ifdef __WIN32__
     rc = DeleteFile(filename);
     if (!rc)
     {
@@ -2338,7 +2338,7 @@ int rename(const char *old, const char *new)
 #ifdef __OS2__
     APIRET rc;
 #endif
-#ifdef _WIN32
+#ifdef __WIN32__
     BOOL rc;
 #endif
 
@@ -2354,7 +2354,7 @@ int rename(const char *old, const char *new)
         ret = 0;
     }
 #endif
-#ifdef _WIN32
+#ifdef __WIN32__
     rc = MoveFile(old, new);
     if (!rc)
     {
@@ -2417,7 +2417,7 @@ char *fgets(char *s, int n, FILE *stream)
     ULONG actualRead;
     APIRET rc;
 #endif
-#ifdef _WIN32
+#ifdef __WIN32__
     DWORD actualRead;
     BOOL rc;
 #endif
@@ -2434,12 +2434,12 @@ char *fgets(char *s, int n, FILE *stream)
         {
             c = *p;
             *p = '\n';
-#if defined(__OS2__) || defined(_WIN32)
+#if defined(__OS2__) || defined(__WIN32__)
             if (n < 8)
             {
 #endif
                 while ((*u++ = *t++) != '\n') ; /* tight inner loop */
-#if defined(__OS2__) || defined(_WIN32)
+#if defined(__OS2__) || defined(__WIN32__)
             }
             else
             {
@@ -2658,7 +2658,7 @@ char *fgets(char *s, int n, FILE *stream)
             errno = rc;
         }
 #endif
-#ifdef _WIN32
+#ifdef __WIN32__
         rc = ReadFile(stream->hfile,
                       stream->fbuf,
                       stream->szfbuf,
@@ -2735,7 +2735,7 @@ int fseek(FILE *stream, long int offset, int whence)
     ULONG retpos;
     APIRET rc;
 #endif
-#ifdef _WIN32
+#ifdef __WIN32__
     DWORD retpos;
 #endif
 
@@ -2773,7 +2773,7 @@ int fseek(FILE *stream, long int offset, int whence)
             stream->bufStartR = newpos - stream->szfbuf;
         }
 #endif
-#ifdef _WIN32
+#ifdef __WIN32__
         retpos = SetFilePointer(stream->hfile, newpos, NULL, FILE_BEGIN);
         if (retpos != newpos)
         {
@@ -2979,7 +2979,7 @@ int fflush(FILE *stream)
     APIRET rc;
     ULONG actualWritten;
 #endif
-#ifdef _WIN32
+#ifdef __WIN32__
     BOOL rc;
     DWORD actualWritten;
 #endif
@@ -3002,7 +3002,7 @@ int fflush(FILE *stream)
             return (EOF);
         }
 #endif
-#ifdef _WIN32
+#ifdef __WIN32__
         rc = WriteFile(stream->hfile,
                        stream->fbuf,
                        (size_t)(stream->upto - stream->fbuf),

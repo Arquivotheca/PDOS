@@ -30,7 +30,7 @@
 #define USHRT_MAX 65535
 
 #if (defined(__OS2__) || defined(__32BIT__) || defined(__MVS__) \
-    || defined(__CMS__) || defined(_WIN32))
+    || defined(__CMS__) || defined(__WIN32__))
 #define INT_MIN -2147483648
 #define INT_MAX 2147483647
 #define UINT_MAX 4294967295U

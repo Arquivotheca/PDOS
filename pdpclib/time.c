@@ -25,7 +25,7 @@
 #ifdef __OS2__
 #include <os2.h>
 #endif
-#ifdef _WIN32
+#ifdef __WIN32__
 #include <windows.h>
 #endif
 #ifdef __MSDOS__
@@ -104,7 +104,7 @@ time_t time(time_t *timer)
     DATETIME dt;
     APIRET rc;
 #endif    
-#ifdef _WIN32
+#ifdef __WIN32__
     SYSTEMTIME dt;
 #endif    
 #if defined(__MSDOS__)
@@ -130,7 +130,7 @@ time_t time(time_t *timer)
     }
     else
 #endif    
-#ifdef _WIN32
+#ifdef __WIN32__
     GetSystemTime(&dt);
     tt = ymd_to_scalar(dt.wYear, dt.wMonth, dt.wDay) 
          - ymd_to_scalar(1970, 1, 1);
@@ -143,7 +143,7 @@ time_t time(time_t *timer)
 #endif
 #if defined(__MVS__) || defined(__CMS__)
     tt = __getclk(clk);
-#elif !defined(_WIN32)
+#elif !defined(__WIN32__)
 
     {
         tt = ymd_to_scalar(dt.year, dt.month, dt.day) 

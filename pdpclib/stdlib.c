@@ -255,10 +255,11 @@ void exit(int status)
 }
 
 /******************************************************************/
-/* qsort.c  --  Non-Recursive ISO C qsort() function              */
+/* qsort.c  --  ISO C qsort() function                            */
 /*                                                                */
 /* Public domain by Raymond Gardner, Englewood CO  February 1991  */
 /* Minor mods by Paul Edwards also public domain                  */
+/* Mods by Martin Baute also public domain                        */
 /*                                                                */
 /* Usage:                                                         */
 /*     qsort(base, nbr_elements, width_bytes, compare_function);  */
@@ -276,131 +277,114 @@ void exit(int status)
 /* Comm. ACM, June 1979.                                          */
 /******************************************************************/
 
-/* prototypes */
-static void swap_chars(char *, char *, size_t);
-
-/*
-** Compile with -DSWAP_INTS if your machine can access an int at an
-** arbitrary location with reasonable efficiency.  (Some machines
-** cannot access an int at an odd address at all, so be careful.)
-*/
-
-#ifdef   SWAP_INTS
- void swap_ints(char *, char *, size_t);
- #define  SWAP(a, b)  (swap_func((char *)(a), (char *)(b), width))
-#else
- #define  SWAP(a, b)  (swap_chars((char *)(a), (char *)(b), size))
-#endif
-
-#define  COMP(a, b)  ((*comp)((void *)(a), (void *)(b)))
-
-#define  T           7    /* subfiles of T or fewer elements will */
-                          /* be sorted by a simple insertion sort */
-                          /* Note!  T must be at least 3          */
-
-void qsort(void *basep, size_t nelems, size_t size,
-                            int (*comp)(const void *, const void *))
+static void memswp(char *i, char *j, size_t size)
 {
-   char *stack[40], **sp;       /* stack and stack pointer        */
-   char *i, *j, *limit;         /* scan and limit pointers        */
-   size_t thresh;               /* size of T elements in bytes    */
-   char *base;                  /* base pointer as char *         */
+     char tmp;
+     
+     do 
+     { 
+         tmp = *i;
+         *i++ = *j;
+         *j++ = tmp;
+     } while (--size);
+     return;
+}
 
-#ifdef   SWAP_INTS
-   size_t width;                /* width of array element         */
-   void (*swap_func)(char *, char *, size_t); /* swap func pointer*/
+/* For small sets, insertion sort is faster than quicksort.
+   T is the threshold below which insertion sort will be used.
+   Must be 3 or larger.
+*/
+#define T 7
 
-   width = size;                /* save size for swap routine     */
-   swap_func = swap_chars;      /* choose swap function           */
-   if ( size % sizeof(int) == 0 ) {   /* size is multiple of ints */
-      width /= sizeof(int);           /* set width in ints        */
-      swap_func = swap_ints;          /* use int swap function    */
-   }
-#endif
+void qsort(void *base,
+           size_t nmemb,
+           size_t size,
+           int (*compar)(const void *, const void *))
+{
+    char * i;
+    char * j;
+    size_t thresh     = T * size;
+    char * base_      = (char *)base;
+    char * limit      = base_ + nmemb * size;
 
-   base = (char *)basep;        /* set up char * base pointer     */
-   thresh = T * size;           /* init threshold                 */
-   sp = stack;                  /* init stack pointer             */
-   limit = base + nelems * size;/* pointer past end of array      */
-   for ( ;; ) {                 /* repeat until break...          */
-      if ( limit - base > thresh ) {  /* if more than T elements  */
-                                      /*   swap base with middle  */
-         SWAP(((((size_t)(limit-base))/size)/2)*size+base, base);
-         i = base + size;             /* i scans left to right    */
-         j = limit - size;            /* j scans right to left    */
-         if ( COMP(i, j) > 0 )        /* Sedgewick's              */
-            SWAP(i, j);               /*    three-element sort    */
-         if ( COMP(base, j) > 0 )     /*        sets things up    */
-            SWAP(base, j);            /*            so that       */
-         if ( COMP(i, base) > 0 )     /*      *i <= *base <= *j   */
-            SWAP(i, base);            /* *base is pivot element   */
-         for ( ;; ) {                 /* loop until break         */
-            do                        /* move i right             */
-               i += size;             /*        until *i >= pivot */
-            while ( COMP(i, base) < 0 );
-            do                        /* move j left              */
-               j -= size;             /*        until *j <= pivot */
-            while ( COMP(j, base) > 0 );
-            if ( i > j )              /* if pointers crossed      */
-               break;                 /*     break loop           */
-            SWAP(i, j);       /* else swap elements, keep scanning*/
-         }
-         SWAP(base, j);         /* move pivot into correct place  */
-         if ( j - base > limit - i ) {  /* if left subfile larger */
-            sp[0] = base;             /* stack left subfile base  */
-            sp[1] = j;                /*    and limit             */
-            base = i;                 /* sort the right subfile   */
-         } else {                     /* else right subfile larger*/
-            sp[0] = i;                /* stack right subfile base */
-            sp[1] = limit;            /*    and limit             */
-            limit = j;                /* sort the left subfile    */
-         }
-         sp += 2;                     /* increment stack pointer  */
-      } else {      /* else subfile is small, use insertion sort  */
-         for ( j = base, i = j+size; i < limit; j = i, i += size )
-            for ( ; COMP(j, j+size) > 0; j -= size ) {
-               SWAP(j, j+size);
-               if ( j == base )
-                  break;
+    if ( ( nmemb == 0 ) || ( size == 0 ) || ( base == NULL ) )
+    {
+        return;
+    }
+
+    for ( ;; )
+    {
+        if ( limit - base_ > thresh ) /* QSort for more than T elements. */
+        {
+            /* We work from second to last - first will be pivot element. */
+            i = base_ + size;
+            j = limit - size;
+            /* We swap first with middle element, then sort that with second
+            and last element so that eventually first element is the median
+            of the three - avoiding pathological pivots.
+            */
+            memswp( ( ( ( (size_t)( limit - base_ ) ) / size ) / 2 ) 
+                    * size + base_, base_, size );
+            if ( compar( i, j ) > 0 ) memswp( i, j, size );
+            if ( compar( base_, j ) > 0 ) memswp( base_, j, size );
+            if ( compar( i, base_ ) > 0 ) memswp( i, base_, size );
+            /* Now we have the median for pivot element, entering main 
+               Quicksort. */
+            for ( ;; )
+            {
+                do
+                {
+                    /* move i right until *i >= pivot */
+                    i += size;
+                } while ( compar( i, base_ ) < 0 );
+                do
+                {
+                    /* move j left until *j <= pivot */
+                    j -= size;
+                } while ( compar( j, base_ ) > 0 );
+                if ( i > j )
+                {
+                    /* break loop if pointers crossed */
+                    break;
+                }
+                /* else swap elements, keep scanning */
+                memswp( i, j, size );
             }
-         if ( sp != stack ) {         /* if any entries on stack  */
-            sp -= 2;                  /* pop the base and limit   */
-            base = sp[0];
-            limit = sp[1];
-         } else                       /* else stack empty, done   */
+            /* move pivot into correct place */
+            memswp( base_, j, size );
+            /* recurse into larger subpartition, iterate on smaller */
+            if ( j - base_ > limit - i )
+            {
+                /* left is larger */
+                qsort( base, ( j - base_ ) / size, size, compar );
+                base_ = i;
+            }
+            else
+            {
+                /* right is larger */
+                qsort( i, ( limit - i ) / size, size, compar );
+                limit = j;
+            }
+        }
+        else /* insertion sort for less than T elements */
+        {
+            for ( j = base_, i = j + size; i < limit; j = i, i += size )
+            {
+                for ( ; compar( j, j + size ) > 0; j -= size )
+                {
+                    memswp( j, j + size, size );
+                    if ( j == base_ )
+                    {
+                        break;
+                    }
+                }
+            }
             break;
-      }
-   }
+        }
+    }
+    return;
 }
 
-/*
-**  swap nbytes between a and b
-*/
-
-static void swap_chars(char *a, char *b, size_t nbytes)
-{
-   char tmp;
-   do {
-      tmp = *a; *a++ = *b; *b++ = tmp;
-   } while ( --nbytes );
-}
-
-#ifdef   SWAP_INTS
-
-/*
-**  swap nints between a and b
-*/
-
-static void swap_ints(char *ap, char *bp, size_t nints)
-{
-   int *a = (int *)ap, *b = (int *)bp;
-   int tmp;
-   do {
-      tmp = *a; *a++ = *b; *b++ = tmp;
-   } while ( --nints );
-}
-
-#endif
 
 static unsigned long myseed = 1;
 

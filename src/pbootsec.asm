@@ -17,9 +17,9 @@
 ; It also expects some sort of stack to be set up.
 
 ifdef WATCOM
-.model memodel, C
+.model memodel
 else
-% .model memodel, C
+% .model memodel
 endif
 
 _DATA   segment word public 'DATA'
@@ -38,7 +38,7 @@ start proc
 ; jump around buffer
 jmp bypass
 
-sysname db 'PDOS 0.8'
+sysname db 'PDOS x.x'
 bpb db 51 dup(?)
 
 ; new disk parameter table

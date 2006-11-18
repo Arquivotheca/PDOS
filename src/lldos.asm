@@ -1,7 +1,11 @@
 ; Released to the public domain by Matthew Parker on 4 December 1995
 ; For different models just change the .model directive
 
+ifdef WATCOM
+.model memodel,c
+else
 % .model memodel, c
+endif
 
 ifdef WATCOM
 getfar   equ _getfar
@@ -25,7 +29,7 @@ public instint, handler,
 endif
 
 public getfar, putfar, rportb, wportb, enable, disable
-public callfar, callwithpsp, callwithbypass, a20e,
+public callfar, callwithpsp, callwithbypass, a20e
 public reboot, putabs, getabs
 
         .code
@@ -257,24 +261,30 @@ reboot proc
 reboot endp
 
 getabs proc, address3: dword
-    uses ds, bx
+        push ds
+        push bx
         lds bx,address3
         mov ax, ds
         shl ax, 12
         mov ds, ax
         mov ah,0
         mov al,[bx]
+        pop bx
+        pop ds
         ret
 getabs endp
 
 putabs proc, address4: dword, character: word
-    uses ds, bx
+        push ds
+        push bx
         lds bx,address4
         mov ax, ds
         shl ax, 12
         mov ds, ax        
         mov ax, character
         mov [bx],al
+        pop bx
+        pop ds
         ret
 putabs endp
 

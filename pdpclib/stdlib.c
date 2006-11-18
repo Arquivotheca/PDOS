@@ -281,12 +281,12 @@ static void memswp(char *i, char *j, size_t size)
 {
      char tmp;
      
-     do 
+     while (size-- > 0)
      { 
          tmp = *i;
          *i++ = *j;
          *j++ = tmp;
-     } while (--size);
+     };
      return;
 }
 

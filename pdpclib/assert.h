@@ -13,7 +13,7 @@
 #ifndef __ASSERT_INCLUDED
 #define __ASSERT_INCLUDED
 
-int __assert(char *x, char *y, char *z);
+int __assert(char *x, char *y, int z);
 
 #ifdef NDEBUG
 #define assert(ignore) ((void)0)

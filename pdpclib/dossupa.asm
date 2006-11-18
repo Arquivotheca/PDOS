@@ -733,10 +733,12 @@ ___COS__ proc
 ret
 ___COS__ endp
 
+ifdef WATCOM
 public __CHP
 __CHP proc
 ret
 __CHP endp
+endif
 
 _TEXT ends
 

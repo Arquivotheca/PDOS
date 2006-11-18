@@ -60,8 +60,8 @@ _DATA   ends
 _BSS    segment word public 'BSS'
 _BSS    ends
 
-_TEXT segment word use16 public 'CODE'
 assume cs:_TEXT
+_TEXT segment word use16 public 'CODE'
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; unsigned long rawprota(...);
@@ -125,7 +125,11 @@ rawprota proc corsubr:dword, \
         jmp rtop
           
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+ifdef MASM
+rawprota_stage3::
+else
 rawprota_stage3:
+endif
 ; protected mode subroutine has terminated
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; put edi (where we saved eax, the return code) into dx:ax
@@ -315,7 +319,11 @@ runreal proc
         jmp ptor
         
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+ifdef MASM
+runreal_stage3::
+else
 runreal_stage3:
+endif
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; convert return long return code into 32 bit int
         shl edx, 16

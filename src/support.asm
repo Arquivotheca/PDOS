@@ -3,11 +3,7 @@
 ; This program written by Paul Edwards
 ; Released to the public domain
 
-ifdef WATCOM
-.model memodel, c
-else
 % .model memodel, c
-endif
 
 assume cs:_TEXT, ds:DGROUP
 

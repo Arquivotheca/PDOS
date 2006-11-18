@@ -16,7 +16,11 @@
 ; that the CS:IP will have an IP of 0 when it is called.
 ; It also expects some sort of stack to be set up.
 
+ifdef WATCOM
+.model memodel, C
+else
 % .model memodel, C
+endif
 
 _DATA   segment word public 'DATA'
 _DATA   ends

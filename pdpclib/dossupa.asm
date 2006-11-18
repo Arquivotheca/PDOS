@@ -733,6 +733,11 @@ ___COS__ proc
 ret
 ___COS__ endp
 
+public __CHP
+__CHP proc
+ret
+__CHP endp
+
 _TEXT ends
 
 end

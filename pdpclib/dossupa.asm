@@ -571,12 +571,12 @@ f_lumod@ endp
 
 ; multiply cx:bx by dx:ax, result in dx:ax
 
-public f_lxmul@
 public __I4M
-public __U4M
-f_lxmul@ proc
 __I4M:
+public __U4M
 __U4M:
+public f_lxmul@
+f_lxmul@ proc
 push bp
 mov bp,sp
 push cx

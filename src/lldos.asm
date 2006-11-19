@@ -143,7 +143,11 @@ bypass:
         
         retf    ; call desired routine
 
+ifdef MASM
+callwithbypass::
+else
 callwithbypass:
+endif
         pop ax ; skip return address,
         pop ax ;    won't be needed
         pop ax ; get the return code
@@ -263,12 +267,15 @@ reboot endp
 getabs proc, address3: dword
         push ds
         push bx
+        push cx
         lds bx,address3
         mov ax, ds
-        shl ax, 12
+        mov cl, 12
+        shl ax, cl
         mov ds, ax
         mov ah,0
         mov al,[bx]
+        pop cx
         pop bx
         pop ds
         ret
@@ -277,12 +284,15 @@ getabs endp
 putabs proc, address4: dword, character: word
         push ds
         push bx
+        push cx
         lds bx,address4
         mov ax, ds
-        shl ax, 12
+        mov cl, 12
+        shl ax, cl
         mov ds, ax        
         mov ax, character
         mov [bx],al
+        pop cx
         pop bx
         pop ds
         ret

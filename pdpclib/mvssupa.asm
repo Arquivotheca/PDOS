@@ -1,18 +1,24 @@
-**********************************************************************
-*                                                                    *
-*  THIS PROGRAM WRITTEN BY PAUL EDWARDS.                             *
-*  RELEASED TO THE PUBLIC DOMAIN                                     *
-*                                                                    *
-**********************************************************************
-**********************************************************************
-*                                                                    *
-*  MVSSUPA - SUPPORT ROUTINES FOR PDPCLIB UNDER MVS                  *
-*                                                                    *
-*  IT IS CURRENTLY CODED FOR GCC, BUT C/370 FUNCTIONALITY IS         *
-*  STILL THERE, IT'S JUST COMMENTED OUT. I DON'T KNOW HOW TO DO      *
-*  CONDITIONAL COMPILATION OF THAT.                                  *
-*                                                                    *
-**********************************************************************
+* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+*
+*  THIS PROGRAM WRITTEN BY PAUL EDWARDS.
+*  RELEASED TO THE PUBLIC DOMAIN
+*
+*  Extensively modified by others
+*
+* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+*
+*  MVSSUPA - SUPPORT ROUTINES FOR PDPCLIB UNDER MVS
+*
+*  IT IS CURRENTLY CODED FOR GCC, BUT C/370 FUNCTIONALITY IS
+*  STILL THERE, IT'S JUST COMMENTED OUT. I DON'T KNOW HOW TO DO
+*  CONDITIONAL COMPILATION OF THAT.
+*
+         LCLC &COMP               Declare compiler switch
+&COMP    SETC 'GCC'               Indicate that this is for GCC
+* &COMP    SETC 'C370'            Indicate that this is for C/370
+*
+* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+MVSSUPA  CSECT ,
          AIF ('&SYSPARM' EQ 'IFOX00').NOMODE
 * BECAUSE OF THE "LOC=ABOVE", WE NEED TO FORCE 31
 * SEARCH FOR "LOC=RES" TO FIND OUT HOW TO FIX
@@ -20,10 +26,11 @@
 * SEARCH FOR "LOC=RES" TO FIND OUT WHY THIS IS BEING
 * HELD BACK AT RMODE 24
          RMODE 24
-.NOMODE ANOP
-         PRINT NOGEN
+.NOMODE  ANOP
+         PRINT ON,GEN,DATA        See all
 * YREGS IS NOT AVAILABLE WITH IFOX
 *         YREGS
+SUBPOOL  EQU   0
 R0       EQU   0
 R1       EQU   1
 R2       EQU   2
@@ -40,8 +47,6 @@ R12      EQU   12
 R13      EQU   13
 R14      EQU   14
 R15      EQU   15
-SUBPOOL  EQU   0
-         CSECT
          ENTRY @@AOPEN
 @@AOPEN  EQU   *
          SAVE  (14,12),,@@AOPEN
@@ -49,17 +54,18 @@ SUBPOOL  EQU   0
          USING @@AOPEN,R12
          LR    R11,R1
          GETMAIN RU,LV=WORKLEN,SP=SUBPOOL
-         ST    R13,4(R1)
-         ST    R1,8(R13)
+         ST    R13,4(,R1)
+         ST    R1,8(,R13)
          LR    R13,R1
          LR    R1,R11
          USING WORKAREA,R13
 *
-         L     R3,0(R1)         R3 POINTS TO DDNAME
-         L     R4,4(R1)         R4 POINTS TO MODE
-         L     R5,8(R1)         R5 POINTS TO RECFM
-         L     R8,12(R1)        R8 POINTS TO LRECL
-         L     R9,16(R1)        R9 POINTS TO MEMBER NAME (OF PDS)
+         L     R3,00(,R1)         R3 POINTS TO DDNAME
+         L     R4,04(,R1)         R4 is the MODE.  0=input 1=output
+         L     R5,08(,R1)         R5 POINTS TO RECFM
+         L     R8,12(,R1)         R8 POINTS TO LRECL
+         L     R9,16(,R1)         R9 POINTS TO MEMBER NAME (OF PDS)
+         LA    R9,0(,R9)          Strip off high-order bit
          AIF   ('&SYSPARM' NE 'IFOX00').BELOW
 * CAN'T USE "BELOW" ON MVS 3.8
          GETMAIN RU,LV=ZDCBLEN,SP=SUBPOOL
@@ -67,92 +73,164 @@ SUBPOOL  EQU   0
 .BELOW   ANOP
          GETMAIN RU,LV=ZDCBLEN,SP=SUBPOOL,LOC=BELOW
 .CHKBLWE ANOP
-         LR    R2,R1
-* THIS LINE IS FOR GCC
-         LR    R6,R4
-* THIS LINE IS FOR C/370
-*         L     R6,0(R4)
-         LTR   R6,R6
+         LR    R2,R1              Addr.of storage obtained to its base
+         USING IHADCB,R2          Give assembler DCB area base register
+         XC    ZDCBAREA(256),ZDCBAREA  Clear the GETMAINed area
+         XC    ZDCBAREA+256(ZDCBLEN-256),ZDCBAREA+256  Finish clear
+         AIF ('&COMP' NE 'C370').GCCMODE
+         L     R4,0(,R4)          Load C/370 MODE.  0=input 1=output
+.GCCMODE ANOP
+         LTR   R4,R4              See if OPEN input or output
          BNZ   WRITING
 * READING
-         USING ZDCBAREA,R2
-         MVC   ZDCBAREA(INDCBLN),INDCB
+         MVC   ZDCBAREA(INDCBLN),INDCB  Move input DCB template to work
+         LTR   R9,R9              See in an address for the member name
+         BZ    NEXTMVC            No member, leave DCB DSORG=PS
+         MVI   DCBDSRG1,DCBDSGPO  Replace DCB DSORG=PS with PO
+NEXTMVC  DS    0H
          MVC   EOFR24(EOFRLEN),ENDFILE
+         MVC   DECB(READLEN),READDUM  MF=L READ MACRO to work area
          LA    R10,JFCB
 * EXIT TYPE 07 + 80 (END OF LIST INDICATOR)
          ICM   R10,B'1000',=X'87'
          ST    R10,JFCBPTR
          LA    R10,JFCBPTR
          LA    R4,EOFR24
-         USING IHADCB,R2
          STCM  R4,B'0111',DCBEODA
          STCM  R10,B'0111',DCBEXLSA
          MVC   DCBDDNAM,0(R3)
          MVC   OPENMB,OPENMAC
-* NOTE THAT THIS IS CURRENTLY NOT REENTRANT AND SHOULD BE MADE SO
-         RDJFCB ((R2),INPUT)
-         LTR   R9,R9
-         BZ    NOMEM
-         USING ZDCBAREA,R2
-         MVC   JFCBELNM,0(R9)
-         OI    JFCBIND1,JFCPDS
-NOMEM    DS    0H
-*         OPEN  ((R2),INPUT),MF=(E,OPENMB),MODE=31,TYPE=J
-* CAN'T USE MODE=31 ON MVS 3.8, OR WITH TYPE=J
-         OPEN  ((R2),INPUT),MF=(E,OPENMB),TYPE=J
-         B     DONEOPEN
+         RDJFCB ((R2),INPUT),MF=(E,OPENMB)
+* See if DSORG=PO but no member so set LRECL&BLKSIZE=256 read directory
+         CLI   JFCDSRG1,JFCORGPO  See if DSORG=PO
+         BNO   NOTDIR             Not DSORG=PO,don't read PDS directory
+         LTR   R9,R9              See in an address for the member name
+         BNZ   NOTDIR             Is member, don't read PDS directory
+         MVI   DCBLRECL,1         Set INDCB LRECL=256
+         MVI   DCBBLKSI,1         Set INDCB BLKSIZS=256
+NOTDIR   DS    0H
+*         OPEN  ((R2),INPUT),MF=(E,OPENMB),MODE=31
+* Can't use MODE=31 on MVS 3.8
+         OPEN  ((R2),INPUT),MF=(E,OPENMB)
+* Assume that OPEN worked?
+         LTR   R9,R9              See in an address for the member name
+         BZ    GETBUFF            No member, go get an input buffer
+         FIND  (R2),(R9),D        Point to the requested member
+         LTR   R15,R15            See if member found
+         BZ    GETBUFF            Member found, go get an input buffer
+* If FIND return code not zero, process return and reason codes and
+* return to caller with a negative return code.
+         SLL   R15,8              Shift return code for reason code
+         OR    R15,R0             Combine return code and reason code
+         LR    R1,R2              Save DCB area address for FREEMAIN
+         LCR   R2,R15             Save negative return and reason code
+         FREEMAIN RU,LV=ZDCBLEN,A=(1),SP=SUBPOOL  Free DCB area
+         B     RETURNOP           Go return to caller with negative RC
+GETBUFF  DS    0H
+         SLR   R6,R6              Clear DCB-BLKSIZE work register
+         ICM   R6,B'0011',DCBBLKSI  Find the input blocksize
+         LA    R6,4(,R6)          Add 4 for RECFM=U buffer
+         GETMAIN RU,LV=(R6),SP=SUBPOOL  Get input buffer storage
+         ST    R1,BUFFADDR        Save the buffer address for READ
+         XC    0(4,R1),0(R1)      Clear the RECFM=U Record Desc. Word
+         TM    DCBRECFM,DCBRECV+DCBRECSB  See if spanned records
+         BNO   DONEOPEN           Not RECFM=VS, VBS, etc. spanned, go
+         SLR   R6,R6              Clear DCB-LRECL work register
+         ICM   R6,B'0011',DCBLRECL  Load the input VBS LRECL
+         CL    R6,F32760          See if LRECL=X
+         BNH   GETVBS             Not LRECL=X, just get LRECL
+         L     R6,F65536          Allow records up to 64K input
+GETVBS   DS    0H
+         GETMAIN RU,LV=(R6),SP=SUBPOOL  Get VBS build record area
+         ST    R1,VBSADDR         Save the VBS record build area addr.
+         AR    R1,R6              Add size GETMAINed to find end
+         ST    R1,VBSEND          Save address after VBS rec.build area
+*        XC    VBSCURR,VBSCURR    VBS current record location is zero
+         B     DONEOPEN           Go return to caller with DCB info
+* Original, before the return and reason codes had
+* negative translations added:
+* z/OS V1R3.0 DFSMS Macro Instructions for Data Sets
+* SC26-7408-01
+* Second Edition, March 2002
+* This edition replaces SC26-7408-00.
+* (c) Copyright International Business Machines
+*  Corporation 1976, 2002. All rights reserved.
+* US Government Users Restricted Rights - Use,
+*  duplication or disclosure restricted by GSA ADP
+*  Schedule Contract with IBM Corp.
+* FIND
+* Return Code (15) - Reason Code (0) - Meaning
+* 00 (X'00') 00 (X'00') Successful execution.
+* -1024 - 04 (X'04') 00 (X'00') Name not found.
+* -1028 - 04 (X'04') 04 (X'04') The caller has only
+*  RACF execute authority to the PDSE.
+* -1032 - 04 (X'04') 08 (X'08') The PDSE member's
+*  share options do not allow you to access it.
+* -1036 - 04 (X'04') 12 (X'0C') The PDSE is open
+*  for output and the FIND macro was issued to
+*  point to a member other than the one currently
+*  processing.
+* -2048 - 08 (X'08') 00 (X'00') Permanent I/O error during
+*  directory search.
+* -2052 - 08 (X'08') 04 (X'04') Insufficient virtual
+*  storage available.
+* -2056 - 08 (X'08') 08 (X'08') Invalid DEB, or DEB is not owned by
+*  a TCB in the current family of TCBs.
+* -2060 - 08 (X'08') 12 (X'0C') An I/O error occurred while
+*  flushing system buffers containing member data
+*  (PDSE only).
+* -2064 - 08 (X'08') 16 (X'10') No DCB address was input.
+*
 WRITING  DS    0H
-         USING ZDCBAREA,R2
          MVC   ZDCBAREA(OUTDCBLN),OUTDCB
          LA    R10,JFCB
 * EXIT TYPE 07 + 80 (END OF LIST INDICATOR)
          ICM   R10,B'1000',=X'87'
          ST    R10,JFCBPTR
          LA    R10,JFCBPTR
-         USING IHADCB,R2
          STCM  R10,B'0111',DCBEXLSA
          MVC   DCBDDNAM,0(R3)
          MVC   WOPENMB,WOPENMAC
-* NOTE THAT THIS IS CURRENTLY NOT REENTRANT AND SHOULD BE MADE SO
-         RDJFCB ((R2),OUTPUT)
+         RDJFCB ((R2),OUTPUT),MF=(E,WOPENMB)  Read JOB File Control Blk
          LTR   R9,R9
          BZ    WNOMEM
-         USING ZDCBAREA,R2
          MVC   JFCBELNM,0(R9)
          OI    JFCBIND1,JFCPDS
 WNOMEM   DS    0H
 *         OPEN  ((R2),OUTPUT),MF=(E,WOPENMB),MODE=31,TYPE=J
-* CAN'T USE MODE=31 ON MVS 3.8, OR WITH TYPE=J
+* Can't use MODE=31 on MVS 3.8or with TYPE=J
          OPEN  ((R2),OUTPUT),MF=(E,WOPENMB),TYPE=J
 DONEOPEN DS    0H
-         USING IHADCB,R2
-         SR    R6,R6
-         LH    R6,DCBLRECL
-         ST    R6,0(R8)
-         TM    DCBRECFM,DCBRECF
-         BNO   VARIABLE
-         L     R6,=F'0'
-         B     DONESET
-VARIABLE DS    0H
-         L     R6,=F'1'
-DONESET  DS    0H
-         ST    R6,0(R5)
-         LR    R15,R2
-         B     RETURNOP
-*
-* THIS IS NOT EXECUTED DIRECTLY, BUT COPIED INTO 24-BIT STORAGE
-ENDFILE  LA    R6,1
-         BR    R14
-EOFRLEN  EQU   *-ENDFILE
+         SLR   R6,R6              Clear DCB-LRECL work register
+         ICM   R6,B'0011',DCBLRECL  Load a default DCB LRECL
+         TM    DCBRECFM,DCBRECU   See if RECFM=U
+         BNO   NOTU               Not RECFM=U, go leave LRECL as LRECL
+         SLR   R6,R6              Clear DCB-BLKSIZE work register
+         ICM   R6,B'0011',DCBBLKSI  Load the RECFM=U BLKSIZE for LRECL
+         LA    R6,4(,R6)          Add four for fake RECFM=U RDW
+NOTU     DS    0H
+         ST    R6,0(,R8)          Return LRECL back to caller
+         LA    R6,0               Assume RECFM=F
+         TM    DCBRECFM,DCBRECV   See if RECFM=V or U
+         BZ    SETRECFM           Not RECFM=V or U, go store default F
+         LA    R6,1               Indicate RECFM=V for caller
+SETRECFM DS    0H
+         ST    R6,0(,R5)          Pass either RECFM F or V to caller
+*        B     RETURNOP
 *
 RETURNOP DS    0H
          LR    R1,R13
          L     R13,SAVEAREA+4
-         LR    R14,R15
-         FREEMAIN RU,LV=WORKLEN,A=(R1),SP=SUBPOOL
-         LR    R15,R14
-         RETURN (14,12),RC=(15)
-         LTORG
+         FREEMAIN RU,LV=WORKLEN,A=(1),SP=SUBPOOL
+         LR    R15,R2             Return neg.RC or GETMAINed area addr.
+         RETURN (14,12),RC=(15)   Return to caller
+*
+* This is not executed directly, but copied into 24-bit storage
+ENDFILE  LA    R6,1               Indicate @@AREAD reached end-of-file
+         BR    R14                Return to instruction after the GET
+EOFRLEN  EQU   *-ENDFILE
+*
+         LTORG ,
 * OPENMAC  OPEN  (,INPUT),MF=L,MODE=31
 * CAN'T USE MODE=31 ON MVS 3.8
 OPENMAC  OPEN  (,INPUT),MF=L,TYPE=J
@@ -161,14 +239,22 @@ OPENMLN  EQU   *-OPENMAC
 * CAN'T USE MODE=31 ON MVS 3.8
 WOPENMAC OPEN  (,OUTPUT),MF=L
 WOPENMLN EQU   *-WOPENMAC
-*INDCB    DCB   MACRF=GL,DSORG=PS,EODAD=ENDFILE,EXLST=JPTR
+*INDCB    DCB   MACRF=GL,DSORG=PS,EODAD=ENDFILE,EXLST=JPTR? DCBE ?
 * LEAVE OUT EODAD AND EXLST, FILLED IN LATER
-INDCB    DCB   MACRF=GL,DSORG=PS
+INDCB    DCB   MACRF=R,DSORG=PS   If member name, will be changed to PO
 INDCBLN  EQU   *-INDCB
-JPTR     DS    F
+F32760   DC    F'32760'           Constant for compare
+F65536   DC    F'65536'           Maximum VBS record GETMAIN length
 OUTDCB   DCB   MACRF=PL,DSORG=PS
 OUTDCBLN EQU   *-OUTDCB
 *
+READDUM  READ  NONE,              Read record Data Event Control Block C
+               SF,                Read record Sequential Forward       C
+               ,       (R2),      Read record DCB address              C
+               ,       (R4),      Read record input buffer             C
+               'S',               Read record standard length BLKSIZE  C
+               MF=L               List type MACRO
+READLEN  EQU   *-READDUM
 *
 *
          ENTRY @@AREAD
@@ -176,57 +262,237 @@ OUTDCBLN EQU   *-OUTDCB
          SAVE  (14,12),,@@AREAD
          LR    R12,R15
          USING @@AREAD,R12
-         LR    R11,R1
+         L     R2,0(,R1)          R2 contains GETMAINed address/handle
+         USING IHADCB,R2
+         L     R3,4(,R1)          R3 points to record pointer
          GETMAIN RU,LV=WORKLEN,SP=SUBPOOL
-         ST    R13,4(R1)
-         ST    R1,8(R13)
+         ST    R13,4(,R1)
+         ST    R1,8(,R13)
          LR    R13,R1
-         LR    R1,R11
          USING WORKAREA,R13
 *
-         L     R2,0(R1)         R2 CONTAINS HANDLE
-         L     R3,4(R1)         R3 POINTS TO BUF POINTER
-         LA    R6,0
-         GET   (R2)
-         ST    R1,0(R3)
-         LR    R15,R6
+         SLR   R6,R6              Clear default end-of-file indicator
+         L     R4,BUFFADDR        Load address of input buffer
+         ICM   R5,B'1111',BUFFCURR  Load address of next record
+         BNZ   DEBLOCK            Block in memory, go de-block it
+         USING IHADCB,R2
+         TM    DCBRECFM,DCBRECU   See if RECFM=U
+         BNO   READ               Not RECFM=U, go read a block
+         LA    R4,4(,R4)          Read RECFM=U four bytes into buffer
+READ     DS    0H
+         READ  DECB,              Read record Data Event Control Block C
+               SF,                Read record Sequential Forward       C
+               (R2),              Read record DCB address              C
+               (R4),              Read record input buffer             C
+               'S',               Read record standard length BLKSIZE  C
+               MF=E               Execute a MF=L MACRO
+         CHECK DECB               Wait for READ to complete
+*                                 If EOF, R6 will be set to F'1'
+         LTR   R6,R6              See if end of input data set
+         BNZ   READEOD            Is end, go return to caller
+* If RECFM=FB or U, store BUFFADDR in BUFFCURR
+* If RECFM=V, VB, VBS, etc. store BUFFADDR+4 in BUFFCURR
+         LR    R5,R4              Copy buffer address to init BUFFCURR
+         TM    DCBRECFM,DCBRECU   See if RECFM=U
+         BO    NOTV               Is RECFM=U, so not RECFM=V
+         TM    DCBRECFM,DCBRECV   See if RECFM=V, VB, VBS, etc.
+         BNO   NOTV               Is not RECFM=V, so skip address bump
+         LA    R5,4(,R4)          Bump buffer address past BDW
+NOTV     DS    0H
+* Subtract residual from BLKSIZE, add BUFFADDR, store as BUFFEND
+         ST    R5,BUFFCURR        Indicate data available
+         LA    R8,DECB            Load Data Event Control Block addr.
+         USING DECB,R8            Give assembler DECB base
+         L     R8,DECIOBPT        Load address of Input/Output Block
+         DROP  R8                 Don't need DECB address base anymore
+         USING IOBSTDRD,R8        Give assembler IOB base
+         SLR   R7,R7              Clear residual amount work register
+         ICM   R7,B'0011',IOBCSW+5  Load residual count
+         DROP  R8                 Don't need IOB address base anymore
+         SLR   R8,R8              Clear DCB-BLKSIZE work register
+         ICM   R8,B'0011',DCBBLKSI  Load maximum block size
+         SLR   R8,R7              Find block size read in
+         LR    R7,R8              Save size of block read in
+         AL    R8,BUFFADDR        Find address after block read in
+         ST    R8,BUFFEND         Save address after end of input block
 *
-RETURNAR DS    0H
-         LR    R1,R13
-         L     R13,SAVEAREA+4
-         LR    R14,R15
-         FREEMAIN RU,LV=WORKLEN,A=(R1),SP=SUBPOOL
-         LR    R15,R14
-         RETURN (14,12),RC=(15)
+DEBLOCK  DS    0H
+*        R4 has address of block buffer
+*        R5 has address of current record
+*        If RECFM=U, then R7 has size of block read in
+         TM    DCBRECFM,DCBRECU   Is data set RECFM=U
+         BO    DEBLOCKU           Is RECFM=U, go deblock it
+         TM    DCBRECFM,DCBRECF   Is data set RECFM=F, FB, etc.
+         BO    DEBLOCKF           Is RECFM=Fx, go deblock it
 *
+* Must be RECFM=V, VB, VBS, VS, VA, VM, VBA, VBM, VSA, VSM, VBSA, VBSM
+*  VBS SDW ( Segment Descriptor Word ):
+*  REC+0 length 2 is segment length
+*  REC+2 0 is record not segmented
+*  REC+2 1 is first segment of record
+*  REC+2 2 is last seqment of record
+*  REC+2 3 is one of the middle segments of a record
+*        R5 has address of current record
+         CLI   2(R5),0            See if a spanned record segment
+         BE    DEBLOCKV           Not spanned, go deblock as RECFM=V
+         L     R6,VBSADDR         Load address of the VBS record area
+         CLI   2(R5),1            See if first spanned record segment
+         BE    DEFIRST            First segment of rec., go start build
+         CLI   2(R5),3            If a middle of spanned record segment
+         BE    DEMID              A middle segment of rec., go continue
+*        CLI   2(R5),3            See if last spanned record segment
+*        BE    DELAST             Last segment of rec., go complete rec
+* DELAST   DS    0H
+*        R5 has address of last record segment
+*        R6 has address of VBS record area
+         SLR   R7,R7              Clear work register
+         ICM   R7,B'0011',0(R5)   Load length of record segment
+         SH    R7,H4              Only want length of data
+         SLR   R8,R8              Clear work register
+         ICM   R8,B'0011',0(R6)   Load length of record so far
+         AR    R8,R7              Find length of complete record
+         STH   R8,0(,R6)          Store complete record length
+         L     R9,VBSCURR         Load old VBS current location
+         AR    R9,R8              See if past end of VBS record buffer
+         CL    R9,VBSEND          See if past end of VBS record buffer
+         BH    ABEND              Record too long, go abend
+         L     R8,VBSCURR         Location to put the record seqment
+         ST    R9,VBSCURR         Save new VBS next data address
+         LR    R9,R7              Length of data to move
+         LA    R10,4(,R5)         Location of input record data
+         LR    R11,R7             Length of data to move
+         MVCL  R8,R10             Move record segment to VBS rec.area
+         DC    H'0'               x
+*        If end of block, zero BUFFCURR
+*        If another record, bump BUFFCURR address
+         DC    H'0'               x
+         DC    H'0'               x
+         DC    H'0'               x
+         DC    H'0'               x
+         DC    H'0'               x
+         DC    H'0'               x
+         DC    H'0'               x
+         LR    R5,R6              Load address of completed record
+         B     RECBACK            Go store the record addr. for return
+DEFIRST  DS    0H
+* R5 has address of last record segment
+* R6 has address of VBS record area
+* Most of DEFIRST is the same as DEMID
+         XC    2(4,R6),0(R6)      Clear VBS record area RDW
+         LA    R7,4               Load four to setup RDW
+         STC   R7,1(,R6)          Set length of RDW in RDW
+         AL    R7,VBSADDR         Find address to put first data
+         ST    R7,VBSCURR         Save new VBS new data address
+DEMID    DS    0H
+         SLR   R7,R7              Clear work register
+         ICM   R7,B'0011',0(R5)   Load length of record segment
+         SH    R7,H4              Only want length of data
+         SLR   R8,R8              Clear work register
+         ICM   R8,B'0011',0(R6)   Load length of record so far
+         AR    R8,R7              Find length of complete record
+         STH   R8,0(,R6)          Store complete record length
+         L     R9,VBSCURR         Load old VBS current location
+         AR    R9,R8              See if past end of VBS record buffer
+         CL    R9,VBSEND          See if past end of VBS record buffer
+         BH    ABEND              Record too long, go abend
+         L     R8,VBSCURR         Location to put the record seqment
+         ST    R9,VBSCURR         Save new VBS next data address
+         LR    R9,R7              Length of data to move
+         LA    R10,4(,R5)         Location of input record data
+         LR    R11,R7             Length of data to move
+         MVCL  R8,R10             Move record segment to VBS rec.area
+         DC    H'0'               x
+         DC    H'0'               x
+*        If end of block, zero BUFFCURR
+*        If another record, bump BUFFCURR address
+         DC    H'0'               x
+*       Return to READ to get next seqment
+         DC    H'0'               x
+         DC    H'0'               x
+         DC    H'0'               x
+         DC    H'0'               x
+         DC    H'0'               x
+* ELSE add record length to BUFFCURR
+* If BUFFCURR equal BUFFEND, zero BUFFCURR
+* Move record to VBS at VBSCURR, add to VBSADDR
+* If record incomplete, return to READ
+* Load VRSADDR into R5            x
+* zero VBSCURR                    x
+* Branch to RECBACK               x
+*                                 x
 *
+DEBLOCKU DS    0H
+* If RECFM=U, a block is a variable record
+*        R4 has address of block buffer
+*        R7 has size of block read in
+         LA    R7,4(,R7)          Add four to block size for fake RDW
+         STH   R7,0(,R4)          Store variable RDW for RECFM=U
+         LR    R5,R4              Indicate start of buffer is record
+         XC    BUFFCURR,BUFFCURR  Indicate no next record in block
+         B     RECBACK            Go store the record addr. for return
+*
+DEBLOCKV DS    0H
+* If RECFM=V, bump address RDW size
+*        R5 has address of current record
+         SLR   R7,R7              Clear DCB-LRECL work register
+         ICM   R7,B'0011',0(R5)   Load RECFM=V RDW length field
+         AR    R7,R5              Find the next record address
+* If address=BUFFEND, zero BUFFCURR
+         CL    R7,BUFFEND         Is it off end of block?
+         BL    SETCURR            Is not off, go store it
+         LA    R7,0               Clear the next record address
+         B     SETCURR            Go store next record addr.
+*
+DEBLOCKF DS    0H
+* If RECFM=FB, bump address by lrecl
+*        R5 has address of current record
+         SLR   R7,R7              Clear DCB-LRECL work register
+         ICM   R7,B'0011',DCBLRECL  Load RECFM=F DCB LRECL
+         AR    R7,R5              Find the next record address
+* If address=BUFFEND, zero BUFFCURR
+         CL    R7,BUFFEND         Is it off end of block?
+         BL    SETCURR            Is not off, go store it
+         LA    R7,0               Clear the next record address
+SETCURR  DS    0H
+         ST    R7,BUFFCURR        Store the next record address
+*        BNH   RECBACK            Go store the record addr. for return
+RECBACK  DS    0H
+         ST    R5,0(,R3)          Store record address for caller
+READEOD  DS    0H
+         LR    R1,R13             Save temp.save area addr.for FREEMAIN
+         L     R13,SAVEAREA+4     Restore Caller's save area address
+         FREEMAIN RU,LV=WORKLEN,A=(1),SP=SUBPOOL  Free temp.save area
+         LR    R15,R6             Set return code 1=EOF or 0=not-eof
+         RETURN (14,12),RC=(15)   Return to caller
+*
+ABEND    DS    0H
+         WTO   'MVSSUPA - @@AREAD - encountered VBS record too long',  c
+               ROUTCDE=11         Send to programmer and listing
+         ABEND 1234,DUMP          Abend U1234 and allow a dump
+*
+         LTORG ,                  In case someone adds literals
+*
+H4       DC    H'4'               Constant for subtraction
 *
          ENTRY @@AWRITE
 @@AWRITE EQU   *
          SAVE  (14,12),,@@AWRITE
          LR    R12,R15
          USING @@AWRITE,R12
-         LR    R11,R1
+         L     R2,0(,R1)          R2 contains GETMAINed address
+         L     R3,4(,R1)          R3 points to the record address
          GETMAIN RU,LV=WORKLEN,SP=SUBPOOL
-         ST    R13,4(R1)
-         ST    R1,8(R13)
+         ST    R13,4(,R1)
+         ST    R1,8(,R13)
          LR    R13,R1
-         LR    R1,R11
          USING WORKAREA,R13
 *
-         L     R2,0(R1)         R2 CONTAINS HANDLE
-         L     R3,4(R1)         R3 POINTS TO BUF POINTER
          PUT   (R2)
-         ST    R1,0(R3)
-         LA    R15,0
-*
-RETURNAW DS    0H
+         ST    R1,0(,R3)
          LR    R1,R13
          L     R13,SAVEAREA+4
-         LR    R14,R15
-         FREEMAIN RU,LV=WORKLEN,A=(R1),SP=SUBPOOL
-         LR    R15,R14
-         RETURN (14,12),RC=(15)
+         FREEMAIN RU,LV=WORKLEN,A=(1),SP=SUBPOOL
+         RETURN (14,12),RC=0
 *
 *
 *
@@ -235,31 +501,40 @@ RETURNAW DS    0H
          SAVE  (14,12),,@@ACLOSE
          LR    R12,R15
          USING @@ACLOSE,R12
-         LR    R11,R1
+         L     R2,0(,R1)          R2 contains GETMAINed address/handle
          GETMAIN RU,LV=WORKLEN,SP=SUBPOOL
-         ST    R13,4(R1)
-         ST    R1,8(R13)
+         ST    R13,4(,R1)
+         ST    R1,8(,R13)
          LR    R13,R1
-         LR    R1,R11
          USING WORKAREA,R13
 *
-         L     R2,0(R1)         R2 CONTAINS HANDLE
+         ICM   R1,B'1111',VBSADDR  Load VBS record area
+         BZ    FREEBUFF           No area, skip free of it
+         L     R0,VBSEND          Load address past end of VBS area
+         SLR   R0,R1              Calculate size of VBS record area
+         FREEMAIN RU,LV=(0),A=(1),SP=SUBPOOL  Free VBS record area
+FREEBUFF DS    0H
+         ICM   R1,B'1111',BUFFADDR  Load input buffer address
+         BZ    CLOSE              No area, skip free of it
+         L     R0,BUFFEND         Load address after end of buffer addr
+         SLR   R0,R1              Calculate size of input buffer
+         FREEMAIN RU,LV=(0),A=(1),SP=SUBPOOL  Free input buffer
+CLOSE    DS    0H
          MVC   CLOSEMB,CLOSEMAC
 *         CLOSE ((R2)),MF=(E,CLOSEMB),MODE=31
 * CAN'T USE MODE=31 WITH MVS 3.8
          CLOSE ((R2)),MF=(E,CLOSEMB)
+         TM    DCBMACR1,DCBMRRD   See if using MACRF=R, no dynamic buff
+         BO    NOPOOL             Is MACRF=R, skip FREEPOOL
          FREEPOOL ((R2))
+NOPOOL   DS    0H
          FREEMAIN RU,LV=ZDCBLEN,A=(R2),SP=SUBPOOL
-         LA    R15,0
 *
-RETURNAC DS    0H
          LR    R1,R13
          L     R13,SAVEAREA+4
-         LR    R14,R15
-         FREEMAIN RU,LV=WORKLEN,A=(R1),SP=SUBPOOL
-         LR    R15,R14
-         RETURN (14,12),RC=(15)
-         LTORG
+         FREEMAIN RU,LV=WORKLEN,A=(1),SP=SUBPOOL
+         RETURN (14,12),RC=0
+         LTORG ,
 * CLOSEMAC CLOSE (),MF=L,MODE=31
 * CAN'T USE MODE=31 WITH MVS 3.8
 CLOSEMAC CLOSE (),MF=L
@@ -267,24 +542,28 @@ CLOSEMLN EQU   *-CLOSEMAC
 *
 *
 *
-**********************************************************************
-*                                                                    *
-*  GETM - GET MEMORY                                                 *
-*                                                                    *
-**********************************************************************
+* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+*
+*  GETM - GET MEMORY
+*
+* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
          ENTRY @@GETM
 @@GETM   EQU   *
          SAVE  (14,12),,@@GETM
          LR    R12,R15
          USING @@GETM,R12
 *
-         L     R2,0(R1)
+         L     R2,0(,R1)
+         AIF ('&COMP' NE 'GCC').GETMC
 * THIS LINE IS FOR GCC
          LR    R3,R2
+         AGO   .GETMEND
+.GETMC   ANOP
 * THIS LINE IS FOR C/370
-*         L     R3,0(R2)
+         L     R3,0(,R2)
+.GETMEND ANOP
          LR    R4,R3
-         A     R3,=F'16'
+         LA    R3,16(,R3)
 
 *
 * THIS SHOULD NOT BE NECESSARY. THE DEFAULT OF LOC=RES
@@ -292,7 +571,7 @@ CLOSEMLN EQU   *-CLOSEMAC
 * UNKNOWN PROBLEM, PROBABLY WITH RDJFCB, WHICH PREVENTS
 * EXECUTABLES FROM RESIDING ABOVE THE LINE, HENCE THIS
 * HACK TO ALLOCATE MOST STORAGE ABOVE THE LINE
-*                  
+*
          AIF   ('&SYSPARM' NE 'IFOX00').ANYCHKY
 * CAN'T USE "ANY" ON MVS 3.8
          GETMAIN RU,LV=(R3),SP=SUBPOOL
@@ -311,54 +590,54 @@ CLOSEMLN EQU   *-CLOSEMAC
 *
 RETURNGM DS    0H
          RETURN (14,12),RC=(15)
-         LTORG
+         LTORG ,
 *
 *
 *
-**********************************************************************
-*                                                                    *
-*  FREEM - FREE MEMORY                                               *
-*                                                                    *
-**********************************************************************
+* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+*
+*  FREEM - FREE MEMORY
+*
+* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
          ENTRY @@FREEM
 @@FREEM  EQU   *
          SAVE  (14,12),,@@FREEM
          LR    R12,R15
          USING @@FREEM,R12
 *
-         L     R2,0(R1)
+         L     R2,0(,R1)
          S     R2,=F'16'
-         L     R3,0(R2)
+         L     R3,0(,R2)
          FREEMAIN RU,LV=(R3),A=(R2),SP=SUBPOOL
 *
 RETURNFM DS    0H
          RETURN (14,12),RC=(15)
-         LTORG
+         LTORG ,
 *
 *
 *
-**********************************************************************
-*                                                                    *
-*  GETCLCK - GET THE VALUE OF THE MVS CLOCK TIMER AND MOVE IT TO AN  *
-*  8-BYTE FIELD.  THIS 8-BYTE FIELD DOES NOT NEED TO BE ALIGNED IN   *
-*  ANY PARTICULAR WAY.                                               *
-*                                                                    *
-*  E.G. CALL 'GETCLCK' USING WS-CLOCK1                               *
-*                                                                    *
-*  THIS FUNCTION ALSO RETURNS THE NUMBER OF SECONDS SINCE 1970-01-01 *
-*  BY USING SOME EMPERICALLY-DERIVED MAGIC NUMBERS                   *
-*                                                                    *
-**********************************************************************
+* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+*
+*  GETCLCK - GET THE VALUE OF THE MVS CLOCK TIMER AND MOVE IT TO AN
+*  8-BYTE FIELD.  THIS 8-BYTE FIELD DOES NOT NEED TO BE ALIGNED IN
+*  ANY PARTICULAR WAY.
+*
+*  E.G. CALL 'GETCLCK' USING WS-CLOCK1
+*
+*  THIS FUNCTION ALSO RETURNS THE NUMBER OF SECONDS SINCE 1970-01-01
+*  BY USING SOME EMPERICALLY-DERIVED MAGIC NUMBERS
+*
+* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
          ENTRY @@GETCLK
 @@GETCLK EQU   *
          SAVE  (14,12),,@@GETCLK
          LR    R12,R15
          USING @@GETCLK,R12
 *
-         L     R2,0(R1)
+         L     R2,0(,R1)
          STCK  0(R2)
-         L     R4,0(R2)
-         L     R5,4(R2)
+         L     R4,0(,R2)
+         L     R5,4(,R2)
          SRDL  R4,12
          SL    R4,=X'0007D910'
          D     R4,=F'1000000'
@@ -371,18 +650,18 @@ RETURNGC DS    0H
 *
 *
 *
-**********************************************************************
-*                                                                    *
-*  SAVER - SAVE REGISTERS AND PSW INTO ENV_BUF                       *
-*                                                                    *
-**********************************************************************
+* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+*
+*  SAVER - SAVE REGISTERS AND PSW INTO ENV_BUF
+*
+* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
          ENTRY @@SAVER
 @@SAVER EQU   *
 *
          SAVE  (14,12),,@@SAVER    * SAVE REGS AS NORMAL
          LR    R12,R15
          USING @@SAVER,12
-         L     R1,0(R1)            * ADDRESS OF ENV TO R1
+         L     R1,0(,R1)           * ADDRESS OF ENV TO R1
          L     R2,@@MANSTK         * R2 POINTS TO START OF STACK
          L     R3,@@MANSTK+4       * R3 HAS LENGTH OF STACK
          LR    R5,R3               * AND R5
@@ -403,53 +682,54 @@ RETURNGC DS    0H
          MVCL  R4,R2               * COPY SETJMP'S SAVE AREA TO ENV
 *        STM   R0,R15,0(R1)               SAVE REGISTERS
 *        BALR  R15,0                     GET PSW INTO R15
-*        ST    R15,64(R1)                 SAVE PSW
+*        ST    R15,64(,R1)                SAVE PSW
 *
 RETURNSR DS    0H
          SR    R15,R15              * CLEAR RETURN CODE
          RETURN (14,12),RC=(15)
          ENTRY   @@MANSTK
 @@MANSTK DS    2F
-         LTORG
+         LTORG ,
 *
 *
 *
-**********************************************************************
-*                                                                    *
-*  LOADR - LOAD REGISTERS AND PSW FROM ENV_BUF                       *
-*                                                                    *
-**********************************************************************
+* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+*
+*  LOADR - LOAD REGISTERS AND PSW FROM ENV_BUF
+*
+* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
          ENTRY @@LOADR
 @@LOADR EQU   *
 *
          BALR  R12,R0
          USING *,12
-         L     R1,0(R1)           * R1 POINTS TO ENV
-         L     R2,8(R1)           * R2 POINTS TO STACK
-         L     R3,4(R1)           * R3 HAS HOW LONG
+         L     R1,0(,R1)          * R1 POINTS TO ENV
+         L     R2,8(,R1)          * R2 POINTS TO STACK
+         L     R3,4(,R1)          * R3 HAS HOW LONG
          LR    R5,R3              * AS DOES R5
-         L     R6,24(R1)          * R6 HAS RETURN CODE
-         L     R4,0(R1)           * OUR SAVE AREA
-         L     R13,12(R1)         * GET OLD STACK POINTER
+         L     R6,24(,R1)         * R6 HAS RETURN CODE
+         L     R4,0(,R1)          * OUR SAVE AREA
+         L     R13,12(,R1)        * GET OLD STACK POINTER
          MVCL  R2,R4              * AND RESTORE STACK
-         ST    R6,24(R1)          * SAVE VAL IN ENV
+         ST    R6,24(,R1)         * SAVE VAL IN ENV
          L     R6,=F'1'
          ST    R6,20(R1)          * AND SET LONGJ TO 1.
          FREEMAIN RU,LV=(R3),A=(R4),SP=SUBPOOL
 *        L     R14,16(R1)          * AND RETURN ADDRESS
 *        B     RETURNSR            * AND BACK INTO SETJMP
-*        L     R15,64(R1)                 RESTORE PSW
+*        L     R15,64(,R1)                RESTORE PSW
 *        LM    R0,R15,0(R1)               RESTORE REGISTERS
 *        BR    R15                        JUMP TO SAVED PSW
 *
 RETURNLR DS    0H
          SR    R15,R15            * CLEAR RETURN CODE
          RETURN (14,12),RC=(15)
-         LTORG
+         LTORG ,
+*
+         IEZIOB ,                 Input/Output Block
 *
 *
-*
-WORKAREA DSECT
+WORKAREA DSECT ,
 SAVEAREA DS    18F
          DS    0F
 CLOSEMB  DS    CL(CLOSEMLN)
@@ -458,14 +738,25 @@ OPENMB   DS    CL(OPENMLN)
          DS    0F
 WOPENMB  DS    CL(WOPENMLN)
 WORKLEN  EQU   *-WORKAREA
-ZDCBAREA DSECT
+*
+         DCBD  DSORG=PS,DEVD=DA   Map Data Control Block
+         ORG   IHADCB             Overlay the DCB DSECT
+ZDCBAREA EQU   *
          DS    CL(INDCBLN)
          DS    CL(OUTDCBLN)
          DS    0H
 EOFR24   DS    CL(EOFRLEN)
+         IHADECB DSECT=NO         Data Event Control Block
+BUFFADDR DS    F                  Location of the BLOCK Buffer
+BUFFEND  DS    F                  Address after end of current block
+BUFFCURR DS    F                  Current record in the buffer
+VBSADDR  DS    F                  Location of the VBS record build area
+VBSEND   DS    F                  Addr. after end VBS record build area
+VBSCURR  DS    F                  Location to store next byte
 JFCBPTR  DS    F
 JFCB     DS    0F
-         IEFJFCBN
+         IEFJFCBN LIST=YES        SYS1.AMODGEN JOB File Control Block
 ZDCBLEN  EQU   *-ZDCBAREA
-         DCBD  DSORG=PS
-         END
+*
+*
+         END   ,                  End of sub-routine

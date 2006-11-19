@@ -13,6 +13,7 @@
 #include "time.h"
 #include "stdarg.h"
 #include "stdio.h"
+#include "stddef.h"
 
 /* pdos and msdos use the same interface most of the time) */
 #ifdef __PDOS__

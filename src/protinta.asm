@@ -125,7 +125,7 @@ rawprota proc corsubr:dword, \
         jmp rtop
           
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-ifdef MASM
+ifdef HAVE_DOUBLE_COLON
 rawprota_stage3::
 else
 rawprota_stage3:
@@ -319,7 +319,7 @@ runreal proc
         jmp ptor
         
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-ifdef MASM
+ifdef HAVE_DOUBLE_COLON
 runreal_stage3::
 else
 runreal_stage3:

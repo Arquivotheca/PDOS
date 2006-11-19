@@ -143,7 +143,7 @@ bypass:
         
         retf    ; call desired routine
 
-ifdef MASM
+ifdef HAVE_DOUBLE_COLON
 callwithbypass::
 else
 callwithbypass:

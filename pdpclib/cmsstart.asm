@@ -34,11 +34,15 @@ R14      EQU   14
 R15      EQU   15
 SUBPOOL  EQU   0
          CSECT
+         ENTRY @@CRT0
+@@CRT0   EQU   *
          ENTRY @@MVSTRT
 @@MVSTRT EQU   *
-         SAVE  (14,12),,@@MVSTRT
+*         ENTRY CEESTART
+*CEESTART EQU   *
+         SAVE  (14,12),,@@CRT0
          LR    R10,R15
-         USING @@MVSTRT,R10
+         USING @@CRT0,R10
          LR    R11,R1
          GETMAIN R,LV=STACKLEN,SP=SUBPOOL
          ST    R13,4(R1)
@@ -92,12 +96,8 @@ RETURNMS DS    0H
          RETURN (14,12),RC=(15)
 SAVER13  DS    F
          LTORG
-*         ENTRY CEESTART
-*CEESTART EQU   *
 *         ENTRY CEESG003
 *CEESG003 EQU   *
-         ENTRY @@CRT0
-@@CRT0   EQU   *
          ENTRY @@EXITA
 @@EXITA  EQU   *
 * THIS WAS FOR C/370. THE GCC CODE MAY OR MAY NOT BE

@@ -40,6 +40,8 @@ SUBPOOL  EQU   0
          CSECT
          ENTRY @@MVSTRT
 @@MVSTRT EQU   *
+         ENTRY @@CRT0
+@@CRT0   EQU   *
          SAVE  (14,12),,@@MVSTRT
          LR    R10,R15
          USING @@MVSTRT,R10
@@ -113,8 +115,6 @@ SAVER13  DS    F
 *CEESTART EQU   *
 *         ENTRY CEESG003
 *CEESG003 EQU   *
-         ENTRY @@CRT0
-@@CRT0   EQU   *
          ENTRY @@EXITA
 @@EXITA  EQU   *
 * THIS WAS THE C/370 CODE BUT I DON'T KNOW WHETHER

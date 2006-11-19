@@ -27,6 +27,9 @@ typedef unsigned int size_t;
 #endif
 #ifndef __WCHAR_T_DEFINED
 #define __WCHAR_T_DEFINED
+#ifndef _WCHAR_T_DEFINED
+#define _WCHAR_T_DEFINED
+#endif
 typedef char wchar_t;
 #endif
 

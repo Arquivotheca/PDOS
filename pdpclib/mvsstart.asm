@@ -38,13 +38,16 @@ R14      EQU   14
 R15      EQU   15
 SUBPOOL  EQU   0
          CSECT
-         ENTRY @@MVSTRT
-@@MVSTRT EQU   *
          ENTRY @@CRT0
 @@CRT0   EQU   *
-         SAVE  (14,12),,@@MVSTRT
+         ENTRY @@MVSTRT
+@@MVSTRT EQU   *
+* REQUIRED FOR C/370
+*         ENTRY CEESTART 
+*CEESTART EQU   *
+         SAVE  (14,12),,@@CRT0
          LR    R10,R15
-         USING @@MVSTRT,R10
+         USING @@CRT0,R10
          LR    R11,R1
          GETMAIN RU,LV=STACKLEN,SP=SUBPOOL
          ST    R13,4(R1)
@@ -110,9 +113,6 @@ RETURNMS DS    0H
          RETURN (14,12),RC=(15)
 SAVER13  DS    F
          LTORG
-* REQUIRED FOR C/370
-*         ENTRY CEESTART 
-*CEESTART EQU   *
 *         ENTRY CEESG003
 *CEESG003 EQU   *
          ENTRY @@EXITA

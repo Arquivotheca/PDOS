@@ -516,8 +516,9 @@ H4       DC    H'4'               Constant for subtraction
 FREEBUFF DS    0H
          ICM   R1,B'1111',BUFFADDR  Load input buffer address
          BZ    CLOSE              No area, skip free of it
-         L     R0,BUFFEND         Load address after end of buffer addr
-         SLR   R0,R1              Calculate size of input buffer
+         SLR   R0,R0              Clear a work register
+         ICM   R0,B'0011',DCBBLKSI  Load the BLKSIZE for buffer size
+         LA    R0,4(,R0)          Add 4 bytes for RECFM=U
          FREEMAIN RU,LV=(0),A=(1),SP=SUBPOOL  Free input buffer
 CLOSE    DS    0H
          MVC   CLOSEMB,CLOSEMAC

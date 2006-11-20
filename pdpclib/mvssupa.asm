@@ -18,13 +18,14 @@
 * &COMP    SETC 'C370'            Indicate that this is for C/370
 *
 * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+@@AOPEN  CSECT ,
          AIF ('&SYSPARM' EQ 'IFOX00').NOMODE
 * BECAUSE OF THE "LOC=ABOVE", WE NEED TO FORCE 31
 * SEARCH FOR "LOC=RES" TO FIND OUT HOW TO FIX
-         AMODE 31
+@@AOPEN  AMODE 31
 * SEARCH FOR "LOC=RES" TO FIND OUT WHY THIS IS BEING
 * HELD BACK AT RMODE 24
-         RMODE 24
+@@AOPEN  RMODE 24
 .NOMODE  ANOP
          PRINT ON,GEN,DATA        See all
 * YREGS IS NOT AVAILABLE WITH IFOX
@@ -46,10 +47,9 @@ R12      EQU   12
 R13      EQU   13
 R14      EQU   14
 R15      EQU   15
-         CSECT
-         ENTRY @@AOPEN
-@@AOPEN  EQU   *
-         SAVE  (14,12),,@@AOPEN
+*        ENTRY @@AOPEN
+* @@AOPEN  EQU   *
+         SAVE  (14,12),,@@AOPEN.&SYSDATE..&SYSTIME  Save caller's regs.
          LR    R12,R15
          USING @@AOPEN,R12
          LR    R11,R1
@@ -65,7 +65,7 @@ R15      EQU   15
          L     R5,08(,R1)         R5 POINTS TO RECFM
          L     R8,12(,R1)         R8 POINTS TO LRECL
          L     R9,16(,R1)         R9 POINTS TO MEMBER NAME (OF PDS)
-         LA    R9,0(,R9)          Strip off high-order bit
+         LA    R9,00(,R9)         Strip off high-order bit
          AIF   ('&SYSPARM' NE 'IFOX00').BELOW
 * CAN'T USE "BELOW" ON MVS 3.8
          GETMAIN RU,LV=ZDCBLEN,SP=SUBPOOL
@@ -76,7 +76,8 @@ R15      EQU   15
          LR    R2,R1              Addr.of storage obtained to its base
          USING IHADCB,R2          Give assembler DCB area base register
          XC    ZDCBAREA(256),ZDCBAREA  Clear the GETMAINed area
-         XC    ZDCBAREA+256(ZDCBLEN-256),ZDCBAREA+256  Finish clear
+         XC    ZDCBAREA+256(256),ZDCBAREA+256  Continue clear
+         XC    ZDCBAREA+512(ZDCBLEN-512),ZDCBAREA+512  Finish clear
          AIF ('&COMP' NE 'C370').GCCMODE
          L     R4,0(,R4)          Load C/370 MODE.  0=input 1=output
 .GCCMODE ANOP
@@ -91,30 +92,43 @@ NEXTMVC  DS    0H
          MVC   EOFR24(EOFRLEN),ENDFILE
          MVC   DECB(READLEN),READDUM  MF=L READ MACRO to work area
          LA    R10,JFCB
-* EXIT TYPE 07 + 80 (END OF LIST INDICATOR)
-         ICM   R10,B'1000',=X'87'
          ST    R10,JFCBPTR
+         MVI   JFCBPTR,X'87'  Exit type 7 + 80 (End of list indicator)
          LA    R10,JFCBPTR
-         LA    R4,EOFR24
-         STCM  R4,B'0111',DCBEODA
+         LA    R1,EOFR24
+         STCM  R1,B'0111',DCBEODA
          STCM  R10,B'0111',DCBEXLSA
          MVC   DCBDDNAM,0(R3)
          MVC   OPENMB,OPENMAC
+         LTR   R9,R9              See if an address for the member name
+         BNZ   OPENIN             Is member name, skip changing DCB
          RDJFCB ((R2),INPUT),MF=(E,OPENMB)
+         MVC   CAMLST,CAMDUM      Copy CAMLST template to work area
+         LA    R1,JFCB            Load address of input data set name
+         ST    R1,CAMLST+4        Store data set name address in CAMLST
+         LA    R1,JFCBVOLS        Load address of input data set volser
+         ST    R1,CAMLST+8        Store data set name volser in CAMLST
+         LA    R1,DSCB+44         Load address of where to put DSCB
+         ST    R1,CAMLST+12       Store CAMLST output loc. in CAMLST
+         OBTAIN CAMLST            Read the VTOC record
+* CAMLST CAMLST SEARCH,DSNAME,VOLSER,DSCB+44
 * See if DSORG=PO but no member so set LRECL&BLKSIZE=256 read directory
-         CLI   JFCDSRG1,JFCORGPO  See if DSORG=PO
-         BNO   NOTDIR             Not DSORG=PO,don't read PDS directory
-         LTR   R9,R9              See in an address for the member name
-         BNZ   NOTDIR             Is member, don't read PDS directory
-         MVI   DCBLRECL,1         Set INDCB LRECL=256
-         MVI   DCBBLKSI,1         Set INDCB BLKSIZS=256
-NOTDIR   DS    0H
+         TM    DS1DSORG,DS1DSGPO  See if DSORG=PO
+         BZ    OPENIN             Not PDS, don't read PDS directory
+* At this point, we have a PDS but no member name requested.
+* Request must be to read the PDS directory
+         MVI   DCBBLKSI,1         Set DCB BLKSIZE to 256
+         MVI   DCBLRECL,1         Set DCB LRECL to 256
+         MVI   DCBRECFM,DCBRECF   Set DCB RECFM to RECFM=F
+OPENIN   DS    0H
 *         OPEN  ((R2),INPUT),MF=(E,OPENMB),MODE=31
 * Can't use MODE=31 on MVS 3.8
          OPEN  ((R2),INPUT),MF=(E,OPENMB)
 * Assume that OPEN worked?
-         LTR   R9,R9              See in an address for the member name
-         BZ    GETBUFF            No member, go get an input buffer
+         MVC   LRECL+2(2),DCBLRECL  Copy LRECL to a fullword
+         MVC   BLKSIZE+2(2),DCBBLKSI  Copy BLKSIZE to a fullword
+         LTR   R9,R9              See if an address for the member name
+         BZ    GETBUFF            No member name, skip finding it
          FIND  (R2),(R9),D        Point to the requested member
          LTR   R15,R15            See if member found
          BZ    GETBUFF            Member found, go get an input buffer
@@ -127,16 +141,14 @@ NOTDIR   DS    0H
          FREEMAIN RU,LV=ZDCBLEN,A=(1),SP=SUBPOOL  Free DCB area
          B     RETURNOP           Go return to caller with negative RC
 GETBUFF  DS    0H
-         SLR   R6,R6              Clear DCB-BLKSIZE work register
-         ICM   R6,B'0011',DCBBLKSI  Find the input blocksize
-         LA    R6,4(,R6)          Add 4 for RECFM=U buffer
+         L     R6,BLKSIZE         Load the input blocksize
+         LA    R6,4(,R6)          Add 4 in case RECFM=U buffer
          GETMAIN RU,LV=(R6),SP=SUBPOOL  Get input buffer storage
          ST    R1,BUFFADDR        Save the buffer address for READ
          XC    0(4,R1),0(R1)      Clear the RECFM=U Record Desc. Word
          TM    DCBRECFM,DCBRECV+DCBRECSB  See if spanned records
          BNO   DONEOPEN           Not RECFM=VS, VBS, etc. spanned, go
-         SLR   R6,R6              Clear DCB-LRECL work register
-         ICM   R6,B'0011',DCBLRECL  Load the input VBS LRECL
+         L     R6,LRECL           Load the input VBS LRECL
          CL    R6,F32760          See if LRECL=X
          BNH   GETVBS             Not LRECL=X, just get LRECL
          L     R6,F65536          Allow records up to 64K input
@@ -200,22 +212,40 @@ WNOMEM   DS    0H
 *         OPEN  ((R2),OUTPUT),MF=(E,WOPENMB),MODE=31,TYPE=J
 * Can't use MODE=31 on MVS 3.8or with TYPE=J
          OPEN  ((R2),OUTPUT),MF=(E,WOPENMB),TYPE=J
+         MVC   LRECL+2(2),DCBLRECL  Copy LRECL to a fullword
+         MVC   BLKSIZE+2(2),DCBBLKSI  Copy BLKSIZE to a fullword
 DONEOPEN DS    0H
-         SLR   R6,R6              Clear DCB-LRECL work register
-         ICM   R6,B'0011',DCBLRECL  Load a default DCB LRECL
+         L     R1,LRECL           Load RECFM F or V max. record length
          TM    DCBRECFM,DCBRECU   See if RECFM=U
          BNO   NOTU               Not RECFM=U, go leave LRECL as LRECL
-         SLR   R6,R6              Clear DCB-BLKSIZE work register
-         ICM   R6,B'0011',DCBBLKSI  Load the RECFM=U BLKSIZE for LRECL
-         LA    R6,4(,R6)          Add four for fake RECFM=U RDW
+         L     R1,BLKSIZE         Load RECFM U maximum record length
+         LA    R1,4(,R1)          Add four for fake RECFM=U RDW
 NOTU     DS    0H
-         ST    R6,0(,R8)          Return LRECL back to caller
-         LA    R6,0               Assume RECFM=F
-         TM    DCBRECFM,DCBRECV   See if RECFM=V or U
-         BZ    SETRECFM           Not RECFM=V or U, go store default F
-         LA    R6,1               Indicate RECFM=V for caller
+         ST    R1,0(,R8)          Return record length back to caller
+         TM    DCBRECFM,DCBRECU   See if RECFM=U
+         BO    SETRECU            Is RECFM=U, go find input or output?
+         TM    DCBRECFM,DCBRECV   See if RECFM=V
+         BO    SETRECV            Is RECFM=V, go return "1" to caller
+         B     SETRECF            Is RECFM=F, go return "0" to caller
+* RECFM=U on input  will tell caller that it is RECFM=V
+* RECFM=U on output will tell caller that it is RECFM=F
+SETRECU  DS    0H
+         LTR   R4,R4              See if OPEN input or output
+         BNZ   SETRECF            Is for output, go to set RECFM=F
+*        BZ    SETRECV            Else is for input, go to set RECFM=V
+SETRECV  DS    0H
+         LTR   R9,R9              See if a no member name
+         BNZ   SETRECV2           Not a PDS so set RECFM by DCB value
+         CLI   JFCDSRG1,JFCORGPO  See if DSORG=PO
+         BO    SETRECF            Is PDS, no member, read PDS.Dir fixed
+SETRECV2 DS    0H
+         LA    R1,1               Pass RECFM V to caller
+         B     SETRECFM           Go to set RECFM=V
+SETRECF  DS    0H
+         LA    R1,0               Pass RECFM F to caller
+*        B     SETRECFM           Go to set RECFM=F
 SETRECFM DS    0H
-         ST    R6,0(,R5)          Pass either RECFM F or V to caller
+         ST    R1,0(,R5)          Pass either RECFM F or V to caller
 *        B     RETURNOP
 *
 RETURNOP DS    0H
@@ -233,7 +263,7 @@ EOFRLEN  EQU   *-ENDFILE
          LTORG ,
 * OPENMAC  OPEN  (,INPUT),MF=L,MODE=31
 * CAN'T USE MODE=31 ON MVS 3.8
-OPENMAC  OPEN  (,INPUT),MF=L,TYPE=J
+OPENMAC  OPEN  (,INPUT),MF=L   ,TYPE=J-?????
 OPENMLN  EQU   *-OPENMAC
 * WOPENMAC OPEN  (,OUTPUT),MF=L,MODE=31
 * CAN'T USE MODE=31 ON MVS 3.8
@@ -252,9 +282,14 @@ READDUM  READ  NONE,              Read record Data Event Control Block C
                SF,                Read record Sequential Forward       C
                ,       (R2),      Read record DCB address              C
                ,       (R4),      Read record input buffer             C
-               'S',               Read record standard length BLKSIZE  C
+               ,       (R5),      Read BLKSIZE or 256 for PDS.DirectoryC
                MF=L               List type MACRO
 READLEN  EQU   *-READDUM
+*
+*
+* CAMDUM CAMLST SEARCH,DSNAME,VOLSER,DSCB+44
+CAMDUM   CAMLST SEARCH,*-*,*-*,*-*
+CAMLEN   EQU   *-CAMDUM           Length of CAMLST Template
 *
 *
          ENTRY @@AREAD
@@ -264,7 +299,7 @@ READLEN  EQU   *-READDUM
          USING @@AREAD,R12
          L     R2,0(,R1)          R2 contains GETMAINed address/handle
          USING IHADCB,R2
-         L     R3,4(,R1)          R3 points to record pointer
+         L     R3,4(,R1)  R3 points to where to store record pointer
          GETMAIN RU,LV=WORKLEN,SP=SUBPOOL
          ST    R13,4(,R1)
          ST    R1,8(,R13)
@@ -279,12 +314,13 @@ READLEN  EQU   *-READDUM
          TM    DCBRECFM,DCBRECU   See if RECFM=U
          BNO   READ               Not RECFM=U, go read a block
          LA    R4,4(,R4)          Read RECFM=U four bytes into buffer
+         L     R5,BLKSIZE         Load block size to read
 READ     DS    0H
          READ  DECB,              Read record Data Event Control Block C
                SF,                Read record Sequential Forward       C
                (R2),              Read record DCB address              C
                (R4),              Read record input buffer             C
-               'S',               Read record standard length BLKSIZE  C
+               (R5),              Read BLKSIZE or 256 for PDS.DirectoryC
                MF=E               Execute a MF=L MACRO
          CHECK DECB               Wait for READ to complete
 *                                 If EOF, R6 will be set to F'1'
@@ -309,8 +345,7 @@ NOTV     DS    0H
          SLR   R7,R7              Clear residual amount work register
          ICM   R7,B'0011',IOBCSW+5  Load residual count
          DROP  R8                 Don't need IOB address base anymore
-         SLR   R8,R8              Clear DCB-BLKSIZE work register
-         ICM   R8,B'0011',DCBBLKSI  Load maximum block size
+         L     R8,BLKSIZE         Load maximum block size
          SLR   R8,R7              Find block size read in
          LR    R7,R8              Save size of block read in
          AL    R8,BUFFADDR        Find address after block read in
@@ -401,6 +436,7 @@ DEMID    DS    0H
          LA    R10,4(,R5)         Location of input record data
          LR    R11,R7             Length of data to move
          MVCL  R8,R10             Move record segment to VBS rec.area
+         WTO   'RECFM=VBS is not supported yet',ROUTCDE=11
          DC    H'0'               x
          DC    H'0'               x
 *        If end of block, zero BUFFCURR
@@ -446,8 +482,7 @@ DEBLOCKV DS    0H
 DEBLOCKF DS    0H
 * If RECFM=FB, bump address by lrecl
 *        R5 has address of current record
-         SLR   R7,R7              Clear DCB-LRECL work register
-         ICM   R7,B'0011',DCBLRECL  Load RECFM=F DCB LRECL
+         L     R7,LRECL           Load RECFM=F DCB LRECL
          AR    R7,R5              Find the next record address
 * If address=BUFFEND, zero BUFFCURR
          CL    R7,BUFFEND         Is it off end of block?
@@ -516,10 +551,8 @@ H4       DC    H'4'               Constant for subtraction
 FREEBUFF DS    0H
          ICM   R1,B'1111',BUFFADDR  Load input buffer address
          BZ    CLOSE              No area, skip free of it
-         SLR   R3,R3              Clear a work register
-         ICM   R3,B'0011',DCBBLKSI  Load the BLKSIZE for buffer size
-         LA    R3,4(,R3)          Add 4 bytes for RECFM=U
-         LR    R0,R3              Copy length to free for FREEMAIN
+         L     R3,BLKSIZE         Load the BLKSIZE for buffer size
+         LA    R0,4(,R3)          Add 4 bytes for RECFM=U
          FREEMAIN RU,LV=(0),A=(1),SP=SUBPOOL  Free input buffer
 CLOSE    DS    0H
          MVC   CLOSEMB,CLOSEMAC
@@ -749,6 +782,8 @@ ZDCBAREA EQU   *
          DS    0H
 EOFR24   DS    CL(EOFRLEN)
          IHADECB DSECT=NO         Data Event Control Block
+BLKSIZE  DS    F                  Save area for input DCB BLKSIZE
+LRECL    DS    F                  Save area for input DCB LRECL
 BUFFADDR DS    F                  Location of the BLOCK Buffer
 BUFFEND  DS    F                  Address after end of current block
 BUFFCURR DS    F                  Current record in the buffer
@@ -758,6 +793,12 @@ VBSCURR  DS    F                  Location to store next byte
 JFCBPTR  DS    F
 JFCB     DS    0F
          IEFJFCBN LIST=YES        SYS1.AMODGEN JOB File Control Block
+CAMLST   DS    XL(CAMLEN)         CAMLST for OBTAIN to get VTOC entry
+* Format 1 Data Set Control Block
+DSCB     DS    0F
+         IECSDSL1 (1)             Map the Format 1 DSCB
+DSCBCCHH DS    CL5                CCHHR of DSCB returned by OBTAIN
+         DS    CL47               Rest of OBTAIN's 148 byte work area
 ZDCBLEN  EQU   *-ZDCBAREA
 *
 *

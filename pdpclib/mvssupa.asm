@@ -18,7 +18,6 @@
 * &COMP    SETC 'C370'            Indicate that this is for C/370
 *
 * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
-MVSSUPA  CSECT ,
          AIF ('&SYSPARM' EQ 'IFOX00').NOMODE
 * BECAUSE OF THE "LOC=ABOVE", WE NEED TO FORCE 31
 * SEARCH FOR "LOC=RES" TO FIND OUT HOW TO FIX
@@ -47,6 +46,7 @@ R12      EQU   12
 R13      EQU   13
 R14      EQU   14
 R15      EQU   15
+         CSECT
          ENTRY @@AOPEN
 @@AOPEN  EQU   *
          SAVE  (14,12),,@@AOPEN

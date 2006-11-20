@@ -125,11 +125,7 @@ rawprota proc corsubr:dword, \
         jmp rtop
           
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-ifdef HAVE_DOUBLE_COLON
-rawprota_stage3::
-else
-rawprota_stage3:
-endif
+rawprota_stage3 label near
 ; protected mode subroutine has terminated
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; put edi (where we saved eax, the return code) into dx:ax
@@ -319,11 +315,7 @@ runreal proc
         jmp ptor
         
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-ifdef HAVE_DOUBLE_COLON
-runreal_stage3::
-else
-runreal_stage3:
-endif
+runreal_stage3 label near
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; convert return long return code into 32 bit int
         shl edx, 16

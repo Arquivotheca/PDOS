@@ -143,11 +143,7 @@ bypass:
         
         retf    ; call desired routine
 
-ifdef HAVE_DOUBLE_COLON
-callwithbypass::
-else
-callwithbypass:
-endif
+callwithbypass label near
         pop ax ; skip return address,
         pop ax ;    won't be needed
         pop ax ; get the return code

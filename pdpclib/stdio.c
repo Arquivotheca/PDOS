@@ -159,6 +159,8 @@ static int examine(const char **formt, FILE *fq, char *s, va_list *arg,
 
 #ifdef __CMS__
 static void filedef(char *fdddname, char *fnm, int mymode);
+static char *int_strtok(char *s1, const char *s2);
+#define strtok int_strtok
 #endif
 
 int printf(const char *format, ...)
@@ -614,7 +616,7 @@ static void osfopen(void)
             *p = toupper((unsigned char)*p);
             p++;
         }
-        sprintf(tmpdd, "GCC%03dHD", spareSpot);
+        sprintf(tmpdd, "PDP%03dHD", spareSpot);
         filedef(tmpdd, newfnm, mode);
         p = tmpdd;
     }
@@ -4007,6 +4009,29 @@ static void filedef(char *fdddname, char *fnm, int mymode)
 
    __SVC202 ( s202parm, &code, &parm );
 }
+
+static char *int_strtok(char *s1, const char *s2)
+{
+    static char *old = NULL;
+    char *p;
+    size_t len;
+    size_t remain;
+    
+    if (s1 != NULL) old = s1;
+    if (old == NULL) return (NULL);
+    p = old;
+    len = strspn(p, s2);
+    remain = strlen(p);
+    if (remain <= len) { old = NULL; return (NULL); }
+    p += len;
+    len = strcspn(p, s2);
+    remain = strlen(p);
+    if (remain <= len) { old = NULL; return (p); }
+    *(p + len) = '\0';
+    old = p + len + 1;
+    return (p);
+}
+
 #endif
 
 

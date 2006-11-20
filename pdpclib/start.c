@@ -259,10 +259,18 @@ int CTYP __start(char *p)
     memmgrDefaults(&__memmgr);
     memmgrInit(&__memmgr);
 #endif
-    stdin = fopen("dd:SYSIN", "r");
-    stdin->permfile = 1;
     stdout = fopen("dd:SYSPRINT", "w");
+    if (stdout == NULL)
+    {
+        exit(EXIT_FAILURE);
+    }
     stdout->permfile = 1;
+    stdin = fopen("dd:SYSIN", "r");
+    if (stdin == NULL)
+    {
+        exit(EXIT_FAILURE);
+    }
+    stdin->permfile = 1;
     stderr = stdout;
 #if defined(__CMS__)
     /* if no parameters are provided, the tokenized

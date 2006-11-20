@@ -262,13 +262,15 @@ int CTYP __start(char *p)
     stdout = fopen("dd:SYSPRINT", "w");
     if (stdout == NULL)
     {
-        exit(EXIT_FAILURE);
+        __exita(EXIT_FAILURE);
     }
     stdout->permfile = 1;
     stdin = fopen("dd:SYSIN", "r");
     if (stdin == NULL)
     {
-        exit(EXIT_FAILURE);
+        printf("SYSIN DD not defined\n");
+        fclose(stdout);
+        __exita(EXIT_FAILURE);
     }
     stdin->permfile = 1;
     stderr = stdout;

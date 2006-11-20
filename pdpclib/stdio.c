@@ -660,13 +660,15 @@ static void osfopen(void)
     }
     myfile->hfile = 
         __aopen(myfile->ddname, mode, &myfile->recfm, &myfile->lrecl, p);
-/* dw mod to return error on open fail */
-    if(myfile->hfile == NULL)
+
+    /* errors from MVS __aopen are negative numbers */
+    if ((int)myfile->hfile <= 0)
     {
         err = 1;
+        errno = -(int)myfile->hfile;
         return;
     }
-/* dw end of mod */
+
     if ((modeType == 4) || (modeType == 5))
     {
         myfile->style = 0; /* binary */

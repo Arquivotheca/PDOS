@@ -49,7 +49,7 @@ R14      EQU   14
 R15      EQU   15
          ENTRY @@AOPEN
 @@AOPEN  EQU   *
-         SAVE  (14,12),,@@AOPEN.&SYSDATE..&SYSTIME  Save caller's regs.
+         SAVE  (14,12),,@@AOPEN  Save caller's regs.
          LR    R12,R15
          USING @@AOPEN,R12
          LR    R11,R1

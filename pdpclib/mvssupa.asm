@@ -18,14 +18,14 @@
 * &COMP    SETC 'C370'            Indicate that this is for C/370
 *
 * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
-@@AOPEN  CSECT ,
+         CSECT ,
          AIF ('&SYSPARM' EQ 'IFOX00').NOMODE
 * BECAUSE OF THE "LOC=ABOVE", WE NEED TO FORCE 31
 * SEARCH FOR "LOC=RES" TO FIND OUT HOW TO FIX
-@@AOPEN  AMODE 31
+         AMODE 31
 * SEARCH FOR "LOC=RES" TO FIND OUT WHY THIS IS BEING
 * HELD BACK AT RMODE 24
-@@AOPEN  RMODE 24
+         RMODE 24
 .NOMODE  ANOP
          PRINT ON,GEN,DATA        See all
 * YREGS IS NOT AVAILABLE WITH IFOX
@@ -47,8 +47,8 @@ R12      EQU   12
 R13      EQU   13
 R14      EQU   14
 R15      EQU   15
-*        ENTRY @@AOPEN
-* @@AOPEN  EQU   *
+         ENTRY @@AOPEN
+@@AOPEN  EQU   *
          SAVE  (14,12),,@@AOPEN.&SYSDATE..&SYSTIME  Save caller's regs.
          LR    R12,R15
          USING @@AOPEN,R12

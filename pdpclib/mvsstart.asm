@@ -40,8 +40,6 @@ SUBPOOL  EQU   0
          CSECT
          ENTRY @@CRT0
 @@CRT0   EQU   *
-         ENTRY @@MVSTRT
-@@MVSTRT EQU   *
 * REQUIRED FOR C/370
 *         ENTRY CEESTART 
 *CEESTART EQU   *

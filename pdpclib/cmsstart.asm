@@ -36,8 +36,6 @@ SUBPOOL  EQU   0
          CSECT
          ENTRY @@CRT0
 @@CRT0   EQU   *
-         ENTRY @@MVSTRT
-@@MVSTRT EQU   *
 *         ENTRY CEESTART
 *CEESTART EQU   *
          SAVE  (14,12),,@@CRT0

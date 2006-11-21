@@ -228,6 +228,3 @@ int main(void)
     testExtendedMemory();
     return (0);
 }
-
-
-

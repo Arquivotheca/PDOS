@@ -49,7 +49,7 @@ R14      EQU   14
 R15      EQU   15
          ENTRY @@AOPEN
 @@AOPEN  EQU   *
-         SAVE  (14,12),,@@AOPEN  Save caller's regs.
+         SAVE  (14,12),,@@AOPEN.V1R1M3  Save caller's regs.
          LR    R12,R15
          USING @@AOPEN,R12
          LR    R11,R1
@@ -103,6 +103,8 @@ NEXTMVC  DS    0H
          LTR   R9,R9              See if an address for the member name
          BNZ   OPENIN             Is member name, skip changing DCB
          RDJFCB ((R2),INPUT),MF=(E,OPENMB)
+         TM    JFCBIND1,JFCPDS    See if a member name in JCL
+         BO    OPENIN             Is member name, skip changing DCB
          MVC   CAMLST,CAMDUM      Copy CAMLST template to work area
          LA    R1,JFCB            Load address of input data set name
          ST    R1,CAMLST+4        Store data set name address in CAMLST
@@ -337,10 +339,7 @@ READ     DS    0H
 NOTV     DS    0H
 * Subtract residual from BLKSIZE, add BUFFADDR, store as BUFFEND
          ST    R5,BUFFCURR        Indicate data available
-         LA    R8,DECB            Load Data Event Control Block addr.
-         USING DECB,R8            Give assembler DECB base
          L     R8,DECIOBPT        Load address of Input/Output Block
-         DROP  R8                 Don't need DECB address base anymore
          USING IOBSTDRD,R8        Give assembler IOB base
          SLR   R7,R7              Clear residual amount work register
          ICM   R7,B'0011',IOBCSW+5  Load residual count

@@ -6,13 +6,14 @@
 **********************************************************************
 **********************************************************************
 *                                                                    *
-*  MVSSTART - STARTUP ROUTINES FOR MVS.                              *
-*  IT IS CURRENTLY CODED TO WORK WITH GCC, BUT THE C/370             *
-*  FUNCTIONALITY IS STILL THERE, IT JUST NEEDS TO BE                 *
-*  UNCOMMENTED. I DON'T KNOW HOW TO DO CONDITIONAL ASSEMBLY SO       *
-*  THAT I CAN PASS A PARAMETER TO CHOOSE BETWEEN GCC AND C/370.      *
+*  MVSSTART - startup routines for MVS.                              *
+*  It is currently coded to work with GCC. To activate the C/370     *
+*  version change the "&COMP" switch.                                *
 *                                                                    *
 **********************************************************************
+         LCLC &COMP               Declare compiler switch
+&COMP    SETC 'GCC'               Indicate that this is for GCC
+* &COMP    SETC 'C370'            Indicate that this is for C/370
          AIF ('&SYSPARM' EQ 'IFOX00').NOMODE
          AMODE ANY
          RMODE ANY
@@ -40,9 +41,10 @@ SUBPOOL  EQU   0
          CSECT
          ENTRY @@CRT0
 @@CRT0   EQU   *
-* REQUIRED FOR C/370
-*         ENTRY CEESTART 
-*CEESTART EQU   *
+         AIF ('&COMP' NE 'C370').NOCEES
+         ENTRY CEESTART 
+CEESTART EQU   *
+.NOCEES  ANOP
          SAVE  (14,12),,@@CRT0
          LR    R10,R15
          USING @@CRT0,R10
@@ -54,13 +56,12 @@ SUBPOOL  EQU   0
          LR    R1,R11
          USING STACK,R13
 *
-*DW* SAVE STACK POINTER FOR SETJMP/LONGJMP          
+* SAVE STACK POINTER FOR SETJMP/LONGJMP          
          EXTRN @@MANSTK                             
          L     R3,=V(@@MANSTK)                      
          ST    R13,0(R3)                            
          L     R2,=A(STACKLEN)                      
          ST    R2,4(R3)                             
-*DW END OF MOD
 *
          LA    R2,0
          ST    R2,DUMMYPTR       WHO KNOWS WHAT THIS IS USED FOR

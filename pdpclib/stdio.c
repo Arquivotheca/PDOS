@@ -807,6 +807,11 @@ size_t fread(void *ptr, size_t size, size_t nmemb, FILE *stream)
     {
         stream->quickBin = 0;
     }
+    if (stream->ungetCh != -1)
+    {
+        *--stream->upto = (char)stream->ungetCh;
+        stream->ungetCh = -1;
+    }
     if (!stream->quickBin)
     {
         if (stream->textMode)

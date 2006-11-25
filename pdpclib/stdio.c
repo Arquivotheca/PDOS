@@ -1946,6 +1946,8 @@ static int examine(const char **formt, FILE *fq, char *s, va_list *arg,
                       break;
             case '0': flagZero = 1;
                       break;
+            case '*': width = va_arg(*arg, int);
+                      break;
             default:  fin = 1;
                       break;
         }

@@ -186,7 +186,7 @@ int CTYP __start(char *p)
 #else
 #if defined(__CMS__)
 /*
-  This code checks to see if DDs exist for SYSIN & SYSPRINT
+  This code checks to see if DDs exist for SYSIN, SYSPRINT & SYSTERM
   if not it issues FD to the terminal
 */
     char s202parm [800]; /* svc 202 buffer */
@@ -206,10 +206,7 @@ int CTYP __start(char *p)
   and issue the SVC
 */
     ret = __SVC202 ( s202parm, &code, &parm );
-/*
-    report findings
-*/
-/*  printf(" SVC 202 returned <%d>\n",ret); */
+
     if (ret == 24)
     { /* we need to issue filedef */
         memcpy ( &s202parm[16] , "TERM    ", 8);
@@ -223,6 +220,7 @@ int CTYP __start(char *p)
 
         ret = __SVC202 ( s202parm, &code, &parm );
     }
+
 /* now for sysprint */
 /*
  Now build the SVC 202 string
@@ -237,11 +235,35 @@ int CTYP __start(char *p)
   and issue the SVC
 */
     ret = __SVC202 ( s202parm, &code, &parm );
+    if (ret == 24)
+    { /* we need to issue filedef */
+        memcpy ( &s202parm[16] , "TERM    ", 8);
+        memcpy ( &s202parm[24] , "(       ", 8);
+        memcpy ( &s202parm[32] , "LRECL   ", 8);
+        memcpy ( &s202parm[40] , "80      ", 8);
+        memcpy ( &s202parm[48] , "RECFM   ", 8);
+        memcpy ( &s202parm[56] , "F       ", 8);
+        s202parm[64]=s202parm[65]=s202parm[66]=s202parm[67]=
+            s202parm[68]=s202parm[69]=s202parm[70]=s202parm[71]=0xff;
+
+        ret = __SVC202 ( s202parm, &code, &parm );
+    }
+
+/* now for systerm */
 /*
-    report findings
+ Now build the SVC 202 string
 */
-/*    printf(" SVC 202 returned <%d>\n",ret); */
-    if(ret == 24)
+    memcpy ( &s202parm[0] ,  "FILEDEF ", 8);
+    memcpy ( &s202parm[8] ,  "SYSTERM ", 8);
+    memcpy ( &s202parm[16] , "(       ", 8);
+    memcpy ( &s202parm[24] , "NOCHANGE", 8);
+    s202parm[32]=s202parm[33]=s202parm[34]=s202parm[35]=
+        s202parm[36]=s202parm[37]=s202parm[38]=s202parm[39]=0xff;
+/*
+  and issue the SVC
+*/
+    ret = __SVC202 ( s202parm, &code, &parm );
+    if (ret == 24)
     { /* we need to issue filedef */
         memcpy ( &s202parm[16] , "TERM    ", 8);
         memcpy ( &s202parm[24] , "(       ", 8);
@@ -265,15 +287,23 @@ int CTYP __start(char *p)
         __exita(EXIT_FAILURE);
     }
     stdout->permfile = 1;
+
+    stderr = fopen("dd:SYSTERM", "w");
+    if (stderr == NULL)
+    {
+        printf("SYSTERM DD not defined\n");
+        __exita(EXIT_FAILURE);
+    }
+    stderr->permfile = 1;
+
     stdin = fopen("dd:SYSIN", "r");
     if (stdin == NULL)
     {
-        printf("SYSIN DD not defined\n");
+        fprintf(stderr, "SYSIN DD not defined\n");
         fclose(stdout);
         __exita(EXIT_FAILURE);
     }
     stdin->permfile = 1;
-    stderr = stdout;
 #if defined(__CMS__)
     /* if no parameters are provided, the tokenized
        plist will start with x'ff' */

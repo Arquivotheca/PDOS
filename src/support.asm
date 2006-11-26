@@ -98,6 +98,9 @@ mov word ptr [si + 12], 0
 jnc flagclear
 mov word ptr [si + 12], 1
 flagclear:
+pushf
+pop ax
+mov word ptr [si + 14], ax
 
 ret
 int86 endp

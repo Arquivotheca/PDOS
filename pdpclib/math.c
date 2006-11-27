@@ -176,7 +176,7 @@ double asin (double y)
     }
 
 /*
-     arcsin(x) = x + 1/2 (x^3/3) + (1/2)(3/4)(x^5/5) +  
+     arcsin(x) = x + 1/2 (x^3/3) + (1/2)(3/4)(x^5/5) +
         (1/2)(3/4)(5/6)(x^7/7) + ...
 */
     i=1;
@@ -206,7 +206,7 @@ double asin (double y)
 /*
 
      Because atan(x) is valid for large values of "x" &
-     the taylor series converges more slowly for large "X" 
+     the taylor series converges more slowly for large "X"
      we use the following
 
      1. Reduce to the first octant by using :-
@@ -249,7 +249,7 @@ double atan (double x)
  if so use atan(x)=pi/6+atan((X*SQRT3-1)/(X+SQRT3))
 */
 
-    if( x > 0.26794919243112) 
+    if( x > 0.26794919243112)
     return( (pi/6.0) + atan( ( x * sqrt(3.0)-1.0 ) / (x + sqrt(3.0) ) ) );
 
 /*
@@ -296,7 +296,7 @@ double cos(double x)
                 ====     ====    ====   ====    .........
                   2!       4!      6!     8!
 
-   Note whilst this is accurate it can be slow for large 
+   Note whilst this is accurate it can be slow for large
    values of "X" so we scale
 
 */
@@ -308,7 +308,7 @@ double cos(double x)
     Scale arguments to be in range 1 => pi
 */
 
-    i = x/pi;
+    i = x/(2*pi);
     x1 =  x - (i * pi);
 
     i=1;
@@ -341,7 +341,7 @@ double sin(double x)
                 ====     ====    ====   ====
                   3!       5!      7!     9!
 
-   Note whilst this is accurate it can be slow for large values 
+   Note whilst this is accurate it can be slow for large values
    of "X" so we scale
 
 */
@@ -352,7 +352,7 @@ double sin(double x)
 /*
   scale so series converges pretty quickly
 */
-    i = x/pi;
+    i = x/(2.0*pi);
     x1 =  x - (i * pi);
 
 /*
@@ -437,7 +437,7 @@ double tanh(double x)
     double y;
     double dexp2;
 
-    if ( (x <= -1.0 ) || (x >= 1.0) ) return(0.0); /* need 
+    if ( (x <= -1.0 ) || (x >= 1.0) ) return(0.0); /* need
                                    to set an error here */
 
     dexp2 = exp( -2.0 * x);
@@ -668,7 +668,7 @@ double modf(double value, double *iptr)
 {
     int neg = 0;
     long i;
-    
+
     if (value < 0)
     {
         neg = 1;
@@ -680,7 +680,7 @@ double modf(double value, double *iptr)
     {
         value = -value;
         i = -i;
-    }    
+    }
     *iptr = i;
     return (value);
 }

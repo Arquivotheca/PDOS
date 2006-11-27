@@ -522,10 +522,16 @@ long int strtol(const char *nptr, char **endptr, int base)
 {
     long x = 0;
     int undecided = 0;
+    int neg = 0;
 
     if (base == 0)
     {
         undecided = 1;
+    }
+    if (*nptr == '-')
+    {
+        neg = 1;
+        nptr++;
     }
     while (1)
     {
@@ -570,6 +576,10 @@ long int strtol(const char *nptr, char **endptr, int base)
         {
             break;
         }
+    }
+    if (neg)
+    {
+        x = -x;
     }
     if (endptr != NULL)
     {

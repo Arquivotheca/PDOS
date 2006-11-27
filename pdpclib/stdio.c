@@ -3146,10 +3146,18 @@ static int vvscanf(const char *format, va_list arg, FILE *fp, const char *s)
                 {
                     fin = 1;
                 }
+                cnt++;
             }
             else if (*format == 'd')
             {
+                int neg = 0;
+                
                 iptr = va_arg(arg, int *);
+                if (ch == '-')
+                {
+                    neg = 1;
+                    inch();
+                }
                 if (!isdigit(ch)) return (cnt);
                 *iptr = ch - '0';
                 inch();
@@ -3162,6 +3170,11 @@ static int vvscanf(const char *format, va_list arg, FILE *fp, const char *s)
                 {
                     fin = 1;
                 }
+                if (neg)
+                {
+                    *iptr = -*iptr;
+                }
+                cnt++;
             }
         }
         else

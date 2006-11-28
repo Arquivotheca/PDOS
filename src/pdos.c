@@ -706,14 +706,14 @@ static void int21handler(union REGS *regsin,
             {
 #ifdef __32BIT__
                 regsout->d.eax = PosBlockDeviceRemovable(regsin->h.bl);
-                if (regsout->d.eax < 0)
+                if ((int)regsout->d.eax < 0)
                 {
                     regsout->x.cflag = 1;
                     regsout->d.eax = -regsout->d.eax;
                 }
 #else                
                 regsout->x.ax = PosBlockDeviceRemovable(regsin->h.bl);
-                if (regsout->x.ax < 0)
+                if ((int)regsout->x.ax < 0)
                 {
                     regsout->x.cflag = 1;
                     regsout->x.ax = -regsout->x.ax;

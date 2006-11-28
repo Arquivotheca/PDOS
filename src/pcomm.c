@@ -20,6 +20,15 @@
 
 void __exec(char *cmd, void *env);
 
+
+
+/* Written By NECDET COKYAZICI, Public Domain */
+void putch(int a);
+void bell(void);
+void safegets(char *buffer, int size);
+
+
+
 static char buf[200];
 static unsigned char cmdt[140];
 static struct {
@@ -73,7 +82,8 @@ int main(int argc, char **argv)
     while (!term)
     {
         putPrompt();
-        fgets(buf, sizeof buf, stdin);
+        safegets(buf, sizeof buf);
+
         processInput();
     }
     printf("thankyou for using pcomm!\n");
@@ -324,4 +334,107 @@ static void readAutoExec(void)
         fclose(fp);
     }
     return;
+}
+
+
+
+/* Written By NECDET COKYAZICI, Public Domain */
+
+
+void putch(int a)
+{
+    putchar(a);
+    fflush(stdout);
+}
+
+
+void bell(void)
+{
+    putch('\a');
+}
+
+
+void safegets(char *buffer, int size)
+{
+    int a;
+    int shift;
+    int i = 0;
+
+    while (1)
+    {
+
+        a = PosGetCharInputNoEcho();
+
+/*
+        shift = BosGetShiftStatus();
+
+        if (shift == 1)
+        {
+            if ((a != '\n') && (a != '\r') && (a != '\b'))
+            if (islower(a))
+            a -= 32;
+     
+            else if ((a >= '0') && (a <= '9'))
+            a -= 16;
+        }
+
+*/
+
+        if (i == size)
+        {
+            buffer[size] = '\0';
+      
+            if ((a == '\n') || (a == '\r'))
+            return;
+
+            bell();
+        }
+
+        if ((i == 0) && (a == '\b'))
+        continue;
+
+        if (i < size)
+        {
+
+            if ((a == '\n') || (a == '\r'))
+            {
+                putch('\n');
+
+                buffer[i] = '\0';
+
+                return;
+            }
+
+
+            if (a == '\b')
+            {
+        
+                if (i == 0)
+                continue;
+        
+                else
+                i--;
+
+                putch('\b');
+                putch(' ');
+                putch('\b');
+
+                continue;
+            }
+            else
+            putch(a);
+
+
+            if (isprint((unsigned char)a))
+            {
+                buffer[i] = a;
+                i++;
+            }
+            else bell();
+
+        }
+        else bell();
+
+    }
+
 }

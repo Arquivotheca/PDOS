@@ -545,10 +545,14 @@ static void int21handler(union REGS *regsin,
             PosDisplayOutput(regsin->h.dl);
             break;
 
+        case 0x08:
+	    regsout->h.al = PosGetCharInputNoEcho();
+            break;
+
         case 0x09:
             PosDisplayString(MK_FP(sregs->ds, regsin->x.dx));
             break;
-        
+
         case 0x0e:
             regsout->h.al = PosSelectDisk(regsin->h.dl);
             break;
@@ -909,6 +913,19 @@ void PosDisplayOutput(int ch)
     PosWriteFile(1, buf, 1);
     return;
 }
+
+/* Written By NECDET COKYAZICI, Public Domain */
+
+int PosGetCharInputNoEcho(void)
+{
+    int scan;
+    int ascii;
+
+
+    BosReadKeyboardCharacter(&scan, &ascii);
+
+    return ascii;
+}
             
 void PosDisplayString(const char *buf)
 {
@@ -919,7 +936,8 @@ void PosDisplayString(const char *buf)
     PosWriteFile(1, buf, p - buf);
     return;
 }
-            
+
+
 int PosSelectDisk(int drive)
 {
     currentDrive = drive;

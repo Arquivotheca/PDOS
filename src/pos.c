@@ -29,6 +29,19 @@ void PosDisplayOutput(int ch)
     return;
 }
 
+/* Written By NECDET COKYAZICI, Public Domain */
+
+int PosGetCharInputNoEcho(void)
+{
+    union REGS regsin;
+    union REGS regsout;
+    
+    regsin.h.ah = 0x08;
+    int86(0x21, &regsin, &regsout);
+
+    return (regsout.h.al);
+}
+
 void PosDisplayString(const char *buf)
 {
     union REGS regsin;
@@ -45,6 +58,7 @@ void PosDisplayString(const char *buf)
     int86x(0x21, &regsin, &regsout, &sregs);
     return;
 }
+
 
 int PosSelectDisk(int drive)
 {

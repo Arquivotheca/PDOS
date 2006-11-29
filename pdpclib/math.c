@@ -117,13 +117,14 @@ double acos(double x)
 {
 
 /*
+*/
 
-    if ( x > 1 ) /* is argument out of range */
+    if ( fabs(x) > 1.0 ) /* is argument out of range */
     {
         errno=EDOM;
         return (HUGE_VALUE);
     }
-    if ( x < 0 ) return ( pi - acos(-x) ) ;
+    if ( x < 0.0 ) return ( pi - acos(-x) ) ;
 
     return ( asin ( sqrt(1.0 - x*x) ) );
 
@@ -169,10 +170,10 @@ double asin (double y)
  now check for large(ish) x > 0.6
 */
 
-    if( x > 0.75 && x < 1.0)
+    if( x > 0.75 )
     {
         x = ( sqrt(1.0 - (x*x) ) );
-        return((pi/2.0)-sin(x));
+        return((pi/2.0)-asin(x));
     }
 
 /*

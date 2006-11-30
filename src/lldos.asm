@@ -5,7 +5,7 @@
 
 ifdef NEED_HANDLER
 extrn int21:proc
-public instint, handler,
+public instint, handler
 endif
 
 public getfar, putfar, rportb, wportb, enable, disable
@@ -147,9 +147,9 @@ callwithpsp_ret:
 callwithpsp endp
 
 ifdef NEED_HANDLER
-instint proc,
-        uses bx, es
-        push 0
+instint proc uses bx es
+        mov bx, 0
+        push bx
         pop es
         cli
         mov bx, offset handler

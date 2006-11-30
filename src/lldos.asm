@@ -1,27 +1,7 @@
 ; Released to the public domain by Matthew Parker on 4 December 1995
 ; For different models just change the .model directive
 
-ifdef WATCOM
-.model memodel,c
-else
 % .model memodel, c
-endif
-
-ifdef WATCOM
-getfar   equ _getfar
-putfar   equ _putfar
-rportb  equ _rportb
-wportb equ _wportb
-enable   equ _enable
-disable  equ _disable
-callfar equ _callfar
-callwithpsp equ _callwithpsp
-callwithbypss equ _callwithbypass
-a20e equ _a20e
-reboot equ _reboot
-putabs equ _putabs
-getabs equ _getabs
-endif
 
 ifdef NEED_HANDLER
 extrn int21:proc

@@ -102,12 +102,10 @@ bypass:
         push ax
 
 ; MSDOS pushes a 0 on the stack to do a near return, which points
-; to the PSP, which has an int 20h in it, which is terminate, but
-; we leave that for the caller to organize instead so that we can
-; do a retf if we want.
+; to the PSP, which has an int 20h in it, which is terminate
         
-;        mov ax, 0
-;        push ax
+        mov ax, 0
+        push ax
                 
         push ds
         push bx

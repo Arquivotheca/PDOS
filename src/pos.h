@@ -82,6 +82,9 @@ int PosDeleteFile(const char *fname); /* func 41 */
 
 long PosMoveFilePointer(int handle, long offset, int whence); /* func 42 */
 
+int PosGetDeviceInformation(int handle, unsigned int *devinfo);
+      /* func 44 subfunc 0 */
+
 int PosBlockDeviceRemovable(int drive); /* func 44 subfunc 8 */
 
 int PosGetCurDir(int drive, char *dir); /* func 47 */

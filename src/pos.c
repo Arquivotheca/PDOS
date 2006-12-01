@@ -389,6 +389,22 @@ long PosMoveFilePointer(int handle, long offset, int whence)
 #endif            
 }
 
+int PosGetDeviceInformation(int handle, unsigned int *devinfo)
+{
+    union REGS regsin;
+    union REGS regsout;
+    
+    regsin.h.ah = 0x44;
+    regsin.h.al = 0x00;
+    regsin.x.bx = handle;
+    int86(0x21, &regsin, &regsout);
+    if (!regsout.x.cflag)
+    {
+        regsout.x.ax = 0;
+    }
+    return (regsout.x.ax);
+}
+
 int PosBlockDeviceRemovable(int drive)
 {
     union REGS regsin;

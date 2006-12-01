@@ -722,7 +722,16 @@ static void int21handler(union REGS *regsin,
             break;
             
         case 0x44:
-            if (regsin->h.al == 0x08)
+            if (regsin->h.al == 0x00)
+            {
+                regsout->x.ax = PosGetDeviceInformation(regsin->x.bx,
+                                                        &regsout->x.dx);
+                if (regsout->x.ax != 0)
+                {
+                    regsout->x.cflag = 1;
+                }
+            }
+            else if (regsin->h.al == 0x08)
             {
 #ifdef __32BIT__
                 regsout->d.eax = PosBlockDeviceRemovable(regsin->h.bl);
@@ -1153,6 +1162,28 @@ int PosDeleteFile(const char *fname)
 /* unimplemented */
 long PosMoveFilePointer(int handle, long offset, int whence)
 {
+    return (0);
+}
+
+int PosGetDeviceInformation(int handle, unsigned int *devinfo)
+{
+    *devinfo = 0;
+    if (handle < 3)
+    {
+        if (handle == 0)
+        {
+            *devinfo |= (1 << 0); /* standard input device */
+        }
+        else if ((handle == 1) || (handle == 2))
+        {
+            *devinfo |= (1 << 1); /* standard output device */
+        }
+        *devinfo |= (1 << 7); /* character device */
+    }
+    else
+    {
+        /* block device (disk file) */
+    }
     return (0);
 }
 

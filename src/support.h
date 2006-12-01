@@ -98,6 +98,8 @@ extern int __abscor;
 extern char *__vidptr;
 #define ABSADDR(x) ((void *)((char *)(x) - __abscor))
 #define ADDR2ABS(x) ((void *)((char *)(x) + __abscor))
+void enable(void);
+void disable(void);
 #else
 #define ADDR2ABS(x) ((((unsigned long)(x) >> 16) << 4) \
                    + ((unsigned long)(x) & 0xffffU))

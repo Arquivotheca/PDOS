@@ -67,6 +67,7 @@ static void scrunchf(char *dest, char *new);
 static int ff_search(void);
 
 #ifdef __32BIT__                         
+int int20(unsigned int *regs);
 int int21(unsigned int *regs);
 #endif
 static void loadConfig(void);
@@ -924,6 +925,11 @@ static void int21handler(union REGS *regsin,
 
 /* !!! START OF POS FUNCTIONS !!! */
 
+void PosTermNoRC(void)
+{
+    PosTerminate(0);
+}
+
 void PosDisplayOutput(int ch)
 {
     unsigned char buf[1];
@@ -1500,6 +1506,31 @@ static int ff_search(void)
 
 #ifdef __32BIT__
 /* registers come in as eax, ebx, ecx, edx, esi, edi, cflag */
+int int20(unsigned int *regs)
+{
+    static union REGS regsin;
+    static union REGS regsout;
+    static struct SREGS sregs;
+
+    regsin.d.eax = regs[0];
+    regsin.d.ebx = regs[1];
+    regsin.d.ecx = regs[2];
+    regsin.d.edx = regs[3];
+    regsin.d.esi = regs[4];
+    regsin.d.edi = regs[5];
+    regsin.d.cflag = 0;
+    memcpy(&regsout, &regsin, sizeof regsout);
+    PosTermNoRC();
+    regs[0] = regsout.d.eax;
+    regs[1] = regsout.d.ebx;
+    regs[2] = regsout.d.ecx;
+    regs[3] = regsout.d.edx;
+    regs[4] = regsout.d.esi;
+    regs[5] = regsout.d.edi;
+    regs[6] = regsout.d.cflag;
+    return (0);
+}
+
 int int21(unsigned int *regs)
 {
     static union REGS regsin;
@@ -1550,7 +1581,7 @@ void int20(unsigned int *regptrs,
     sregs.ds = ds;
     sregs.es = es;
     memcpy(&regsout, &regsin, sizeof regsout);
-    PosTerminate(0);
+    PosTermNoRC();
     regptrs[0] = sregs.es;
     regptrs[1] = sregs.ds;
     regptrs[2] = regsout.x.di;
@@ -2183,6 +2214,7 @@ int pdosstrt(void)
     transferbuf = ABSADDR(pp->transferbuf);
     doreboot = pp->doreboot;
     bootBPB = ABSADDR(pp->bpb);
+    protintHandler(0x20, int20);
     protintHandler(0x21, int21);
     psp[0x80] = 0;
     psp[0x81] = 0;

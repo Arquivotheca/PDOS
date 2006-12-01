@@ -43,6 +43,8 @@ int PosGetDefaultDrive(void); /* func 19 */
 
 void PosSetDTA(void *dta); /* func 1a */
 
+void PosSetInterruptVector(int intnum, void *handler); /* func 25 */
+
 void PosGetSystemDate(int *year, int *month, int *day, int *dow); /* func 2a */
 
 void PosGetSystemTime(int *hour, /* func 2c */
@@ -53,6 +55,8 @@ void PosGetSystemTime(int *hour, /* func 2c */
 void *PosGetDTA(void); /* func 2f */
 
 unsigned int PosGetDosVersion(void); /* func 30 */
+
+void *PosGetInterruptVector(int intnum); /* func 35 */
 
 int PosChangeDir(char *to); /* func 3b */
 

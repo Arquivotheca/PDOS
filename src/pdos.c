@@ -570,6 +570,15 @@ static void int21handler(union REGS *regsin,
             PosSetDTA(tempdta);
             break;
 
+        case 0x25:
+#ifdef __32BIT__
+            p = SUBADDRFIX(regsin->d.edx);
+#else                        
+            p = MK_FP(sregs->ds, regsin->x.dx);
+#endif            
+            PosSetInterruptVector(regsin->h.al, p);
+            break;
+            
         case 0x2a:
             {
                 int year, month, day, dow;
@@ -608,6 +617,16 @@ static void int21handler(union REGS *regsin,
             regsout->x.ax = PosGetDosVersion();
             regsout->x.bx = 0;
             regsout->x.cx = 0;
+            break;
+        
+        case 0x35:
+            p = PosGetInterruptVector(regsin->h.al);
+#ifdef __32BIT__
+            regsout->d.ebx = (int)ADDRFIXSUB(p);
+#else                        
+            regsout->x.bx = FP_OFF(p);
+            sregs->es = FP_SEG(p);
+#endif
             break;
             
         case 0x3b:
@@ -975,6 +994,13 @@ void PosSetDTA(void *p)
     return;
 }
 
+void PosSetInterruptVector(int intnum, void *handler)
+{
+    disable();
+    *((void **)0 + intnum) = handler;
+    enable();
+}
+
 unsigned int PosGetDosVersion(void)
 {
     int version;
@@ -982,6 +1008,11 @@ unsigned int PosGetDosVersion(void)
     /* set to 4.00 */
     version = (0x00 << 8) | 0x04;
     return (version);
+}
+
+void *PosGetInterruptVector(int intnum)
+{
+    return *((void **)0 + intnum);
 }
 
 int PosChangeDir(char *to)

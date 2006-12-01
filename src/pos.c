@@ -98,6 +98,24 @@ void PosSetDTA(void *dta)
     return;
 }
 
+void PosSetInterruptVector(int intnum, void *handler)
+{
+    union REGS regsin;
+    union REGS regsout;
+    struct SREGS sregs;
+    
+    regsin.h.ah = 0x25;
+    regsin.h.al = (char)intnum;
+#ifdef __32BIT__
+    regsin.d.edx = (int)handler;
+#else
+    sregs.ds = FP_SEG(handler);
+    regsin.x.dx = FP_OFF(handler);
+#endif
+    int86x(0x21, &regsin, &regsout, &sregs);
+    return;
+}
+
 void PosGetSystemDate(int *year, int *month, int *day, int *dow)
 {
     union REGS regsin;
@@ -151,6 +169,22 @@ unsigned int PosGetDosVersion(void)
     regsin.h.ah = 0x30;
     int86(0x21, &regsin, &regsout);
     return ((regsout.h.al << 8) | regsout.h.ah);
+}
+
+void *PosGetInterruptVector(int intnum)
+{
+    union REGS regsin;
+    union REGS regsout;
+    struct SREGS sregs;
+    
+    regsin.h.ah = 0x35;
+    regsin.h.al = (char)intnum;
+    int86x(0x21, &regsin, &regsout, &sregs);
+#ifdef __32BIT__
+    return (regsout.d.ebx);
+#else        
+    return (MK_FP(sregs.es, regsout.x.bx));
+#endif
 }
 
 int PosChangeDir(char *to)

@@ -31,6 +31,9 @@
 
 /* API functions */
 
+void PosTermNoRC(void); /* int 20h */
+
+/* int 21h */
 void PosDisplayOutput(int ch); /* func 2 */
 
 int PosGetCharInputNoEcho(void); /* func 8 */

@@ -19,6 +19,12 @@ static void int86n(unsigned int intno);
 static void int86i(unsigned int intno, union REGS *regsin);
 
 
+void PosTermNoRC(void)
+{
+    int86n(0x20);
+    return;
+}
+
 void PosDisplayOutput(int ch)
 {
     union REGS regsin;
@@ -181,7 +187,7 @@ void *PosGetInterruptVector(int intnum)
     regsin.h.al = (char)intnum;
     int86x(0x21, &regsin, &regsout, &sregs);
 #ifdef __32BIT__
-    return (regsout.d.ebx);
+    return ((void *)regsout.d.ebx);
 #else        
     return (MK_FP(sregs.es, regsout.x.bx));
 #endif

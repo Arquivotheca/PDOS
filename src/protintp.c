@@ -25,6 +25,7 @@ void inthdlr_10(void);
 void inthdlr_13(void);
 void inthdlr_15(void);
 void inthdlr_16(void);
+void inthdlr_20(void);
 void inthdlr_21(void);
 void int_enable(void);
 
@@ -48,11 +49,15 @@ void gotint(int intno, unsigned int *save)
     unsigned short newregs[11];
     unsigned short *ssave;
     int x;
-    
+
     for (x = 0; x < numUserInts; x++)
     {
         if (userInt[x].intno == intno)
         {
+            /* An int 21h e.g. will be handled by PDOS and will
+               return 0 indicating that no further action is
+               required. If it returns non-zero, then it will fall
+               through and call the real-mode interrupt. */
             if (userInt[x].func(save) == 0)
             {
                 return;
@@ -61,6 +66,16 @@ void gotint(int intno, unsigned int *save)
         }
     }
 
+    /* If the interrupt number is 0, it signifies that this is
+       just the default handler, and we are not required to take
+       any action. */
+    if (intno == 0)
+    {
+        return;
+    }
+    
+    /* The default behaviour is to convert any protected mode
+       interrupt into a real mode interrupt. */
     newregs[0] = (unsigned short)save[0]; /* ax */    
     newregs[1] = (unsigned short)save[1]; /* bx */
     newregs[2] = (unsigned short)save[2]; /* cx */
@@ -119,6 +134,7 @@ unsigned long runprot_p(rawprot_parms *parmlist)
         { 0x13, inthdlr_13 },
         { 0x15, inthdlr_15 },
         { 0x16, inthdlr_16 },
+        { 0x20, inthdlr_20 },
         { 0x21, inthdlr_21 },
         { 0, 0 } };
 
@@ -171,6 +187,7 @@ unsigned long runaout_p(rawprot_parms *parmlist)
 }
 
 
+/* Allow PDOS to get access to an interrupt. */
 void protintHandler(int intno, int (*func)(unsigned int *))
 {
     int x;
@@ -180,20 +197,11 @@ void protintHandler(int intno, int (*func)(unsigned int *))
         if (userInt[x].intno == intno)
         {
             userInt[x].func = func;
-            if (userInt[x].func == 0)
-            {
-                numUserInts--;
-                if (numUserInts > 0)
-                {
-                    userInt[x].intno = userInt[numUserInts].intno;
-                    userInt[x].func = userInt[numUserInts].func;
-                }
-            }
+            return;
         }
-        return;
     }
-    userInt[numUserInts].intno = intno;
-    userInt[numUserInts].func = func;
+    userInt[x].intno = intno;
+    userInt[x].func = func;
     numUserInts++;
     return;
 }

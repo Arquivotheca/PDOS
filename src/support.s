@@ -4,6 +4,8 @@
 
         .globl _int86
         .globl _int86x
+        .globl _enable
+        .globl _disable
 
         .text
 
@@ -83,4 +85,12 @@ nocarry:
         pop     %ebx
         pop     %eax
         pop     %ebp
+        ret
+
+_enable:
+        sti
+        ret
+
+_disable:
+        cli
         ret

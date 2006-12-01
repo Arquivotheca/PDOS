@@ -55,6 +55,12 @@ not15:
         jmp     fintry
 not16:
 
+        cmp     $0x20, 8(%ebp)
+        jne     not20
+        int     $0x20
+        jmp     fintry
+not20:
+
         cmp     $0x21, 8(%ebp)
         jne     not21
         int     $0x21

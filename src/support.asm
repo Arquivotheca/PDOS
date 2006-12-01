@@ -70,6 +70,12 @@ int 016h
 jmp fintry
 not16:
 
+cmp intnum, 020h
+jne not20
+int 020h
+jmp fintry
+not20:
+
 cmp intnum, 021h
 jne not21
 int 021h

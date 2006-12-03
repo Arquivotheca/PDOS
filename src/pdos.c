@@ -1254,7 +1254,7 @@ int PosFreeMem(void *ptr)
 int PosReallocPages(void *ptr, unsigned int newpages, unsigned int *maxp)
 {
     int ret;
-    
+
     ret = memmgrRealloc(&memmgr, ptr, newpages * 16);
     if (ret != 0)
     {
@@ -1758,6 +1758,7 @@ static void loadExe(char *prog, PARMBLOCK *parmblock)
     unsigned int ss;
     unsigned int sp;
     unsigned char *exeEntry;
+    unsigned int maxPages;
     int fno;
     int ret;
     unsigned char *bss;
@@ -1804,13 +1805,20 @@ static void loadExe(char *prog, PARMBLOCK *parmblock)
     {
         exeLen = *(unsigned int *)&header[4];
         exeLen = exeLen * 512 - headerLen;
-        exeLen = 60000U - 0x100; /* need to fix this */
     }
     else
     {
         exeLen = 60000U - 0x100; /* need to bump this up to 0x10000 */
     }
-    psp = pdos16MemmgrAllocPages(&memmgr, (exeLen + 0x100 + 400 * 16) / 16, 0);
+    maxPages = memmgrMaxSize(&memmgr);
+    if ((long)maxPages * 16 < exeLen)
+    {
+        printf("insufficient memory to load program\n");
+        printf("required %ld, available %ld\n",
+               exeLen, (long)maxPages * 16);
+        return;
+    }
+    psp = pdos16MemmgrAllocPages(&memmgr, maxPages, 0);
     origpsp = psp;
     psp = (unsigned char *)FP_NORM(psp);
 #endif
@@ -1825,11 +1833,9 @@ static void loadExe(char *prog, PARMBLOCK *parmblock)
     psp[1] = 0x20;
 #ifndef __32BIT__
     *(unsigned int *)&psp[0x2c] = FP_SEG(envptr);
-    *(unsigned int *)&psp[2] = FP_SEG(FP_NORM(psp + 59000U));
 #endif
     /* set to say 640k in use */
-    *(unsigned int *)(psp + 2) = 
-        /* 0xa000;*/ FP_SEG(psp) + exeLen / 16 + 330 /* was 0xff0 */;
+    *(unsigned int *)(psp + 2) = FP_SEG(psp) + maxPages;
     if (parmblock != NULL)
     {
         memcpy(psp + 0x80, parmblock->cmdtail, parmblock->cmdtail[0] + 1);
@@ -1848,7 +1854,20 @@ static void loadExe(char *prog, PARMBLOCK *parmblock)
 #else
     if (isexe)
     {
-        fileRead(fno, exeStart, exeLen);
+        unsigned int maxread = 32768;
+        unsigned long totalRead = 0;
+        char *upto;
+        
+        while (totalRead < exeLen)
+        {
+            if ((exeLen - totalRead) < maxread)
+            {
+                maxread = exeLen - totalRead;
+            }
+            upto = ABS2ADDR(ADDR2ABS(exeStart) + totalRead);
+            fileRead(fno, upto, maxread);
+            totalRead += maxread;
+        }
     }
     else
     {
@@ -1866,6 +1885,8 @@ static void loadExe(char *prog, PARMBLOCK *parmblock)
         addSeg = FP_SEG(exeStart);
         for (relocI = 0; relocI < numReloc; relocI++)
         {
+            /* This 16:16 arithmetic will work because the exeStart
+               offset is 0. */
             fixSeg = (unsigned int *)
                      ((unsigned long)exeStart + relocStart[relocI]);
             *fixSeg = *fixSeg + addSeg;
@@ -1874,7 +1895,9 @@ static void loadExe(char *prog, PARMBLOCK *parmblock)
         ss = *(unsigned int *)&header[0xe];
         ss += addSeg;
         sp = *(unsigned int *)&header[0x10];
-    
+
+        /* This 16:16 arithmetic will work because the exeStart
+           offset is 0 */
         exeEntry = (unsigned char *)((unsigned long)exeStart 
                                      + *(unsigned long *)&header[0x14]);
     }

@@ -101,8 +101,10 @@ extern char *__vidptr;
 void enable(void);
 void disable(void);
 #else
+/* ADDR2ABS - convert a 16:16 address into a flat absolute address */
 #define ADDR2ABS(x) ((((unsigned long)(x) >> 16) << 4) \
                    + ((unsigned long)(x) & 0xffffU))
+/* ABS2ADDR - convert a flat address into a 16:16 pointer */
 #define ABS2ADDR(x) ((void far *)((((unsigned long)(x) & 0xf0000UL) << 12) \
                    | ((unsigned long)(x) & 0xffff)))
 #endif

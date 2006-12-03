@@ -250,7 +250,7 @@ double atan (double x)
  if so use atan(x)=pi/6+atan((X*SQRT3-1)/(X+SQRT3))
 */
 
-    if( x > 0.26794919243112)
+    if( x > (2.0 - sqrt(3.0)))
     return( (pi/6.0) + atan( ( x * sqrt(3.0)-1.0 ) / (x + sqrt(3.0) ) ) );
 
 /*
@@ -261,13 +261,13 @@ double atan (double x)
 
     i=1;
     answer=x;
-    term = 1;
+    term = x;
     powx = x;
 
     while (1)
     {
         work = i;
-        powx = powx * x * x;
+        powx = 0.0 - powx * x * x;
         term = powx / (work + 2.0);
         if ( answer == (answer + term) )break;
         answer = answer + (term);

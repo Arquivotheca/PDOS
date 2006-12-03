@@ -1745,7 +1745,7 @@ static void loadExe(char *prog, PARMBLOCK *parmblock)
     unsigned int headerLen;
     unsigned char *header;
     unsigned char *envptr;
-    unsigned int exeLen;
+    unsigned long exeLen;
     unsigned char *psp;
     unsigned char *origpsp;
     unsigned char *origenv;
@@ -1804,12 +1804,13 @@ static void loadExe(char *prog, PARMBLOCK *parmblock)
     {
         exeLen = *(unsigned int *)&header[4];
         exeLen = exeLen * 512 - headerLen;
+        exeLen = 60000U - 0x100; /* need to fix this */
     }
     else
     {
-        exeLen = 60000U - 0x100;
+        exeLen = 60000U - 0x100; /* need to bump this up to 0x10000 */
     }
-    psp = memmgrAllocate(&memmgr, 60000U, 0);
+    psp = pdos16MemmgrAllocPages(&memmgr, (exeLen + 0x100 + 400 * 16) / 16, 0);
     origpsp = psp;
     psp = (unsigned char *)FP_NORM(psp);
 #endif
@@ -1827,7 +1828,8 @@ static void loadExe(char *prog, PARMBLOCK *parmblock)
     *(unsigned int *)&psp[2] = FP_SEG(FP_NORM(psp + 59000U));
 #endif
     /* set to say 640k in use */
-    *(unsigned int *)(psp + 2) = /* 0xa000;*/ FP_SEG(psp) + 0xff0;
+    *(unsigned int *)(psp + 2) = 
+        /* 0xa000;*/ FP_SEG(psp) + exeLen / 16 + 330 /* was 0xff0 */;
     if (parmblock != NULL)
     {
         memcpy(psp + 0x80, parmblock->cmdtail, parmblock->cmdtail[0] + 1);

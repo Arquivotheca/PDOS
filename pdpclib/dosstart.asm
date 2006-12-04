@@ -45,9 +45,22 @@ push ds
 mov ax, 0
 push ax
 
+; determine how much memory is needed. The stack pointer points
+; to the top. Work out what segment that is, then subtract the
+; starting segment (the PSP), and you have your answer.
+
+mov ax, sp
+mov cl, 4
+shr ax, cl ; get sp into pages
+mov bx, ss
+add ax, bx
+add ax, 2 ; safety margin because we've done some pushes etc
+mov bx, es
+sub ax, bx ; subtract the psp segment
+
 ; free initially allocated memory
 
-mov bx, 01111h
+mov bx, ax
 mov ah, 4ah
 int 21h
 

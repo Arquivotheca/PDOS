@@ -1804,11 +1804,11 @@ static void loadExe(char *prog, PARMBLOCK *parmblock)
     if (isexe)
     {
         exeLen = *(unsigned int *)&header[4];
-        exeLen = exeLen * 512 - headerLen;        
+        exeLen = (exeLen + 1) * 512 - headerLen;        
     }
     else
     {
-        exeLen = 60000U - 0x100; /* need to bump this up to 0x10000 */
+        exeLen = 0x10000;
     }
     maxPages = memmgrMaxSize(&memmgr);
     if ((long)maxPages * 16 < exeLen)
@@ -1842,7 +1842,8 @@ static void loadExe(char *prog, PARMBLOCK *parmblock)
     *(unsigned int *)(psp + 2) = FP_SEG(psp) + maxPages;
     if (parmblock != NULL)
     {
-        memcpy(psp + 0x80, parmblock->cmdtail, parmblock->cmdtail[0] + 1);
+        /* 1 for the count and 1 for the return */
+        memcpy(psp + 0x80, parmblock->cmdtail, parmblock->cmdtail[0] + 1 + 1);
     }
     
     exeStart = psp + 0x100;
@@ -1877,7 +1878,8 @@ static void loadExe(char *prog, PARMBLOCK *parmblock)
     else
     {
         memcpy(exeStart, firstbit, sizeof firstbit);
-        fileRead(fno, exeStart + sizeof firstbit, exeLen);        
+        fileRead(fno, exeStart + sizeof firstbit, 32768);
+        fileRead(fno, FP_NORM(exeStart + sizeof firstbit + 32768), 32768);
     }
 #endif
     fileClose(fno);
@@ -1909,7 +1911,7 @@ static void loadExe(char *prog, PARMBLOCK *parmblock)
     else
     {
         ss = FP_SEG(psp);
-        sp = 0xe000; /* should really be fffe */
+        sp = 0xfffe;
         *(unsigned int *)MK_FP(ss, sp) = 0;
         exeEntry = psp + 0x100;
     }

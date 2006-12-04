@@ -614,6 +614,13 @@ The latest version currently resides at
 http://sourceforge.net/projects/pdos
 
 
+DEVELOPING
+----------
+Code changes are most welcome! But the code changes must all
+be public domain. Please refer to refer.txt for more information
+on what needs to be done and how to do it.
+
+
 CONTACTING THE AUTHOR
 ---------------------
 

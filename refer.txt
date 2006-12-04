@@ -1,0 +1,387 @@
+
+
+
+
+    ------------------------------------------------------------
+    PDOS Programmers Progress Reference, and Help for New Comers
+    ------------------------------------------------------------
+
+           http://pdos.sf.net/
+
+
+ If you are working on PDOS, check your e-mail regulary
+ for important news, updates, and progress reports from
+ Paul Edwards, the project manager of PDOS.
+
+
+
+
+What is PDOS?
+-------------
+
+PDOS is a Public Domain and Open Source clone of MS-DOS,
+currently in developement. The name PDOS is an acryonmn
+for "Public Domain Operating System".
+
+
+
+
+Who can help with PDOS?
+-----------------------
+
+Anyone that knows C programming at any level. This project is also
+about learning new things so it's ok if you don't know everything.
+But it would be an advantage to know some Assembly programming as
+well, even a rough understanding of Assembly will help. And it will
+also be an advantage understanding about DOS and how it works.
+
+
+
+
+What needs to be done with PDOS?
+--------------------------------
+
+We need to be able to make PDOS fully compatible with every MS-DOS program.
+For this, every standard DOS interrupt handler function and every standard
+DOS call needs to be implemented.
+
+This isn't as complicated and difficult as some people might think it is,
+most of the functions are very simple, which any C programmer should be able
+to write. Below explains the project's standard of writing code for PDOS,
+and the way in which you should implement the DOS calls.
+
+
+
+
+How to implement DOS calls in PDOS:
+-----------------------------------
+
+Remember to use a similar programming style (indentation and identifier
+naming style) used in the rest of the project, and also use 4 spaces
+instead of a tab, because some other people working on the project
+might be using a text editor that doesn't support tabs properly.
+Spaces are more portable because every text editor should support
+spaces properly but the same cannot be said about tabs.
+
+Check "bos.h" (the header for the prototypes of BIOS functions)
+and see if the DOS call you are going to implement already
+uses a BIOS function implemented in "bos.c". If not, carry on
+reading, you will understand what to do at the end.
+
+Use the search function in your text editor to search this
+document for # to see what functions are already implemented.
+
+Look at "pos.c" and see if the DOS call you are about to implement
+will be used in a similar way to any of the functions there.
+If so use the similar function in "pos.c" as base code for the DOS
+call you are going to write.
+
+Then once you are finished writing it, make sure it is in the
+correct part of "pos.c", that is to say, in the correct order,
+according to function and subfunction number (which are in
+hexadecimal). And also add a comment to describe it like
+the other functions in "pos.c" with the function and
+subfunction hexadecimal number in the comment.
+
+And also add the function prototype to "pos.h", again in
+the correct order, with a comment next to it saying
+what function and subfunction it uses, like the
+other prototypes in "pos.h".
+
+Thats how to implement the DOS call, but the actual implementation
+in high level programming of the DOS call you do in "pdos.c", you
+do not need to update "pdos.h", only "pdos.c".
+
+When adding the high level implementation to "pdos.c", write
+the function using the same declaration you did in "pos.h".
+How does this work you ask? well "pdos.obj" and "pos.obj"
+aren't linked together so it's possible to do that.
+
+After you have finished writing the high level implementation of
+the DOS call for "pdos.c", use the search function in the text
+editor you are using to search "pdos.c" for the function
+"int21handler" and add your DOS Call there, the same way the
+other functions were added, and again in the correct order.
+
+That should be it, unless you needed to use a BIOS function
+that wasn't in "bos.c". Then you should write the BIOS function
+yourself, again in the correct order according to the hexadecimal
+value of the function and subfunction. And using similar comments
+like the other functions in "bos.h" to explain what the function
+does and what function and subfunction of the BIOS it calls.
+Then add the function prototype to "bos.h" of the BIOS function
+call you implemented in "bos.c", and also similar comments
+next to that function prototype like the other functions.
+
+
+
+
+--------------------------------------------------------------
+KEY:
+
+  # Complete.
+  + Work in progress.
+
+DOS Calls and Interrupt Handlers in this document not having #
+in front of them are the ones that need to be implemented.
+--------------------------------------------------------------
+
+
+
+
+DOS interrupt Handlers
+----------------------
+
+#int 20h - Program terminate
++int 21h - DOS Function Dispatcher
+int 22h - Program Terminate
+int 23h - Ctl-break exit address
+int 24h - Critical error handler address
+int 25h - Absolute disk read
+int 26h - Absolute disk write
+int 27h - Terminate but stay resident
+int 28h - DOS idle loop/scheduler (undocumented)
+int 29h - DOS Fast Character I/O  (Undocumented 2.x+)
+int 2Ah - DOS Network Critical Section and NETBIOS
+int 2Eh - exec command from base level command
+int 2Fh - multiplexer
+int 33h - mouse support
+int 5Ch - NETBIOS      NETBIOS interface, TOPS interface
+int 67h - LIM/EMS specification
+
+For a detailed description of their subfunctions check:
+http://mvmpc9.ciw.uni-karlsruhe.de/public/HELPPC/INTERRUP.TXT
+
+
+
+
+PDOS specific DOS calls which were needed for
+easier debugging during early stages of development:
+---------------------------------------------
+
+#Int 21/AX=F300h - PDOS - Display Integer
+#Int 21/AX=F301h - PDOS - Reboot
+#Int 21/AX=F303h - PDOS - Set Run Time
+
+For a full reference of standard and non-standard DOS calls check:
+http://www.ctyme.com/intr/int-21.htm
+
+
+
+
+INT 21h STANDARD MS-DOS CALLS WITHOUT SUBFUNCTION:
+--------------------------------------------------
+
+Int 21/AH=00h - DOS 1+ - TERMINATE PROGRAM
+Int 21/AH=01h - DOS 1+ - READ CHARACTER FROM STANDARD INPUT, WITH ECHO
+#Int 21/AH=02h - DOS 1+ - WRITE CHARACTER TO STANDARD OUTPUT
+Int 21/AH=03h - DOS 1+ - READ CHARACTER FROM STDAUX
+Int 21/AH=04h - DOS 1+ - WRITE CHARACTER TO STDAUX
+Int 21/AH=05h - DOS 1+ - WRITE CHARACTER TO PRINTER
+Int 21/AH=06h - DOS 1+ - DIRECT CONSOLE OUTPUT
+Int 21/AH=06h/DL=FFh - DOS 1+ - DIRECT CONSOLE INPUT
+Int 21/AH=07h - DOS 1+ - DIRECT CHARACTER INPUT, WITHOUT ECHO
+#Int 21/AH=08h - DOS 1+ - CHARACTER INPUT WITHOUT ECHO
+#Int 21/AH=09h - DOS 1+ - WRITE STRING TO STANDARD OUTPUT
+Int 21/AH=0Ah - DOS 1+ - BUFFERED INPUT
+Int 21/AH=0Bh - DOS 1+ - GET STDIN STATUS
+Int 21/AH=0Ch - DOS 1+ - FLUSH BUFFER AND READ STANDARD INPUT
+Int 21/AH=0Dh - DOS 1+ - DISK RESET
+#Int 21/AH=0Eh - DOS 1+ - SELECT DEFAULT DRIVE
+Int 21/AH=0Fh - DOS 1+ - OPEN FILE USING FCB
+Int 21/AH=10h - DOS 1+ - CLOSE FILE USING FCB
+Int 21/AH=11h - DOS 1+ - FIND FIRST MATCHING FILE USING FCB
+Int 21/AH=12h - DOS 1+ - FIND NEXT MATCHING FILE USING FCB
+Int 21/AH=13h - DOS 1+ - DELETE FILE USING FCB
+Int 21/AH=14h - DOS 1+ - SEQUENTIAL READ FROM FCB FILE
+Int 21/AH=15h - DOS 1+ - SEQUENTIAL WRITE TO FCB FILE
+Int 21/AH=16h - DOS 1+ - CREATE OR TRUNCATE FILE USING FCB
+Int 21/AH=17h - DOS 1+ - RENAME FILE USING FCB
+Int 21/AH=18h - DOS 1+ - NULL FUNCTION FOR CP/M COMPATIBILITY
+#Int 21/AH=19h - DOS 1+ - GET CURRENT DEFAULT DRIVE
+#Int 21/AH=1Ah - DOS 1+ - SET DISK TRANSFER AREA ADDRESS
+Int 21/AH=1Bh - DOS 1+ - GET ALLOCATION INFORMATION FOR DEFAULT DRIVE
+Int 21/AH=1Ch - DOS 1+ - GET ALLOCATION INFORMATION FOR SPECIFIC DRIVE
+Int 21/AH=1Dh - DOS 1+ - NULL FUNCTION FOR CP/M COMPATIBILITY
+Int 21/AH=1Eh - DOS 1+ - NULL FUNCTION FOR CP/M COMPATIBILITY
+Int 21/AH=1Fh - DOS 1+ - GET DRIVE PARAMETER BLOCK FOR DEFAULT DRIVE
+Int 21/AH=20h - DOS 1+ - NULL FUNCTION FOR CP/M COMPATIBILITY
+Int 21/AH=21h - DOS 1+ - READ RANDOM RECORD FROM FCB FILE
+Int 21/AH=22h - DOS 1+ - WRITE RANDOM RECORD TO FCB FILE
+Int 21/AH=23h - DOS 1+ - GET FILE SIZE FOR FCB
+Int 21/AH=24h - DOS 1+ - SET RANDOM RECORD NUMBER FOR FCB
+#Int 21/AH=25h - DOS 1+ - SET INTERRUPT VECTOR
+Int 21/AH=26h - DOS 1+ - CREATE NEW PROGRAM SEGMENT PREFIX
+Int 21/AH=27h - DOS 1+ - RANDOM BLOCK READ FROM FCB FILE
+Int 21/AH=28h - DOS 1+ - RANDOM BLOCK WRITE TO FCB FILE
+Int 21/AH=29h - DOS 1+ - PARSE FILENAME INTO FCB
+#Int 21/AH=2Ah - DOS 1+ - GET SYSTEM DATE
+Int 21/AH=2Bh - DOS 1+ - SET SYSTEM DATE
+#Int 21/AH=2Ch - DOS 1+ - GET SYSTEM TIME
+Int 21/AH=2Dh - DOS 1+ - SET SYSTEM TIME
+Int 21/AH=2Eh/DL=00h - DOS 1+ - SET VERIFY FLAG
+#Int 21/AH=2Fh - DOS 2+ - GET DISK TRANSFER AREA ADDRESS
+#Int 21/AH=30h - DOS 2+ - GET DOS VERSION
+Int 21/AH=31h - DOS 2+ - TERMINATE AND STAY RESIDENT
+Int 21/AH=32h - DOS 2+ - GET DOS DRIVE PARAMETER BLOCK FOR SPECIFIC DRIVE
+Int 21/AH=33h - DOS 2+ - EXTENDED BREAK CHECKING
+Int 21/AH=34h - DOS 2+ - GET ADDRESS OF INDOS FLAG
+#Int 21/AH=35h - DOS 2+ - GET INTERRUPT VECTOR
+Int 21/AH=36h - DOS 2+ - GET FREE DISK SPACE
+Int 21/AH=37h - DOS 2.x and 3.3+ only - AVAILDEV - SPECIFY \DEV\ PREFIX USE
+Int 21/AH=38h - DOS 2+ - GET COUNTRY-SPECIFIC INFORMATION
+Int 21/AH=38h/DX=FFFFh - DOS 3.0+ - SET COUNTRY CODE
+Int 21/AH=39h - DOS 2+ - MKDIR - CREATE SUBDIRECTORY
+Int 21/AH=3Ah - DOS 2+ - RMDIR - REMOVE SUBDIRECTORY
+Int 21/AH=3Bh - DOS 2+ - CHDIR - SET CURRENT DIRECTORY
+Int 21/AH=3Ch - DOS 2+ - CREAT - CREATE OR TRUNCATE FILE
+#Int 21/AH=3Dh - DOS 2+ - OPEN - OPEN EXISTING FILE
+#Int 21/AH=3Eh - DOS 2+ - CLOSE - CLOSE FILE
+#Int 21/AH=3Fh - DOS 2+ - READ - READ FROM FILE OR DEVICE
+#Int 21/AH=40h - DOS 2+ - WRITE - WRITE TO FILE OR DEVICE
+#Int 21/AH=41h - DOS 2+ - UNLINK - DELETE FILE
+#Int 21/AH=42h - DOS 2+ - LSEEK - SET CURRENT FILE POSITION
+Int 21/AH=45h - DOS 2+ - DUP - DUPLICATE FILE HANDLE
+Int 21/AH=46h - DOS 2+ - DUP2, FORCEDUP - FORCE DUPLICATE FILE HANDLE
+#Int 21/AH=47h - DOS 2+ - CWD - GET CURRENT DIRECTORY
+#Int 21/AH=48h - DOS 2+ - ALLOCATE MEMORY
+#Int 21/AH=49h - DOS 2+ - FREE MEMORY
+#Int 21/AH=4Ah - DOS 2+ - RESIZE MEMORY BLOCK
+#Int 21/AH=4Bh - DOS 2+ - EXEC - LOAD AND/OR EXECUTE PROGRAM
+#Int 21/AH=4Ch - DOS 2+ - EXIT - TERMINATE WITH RETURN CODE
+#Int 21/AH=4Dh - DOS 2+ - GET RETURN CODE (ERRORLEVEL)
+#Int 21/AH=4Eh - DOS 2+ - FINDFIRST - FIND FIRST MATCHING FILE
+#Int 21/AH=4Fh - DOS 2+ - FINDNEXT - FIND NEXT MATCHING FILE
+Int 21/AH=50h - DOS 2+ internal - SET CURRENT PROCESS ID (SET PSP ADDRESS)
+Int 21/AH=51h - DOS 2+ internal - GET CURRENT PROCESS ID (GET PSP ADDRESS)
+Int 21/AH=52h - DOS 2+ internal - SYSVARS - GET LIST OF LISTS
+Int 21/AH=53h - DOS 2+ internal - TRANSLATE BIOS PARAMBLOK TO DRIVE PARAMBLOK
+Int 21/AH=54h - DOS 2+ - GET VERIFY FLAG
+Int 21/AH=55h - DOS 2+ internal - CREATE CHILD PSP
+#Int 21/AH=56h - DOS 2+ - RENAME - RENAME FILE
+Int 21/AH=58h - DOS 2.11+ - GET OR SET MEMORY ALLOCATION STRATEGY
+Int 21/AH=58h - DOS 5+ - GET OR SET UMB LINK STATE
+Int 21/AH=59h/BX=0000h - DOS 3.0+ - GET EXTENDED ERROR INFORMATION
+Int 21/AH=5Ah - DOS 3.0+ - CREATE TEMPORARY FILE
+Int 21/AH=5Bh - DOS 3.0+ - CREATE NEW FILE
+Int 21/AH=5Ch - DOS 3.0+ - FLOCK - RECORD LOCKING
+Int 21/AH=60h - DOS 3.0+ - TRUENAME - CANONICALIZE FILENAME OR PATH
+Int 21/AH=61h - DOS 3.0+ - UNUSED (RESERVED FOR NETWORK USE)
+Int 21/AH=62h - DOS 3.0+ - GET CURRENT PSP ADDRESS
+Int 21/AH=64h - DOS 3.2+ internal - SET DEVICE DRIVER LOOKAHEAD FLAG
+Int 21/AH=65h - DOS 3.3+ - GET EXTENDED COUNTRY INFORMATION
+Int 21/AH=65h - DOS 4.0+ - COUNTRY-DEPENDENT CHARACTER CAPITALIZATION
+Int 21/AH=65h - DOS 4.0+ internal - COUNTRY-DEPENDENT FILENAME CAPITALIZATION
+Int 21/AH=67h - DOS 3.3+ - SET HANDLE COUNT
+Int 21/AH=68h - DOS 3.3+ - FFLUSH - COMMIT FILE
+Int 21/AH=69h - DOS 4.0+ internal - GET/SET DISK SERIAL NUMBER
+Int 21/AH=6Ah - DOS 4.0+ - COMMIT FILE
+Int 21/AH=6Bh - DOS 4.0 internal - IFS IOCTL
+Int 21/AH=6Bh - DOS 5+ - NULL FUNCTION
+Int 21/AH=6Dh - DOS 5+ ROM - FIND FIRST ROM PROGRAM
+Int 21/AH=6Eh - DOS 5+ ROM - FIND NEXT ROM PROGRAM
+Int 21/AH=70h - MS-DOS 7 (Windows95) - GET AND SET INTERNATIONALIZATION INFO
+Int 21/AH=73h - MS-DOS 7 - DRIVE LOCKING AND FLUSHING
+Int 21/AH=F8h - DOS v2.11-2.13 - SET OEM INT 21 HANDLER
+Int 21/AH=F9h - DOS v2.11-2.13 - OEM FUNCTION
+Int 21/AH=FAh - DOS v2.11-2.13 - OEM FUNCTION
+Int 21/AH=FBh - DOS v2.11-2.13 - OEM FUNCTION
+Int 21/AH=FCh - DOS v2.11-2.13 - OEM FUNCTION
+Int 21/AH=FDh - DOS v2.11-2.13 - OEM FUNCTION
+Int 21/AH=FEh - DOS v2.11-2.13 - OEM FUNCTION
+Int 21/AH=FFh - DOS v2.11-2.13 - OEM FUNCTION
+
+
+
+
+INT 21h STANDARD MS-DOS CALLS WITH SUBFUNCTION:
+-----------------------------------------------
+
+Int 21/AX=3302h - DOS 3.x+ intrnl - GET+SET EXTENDED CNTRL-BREAK CHECK STATE
+Int 21/AX=3303h - DOS 3.4/4.0 - GET CURRENT CPSW STATE
+Int 21/AX=3304h - DOS 3.4/4.0 - SET CPSW STATE
+Int 21/AX=3305h - DOS 4.0+ - GET BOOT DRIVE
+Int 21/AX=3306h - DOS 5+ - GET TRUE VERSION NUMBER
+Int 21/AX=3307h - Windows95 - SET/CLEAR DOS_FLAG
+Int 21/AX=3700h - DOS 2+ - SWITCHAR - GET SWITCH CHARACTER
+Int 21/AX=3701h - DOS 2+ - SWITCHAR - SET SWITCH CHARACTER
+Int 21/AX=4300h - DOS 2+ - GET FILE ATTRIBUTES
+Int 21/AX=4301h - DOS 2+ - CHMOD - SET FILE ATTRIBUTES
+Int 21/AX=4302h - MS-DOS 7 - GET COMPRESSED FILE SIZE
+Int 21/AX=43FFh/BP=5053h - MS-DOS 7.20 (Win98) - EXTENDED-LENGTH FILENAME OP
+#Int 21/AX=4400h  - Get Device Information
+Int 21/AX=4401h - DOS 2+ - IOCTL - SET DEVICE INFORMATION
+Int 21/AX=4402h - DOS 2+ - IOCTL - READ FROM CHARACTER DEVICE CONTROL CHANNEL
+Int 21/AX=4402h - MS-DOS 7.0+ - CONFIG$ device - GET CONFIGURATION INFO
+Int 21/AX=4403h - DOS 2+ - IOCTL - WRITE TO CHARACTER DEVICE CONTROL CHANNEL
+Int 21/AX=4403h - MS-DOS 7.0+ - CONFIG$ device - SET? CONFIGURATION INFO
+Int 21/AX=4404h - DOS 2+ - IOCTL - READ FROM BLOCK DEVICE CONTROL CHANNEL
+Int 21/AX=4405h - DOS 2+ - IOCTL - WRITE TO BLOCK DEVICE CONTROL CHANNEL
+Int 21/AX=4406h - DOS 2+ - IOCTL - GET INPUT STATUS
+Int 21/AX=4407h - DOS 2+ - IOCTL - GET OUTPUT STATUS
+#Int 21/AX=4408h - DOS 3.0+ - IOCTL - CHECK IF BLOCK DEVICE REMOVABLE
+Int 21/AX=4409h - DOS 3.1+ - IOCTL - CHECK IF BLOCK DEVICE REMOTE
+Int 21/AX=440Ah - DOS 3.1+ - IOCTL - CHECK IF HANDLE IS REMOTE
+Int 21/AX=440Bh - DOS 3.1+ - IOCTL - SET SHARING RETRY COUNT
+Int 21/AX=440Ch - DOS 3.2+ - IOCTL - GENERIC CHARACTER DEVICE REQUEST
+Int 21/AX=440Dh - DOS 3.2+ - IOCTL - GENERIC BLOCK DEVICE REQUEST
+Int 21/AX=440Dh/CX=084Ah - MS-DOS 7.0+ - GENERIC IOCTL - LOCK LOGICAL VOLUME
+Int 21/AX=440Dh/CX=084Bh - MS-DOS 7.0+ - GENERIC IOCTL - LOCK PHYSICAL VOLUME
+Int 21/AX=440Dh/CX=086Ah - MS-DOS 7.0+ - GENERIC IOCTL - UNLOCK LOGICALVOLUME
+Int 21/AX=440Dh/CX=086Bh - MS-DOS 7.0+ - GENERICIOCTL - UNLOCK PHYSICALVOLUME
+Int 21/AX=440Dh/CX=086Ch - MS-DOS 7.0+ - GENERIC IOCTL - GET LOCK FLAG STATE
+Int 21/AX=440Dh/CX=086Dh - MS-DOS 7.0+ - GENERIC IOCTL - ENUMERATE OPEN FILES
+Int 21/AX=440Dh/CX=086Eh - MS-DOS 7.0+ - GENERIC IOCTL - FIND SWAP FILE
+Int 21/AX=440Dh/CX=0870h - MS-DOS 7.0+ - GENERICIOCTL - GET CURRENT LOCKSTATE
+Int 21/AX=440Dh/CX=0871h - MS-DOS 7.0+ - GENERIC IOCTL - GET FIRST CLUSTER
+Int 21/AX=440Dh/CX=EDC1h - DR PalmDOS - GENERIC IOCTL - LOGIN SECURITY
+Int 21/AX=440Eh - DOS 3.2+ - IOCTL - GET LOGICAL DRIVE MAP
+Int 21/AX=440Fh - DOS 3.2+ - IOCTL - SET LOGICAL DRIVE MAP
+Int 21/AX=4410h - DOS 5+ - IOCTL - QUERY GENERIC IOCTL CAPABILITY (HANDLE)
+Int 21/AX=4411h - DOS 5+ - IOCTL - QUERY GENERIC IOCTL CAPABILITY (DRIVE)
+Int 21/AX=4B05h - DOS 5+ - SET EXECUTION STATE
+Int 21/AX=5700h - DOS 2+ - GET FILE'S LAST-WRITTEN DATE AND TIME
+Int 21/AX=5701h - DOS 2+ - SET FILE'S LAST-WRITTEN DATE AND TIME
+Int 21/AX=5702h - DOS 4.x only - GET EXTENDED ATTRIBUTES FOR FILE
+Int 21/AX=5703h - DOS 4.x only - GET EXTENDED ATTRIBUTE PROPERTIES
+Int 21/AX=5704h - DOS 4.x only - SET EXTENDED ATTRIBUTES
+Int 21/AX=5704h - MS-DOS 7/Windows95 - GET LAST ACCESS DATE AND TIME
+Int 21/AX=5705h - MS-DOS 7/Windows95 - SET LAST ACCESS DATE AND TIME
+Int 21/AX=5706h - MS-DOS 7/Windows95 - GET CREATION DATE AND TIME
+Int 21/AX=5707h - MS-DOS 7/Windows95 - SET CREATION DATE AND TIME
+Int 21/AX=5D00h - DOS 3.1+ internal - SERVER FUNCTION CALL
+Int 21/AX=5D01h - DOS 3.1+ internal - COMMIT ALL FILES ON SAID PC/PROCESS
+Int 21/AX=5D06h - DOS 3.0+ internal - GET ADDRESS OF DOS SWAPPABLE DATA AREA
+Int 21/AX=5D07h - DOS 3.1+ network - GET REDIRECTED PRINTER MODE
+Int 21/AX=5D08h - DOS 3.1+ network - SET REDIRECTED PRINTER MODE
+Int 21/AX=5D09h - DOS 3.1+ network - FLUSH REDIRECTED PRINTER OUTPUT
+Int 21/AX=5D0Ah - DOS 3.1+ - SET EXTENDED ERROR INFORMATION
+Int 21/AX=5D0Bh - DOS 4.x only - internal - GET DOS SWAPPABLE DATA AREAS
+Int 21/AX=5E01h/CH=00h - DOS 3.1+ network - SET MACHINE NAME
+Int 21/AX=5E02h - DOS 3.1+ network - SET NETWORK PRINTER SETUP STRING
+Int 21/AX=5E03h - DOS 3.1+ network - GET NETWORK PRINTER SETUP STRING
+Int 21/AX=5E04h - DOS 3.1+ network - SET PRINTER MODE
+Int 21/AX=5E05h - DOS 3.1+ network - GET PRINTER MODE
+Int 21/AX=5F00h - DOS 3.1+ network - GET REDIRECTION MODE
+Int 21/AX=5F01h - DOS 3.1+ network - SET REDIRECTION MODE
+Int 21/AX=5F02h - DOS 3.1+ network - GET REDIRECTION LIST ENTRY
+Int 21/AX=5F03h - DOS 3.1+ network - REDIRECT DEVICE
+Int 21/AX=5F04h - DOS 3.1+ network - CANCEL REDIRECTION
+Int 21/AX=5F05h - DOS 4.0+ network - GET EXTENDED REDIRECTION LIST ENTRY
+Int 21/AX=5F07h - DOS 5+ - ENABLE DRIVE
+Int 21/AX=5F08h - DOS 5+ - DISABLE DRIVE
+Int 21/AX=6300h - DOS 2.25 only - GET LEAD BYTE TABLE ADDRESS
+Int 21/AX=6300h - DOS 3.2+ - GET DOUBLE BYTE CHARACTER SET LEAD-BYTE TABLE
+Int 21/AX=6523h - DOS 4.0+ - DETERMINE IF CHARACTER REPRESENT YES/NO RESPONSE
+Int 21/AX=6601h - DOS 3.3+ - GET GLOBAL CODE PAGE TABLE
+Int 21/AX=6602h - DOS 3.3+ - SET GLOBAL CODE PAGE TABLE
+Int 21/AX=6C00h - DOS 4.0+ - EXTENDED OPEN/CREATE
+Int 21/AX=6F00h - DOS 5+ ROM - GET ROM SCAN START ADDRESS
+Int 21/AX=6F01h - DOS 5+ ROM - SET ROM SCAN START ADDRESS
+Int 21/AX=6F02h - DOS 5+ ROM - GET EXCLUSION REGION LIST
+Int 21/AX=6F03h - DOS 5+ ROM - SET EXCLUSION REGION LIST
+Int 21/AX=71A7h/BL=00h - Windows95 - LONG FILENAME - FILE TIME TO DOS TIME
+Int 21/AX=71A7h/BL=01h - Windows95 - LONG FILENAME - DOS TIME TO FILE TIME
+
+
+

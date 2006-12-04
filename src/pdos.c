@@ -1267,7 +1267,7 @@ int PosReallocPages(void *ptr, unsigned int newpages, unsigned int *maxp)
 int PosReallocPages(void *ptr, unsigned int newpages, unsigned int *maxp)
 {
     int ret;
-    
+
     ret = pdos16MemmgrReallocPages(&memmgr, ptr, newpages);
     if (ret != 0)
     {
@@ -1796,15 +1796,15 @@ static void loadExe(char *prog, PARMBLOCK *parmblock)
     *((unsigned int *)(envptr + 5)) = 1; /* who knows why */
     memcpy(envptr + 7, prog, strlen(prog) + 1);
 
-    /* allocate exeLen + 0x100 (psp) + stack + extra (safety margin) */
 #ifdef __32BIT__
     exeLen = N_BSSADDR(firstbit) - N_TXTADDR(firstbit) + firstbit.a_bss;
+    /* allocate exeLen + 0x100 (psp) + stack + extra (safety margin) */
     psp = memmgrAllocate(&memmgr, exeLen + 0x100 + 0x8000 + 0x100, 0);
 #else
     if (isexe)
     {
         exeLen = *(unsigned int *)&header[4];
-        exeLen = exeLen * 512 - headerLen;
+        exeLen = exeLen * 512 - headerLen;        
     }
     else
     {
@@ -1816,6 +1816,8 @@ static void loadExe(char *prog, PARMBLOCK *parmblock)
         printf("insufficient memory to load program\n");
         printf("required %ld, available %ld\n",
                exeLen, (long)maxPages * 16);
+        memmgrFree(&memmgr, header);
+        memmgrFree(&memmgr, envptr);
         return;
     }
     psp = pdos16MemmgrAllocPages(&memmgr, maxPages, 0);
@@ -1825,6 +1827,8 @@ static void loadExe(char *prog, PARMBLOCK *parmblock)
     if (psp == NULL)
     {
         printf("insufficient memory to load program\n");
+        memmgrFree(&memmgr, header);
+        memmgrFree(&memmgr, envptr);
         return;
     }    
 
@@ -1865,6 +1869,7 @@ static void loadExe(char *prog, PARMBLOCK *parmblock)
                 maxread = exeLen - totalRead;
             }
             upto = ABS2ADDR(ADDR2ABS(exeStart) + totalRead);
+            upto = FP_NORM(upto);
             fileRead(fno, upto, maxread);
             totalRead += maxread;
         }
@@ -1909,8 +1914,8 @@ static void loadExe(char *prog, PARMBLOCK *parmblock)
         exeEntry = psp + 0x100;
     }
 
-    /*printf("exeEntry: %lx, psp: %lx, ss: %x, sp: %x\n",
-           exeEntry, psp, ss, sp);*/
+    /* printf("exeEntry: %lx, psp: %lx, ss: %x, sp: %x\n",
+           exeEntry, psp, ss, sp); */
 #else
     /* initialise BSS */
     bss = exeStart + N_BSSADDR(firstbit);
@@ -1927,10 +1932,11 @@ static void loadExe(char *prog, PARMBLOCK *parmblock)
     dta = olddta;
     psp = origpsp;
     envptr = origenv;
-    memmgrFree(&memmgr, header);
 #endif
 #ifdef __32BIT__
     ret = fixexe32(psp, firstbit.a_entry, sp);
+#else
+    memmgrFree(&memmgr, header);
 #endif
     lastrc = ret;
     memmgrFree(&memmgr, psp);

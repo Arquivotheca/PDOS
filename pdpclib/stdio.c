@@ -4224,6 +4224,12 @@ static void dblcvt(double num, char cnvtype, size_t nwidth,
                allow for numeric fuzz */
             if ( ( (nprecision-pdigits-1) > exp) && (b < 0.1E-15 ) )
             { 
+                while (pdigits >= 0){
+                        work[0] = '0';
+                        work[1] = 0x00;
+                        strcat(result,work);
+                        pdigits --;
+                }
                 break;
             }
             i = b;
@@ -4244,7 +4250,7 @@ static void dblcvt(double num, char cnvtype, size_t nwidth,
         work[1] = 0x00;
         strcat(result,work);
         strcat(result,".");
- 
+
         pdigits = nprecision;
 
         while (pdigits-- > 0)

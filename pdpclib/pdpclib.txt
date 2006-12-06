@@ -39,8 +39,7 @@ MAIN DESIGN GOALS
 CURRENT STATUS
 --------------
 
-Almost all routines have been implemented (atan2
-and modf are the exceptions), but some are not
+All routines have an implementation, but some are not
 fully functional, specifically the format specifiers
 in scanf() and printf() and file update, append and
 random access in fopen() etc, plus longjmp/setjmp

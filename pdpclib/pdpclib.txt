@@ -263,3 +263,8 @@ Matthew Parker for getting the program name under MSDOS.
 Phil Roberts for helping to debug the MVS port.
 Dave Wade for doing the CMS port, the maths functions
   and getting floating point supported.
+
+Also, I have used code from both of these other public domain
+C runtime libraries:
+http://sourceforge.net/projects/libnix
+http://sourceforge.net/projects/pdclib

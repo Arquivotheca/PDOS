@@ -396,11 +396,20 @@ int PosGetDeviceInformation(int handle, unsigned int *devinfo)
     
     regsin.h.ah = 0x44;
     regsin.h.al = 0x00;
+#ifdef __32BIT__
+    regsin.d.ebx = handle;
+#else
     regsin.x.bx = handle;
+#endif
     int86(0x21, &regsin, &regsout);
     if (!regsout.x.cflag)
     {
         regsout.x.ax = 0;
+#ifdef __32BIT__
+        *devinfo = regsout.d.edx;
+#else
+        *devinfo = regsout.x.dx;
+#endif
     }
     return (regsout.x.ax);
 }

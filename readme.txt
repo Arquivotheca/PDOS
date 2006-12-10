@@ -142,24 +142,20 @@ paths in before that will actually work.
 The step by step guide is below...
 
 
-To compile 16-bit version using Borland C++ 3.1:
+To compile 16-bit version using Turbo C++ 1.01:
 
 Go to pdpclib and type "compile"
 Go to src and type "comp1" then "comp2" then "comp3".
-Then type "bcc -c -ml -I..\pdpclib world.c"
-then ...
-tlink -x ..\pdpclib\dosstart.obj+world.obj,world.exe,,..\pdpclib\borland.lib,
+Then "compw16"
 
-To compile 32-bit version using EMX 0.9d and Borland C++ 3.1:
+To compile 32-bit version using EMX 0.9d and Turbo C++ 1.01:
 
 Go to pdpclib and type "compp"
 Go to src and type "comp4" then "comp5" then "comp6".
-Then type "gcc -s -c -I../pdpclib world.c"
-then "ld -s -o world ../pdpclib/pdosst32.o world.o ../pdpclib/pdos.a
-then "ren world world.exe"
+Then "compw32"
 
 Run comp0 and then doinst (after editing it!!!) 
-to install it.
+to install either 16 or 32-bit version.
 NOTE! Installing PDOS in this manner will use
 the MSDOS boot sector rather than PDOS's one.
 The MSDOS boot sector is potentially copyrighted

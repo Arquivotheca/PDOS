@@ -110,36 +110,25 @@ incompatible boot sector.
 DEVELOPMENT ENVIRONMENT
 -----------------------
 
-I use the following bits of software.  I hope that
-in the future I can eliminate the commercial software
-to make it more easily accessible, probably using
-Open Watcom.
+I use the following bits of software.
 
 MSDOS 5.0
-Borland C++ 3.1 for DOS
 
-Turbo C++ 1.01
-http://bdn.borland.com/article/0,1410,21751,00.html
+Turbo C++ 1.01 (for 16-bit C compiler)
+http://bdn.borland.com/article/21751
 
-TASM 3.1 for DOS
+Open Watcom 1.6 (for 16-bit wasmr assembler)
+http://www.openwatcom.org
 
-Not used:
-Arrowsoft Assembler 1.00d
-ftp://ftp.simtel.net/pub/simtelnet/msdos/asmutl/valarrow.zip
-
-Not used:
-NASM 0.98:
-http://sourceforge.net/projects/nasm
-
-Not used:
-MASM 6.15:
-http://msdn.microsoft.com/vstudio/downloads/tools/ppack/download.aspx
-
-
-EMX 0.9d (which includes GCC 2.8.1) can be obtained from:
+EMX 0.9d (which includes GCC 2.8.1) (for 32-bit C compiler and assembler):
 http://hobbes.nmsu.edu/cgi-bin/h-browse?dir=/pub/os2/dev/emx/v0.9d
 
 raread/rawrite (unknown origin)
+
+Not used:
+MASM 6.15:
+http://msdn2.microsoft.com/en-us/vstudio/aa718349.aspx
+(go "vcpp5 /c" to extract)
 
 
 RECOMPILING

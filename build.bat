@@ -15,8 +15,7 @@ call comp0
 call comp1
 call comp2
 call comp3
-tcc -c -ml -I..\pdpclib world.c
-tlink -x ..\pdpclib\dosstart.obj+world.obj,world.exe,,..\pdpclib\borland.lib,
+call compw16
 copy %loc%\pload.com %loc%\io.sys
 copy %loc%\pdos.exe %loc%\msdos.sys
 copy %loc%\pcomm.exe %loc%\command.com
@@ -32,8 +31,7 @@ cd ..\src
 call comp4
 call comp5
 call comp6
-gcc -s -c -I../pdpclib world.c
-ld -s -o world ../pdpclib/pdosst32.o world.o ../pdpclib/pdos.a
+call compw32
 del %drive%:world16.exe
 copy %loc%\pload.com %loc%\io.sys
 copy %loc%\pdos.exe %loc%\msdos.sys

@@ -4,7 +4,7 @@
 /*  Released to the Public Domain                                    */
 /*                                                                   */
 /*  9-April-2006 D.Wade                                              */
-/*      Moved definitions for HUGE_VALUE to math.h                   */
+/*      Moved definitions for HUGE_VAL to math.h                   */
 /*      Inserted argument rang checks in :-                          */
 /*       acos                                                        */
 /*                                                                   */
@@ -86,7 +86,7 @@ double floor(double x)
 
     if (x < 0.0)
     {
-        y = (int)fabs(x);
+        y = (int)x;
         if ((double)y != x)
         {
             y--;
@@ -96,7 +96,7 @@ double floor(double x)
     {
         y = (int)x;
     }
-    return ((double)x);
+    return ((double)y);
 }
 
 double fmod(double x, double y)
@@ -123,7 +123,7 @@ double acos(double x)
     if ( fabs(x) > 1.0 ) /* is argument out of range */
     {
         errno=EDOM;
-        return (HUGE_VALUE);
+        return (HUGE_VAL);
     }
     if ( x < 0.0 ) return ( pi - acos(-x) ) ;
 
@@ -164,7 +164,7 @@ double asin (double y)
     if ( x > 1.0 )
     {
         errno=EDOM;
-        return(HUGE_VALUE);
+        return(HUGE_VAL);
     }
 
 /*
@@ -393,7 +393,7 @@ double tan (double x)
 /*
 
   use tan = sin(x)/cos(x)
-  if cos(x) is 0 then return HUGE_VALUE else return sin/cos
+  if cos(x) is 0 then return HUGE_VAL else return sin/cos
 
   *** need to set ERROR for overflow ***
 
@@ -404,7 +404,7 @@ double tan (double x)
     if (temp == 0.0 )
     {
         /* errno=EDOM; don't seem to return an error here */
-        return (HUGE_VALUE); /* need to set error here */
+        return (HUGE_VAL); /* need to set error here */
     }
     return ( sin(x)/cos(x) );
 }
@@ -499,7 +499,7 @@ double log (double x)
     {
         /* need to set signal */
         errno=EDOM;
-        return (HUGE_VALUE);
+        return (HUGE_VAL);
     }
 
 /*

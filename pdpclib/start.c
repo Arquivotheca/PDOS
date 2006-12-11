@@ -528,6 +528,7 @@ void __exit(int status)
 #if defined(__MVS__) || defined(__CMS__)
     fclose(stdin);
     fclose(stdout);
+    fclose(stderr);
 #endif
 #if USE_MEMMGR
     memmgrTerm(&__memmgr);

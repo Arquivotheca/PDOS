@@ -19,11 +19,11 @@
 /*
  This is about the nearest thing we can get to inf wthout
 */
-#define HUGE_VALUE 9.999999999999999999999E72
+#define HUGE_VAL 9.999999999999999999999E72
 
 #else
 
-#define HUGE_VALUE 9.999999999999999999999E72
+#define HUGE_VAL 9.999999999999999999999E72
 
 #endif
 

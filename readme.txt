@@ -82,7 +82,10 @@ necessitates all applications to be recompiled,
 although not necessarily rewritten.  At a later
 stage, it may support the Windows NT API so that
 32-bit console mode executables can be run
-unchanged.
+unchanged.  Note that PDOS-32 is pure 32-bit.  It
+doesn't have any 16-bit code in it, although it
+does call 16-bit BIOS functions by switching to
+real mode.
 
 
 INSTALLING
@@ -567,7 +570,7 @@ So note some important things.
 5. Ability to handle Windows 32-bit executables is required.
 6. Some utilities, such as "sys" are required.
 7. Ability to handle long file names is required.
-8. PDPCLIB needs to be ported to do Windows 32-bit.
+8. PDPCLIB needs to be ported to do Windows 32-bit (done!).
 9. An editor is required.
 10. Something as simple as DOS, not as complicated as Unix, is required.
 11. PDPZM should be ported to upload/download data.

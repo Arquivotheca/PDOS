@@ -101,7 +101,10 @@ double floor(double x)
 
 double fmod(double x, double y)
 {
-    return (x / y);
+    int imod;
+    if(y == 0.0) return (0.0);
+    imod = x / y;
+    return ((double)x-((double)imod*y));
 }
 
 #ifdef acos
@@ -283,11 +286,11 @@ double atan (double x)
 /* atan2 was taken from libnix and modified slightly */
 
 double atan2(double y,double x)
-{ 
+{
     return (x >= y) ?
                (x >= -y ? atan(y/x) : -pi/2 - atan(x/y))
               :
-               (x >= -y ? pi/2 - atan(x/y) 
+               (x >= -y ? pi/2 - atan(x/y)
                         : (y >= 0) ? pi + atan(y/x)
                                    : -pi + atan(y/x));
 }
@@ -629,12 +632,18 @@ double frexp(double x, int *exp)
     };
     union dblhex split;
 
+    if ( x == 0.0)
+    {
+        exp=0;
+        return (0.0);
+    }
+
     split.d = x;
     *exp = (((split.s[0] >> 8) & 0x007f)-64) * 4;
     split.s[0] = split.s[0] & 0x80ff;
     split.s[0] = split.s[0] | 0x4000;
     /* following code adjust for fact IBM has hex float */
-    while ( fabs(split.d) < 0.5 )
+    while ( (fabs(split.d) < 0.5) && (split.d != 0) )
     {
         split.d = split.d * 2;
         *exp =( *exp ) - 1;
@@ -642,7 +651,6 @@ double frexp(double x, int *exp)
     /*    */
     return(split.d);
 }
-
 double ldexp(double x, int exp)
 {
 /*
@@ -678,17 +686,23 @@ double ldexp(double x, int exp)
     return(split.d);
 }
 
-/* modf was taken from libnix and modified slightly */
 double modf(double value, double *iptr)
 {
+    int neg = 0;
+    long i;
+
     if (value < 0)
     {
-        *iptr = ceil(value);
-        return (*iptr-value);
+        neg = 1;
+        value = -value;
     }
-    else
+    i = (long)value;
+    value -= i;
+    if (neg)
     {
-        *iptr=floor(value);
-        return (value-*iptr);
+        value = -value;
+        i = -i;
     }
+    *iptr = i;
+    return (value);
 }

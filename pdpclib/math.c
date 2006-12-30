@@ -54,6 +54,7 @@
 */
 static const double pi   = 3.1415926535897932384626433832795;
 static const double ln10 = 2.3025850929940456840179914546844;
+static const double ln2 = 0.69314718055994530941723212145818 ;
 
 
 double ceil(double x)
@@ -440,18 +441,13 @@ double sinh(double x)
 }
 
 /*
-
     tanh returns the hyperbolic area tangent of floating point argument x.
-
 */
 
 double tanh(double x)
 {
     double y;
     double dexp2;
-
-    if ( (x <= -1.0 ) || (x >= 1.0) ) return(0.0); /* need
-                                   to set an error here */
 
     dexp2 = exp( -2.0 * x);
     return ( (1.0  - dexp2) /  (1.0 + dexp2) );
@@ -467,8 +463,9 @@ double exp (double x)
     int i;
     double term,answer,work;
 
-    i=1;
-    term=answer=1;
+    i=2;
+    term=x;
+    answer=x;
 
     while (1)
     {
@@ -479,6 +476,7 @@ double exp (double x)
         i++;
     }
 
+    answer=answer+1.0;
     return(answer);
 }
 
@@ -504,17 +502,21 @@ double log (double x)
         errno=EDOM;
         return (HUGE_VAL);
     }
+    if( x == 1.0)return(0.0);
 
 /*
   Scale arguments to be in range 1 < x <= 10
 */
 
+/*
     scale = 0;
     xs = x;
-    while ( xs > 1.0 ) { scale ++; xs=xs/10.0;}
-    while ( xs < 0.1 ) { scale --; xs=xs*10.0;}
-
-    xs = xs - 1;
+    while ( xs > 10.0 ) { scale ++; xs=xs/10.0;}
+    while ( xs < 1.0 ) { scale --; xs=xs*10.0;}
+*/
+    xs = frexp(x,&scale);
+    xs = (1.0 * xs) - 1.0;
+    scale = scale - 0;
 
     i=2;
     term=answer=xs;
@@ -528,7 +530,7 @@ double log (double x)
         i++;
     }
 
-    answer = answer + (double)scale * ln10;
+    answer = answer + (double)scale * ln2;
     return(answer);
 }
 
@@ -548,6 +550,20 @@ double log10(double x)
 
 double pow(double x,double y)
 {
+    int j,neg;
+    double yy,xx;
+    neg=0;
+    j=y;
+    yy=j;
+    if( yy == y) {
+        xx = x;
+        if ( y < 0 ){neg = 1; j = -j;}
+        if ( y == 0) return (1.0);
+        --j;
+        while(j>0){ xx=xx * x; j--;}
+        if(neg)xx=1.0/xx;
+        return (xx);
+    }
     if (x < 0.0)
     {
          errno=EDOM;

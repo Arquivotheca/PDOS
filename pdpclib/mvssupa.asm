@@ -1,17 +1,17 @@
 * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
 *
-*  THIS PROGRAM WRITTEN BY PAUL EDWARDS.
-*  RELEASED TO THE PUBLIC DOMAIN
+*  This program written by PAUL EDWARDS.
+*  Released to the public domain
 *
 *  Extensively modified by others
 *
 * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
 *
-*  MVSSUPA - SUPPORT ROUTINES FOR PDPCLIB UNDER MVS
+*  MVSSUPA - Support routines for PDPCLIB under MVS
 *
-*  IT IS CURRENTLY CODED FOR GCC, BUT C/370 FUNCTIONALITY IS
-*  STILL THERE, IT'S JUST COMMENTED OUT. I DON'T KNOW HOW TO DO
-*  CONDITIONAL COMPILATION OF THAT.
+*  It is currently coded for GCC, but C/370 functionality is
+*  still there, it's just commented out. I don't know how to
+*  do conditional compilation of that.
 *
          LCLC &COMP               Declare compiler switch
 &COMP    SETC 'GCC'               Indicate that this is for GCC
@@ -49,7 +49,7 @@ R14      EQU   14
 R15      EQU   15
          ENTRY @@AOPEN
 @@AOPEN  EQU   *
-         SAVE  (14,12),,@@AOPEN.V1R1M3  Save caller's regs.
+         SAVE  (14,12),,@@AOPEN.V1R1M4  Save caller's regs.
          LR    R12,R15
          USING @@AOPEN,R12
          LR    R11,R1
@@ -99,10 +99,10 @@ NEXTMVC  DS    0H
          STCM  R1,B'0111',DCBEODA
          STCM  R10,B'0111',DCBEXLSA
          MVC   DCBDDNAM,0(R3)
-         MVC   OPENMB,OPENMAC
+         MVI   OPENCLOS,X'80'     Initialize MODE=24 OPEN/CLOSE list
          LTR   R9,R9              See if an address for the member name
          BNZ   OPENIN             Is member name, skip changing DCB
-         RDJFCB ((R2),INPUT),MF=(E,OPENMB)
+         RDJFCB ((R2)),MF=(E,OPENCLOS)  Read JOB File Control Block
          TM    JFCBIND1,JFCPDS    See if a member name in JCL
          BO    OPENIN             Is member name, skip changing DCB
          MVC   CAMLST,CAMDUM      Copy CAMLST template to work area
@@ -123,9 +123,9 @@ NEXTMVC  DS    0H
          MVI   DCBLRECL,1         Set DCB LRECL to 256
          MVI   DCBRECFM,DCBRECF   Set DCB RECFM to RECFM=F
 OPENIN   DS    0H
-*         OPEN  ((R2),INPUT),MF=(E,OPENMB),MODE=31
+*         OPEN  ((R2),INPUT),MF=(E,OPENCLOS31),MODE=31
 * Can't use MODE=31 on MVS 3.8
-         OPEN  ((R2),INPUT),MF=(E,OPENMB)
+         OPEN  ((R2),INPUT),MF=(E,OPENCLOS)
 * Assume that OPEN worked?
          MVC   LRECL+2(2),DCBLRECL  Copy LRECL to a fullword
          MVC   BLKSIZE+2(2),DCBBLKSI  Copy BLKSIZE to a fullword
@@ -204,16 +204,22 @@ WRITING  DS    0H
          LA    R10,JFCBPTR
          STCM  R10,B'0111',DCBEXLSA
          MVC   DCBDDNAM,0(R3)
-         MVC   WOPENMB,WOPENMAC
-         RDJFCB ((R2),OUTPUT),MF=(E,WOPENMB)  Read JOB File Control Blk
+         MVI   OPENCLOS,X'80'     Initialize MODE=24 OPEN/CLOSE list
+         RDJFCB ((R2)),MF=(E,OPENCLOS)  Read JOB File Control Blk
          LTR   R9,R9
          BZ    WNOMEM
          MVC   JFCBELNM,0(R9)
          OI    JFCBIND1,JFCPDS
+         OPEN  ((R2),OUTPUT),MF=(E,OPENCLOS),TYPE=J
+* Assume that OPEN worked?
+         B     WOPENEND           Go to move DCB info
 WNOMEM   DS    0H
 *         OPEN  ((R2),OUTPUT),MF=(E,WOPENMB),MODE=31,TYPE=J
 * Can't use MODE=31 on MVS 3.8or with TYPE=J
-         OPEN  ((R2),OUTPUT),MF=(E,WOPENMB),TYPE=J
+* If JFCB showed DSORG=PO but no JFCB member name, should abend
+         OPEN  ((R2),OUTPUT),MF=(E,OPENCLOS)
+* Assume that OPEN worked?
+WOPENEND DS    0H
          MVC   LRECL+2(2),DCBLRECL  Copy LRECL to a fullword
          MVC   BLKSIZE+2(2),DCBBLKSI  Copy BLKSIZE to a fullword
 DONEOPEN DS    0H
@@ -265,12 +271,12 @@ EOFRLEN  EQU   *-ENDFILE
          LTORG ,
 * OPENMAC  OPEN  (,INPUT),MF=L,MODE=31
 * CAN'T USE MODE=31 ON MVS 3.8
-OPENMAC  OPEN  (,INPUT),MF=L   ,TYPE=J-?????
-OPENMLN  EQU   *-OPENMAC
+* OPENMAC  OPEN  (*-*),MF=L   ,TYPE=J-?????
+* OPENMLN  EQU   *-OPENMAC
 * WOPENMAC OPEN  (,OUTPUT),MF=L,MODE=31
 * CAN'T USE MODE=31 ON MVS 3.8
-WOPENMAC OPEN  (,OUTPUT),MF=L
-WOPENMLN EQU   *-WOPENMAC
+* WOPENMAC OPEN  (*-*),MF=L
+* WOPENMLN EQU   *-WOPENMAC
 *INDCB    DCB   MACRF=GL,DSORG=PS,EODAD=ENDFILE,EXLST=JPTR? DCBE ?
 * LEAVE OUT EODAD AND EXLST, FILLED IN LATER
 INDCB    DCB   MACRF=R,DSORG=PS   If member name, will be changed to PO
@@ -554,10 +560,11 @@ FREEBUFF DS    0H
          LA    R0,4(,R3)          Add 4 bytes for RECFM=U
          FREEMAIN RU,LV=(0),A=(1),SP=SUBPOOL  Free input buffer
 CLOSE    DS    0H
-         MVC   CLOSEMB,CLOSEMAC
-*         CLOSE ((R2)),MF=(E,CLOSEMB),MODE=31
+*        MVC   CLOSEMB,CLOSEMAC
+         MVI   OPENCLOS,X'80'     Initialize MODE=24 OPEN/CLOSE list
+*         CLOSE ((R2)),MF=(E,OPENCLOS31),MODE=31
 * CAN'T USE MODE=31 WITH MVS 3.8
-         CLOSE ((R2)),MF=(E,CLOSEMB)
+         CLOSE ((R2)),MF=(E,OPENCLOS)
          TM    DCBMACR1,DCBMRRD   See if using MACRF=R, no dynamic buff
          BO    NOPOOL             Is MACRF=R, skip FREEPOOL
          FREEPOOL ((R2))
@@ -571,8 +578,8 @@ NOPOOL   DS    0H
          LTORG ,
 * CLOSEMAC CLOSE (),MF=L,MODE=31
 * CAN'T USE MODE=31 WITH MVS 3.8
-CLOSEMAC CLOSE (),MF=L
-CLOSEMLN EQU   *-CLOSEMAC
+* CLOSEMAC CLOSE (),MF=L
+* CLOSEMLN EQU   *-CLOSEMAC
 *
 *
 *
@@ -765,12 +772,7 @@ RETURNLR DS    0H
 *
 WORKAREA DSECT ,
 SAVEAREA DS    18F
-         DS    0F
-CLOSEMB  DS    CL(CLOSEMLN)
-         DS    0F
-OPENMB   DS    CL(OPENMLN)
-         DS    0F
-WOPENMB  DS    CL(WOPENMLN)
+OPENCLOS DS    F                  OPEN/CLOSE list
 WORKLEN  EQU   *-WORKAREA
 *
          DCBD  DSORG=PS,DEVD=DA   Map Data Control Block

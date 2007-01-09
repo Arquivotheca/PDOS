@@ -206,8 +206,17 @@ OUTDCBLN EQU   *-OUTDCB
          SAVE  (14,12),,@@AREAD
          LR    R12,R15
          USING @@AREAD,R12
+         AIF ('&SYSPARM' EQ 'IFOX00').NOMOD1
+         AMODESW SET,AMODE=24
+.NOMOD1  ANOP
          LR    R11,R1
+         AIF   ('&SYSPARM' NE 'IFOX00').BELOW1
+* CAN'T USE "BELOW" ON MVS 3.8
          GETMAIN R,LV=WORKLEN,SP=SUBPOOL
+         AGO   .NOBEL1
+.BELOW1  ANOP
+         GETMAIN R,LV=WORKLEN,SP=SUBPOOL,LOC=BELOW
+.NOBEL1  ANOP
          ST    R13,4(R1)
          ST    R1,8(R13)
          LR    R13,R1
@@ -228,6 +237,9 @@ RETURNAR DS    0H
          L     R13,SAVEAREA+4
          LR    R14,R15
          FREEMAIN R,LV=WORKLEN,A=(R1),SP=SUBPOOL
+         AIF ('&SYSPARM' EQ 'IFOX00').NOMOD2
+         AMODESW SET,AMODE=31
+.NOMOD2  ANOP
          LR    R15,R14
          RETURN (14,12),RC=(15)
 *
@@ -238,8 +250,17 @@ RETURNAR DS    0H
          SAVE  (14,12),,@@AWRITE
          LR    R12,R15
          USING @@AWRITE,R12
+         AIF ('&SYSPARM' EQ 'IFOX00').NOMOD3
+         AMODESW SET,AMODE=24
+.NOMOD3  ANOP
          LR    R11,R1
+         AIF   ('&SYSPARM' NE 'IFOX00').BELOW2
+* CAN'T USE "BELOW" ON MVS 3.8
          GETMAIN R,LV=WORKLEN,SP=SUBPOOL
+         AGO   .NOBEL2
+.BELOW2  ANOP
+         GETMAIN R,LV=WORKLEN,SP=SUBPOOL,LOC=BELOW
+.NOBEL2  ANOP
          ST    R13,4(R1)
          ST    R1,8(R13)
          LR    R13,R1
@@ -250,6 +271,9 @@ RETURNAR DS    0H
          L     R3,4(R1)         R3 POINTS TO BUF POINTER
          PUT   (R2)
          ST    R1,0(R3)
+         AIF ('&SYSPARM' EQ 'IFOX00').NOMOD4
+         AMODESW SET,AMODE=31
+.NOMOD4  ANOP
          LA    R15,0
 *
 RETURNAW DS    0H
@@ -268,7 +292,13 @@ RETURNAW DS    0H
          LR    R12,R15
          USING @@ACLOSE,R12
          LR    R11,R1
+         AIF   ('&SYSPARM' NE 'IFOX00').BELOW3
+* CAN'T USE "BELOW" ON MVS 3.8
          GETMAIN R,LV=WORKLEN,SP=SUBPOOL
+         AGO   .NOBEL3
+.BELOW3  ANOP
+         GETMAIN R,LV=WORKLEN,SP=SUBPOOL,LOC=BELOW
+.NOBEL3  ANOP
          ST    R13,4(R1)
          ST    R1,8(R13)
          LR    R13,R1

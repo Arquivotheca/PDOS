@@ -776,7 +776,7 @@ WORKLEN  EQU   *-WORKAREA
 *
          DCBD  DSORG=PS,DEVD=DA   Map Data Control Block
          ORG   IHADCB             Overlay the DCB DSECT
-ZDCBAREA EQU   0H
+ZDCBAREA EQU   *
          DS    CL(INDCBLN)
          DS    CL(OUTDCBLN)
 OPENCLOS DS    F                  OPEN/CLOSE parameter list

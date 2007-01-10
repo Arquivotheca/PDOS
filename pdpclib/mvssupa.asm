@@ -22,10 +22,10 @@
          AIF ('&SYSPARM' EQ 'IFOX00').NOMODE
 * BECAUSE OF THE "LOC=ABOVE", WE NEED TO FORCE 31
 * SEARCH FOR "LOC=RES" TO FIND OUT HOW TO FIX
-         AMODE 31
+         AMODE ANY
 * SEARCH FOR "LOC=RES" TO FIND OUT WHY THIS IS BEING
 * HELD BACK AT RMODE 24
-         RMODE 24
+         RMODE ANY
 .NOMODE  ANOP
          PRINT ON,GEN,DATA        See all
 * YREGS IS NOT AVAILABLE WITH IFOX
@@ -49,7 +49,7 @@ R14      EQU   14
 R15      EQU   15
          ENTRY @@AOPEN
 @@AOPEN  EQU   *
-         SAVE  (14,12),,@@AOPEN.V1R1M4  Save caller's regs.
+         SAVE  (14,12),,@@AOPEN.V1R1M5  Save caller's regs.
          LR    R12,R15
          USING @@AOPEN,R12
          LR    R11,R1
@@ -78,7 +78,7 @@ R15      EQU   15
          XC    ZDCBAREA(256),ZDCBAREA  Clear the GETMAINed area
          XC    ZDCBAREA+256(256),ZDCBAREA+256  Continue clear
          XC    ZDCBAREA+512(ZDCBLEN-512),ZDCBAREA+512  Finish clear
-         AIF ('&COMP' NE 'C370').GCCMODE
+         AIF   ('&COMP' NE 'C370').GCCMODE
          L     R4,0(,R4)          Load C/370 MODE.  0=input 1=output
 .GCCMODE ANOP
          LTR   R4,R4              See if OPEN input or output
@@ -772,14 +772,14 @@ RETURNLR DS    0H
 *
 WORKAREA DSECT ,
 SAVEAREA DS    18F
-OPENCLOS DS    F                  OPEN/CLOSE list
 WORKLEN  EQU   *-WORKAREA
 *
          DCBD  DSORG=PS,DEVD=DA   Map Data Control Block
          ORG   IHADCB             Overlay the DCB DSECT
-ZDCBAREA EQU   *
+ZDCBAREA EQU   0H
          DS    CL(INDCBLN)
          DS    CL(OUTDCBLN)
+OPENCLOS DS    F                  OPEN/CLOSE parameter list
          DS    0H
 EOFR24   DS    CL(EOFRLEN)
          IHADECB DSECT=NO         Data Event Control Block

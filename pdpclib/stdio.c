@@ -551,7 +551,7 @@ static void osfopen(void)
 #ifdef __MSDOS__
     int mode;
     int errind;
-
+     
     if ((modeType == 1) || (modeType == 4))
     {
         mode = 0;
@@ -595,19 +595,19 @@ static void osfopen(void)
 /* dw */
 /* This code needs changing for VM */
     p = strchr(fnm, ':');
-    if ((p != NULL)
+    if ((p != NULL) 
         && ((strncmp(fnm, "dd", 2) == 0)
             || (strncmp(fnm, "DD", 2) == 0)))
     {
         p++;
     }
     else
-/* if we are in here then there is no "dd:" on front of file */
+/* if we are in here then there is no "dd:" on front of file */ 
 /* if its CMS generate a ddname and issue a filedef for the file */
 #ifdef __CMS__
     {
         char newfnm[FILENAME_MAX];
-
+        
 /* create a DD from the handle number */
         strcpy(newfnm, fnm);
         p = newfnm;
@@ -658,7 +658,7 @@ static void osfopen(void)
         }
         p = myfile->pdsmem;
     }
-    myfile->hfile =
+    myfile->hfile = 
         __aopen(myfile->ddname, mode, &myfile->recfm, &myfile->lrecl, p);
 
     /* errors from MVS __aopen are negative numbers */
@@ -732,7 +732,7 @@ int fclose(FILE *stream)
         {
             size_t remain;
             size_t x;
-
+            
             remain = stream->endbuf - stream->upto;
             for (x = 0; x < remain; x++)
             {
@@ -2963,7 +2963,7 @@ FILE *freopen(const char *filename, const char *mode, FILE *stream)
     perm = stream->permfile;
     stream->permfile = 1;
     fclose(stream);
-
+    
     myfile = stream;
     fnm = filename;
     modus = mode;
@@ -3151,7 +3151,7 @@ static int vvscanf(const char *format, va_list arg, FILE *fp, const char *s)
             else if (*format == 'd')
             {
                 int neg = 0;
-
+                
                 iptr = va_arg(arg, int *);
                 if (ch == '-')
                 {
@@ -3339,7 +3339,7 @@ char *fgets(char *s, int n, FILE *stream)
             stream->quickText = 0;
         }
     }
-
+    
     if (stream->eofInd)
     {
         return (NULL);
@@ -3373,10 +3373,10 @@ char *fgets(char *s, int n, FILE *stream)
             break;
 
     }
-
+    
     /* Ok, the obvious optimizations have been done,
        so now we switch to the slow generic version */
-
+    
     n--;
     cnt = 0;
     while (cnt < n)
@@ -3621,7 +3621,7 @@ size_t fwrite(const void *ptr, size_t size, size_t nmemb, FILE *stream)
                         dptr[4] = ' ';
                         stream->bufStartR += 2;
                     }
-                    else
+                    else 
                     {
                         dptr[0] = (sz + 4) >> 8;
                         dptr[1] = (sz + 4) & 0xff;
@@ -3650,7 +3650,7 @@ size_t fwrite(const void *ptr, size_t size, size_t nmemb, FILE *stream)
                         stream->bufStartR += 2;
                     }
                     else
-                    {
+                    {  
                         dptr[0] = (sz + 4) >> 8;
                         dptr[1] = (sz + 4) & 0xff;
                         dptr[2] = 0;
@@ -3682,7 +3682,7 @@ size_t fwrite(const void *ptr, size_t size, size_t nmemb, FILE *stream)
                             dptr[4] = ' ';
                             stream->bufStartR += 2;
                         }
-                        else
+                        else 
                         {
                             dptr[0] = (sz + 4) >> 8;
                             dptr[1] = (sz + 4) & 0xff;
@@ -3752,7 +3752,7 @@ size_t fread(void *ptr, size_t size, size_t nmemb, FILE *stream)
     {
         return (0);
     }
-
+    
     /* If we have an unget character, then write it into
        the buffer in advance */
     if (stream->ungetCh != -1)
@@ -3788,15 +3788,15 @@ size_t fread(void *ptr, size_t size, size_t nmemb, FILE *stream)
                     stream->eofInd = 1;
                     break;
                 }
-
+                
                 eptr = dptr + stream->lrecl - 1;
                 while ((*eptr == ' ') && (eptr >= dptr))
                 {
                     eptr--;
                 }
-
+    
                 read = eptr + 1 - dptr;
-
+                
                 if ((totalread + read) >= bytes)
                 {
                     extra = (totalread + read) - bytes;
@@ -3805,7 +3805,7 @@ size_t fread(void *ptr, size_t size, size_t nmemb, FILE *stream)
                     stream->endbuf = stream->fbuf + extra;
                     *stream->endbuf++ = '\n';
                 }
-
+                
                 memcpy((char *)ptr + totalread, dptr, read);
                 totalread += read;
                 stream->bufStartR += read;
@@ -3843,9 +3843,9 @@ size_t fread(void *ptr, size_t size, size_t nmemb, FILE *stream)
                     stream->eofInd = 1;
                     break;
                 }
-
+                
                 read = stream->lrecl;
-
+                
                 if ((totalread + read) > bytes)
                 {
                     extra = (totalread + read) - bytes;
@@ -3853,7 +3853,7 @@ size_t fread(void *ptr, size_t size, size_t nmemb, FILE *stream)
                     memcpy(stream->fbuf, dptr + read, extra);
                     stream->endbuf = stream->fbuf + extra;
                 }
-
+                
                 memcpy((char *)ptr + totalread, dptr, read);
                 totalread += read;
                 stream->bufStartR += read;
@@ -3885,11 +3885,11 @@ size_t fread(void *ptr, size_t size, size_t nmemb, FILE *stream)
                     stream->eofInd = 1;
                     break;
                 }
-
+                
                 read = (dptr[0] << 8) | dptr[1];
                 read -= 4;
                 dptr += 4;
-
+                
                 if ((totalread + read) >= bytes)
                 {
                     extra = (totalread + read) - bytes;
@@ -3898,7 +3898,7 @@ size_t fread(void *ptr, size_t size, size_t nmemb, FILE *stream)
                     stream->endbuf = stream->fbuf + extra;
                     *stream->endbuf++ = '\n';
                 }
-
+                
                 memcpy((char *)ptr + totalread, dptr, read);
                 totalread += read;
                 stream->bufStartR += read;
@@ -3936,9 +3936,9 @@ size_t fread(void *ptr, size_t size, size_t nmemb, FILE *stream)
                     stream->eofInd = 1;
                     break;
                 }
-
+                
                 read = (dptr[0] << 8) | dptr[1];
-
+                
                 if ((totalread + read) > bytes)
                 {
                     extra = (totalread + read) - bytes;
@@ -3946,7 +3946,7 @@ size_t fread(void *ptr, size_t size, size_t nmemb, FILE *stream)
                     memcpy(stream->fbuf, dptr + read, extra);
                     stream->endbuf = stream->fbuf + extra;
                 }
-
+                
                 memcpy((char *)ptr + totalread, dptr, read);
                 totalread += read;
                 stream->bufStartR += read;
@@ -3962,7 +3962,7 @@ size_t fread(void *ptr, size_t size, size_t nmemb, FILE *stream)
 
 #endif
 
-/*
+/* 
    Following code issues a FILEDEF for CMS
 */
 
@@ -3977,58 +3977,74 @@ static void filedef(char *fdddname, char *fnm, int mymode)
     char *ftype;
     char *fmode;
     char *p;
+    int console;
 
 /*
     first parse the file name
 */
+    console = 0;
+    if( fnm[0] == '*') console = 1;
     while ( p = strchr(fnm, '.') ) *p=' '; /*  replace all . with blank */
     fname =  strtok(fnm, " ");
     ftype =  strtok(NULL, " ");
     if (ftype == NULL) ftype = "TYPE";
-    fmode =  strtok(NULL, " ");
+    fmode =  strtok(NULL, " ");  
 
 /*
  Now build the SVC 202 string
 */
     memcpy ( &s202parm[0] , "FILEDEF ", 8);
     memcpy ( &s202parm[8] , fdddname, 8);
-    memcpy ( &s202parm[16] , "DISK    ", 8);
-/*
-  Clear PARMS area
-*/
-    memcpy ( &s202parm[24] , "        " , 8);
-    memcpy ( &s202parm[32] , "        " , 8);
-    if (mymode)
+    if(console)
     {
-        memcpy ( &s202parm[40] , "A1      " , 8);
+        memcpy ( &s202parm[16] , "TERMINAL", 8);
+        memcpy ( &s202parm[24] , "(       " , 8 );
+        memcpy ( &s202parm[32] , "RECFM   " , 8 );
+        memcpy ( &s202parm[40] , "V       " , 8 );
+        memcpy ( &s202parm[48] , "LRECL   " , 8 );
+        memcpy ( &s202parm[56] , "80      " , 8 );
+        s202parm[64]=s202parm[65]=s202parm[66]=s202parm[67]=
+            s202parm[68]=s202parm[69]=s202parm[70]=s202parm[71]=0xff;
     }
     else
     {
-        memcpy ( &s202parm[40] , "*       " , 8);
-    }
-
-    memcpy ( &s202parm[24] , fname ,
-             ( strlen(fname) > 8 ) ? 8 : strlen(fname)  );
-    memcpy ( &s202parm[32] , ftype ,
-             ( strlen(ftype) >8 ) ? 8 : strlen(ftype) );
+        memcpy ( &s202parm[16] , "DISK    ", 8);
+/* 
+  Clear PARMS area
+*/
+        memcpy ( &s202parm[24] , "        " , 8);
+        memcpy ( &s202parm[32] , "        " , 8);
+        if (mymode)
+        {
+            memcpy ( &s202parm[40] , "A1      " , 8);
+        }
+        else
+        {
+            memcpy ( &s202parm[40] , "*       " , 8);
+        }
+    
+        memcpy ( &s202parm[24] , fname , 
+                 ( strlen(fname) > 8 ) ? 8 : strlen(fname)  );
+        memcpy ( &s202parm[32] , ftype , 
+                 ( strlen(ftype) >8 ) ? 8 : strlen(ftype) );
 /*  memcpy ( &s202parm[40] , fmode , strlen(fmode) ); */
 
-   if ( mymode )
-   {
-        memcpy ( &s202parm[48] , "(       " , 8 );
-        memcpy ( &s202parm[56] , "RECFM   " , 8 );
-        memcpy ( &s202parm[64] , "V       " , 8 );
-        memcpy ( &s202parm[72] , "LRECL   " , 8 );
-        memcpy ( &s202parm[80] , "2000    " , 8 );
-        s202parm[88]=s202parm[89]=s202parm[90]=s202parm[91]=
-            s202parm[92]=s202parm[93]=s202parm[94]=s202parm[95]=0xff;
-   }
-   else
-   {
-        s202parm[48]=s202parm[49]=s202parm[50]=s202parm[51]=
-            s202parm[52]=s202parm[53]=s202parm[54]=s202parm[55]=0xff;
-   }
-
+       if ( mymode ) 
+       {
+            memcpy ( &s202parm[48] , "(       " , 8 );
+            memcpy ( &s202parm[56] , "RECFM   " , 8 );
+            memcpy ( &s202parm[64] , "V       " , 8 );
+            memcpy ( &s202parm[72] , "LRECL   " , 8 );
+            memcpy ( &s202parm[80] , "2000    " , 8 );
+            s202parm[88]=s202parm[89]=s202parm[90]=s202parm[91]=
+                s202parm[92]=s202parm[93]=s202parm[94]=s202parm[95]=0xff;
+       }
+       else
+       {
+            s202parm[48]=s202parm[49]=s202parm[50]=s202parm[51]=
+                s202parm[52]=s202parm[53]=s202parm[54]=s202parm[55]=0xff;
+       }
+   } 
    __SVC202 ( s202parm, &code, &parm );
 }
 
@@ -4038,7 +4054,7 @@ static char *int_strtok(char *s1, const char *s2)
     char *p;
     size_t len;
     size_t remain;
-
+    
     if (s1 != NULL) old = s1;
     if (old == NULL) return (NULL);
     p = old;
@@ -4063,16 +4079,16 @@ static char *int_strtok(char *s1, const char *s2)
 
  His erstwhile tutors are probably turning in their graves.
 
- It is however placed in the Public Domain so that any one
+ It is however placed in the Public Domain so that any one 
  who wishes to improve is free to do so
 
-*/
+*/ 
 
 static void dblcvt(double num, char cnvtype, size_t nwidth,
             size_t nprecision, char *result)
 {
     double b;
-    int i,exp,pdigits,format,npad;
+    int i,exp,pdigits,format;
     char sign, work[45];
 
     /* save original data & set sign */
@@ -4131,9 +4147,9 @@ static void dblcvt(double num, char cnvtype, size_t nwidth,
         case 'F':
             if ( exp >= 0 ) format = 1; else format = -1;
             break;
-        default:
-            /* Style e is used if the exponent from its
-               conversion is less than -4 or greater than
+        default: 
+            /* Style e is used if the exponent from its 
+               conversion is less than -4 or greater than 
                or equal to the precision.
             */
             if ( exp >= 0 )
@@ -4168,7 +4184,7 @@ static void dblcvt(double num, char cnvtype, size_t nwidth,
     if (format==-1)
     {
         /*
-             Number < 1.0 so we need to print the "0."
+             Number < 1.0 so we need to print the "0." 
              and the leading zeros...
         */
         result[0]=sign;
@@ -4220,16 +4236,10 @@ static void dblcvt(double num, char cnvtype, size_t nwidth,
             }
             b = b - i;
             b = b * 10.0;
-            /* the following test needs to be adjusted to
+            /* the following test needs to be adjusted to 
                allow for numeric fuzz */
             if ( ( (nprecision-pdigits-1) > exp) && (b < 0.1E-15 ) )
-            {
-                while (pdigits >= 0){
-                        work[0] = '0';
-                        work[1] = 0x00;
-                        strcat(result,work);
-                        pdigits --;
-                }
+            { 
                 break;
             }
             i = b;
@@ -4250,7 +4260,7 @@ static void dblcvt(double num, char cnvtype, size_t nwidth,
         work[1] = 0x00;
         strcat(result,work);
         strcat(result,".");
-
+ 
         pdigits = nprecision;
 
         while (pdigits-- > 0)
@@ -4275,23 +4285,13 @@ static void dblcvt(double num, char cnvtype, size_t nwidth,
         else
         {
             work[1]= '+';
-        }
+        }      
         work[2] = (char)('0' + (exp/10) % 10);
-        work[3] = (char)('0' + exp % 10);
+        work[3] = (char)('0' + exp % 10);     
         work[4] = 0x00;
         strcat(result, work);
     }
-/* now need to pad with spaces if too short */
-    npad = nwidth - strlen(result);
-    if(npad > 0){
-        strcpy(work,result);
-        result[0]='\0';
-        while(npad--){
-            strcat(result," ");
-        }
-        strcat(result,work);
-    }
-    /* printf(" Final Answer = <%s> fprintf goves=%g\n",
+    /* printf(" Final Answer = <%s> fprintf goves=%g\n", 
                 result,num); */
     return;
 }

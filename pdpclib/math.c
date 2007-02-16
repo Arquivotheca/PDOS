@@ -150,7 +150,7 @@ double acos(double x)
 
 double asin (double y)
 {
-    int i,scale;
+    int i;
     double term,answer,work,x,powx,coef;
 
     x = y;
@@ -234,8 +234,8 @@ double asin (double y)
 
 double atan (double x)
 {
-    int i,scale;
-    double term,answer,work,powx,coef;
+    int i;
+    double term,answer,work,powx;
 
 /*
   if arg is -ve then we want "-atan(-x)"
@@ -446,7 +446,6 @@ double sinh(double x)
 
 double tanh(double x)
 {
-    double y;
     double dexp2;
 
     dexp2 = exp( -2.0 * x);
@@ -640,7 +639,6 @@ double frexp(double x, int *exp)
   split float into fraction and mantissa
   note this is not so easy for IBM as it uses HEX float
 */
-    double xf;
     union dblhex
     {
         double d;
@@ -672,7 +670,6 @@ double ldexp(double x, int exp)
 /*
   note this is not so easy for IBM as it uses HEX float
 */
-    double xf;
     int bin_exp,hex_exp,adj_exp;
     union dblhex
     {

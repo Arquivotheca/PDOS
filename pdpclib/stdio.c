@@ -4294,5 +4294,17 @@ static void dblcvt(double num, char cnvtype, size_t nwidth,
     }
     /* printf(" Final Answer = <%s> fprintf goves=%g\n",
                 result,num); */
+    /*
+     do we need to pad
+    */
+    if(result[0] == ' ')strcpy(work,result+1); else strcpy(work,result);
+    pdigits=nwidth-strlen(work);
+    result[0]= 0x00;
+    while(pdigits>0)
+    {
+        strcat(result," ");
+        pdigits--;
+    }
+    strcat(result,work);
     return;
 }

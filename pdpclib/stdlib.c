@@ -423,7 +423,7 @@ double strtod(const char *nptr, char **endptr)
     double xf = 0.0;
     double xd = 1.0;
 
-    while( isspace( (int)*nptr ) ) ++nptr;
+    while( isspace( (unsigned char)*nptr ) ) ++nptr;
     if(*nptr == '-')
     {
         xs = -1;

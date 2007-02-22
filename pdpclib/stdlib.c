@@ -79,7 +79,7 @@ void *malloc(size_t size)
 #endif
 #ifdef __WIN32__
     void *p;
-    
+
     p = GlobalAlloc(0, size + sizeof(size_t));
     if (p != NULL)
     {
@@ -108,7 +108,7 @@ void *malloc(size_t size)
         if (ptr == NULL)
         {
             void *ptr2;
-            
+
             ptr2 = __getm(REQ_CHUNK);
             if (ptr2 == NULL)
             {
@@ -210,7 +210,7 @@ void free(void *ptr)
     if (ptr != NULL)
     {
         size_t size;
-        
+
         size = *((size_t *)ptr - 1);
         if (size > MAX_CHUNK)
         {
@@ -280,9 +280,9 @@ void exit(int status)
 static void memswp(char *i, char *j, size_t size)
 {
      char tmp;
-     
+
      while (size-- > 0)
-     { 
+     {
          tmp = *i;
          *i++ = *j;
          *j++ = tmp;
@@ -323,12 +323,12 @@ void qsort(void *base,
             and last element so that eventually first element is the median
             of the three - avoiding pathological pivots.
             */
-            memswp( ( ( ( (size_t)( limit - base_ ) ) / size ) / 2 ) 
+            memswp( ( ( ( (size_t)( limit - base_ ) ) / size ) / 2 )
                     * size + base_, base_, size );
             if ( compar( i, j ) > 0 ) memswp( i, j, size );
             if ( compar( base_, j ) > 0 ) memswp( base_, j, size );
             if ( compar( i, base_ ) > 0 ) memswp( i, base_, size );
-            /* Now we have the median for pivot element, entering main 
+            /* Now we have the median for pivot element, entering main
                Quicksort. */
             for ( ;; )
             {
@@ -422,15 +422,18 @@ double strtod(const char *nptr, char **endptr)
     double es = 1.0;
     double xf = 0.0;
     double xd = 1.0;
-    int dp = 0;
 
-
- /* while(isspace(*nptr))++nptr; */
+    while( isspace( (int)*nptr ) ) ++nptr;
     if(*nptr == '-')
     {
         xs = -1;
         nptr++;
     }
+    else if(*nptr == '+')
+    {
+        nptr++;
+    }
+
 
     while (1)
     {
@@ -447,7 +450,6 @@ double strtod(const char *nptr, char **endptr)
     }
     if (*nptr == '.')
     {
-        dp = 1;
         nptr++;
         while (1)
         {
@@ -472,7 +474,6 @@ double strtod(const char *nptr, char **endptr)
             es = -1;
             nptr++;
         }
-        dp = 0;
         xd = 1;
         xf = 0;
         while (1)
@@ -804,8 +805,8 @@ int system(const char *string)
     BOOL rc;
     PROCESS_INFORMATION pi;
     STARTUPINFO si;
-    DWORD ExitCode;    
-    
+    DWORD ExitCode;
+
     memset(&si, 0, sizeof si);
     si.cb = sizeof si;
     memset(&pi, 0, sizeof pi);

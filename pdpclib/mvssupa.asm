@@ -245,10 +245,17 @@ SETRECV  DS    0H
          LTR   R9,R9              See if a no member name
          BNZ   SETRECV2           Not a PDS so set RECFM by DCB value
          CLI   JFCDSRG1,JFCORGPO  See if DSORG=PO
-         BO    SETRECF            Is PDS, no member, read PDS.Dir fixed
+         BO    PDSDIR             Is PDS, no member, read PDS.Dir fixed
 SETRECV2 DS    0H
          LA    R1,1               Pass RECFM V to caller
          B     SETRECFM           Go to set RECFM=V
+* Do not allow a PDS directory to be written to.
+* Not exactly sure what to do to clean up nicely, so just abend
+* if attempt is made to do that.
+PDSDIR   DS    0H
+         LTR   R4,R4
+         BZ    SETRECF
+         DC    H'0'               Abend if writing to PDS Directory
 SETRECF  DS    0H
          LA    R1,0               Pass RECFM F to caller
 *        B     SETRECFM           Go to set RECFM=F

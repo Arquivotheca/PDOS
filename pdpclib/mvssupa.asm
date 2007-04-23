@@ -223,10 +223,20 @@ WRITING  DS    0H
          OPEN  ((R2),OUTPUT),MF=(E,OPENCLOS),TYPE=J
          BO    WOPENEND           Go to move DCB info
 WNOMEM   DS    0H
-         TM    DS1DSORG,DS1DSGPO  See if DSORG=PO
-         BZ    WNOMEM2            Is not PDS, go OPEN
          TM    JFCBIND1,JFCPDS    See if a member name in JCL
          BO    WNOMEM2            Is member name, go to continue OPEN
+         MVC   CAMLST,CAMDUM      Copy CAMLST template to work area
+         LA    R1,JFCB            Load address of output data set name
+         ST    R1,CAMLST+4        Store data set name address in CAMLST
+         LA    R1,JFCBVOLS        Load addr. of output data set volser
+         ST    R1,CAMLST+8        Store data set name volser in CAMLST
+         LA    R1,DSCB+44         Load address of where to put DSCB
+         ST    R1,CAMLST+12       Store CAMLST output loc. in CAMLST
+         OBTAIN CAMLST            Read the VTOC record
+* CAMLST CAMLST SEARCH,DSNAME,VOLSER,DSCB+44
+* See if DSORG=PO but no member so OPEN output would destroy directory
+         TM    DS1DSORG,DS1DSGPO  See if DSORG=PO
+         BZ    WNOMEM2            Is not PDS, go OPEN
          WTO   'MVSSUPA - No member name for output PDS',ROUTCDE=11
          WTO   'MVSSUPA - Refuses to write over PDS directory',        C
                ROUTCDE=11

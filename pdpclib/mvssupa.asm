@@ -1,6 +1,34 @@
+*
+* Not implemented:
+* >3. dynamic file allocation added (I will need to
+* >change the C code as well for this one, and agree
+* >on interface).
+*
+* >4. VBS or whatever limitations lifted.
+* >Those are the priority order as well.
+*
+*
+*  OPEN input failed return code is: -37
+*  OPEN output failed return code is: -39
+*
+* FIND input member return codes are:
+* Original, before the return and reason codes had
+* negative translations added refer to copyrighted:
+* DFSMS Macro Instructions for Data Sets
+* RC = 0 Member was found.
+* RC = -1024 Member not found.
+* RC = -1028 RACF allows PDSE EXECUTE, not PDSE READ.
+* RC = -1032 PDSE share not available.
+* RC = -1036 PDSE is OPENed output to a different member.
+* RC = -2048 Directory I/O error.
+* RC = -2052 Out of virtual storage.
+* RC = -2056 Invalid DEB or DEB not on TCB or TCBs DEB chain.
+* RC = -2060 PDSE I/O error flushing system buffers.
+* RC = -2064 Invalid FIND, no DCB address.
+*
 * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
 *
-*  This program written by PAUL EDWARDS.
+*  This program written by Paul Edwards.
 *  Released to the public domain
 *
 *  Extensively modified by others
@@ -10,8 +38,7 @@
 *  MVSSUPA - Support routines for PDPCLIB under MVS
 *
 *  It is currently coded for GCC, but C/370 functionality is
-*  still there, it's just commented out. I don't know how to
-*  do conditional compilation of that.
+*  still there, it's just being tested after any change.
 *
          LCLC &COMP               Declare compiler switch
 &COMP    SETC 'GCC'               Indicate that this is for GCC
@@ -19,14 +46,6 @@
 *
 * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
          CSECT ,
-         AIF ('&SYSPARM' EQ 'IFOX00').NOMODE
-* BECAUSE OF THE "LOC=ABOVE", WE NEED TO FORCE 31
-* SEARCH FOR "LOC=RES" TO FIND OUT HOW TO FIX
-         AMODE ANY
-* SEARCH FOR "LOC=RES" TO FIND OUT WHY THIS IS BEING
-* HELD BACK AT RMODE 24
-         RMODE ANY
-.NOMODE  ANOP
          PRINT ON,GEN,DATA        See all
 * YREGS IS NOT AVAILABLE WITH IFOX
 *         YREGS
@@ -49,7 +68,7 @@ R14      EQU   14
 R15      EQU   15
          ENTRY @@AOPEN
 @@AOPEN  EQU   *
-         SAVE  (14,12),,@@AOPEN.V1R1M5  Save caller's regs.
+         SAVE  (14,12),,@@AOPEN.V1R1M6  Save caller's regs.
          LR    R12,R15
          USING @@AOPEN,R12
          LR    R11,R1
@@ -65,14 +84,28 @@ R15      EQU   15
          L     R5,08(,R1)         R5 POINTS TO RECFM
          L     R8,12(,R1)         R8 POINTS TO LRECL
          L     R9,16(,R1)         R9 POINTS TO MEMBER NAME (OF PDS)
-         LA    R9,00(,R9)         Strip off high-order bit
-         AIF   ('&SYSPARM' NE 'IFOX00').BELOW
-* CAN'T USE "BELOW" ON MVS 3.8
-         GETMAIN RU,LV=ZDCBLEN,SP=SUBPOOL
-         AGO   .CHKBLWE
-.BELOW   ANOP
+         LA    R9,00(,R9)         Strip off high-order bit or byte
+*
+* Because of the AMODE, RMODE, and  LOC=BELOW, we need to know
+* whether assembling for MVS 3.8j or a 31 bit or higher MVS.
+* The MACLIB is different for the systems so MACRO WTO will
+* be used to differentiate between MACLIBs.
+         GBLA  &IHBLEN            Declare WTO Global length
+DUMMYWTO WTO   ' '                Generate WTO to see if Global set
+         ORG   DUMMYWTO           Overlay dummy WTO
+         LCLA  &MVS38J            Declare Local for MACLIB level
+&MVS38J  SETA  &IHBLEN            Zero if MVS 3.8j MACLIBs
+         AIF   (&MVS38J NE 0).MVS3164  If not MVS 3.8j, then 31/64 bit
+         GETMAIN RU,LV=ZDCBLEN,SP=SUBPOOL  No LOC= for MVS 3.8j GETMAIN
+         AGO   .GETOEND
+.MVS3164 ANOP  ,                  31 or 64 bit MVS
          GETMAIN RU,LV=ZDCBLEN,SP=SUBPOOL,LOC=BELOW
-.CHKBLWE ANOP
+         AMODE ANY                Functions called from either AMODE
+         RMODE ANY                Program resides above or below line
+* The combination AMODE ANY and RMODE ANY does not really make sense.
+* If resident above the line, how can a call from AMODE 24 work?
+.GETOEND ANOP  ,
+*
          LR    R2,R1              Addr.of storage obtained to its base
          USING IHADCB,R2          Give assembler DCB area base register
          XC    ZDCBAREA(256),ZDCBAREA  Clear the GETMAINed area
@@ -124,9 +157,10 @@ NEXTMVC  DS    0H
          MVI   DCBRECFM,DCBRECF   Set DCB RECFM to RECFM=F
 OPENIN   DS    0H
 *         OPEN  ((R2),INPUT),MF=(E,OPENCLOS31),MODE=31
-* Can't use MODE=31 on MVS 3.8
+* Can't use MODE=31 on MVS 3.8 and don't want it on zOS
          OPEN  ((R2),INPUT),MF=(E,OPENCLOS)
-* Assume that OPEN worked?
+         TM    DCBOFLGS,DCBOFOPN  Did OPEN work?
+         BZ    BADOPIN            OPEN failed, go return error code -37
          MVC   LRECL+2(2),DCBLRECL  Copy LRECL to a fullword
          MVC   BLKSIZE+2(2),DCBBLKSI  Copy BLKSIZE to a fullword
          LTR   R9,R9              See if an address for the member name
@@ -140,8 +174,17 @@ OPENIN   DS    0H
          OR    R15,R0             Combine return code and reason code
          LR    R1,R2              Save DCB area address for FREEMAIN
          LCR   R2,R15             Save negative return and reason code
+FREEDCB  DS    0H
          FREEMAIN RU,LV=ZDCBLEN,A=(1),SP=SUBPOOL  Free DCB area
          B     RETURNOP           Go return to caller with negative RC
+BADOPIN  DS    0H
+         LA    R2,37              Load OPEN input error return code
+         LCR   R2,R2              Load OPEN input error return code
+         B     FREEDCB            Go free the DCB area
+BADOPOUT DS    0H
+         LA    R2,39              Load OPEN output error return code
+         LCR   R2,R15             Load OPEN output error return code
+         B     FREEDCB            Go free the DCB area
 GETBUFF  DS    0H
          L     R6,BLKSIZE         Load the input blocksize
          LA    R6,4(,R6)          Add 4 in case RECFM=U buffer
@@ -161,39 +204,6 @@ GETVBS   DS    0H
          ST    R1,VBSEND          Save address after VBS rec.build area
 *        XC    VBSCURR,VBSCURR    VBS current record location is zero
          B     DONEOPEN           Go return to caller with DCB info
-* Original, before the return and reason codes had
-* negative translations added:
-* z/OS V1R3.0 DFSMS Macro Instructions for Data Sets
-* SC26-7408-01
-* Second Edition, March 2002
-* This edition replaces SC26-7408-00.
-* (c) Copyright International Business Machines
-*  Corporation 1976, 2002. All rights reserved.
-* US Government Users Restricted Rights - Use,
-*  duplication or disclosure restricted by GSA ADP
-*  Schedule Contract with IBM Corp.
-* FIND
-* Return Code (15) - Reason Code (0) - Meaning
-* 00 (X'00') 00 (X'00') Successful execution.
-* -1024 - 04 (X'04') 00 (X'00') Name not found.
-* -1028 - 04 (X'04') 04 (X'04') The caller has only
-*  RACF execute authority to the PDSE.
-* -1032 - 04 (X'04') 08 (X'08') The PDSE member's
-*  share options do not allow you to access it.
-* -1036 - 04 (X'04') 12 (X'0C') The PDSE is open
-*  for output and the FIND macro was issued to
-*  point to a member other than the one currently
-*  processing.
-* -2048 - 08 (X'08') 00 (X'00') Permanent I/O error during
-*  directory search.
-* -2052 - 08 (X'08') 04 (X'04') Insufficient virtual
-*  storage available.
-* -2056 - 08 (X'08') 08 (X'08') Invalid DEB, or DEB is not owned by
-*  a TCB in the current family of TCBs.
-* -2060 - 08 (X'08') 12 (X'0C') An I/O error occurred while
-*  flushing system buffers containing member data
-*  (PDSE only).
-* -2064 - 08 (X'08') 16 (X'10') No DCB address was input.
 *
 WRITING  DS    0H
          MVC   ZDCBAREA(OUTDCBLN),OUTDCB
@@ -211,15 +221,23 @@ WRITING  DS    0H
          MVC   JFCBELNM,0(R9)
          OI    JFCBIND1,JFCPDS
          OPEN  ((R2),OUTPUT),MF=(E,OPENCLOS),TYPE=J
-* Assume that OPEN worked?
-         B     WOPENEND           Go to move DCB info
+         BO    WOPENEND           Go to move DCB info
 WNOMEM   DS    0H
-*         OPEN  ((R2),OUTPUT),MF=(E,WOPENMB),MODE=31,TYPE=J
-* Can't use MODE=31 on MVS 3.8or with TYPE=J
-* If JFCB showed DSORG=PO but no JFCB member name, should abend
+         TM    DS1DSORG,DS1DSGPO  See if DSORG=PO
+         BZ    WNOMEM2            Is not PDS, go OPEN
+         TM    JFCBIND1,JFCPDS    See if a member name in JCL
+         BO    WNOMEM2            Is member name, go to continue OPEN
+         WTO   'MVSSUPA - No member name for output PDS',ROUTCDE=11
+         WTO   'MVSSUPA - Refuses to write over PDS directory',        C
+               ROUTCDE=11
+         ABEND 123                Abend without a dump
+         DC    H'0'               Insure that abend took
+WNOMEM2  DS    0H
+* Can't use MODE=31 on MVS 3.8 or with TYPE=J
          OPEN  ((R2),OUTPUT),MF=(E,OPENCLOS)
-* Assume that OPEN worked?
 WOPENEND DS    0H
+         TM    DCBOFLGS,DCBOFOPN  Did OPEN work?
+         BZ    BADOPOUT           OPEN failed, go return error code -39
          MVC   LRECL+2(2),DCBLRECL  Copy LRECL to a fullword
          MVC   BLKSIZE+2(2),DCBBLKSI  Copy BLKSIZE to a fullword
 DONEOPEN DS    0H
@@ -245,17 +263,10 @@ SETRECV  DS    0H
          LTR   R9,R9              See if a no member name
          BNZ   SETRECV2           Not a PDS so set RECFM by DCB value
          CLI   JFCDSRG1,JFCORGPO  See if DSORG=PO
-         BO    PDSDIR             Is PDS, no member, read PDS.Dir fixed
+         BO    SETRECF            Is PDS, no member, read PDS.Dir fixed
 SETRECV2 DS    0H
          LA    R1,1               Pass RECFM V to caller
          B     SETRECFM           Go to set RECFM=V
-* Do not allow a PDS directory to be written to.
-* Not exactly sure what to do to clean up nicely, so just abend
-* if attempt is made to do that.
-PDSDIR   DS    0H
-         LTR   R4,R4
-         BZ    SETRECF
-         DC    H'0'               Abend if writing to PDS Directory
 SETRECF  DS    0H
          LA    R1,0               Pass RECFM F to caller
 *        B     SETRECFM           Go to set RECFM=F
@@ -612,21 +623,8 @@ NOPOOL   DS    0H
 .GETMEND ANOP
          LR    R4,R3
          LA    R3,16(,R3)
-
 *
-* THIS SHOULD NOT BE NECESSARY. THE DEFAULT OF LOC=RES
-* SHOULD BE SUFFICIENT. HOWEVER, CURRENTLY THERE IS AN
-* UNKNOWN PROBLEM, PROBABLY WITH RDJFCB, WHICH PREVENTS
-* EXECUTABLES FROM RESIDING ABOVE THE LINE, HENCE THIS
-* HACK TO ALLOCATE MOST STORAGE ABOVE THE LINE
-*
-         AIF   ('&SYSPARM' NE 'IFOX00').ANYCHKY
-* CAN'T USE "ANY" ON MVS 3.8
          GETMAIN RU,LV=(R3),SP=SUBPOOL
-         AGO   .ANYCHKE
-.ANYCHKY ANOP
-         GETMAIN RU,LV=(R3),SP=SUBPOOL,LOC=ANY
-.ANYCHKE ANOP
 *
 * WE STORE THE AMOUNT WE REQUESTED FROM MVS INTO THIS ADDRESS
          ST    R3,0(R1)
@@ -715,13 +713,7 @@ RETURNGC DS    0H
          LR    R5,R3               * AND R5
          LR    R9,R1               * R9 NOW CONTAINS ADDRESS OF ENV
 * GET A SAVE AREA
-         AIF   ('&SYSPARM' NE 'IFOX00').ANYY
-* CAN'T USE "ANY" ON MVS 3.8
          GETMAIN RU,LV=(R3),SP=SUBPOOL
-         AGO   .ANYE
-.ANYY    ANOP
-         GETMAIN RU,LV=(R3),SP=SUBPOOL,LOC=ANY
-.ANYE    ANOP
          ST    R1,0(R9)            * SAVE IT IN FIRST WORK OF ENV
          ST    R5,4(R9)            * SAVE LENGTH IN SECOND WORD OF ENV
          ST    R2,8(R9)            * NOTE WHERE WE GOT IT FROM
@@ -783,7 +775,7 @@ WORKLEN  EQU   *-WORKAREA
 *
          DCBD  DSORG=PS,DEVD=DA   Map Data Control Block
          ORG   IHADCB             Overlay the DCB DSECT
-ZDCBAREA EQU   *
+ZDCBAREA DS    0H
          DS    CL(INDCBLN)
          DS    CL(OUTDCBLN)
 OPENCLOS DS    F                  OPEN/CLOSE parameter list

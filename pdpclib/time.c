@@ -256,8 +256,8 @@ struct tm *localtime(const time_t *timer)
     tms.tm_year = yr - 1900;
     tms.tm_mon = mo - 1;
     tms.tm_mday = da;
-    tms.tm_yday = (int)(ymd_to_scalar(tms.tm_year + 1900, 1, 1)
-                  - ymd_to_scalar(tms.tm_year + 1900, mo, da));
+    tms.tm_yday = (int)(ymd_to_scalar(tms.tm_year + 1900, mo, da)
+                  - ymd_to_scalar(tms.tm_year + 1900, 1, 1));
     tms.tm_wday = dow(tms.tm_year + 1900, mo, da);
     tms.tm_isdst = -1;
     tms.tm_sec = (int)(secs % 60);

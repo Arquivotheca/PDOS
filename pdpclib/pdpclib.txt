@@ -257,11 +257,13 @@ HISTORY
 
 0.83  Whitespace change required to avoid assembly error.
 
-0.84  Al math functions have been implemented, meaning
+0.84  All math functions have been implemented, meaning
       every function has now been implemented, although
       some still have limitations. Also, Win32 support has been
       added so you can use PDPCLIB in combination with gcc to
-      create console mode applications.
+      create console mode applications. Also, MVS has been
+      significantly enhanced so that it can read PDS
+      concatenations.
       
 
 CREDITS

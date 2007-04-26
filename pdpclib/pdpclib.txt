@@ -51,15 +51,9 @@ The following environments have been used:
 Win32 for:
 gcc 2.91.57
 
-OS/2 for:
-EMX 0.9b
-Watcom C++ 10.0b
-IBM CSET++ 2.0
-Borland C++ 1.5
-
 DOS for:
-Borland C++ 3.1
-Watcom C++ 10.0b
+Turbo C++ 1.01
+Open Watcom 1.6
 
 MVS for:
 IBM C/370 v2r1m0
@@ -68,8 +62,14 @@ GCCMVS 3.2.3
 CMS for:
 GCCCMS 3.2.3
 
-PDOS for:
+OS/2 for:
 EMX 0.9b
+Watcom C++ 10.0b
+IBM CSET++ 2.0
+Borland C++ 1.5
+
+PDOS for:
+EMX 0.9d
 
 
 WHO WANTS IT?
@@ -116,6 +116,20 @@ then compiling your programs in the same way that the "pdptest" program
 is compiled.  Note that code that refers to __32BIT__ is for compiling
 programs using EMX 0.9d for DOS.
 
+For 16-bit DOS, the standard is to use the free C Turbo C++ 1.01
+(in order to get the C compiler) and the free Open Watcom 1.6
+(in order to get the assembler), so that you have a totally free
+16-bit DOS development system. Just type "compile" to use this
+combination.
+
+For 32-bit Windows, the standard is to use the gcc compiler.
+Use a decent "make" that doesn't need tabs and then go
+"make -f makefile.w32". Note that you will first need to copy
+the following ".a" files into the directory containing PDPCLIB:
+libkernel32.a
+libgcc.a
+It doesn't matter whether you use the Cygwin or MinGW files,
+so long as you are consistent.
 
 
 PERFORMANCE

@@ -263,7 +263,7 @@ HISTORY
       added so you can use PDPCLIB in combination with gcc to
       create console mode applications. Also, MVS has been
       significantly enhanced so that it can read PDS
-      concatenations.
+      concatenations. Also, MVS executables are now 31-bit.
       
 
 CREDITS

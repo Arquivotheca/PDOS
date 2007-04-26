@@ -1,12 +1,28 @@
+***********************************************************************
 *
-* Not implemented:
-* >3. dynamic file allocation added (I will need to
-* >change the C code as well for this one, and agree
-* >on interface).
+*  This program written by Paul Edwards.
+*  Released to the public domain
 *
-* >4. VBS or whatever limitations lifted.
-* >Those are the priority order as well.
+*  Extensively modified by others
 *
+***********************************************************************
+*
+*  MVSSUPA - Support routines for PDPCLIB under MVS
+*
+*  It is currently coded for GCC, but C/370 functionality is
+*  still there, it's just being tested after any change.
+*
+***********************************************************************
+*
+* Note that the VBS support may not be properly implemented.
+* Note that this code issues WTOs. It should be changed to just
+* set a return code an exit gracefully instead. I'm not talking
+* about that dummy WTO. But on the subject of that dummy WTO - it
+* should be made consistent with the rest of PDPCLIB which doesn't
+* use that to set the RMODE/AMODE. It should be consistent one way
+* or the other.
+*
+* Here are some of the errors reported:
 *
 *  OPEN input failed return code is: -37
 *  OPEN output failed return code is: -39
@@ -26,27 +42,14 @@
 * RC = -2060 PDSE I/O error flushing system buffers.
 * RC = -2064 Invalid FIND, no DCB address.
 *
-* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
-*
-*  This program written by Paul Edwards.
-*  Released to the public domain
-*
-*  Extensively modified by others
-*
-* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
-*
-*  MVSSUPA - Support routines for PDPCLIB under MVS
-*
-*  It is currently coded for GCC, but C/370 functionality is
-*  still there, it's just being tested after any change.
+***********************************************************************
 *
          LCLC &COMP               Declare compiler switch
 &COMP    SETC 'GCC'               Indicate that this is for GCC
 * &COMP    SETC 'C370'            Indicate that this is for C/370
 *
-* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
-         CSECT ,
-         PRINT ON,GEN,DATA        See all
+         CSECT
+         PRINT OFF
 * YREGS IS NOT AVAILABLE WITH IFOX
 *         YREGS
 SUBPOOL  EQU   0
@@ -68,7 +71,7 @@ R14      EQU   14
 R15      EQU   15
          ENTRY @@AOPEN
 @@AOPEN  EQU   *
-         SAVE  (14,12),,@@AOPEN.V1R1M6  Save caller's regs.
+         SAVE  (14,12),,@@AOPEN  Save caller's regs.
          LR    R12,R15
          USING @@AOPEN,R12
          LR    R11,R1
@@ -104,7 +107,12 @@ DUMMYWTO WTO   ' '                Generate WTO to see if Global set
          RMODE ANY                Program resides above or below line
 * The combination AMODE ANY and RMODE ANY does not really make sense.
 * If resident above the line, how can a call from AMODE 24 work?
-.GETOEND ANOP  ,
+* Well, the idea is that this code is flexible and can be linked in
+* to a caller who is AMODE 24 or AMODE 31, and the caller will
+* obviously need to set an RMODE appropriate to his AMODE. The point
+* is that this code imposes no restriction, so it should advertise
+* itself as such. I believe the IBM C NCALs are done the same way.
+.GETOEND ANOP
 *
          LR    R2,R1              Addr.of storage obtained to its base
          USING IHADCB,R2          Give assembler DCB area base register
@@ -156,8 +164,6 @@ NEXTMVC  DS    0H
          MVI   DCBLRECL,1         Set DCB LRECL to 256
          MVI   DCBRECFM,DCBRECF   Set DCB RECFM to RECFM=F
 OPENIN   DS    0H
-*         OPEN  ((R2),INPUT),MF=(E,OPENCLOS31),MODE=31
-* Can't use MODE=31 on MVS 3.8 and don't want it on zOS
          OPEN  ((R2),INPUT),MF=(E,OPENCLOS)
          TM    DCBOFLGS,DCBOFOPN  Did OPEN work?
          BZ    BADOPIN            OPEN failed, go return error code -37
@@ -243,7 +249,6 @@ WNOMEM   DS    0H
          ABEND 123                Abend without a dump
          DC    H'0'               Insure that abend took
 WNOMEM2  DS    0H
-* Can't use MODE=31 on MVS 3.8 or with TYPE=J
          OPEN  ((R2),OUTPUT),MF=(E,OPENCLOS)
 WOPENEND DS    0H
          TM    DCBOFLGS,DCBOFOPN  Did OPEN work?
@@ -296,17 +301,7 @@ ENDFILE  LA    R6,1               Indicate @@AREAD reached end-of-file
          BR    R14                Return to instruction after the GET
 EOFRLEN  EQU   *-ENDFILE
 *
-         LTORG ,
-* OPENMAC  OPEN  (,INPUT),MF=L,MODE=31
-* CAN'T USE MODE=31 ON MVS 3.8
-* OPENMAC  OPEN  (*-*),MF=L   ,TYPE=J-?????
-* OPENMLN  EQU   *-OPENMAC
-* WOPENMAC OPEN  (,OUTPUT),MF=L,MODE=31
-* CAN'T USE MODE=31 ON MVS 3.8
-* WOPENMAC OPEN  (*-*),MF=L
-* WOPENMLN EQU   *-WOPENMAC
-*INDCB    DCB   MACRF=GL,DSORG=PS,EODAD=ENDFILE,EXLST=JPTR? DCBE ?
-* LEAVE OUT EODAD AND EXLST, FILLED IN LATER
+         LTORG
 INDCB    DCB   MACRF=R,DSORG=PS   If member name, will be changed to PO
 INDCBLN  EQU   *-INDCB
 F32760   DC    F'32760'           Constant for compare
@@ -538,7 +533,7 @@ ABEND    DS    0H
                ROUTCDE=11         Send to programmer and listing
          ABEND 1234,DUMP          Abend U1234 and allow a dump
 *
-         LTORG ,                  In case someone adds literals
+         LTORG                    In case someone adds literals
 *
 H4       DC    H'4'               Constant for subtraction
 *
@@ -588,10 +583,7 @@ FREEBUFF DS    0H
          LA    R0,4(,R3)          Add 4 bytes for RECFM=U
          FREEMAIN RU,LV=(0),A=(1),SP=SUBPOOL  Free input buffer
 CLOSE    DS    0H
-*        MVC   CLOSEMB,CLOSEMAC
          MVI   OPENCLOS,X'80'     Initialize MODE=24 OPEN/CLOSE list
-*         CLOSE ((R2)),MF=(E,OPENCLOS31),MODE=31
-* CAN'T USE MODE=31 WITH MVS 3.8
          CLOSE ((R2)),MF=(E,OPENCLOS)
          TM    DCBMACR1,DCBMRRD   See if using MACRF=R, no dynamic buff
          BO    NOPOOL             Is MACRF=R, skip FREEPOOL
@@ -603,13 +595,7 @@ NOPOOL   DS    0H
          L     R13,SAVEAREA+4
          FREEMAIN RU,LV=WORKLEN,A=(1),SP=SUBPOOL
          RETURN (14,12),RC=0
-         LTORG ,
-* CLOSEMAC CLOSE (),MF=L,MODE=31
-* CAN'T USE MODE=31 WITH MVS 3.8
-* CLOSEMAC CLOSE (),MF=L
-* CLOSEMLN EQU   *-CLOSEMAC
-*
-*
+         LTORG
 *
 * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
 *
@@ -646,9 +632,7 @@ NOPOOL   DS    0H
 *
 RETURNGM DS    0H
          RETURN (14,12),RC=(15)
-         LTORG ,
-*
-*
+         LTORG
 *
 * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
 *
@@ -668,7 +652,7 @@ RETURNGM DS    0H
 *
 RETURNFM DS    0H
          RETURN (14,12),RC=(15)
-         LTORG ,
+         LTORG
 *
 *
 *
@@ -739,7 +723,7 @@ RETURNSR DS    0H
          RETURN (14,12),RC=(15)
          ENTRY   @@MANSTK
 @@MANSTK DS    2F
-         LTORG ,
+         LTORG
 *
 *
 *
@@ -774,12 +758,12 @@ RETURNSR DS    0H
 RETURNLR DS    0H
          SR    R15,R15            * CLEAR RETURN CODE
          RETURN (14,12),RC=(15)
-         LTORG ,
+         LTORG
 *
-         IEZIOB ,                 Input/Output Block
+         IEZIOB                   Input/Output Block
 *
 *
-WORKAREA DSECT ,
+WORKAREA DSECT
 SAVEAREA DS    18F
 WORKLEN  EQU   *-WORKAREA
 *
@@ -812,4 +796,4 @@ DSCBCCHH DS    CL5                CCHHR of DSCB returned by OBTAIN
 ZDCBLEN  EQU   *-ZDCBAREA
 *
 *
-         END   ,                  End of sub-routine
+         END                      End of sub-routine

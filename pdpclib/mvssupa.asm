@@ -21,6 +21,10 @@
 * should be made consistent with the rest of PDPCLIB which doesn't
 * use that to set the RMODE/AMODE. It should be consistent one way
 * or the other.
+* I think this:
+* XC    ZDCBAREA+512(ZDCBLEN-512)
+* etc looks very scary. Hardcoding the assumed length of the DCB
+* area. I'd like to see this replaced.
 *
 * Here are some of the errors reported:
 *

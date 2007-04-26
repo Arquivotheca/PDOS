@@ -122,14 +122,15 @@ For 16-bit DOS, the standard is to use the free C Turbo C++ 1.01
 16-bit DOS development system. Just type "compile" to use this
 combination.
 
-For 32-bit Windows, the standard is to use the gcc compiler.
-Use a decent "make" that doesn't need tabs and then go
-"make -f makefile.w32". Note that you will first need to copy
-the following ".a" files into the directory containing PDPCLIB:
+For 32-bit Windows (pdpclib-win32), the standard is to use 
+the gcc compiler.  Use a decent "make" that doesn't need tabs 
+and then go "make -f makefile.w32". Note that you will first 
+need to copy the following ".a" files into the directory 
+containing PDPCLIB:
 libkernel32.a
 libgcc.a
-It doesn't matter whether you use the Cygwin or MinGW files,
-so long as you are consistent.
+You should get these from a "mingw" directory to use mingw
+rather than cygwin.
 
 
 PERFORMANCE
@@ -256,8 +257,8 @@ HISTORY
 
 0.83  Whitespace change required to avoid assembly error.
 
-0.84  Almost all math functions have been implemented, meaning
-      nearly every function has now been implemented, although
+0.84  Al math functions have been implemented, meaning
+      every function has now been implemented, although
       some still have limitations. Also, Win32 support has been
       added so you can use PDPCLIB in combination with gcc to
       create console mode applications.

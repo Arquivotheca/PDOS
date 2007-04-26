@@ -88,7 +88,7 @@ on the use of their object code, saying that the resultant executable
 must have either their copyright notice on it, or yours, or some such
 rubbish.
 
-3. People who have EMX 0.9b, but would like to be able to modify the
+3. People who have EMX 0.9d, but would like to be able to modify the
 runtime library code without being bound by any of EMX's licensing
 restrictions on doing that.
 
@@ -104,7 +104,7 @@ to the best of my knowledge, on any platform.
 6. People who have ISO text-processing programs that want a significant
 speed improvement.
 
-7. Mainframe users who don't have any other choice.
+7. Mainframe users who don't have any other choice to use with GCC.
 
 
 USAGE

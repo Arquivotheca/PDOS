@@ -116,11 +116,11 @@ DUMMYWTO WTO   ' '                Generate WTO to see if Global set
 *
          LR    R2,R1              Addr.of storage obtained to its base
          USING IHADCB,R2          Give assembler DCB area base register
-         LR    R0,R2              Load DCB area address
-         LA    R1,ZDCBLEN         Load length of DCB area
+         LR    R0,R2              Load output DCB area address
+         LA    R1,ZDCBLEN         Load output length of DCB area
          LA    R10,0              No input location
-         LA    R11,0              No input length and pad of X'00'
-         MVCL  R0,R10             Clear DCB area
+         LA    R11,0              Pad of X'00' and no input length
+         MVCL  R0,R10             Clear DCB area to binary zeroes
          AIF   ('&COMP' NE 'C370').GCCMODE
          L     R4,0(,R4)          Load C/370 MODE.  0=input 1=output
 .GCCMODE ANOP
@@ -180,18 +180,18 @@ OPENIN   DS    0H
 * return to caller with a negative return code.
          SLL   R15,8              Shift return code for reason code
          OR    R15,R0             Combine return code and reason code
-         LR    R1,R2              Save DCB area address for FREEMAIN
-         LCR   R2,R15             Save negative return and reason code
+         LR    R3,R15             Number to generate return and reason
+         MVI   OPENCLOS,X'80'     Initialize MODE=24 OPEN/CLOSE list
+         CLOSE ((R2)),MF=(E,OPENCLOS)  Close, FREEPOOL not needed
 FREEDCB  DS    0H
-         FREEMAIN RU,LV=ZDCBLEN,A=(1),SP=SUBPOOL  Free DCB area
+         FREEMAIN RU,LV=ZDCBLEN,A=(2),SP=SUBPOOL  Free DCB area
+         LCR   R2,R3              Set return and reason code
          B     RETURNOP           Go return to caller with negative RC
 BADOPIN  DS    0H
-         LA    R2,37              Load OPEN input error return code
-         LCR   R2,R2              Load OPEN input error return code
+         LA    R3,37              Load OPEN input error return code
          B     FREEDCB            Go free the DCB area
 BADOPOUT DS    0H
-         LA    R2,39              Load OPEN output error return code
-         LCR   R2,R15             Load OPEN output error return code
+         LA    R3,39              Load OPEN output error return code
          B     FREEDCB            Go free the DCB area
 GETBUFF  DS    0H
          L     R6,BLKSIZE         Load the input blocksize

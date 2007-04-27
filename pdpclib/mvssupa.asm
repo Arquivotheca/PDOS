@@ -21,10 +21,6 @@
 * should be made consistent with the rest of PDPCLIB which doesn't
 * use that to set the RMODE/AMODE. It should be consistent one way
 * or the other.
-* I think this:
-* XC    ZDCBAREA+512(ZDCBLEN-512)
-* etc looks very scary. Hardcoding the assumed length of the DCB
-* area. I'd like to see this replaced.
 *
 * Here are some of the errors reported:
 *
@@ -120,9 +116,11 @@ DUMMYWTO WTO   ' '                Generate WTO to see if Global set
 *
          LR    R2,R1              Addr.of storage obtained to its base
          USING IHADCB,R2          Give assembler DCB area base register
-         XC    ZDCBAREA(256),ZDCBAREA  Clear the GETMAINed area
-         XC    ZDCBAREA+256(256),ZDCBAREA+256  Continue clear
-         XC    ZDCBAREA+512(ZDCBLEN-512),ZDCBAREA+512  Finish clear
+         LR    R0,R2              Load DCB area address
+         LA    R1,ZDCBLEN         Load length of DCB area
+         LA    R10,0              No input location
+         LA    R11,0              No input length and pad of X'00'
+         MVCL  R0,R10             Clear DCB area
          AIF   ('&COMP' NE 'C370').GCCMODE
          L     R4,0(,R4)          Load C/370 MODE.  0=input 1=output
 .GCCMODE ANOP

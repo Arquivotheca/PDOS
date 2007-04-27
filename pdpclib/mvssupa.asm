@@ -53,7 +53,7 @@
 * &COMP    SETC 'C370'            Indicate that this is for C/370
 *
          CSECT
-         PRINT OFF
+         PRINT NOGEN
 * YREGS IS NOT AVAILABLE WITH IFOX
 *         YREGS
 SUBPOOL  EQU   0
@@ -800,4 +800,4 @@ DSCBCCHH DS    CL5                CCHHR of DSCB returned by OBTAIN
 ZDCBLEN  EQU   *-ZDCBAREA
 *
 *
-         END                      End of sub-routine
+         END

@@ -105,13 +105,6 @@ DUMMYWTO WTO   ' '                Generate WTO to see if Global set
          GETMAIN RU,LV=ZDCBLEN,SP=SUBPOOL,LOC=BELOW
          AMODE ANY                Functions called from either AMODE
          RMODE ANY                Program resides above or below line
-* The combination AMODE ANY and RMODE ANY does not really make sense.
-* If resident above the line, how can a call from AMODE 24 work?
-* Well, the idea is that this code is flexible and can be linked in
-* to a caller who is AMODE 24 or AMODE 31, and the caller will
-* obviously need to set an RMODE appropriate to his AMODE. The point
-* is that this code imposes no restriction, so it should advertise
-* itself as such. I believe the IBM C NCALs are done the same way.
 .GETOEND ANOP
 *
          LR    R2,R1              Addr.of storage obtained to its base

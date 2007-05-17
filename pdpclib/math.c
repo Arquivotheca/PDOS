@@ -323,7 +323,7 @@ double cos(double x)
 */
 
     i = x/(2*pi);
-    x1 =  x - (i * pi);
+    x1 =  x - (i * (2.0 * pi));
 
     i=1;
     term=answer=1;
@@ -367,7 +367,7 @@ double sin(double x)
   scale so series converges pretty quickly
 */
     i = x/(2.0*pi);
-    x1 =  x - (i * pi);
+    x1 =  x - (i * (2.0 * pi));
 
 /*
  set up initial term

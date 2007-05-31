@@ -3112,6 +3112,7 @@ static int vvscanf(const char *format, va_list arg, FILE *fp, const char *s)
     int cnt = 0;
     char *cptr;
     int *iptr;
+    long *lptr;
     double *dptr;
     float *fptr;
     int modlong;   /* nonzero if "l" modifier found */
@@ -3142,11 +3143,7 @@ static int vvscanf(const char *format, va_list arg, FILE *fp, const char *s)
             }
             else if (*format == 'l')
             {
-                /* Type modifier: l  (e.g. %ld or %lf)
-                   We ignore it for now (expect for fl-pt), but set a switch.
-                   GCC compiler gives a warning if %f is used with
-                   a double variable; %lf avoids the warning.
-                */
+                /* Type modifier: l  (e.g. %ld or %lf) */
                 modlong=1;
                 informatitem=1;
             }
@@ -3175,8 +3172,10 @@ static int vvscanf(const char *format, va_list arg, FILE *fp, const char *s)
                 else if (*format == 'd')
                 {
                     int neg = 0;
+                    long lval;
 
-                    iptr = va_arg(arg, int *);
+                    if (modlong) lptr = va_arg(arg, long *);
+                    else iptr = va_arg(arg, int *);
                     /* Skip leading whitespace: */
                     while (ch>=0 && isspace(ch)) inch();
                     if (ch == '-')
@@ -3186,11 +3185,11 @@ static int vvscanf(const char *format, va_list arg, FILE *fp, const char *s)
                     }
                     else if(ch == '+') inch();
                     if (!isdigit((unsigned char)ch)) return (cnt);
-                    *iptr = ch - '0';
+                    lval = ch - '0';
                     inch();
                     while ((ch >= 0) && (isdigit(ch)))
                     {
-                        *iptr = *iptr * 10 + (ch - '0');
+                        lval = lval * 10 + (ch - '0');
                         inch();
                     }
                     if (ch < 0)
@@ -3199,8 +3198,10 @@ static int vvscanf(const char *format, va_list arg, FILE *fp, const char *s)
                     }
                     if (neg)
                     {
-                        *iptr = -*iptr;
+                        lval = -lval;
                     }
+                    if (modlong) *lptr=lval; /* l modifier: assign to long */
+                    else *iptr=(int)lval;
                     cnt++;
                 }
                 else if (*format=='e' || *format=='f' || *format=='g' ||
@@ -3211,7 +3212,7 @@ static int vvscanf(const char *format, va_list arg, FILE *fp, const char *s)
                     int ntrailzer,expnum,expsignsw;
                     double fpval,pow10;
 
-                    if(modlong) dptr = va_arg(arg, double *);
+                    if (modlong) dptr = va_arg(arg, double *);
                     else fptr = va_arg(arg, float *);
                     negsw1=0;   /* init */
                     negsw2=0;

@@ -3103,6 +3103,8 @@ int sscanf(const char *s, const char *format, ...)
     return (ret);
 }
 
+/* vvscanf - the guts of the input scanning */
+/* several mods by Dave Edwards */
 static int vvscanf(const char *format, va_list arg, FILE *fp, const char *s)
 {
     int ch;
@@ -3110,73 +3112,224 @@ static int vvscanf(const char *format, va_list arg, FILE *fp, const char *s)
     int cnt = 0;
     char *cptr;
     int *iptr;
+    double *dptr;
+    float *fptr;
+    int modlong;   /* nonzero if "l" modifier found */
+    int informatitem;  /* nonzero if % format item started */
+           /* informatitem is 1 if we have processed "%l" but not the
+              type letter (s,d,e,f,g,...) yet. */
 
     inch();
+    informatitem=0;   /* init */
     while (!fin)
     {
         if (*format == '\0')
         {
             fin = 1;
         }
-        else if (*format == '%')
+        else if (*format == '%' || informatitem)
         {
-            format++;
+            if(*format=='%')   /* starting a format item */
+            {
+                format++;
+                modlong=0;   /* init */
+            }
             if (*format == '%')
             {
                 if (ch != '%') return (cnt);
                 inch();
+                informatitem=0;
             }
-            else if (*format == 's')
+            else if (*format == 'l')
             {
-                cptr = va_arg(arg, char *);
-                *cptr++ = (char)ch;
-                inch();
-                while ((ch >= 0) && (!isspace(ch)))
+                /* Type modifier: l  (e.g. %ld or %lf)
+                   We ignore it for now (expect for fl-pt), but set a switch.
+                   GCC compiler gives a warning if %f is used with
+                   a double variable; %lf avoids the warning.
+                */
+                modlong=1;
+                informatitem=1;
+            }
+            else    /* process a type character: */
+            {
+                informatitem=0;   /* end of format item */
+                if (*format == 's')
                 {
+                    cptr = va_arg(arg, char *);
+                    /* Skip leading whitespace: */
+                    while (ch>=0 && isspace(ch)) inch();
                     *cptr++ = (char)ch;
                     inch();
+                    while ((ch >= 0) && (!isspace(ch)))
+                    {
+                        *cptr++ = (char)ch;
+                        inch();
+                    }
+                    *cptr = '\0';
+                    if (ch < 0)
+                    {
+                        fin = 1;
+                    }
+                    cnt++;
                 }
-                *cptr = '\0';
-                if (ch < 0)
+                else if (*format == 'd')
                 {
-                    fin = 1;
-                }
-                cnt++;
-            }
-            else if (*format == 'd')
-            {
-                int neg = 0;
+                    int neg = 0;
 
-                iptr = va_arg(arg, int *);
-                if (ch == '-')
-                {
-                    neg = 1;
+                    iptr = va_arg(arg, int *);
+                    /* Skip leading whitespace: */
+                    while (ch>=0 && isspace(ch)) inch();
+                    if (ch == '-')
+                    {
+                        neg = 1;
+                        inch();
+                    }
+                    else if(ch == '+') inch();
+                    if (!isdigit((unsigned char)ch)) return (cnt);
+                    *iptr = ch - '0';
                     inch();
+                    while ((ch >= 0) && (isdigit(ch)))
+                    {
+                        *iptr = *iptr * 10 + (ch - '0');
+                        inch();
+                    }
+                    if (ch < 0)
+                    {
+                        fin = 1;
+                    }
+                    if (neg)
+                    {
+                        *iptr = -*iptr;
+                    }
+                    cnt++;
                 }
-                if (!isdigit(ch)) return (cnt);
-                *iptr = ch - '0';
-                inch();
-                while ((ch >= 0) && (isdigit(ch)))
+                else if (*format=='e' || *format=='f' || *format=='g' ||
+                         *format=='E' || *format=='G')
                 {
-                    *iptr = *iptr * 10 + (ch - '0');
-                    inch();
+                    /* Floating-point (double or float) input item */
+                    int negsw1,negsw2,dotsw,expsw,ndigs1,ndigs2,nfdigs;
+                    int ntrailzer,expnum,expsignsw;
+                    double fpval,pow10;
+
+                    if(modlong) dptr = va_arg(arg, double *);
+                    else fptr = va_arg(arg, float *);
+                    negsw1=0;   /* init */
+                    negsw2=0;
+                    dotsw=0;
+                    expsw=0;
+                    ndigs1=0;
+                    ndigs2=0;
+                    nfdigs=0;
+                    ntrailzer=0;  /* # of trailing 0's unaccounted for */
+                    expnum=0;
+                    expsignsw=0;  /* nonzero means done +/- on exponent */
+                    fpval=0.0;
+                    /* Skip leading whitespace: */
+                    while (ch>=0 && isspace(ch)) inch();
+                    if (ch=='-')
+                    {
+                        negsw1=1;
+                        inch();
+                    }
+                    else if (ch=='+') inch();
+                    while (ch>=0)
+                    {
+                        if (ch=='.' && dotsw==0 && expsw==0) dotsw=1;
+                        else if (isdigit(ch))
+                        {
+                            if(expsw)
+                            {
+                                ndigs2++;
+                                expnum=expnum*10+(ch-'0');
+                            }
+                            else
+                            {
+                                /* To avoid overflow or loss of precision,
+                                   skip leading and trailing zeros unless
+                                   really needed. (Automatic for leading
+                                   0's, since 0.0*10.0 is 0.0) */
+                                ndigs1++;
+                                if (dotsw) nfdigs++;
+                                if (ch=='0' && fpval!=0.)
+                                {
+                                    /* Possible trailing 0 */
+                                    ntrailzer++;
+                                }
+                                else
+                                {
+                                    /* Account for any preceding zeros */
+                                    while (ntrailzer>0)
+                                    {
+                                        fpval*=10.;
+                                        ntrailzer--;
+                                    }
+                                    fpval=fpval*10.0+(ch-'0');
+                                }
+                            }
+                        }
+                        else if ((ch=='e' || ch=='E') && expsw==0) expsw=1;
+                        else if ((ch=='+' || ch=='-') && expsw==1
+                                 && ndigs2==0 && expsignsw==0)
+                        {
+                            expsignsw=1;
+                            if (ch=='-') negsw2=1;
+                        }
+                        else break;   /* bad char: end of input item */
+                        inch();
+                    }
+                    if (ch<0) fin=1;
+                    /* Check for a valid fl-pt value: */
+                    if (ndigs1==0 || (expsw && ndigs2==0)) return(cnt);
+                    /* Complete the fl-pt value: */
+                    if (negsw2) expnum=-expnum;
+                    expnum+=ntrailzer-nfdigs;
+                    if (expnum!=0 && fpval!=0.0)
+                    {
+                        negsw2=0;
+                        if (expnum<0)
+                        {
+                            expnum=-expnum;
+                            negsw2=1;                            
+                        }
+                        /* Multiply or divide by 10.0**expnum, using
+                           bits of expnum (fast method) */
+                        pow10=10.0;
+                        for (;;)
+                        {
+                            if (expnum & 1)     /* low-order bit */
+                            {
+                                if (negsw2) fpval/=pow10;
+                                else fpval*=pow10;
+                            }
+                            expnum>>=1;   /* shift right 1 bit */
+                            if (expnum==0) break;
+                            pow10*=pow10;   /* 10.**n where n is power of 2 */
+                        }
+                    }
+                    if (negsw1) fpval=-fpval;
+                    if (modlong) *dptr=fpval; /* l modifier: assign to double */
+                    else *fptr=(float)fpval;
+                    cnt++;
                 }
-                if (ch < 0)
-                {
-                    fin = 1;
-                }
-                if (neg)
-                {
-                    *iptr = -*iptr;
-                }
-                cnt++;
             }
+        }
+        else if (isspace((unsigned char)(*format)))
+        {
+            /* Whitespace char in format string: skip next whitespace
+               chars in input data. This supports input of multiple
+               data items. */
+            while (ch>=0 && isspace(ch))
+            {
+                inch();
+            }
+            if (ch<0) fin=1;   /* EOF */
         }
         else
         {
             if (ch != *format) return (cnt);
             inch();
         }
+        format++;
     }
     return (cnt);
 }

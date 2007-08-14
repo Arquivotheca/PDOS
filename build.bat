@@ -19,6 +19,11 @@ call compw16
 copy %loc%\pload.com %loc%\io.sys
 copy %loc%\pdos.exe %loc%\msdos.sys
 copy %loc%\pcomm.exe %loc%\command.com
+md 16bit
+copy pload.com 16bit
+copy pdos.exe 16bit
+copy pcomm.exe 16bit
+copy world.exe 16bit\world16.exe
 patchver %loc%\io.sys
 sys %loc% %drive%:
 copy world.exe %drive%:world16.exe
@@ -36,8 +41,13 @@ del %drive%:world16.exe
 copy %loc%\pload.com %loc%\io.sys
 copy %loc%\pdos.exe %loc%\msdos.sys
 copy %loc%\pcomm.exe %loc%\command.com
+md 32bit
+copy pload.com 32bit
+copy pdos.exe 32bit
+copy pcomm.exe 32bit
+copy world.exe 32bit\world32.exe
 sys %loc% %drive%:
-copy world %drive%:world32.exe
+copy world.exe %drive%:world32.exe
 echo pdos32.dsk | raread -n -d A
 
 call compb

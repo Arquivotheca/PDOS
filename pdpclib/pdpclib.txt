@@ -19,7 +19,7 @@ conforms to ISO/IEC 9899:1990.  It is expected to be highly OS-specific,
 but hopefully not too compiler-specific.  It is the job of C library 
 developers to make unportable but fast code, not that of the application 
 developers.  Anyone wishing to contribute to this project, please contact 
-Paul Edwards at kerravon@w3.to.
+Paul Edwards at fight.subjugation@gmail.com.
 
 The official method for obtaining PDPCLIB is to download it from:
 http://sourceforge.net/projects/pdos

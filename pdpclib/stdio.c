@@ -1983,11 +1983,18 @@ static int examine(const char **formt, FILE *fq, char *s, va_list *arg,
     if (*format == '.')
     {
         format++;
-        precision = 0;
-        while (isdigit((unsigned char)*format))
+        if (*format == '*')
         {
-            precision = precision * 10 + (*format - '0');
-            format++;
+            precision = va_arg(*arg, int);
+        }
+        else
+        {
+            precision = 0;
+            while (isdigit((unsigned char)*format))
+            {
+                precision = precision * 10 + (*format - '0');
+                format++;
+            }
         }
     }
 

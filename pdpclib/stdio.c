@@ -3569,6 +3569,7 @@ int fputs(const char *s, FILE *stream)
                 return (len + 1);
             }
             s = p + 1;
+            stream->quickText = 0;
         }
     }
     switch (stream->style)
@@ -3597,6 +3598,7 @@ int fputs(const char *s, FILE *stream)
         default:
             len = strlen(s);
             fwrite(s, len, 1, stream);
+            break;
     }
     return (0);
 }
@@ -3786,7 +3788,7 @@ size_t fwrite(const void *ptr, size_t size, size_t nmemb, FILE *stream)
                     {
                         sz = stream->lrecl - (stream->upto - stream->fbuf);
                     }
-                    memcpy(stream->upto, p, sz);
+                    memcpy(stream->upto, ptr, sz);
                     sz += (stream->upto - stream->fbuf);
                     __awrite(stream->hfile, &dptr);
                     if(sz == 0)

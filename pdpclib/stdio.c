@@ -190,6 +190,7 @@ int vfprintf(FILE *stream, const char *format, va_list arg)
 {
     int ret;
 
+    stream->quickText = 0;
     ret = vvprintf(format, arg, stream, NULL);
     return (ret);
 }

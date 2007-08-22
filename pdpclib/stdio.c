@@ -3758,6 +3758,7 @@ size_t fwrite(const void *ptr, size_t size, size_t nmemb, FILE *stream)
             break;
 
         case VARIABLE_TEXT:
+            stream->quickText = 0;
             bytes = nmemb * size;
             p = memchr(ptr, '\n', bytes);
             if (p != NULL)

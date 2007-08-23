@@ -2,7 +2,7 @@
             -------------------------------
             
 Version : 0.84
-Released: 2007-08-14
+Released: 2007-08-23
 
 Written by Paul Edwards.
 Released to the public domain.

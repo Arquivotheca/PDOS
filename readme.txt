@@ -1,7 +1,7 @@
           PDOS - Public Domain Operating System
           -------------------------------------
 
-Version 0.86, released 2007-08-14
+Version 0.86, released 2007-08-23
 Written by Paul Edwards, fight.subjugation@gmail.com
 Released to the public domain
 You may use this entire package for any purpose whatsoever

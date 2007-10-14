@@ -3,19 +3,8 @@
 /*  This Program Written by Paul Edwards.                            */
 /*  Released to the Public Domain                                    */
 /*                                                                   */
-/* Modifications by Dave Edwards, released to the Public Domain:
-   2007-10-11 - In examine(), support %hu, %hd correctly. Must
-      ignore 'h' because gccmvs passes short int arg as 4-byte arg.
-    - In vvprintf() and examine() for floating-point formats, update
-      chcount and support output to a string, e.g. for sprintf().
-    - When using strchr() to test for format chars, do not allow
-      match on null terminator (0).
-    - In vvscanf(), support types 'c' and 'u', and modifier 'h'.
-      Give return value EOF (-1) if EOF or end of string at
-      beginning. Test correctly for EOF or end of string within
-      data items. This is needed for sscanf() etc.  Switch
-      prevwasc added to handle a logic problem with type 'c'.
-*/
+/*  Modifications by Dave Edwards, released to the Public Domain     */
+/*                                                                   */
 /*********************************************************************/
 /*********************************************************************/
 /*                                                                   */
@@ -2016,12 +2005,10 @@ static int examine(const char **formt, FILE *fq, char *s, va_list *arg,
     /* processing h/l/L */
     if (*format == 'h')
     {
-        half = 1;
-#if defined(__MVS__) || defined(__CMS__)
-        /* gccmvs passes a short int arg (2 bytes) as a 4-byte integer,
-           therefore we must ignore 'h' */
-        half=0;
-#endif
+        /* all environments should promote shorts to ints,
+           so we should be able to ignore the 'h' specifier.
+           It will create problems otherwise. */
+        /* half = 1; */
     }
     else if (*format == 'l')
     {
@@ -3217,7 +3204,8 @@ static int vvscanf(const char *format, va_list arg, FILE *fp, const char *s)
                         for(;;)
                         {
                             if (isspace(ch)) break;
-                            if ((fp != NULL && ch == EOF) || (fp == NULL && ch == 0))
+                            if ((fp != NULL && ch == EOF) 
+                                || (fp == NULL && ch == 0))
                             {
                                 fin = 1;
                                 break;
@@ -3231,14 +3219,17 @@ static int vvscanf(const char *format, va_list arg, FILE *fp, const char *s)
                 }
                 else if (*format == 'c')
                 {
-                    if (prevwasc) inch();  /* The previous item in this scan was 'c',
-                               therefore we need to get the next char. This switch is
-                               needed because 'c' coding cannot read the next char
-                               after processing a char, since that would cause multiple
-                               scanf() calls with one %c each to skip every 2nd char. */
+                    if (prevwasc) inch();  
+                        /* The previous item in this scan was 'c',
+                           therefore we need to get the next char. This switch
+                           is needed because 'c' coding cannot read the next 
+                           char after processing a char, since that would 
+                           cause multiple scanf() calls with one %c each to 
+                           skip every 2nd char. */
                     prevwasc = 1;
                     cptr = va_arg(arg, char *);
-                    if ((fp != NULL && ch == EOF) || (fp == NULL && ch == 0)) fin = 1;
+                    if ((fp != NULL && ch == EOF) 
+                        || (fp == NULL && ch == 0)) fin = 1;
                                           /* at EOF or end of string */
                     else
                     {
@@ -3262,7 +3253,8 @@ static int vvscanf(const char *format, va_list arg, FILE *fp, const char *s)
                     else
                     {
                         if (modlong) luptr = va_arg(arg, unsigned long *);
-                        else if (modshort) huptr = va_arg(arg, unsigned short *);
+                        else if (modshort) huptr = 
+                                 va_arg(arg, unsigned short *);
                         else uptr = va_arg(arg, unsigned int *);
                     }
                     /* Skip leading whitespace: */
@@ -3281,15 +3273,18 @@ static int vvscanf(const char *format, va_list arg, FILE *fp, const char *s)
                         lval = lval * 10 + (ch - '0');
                         inch();
                     }
-                    if ((fp != NULL && ch == EOF) || (fp == NULL && ch == 0)) fin = 1;
+                    if ((fp != NULL && ch == EOF) 
+                        || (fp == NULL && ch == 0)) fin = 1;
                     if (neg)
                     {
                         lval = -lval;
                     }
                     if (*format != 'u')
                     {
-                        if (modlong) *lptr=lval; /* l modifier: assign to long */
-                        else if (modshort) *hptr = (short)lval;  /* h modifier */
+                        if (modlong) *lptr=lval; 
+                            /* l modifier: assign to long */
+                        else if (modshort) *hptr = (short)lval;  
+                            /* h modifier */
                         else *iptr=(int)lval;
                     }
                     else
@@ -3376,7 +3371,8 @@ static int vvscanf(const char *format, va_list arg, FILE *fp, const char *s)
                         else break;   /* bad char: end of input item */
                         inch();
                     }
-                    if ((fp != NULL && ch == EOF) || (fp == NULL && ch == 0)) fin=1;
+                    if ((fp != NULL && ch == EOF) 
+                        || (fp == NULL && ch == 0)) fin=1;
                     /* Check for a valid fl-pt value: */
                     if (ndigs1==0 || (expsw && ndigs2==0)) return(cnt);
                     /* Complete the fl-pt value: */
@@ -3432,7 +3428,8 @@ static int vvscanf(const char *format, va_list arg, FILE *fp, const char *s)
             inch();
         }
         format++;
-        if ((fp != NULL && ch == EOF) || (fp == NULL && ch == 0)) fin = 1;   /* EOF */
+        if ((fp != NULL && ch == EOF) || (fp == NULL && ch == 0)) fin = 1;
+            /* EOF */
     }
     return (cnt);
 }

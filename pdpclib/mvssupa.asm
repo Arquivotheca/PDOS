@@ -222,7 +222,7 @@ WRITING  DS    0H
          MVC   JFCBELNM,0(R9)
          OI    JFCBIND1,JFCPDS
          OPEN  ((R2),OUTPUT),MF=(E,OPENCLOS),TYPE=J
-         BO    WOPENEND           Go to move DCB info
+         B     WOPENEND           Go to move DCB info
 WNOMEM   DS    0H
          TM    JFCBIND1,JFCPDS    See if a member name in JCL
          BO    WNOMEM2            Is member name, go to continue OPEN
@@ -255,6 +255,8 @@ DONEOPEN DS    0H
          TM    DCBRECFM,DCBRECU   See if RECFM=U
          BNO   NOTU               Not RECFM=U, go leave LRECL as LRECL
          L     R1,BLKSIZE         Load RECFM U maximum record length
+         LTR   R4,R4              See if OPEN input or output
+         BNZ   NOTU               For output, skip adding RDW bytes
          LA    R1,4(,R1)          Add four for fake RECFM=U RDW
 NOTU     DS    0H
          ST    R1,0(,R8)          Return record length back to caller
@@ -270,11 +272,6 @@ SETRECU  DS    0H
          BNZ   SETRECF            Is for output, go to set RECFM=F
 *        BZ    SETRECV            Else is for input, go to set RECFM=V
 SETRECV  DS    0H
-         LTR   R9,R9              See if a no member name
-         BNZ   SETRECV2           Not a PDS so set RECFM by DCB value
-         CLI   JFCDSRG1,JFCORGPO  See if DSORG=PO
-         BO    SETRECF            Is PDS, no member, read PDS.Dir fixed
-SETRECV2 DS    0H
          LA    R1,1               Pass RECFM V to caller
          B     SETRECFM           Go to set RECFM=V
 SETRECF  DS    0H

@@ -2024,15 +2024,15 @@ static int examine(const char **formt, FILE *fq, char *s, va_list *arg,
     }
     format++;
 
-    if (precision < 0)
-    {
-        precision = 1;
-    }
     /* processing specifier */
     specifier = *format;
 
     if (strchr("dxXuiop", specifier) != NULL && specifier != 0)
     {
+        if (precision < 0)
+        {
+            precision = 1;
+        }
 #if defined(__MSDOS__) && !defined(__PDOS__)
         if (specifier == 'p')
         {
@@ -2183,6 +2183,10 @@ static int examine(const char **formt, FILE *fq, char *s, va_list *arg,
     }
     else if (strchr("eEgGfF", specifier) != NULL && specifier != 0)
     {
+        if (precision < 0)
+        {
+            precision = 6;
+        }
         vdbl = va_arg(*arg, double);
         dblcvt(vdbl, specifier, width, precision, work);   /* 'e','f' etc. */
         slen = strlen(work);
@@ -2199,6 +2203,10 @@ static int examine(const char **formt, FILE *fq, char *s, va_list *arg,
     }
     else if (specifier == 's')
     {
+        if (precision < 0)
+        {
+            precision = 1;
+        }
         svalue = va_arg(*arg, char *);
         fillCh = ' ';
         if (precision > 1)

@@ -23,8 +23,7 @@ typedef unsigned int clock_t;
 #if (defined(__OS2__) || defined(__32BIT__) || defined(__MVS__) \
     || defined(__CMS__))
 typedef unsigned long size_t;
-#endif
-#if (defined(__MSDOS__) || defined(__DOS__) || defined(__POWERC) \
+#elif (defined(__MSDOS__) || defined(__DOS__) || defined(__POWERC) \
     || defined(__WIN32__))
 typedef unsigned int size_t;
 #endif

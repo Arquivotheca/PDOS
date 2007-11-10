@@ -3999,7 +3999,7 @@ size_t fread(void *ptr, size_t size, size_t nmemb, FILE *stream)
                 stream->quickBin = 0;
                 return (0);
             }
-            memcpy(ptr, dptr, read);
+            memcpy(ptr, dptr, size);
             return (1);
         }
         else

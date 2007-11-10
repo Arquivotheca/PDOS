@@ -38,8 +38,8 @@ void *memmove(void *s1, const void *s2, size_t n)
             {
                 *(p+x) = *(cs2+x);
             }
+            *(p+x) = *(cs2+x);
         }
-        *(p+x) = *(cs2+x);
     }
     return (s1);
 }

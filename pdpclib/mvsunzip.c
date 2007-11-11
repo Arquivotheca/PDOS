@@ -23,6 +23,7 @@ static int fasc(int asc);
 static int onefile(FILE *infile);
 static char *ascii2l(char *buf);
 static char *outn;
+static int binary = 0;
 
 int main(int argc, char **argv)
 {
@@ -31,7 +32,7 @@ int main(int argc, char **argv)
 #ifdef __CMS__
     if (argc <= 1)
 #else
-    if (argc <= 2)
+    if ((argc <= 2) || ((argc >=4) && (strcmp(argv[3], "binary") != 0)))
 #endif
     {
 #ifdef __CMS__
@@ -39,7 +40,7 @@ int main(int argc, char **argv)
         printf("where infile is a sequential file\n");
         printf("e.g. mvsunzip dd:input\n");
 #else
-        printf("usage: mvsunzip <infile> <outfile>\n");
+        printf("usage: mvsunzip <infile> <outfile> [binary]\n");
         printf("where infile is a sequential file\n");
         printf("and outfile is a PDS\n");
         printf("e.g. mvsunzip dd:input dd:output\n");
@@ -48,6 +49,10 @@ int main(int argc, char **argv)
     }
 #ifndef __CMS__
     outn = *(argv+2);
+    if (argc >= 4)
+    {
+        binary = 1;
+    }
 #endif
     infile = fopen(*(argv+1), "rb");
     if (infile == NULL)
@@ -124,8 +129,11 @@ static int onefile(FILE *infile)
     ascii2l(fnm);
     printf("fnm is %s\n", fnm);
     fread(buf, size, 1, infile);
-    buf[size] = '\0';
-    ascii2l(buf);
+    if (!binary)
+    {
+        buf[size] = '\0';
+        ascii2l(buf);
+    }
     p = strrchr(fnm, '/');
     if (p != NULL)
     {
@@ -153,8 +161,16 @@ static int onefile(FILE *infile)
     sprintf(newfnm, "%s(%s)", outn, p);
 #endif
 
-    newf = fopen(newfnm, "w");
-    fwrite(buf, strlen(buf), 1, newf);
+    if (binary)
+    {
+        newf = fopen(newfnm, "wb");
+        fwrite(buf, size, 1, newf);
+    }
+    else
+    {
+        newf = fopen(newfnm, "w");
+        fwrite(buf, strlen(buf), 1, newf);
+    }
     fclose(newf);
     return (1);
 }

@@ -109,7 +109,10 @@ static int onefile(FILE *infile)
     size = (c << 24) | size;
     if ((size > MAXBUF) && !binary)
     {
-        printf("file is too big\n");
+        /* At the end we also get something too big, so we can't 
+           issue a warning. Need to find out what proper protocol
+           is for detecting end. */
+        /* printf("file is too big\n"); */
         return (0);
     }
     c = fgetc(infile);
@@ -122,7 +125,10 @@ static int onefile(FILE *infile)
     size2 = (c << 24) | size2;
     if (size != size2)
     {
-        printf("warning - compressed file found - ending early\n");
+        /* At the end we also get something of mismatched size.
+           Perhaps it's just that first bit that we need to
+           look at. Until then, no warning can be generated. */
+        /* printf("warning - compressed file found - ending early\n"); */
         return (0);
     }
     c = fgetc(infile);

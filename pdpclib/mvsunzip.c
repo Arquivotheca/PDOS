@@ -69,6 +69,7 @@ static int onefile(FILE *infile)
     int c;
     int x;
     long size;
+    long size2;
     int fnmlen;
     char fnm[FILENAME_MAX];
     static char *buf = NULL;
@@ -109,11 +110,20 @@ static int onefile(FILE *infile)
     if ((size > MAXBUF) && !binary)
     {
         printf("file is too big\n");
-        return (EXIT_FAILURE);
+        return (0);
     }
-    for (x = 0; x < 4; x++)
+    c = fgetc(infile);
+    size2 = c;
+    c = fgetc(infile);
+    size2 = (c << 8) | size2;
+    c = fgetc(infile);
+    size2 = (c << 16) | size2;
+    c = fgetc(infile);
+    size2 = (c << 24) | size2;
+    if (size != size2)
     {
-        fgetc(infile);
+        printf("warning - compressed file found - ending early\n");
+        return (0);
     }
     c = fgetc(infile);
     fnmlen = c;
@@ -168,10 +178,17 @@ static int onefile(FILE *infile)
         int c;
         
         newf = fopen(newfnm, "wb");
-        for (x = 0; x < size; x++)
+        for (x = 0; x < size; x += MAXBUF)
         {
-            c = fgetc(infile);
-            fputc(c, newf);
+            size_t y;
+            
+            y = size - x;
+            if (y > MAXBUF)
+            {
+                y = MAXBUF;
+            }
+            fread(buf, y, 1, infile);
+            fwrite(buf, y, 1, newf);
         }
     }
     else

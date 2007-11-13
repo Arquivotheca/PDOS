@@ -181,9 +181,13 @@ static int onefile(FILE *infile)
     if (binary)
     {
         size_t x;
-        int c;
         
         newf = fopen(newfnm, "wb");
+        if (newf == NULL)
+        {
+            printf("file open failure on %s\n", newfnm);
+            exit(EXIT_FAILURE);
+        }
         for (x = 0; x < size; x += MAXBUF)
         {
             size_t y;
@@ -200,6 +204,11 @@ static int onefile(FILE *infile)
     else
     {
         newf = fopen(newfnm, "w");
+        if (newf == NULL)
+        {
+            printf("file open failure on %s\n", newfnm);
+            exit(EXIT_FAILURE);
+        }
         fwrite(buf, strlen(buf), 1, newf);
     }
     fclose(newf);

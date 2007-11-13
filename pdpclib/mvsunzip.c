@@ -106,9 +106,10 @@ static int onefile(FILE *infile)
     size = (c << 16) | size;
     c = fgetc(infile);
     size = (c << 24) | size;
-    if (size > MAXBUF)
+    if ((size > MAXBUF) && !binary)
     {
-        return (0);
+        printf("file is too big\n");
+        return (EXIT_FAILURE);
     }
     for (x = 0; x < 4; x++)
     {
@@ -128,9 +129,9 @@ static int onefile(FILE *infile)
     fread(buf, extra, 1, infile);
     ascii2l(fnm);
     printf("fnm is %s\n", fnm);
-    fread(buf, size, 1, infile);
     if (!binary)
     {
+        fread(buf, size, 1, infile);
         buf[size] = '\0';
         ascii2l(buf);
     }
@@ -163,8 +164,15 @@ static int onefile(FILE *infile)
 
     if (binary)
     {
+        size_t x;
+        int c;
+        
         newf = fopen(newfnm, "wb");
-        fwrite(buf, size, 1, newf);
+        for (x = 0; x < size; x++)
+        {
+            c = fgetc(infile);
+            fputc(c, newf);
+        }
     }
     else
     {

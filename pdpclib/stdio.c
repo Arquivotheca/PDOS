@@ -2781,7 +2781,12 @@ int fseek(FILE *stream, long int offset, int whence)
     {
         newpos = offset + stream->bufStartR + (stream->upto - stream->fbuf);
     }
-    if ((newpos > stream->bufStartR)
+
+    if (whence == SEEK_END)
+    {
+        while (getc(stream) != EOF) ;
+    }
+    else if ((newpos > stream->bufStartR)
         && (newpos < (stream->bufStartR + (stream->endbuf - stream->fbuf)))
         && stream->update)
     {

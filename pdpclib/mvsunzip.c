@@ -17,7 +17,7 @@
 #include <string.h>
 #include <errno.h>
 
-#define MAXBUF 2000000
+#define MAXBUF 2000000L
 
 static int fasc(int asc);
 static int onefile(FILE *infile);
@@ -54,6 +54,7 @@ int main(int argc, char **argv)
         binary = 1;
     }
 #endif
+    printf("processing data from %s\n", *(argv + 1));
     infile = fopen(*(argv+1), "rb");
     if (infile == NULL)
     {
@@ -95,7 +96,15 @@ static int onefile(FILE *infile)
     {
         return (0);
     }
-    for (x = 0; x < 16; x++)
+    if (fgetc(infile) != 0x03)
+    {
+        return (0);
+    }
+    if (fgetc(infile) != 0x04)
+    {
+        return (0);
+    }
+    for (x = 0; x < 14; x++)
     {
         fgetc(infile);
     }
@@ -109,10 +118,7 @@ static int onefile(FILE *infile)
     size = (c << 24) | size;
     if ((size > MAXBUF) && !binary)
     {
-        /* At the end we also get something too big, so we can't 
-           issue a warning. Need to find out what proper protocol
-           is for detecting end. */
-        /* printf("file is too big\n"); */
+        printf("warning - file is too big - ending early\n");
         return (0);
     }
     c = fgetc(infile);
@@ -125,10 +131,7 @@ static int onefile(FILE *infile)
     size2 = (c << 24) | size2;
     if (size != size2)
     {
-        /* At the end we also get something of mismatched size.
-           Perhaps it's just that first bit that we need to
-           look at. Until then, no warning can be generated. */
-        /* printf("warning - compressed file found - ending early\n"); */
+        printf("warning - compressed file found - ending early\n");
         return (0);
     }
     c = fgetc(infile);

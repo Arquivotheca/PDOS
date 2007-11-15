@@ -3741,25 +3741,29 @@ size_t fwrite(const void *ptr, size_t size, size_t nmemb, FILE *stream)
     {
         case FIXED_BINARY:
             bytes = nmemb * size;
-            if ((stream->endbuf - stream->upto) > bytes)
+            /* if we've exceed our buffer we need to write out
+               a record - but if we haven't written any data to
+               our internal buffer yet, don't bother going through
+               this code, it'll be handled later. */
+            if (((stream->endbuf - stream->upto) <= bytes)
+                && (stream->upto != stream->fbuf))
             {
-                memcpy(stream->upto, ptr, bytes);
+                /* ready to write a record - request some space
+                   from MVS */
+                __awrite(stream->hfile, &dptr);
+                sz = stream->endbuf - stream->upto;
+                memcpy(dptr, stream->fbuf, stream->szfbuf - sz);
+                memcpy(dptr + stream->szfbuf - sz, ptr, sz);
+                ptr = (char *)ptr + sz;
+                bytes -= sz;
+                stream->upto = stream->fbuf;
+                stream->bufStartR += stream->szfbuf;
             }
-            else
-            {
-                if (stream->upto != stream->fbuf)
-                {
-                    sz = stream->endbuf - stream->upto;
-                    memcpy(stream->upto, ptr, sz);
-                    ptr = (char *)ptr + sz;
-                    bytes -= sz;
-                    __awrite(stream->hfile, &dptr);
-                    memcpy(dptr, stream->fbuf, sz);
-                    stream->upto = stream->fbuf;
-                    stream->bufStartR += sz;
-                }
-            }
-            while (bytes > stream->szfbuf)
+            /* At this point, the internal buffer is empty if the
+               number of bytes to write is still greater than the
+               internal buffer. In which case, start writing directly
+               to an MVS-provided area. */
+            while (bytes >= stream->szfbuf)
             {
                 __awrite(stream->hfile, &dptr);
                 memcpy(dptr, ptr, stream->szfbuf);
@@ -3767,6 +3771,7 @@ size_t fwrite(const void *ptr, size_t size, size_t nmemb, FILE *stream)
                 bytes -= stream->szfbuf;
                 stream->bufStartR += stream->szfbuf;
             }
+            /* any remainder needs to go into the internal buffer */
             memcpy(stream->upto, ptr, bytes);
             stream->upto += bytes;
             break;

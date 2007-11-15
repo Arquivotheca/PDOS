@@ -561,6 +561,7 @@ long int strtol(const char *nptr, char **endptr, int base)
                 {
                     base = 16;
                     undecided = 0;
+                    nptr++;
                 }
                 else
                 {

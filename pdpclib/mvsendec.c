@@ -29,7 +29,7 @@ int main(int argc, char **argv)
     size_t x;
     static char tohex[] = { '0', '1', '2', '3', '4', '5', '6', '7',
                             '8', '9', 'A', 'B', 'C', 'D', 'E', 'F' };
-    static char fromhex[UCHAR_MAX];                            
+    static char fromhex[UCHAR_MAX + 1];
     
     if (argc < 4)
     {

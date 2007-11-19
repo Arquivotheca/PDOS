@@ -2760,6 +2760,7 @@ int fgetc(FILE *stream)
 
 int fseek(FILE *stream, long int offset, int whence)
 {
+    long oldpos;
     long newpos;
 #ifdef __OS2__
     ULONG retpos;
@@ -2769,6 +2770,7 @@ int fseek(FILE *stream, long int offset, int whence)
     DWORD retpos;
 #endif
 
+    oldpos = stream->bufStartR + (stream->upto - stream->fbuf);
     if (stream->mode == __WRITE_MODE)
     {
         fflush(stream);
@@ -2779,12 +2781,17 @@ int fseek(FILE *stream, long int offset, int whence)
     }
     else if (whence == SEEK_CUR)
     {
-        newpos = offset + stream->bufStartR + (stream->upto - stream->fbuf);
+        newpos = oldpos + offset;
     }
 
     if (whence == SEEK_END)
     {
-        while (getc(stream) != EOF) ;
+        char buf[1000];
+
+        while (fread(buf, sizeof buf, 1, stream) == 1)
+        {
+            /* do nothing */
+        }
     }
     else if ((newpos > stream->bufStartR)
         && (newpos < (stream->bufStartR + (stream->endbuf - stream->fbuf)))
@@ -2830,7 +2837,6 @@ int fseek(FILE *stream, long int offset, int whence)
 #endif
 #if defined(__MVS__) || defined(__CMS__)
         char fnm[FILENAME_MAX];
-        long int oldpos;
         long int x;
         size_t y;
         char buf[1000];

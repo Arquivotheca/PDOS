@@ -2830,13 +2830,27 @@ int fseek(FILE *stream, long int offset, int whence)
 #endif
 #if defined(__MVS__) || defined(__CMS__)
         char fnm[FILENAME_MAX];
+        long int oldpos;
 
-        strcpy(fnm, "dd:");
-        strcat(fnm, stream->ddname);
-        freopen(fnm, stream->modeStr, stream);
-        while (newpos-- > 0)
+        oldpos = ftell(stream);
+        if (oldpos <= newpos)
         {
-            getc(stream);
+            long int x;
+            
+            for (x = oldpos; x < newpos; x++)
+            {
+                getc(stream);
+            }
+        }
+        else
+        {
+            strcpy(fnm, "dd:");
+            strcat(fnm, stream->ddname);
+            freopen(fnm, stream->modeStr, stream);
+            while (newpos-- > 0)
+            {
+                getc(stream);
+            }
         }
 #endif
     }

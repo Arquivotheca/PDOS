@@ -2793,7 +2793,7 @@ int fseek(FILE *stream, long int offset, int whence)
             /* do nothing */
         }
     }
-    else if ((newpos > stream->bufStartR)
+    else if ((newpos >= stream->bufStartR)
         && (newpos < (stream->bufStartR + (stream->endbuf - stream->fbuf)))
         && (stream->update || (stream->mode == __READ_MODE)))
     {

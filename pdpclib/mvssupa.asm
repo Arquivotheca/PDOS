@@ -645,9 +645,6 @@ RETURNGM DS    0H
 RETURNFM DS    0H
          RETURN (14,12),RC=(15)
          LTORG
-*
-*
-*
 * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
 *
 *  GETCLCK - GET THE VALUE OF THE MVS CLOCK TIMER AND MOVE IT TO AN
@@ -680,7 +677,47 @@ RETURNGC DS    0H
          RETURN (14,12),RC=(15)
          LTORG
 *
+* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
 *
+*  SETM24 - Set AMODE to 24
+*
+* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+         ENTRY @@SETM24
+@@SETM24 EQU   *
+         SAVE  (14,12),,@@SETM24
+         LR    R12,R15
+         USING @@SETM24,R12
+*
+         L     R6,=A(LAB24)
+         N     R6,=X'7FFFFFFF'
+         DC    X'0B06'            BSM R0,R6
+LAB24    DS    0H
+         LA    R15,0
+*
+RETURN24 DS    0H
+         RETURN (14,12),RC=(15)
+         LTORG
+*
+* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+*
+*  SETM31 - Set AMODE to 31
+*
+* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+         ENTRY @@SETM31
+@@SETM31 EQU   *
+         SAVE  (14,12),,@@SETM31
+         LR    R12,R15
+         USING @@SETM31,R12
+*
+         L     R6,=A(LAB31)
+         O     R6,=X'80000000'
+         DC    X'0B06'            BSM R0,R6
+LAB31    DS    0H
+         LA    R15,0
+*
+RETURN31 DS    0H
+         RETURN (14,12),RC=(15)
+         LTORG
 *
 * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
 *

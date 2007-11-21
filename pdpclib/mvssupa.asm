@@ -716,7 +716,13 @@ LAB31    DS    0H
          LA    R15,0
 *
 RETURN31 DS    0H
-         RETURN (14,12),RC=(15)
+* We can't use the RETURN macro because R14 is unreliable
+* As the BALR if done from 24-bit mode has corrupted the
+* high byte.
+         L     14,12(13,0)
+         N     14,=X'00FFFFFF'
+         LM    0,12,20(13)
+         BR    14         
          LTORG
 *
 * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *

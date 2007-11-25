@@ -14,14 +14,8 @@
 #include "stdlib.h"
 #include "string.h"
 
-#if defined(__MVS__) || defined(__CMS__)
-#define USE_MEMMGR 0
-#else
-#define USE_MEMMGR 0
-#endif
-
 #if USE_MEMMGR
-#include "memmgr.h"
+#include "__memmgr.h"
 #endif
 
 #define MAXPARMS 19 /* maximum number of arguments we can handle */
@@ -45,10 +39,6 @@
 /* Must be unsigned as it is used for array index */
 extern unsigned char *__envptr;
 extern unsigned short __osver;
-#endif
-
-#if USE_MEMMGR
-MEMMGR __memmgr;
 #endif
 
 int main(int argc, char **argv);

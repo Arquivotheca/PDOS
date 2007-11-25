@@ -34,17 +34,11 @@
 #include "mvssupa.h"
 #endif
 
-#if defined(__MVS__) || defined(__CMS__)
-#define USE_MEMMGR 0
-#else
-#define USE_MEMMGR 0
-#endif
-
 #if USE_MEMMGR
-#include "memmgr.h"
-extern MEMMGR __memmgr;
-#define MAX_CHUNK 950000 /* maximum size we will store in memmgr */
-#define REQ_CHUNK 1000000 /* size that we request from OS */
+#include "__memmgr.h"
+#define MAX_CHUNK 5000000 /* maximum size we will store in memmgr */
+    /* Note that you can set MAX_CHUNK to less than REQ_CHUNK */
+#define REQ_CHUNK 5000000 /* size that we request from OS */
 #endif
 
 #ifdef __MSDOS__

@@ -71,30 +71,22 @@ void *malloc(size_t size)
     BaseAddress = (char *)BaseAddress + sizeof(size_t);
     return ((void *)BaseAddress);
 #endif
-#ifdef __WIN32__
-    void *p;
-
-    p = GlobalAlloc(0, size + sizeof(size_t));
-    if (p != NULL)
-    {
-        *(size_t *)p = size;
-        p = (char *)p + sizeof(size_t);
-    }
-    return (p);
-#endif
 #ifdef __MSDOS__
     void *ptr;
 
     __allocmem(size, &ptr);
     return (ptr);
 #endif
-#if defined(__MVS__) || defined(__CMS__)
 #if USE_MEMMGR
     void *ptr;
 
     if (size > MAX_CHUNK)
     {
+#if defined(__MVS__) || defined(__CMS__)
         ptr = __getm(size);
+#elif defined(__WIN32__)
+        ptr = GlobalAlloc(0, size);
+#endif
     }
     else
     {
@@ -103,7 +95,11 @@ void *malloc(size_t size)
         {
             void *ptr2;
 
+#if defined(__MVS__) || defined(__CMS__)
             ptr2 = __getm(REQ_CHUNK);
+#elif defined(__WIN32__)
+            ptr2 = GlobalAlloc(0, REQ_CHUNK);
+#endif
             if (ptr2 == NULL)
             {
                 return (NULL);
@@ -113,10 +109,14 @@ void *malloc(size_t size)
         }
     }
     return (ptr);
-#else
+#else /* not MEMMGR */
+#if defined(__MVS__) || defined(__CMS__)
     return (__getm(size));
 #endif
+#ifdef __WIN32__
+    return (GlobalAlloc(0, size);
 #endif
+#endif /* not MEMMGR */
 }
 
 void *calloc(size_t nmemb, size_t size)
@@ -187,19 +187,12 @@ void free(void *ptr)
         DosFreeMem((PVOID)ptr);
     }
 #endif
-#ifdef __WIN32__
-    if (ptr != NULL)
-    {
-        GlobalFree(ptr);
-    }
-#endif
 #ifdef __MSDOS__
     if (ptr != NULL)
     {
         __freemem(ptr);
     }
 #endif
-#if defined(__MVS__) || defined(__CMS__)
 #if USE_MEMMGR
     if (ptr != NULL)
     {
@@ -208,20 +201,31 @@ void free(void *ptr)
         size = *((size_t *)ptr - 1);
         if (size > MAX_CHUNK)
         {
+#if defined(__MVS__) || defined(__CMS__)
             __freem(ptr);
+#elif defined(__WIN32__)
+            GlobalFree(ptr);
+#endif
         }
         else
         {
             memmgrFree(&__memmgr, ptr);
         }
     }
-#else
+#else /* not using MEMMGR */
+#if defined(__MVS__) || defined(__CMS__)
     if (ptr != NULL)
     {
         __freem(ptr);
     }
 #endif
+#ifdef __WIN32__
+    if (ptr != NULL)
+    {
+        GlobalFree(ptr);
+    }
 #endif
+#endif /* not USE_MEMMGR */
     return;
 }
 

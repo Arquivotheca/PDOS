@@ -634,7 +634,12 @@ NOPOOL   DS    0H
          LR    R4,R3
          LA    R3,16(,R3)
 *
+         AIF   ('&SYS' NE 'S380').N380GM1
+         L     R1,=X'04100000'
+         AGO   .N380GM2
+.N380GM1 ANOP
          GETMAIN RU,LV=(R3),SP=SUBPOOL
+.N380GM2 ANOP
 *
 * WE STORE THE AMOUNT WE REQUESTED FROM MVS INTO THIS ADDRESS
          ST    R3,0(R1)
@@ -662,7 +667,13 @@ RETURNGM DS    0H
          L     R2,0(,R1)
          S     R2,=F'16'
          L     R3,0(,R2)
+*
+         AIF   ('&SYS' NE 'S380').N380FM1
+         LA    R15,0
+         AGO   .N380FM2
+.N380FM1 ANOP
          FREEMAIN RU,LV=(R3),A=(R2),SP=SUBPOOL
+.N380FM2 ANOP
 *
 RETURNFM DS    0H
          RETURN (14,12),RC=(15)

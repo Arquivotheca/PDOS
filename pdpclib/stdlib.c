@@ -36,9 +36,9 @@
 
 #if USE_MEMMGR
 #include "__memmgr.h"
-#define MAX_CHUNK 5000000 /* maximum size we will store in memmgr */
+#define MAX_CHUNK 30000000 /* maximum size we will store in memmgr */
     /* Note that you can set MAX_CHUNK to less than REQ_CHUNK */
-#define REQ_CHUNK 5000000 /* size that we request from OS */
+#define REQ_CHUNK 30000000 /* size that we request from OS */
 #endif
 
 #ifdef __MSDOS__

@@ -14,6 +14,8 @@
          LCLC &COMP               Declare compiler switch
 &COMP    SETC 'GCC'               Indicate that this is for GCC
 * &COMP    SETC 'C370'            Indicate that this is for C/370
+         LCLC &SYS                Declare variable for system
+&SYS     SETC 'S380'              Indicate that this is for S/380
          AIF ('&SYSPARM' EQ 'IFOX00').NOMODE
          AMODE ANY
          RMODE ANY
@@ -101,7 +103,16 @@ CEESTART EQU   *
          ST    R5,SAVER13
 *
          LA    R1,PARMLIST
+*
+         AIF   ('&SYS' NE 'S380').N380ST1
+         CALL  @@SETM31
+.N380ST1 ANOP
+*
          CALL  @@START
+*
+         AIF   ('&SYS' NE 'S380').N380ST2
+         CALL  @@SETM24
+.N380ST2 ANOP
 *
 RETURNMS DS    0H
          LR    R1,R13

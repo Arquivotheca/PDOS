@@ -47,6 +47,8 @@
          LCLC &COMP               Declare compiler switch
 &COMP    SETC 'GCC'               Indicate that this is for GCC
 * &COMP    SETC 'C370'            Indicate that this is for C/370
+         LCLC &SYS                Declare variable for system
+&SYS     SETC 'S380'              Indicate that this is for S/380
 *
          CSECT
          PRINT NOGEN
@@ -75,6 +77,7 @@ R15      EQU   15
          LR    R12,R15
          USING @@AOPEN,R12
          LR    R11,R1
+*
          GETMAIN RU,LV=WORKLEN,SP=SUBPOOL
          ST    R13,4(,R1)
          ST    R1,8(,R13)
@@ -285,6 +288,7 @@ RETURNOP DS    0H
          LR    R1,R13
          L     R13,SAVEAREA+4
          FREEMAIN RU,LV=WORKLEN,A=(1),SP=SUBPOOL
+*
          LR    R15,R2             Return neg.RC or GETMAINed area addr.
          RETURN (14,12),RC=(15)   Return to caller
 *
@@ -542,7 +546,16 @@ H4       DC    H'4'               Constant for subtraction
          LR    R13,R1
          USING WORKAREA,R13
 *
+         AIF   ('&SYS' NE 'S380').N380WR1
+         CALL  @@SETM24
+.N380WR1 ANOP
+*
          PUT   (R2)
+*
+         AIF   ('&SYS' NE 'S380').N380WR2
+         CALL  @@SETM31
+.N380WR2 ANOP
+*
          ST    R1,0(,R3)
          LR    R1,R13
          L     R13,SAVEAREA+4

@@ -12,3 +12,5 @@ gccmvs -S -I . setjmp.c
 gccmvs -S -I . signal.c
 gccmvs -S -I . pdptest.c
 m4 -I . pdpmvs.m4 >pdpmvs.jcl
+rem call sub pdpmvs.jcl
+call runmvs pdpmvs.jcl output.txt

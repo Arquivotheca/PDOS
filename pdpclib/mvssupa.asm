@@ -169,7 +169,15 @@ OPENIN   DS    0H
          MVC   BLKSIZE+2(2),DCBBLKSI  Copy BLKSIZE to a fullword
          LTR   R9,R9              See if an address for the member name
          BZ    GETBUFF            No member name, skip finding it
+*
+         AIF   ('&SYS' NE 'S380').N380OP1
+* Get R9 below the line
+         MVC   JFCBELNM,0(R9)
+         LA    R9,JFCBELNM
+.N380OP1 ANOP
+*
          FIND  (R2),(R9),D        Point to the requested member
+*
          LTR   R15,R15            See if member found
          BZ    GETBUFF            Member found, go get an input buffer
 * If FIND return code not zero, process return and reason codes and

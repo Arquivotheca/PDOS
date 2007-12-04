@@ -343,6 +343,11 @@ CAMLEN   EQU   *-CAMDUM           Length of CAMLST Template
          LA    R4,4(,R4)          Read RECFM=U four bytes into buffer
          L     R5,BLKSIZE         Load block size to read
 READ     DS    0H
+*
+         AIF   ('&SYS' NE 'S380').N380RD1
+         CALL  @@SETM24
+.N380RD1 ANOP
+*
          READ  DECB,              Read record Data Event Control Block C
                SF,                Read record Sequential Forward       C
                (R2),              Read record DCB address              C
@@ -351,6 +356,10 @@ READ     DS    0H
                MF=E               Execute a MF=L MACRO
          CHECK DECB               Wait for READ to complete
 *                                 If EOF, R6 will be set to F'1'
+         AIF   ('&SYS' NE 'S380').N380RD2
+         CALL  @@SETM31
+.N380RD2 ANOP
+*
          LTR   R6,R6              See if end of input data set
          BNZ   READEOD            Is end, go return to caller
 * If RECFM=FB or U, store BUFFADDR in BUFFCURR

@@ -10,13 +10,21 @@
 
 #include <stddef.h>
 
+/* #define __MEMMGR_INTEGRITY 1 */
+
 typedef struct memmgrn {
+#ifdef __MEMMGR_INTEGRITY
+    int eyecheck1;
+#endif
     struct memmgrn *next;
     struct memmgrn *prev;
     int fixed;
     size_t size;
     int allocated;
     int id;
+#ifdef __MEMMGR_INTEGRITY
+    int eyecheck2;
+#endif
     size_t filler; /* we add this so that *(p - size_t) is writable */
 } MEMMGRN;
 
@@ -39,6 +47,7 @@ typedef struct {
 #define memmgrFree __mmFree
 #define memmgrFreeId __mmFId
 #define memmgrMaxSize __mmMaxSize
+#define memmgrIntegrity __mmIntegrity
 #define memmgrRealloc __mmRealloc
 
 void memmgrDefaults(MEMMGR *memmgr);
@@ -49,6 +58,7 @@ void *memmgrAllocate(MEMMGR *memmgr, size_t bytes, int id);
 void memmgrFree(MEMMGR *memmgr, void *ptr);
 void memmgrFreeId(MEMMGR *memmgr, int id);
 size_t memmgrMaxSize(MEMMGR *memmgr);
+void memmgrIntegrity(MEMMGR *memmgr);
 int memmgrRealloc(MEMMGR *memmgr, void *ptr, size_t newsize);
 
 extern MEMMGR __memmgr;

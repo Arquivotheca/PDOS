@@ -71,6 +71,11 @@ R12      EQU   12
 R13      EQU   13
 R14      EQU   14
 R15      EQU   15
+* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+*
+*  AOPEN- Open a dataset
+*
+* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
          ENTRY @@AOPEN
 @@AOPEN  EQU   *
          SAVE  (14,12),,@@AOPEN  Save caller's regs.
@@ -117,6 +122,16 @@ DUMMYWTO WTO   ' '                Generate WTO to see if Global set
          LA    R10,0              No input location
          LA    R11,0              Pad of X'00' and no input length
          MVCL  R0,R10             Clear DCB area to binary zeroes
+*
+* The member name may not be below the line, which may stuff up
+* the "FIND" macro, so make sure it is in 24-bit memory.
+*
+         LTR   R9,R9              See if an address for the member name
+         BZ    NOMEM              No member name, skip copying
+         MVC   MEMBER24,0(R9)
+         LA    R9,MEMBER24
+NOMEM    DS    0H
+*
          AIF   ('&COMP' NE 'C370').GCCMODE
          L     R4,0(,R4)          Load C/370 MODE.  0=input 1=output
 .GCCMODE ANOP
@@ -169,12 +184,6 @@ OPENIN   DS    0H
          MVC   BLKSIZE+2(2),DCBBLKSI  Copy BLKSIZE to a fullword
          LTR   R9,R9              See if an address for the member name
          BZ    GETBUFF            No member name, skip finding it
-*
-         AIF   ('&SYS' NE 'S380').N380OP1
-* Get R9 below the line
-         MVC   JFCBELNM,0(R9)
-         LA    R9,JFCBELNM
-.N380OP1 ANOP
 *
          FIND  (R2),(R9),D        Point to the requested member
 *
@@ -326,7 +335,11 @@ READLEN  EQU   *-READDUM
 CAMDUM   CAMLST SEARCH,*-*,*-*,*-*
 CAMLEN   EQU   *-CAMDUM           Length of CAMLST Template
 *
+* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
 *
+*  AREAD - Read from an open dataset
+*
+* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
          ENTRY @@AREAD
 @@AREAD  EQU   *
          SAVE  (14,12),,@@AREAD
@@ -550,6 +563,11 @@ ABEND    DS    0H
 *
 H4       DC    H'4'               Constant for subtraction
 *
+* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+*
+*  AWRITE - Write to an open dataset
+*
+* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
          ENTRY @@AWRITE
 @@AWRITE EQU   *
          SAVE  (14,12),,@@AWRITE
@@ -557,11 +575,13 @@ H4       DC    H'4'               Constant for subtraction
          USING @@AWRITE,R12
          L     R2,0(,R1)          R2 contains GETMAINed address
          L     R3,4(,R1)          R3 points to the record address
-         GETMAIN RU,LV=WORKLEN,SP=SUBPOOL
+         USING ZDCBAREA,R2
+*        GETMAIN RU,LV=WORKLEN,SP=SUBPOOL
+         LA    R1,SAVEADCB
          ST    R13,4(,R1)
          ST    R1,8(,R13)
          LR    R13,R1
-         USING WORKAREA,R13
+*        USING WORKAREA,R13
 *
          AIF   ('&SYS' NE 'S380').N380WR1
          CALL  @@SETM24
@@ -575,12 +595,16 @@ H4       DC    H'4'               Constant for subtraction
 *
          ST    R1,0(,R3)
          LR    R1,R13
-         L     R13,SAVEAREA+4
-         FREEMAIN RU,LV=WORKLEN,A=(1),SP=SUBPOOL
+*        L     R13,SAVEAREA+4
+         L     R13,SAVEADCB+4
+*        FREEMAIN RU,LV=WORKLEN,A=(1),SP=SUBPOOL
          RETURN (14,12),RC=0
 *
+* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
 *
+*  ACLOSE - Close a dataset
 *
+* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
          ENTRY @@ACLOSE
 @@ACLOSE EQU   *
          SAVE  (14,12),,@@ACLOSE
@@ -869,7 +893,8 @@ DSCB     DS    0F
          IECSDSL1 (1)             Map the Format 1 DSCB
 DSCBCCHH DS    CL5                CCHHR of DSCB returned by OBTAIN
          DS    CL47               Rest of OBTAIN's 148 byte work area
+SAVEADCB DS    18F                Register save area for PUT
+MEMBER24 DS    CL8
 ZDCBLEN  EQU   *-ZDCBAREA
-*
 *
          END

@@ -12,6 +12,10 @@
 
 #include "__memmgr.h"
 
+#ifdef __MEMMGR_INTEGRITY    
+#include <stdlib.h>
+#endif
+
 MEMMGR __memmgr;
 
 void memmgrDefaults(MEMMGR *memmgr)
@@ -75,6 +79,10 @@ void memmgrSupply(MEMMGR *memmgr, void *buffer, size_t szbuf)
     b->fixed = 1;
     b->size = szbuf - MEMMGRN_SZ;
     b->allocated = 0;
+#ifdef __MEMMGR_INTEGRITY
+    b->eyecheck1 = b->eyecheck2 = 0xa5a5a5a5;
+    memmgrIntegrity(memmgr);
+#endif
     return;
 }
 
@@ -82,7 +90,10 @@ void *memmgrAllocate(MEMMGR *memmgr, size_t bytes, int id)
 {
     MEMMGRN *p, *n;
     size_t oldbytes = bytes;
-    
+
+#ifdef __MEMMGR_INTEGRITY
+    memmgrIntegrity(memmgr);
+#endif
     if ((bytes % MEMMGR_ALIGN) != 0)
     {
         bytes += (MEMMGR_ALIGN - bytes % MEMMGR_ALIGN);
@@ -110,6 +121,9 @@ void *memmgrAllocate(MEMMGR *memmgr, size_t bytes, int id)
                 n->fixed = 0;
                 n->size = p->size - bytes - MEMMGRN_SZ;
                 n->allocated = 0;
+#ifdef __MEMMGR_INTEGRITY
+                n->eyecheck1 = n->eyecheck2 = 0xa5a5a5a5;
+#endif
                 p->size = bytes;
             }
             p->allocated = 1;
@@ -128,6 +142,9 @@ void *memmgrAllocate(MEMMGR *memmgr, size_t bytes, int id)
         
         q = (size_t *)((char *)p + MEMMGRN_SZ);
         *(q - 1) = oldbytes;
+#ifdef __MEMMGR_INTEGRITY
+        memmgrIntegrity(memmgr);
+#endif
         return ((char *)p + MEMMGRN_SZ);
     }
 }
@@ -141,6 +158,9 @@ void memmgrFree(MEMMGR *memmgr, void *ptr)
     p = memmgr->start;
     l = NULL;
     
+#ifdef __MEMMGR_INTEGRITY
+    memmgrIntegrity(memmgr);
+#endif
     while (p != NULL)
     {
         if (p == ptr)
@@ -164,6 +184,9 @@ void memmgrFree(MEMMGR *memmgr, void *ptr)
         l = p;
         p = p->next;
     }
+#ifdef __MEMMGR_INTEGRITY
+    memmgrIntegrity(memmgr);
+#endif
     return;
 }
 
@@ -174,6 +197,9 @@ void memmgrFreeId(MEMMGR *memmgr, int id)
     p = memmgr->start;
     l = NULL;
     
+#ifdef __MEMMGR_INTEGRITY
+    memmgrIntegrity(memmgr);
+#endif
     while (p != NULL)
     {
         if ((p->id == id) && p->allocated)
@@ -196,13 +222,16 @@ void memmgrFreeId(MEMMGR *memmgr, int id)
         l = p;
         p = p->next;
     }
+#ifdef __MEMMGR_INTEGRITY
+    memmgrIntegrity(memmgr);
+#endif
     return;
 }
 
 /* find the largest block of memory available */
 size_t memmgrMaxSize(MEMMGR *memmgr)
 {
-    MEMMGRN *p, *n;
+    MEMMGRN *p;
     size_t max = 0;
     
     p = memmgr->start;
@@ -218,6 +247,28 @@ size_t memmgrMaxSize(MEMMGR *memmgr)
     return (max);
 }
 
+#ifdef __MEMMGR_INTEGRITY
+/* do an integrity check */
+void memmgrIntegrity(MEMMGR *memmgr)
+{
+    MEMMGRN *p;
+    size_t max = 0;
+    
+    p = memmgr->start;
+    
+    while (p != NULL)
+    {
+        if ((p->eyecheck1 != 0xa5a5a5a5) || (p->eyecheck2 != 0xa5a5a5a5))
+        {
+            *(char *)0 = '\0'; /* try to invoke crash */
+            exit(EXIT_FAILURE);
+        }
+        p = p->next;
+    }
+    return;
+}
+#endif
+
 /* resize a memory block */
 /* note that the size in the control block is the
    size available for data */
@@ -226,6 +277,9 @@ int memmgrRealloc(MEMMGR *memmgr, void *ptr, size_t newsize)
     MEMMGRN *p, *n, *z;
     size_t oldbytes = newsize;
     
+#ifdef __MEMMGR_INTEGRITY    
+    memmgrIntegrity(memmgr);
+#endif
     if ((newsize % MEMMGR_ALIGN) != 0)
     {
         newsize += (MEMMGR_ALIGN - newsize % MEMMGR_ALIGN);
@@ -259,7 +313,7 @@ int memmgrRealloc(MEMMGR *memmgr, void *ptr, size_t newsize)
             {
                 return (-1);
             }
-            
+
             /* insert new control block */
             n = (MEMMGRN *)((char *)p + MEMMGRN_SZ + newsize);
             n->next = p->next;
@@ -268,6 +322,9 @@ int memmgrRealloc(MEMMGR *memmgr, void *ptr, size_t newsize)
             n->fixed = 0;
             n->size = p->size - newsize - MEMMGRN_SZ;
             n->allocated = 0;
+#ifdef __MEMMGR_INTEGRITY
+            n->eyecheck1 = n->eyecheck2 = 0xa5a5a5a5;
+#endif
             p->size = newsize;
             
             /* combine with next block if possible */
@@ -282,12 +339,22 @@ int memmgrRealloc(MEMMGR *memmgr, void *ptr, size_t newsize)
         }
         p = p->next;
     }
-    
+
+#ifdef __MEMMGR_INTEGRITY    
+    memmgrIntegrity(memmgr);
+#endif
     /* if we exhausted list, they passed a dud pointer */
     if (p == NULL)
     {
         return (-2);
     }
+    /* Otherwise, keep track of the new size */
+    else
+    {
+        size_t *q;
+        
+        q = (size_t *)((char *)p + MEMMGRN_SZ);
+        *(q - 1) = oldbytes;
+    }
     return (0);
 }
-

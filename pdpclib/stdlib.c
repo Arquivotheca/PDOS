@@ -85,7 +85,12 @@ void *malloc(size_t size)
 #if defined(__MVS__) || defined(__CMS__)
         ptr = __getm(size);
 #elif defined(__WIN32__)
-        ptr = GlobalAlloc(0, size);
+        ptr = GlobalAlloc(0, size + sizeof(size_t));
+        if (ptr != NULL)
+        {
+            *(size_t *)ptr = size;
+            ptr = (char *)ptr + sizeof(size_t);
+        }
 #endif
     }
     else
@@ -99,6 +104,11 @@ void *malloc(size_t size)
             ptr2 = __getm(REQ_CHUNK);
 #elif defined(__WIN32__)
             ptr2 = GlobalAlloc(0, REQ_CHUNK);
+            if (ptr2 != NULL)
+            {
+                *(size_t *)ptr2 = size;
+                ptr2 = (char *)ptr2 + sizeof(size_t);
+            }
 #endif
             if (ptr2 == NULL)
             {
@@ -114,7 +124,15 @@ void *malloc(size_t size)
     return (__getm(size));
 #endif
 #ifdef __WIN32__
-    return (GlobalAlloc(0, size));
+    void *ptr;
+
+    ptr = GlobalAlloc(0, size + sizeof(size_t));
+    if (ptr != NULL)
+    {
+        *(size_t *)ptr = size;
+        ptr = (char *)ptr + sizeof(size_t);
+    }
+    return (ptr);
 #endif
 #endif /* not MEMMGR */
 }

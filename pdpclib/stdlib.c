@@ -114,7 +114,7 @@ void *malloc(size_t size)
     return (__getm(size));
 #endif
 #ifdef __WIN32__
-    return (GlobalAlloc(0, size);
+    return (GlobalAlloc(0, size));
 #endif
 #endif /* not MEMMGR */
 }

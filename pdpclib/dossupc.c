@@ -39,7 +39,7 @@ unsigned long CTYP __divide(unsigned long x, unsigned long y)
     unsigned int f;
     unsigned int g = 0;
     unsigned int h;
-    
+
     b = (unsigned int)(y & 0xffffU);
     a = (unsigned int)(y >> 16);
     c = -b;
@@ -75,7 +75,7 @@ unsigned long CTYP __modulo(unsigned long x, unsigned long y)
     unsigned int f;
     unsigned int g = 0;
     unsigned int h;
-    
+
     b = (unsigned int)(y & 0xffffU);
     a = (unsigned int)(y >> 16);
     c = -b;

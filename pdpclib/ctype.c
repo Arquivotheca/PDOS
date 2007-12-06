@@ -269,7 +269,7 @@ static unsigned short __isbufR[257] = {
     0x0000U,
     0x0000U,
     0x0000U };
-    
+
 static short __tolowR[257] = {
     -1,
     0x00,
@@ -528,7 +528,7 @@ static short __tolowR[257] = {
     0xFD,
     0xFE,
     0xFF };
-    
+
 static short __toupR[257] = {
     -1,
     0x00,
@@ -1568,17 +1568,17 @@ static short __toupR[257] = {
     0xFF };
 
 #endif
-    
+
 unsigned short *__isbuf = &__isbufR[1];
 short *__tolow = &__tolowR[1];
 short *__toup = &__toupR[1];
 
-int isalnum(int c) 
+int isalnum(int c)
 {
     return (__isbuf[(c)] & 0x0001U);
 }
 
-int isalpha(int c) 
+int isalpha(int c)
 {
     return (__isbuf[(c)] & 0x0002U);
 }
@@ -1593,17 +1593,17 @@ int isdigit(int c)
     return (__isbuf[(c)] & 0x0008U);
 }
 
-int isgraph(int c) 
+int isgraph(int c)
 {
     return (__isbuf[(c)] & 0x0010U);
 }
 
-int islower(int c) 
+int islower(int c)
 {
     return (__isbuf[(c)] & 0x0020U);
 }
 
-int isprint(int c) 
+int isprint(int c)
 {
     return (__isbuf[(c)] & 0x0040U);
 }
@@ -1623,17 +1623,17 @@ int isupper(int c)
     return (__isbuf[(c)] & 0x0200U);
 }
 
-int isxdigit(int c) 
+int isxdigit(int c)
 {
     return (__isbuf[(c)] & 0x0400U);
 }
 
-int tolower(int c) 
+int tolower(int c)
 {
     return (__tolow[(c)]);
 }
 
-int toupper(int c) 
+int toupper(int c)
 {
     return (__toup[(c)]);
 }

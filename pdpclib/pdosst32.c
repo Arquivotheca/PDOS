@@ -10,6 +10,6 @@ int __pdosst32(int i1, int i2, int i3, void *exep)
 {
     int rc;
 
-    rc = __pstart(&i1, &i2, &i3, exep);    
+    rc = __pstart(&i1, &i2, &i3, exep);
     return (rc);
 }

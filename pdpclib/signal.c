@@ -34,9 +34,9 @@ void (*signal(int sig, void (*func)(int)))(int)
 {
     handlers[sig] = func;
     return (func);
-}    
-    
-    
+}
+
+
 int raise(int sig)
 {
     (handlers[sig])(sig);

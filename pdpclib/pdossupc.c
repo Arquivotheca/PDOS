@@ -11,7 +11,7 @@ int __open(const char *filename, int mode, int *errind)
 {
     int handle;
     int ret;
-    
+
     ret = PosOpenFile(filename, mode, &handle);
     *errind = ret;
     return (handle);
@@ -20,7 +20,7 @@ int __open(const char *filename, int mode, int *errind)
 int __read(int handle, void *buf, size_t len, int *errind)
 {
     long readBytes;
-    
+
     PosReadFile(handle, buf, len, &readBytes);
     *errind = 0;
     return (readBytes);
@@ -29,7 +29,7 @@ int __read(int handle, void *buf, size_t len, int *errind)
 int __write(int handle, const void *buf, size_t len, int *errind)
 {
     int ret;
-    
+
     ret = PosWriteFile(handle, buf, len);
     *errind = 0;
     return (ret);
@@ -82,12 +82,12 @@ void __datetime(void *ptr)
     int year, month, day, dow;
     int hour, minute, second, hundredths;
     int *iptr = ptr;
-    
+
     PosGetSystemDate(&year, &month, &day, &dow);
     iptr[0] = year;
     iptr[1] = month;
     iptr[2] = day;
-    iptr[3] = dow;    
+    iptr[3] = dow;
     PosGetSystemTime(&hour, &minute, &second, &hundredths);
     iptr[4] = hour;
     iptr[5] = minute;
@@ -127,7 +127,7 @@ void __exita(int retcode)
 {
 #ifndef PDOS_RET_EXIT
      PosTerminate(retcode);
-#endif     
+#endif
     return;
 }
 

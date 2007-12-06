@@ -20,7 +20,7 @@ void *memmove(void *s1, const void *s2, size_t n)
     char *p = s1;
     const char *cs2 = s2;
     size_t x;
-    
+
     if (p <= cs2)
     {
         for (x=0; x < n; x++)
@@ -50,7 +50,7 @@ void *memmove(void *s1, const void *s2, size_t n)
 char *strcpy(char *s1, const char *s2)
 {
     char *p = s1;
-    
+
     while ((*p++ = *s2++) != '\0') ;
     return (s1);
 }
@@ -62,7 +62,7 @@ char *strncpy(char *s1, const char *s2, size_t n)
 {
     char *p = s1;
     size_t x;
-    
+
     for (x=0; x < n; x++)
     {
         *p = *s2;
@@ -83,7 +83,7 @@ char *strncpy(char *s1, const char *s2, size_t n)
 char *strcat(char *s1, const char *s2)
 {
     char *p = s1;
-    
+
     while (*p != '\0') p++;
     while ((*p = *s2) != '\0')
     {
@@ -100,7 +100,7 @@ char *strncat(char *s1, const char *s2, size_t n)
 {
     char *p = s1;
     size_t x = 0;
-    
+
     while (*p != '\0') p++;
     while ((*s2 != '\0') && (x < n))
     {
@@ -121,7 +121,7 @@ int memcmp(const void *s1, const void *s2, size_t n)
     const unsigned char *p1;
     const unsigned char *p2;
     size_t x = 0;
-    
+
     p1 = (const unsigned char *)s1;
     p2 = (const unsigned char *)s2;
     while (x < n)
@@ -132,7 +132,7 @@ int memcmp(const void *s1, const void *s2, size_t n)
     }
     return (0);
 }
-    
+
 #ifdef strcmp
 #undef strcmp
 #endif
@@ -140,7 +140,7 @@ int strcmp(const char *s1, const char *s2)
 {
     const unsigned char *p1;
     const unsigned char *p2;
-    
+
     p1 = (const unsigned char *)s1;
     p2 = (const unsigned char *)s2;
     while (*p1 != '\0')
@@ -170,7 +170,7 @@ int strncmp(const char *s1, const char *s2, size_t n)
     const unsigned char *p1;
     const unsigned char *p2;
     size_t x = 0;
-    
+
     p1 = (const unsigned char *)s1;
     p2 = (const unsigned char *)s2;
     while (x < n)
@@ -189,7 +189,7 @@ int strncmp(const char *s1, const char *s2, size_t n)
 size_t strxfrm(char *s1, const char *s2, size_t n)
 {
     size_t oldlen;
-    
+
     oldlen = strlen(s2);
     if (oldlen < n)
     {
@@ -206,7 +206,7 @@ void *memchr(const void *s, int c, size_t n)
 {
     const unsigned char *p;
     size_t x = 0;
-    
+
     p = (const unsigned char *)s;
     while (x < n)
     {
@@ -238,7 +238,7 @@ size_t strcspn(const char *s1, const char *s2)
 {
     const char *p1;
     const char *p2;
-    
+
     p1 = s1;
     while (*p1 != '\0')
     {
@@ -260,7 +260,7 @@ char *strpbrk(const char *s1, const char *s2)
 {
     const char *p1;
     const char *p2;
-    
+
     p1 = s1;
     while (*p1 != '\0')
     {
@@ -281,7 +281,7 @@ char *strpbrk(const char *s1, const char *s2)
 char *strrchr(const char *s, int c)
 {
     const char *p;
-    
+
     p = s + strlen(s);
     while (p >= s)
     {
@@ -298,7 +298,7 @@ size_t strspn(const char *s1, const char *s2)
 {
     const char *p1;
     const char *p2;
-    
+
     p1 = s1;
     while (*p1 != '\0')
     {
@@ -351,7 +351,7 @@ char *strtok(char *s1, const char *s2)
     char *p;
     size_t len;
     size_t remain;
-    
+
     if (s1 != NULL) old = s1;
     if (old == NULL) return (NULL);
     p = old;
@@ -373,7 +373,7 @@ char *strtok(char *s1, const char *s2)
 void *memset(void *s, int c, size_t n)
 {
     size_t x = 0;
-    
+
     for (x = 0; x < n; x++)
     {
         *((char *)s + x) = (unsigned char)c;
@@ -389,14 +389,14 @@ char *strerror(int errnum)
     if (errnum == 0) return ("No error has occurred\n");
     else return ("An error has occurred\n");
 }
-                
+
 #ifdef strlen
 #undef strlen
 #endif
 size_t strlen(const char *s)
 {
     const char *p;
-    
+
     p = s;
     while (*p != '\0') p++;
     return ((size_t)(p - s));
@@ -412,7 +412,7 @@ void *memcpy(void *s1, const void *s2, size_t n)
     register const unsigned char *f = s2;
     register const unsigned char *fe;
     register unsigned char *t = s1;
-    
+
     fe = f + n;
     while (f != fe)
     {
@@ -426,7 +426,7 @@ void *memcpy(void *s1, const void *s2, size_t n)
     register unsigned int *p = (unsigned int *)s1;
     register unsigned int *cs2 = (unsigned int *)s2;
     register unsigned int *endi;
-    
+
     endi = (unsigned int *)((char *)p + (n & ~0x03));
     while (p != endi)
     {

@@ -40,7 +40,7 @@ void CTYP __datetime(void *ptr);
 
 /* scalar date routines    --    public domain by Ray Gardner
 ** These will work over the range 1-01-01 thru 14699-12-31
-** The functions written by Ray are isleap, months_to_days, 
+** The functions written by Ray are isleap, months_to_days,
 ** years_to_days, ymd_to_scalar, scalar_to_ymd.
 ** modified slightly by Paul Edwards
 */
@@ -63,7 +63,7 @@ static long years_to_days (unsigned yr)
 static long ymd_to_scalar(unsigned yr, unsigned mo, unsigned day)
 {
    long scalar;
-   
+
    scalar = day + months_to_days(mo);
    if ( mo > 2 )                         /* adjust if past February */
       scalar -= isleap(yr) ? 1 : 2;
@@ -72,17 +72,17 @@ static long ymd_to_scalar(unsigned yr, unsigned mo, unsigned day)
    return (scalar);
 }
 
-static void scalar_to_ymd(long scalar, 
-                          unsigned *pyr, 
-                          unsigned *pmo, 
+static void scalar_to_ymd(long scalar,
+                          unsigned *pyr,
+                          unsigned *pmo,
                           unsigned *pday)
 {
    unsigned n;                /* compute inverse of years_to_days() */
 
-   n = (unsigned)((scalar * 400L) / 146097L); 
+   n = (unsigned)((scalar * 400L) / 146097L);
    while (years_to_days(n) < scalar)
    {
-      n++;                         
+      n++;
    }
    for ( n = (unsigned)((scalar * 400L) / 146097L); years_to_days(n) < scalar; )
       n++;                          /* 146097 == years_to_days(400) */
@@ -101,13 +101,13 @@ static void scalar_to_ymd(long scalar,
 time_t time(time_t *timer)
 {
     time_t tt;
-#ifdef __OS2__    
+#ifdef __OS2__
     DATETIME dt;
     APIRET rc;
-#endif    
+#endif
 #ifdef __WIN32__
     SYSTEMTIME dt;
-#endif    
+#endif
 #if defined(__MSDOS__)
     struct {
         int year;
@@ -121,7 +121,7 @@ time_t time(time_t *timer)
 #endif
 #if defined(__MVS__) || defined(__CMS__)
     unsigned int clk[2];
-#endif    
+#endif
 
 #ifdef __OS2__
     rc = DosGetDateTime(&dt);
@@ -130,15 +130,15 @@ time_t time(time_t *timer)
         tt = (time_t)-1;
     }
     else
-#endif    
+#endif
 #ifdef __WIN32__
     GetSystemTime(&dt);
-    tt = ymd_to_scalar(dt.wYear, dt.wMonth, dt.wDay) 
+    tt = ymd_to_scalar(dt.wYear, dt.wMonth, dt.wDay)
          - ymd_to_scalar(1970, 1, 1);
     tt = tt * 24 + dt.wHour;
     tt = tt * 60 + dt.wMinute;
     tt = tt * 60 + dt.wSecond;
-#endif    
+#endif
 #ifdef __MSDOS__
     __datetime(&dt);
 #endif
@@ -147,13 +147,13 @@ time_t time(time_t *timer)
 #elif !defined(__WIN32__)
 
     {
-        tt = ymd_to_scalar(dt.year, dt.month, dt.day) 
+        tt = ymd_to_scalar(dt.year, dt.month, dt.day)
              - ymd_to_scalar(1970, 1, 1);
         tt = tt * 24 + dt.hours;
         tt = tt * 60 + dt.minutes;
         tt = tt * 60 + dt.seconds;
     }
-#endif    
+#endif
     if (timer != NULL)
     {
         *timer = tt;
@@ -174,15 +174,15 @@ double difftime(time_t time1, time_t time0)
 time_t mktime(struct tm *timeptr)
 {
     time_t tt;
-    
+
     if ((timeptr->tm_year < 70) || (timeptr->tm_year > 120))
     {
         tt = (time_t)-1;
     }
     else
     {
-        tt = ymd_to_scalar(timeptr->tm_year + 1900, 
-                           timeptr->tm_mon + 1, 
+        tt = ymd_to_scalar(timeptr->tm_year + 1900,
+                           timeptr->tm_mon + 1,
                            timeptr->tm_mday)
              - ymd_to_scalar(1970, 1, 1);
         tt = tt * 24 + timeptr->tm_hour;
@@ -234,7 +234,7 @@ struct tm *gmtime(const time_t *timer)
    years, because the results are meaningless anyway.  It is
    mainly to stop people playing silly buggers and causing
    the macro to crash on negative years. */
- 
+
 #define dow(y,m,d) \
   ((((((m)+9)%12+1)<<4)%27 + (d) + 1 + \
   ((y)%400+400) + ((y)%400+400)/4 - ((y)%400+400)/100 + \

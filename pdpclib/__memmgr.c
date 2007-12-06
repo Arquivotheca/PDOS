@@ -12,7 +12,7 @@
 
 #include "__memmgr.h"
 
-#ifdef __MEMMGR_INTEGRITY    
+#ifdef __MEMMGR_INTEGRITY
 #include <stdlib.h>
 #endif
 
@@ -43,12 +43,12 @@ void memmgrSupply(MEMMGR *memmgr, void *buffer, size_t szbuf)
         szbuf -= (MEMMGR_ALIGN - (int)buffer % MEMMGR_ALIGN);
         buffer = (char *)buffer + (MEMMGR_ALIGN - (int)buffer % MEMMGR_ALIGN);
     }
-    
+
     if ((szbuf % MEMMGR_ALIGN) != 0)
     {
         szbuf -= szbuf % MEMMGR_ALIGN;
     }
-    
+
     p = memmgr->start;
     l = NULL;
     while ((p != NULL) && ((MEMMGRN *)buffer >= p))
@@ -56,12 +56,12 @@ void memmgrSupply(MEMMGR *memmgr, void *buffer, size_t szbuf)
         l = p;
         p = p->next;
     }
-        
+
     b = (MEMMGRN *)buffer;
-        
+
     b->prev = l;
     b->next = p;
-        
+
     if (l != NULL)
     {
         l->next = b;
@@ -70,12 +70,12 @@ void memmgrSupply(MEMMGR *memmgr, void *buffer, size_t szbuf)
     {
         memmgr->start = b;
     }
-        
+
     if (p != NULL)
     {
         p->prev = b;
     }
-        
+
     b->fixed = 1;
     b->size = szbuf - MEMMGRN_SZ;
     b->allocated = 0;
@@ -100,14 +100,14 @@ void *memmgrAllocate(MEMMGR *memmgr, size_t bytes, int id)
     }
 
     /* if they have exceeded the limits of the data type,
-       bail out now. */    
+       bail out now. */
     if (bytes < oldbytes)
     {
         return (NULL);
     }
-    
+
     p = memmgr->start;
-    
+
     while (p != NULL)
     {
         if ((p->size >= bytes) && !p->allocated)
@@ -139,7 +139,7 @@ void *memmgrAllocate(MEMMGR *memmgr, size_t bytes, int id)
     else
     {
         size_t *q;
-        
+
         q = (size_t *)((char *)p + MEMMGRN_SZ);
         *(q - 1) = oldbytes;
 #ifdef __MEMMGR_INTEGRITY
@@ -154,10 +154,10 @@ void memmgrFree(MEMMGR *memmgr, void *ptr)
     MEMMGRN *p, *n, *l;
 
     ptr = (char *)ptr - MEMMGRN_SZ;
-    
+
     p = memmgr->start;
     l = NULL;
-    
+
 #ifdef __MEMMGR_INTEGRITY
     memmgrIntegrity(memmgr);
 #endif
@@ -166,14 +166,14 @@ void memmgrFree(MEMMGR *memmgr, void *ptr)
         if (p == ptr)
         {
             p->allocated = 0;
-            
+
             n = p->next;
             if ((n != NULL) && !n->allocated && !n->fixed)
             {
                 p->size += n->size + MEMMGRN_SZ;
                 p->next = n->next;
             }
-            
+
             if (!p->fixed && (l != NULL) && !l->allocated)
             {
                 l->size += p->size + MEMMGRN_SZ;
@@ -196,7 +196,7 @@ void memmgrFreeId(MEMMGR *memmgr, int id)
 
     p = memmgr->start;
     l = NULL;
-    
+
 #ifdef __MEMMGR_INTEGRITY
     memmgrIntegrity(memmgr);
 #endif
@@ -205,14 +205,14 @@ void memmgrFreeId(MEMMGR *memmgr, int id)
         if ((p->id == id) && p->allocated)
         {
             p->allocated = 0;
-            
+
             n = p->next;
             if ((n != NULL) && !n->allocated && !n->fixed)
             {
                 p->size += n->size + MEMMGRN_SZ;
                 p->next = n->next;
             }
-            
+
             if (!p->fixed && (l != NULL) && !l->allocated)
             {
                 l->size += p->size + MEMMGRN_SZ;
@@ -233,9 +233,9 @@ size_t memmgrMaxSize(MEMMGR *memmgr)
 {
     MEMMGRN *p;
     size_t max = 0;
-    
+
     p = memmgr->start;
-    
+
     while (p != NULL)
     {
         if ((p->size > max) && !p->allocated)
@@ -253,9 +253,9 @@ void memmgrIntegrity(MEMMGR *memmgr)
 {
     MEMMGRN *p;
     size_t max = 0;
-    
+
     p = memmgr->start;
-    
+
     while (p != NULL)
     {
         if ((p->eyecheck1 != 0xa5a5a5a5) || (p->eyecheck2 != 0xa5a5a5a5))
@@ -276,8 +276,8 @@ int memmgrRealloc(MEMMGR *memmgr, void *ptr, size_t newsize)
 {
     MEMMGRN *p, *n, *z;
     size_t oldbytes = newsize;
-    
-#ifdef __MEMMGR_INTEGRITY    
+
+#ifdef __MEMMGR_INTEGRITY
     memmgrIntegrity(memmgr);
 #endif
     if ((newsize % MEMMGR_ALIGN) != 0)
@@ -286,17 +286,17 @@ int memmgrRealloc(MEMMGR *memmgr, void *ptr, size_t newsize)
     }
 
     /* if they have exceeded the limits of the data type,
-       bail out now. */    
+       bail out now. */
     if (newsize < oldbytes)
     {
         return (-1);
     }
-    
+
 
     ptr = (char *)ptr - MEMMGRN_SZ;
-    
+
     p = memmgr->start;
-    
+
     while (p != NULL)
     {
         if (p == ptr)
@@ -307,7 +307,7 @@ int memmgrRealloc(MEMMGR *memmgr, void *ptr, size_t newsize)
             {
                 return (-1);
             }
-            
+
             /* handle overflow condition */
             if ((newsize + MEMMGRN_SZ) < newsize)
             {
@@ -326,7 +326,7 @@ int memmgrRealloc(MEMMGR *memmgr, void *ptr, size_t newsize)
             n->eyecheck1 = n->eyecheck2 = 0xa5a5a5a5;
 #endif
             p->size = newsize;
-            
+
             /* combine with next block if possible */
             z = n->next;
             if ((z != NULL) && !z->allocated && !z->fixed)
@@ -334,13 +334,13 @@ int memmgrRealloc(MEMMGR *memmgr, void *ptr, size_t newsize)
                 n->size += z->size + MEMMGRN_SZ;
                 n->next = z->next;
             }
-            
+
             break;
         }
         p = p->next;
     }
 
-#ifdef __MEMMGR_INTEGRITY    
+#ifdef __MEMMGR_INTEGRITY
     memmgrIntegrity(memmgr);
 #endif
     /* if we exhausted list, they passed a dud pointer */
@@ -352,7 +352,7 @@ int memmgrRealloc(MEMMGR *memmgr, void *ptr, size_t newsize)
     else
     {
         size_t *q;
-        
+
         q = (size_t *)((char *)p + MEMMGRN_SZ);
         *(q - 1) = oldbytes;
     }

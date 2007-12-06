@@ -1,7 +1,7 @@
 #include <stddef.h>
 
 #pragma linkage(__aopen, OS)
-void *__aopen(const char *ddname, int mode, int *recfm, 
+void *__aopen(const char *ddname, int mode, int *recfm,
               int *lrecl, const char *mem);
 #pragma linkage(__aread, OS)
 int __aread(void *handle, void *buf);

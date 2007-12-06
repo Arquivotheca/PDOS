@@ -20,6 +20,6 @@ int __assert(char *x, char *y, int z);
 #else
 #define assert(x) (x) ? ((void)0) : \
     __assert(#x, __FILE__, __LINE__)
-#endif    
+#endif
 
 #endif

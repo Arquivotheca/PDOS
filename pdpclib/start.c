@@ -72,7 +72,7 @@ int CTYP __start(char *p)
 {
 #ifdef __PDOS__
     char *p;
-#endif    
+#endif
     int x;
     int argc;
     static char *argv[MAXPARMS + 1];
@@ -307,7 +307,7 @@ int CTYP __start(char *p)
            then that is a signal to read the parameter string
            from dd:SYSPARM */
         FILE *pf;
-        
+
         pf = fopen("dd:SYSPARM", "r");
         if (pf != NULL)
         {
@@ -389,7 +389,7 @@ int CTYP __start(char *p)
         }
     }
 #endif
-    
+
 #ifdef __OS2__
     reqFH = 0;
     DosSetRelMaxFH(&reqFH, &maxFH);
@@ -439,7 +439,7 @@ int CTYP __start(char *p)
             }
         }
     }
-#endif    
+#endif
     p = p + 0x80;
     p[*p + 1] = '\0';
     p++;
@@ -458,7 +458,7 @@ int CTYP __start(char *p)
         for (x = 1; x < MAXPARMS; )
         {
             char srch = ' ';
-            
+
             if (*p == '"')
             {
                 p++;
@@ -486,11 +486,11 @@ int CTYP __start(char *p)
     *i1 = argc;
     *i2 = (int)argv;
     return (0);
-#else        
+#else
     rc = main(argc, argv);
     __exit(rc);
     return (rc);
-#endif    
+#endif
 }
 
 void __exit(int status)

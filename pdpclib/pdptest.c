@@ -38,7 +38,7 @@ int main(int argc, char **argv)
     fgets(buf, sizeof buf, stdin);
     fputs(buf, fq);
     fclose(fq);
-#endif    
+#endif
     printf("hello there\n");
     printf("argc = %d\n" , argc);
     for (i = 0; i < argc; i++)

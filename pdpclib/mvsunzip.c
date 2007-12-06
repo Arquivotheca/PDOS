@@ -184,7 +184,7 @@ static int onefile(FILE *infile)
     if (binary)
     {
         size_t x;
-        
+
         newf = fopen(newfnm, "wb");
         if (newf == NULL)
         {
@@ -194,7 +194,7 @@ static int onefile(FILE *infile)
         for (x = 0; x < size; x += MAXBUF)
         {
             size_t y;
-            
+
             y = size - x;
             if (y > MAXBUF)
             {

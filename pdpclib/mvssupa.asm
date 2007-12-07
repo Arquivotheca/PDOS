@@ -71,6 +71,37 @@ R12      EQU   12
 R13      EQU   13
 R14      EQU   14
 R15      EQU   15
+*
+* External variables. Note that these variables will eventually need
+* to be moved into a CRAB or something to allow reentrancy. Note that
+* GCC doesn't currently produce reentrant code, so you will need to
+* solve that problem first.
+* 
+* MANSTK contains the address of the main stack. MANSTL has the length
+* of that stack. This is used for setjmp/longjmp so that the stack can 
+* be copied.
+*
+         ENTRY   @@MANSTK
+@@MANSTK DS    F
+         ENTRY   @@MANSTL
+@@MANSTL DS    F
+*
+* PGMPRM contains the R1 that was passed to the main program, ie
+* when you go EXEC PGM=xxx,PARM='hello there' - that "hello there"
+* is passed to the program, although not directly, I think R1
+* points to a list of parameters that you'll need to map via
+* some appropriate macro. Note that the address stored here will
+* be 31-bit clean.
+*
+         ENTRY   @@PGMPRM
+@@PGMPRM DS    F
+*
+* SYSANC contains an anchor for the use of @@SYSTEM which
+* needs to figure out its operating environment.
+*
+         ENTRY   @@SYSANC
+@@SYSANC DC    A(0)
+*
 * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
 *
 *  AOPEN- Open a dataset
@@ -807,8 +838,10 @@ RETURN31 DS    0H
          LR    R12,R15
          USING @@SAVER,12
          L     R1,0(,R1)           * ADDRESS OF ENV TO R1
-         L     R2,@@MANSTK         * R2 POINTS TO START OF STACK
-         L     R3,@@MANSTK+4       * R3 HAS LENGTH OF STACK
+         L     R2,=A(@@MANSTK)
+         L     R2,0(R2)            * R2 POINTS TO START OF STACK
+         L     R3,=A(@@MANSTL)
+         L     R3,0(R3)            * R3 HAS LENGTH OF STACK
          LR    R5,R3               * AND R5
          LR    R9,R1               * R9 NOW CONTAINS ADDRESS OF ENV
 * GET A SAVE AREA
@@ -826,8 +859,6 @@ RETURN31 DS    0H
 RETURNSR DS    0H
          SR    R15,R15              * CLEAR RETURN CODE
          RETURN (14,12),RC=(15)
-         ENTRY   @@MANSTK
-@@MANSTK DS    2F
          LTORG
 *
 *

@@ -667,7 +667,10 @@ NOPOOL   DS    0H
          LA    R3,16(,R3)
 *
          AIF   ('&SYS' NE 'S380').N380GM1
-         L     R1,=X'04100000'
+         LR    R0,R3              Load amount of S/380 memory to get
+         SLR   R1,R1              Clear register to indicate get
+         SVC   233                Issue SVC X'E9' C'Z'
+*        L     R1,=X'04100000'
          AGO   .N380GM2
 .N380GM1 ANOP
          GETMAIN RU,LV=(R3),SP=SUBPOOL

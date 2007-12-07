@@ -76,9 +76,9 @@ R15      EQU   15
 * to be moved into a CRAB or something to allow reentrancy. Note that
 * GCC doesn't currently produce reentrant code, so you will need to
 * solve that problem first.
-* 
+*
 * MANSTK contains the address of the main stack. MANSTL has the length
-* of that stack. This is used for setjmp/longjmp so that the stack can 
+* of that stack. This is used for setjmp/longjmp so that the stack can
 * be copied.
 *
          ENTRY   @@MANSTK
@@ -823,7 +823,7 @@ RETURN31 DS    0H
          L     14,12(13,0)
          N     14,=X'00FFFFFF'
          LM    0,12,20(13)
-         BR    14         
+         BR    14
          LTORG
 *
 * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *

@@ -54,7 +54,7 @@ SUBPOOL  EQU   0
          ENTRY @@CRT0
 @@CRT0   EQU   *
          AIF ('&COMP' NE 'C370').NOCEES
-         ENTRY CEESTART 
+         ENTRY CEESTART
 CEESTART EQU   *
 .NOCEES  ANOP
          SAVE  (14,12),,@@CRT0
@@ -68,13 +68,13 @@ CEESTART EQU   *
          LR    R1,R11
          USING STACK,R13
 *
-* SAVE STACK POINTER FOR SETJMP/LONGJMP          
+* SAVE STACK POINTER FOR SETJMP/LONGJMP
 *
-         L     R3,=V(@@MANSTK)                      
-         ST    R13,0(R3)                            
-         L     R2,=A(STACKLEN)                      
+         L     R3,=V(@@MANSTK)
+         ST    R13,0(R3)
+         L     R2,=A(STACKLEN)
          L     R3,=V(@@MANSTL)
-         ST    R2,0(R3)                             
+         ST    R2,0(R3)
 *
 * Save the R1 that was passed to this module.
 *

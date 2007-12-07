@@ -375,12 +375,12 @@ READ     DS    0H
                (R4),              Read record input buffer             C
                (R5),              Read BLKSIZE or 256 for PDS.DirectoryC
                MF=E               Execute a MF=L MACRO
-         CHECK DECB               Wait for READ to complete
 *                                 If EOF, R6 will be set to F'1'
          AIF   ('&SYS' NE 'S380').N380RD2
          CALL  @@SETM31
 .N380RD2 ANOP
 *
+         CHECK DECB               Wait for READ to complete
          LTR   R6,R6              See if end of input data set
          BNZ   READEOD            Is end, go return to caller
 * If RECFM=FB or U, store BUFFADDR in BUFFCURR

@@ -704,7 +704,9 @@ RETURNGM DS    0H
          L     R3,0(,R2)
 *
          AIF   ('&SYS' NE 'S380').N380FM1
-         LA    R15,0
+         LR    R0,R3              Load amount of S/380 memory to free
+         LR    R1,R2              Load address to free
+         SVC   233                Issue SVC X'E9' C'Z'
          AGO   .N380FM2
 .N380FM1 ANOP
          FREEMAIN RU,LV=(R3),A=(R2),SP=SUBPOOL

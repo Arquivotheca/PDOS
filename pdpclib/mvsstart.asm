@@ -42,10 +42,10 @@ R15      EQU   15
 SUBPOOL  EQU   0
          CSECT
 *
-* External variables references. Don't store actual external variables
-* here. Allow the entry point of @@CRT0 to be zero. The actual variables
-* themselves should be stored in mvssupa.asm which is the main assembler
-* support code.
+* External variables references. Don't store actual external 
+* variables here. Allow the entry point of @@CRT0 to be zero.
+* The actual variables themselves should be stored in 
+* mvssupa.asm which is the main assembler support code.
 *
          EXTRN @@MANSTK
          EXTRN @@MANSTL

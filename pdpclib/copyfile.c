@@ -19,24 +19,43 @@ int main(int argc, char **argv)
     FILE *fp;
     FILE *fq;
     int c;
+    int off = 0;
+    char *in = "r";
+    char *out = "w";
     
     if (argc < 3)
     {
-        printf("usage: copyfile <infile> <outfile>\n");
+        printf("usage: copyfile [-bb/-tt/-tb/-bt] <infile> <outfile>\n");
+        printf("default is text to text copy\n");
         return (EXIT_FAILURE);
     }
 
-    fp = fopen(*(argv + 1), "r");
+    if (argc > 3)
+    {
+        if (argv[1][0] == '-')
+        {
+            if (argv[1][1] == 'b')
+            {
+                in = "rb";
+            }
+            if (argv[1][2] == 'b')
+            {
+                out = "wb";
+            }
+            off++;
+        }
+    }
+    fp = fopen(*(argv + off + 1), in);
     if (fp == NULL)
     {
-        printf("failed to open %s for reading\n", *(argv + 1));
+        printf("failed to open %s for reading\n", *(argv + off + 1));
         return (EXIT_FAILURE);
     }
 
-    fq = fopen(*(argv + 2), "w");
+    fq = fopen(*(argv + off + 2), out);
     if (fq == NULL)
     {
-        printf("failed to open %s for reading\n", *(argv + 2));
+        printf("failed to open %s for writing\n", *(argv + off + 2));
         return (EXIT_FAILURE);
     }
 

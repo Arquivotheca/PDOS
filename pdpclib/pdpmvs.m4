@@ -36,65 +36,65 @@
 //PDPPRLG  EXEC PGM=IEBGENER
 //SYSUT2   DD  DSN=&&MACLIB(PDPPRLG),DISP=(OLD,PASS)
 //SYSUT1   DD  *
-include(pdpprlg.mac)/*
+undivert(pdpprlg.mac)/*
 //SYSPRINT DD  SYSOUT=*
 //SYSIN    DD  DUMMY
 //*
 //PDPEPIL  EXEC PGM=IEBGENER
 //SYSUT2   DD  DSN=&&MACLIB(PDPEPIL),DISP=(OLD,PASS)
 //SYSUT1   DD  *
-include(pdpepil.mac)/*
+undivert(pdpepil.mac)/*
 //SYSPRINT DD  SYSOUT=*
 //SYSIN    DD  DUMMY
 //*
 //MVSSTART EXEC PDPASM,MEMBER=MVSSTART
 //SYSIN  DD  *
-include(mvsstart.asm)/*
+undivert(mvsstart.asm)/*
 //MVSSUPA  EXEC PDPASM,MEMBER=MVSSUPA
 //SYSIN  DD  *
-include(mvssupa.asm)/*
+undivert(mvssupa.asm)/*
 //START    EXEC PDPASM,MEMBER=START
 //SYSIN  DD *
-include(start.s)/*
+undivert(start.s)/*
 //STDIO    EXEC PDPASM,MEMBER=STDIO
 //SYSIN  DD *
-include(stdio.s)/*
+undivert(stdio.s)/*
 //STDLIB   EXEC PDPASM,MEMBER=STDLIB
 //SYSIN  DD  *
-include(stdlib.s)/*
+undivert(stdlib.s)/*
 //CTYPE    EXEC PDPASM,MEMBER=CTYPE
 //SYSIN  DD  *
-include(ctype.s)/*
+undivert(ctype.s)/*
 //STRING   EXEC PDPASM,MEMBER=STRING
 //SYSIN  DD  *
-include(string.s)/*
+undivert(string.s)/*
 //TIME     EXEC PDPASM,MEMBER=TIME
 //SYSIN  DD  *
-include(time.s)/*
+undivert(time.s)/*
 //ERRNO    EXEC PDPASM,MEMBER=ERRNO
 //SYSIN  DD  *
-include(errno.s)/*
+undivert(errno.s)/*
 //ASSERT   EXEC PDPASM,MEMBER=ASSERT
 //SYSIN  DD  *
-include(assert.s)/*
+undivert(assert.s)/*
 //LOCALE   EXEC PDPASM,MEMBER=LOCALE
 //SYSIN  DD  *
-include(locale.s)/*
+undivert(locale.s)/*
 //MATH     EXEC PDPASM,MEMBER=MATH
 //SYSIN  DD  *
-include(math.s)/*
+undivert(math.s)/*
 //SETJMP   EXEC PDPASM,MEMBER=SETJMP
 //SYSIN  DD  *
-include(setjmp.s)/*
+undivert(setjmp.s)/*
 //SIGNAL   EXEC PDPASM,MEMBER=SIGNAL
 //SYSIN  DD  *
-include(signal.s)/*
+undivert(signal.s)/*
 //@@MEMMGR EXEC PDPASM,MEMBER=@@MEMMGR
 //SYSIN  DD  *
-include(__memmgr.s)/*
+undivert(__memmgr.s)/*
 //PDPTEST EXEC PDPASM,MEMBER=PDPTEST
 //SYSIN  DD  *
-include(pdptest.s)/*
+undivert(pdptest.s)/*
 //LKED     EXEC PGM=IEWL,PARM='MAP,LIST'
 //SYSLIN   DD DDNAME=SYSIN
 //SYSLIB   DD DSN=&&NCALIB,DISP=(OLD,PASS)

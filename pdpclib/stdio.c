@@ -3601,10 +3601,6 @@ char *fgets(char *s, int n, FILE *stream)
             return (NULL);
         }
         len = ((dptr[0] << 8) | dptr[1]) - 4;
-        if ((len == 1) && (dptr[4] == ' '))
-        {
-            len = 0;
-        }
         if (n > (len + 1))
         {
             memcpy(s, dptr + 4, len);
@@ -4179,10 +4175,6 @@ size_t fread(void *ptr, size_t size, size_t nmemb, FILE *stream)
                 read = (dptr[0] << 8) | dptr[1];
                 read -= 4;
                 dptr += 4;
-                if ((read == 1) && (dptr[0] == ' '))
-                {
-                    read = 0;
-                }
 
                 if ((totalread + read) >= bytes)
                 {

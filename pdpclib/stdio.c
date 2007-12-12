@@ -3898,24 +3898,12 @@ size_t fwrite(const void *ptr, size_t size, size_t nmemb, FILE *stream)
                         sz = stream->lrecl;
                     }
                     __awrite(stream->hfile, &dptr);
-                    if(sz == 0)
-                    {
-                        dptr[0] = 0;
-                        dptr[1] = 5;
-                        dptr[2] = 0;
-                        dptr[3] = 0;
-                        dptr[4] = ' ';
-                        stream->bufStartR += 2;
-                    }
-                    else
-                    {
-                        dptr[0] = (sz + 4) >> 8;
-                        dptr[1] = (sz + 4) & 0xff;
-                        dptr[2] = 0;
-                        dptr[3] = 0;
-                        memcpy(dptr + 4, ptr, sz);
-                        stream->bufStartR += (sz + 1);
-                    }
+                    dptr[0] = (sz + 4) >> 8;
+                    dptr[1] = (sz + 4) & 0xff;
+                    dptr[2] = 0;
+                    dptr[3] = 0;
+                    memcpy(dptr + 4, ptr, sz);
+                    stream->bufStartR += (sz + 1);
                 }
                 else
                 {
@@ -3926,24 +3914,12 @@ size_t fwrite(const void *ptr, size_t size, size_t nmemb, FILE *stream)
                     memcpy(stream->upto, ptr, sz);
                     sz += (stream->upto - stream->fbuf);
                     __awrite(stream->hfile, &dptr);
-                    if(sz == 0)
-                    {
-                        dptr[0] = 0;
-                        dptr[1] = 5;
-                        dptr[2] = 0;
-                        dptr[3] = 0;
-                        dptr[4] = ' ';
-                        stream->bufStartR += 2;
-                    }
-                    else
-                    {
-                        dptr[0] = (sz + 4) >> 8;
-                        dptr[1] = (sz + 4) & 0xff;
-                        dptr[2] = 0;
-                        dptr[3] = 0;
-                        memcpy(dptr + 4, stream->fbuf, sz);
-                        stream->bufStartR += (sz + 1);
-                    }
+                    dptr[0] = (sz + 4) >> 8;
+                    dptr[1] = (sz + 4) & 0xff;
+                    dptr[2] = 0;
+                    dptr[3] = 0;
+                    memcpy(dptr + 4, stream->fbuf, sz);
+                    stream->bufStartR += (sz + 1);
                     stream->upto = stream->fbuf;
                 }
                 ptr = (char *)p + 1;
@@ -3959,24 +3935,12 @@ size_t fwrite(const void *ptr, size_t size, size_t nmemb, FILE *stream)
                             sz = stream->lrecl;
                         }
                         __awrite(stream->hfile, &dptr);
-                        if(sz == 0)
-                        {
-                            dptr[0] = 0;
-                            dptr[1] = 5;
-                            dptr[2] = 0;
-                            dptr[3] = 0;
-                            dptr[4] = ' ';
-                            stream->bufStartR += 2;
-                        }
-                        else
-                        {
-                            dptr[0] = (sz + 4) >> 8;
-                            dptr[1] = (sz + 4) & 0xff;
-                            dptr[2] = 0;
-                            dptr[3] = 0;
-                            memcpy(dptr + 4, ptr, sz);
-                            stream->bufStartR += (sz + 1);
-                        }
+                        dptr[0] = (sz + 4) >> 8;
+                        dptr[1] = (sz + 4) & 0xff;
+                        dptr[2] = 0;
+                        dptr[3] = 0;
+                        memcpy(dptr + 4, ptr, sz);
+                        stream->bufStartR += (sz + 1);
                         ptr = p + 1;
                         p = memchr(ptr, '\n', bytes);
                     }

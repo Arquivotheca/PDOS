@@ -45,6 +45,11 @@ int main(int argc, char **argv)
     {
         printf("arg %d is <%s>\n", i, argv[i]);
     }
+#ifdef LOOP
+    /* note - we use two newlines because of PDPCLIB's MVS
+       implementation (MACRF=PL) */
+    printf("deliberately looping!\n\n";
+#endif
     return (6);
 #if 0
     fp = fopen("pdptest.in", "r+b");

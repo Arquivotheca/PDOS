@@ -15,7 +15,7 @@
 &COMP    SETC 'GCC'               Indicate that this is for GCC
 * &COMP    SETC 'C370'            Indicate that this is for C/370
          LCLC &SYS                Declare variable for system
-&SYS     SETC 'S380'              Indicate that this is for S/380
+&SYS     SETC 'SXXX'              Change to S380 to activate S/380
          AIF ('&SYSPARM' EQ 'IFOX00').NOMODE
          AMODE ANY
          RMODE ANY

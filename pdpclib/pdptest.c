@@ -48,7 +48,7 @@ int main(int argc, char **argv)
 #ifdef LOOP
     /* note - we use two newlines because of PDPCLIB's MVS
        implementation (MACRF=PL) */
-    printf("deliberately looping!\n\n";
+    printf("deliberately looping!\n\n");
 #endif
     return (6);
 #if 0

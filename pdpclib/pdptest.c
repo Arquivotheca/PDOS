@@ -49,6 +49,7 @@ int main(int argc, char **argv)
     /* note - we use two newlines because of PDPCLIB's MVS
        implementation (MACRF=PL) */
     printf("deliberately looping!\n\n");
+    for (;;) ;
 #endif
     return (6);
 #if 0

@@ -1,8 +1,8 @@
             Public Domain C runtime library
             -------------------------------
             
-Version : 0.84
-Released: 2007-08-23
+Version : 0.85
+Released: 2007-12-16
 
 Written by Paul Edwards.
 Released to the public domain.
@@ -264,6 +264,8 @@ HISTORY
       create console mode applications. Also, MVS has been
       significantly enhanced so that it can read PDS
       concatenations. Also, MVS executables are now 31-bit.
+
+0.85  Support for S/380, bug fixes, memmgr option.
       
 
 CREDITS
@@ -280,6 +282,7 @@ Matthew Parker for getting the program name under MSDOS.
 Phil Roberts for helping to debug the MVS port.
 Dave Wade for doing the CMS port, the maths functions
   and getting floating point supported.
+Dave Edwards for various bug fixes/enhancements.
 
 Also, I have used code from both of these other public domain
 C runtime libraries:

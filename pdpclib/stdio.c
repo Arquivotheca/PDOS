@@ -1990,6 +1990,7 @@ static int examine(const char **formt, FILE *fq, char *s, va_list *arg,
         if (*format == '*')
         {
             precision = va_arg(*arg, int);
+            format++;
         }
         else
         {

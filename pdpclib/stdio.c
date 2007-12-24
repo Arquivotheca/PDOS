@@ -4491,12 +4491,18 @@ static void dblcvt(double num, char cnvtype, size_t nwidth,
                allow for numeric fuzz */
             if ( ( (nprecision-pdigits-1) > exp) && (b < 0.1E-15 ) )
             {
-                break;
+               if (cnvtype != 'G' && cnvtype != 'g')
+               {
+                   strcat(result,"0");
+               }
             }
-            i = b;
-            work[0] = (char)('0' + i % 10);
-            work[1] = 0x00;
-            strcat(result,work);
+            else
+            {
+                i = b;
+                work[0] = (char)('0' + i % 10);
+                work[1] = 0x00;
+                strcat(result,work);
+            }
         }
     }
     /*

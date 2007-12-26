@@ -63,6 +63,7 @@
 #include "stdarg.h"
 #include "ctype.h"
 #include "errno.h"
+#include "float.h"
 #include "limits.h"
 
 /* PDOS and MSDOS use the same interface most of the time */
@@ -4338,8 +4339,8 @@ static char *int_strtok(char *s1, const char *s2)
 static void dblcvt(double num, char cnvtype, size_t nwidth,
             size_t nprecision, char *result)
 {
-    double b;
-    int i,exp,pdigits,format;
+    double b,round;
+    int i,j,exp,pdigits,format;
     char sign, work[45];
 
     /* save original data & set sign */
@@ -4428,6 +4429,63 @@ static void dblcvt(double num, char cnvtype, size_t nwidth,
             }
             break;
     }
+    /*
+    Now round
+    */
+    switch(format)
+    {
+            case 0:    /* we are printing in standard form */
+                if(nprecision < DBL_MANT_DIG) /* we need to round */
+                 {
+                    j=nprecision;
+                 }
+                 else
+                 {
+                    j=DBL_MANT_DIG;
+                 }
+                 round = 1.0/2.0;
+                 i=0;
+                 while(++i <= j)round=round/10.0;
+                 b=b+round;
+                 if(b >= 10.0)
+                 {
+                    b=b/10.0;
+                    exp=exp+1;
+                 }
+                 break;
+            case 1:      /* we have a number > 1  */
+                         /* need to round at the exp + nprescionth digit */
+                 if(exp + nprecision < DBL_MANT_DIG) /* we need to round */
+                 {
+                    j = exp + nprecision;
+                 }
+                 else
+                 {
+                    j = DBL_MANT_DIG;
+                 }
+                 round = 0.5;
+                 i=0;
+                 while( i++ < j ) round = round/10;
+                 b=b+round;
+                 if(b>=10.0) { b = b/10.0; exp=exp+1; }
+                 break;
+        case -1:   /* we have a number that starts 0.xxxx */
+                 if(nprecision < DBL_MANT_DIG) /* we need to round */
+                 {
+                    j =  nprecision + exp + 1 ;
+                 }
+                 else
+                 {
+                    j = DBL_MANT_DIG;
+                 }
+                 round = 5.0;
+                 i=0;
+                 while( i++ < j ) round = round/10;
+                 if(j>=0)b=b+round;
+                 if(b>=10.0) { b = b/10.0; exp=exp+1;}
+                 if(exp >= 0) format = 1;
+                 break;
+     }
     /*
        Now extract the requisite number of digits
     */

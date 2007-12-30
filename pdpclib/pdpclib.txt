@@ -266,6 +266,8 @@ HISTORY
       concatenations. Also, MVS executables are now 31-bit.
 
 0.85  Support for S/380, bug fixes, memmgr option.
+
+0.86  Bug fixes to do with floating point.
       
 
 CREDITS

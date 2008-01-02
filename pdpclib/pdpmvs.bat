@@ -14,4 +14,4 @@ gccmvs -DUSE_MEMMGR -S -I . __memmgr.c
 gccmvs -DUSE_MEMMGR -S -I . pdptest.c
 m4 -I . pdpmvs.m4 >pdpmvs.jcl
 rem call sub pdpmvs.jcl
-call runmvsp pdpmvs.jcl output.txt
+call runmvs pdpmvs.jcl output.txt

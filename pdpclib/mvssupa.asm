@@ -695,7 +695,7 @@ NOPOOL   DS    0H
          L     R3,0(,R2)
 .GETMEND ANOP
          LR    R4,R3
-         LA    R3,16(,R3)
+         LA    R3,8(,R3)
 *
          AIF   ('&SYS' NE 'S380').N380GM1
          LR    R0,R3              Load amount of S/380 memory to get
@@ -711,8 +711,8 @@ NOPOOL   DS    0H
          ST    R3,0(R1)
 * AND JUST BELOW THE VALUE WE RETURN TO THE CALLER, WE SAVE
 * THE AMOUNT THEY REQUESTED
-         ST    R4,12(R1)
-         A     R1,=F'16'
+         ST    R4,4(R1)
+         A     R1,=F'8'
          LR    R15,R1
 *
 RETURNGM DS    0H
@@ -731,7 +731,7 @@ RETURNGM DS    0H
          USING @@FREEM,R12
 *
          L     R2,0(,R1)
-         S     R2,=F'16'
+         S     R2,=F'8'
          L     R3,0(,R2)
 *
          AIF   ('&SYS' NE 'S380').N380FM1

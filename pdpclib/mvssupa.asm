@@ -379,7 +379,9 @@ CAMLEN   EQU   *-CAMDUM           Length of CAMLST Template
          L     R2,0(,R1)          R2 contains GETMAINed address/handle
          USING IHADCB,R2
          L     R3,4(,R1)  R3 points to where to store record pointer
-         GETMAIN RU,LV=WORKLEN,SP=SUBPOOL
+         USING ZDCBAREA,R2
+*        GETMAIN RU,LV=WORKLEN,SP=SUBPOOL
+         LA    R1,SAVEADCB
          ST    R13,4(,R1)
          ST    R1,8(,R13)
          LR    R13,R1
@@ -579,9 +581,10 @@ SETCURR  DS    0H
 RECBACK  DS    0H
          ST    R5,0(,R3)          Store record address for caller
 READEOD  DS    0H
-         LR    R1,R13             Save temp.save area addr.for FREEMAIN
-         L     R13,SAVEAREA+4     Restore Caller's save area address
-         FREEMAIN RU,LV=WORKLEN,A=(1),SP=SUBPOOL  Free temp.save area
+*        LR    R1,R13             Save temp.save area addr.for FREEMAIN
+*        L     R13,SAVEAREA+4     Restore Caller's save area address
+         L     R13,SAVEADCB+4
+*        FREEMAIN RU,LV=WORKLEN,A=(1),SP=SUBPOOL  Free temp.save area
          LR    R15,R6             Set return code 1=EOF or 0=not-eof
          RETURN (14,12),RC=(15)   Return to caller
 *
@@ -625,7 +628,7 @@ H4       DC    H'4'               Constant for subtraction
 .N380WR2 ANOP
 *
          ST    R1,0(,R3)
-         LR    R1,R13
+*        LR    R1,R13
 *        L     R13,SAVEAREA+4
          L     R13,SAVEADCB+4
 *        FREEMAIN RU,LV=WORKLEN,A=(1),SP=SUBPOOL

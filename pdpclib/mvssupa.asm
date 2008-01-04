@@ -604,7 +604,15 @@ H4       DC    H'4'               Constant for subtraction
          LR    R13,R1
 *        USING WORKAREA,R13
 *
+         AIF   ('&SYS' NE 'S380').N380WR1
+         CALL  @@SETM24
+.N380WR1 ANOP
+*
          PUT   (R2)
+*
+         AIF   ('&SYS' NE 'S380').N380WR2
+         CALL  @@SETM31
+.N380WR2 ANOP
 *
          ST    R1,0(,R3)
 *        LR    R1,R13

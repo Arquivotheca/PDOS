@@ -11,15 +11,9 @@
 *  version change the "&COMP" switch.                                *
 *                                                                    *
 **********************************************************************
-         LCLC &COMP               Declare compiler switch
-&COMP    SETC 'GCC'               Indicate that this is for GCC
-* &COMP    SETC 'C370'            Indicate that this is for C/370
-         LCLC &SYS                Declare variable for system
-&SYS     SETC 'SXXX'              Change to S380 to activate S/380
-         AIF ('&SYSPARM' EQ 'IFOX00').NOMODE
-         AMODE ANY
-         RMODE ANY
-.NOMODE ANOP
+*
+         COPY  PDPTOP
+*
          PRINT NOGEN
 * YREGS IS NOT AVAILABLE WITH IFOX
 *         YREGS

@@ -8,63 +8,24 @@
 *                                                                    *
 *  PDPTOP - standard code for the start of every assembler file.     *
 *                                                                    *
-*  This macro takes the SYSPARM as a parameter (if given) and        *
-*  breaks it up into components (separated by commas), and then      *
-*  sets defines for each recognized parameter. Here is an            *
-*  example:                                                          *
+*  Allow user to specify system-specific things                      *
 *                                                                    *
-*  PDPTOP &SYSPARM                                                   *
-*                                                                    *
-*  And if you go EXEC PGM=IFOX00,PARM='SYSPARM(IFOX,C370)' then      *
-*  SETCs will be generated for IFOX and C370.                        *
-*                                                                    *
-*  This macro also makes an automatic determination of whether to    *
-*  set a S370 or S390 SETC, unless there is a SYSPARM of S380, in    *
-*  which case neither will be generated, and a S380 SETC will be     *
-*  defined instead.                                                  *
 *                                                                    *
 **********************************************************************
-         MACRO
-&N       PDPTOP &SYSPARM=
 *
-* First let's try to find out whether we're on S/370, S/380 or S/390
+* Is the GCC or C/370 calling convention being used?
 *
-         AIF     ('&SYSPARM' CONTAINS 'S380').GOTS380
-* No S380, let's figure out what system we're on.
-* The MACLIB is different between MVS 3.8j and OS/390, so
-* let's take a look.
-         DSECT
-         GBLA  &IHBLEN            Declare WTO Global length
-@@DUMMYW WTO   ' '                Generate WTO to see if Global set
-         ORG   @@DUMMYW           Overlay dummy WTO
-         LCLA  &MVS38J            Declare Local for MACLIB level
-&MVS38J  SETA  &IHBLEN            Zero if MVS 3.8j MACLIBs
-         AIF   (&MVS38J NE 0).MVS3164  If not MVS 3.8j, then 31/64 bit
-         SETC  'S370'
-         AGO   .FINS380
-.MVS3164 ANOP  ,                  31 or 64 bit MVS
-         SETC  'S390'
-         AGO   .FINS380
-.GOTS380 ANOP
-         SETC 'S380'
-.FINS380 ANOP
+         LCLC &COMP               Declare compiler switch
+&COMP    SETC 'GCC'               Indicate that this is for GCC
+* &COMP    SETC 'C370'            Indicate that this is for C/370
 *
-* Now let's find out if we're using the GCC calling convention or
-* the C/370 calling convention. SYSPARM containing C370 sets C/370,
-* otherwise we assume GCC. We should really generalize these two
-* different calling conventions, as multiple compilers will use
-* the same convention. But for now, we'll just call it the C370
-* calling convention.
+* What system are the compiles being done for?
 *
-         AIF     ('&SYSPARM' NOT CONTAINS 'C370').NOC370
-         SETC 'C370'
-.NOTC370
+         LCLC &SYS                Declare variable for system
+&SYS     SETC 'S380'              Define either S370, S380 or S390
 *
-* Now if this is a S/390, we should indentify this module as
-* being AMODE ANY, RMODE ANY
+* AMODE/RMODE not available on S370
 *
-         AIF switch S390 is not set .NOAMODE
-         AMODE ANY
-         RMODE ANY
-.NOAMODE
-         MEND
+*        AMODE ANY
+*        RMODE ANY
+*

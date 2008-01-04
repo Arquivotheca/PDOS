@@ -44,11 +44,7 @@
 *
 ***********************************************************************
 *
-         LCLC &COMP               Declare compiler switch
-&COMP    SETC 'GCC'               Indicate that this is for GCC
-* &COMP    SETC 'C370'            Indicate that this is for C/370
-         LCLC &SYS                Declare variable for system
-&SYS     SETC 'SXXX'              Change to S380 to activate S/380
+         COPY  PDPTOP
 *
          CSECT
          PRINT NOGEN
@@ -128,22 +124,13 @@ R15      EQU   15
          L     R9,16(,R1)         R9 POINTS TO MEMBER NAME (OF PDS)
          LA    R9,00(,R9)         Strip off high-order bit or byte
 *
-* Because of the AMODE, RMODE, and  LOC=BELOW, we need to know
-* whether assembling for MVS 3.8j or a 31 bit or higher MVS.
-* The MACLIB is different for the systems so MACRO WTO will
-* be used to differentiate between MACLIBs.
-         GBLA  &IHBLEN            Declare WTO Global length
-DUMMYWTO WTO   ' '                Generate WTO to see if Global set
-         ORG   DUMMYWTO           Overlay dummy WTO
-         LCLA  &MVS38J            Declare Local for MACLIB level
-&MVS38J  SETA  &IHBLEN            Zero if MVS 3.8j MACLIBs
-         AIF   (&MVS38J NE 0).MVS3164  If not MVS 3.8j, then 31/64 bit
-         GETMAIN RU,LV=ZDCBLEN,SP=SUBPOOL  No LOC= for MVS 3.8j GETMAIN
+* S/370 can't handle LOC=BELOW
+*
+         AIF   ('&SYS' NE 'S370').MVS8090  If not S/370 then 380 or 390
+         GETMAIN RU,LV=ZDCBLEN,SP=SUBPOOL  No LOC= for S/370
          AGO   .GETOEND
-.MVS3164 ANOP  ,                  31 or 64 bit MVS
+.MVS8090 ANOP  ,                  S/380 or S/390
          GETMAIN RU,LV=ZDCBLEN,SP=SUBPOOL,LOC=BELOW
-         AMODE ANY                Functions called from either AMODE
-         RMODE ANY                Program resides above or below line
 .GETOEND ANOP
 *
          LR    R2,R1              Addr.of storage obtained to its base
@@ -794,7 +781,7 @@ RETURNGC DS    0H
 *
          L     R6,=A(LAB24)
          N     R6,=X'7FFFFFFF'
-         DC    X'0B06'            BSM R0,R6
+         BSM   R0,R6
 LAB24    DS    0H
          LA    R15,0
 *
@@ -815,7 +802,7 @@ RETURN24 DS    0H
 *
          L     R6,=A(LAB31)
          O     R6,=X'80000000'
-         DC    X'0B06'            BSM R0,R6
+         BSM   R0,R6
 LAB31    DS    0H
          LA    R15,0
 *

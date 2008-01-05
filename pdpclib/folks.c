@@ -53,24 +53,23 @@ quit
 #include <stdio.h>
 #include <stdlib.h>
 
-#ifdef __MVS__
-#define FNM "dd:folks"
-#else
-#define FNM "folks.dat"
-#endif
-
-int main(void)
+int main(int argc, char **argv)
 {
     FILE *fp;
     unsigned char lenb[4];
     int len;
     int c;
     int x;
-    
-    fp = fopen(FNM, "rb");
+
+    if (argc <= 1)
+    {
+        printf("usage: folks <fnm>\n");
+        return (EXIT_FAILURE);
+    }    
+    fp = fopen(*(argv + 1), "rb");
     if (fp == NULL)
     {
-        printf("failed to open %s\n", FNM);
+        printf("failed to open %s\n", *(argv + 1));
         return (EXIT_FAILURE);
     }
     while (fread(lenb, sizeof lenb, 1, fp) == 1)

@@ -870,8 +870,8 @@ RETURNSR DS    0H
          L     R6,24(,R1)         * R6 HAS RETURN CODE
          L     R4,0(,R1)          * OUR SAVE AREA
          L     R13,12(,R1)        * GET OLD STACK POINTER
-	 LR    R8,R4              * Save before clobbered by MVCL
-	 LR    R7,R5              * Save before clobbered by MVCL
+         LR    R8,R4              * Save before clobbered by MVCL
+         LR    R7,R5              * Save before clobbered by MVCL
          MVCL  R2,R4              * AND RESTORE STACK
          ST    R6,24(,R1)         * SAVE VAL IN ENV
          L     R6,=F'1'

@@ -124,7 +124,7 @@ Open Watcom 1.6 (for 16-bit wasmr assembler)
 http://www.openwatcom.org
 
 EMX 0.9d (which includes GCC 2.8.1) (for 32-bit C compiler and assembler):
-http://hobbes.nmsu.edu/cgi-bin/h-browse?dir=/pub/os2/dev/emx/v0.9d
+http://hobbes.nmsu.edu/cgi-bin/h-browse?sh=1&dir=//pub/os2/dev/emx/v0.9d
 
 raread/rawrite (unknown origin)
 

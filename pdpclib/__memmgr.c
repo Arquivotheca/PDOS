@@ -112,7 +112,7 @@ void *memmgrAllocate(MEMMGR *memmgr, size_t bytes, int id)
     {
         if ((p->size >= bytes) && !p->allocated)
         {
-            if ((p->size - bytes) > MEMMGRN_SZ)
+            if ((p->size - bytes) >= (MEMMGRN_SZ + MEMMGR_MINFREE))
             {
                 n = (MEMMGRN *)((char *)p + MEMMGRN_SZ + bytes);
                 n->next = p->next;
@@ -303,7 +303,7 @@ int memmgrRealloc(MEMMGR *memmgr, void *ptr, size_t newsize)
         {
             /* don't allow reduction in size unless
                it is by a large enough amount */
-            if (p->size < (newsize + MEMMGRN_SZ))
+            if (p->size < (newsize + MEMMGRN_SZ + MEMMGR_MINFREE))
             {
                 return (-1);
             }

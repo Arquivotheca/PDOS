@@ -32,12 +32,20 @@ typedef struct {
     MEMMGRN *start;
 } MEMMGR;
 
-#define MEMMGR_ALIGN 16
+/* What boundary we want the memmgr control block to be a multiple of */
+#define MEMMGR_ALIGN 8
 
 #define MEMMGRN_SZ \
   ((sizeof(MEMMGRN) % MEMMGR_ALIGN == 0) ? \
    sizeof(MEMMGRN) : \
    ((sizeof(MEMMGRN) / MEMMGR_ALIGN + 1) * MEMMGR_ALIGN))
+
+/* what we would like chunks of memory, including room for the
+   control block, to be as a minimum */
+#define MEMMGR_MINFREE_INTERNAL 64
+
+#define MEMMGR_MINFREE (MEMMGRN_SZ < MEMMGR_MINFREE_INTERNAL ? \
+    MEMMGR_MINFREE_INTERNAL - MEMMGRN_SZ : MEMMGRN_SZ)
 
 #define memmgrDefaults __mmDef
 #define memmgrInit __mmInit

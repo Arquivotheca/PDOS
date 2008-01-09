@@ -687,6 +687,11 @@ NOPOOL   DS    0H
          LR    R4,R3
          LA    R3,8(,R3)
 *
+* To avoid fragmentation, round up size to 64 byte multiple
+*
+         A     R3,=A(64-1)
+         N     R3,=X'FFFFFFC0'
+*
          AIF   ('&SYS' NE 'S380').N380GM1
          LR    R0,R3              Load amount of S/380 memory to get
          SLR   R1,R1              Clear register to indicate get

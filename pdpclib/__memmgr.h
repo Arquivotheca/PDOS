@@ -37,7 +37,7 @@ typedef struct {
 #define MEMMGRN_SZ \
   ((sizeof(MEMMGRN) % MEMMGR_ALIGN == 0) ? \
    sizeof(MEMMGRN) : \
-   ((sizeof(MEMMGRN) / MEMMGR_ALIGN + 1) * 16))
+   ((sizeof(MEMMGRN) / MEMMGR_ALIGN + 1) * MEMMGR_ALIGN))
 
 #define memmgrDefaults __mmDef
 #define memmgrInit __mmInit

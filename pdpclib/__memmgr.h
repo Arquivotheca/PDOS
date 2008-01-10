@@ -42,7 +42,7 @@ typedef struct {
 
 /* what we would like chunks of memory, including room for the
    control block, to be as a minimum */
-#define MEMMGR_MINFREE_INTERNAL 64
+#define MEMMGR_MINFREE_INTERNAL 256
 
 #define MEMMGR_MINFREE (MEMMGRN_SZ < MEMMGR_MINFREE_INTERNAL ? \
     MEMMGR_MINFREE_INTERNAL - MEMMGRN_SZ : MEMMGRN_SZ)

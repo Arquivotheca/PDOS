@@ -18,6 +18,8 @@ typedef struct memmgrn {
 #endif
     struct memmgrn *next;
     struct memmgrn *prev;
+    struct memmgrn *nextf;
+    struct memmgrn *prevf;
     int fixed;
     size_t size;
     int allocated;
@@ -30,6 +32,7 @@ typedef struct memmgrn {
 
 typedef struct {
     MEMMGRN *start;
+    MEMMGRN *startf;
 } MEMMGR;
 
 /* What boundary we want the memmgr control block to be a multiple of */
@@ -46,6 +49,11 @@ typedef struct {
 
 #define MEMMGR_MINFREE (MEMMGRN_SZ < MEMMGR_MINFREE_INTERNAL ? \
     MEMMGR_MINFREE_INTERNAL - MEMMGRN_SZ : MEMMGRN_SZ)
+
+/* do you want to crash whenever an integrity problem arises? */
+#ifndef MEMMGR_CRASH
+#define MEMMGR_CRASH 1
+#endif
 
 #define memmgrDefaults __mmDef
 #define memmgrInit __mmInit

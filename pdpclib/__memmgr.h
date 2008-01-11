@@ -21,7 +21,7 @@ typedef struct memmgrn {
     struct memmgrn *nextf;
     struct memmgrn *prevf;
     int fixed;
-    size_t size;
+    size_t size; /* size of memory available to user */
     int allocated;
     int id;
 #ifdef __MEMMGR_INTEGRITY

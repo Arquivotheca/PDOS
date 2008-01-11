@@ -339,8 +339,13 @@ void memmgrFree(MEMMGR *memmgr, void *ptr)
            this one. */        
         l->size += n->size;
         l->next = n->next;
+        if (l->next != NULL)
+        {
+            l->next->prev = l;
+        }
         
         /* That wasn't so hairy after all */
+        /* Actually it was */
     }
 
 #ifdef __MEMMGR_INTEGRITY

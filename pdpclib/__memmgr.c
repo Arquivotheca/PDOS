@@ -81,7 +81,7 @@ void memmgrSupply(MEMMGR *memmgr, void *buffer, size_t szbuf)
     }
 
     b->fixed = 1;
-    b->size = szbuf - MEMMGRN_SZ;
+    b->size = szbuf;
     b->allocated = 0;
     
     /* add this to the front of the list */
@@ -112,12 +112,19 @@ void *memmgrAllocate(MEMMGR *memmgr, size_t bytes, int id)
         bytes += (MEMMGR_ALIGN - bytes % MEMMGR_ALIGN);
     }
 
+    /* now that it is aligned, add the node size and make sure
+    /* that it is a multiple of the minimum size */
+    bytes += (MEMMGRN_SZ + MEMMGR_MINFREE - 1);
+
     /* if they have exceeded the limits of the data type,
        bail out now. */
     if (bytes < oldbytes)
     {
         return (NULL);
     }
+    
+    bytes &= ~(MEMMGRN_SZ + MEMMGR_MINFREE - 1);
+    /* should have decent alignment now */
 
     p = memmgr->startf;
 
@@ -138,12 +145,12 @@ void *memmgrAllocate(MEMMGR *memmgr, size_t bytes, int id)
             }
             if ((p->size - bytes) >= (MEMMGRN_SZ + MEMMGR_MINFREE))
             {
-                n = (MEMMGRN *)((char *)p + MEMMGRN_SZ + bytes);
+                n = (MEMMGRN *)((char *)p + bytes);
                 n->next = p->next;
                 n->prev = p;
                 p->next = n;
                 n->fixed = 0;
-                n->size = p->size - bytes - MEMMGRN_SZ;
+                n->size = p->size - bytes;
                 n->allocated = 0;
 #ifdef __MEMMGR_INTEGRITY
                 n->eyecheck1 = n->eyecheck2 = 0xa5a5a5a5;
@@ -250,7 +257,7 @@ void memmgrFree(MEMMGR *memmgr, void *ptr)
        without any further fuss */
     if (!p->fixed && (l != NULL) && !l->allocated)
     {
-        l->size += p->size + MEMMGRN_SZ;
+        l->size += p->size;
         l->next = p->next;
         combprev = 1;
     }
@@ -264,9 +271,10 @@ void memmgrFree(MEMMGR *memmgr, void *ptr)
        was not combined */
     if (combnext && !combprev)
     {
-        p->size += n->size + MEMMGRN_SZ;
+        p->size += n->size;
         p->next = n->next;
         p->nextf = n->nextf;
+        p->allocated = 0;
         if (p->nextf != NULL)
         {
             p->nextf->prevf = p;
@@ -329,7 +337,7 @@ void memmgrFree(MEMMGR *memmgr, void *ptr)
         /* Ok, the free memory has been taken care of, now we go
            back to the newly combined node and combine it with
            this one. */        
-        l->size += n->size + MEMMGRN_SZ;
+        l->size += n->size;
         l->next = n->next;
         
         /* That wasn't so hairy after all */
@@ -392,8 +400,13 @@ size_t memmgrMaxSize(MEMMGR *memmgr)
         }
         p = p->next;
     }
+    if (max != 0)
+    {
+        max -= MEMMGRN_SZ;
+    }
     return (max);
 }
+
 
 #ifdef __MEMMGR_INTEGRITY
 /* do an integrity check */
@@ -419,9 +432,9 @@ void memmgrIntegrity(MEMMGR *memmgr)
 
 /* resize a memory block */
 /* note that the size in the control block is the
-   size available for data */
+   size of available data plus the control block */
 /* note that we don't currently see if the current buffer actually
-   has enough room for their data, nor do we see if the next node
+   has enough room for their new data size, nor do we see if the next node
    is free. We should, but we don't yet. */
 int memmgrRealloc(MEMMGR *memmgr, void *ptr, size_t newsize)
 {
@@ -435,6 +448,7 @@ int memmgrRealloc(MEMMGR *memmgr, void *ptr, size_t newsize)
     {
         newsize += (MEMMGR_ALIGN - newsize % MEMMGR_ALIGN);
     }
+    newsize += MEMMGRN_SZ;
 
     /* if they have exceeded the limits of the data type,
        bail out now. */
@@ -466,12 +480,6 @@ int memmgrRealloc(MEMMGR *memmgr, void *ptr, size_t newsize)
         return (-1);
     }
 
-    /* handle overflow condition */
-    if ((newsize + MEMMGRN_SZ) < newsize)
-    {
-        return (-1);
-    }
-
     /* insert new control block */
     n = (MEMMGRN *)((char *)p + MEMMGRN_SZ + newsize);
     n->next = p->next;
@@ -489,7 +497,7 @@ int memmgrRealloc(MEMMGR *memmgr, void *ptr, size_t newsize)
     z = n->next;
     if ((z != NULL) && !z->allocated && !z->fixed)
     {
-        n->size += z->size + MEMMGRN_SZ;
+        n->size += z->size;
         n->next = z->next;
         n->nextf = z->nextf;
         if (n->nextf != NULL)

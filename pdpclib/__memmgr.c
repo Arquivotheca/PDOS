@@ -569,8 +569,6 @@ void memmgrIntegrity(MEMMGR *memmgr)
     if (memmgrDebug)
     {
         printf("finished integrity checking\n\n");
-        printf("location 4100938 contains %x\n\n",
-               *(int *)0x4100938);
     }
 #endif
     return;

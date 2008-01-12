@@ -19,7 +19,7 @@
 /* Do you want lots of debugging output? */
 /* Note that you still need to set the memmgrDebug variable to 1
    before it is actually activated */
-#define __MEMMGR_DEBUGGING 1
+#define __MEMMGR_DEBUG 1
 
 typedef struct memmgrn {
 #ifdef __MEMMGR_INTEGRITY

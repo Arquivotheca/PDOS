@@ -115,12 +115,17 @@ void *memmgrAllocate(MEMMGR *memmgr, size_t bytes, int id)
        memory size, like 101, which would disrupt the alignment.
        MEMMGR_MINFREE should have compensated for this by ensuring
        that it is a multiple of the MEMMGRN alignment */
+    bytes += MEMMGRN_SZ;
     if ((bytes % (MEMMGRN_SZ + MEMMGR_MINFREE)) != 0)
     {
         bytes = ((bytes / (MEMMGRN_SZ + MEMMGR_MINFREE)) + 1)
                 * (MEMMGRN_SZ + MEMMGR_MINFREE);
     }
 
+    if (memmgrDebug)
+    {
+        printf("***+++converted to %d\n\n", bytes);
+    }
     /* if they have exceeded the limits of the data type,
        bail out now. */
     if (bytes < oldbytes)
@@ -564,6 +569,8 @@ void memmgrIntegrity(MEMMGR *memmgr)
     if (memmgrDebug)
     {
         printf("finished integrity checking\n\n");
+        printf("location 4100938 contains %x\n\n",
+               *(int *)0x4100938);
     }
 #endif
     return;

@@ -54,7 +54,9 @@ typedef struct {
 
 /* what we would like chunks of memory, including room for the
    control block, to be as a minimum */
-#define MEMMGR_MINFREE_INTERNAL 256
+/* there is a GCCMVS optimizer bug that prevents us from using 256 */
+/* #define MEMMGR_MINFREE_INTERNAL 256 */
+#define MEMMGR_MINFREE_INTERNAL (5 * MEMMGRN_SZ)
 
 /* minimum size we will give to an application for its data */
 #define MEMMGR_MINFREE_INT2 (MEMMGRN_SZ < MEMMGR_MINFREE_INTERNAL ? \
@@ -63,6 +65,10 @@ typedef struct {
 #define MEMMGR_MINFREE ((MEMMGR_MINFREE_INT2 % MEMMGR_ALIGN == 0) ? \
     MEMMGR_MINFREE_INT2 : ((MEMMGR_MINFREE_INT2 / MEMMGR_ALIGN) + 1) \
                            * MEMMGR_ALIGN)
+
+/* total size of the minimum free area, including room for the
+   control block */
+#define MEMMGR_MINFRTOT (MEMMGRN_SZ + MEMMGR_MINFREE)
 
 /* do you want to crash whenever an integrity problem arises? */
 #ifndef MEMMGR_CRASH

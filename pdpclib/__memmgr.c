@@ -145,7 +145,6 @@ void *memmgrAllocate(MEMMGR *memmgr, size_t bytes, int id)
                corrupted. */
             if (p->allocated)
             {
-                printf("alloc is %x, crashing\n\n", p->allocated);
 #if MEMMGR_CRASH
                 *(char *)0 = 0;
 #endif
@@ -156,7 +155,6 @@ void *memmgrAllocate(MEMMGR *memmgr, size_t bytes, int id)
             if ((p->size - bytes) >= MEMMGR_MINFRTOT)
             {
                 n = (MEMMGRN *)((char *)p + bytes);
-                if (memmgrDebug) printf("created node %p\n\n", n);
                 n->next = p->next;
                 if (n->next != NULL)
                 {
@@ -188,7 +186,6 @@ void *memmgrAllocate(MEMMGR *memmgr, size_t bytes, int id)
                    the first in the queue. If we're not, crash */
                 else if (memmgr->startf != p)
                 {
-                    printf("crashing in middle\n\n");
 #if MEMMGR_CRASH
                     *(char *)0 = 0;
 #endif
@@ -203,7 +200,6 @@ void *memmgrAllocate(MEMMGR *memmgr, size_t bytes, int id)
                remove this entry from the free chain */
             else
             {
-                if (memmgrDebug) printf("releasing %p\n\n", p);
                 if (p->nextf != NULL)
                 {
                     p->nextf->prevf = p->prevf;
@@ -216,7 +212,6 @@ void *memmgrAllocate(MEMMGR *memmgr, size_t bytes, int id)
                    the first in the queue. If we're not, crash */
                 else if (memmgr->startf != p)
                 {
-                    printf("crashing down below\n\n");
 #if MEMMGR_CRASH
                     *(char *)0 = 0;
 #endif
@@ -240,7 +235,7 @@ void *memmgrAllocate(MEMMGR *memmgr, size_t bytes, int id)
     }
     if (p == NULL)
     {
-#if 1 /* def __MEMMGR_DEBUG */
+#ifdef __MEMMGR_DEBUG
         if (memmgrDebug)
         {
             printf("***+++alloc returning NULL!\n\n");
@@ -254,7 +249,7 @@ void *memmgrAllocate(MEMMGR *memmgr, size_t bytes, int id)
 
         q = (size_t *)((char *)p + MEMMGRN_SZ);
         *(q - 1) = oldbytes;
-#if 1 /* def __MEMMGR_DEBUG */
+#ifdef __MEMMGR_DEBUG
         if (memmgrDebug)
         {
             printf("***+++alloc returning %p\n\n", p);
@@ -275,7 +270,7 @@ void memmgrFree(MEMMGR *memmgr, void *ptr)
 
     p = (MEMMGRN *)((char *)ptr - MEMMGRN_SZ);
 
-#if 1 /* def __MEMMGR_DEBUG */
+#ifdef __MEMMGR_DEBUG
     if (memmgrDebug)
     {
         printf("***+++freeing size %d block %p\n\n", p->size, p);
@@ -311,8 +306,6 @@ void memmgrFree(MEMMGR *memmgr, void *ptr)
             l->next->prev = l;
         }
         combprev = 1;
-        if (memmgrDebug)
-            printf("comb1\n\n");
     }
     /* is the next one up combinable? */
     if ((n != NULL) && !n->allocated && !n->fixed)
@@ -351,8 +344,6 @@ void memmgrFree(MEMMGR *memmgr, void *ptr)
         {
             memmgr->startf = p;
         }
-        if (memmgrDebug)
-            printf("comb2\n\n");
     }
     
     /* this is the hairy situation. We're combining two existing
@@ -405,8 +396,6 @@ void memmgrFree(MEMMGR *memmgr, void *ptr)
         
         /* That wasn't so hairy after all */
         /* Actually it was */
-        if (memmgrDebug)
-            printf("comb3\n\n");
     }
     
     if (combnext)
@@ -441,7 +430,7 @@ void memmgrFree(MEMMGR *memmgr, void *ptr)
         }
     }
 
-#if 1 /* def __MEMMGR_DEBUG*/
+#ifdef __MEMMGR_DEBUG
     if (memmgrDebug)
     {
         printf("***+++free returning\n\n");
@@ -523,6 +512,7 @@ void memmgrIntegrity(MEMMGR *memmgr)
     size_t max = 0;
 
 #ifdef __MEMMGR_DEBUG
+#if 0
     if (memmgrDebug2 != 0)
     {
         memmgrDebug2++;
@@ -531,6 +521,7 @@ void memmgrIntegrity(MEMMGR *memmgr)
             memmgrDebug = 1;
         }
     }
+#endif
     if (memmgrDebug)
     {
         printf("%d integrity checking all nodes\n\n", memmgrDebug2);
@@ -556,13 +547,11 @@ void memmgrIntegrity(MEMMGR *memmgr)
 #endif
         if ((p->eyecheck1 != 0xa5a5a5a5) || (p->eyecheck2 != 0xa5a5a5a5))
         {
-            printf("integrity checking failed %d\n\n", memmgrDebug2);
             *(char *)0 = '\0'; /* try to invoke crash */
             exit(EXIT_FAILURE);
         }
         if ((p->next != NULL) && (p->next->prev != p))
         {
-            printf("integrity checking failed %d\n\n", memmgrDebug2);
             *(char *)0 = '\0'; /* try to invoke crash */
             exit(EXIT_FAILURE);
         }
@@ -577,7 +566,6 @@ void memmgrIntegrity(MEMMGR *memmgr)
     p = memmgr->startf;
     if ((p != NULL) && (p->prevf != NULL))
     {
-        printf("integrity checking failed %d\n\n", memmgrDebug2);
         *(char *)0 = '\0'; /* try to invoke crash */
         exit(EXIT_FAILURE);
     }
@@ -599,13 +587,11 @@ void memmgrIntegrity(MEMMGR *memmgr)
         if ((p->eyecheck1 != 0xa5a5a5a5) || (p->eyecheck2 != 0xa5a5a5a5)
             || p->allocated)
         {
-            printf("integrity checking failed %d\n\n", memmgrDebug2);
             *(char *)0 = '\0'; /* try to invoke crash */
             exit(EXIT_FAILURE);
         }
         if ((p->nextf != NULL) && (p->nextf->prevf != p))
         {
-            printf("integrity checking failed %d\n\n", memmgrDebug2);
             *(char *)0 = '\0'; /* try to invoke crash */
             exit(EXIT_FAILURE);
         }
@@ -629,7 +615,7 @@ int memmgrRealloc(MEMMGR *memmgr, void *ptr, size_t newsize)
     MEMMGRN *p, *n, *z;
     size_t oldbytes = newsize;
 
-#if 1 /*def __MEMMGR_DEBUG*/
+#ifdef __MEMMGR_DEBUG
     if (memmgrDebug)
     {
         printf("***+++reallocating %p\n\n", ptr);
@@ -844,7 +830,7 @@ int memmgrRealloc(MEMMGR *memmgr, void *ptr, size_t newsize)
        and we just need to acknowledge it, not actually do
        anything. */
 
-#if 1 /*def __MEMMGR_DEBUG*/
+#ifdef __MEMMGR_DEBUG
     if (memmgrDebug)
     {
         printf("***+++returning from realloc\n\n");

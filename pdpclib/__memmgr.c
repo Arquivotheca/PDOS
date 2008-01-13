@@ -116,10 +116,10 @@ void *memmgrAllocate(MEMMGR *memmgr, size_t bytes, int id)
        MEMMGR_MINFREE should have compensated for this by ensuring
        that it is a multiple of the MEMMGRN alignment */
     bytes += MEMMGRN_SZ;
-    if ((bytes % (MEMMGRN_SZ + MEMMGR_MINFREE)) != 0)
+    if ((bytes % MEMMGR_MINFRTOT) != 0)
     {
-        bytes = ((bytes / (MEMMGRN_SZ + MEMMGR_MINFREE)) + 1)
-                * (MEMMGRN_SZ + MEMMGR_MINFREE);
+        bytes = ((bytes / MEMMGR_MINFRTOT) + 1)
+                * MEMMGR_MINFRTOT;
     }
 
     if (memmgrDebug)
@@ -151,7 +151,9 @@ void *memmgrAllocate(MEMMGR *memmgr, size_t bytes, int id)
 #endif
                 exit(EXIT_FAILURE);
             }
-            if ((p->size - bytes) >= (MEMMGRN_SZ + MEMMGR_MINFREE))
+            /* we don't need the whole block, so construct a new
+               free node */
+            if ((p->size - bytes) >= MEMMGR_MINFRTOT)
             {
                 n = (MEMMGRN *)((char *)p + bytes);
                 if (memmgrDebug) printf("created node %p\n\n", n);
@@ -622,9 +624,6 @@ void memmgrIntegrity(MEMMGR *memmgr)
 /* resize a memory block */
 /* note that the size in the control block is the
    size of available data plus the control block */
-/* note that we don't currently see if the current buffer actually
-   has enough room for their new data size, nor do we see if the next node
-   is free. We should, but we don't yet. */
 int memmgrRealloc(MEMMGR *memmgr, void *ptr, size_t newsize)
 {
     MEMMGRN *p, *n, *z;
@@ -640,10 +639,10 @@ int memmgrRealloc(MEMMGR *memmgr, void *ptr, size_t newsize)
     memmgrIntegrity(memmgr);
 #endif
     newsize += MEMMGRN_SZ;
-    if ((newsize % (MEMMGRN_SZ + MEMMGR_MINFREE)) != 0)
+    if ((newsize % MEMMGR_MINFRTOT) != 0)
     {
-        newsize = ((newsize / (MEMMGRN_SZ + MEMMGR_MINFREE)) + 1)
-                   * (MEMMGRN_SZ + MEMMGR_MINFREE);
+        newsize = ((newsize / MEMMGR_MINFRTOT) + 1)
+                   * MEMMGR_MINFRTOT;
     }
 
     /* if they have exceeded the limits of the data type,
@@ -672,82 +671,178 @@ int memmgrRealloc(MEMMGR *memmgr, void *ptr, size_t newsize)
     /* Now we have 3 distinct scenarios.
        1. They are asking for a reduction in size, and there's room
           to create a new (free) block of memory.
+          so newsize + minfree + cb <= p->size
        2. They're asking for a reduction in size, but there's not
           enough room for a new control block.
+          so newsize < p->size but newsize + minfree + cb > p->size
        3. They're asking for an expansion of memory, and the next
           block of memory up is able to satisfy that request.
+          so newsize > p->size
     */
 
-    /* don't allow reduction in size unless
-       it is by a large enough amount */
-    if (p->size < (newsize + MEMMGRN_SZ + MEMMGR_MINFREE))
+    /* are they asking for an expansion? */
+    if (p->size < newsize)
     {
-        return (-1);
-    }
-
-    /* insert new control block */
-    n = (MEMMGRN *)((char *)p + newsize);
-    n->next = p->next;
-    if (n->next != NULL)
-    {
-        n->next->prev = n;
-    }
-    n->prev = p;
-    p->next = n;
-    n->fixed = 0;
-    n->size = p->size - newsize;
-    n->allocated = 0;
-#ifdef __MEMMGR_INTEGRITY
-    n->eyecheck1 = n->eyecheck2 = 0xa5a5a5a5;
+        n = p->next;
+        if ((n != NULL)
+            && !n->allocated
+            && !n->fixed
+            && ((n->size + p->size) >= newsize))
+        {
+            /* ok, we can satisfy this request. Let's see if we
+               have enough room to insert a new node. */
+            if ((p->size + n->size) < (newsize + MEMMGR_MINFRTOT))
+            {
+                /* not enough room for a new node - just combine
+                   and be done */
+                if (n->nextf != NULL)
+                {
+                    n->nextf->prevf = n->prevf;
+                }
+                if (n->prevf != NULL)
+                {
+                    n->prevf->nextf = n->nextf;
+                }
+                else if (memmgr->startf != n)
+                {
+#if MEMMGR_CRASH
+                    *(char *)0 = 0;
 #endif
-    p->size = newsize;
-
-    /* combine with next block if possible */
-    z = n->next;
-    if ((z != NULL) && !z->allocated && !z->fixed)
-    {
+                    exit(EXIT_FAILURE);
+                }
+                else
+                {
+                    memmgr->startf = n->nextf;
+                }
+                /* Ok, free chain has been taken care of, now let's get
+                   rid of that next node by combining */
+                p->size += n->size;
+                p->next = n->next;
+                if (p->next != NULL)
+                {
+                    p->next->prev = p;
+                }
+            }
+            else
+            {
+                /* we have room for a new node - so, construct the new
+                   node first */
+                z = (MEMMGRN *)((char *)p + newsize);
+                z->allocated = 0;
+                z->fixed = 0;
 #ifdef __MEMMGR_INTEGRITY
-        z->eyecheck1 = z->eyecheck2 = 0;
+                z->eyecheck1 = z->eyecheck2 = 0xa5a5a5a5;
 #endif
-        n->size += z->size;
-        n->next = z->next;
+                z->size = p->size + n->size - newsize;
+                z->prev = p;
+                p->next = z;
+                z->next = n->next;
+                if (z->next != NULL)
+                {
+                    z->next->prev = z;
+                }
+                z->nextf = n->nextf;
+                if (z->nextf != NULL)
+                {
+                    z->nextf->prevf = z;
+                }
+                z->prevf = n->prevf;
+                if (z->prevf != NULL)
+                {
+                    z->prevf->nextf = z;
+                }
+                else if (memmgr->startf != n)
+                {
+#if MEMMGR_CRASH
+                    *(char *)0 = 0;
+#endif
+                    exit(EXIT_FAILURE);
+                }
+                else
+                {
+                    memmgr->startf = z;
+                }
+                /* n node is now irrelevant. adjust p's size */
+                p->size = newsize;
+            }
+        }
+        /* we don't have enough room to satisfy this expansion request */
+        else
+        {
+            return (-1);
+        }
+    }
+    /* It's not an expansion, but is there enough room to insert a
+       new node? */
+    else if ((newsize + MEMMGR_MINFRTOT) <= p->size)
+    {
+        /* yep, let's insert new node */
+        n = (MEMMGRN *)((char *)p + newsize);
+        n->next = p->next;
         if (n->next != NULL)
         {
             n->next->prev = n;
         }
-        n->nextf = z->nextf;
-        if (n->nextf != NULL)
-        {
-            n->nextf->prevf = n;
-        }
-        n->prevf = z->prevf;
-        if (n->prevf != NULL)
-        {
-            n->prevf->nextf = n;
-        }
-        else if (memmgr->startf != z)
-        {
-#if MEMMGR_CRASH
-            *(char *)0 = 0;
+        n->prev = p;
+        p->next = n;
+        n->fixed = 0;
+        n->size = p->size - newsize;
+        n->allocated = 0;
+#ifdef __MEMMGR_INTEGRITY
+        n->eyecheck1 = n->eyecheck2 = 0xa5a5a5a5;
 #endif
-            exit(EXIT_FAILURE);
+        p->size = newsize;
+
+        /* combine with next block if possible */
+        z = n->next;
+        if ((z != NULL) && !z->allocated && !z->fixed)
+        {
+#ifdef __MEMMGR_INTEGRITY
+            z->eyecheck1 = z->eyecheck2 = 0;
+#endif
+            n->size += z->size;
+            n->next = z->next;
+            if (n->next != NULL)
+            {
+                n->next->prev = n;
+            }
+            n->nextf = z->nextf;
+            if (n->nextf != NULL)
+            {
+                n->nextf->prevf = n;
+            }
+            n->prevf = z->prevf;
+            if (n->prevf != NULL)
+            {
+                n->prevf->nextf = n;
+            }
+            else if (memmgr->startf != z)
+            {
+#if MEMMGR_CRASH
+                *(char *)0 = 0;
+#endif
+                exit(EXIT_FAILURE);
+            }
+            else
+            {
+                memmgr->startf = n;
+            }
         }
+        /* otherwise add it to the start of the free chain */
         else
         {
+            n->nextf = memmgr->startf;
+            if (n->nextf != NULL)
+            {
+                n->nextf->prevf = n;
+            }
+            n->prevf = NULL;
             memmgr->startf = n;
         }
     }
-    /* otherwise add it to the start of the free chain */
-    else
-    {
-        n->nextf = memmgr->startf;
-        if (n->nextf != NULL)
-        {
-            n->nextf->prevf = n;
-        }
-        n->prevf = NULL;
-        memmgr->startf = n;
-    }
+    /* Otherwise they are requesting a minor resize downwards,
+       and we just need to acknowledge it, not actually do
+       anything. */
 
 #if 1 /*def __MEMMGR_DEBUG*/
     if (memmgrDebug)

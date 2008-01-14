@@ -25,7 +25,13 @@
 &SYS     SETC 'S380'              Define either S370, S380 or S390
 *
 * AMODE/RMODE not available on S370
+* On S/380 they are a hybrid (currently)
+* On S/390 there is no restriction
 *
-         AMODE ANY
-         RMODE ANY
+* MVS/XA and earlier versions of MVS/ESA should use the S/380
+* hybrid, although mvssupa.asm doesn't quite handle that at the
+* moment (a temporary condition).
+*
+         AMODE 31
+         RMODE 24
 *

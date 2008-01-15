@@ -38,6 +38,7 @@
 #include "__memmgr.h"
 #define MAX_CHUNK 30000000 /* maximum size we will store in memmgr */
     /* Note that you can set MAX_CHUNK to less than REQ_CHUNK */
+    /* But don't do this until MVS/380 has been fixed */
 #define REQ_CHUNK 30000000 /* size that we request from OS */
 #endif
 
@@ -83,7 +84,9 @@ void *malloc(size_t size)
     if (size > MAX_CHUNK)
     {
 #if defined(__MVS__) || defined(__CMS__)
-        ptr = __getm(size);
+        /* don't allow this until MVS/380 is fixed */
+        /* ptr = __getm(size); */
+        ptr = NULL;
 #elif defined(__WIN32__)
         ptr = GlobalAlloc(0, size + sizeof(size_t));
         if (ptr != NULL)
@@ -101,7 +104,15 @@ void *malloc(size_t size)
             void *ptr2;
 
 #if defined(__MVS__) || defined(__CMS__)
-            ptr2 = __getm(REQ_CHUNK);
+            /* until MVS/380 is fixed, don't do an additional request */
+            if (__memmgr.start == NULL)
+            {
+                ptr2 = __getm(REQ_CHUNK);
+            }
+            else
+            {
+                ptr2 = NULL;
+            }
 #elif defined(__WIN32__)
             ptr2 = GlobalAlloc(0, REQ_CHUNK);
             if (ptr2 != NULL)
@@ -220,7 +231,8 @@ void free(void *ptr)
         if (size > MAX_CHUNK)
         {
 #if defined(__MVS__) || defined(__CMS__)
-            __freem(ptr);
+            /* Just ignore this until MVS/380 is fixed */
+            /* __freem(ptr); */
 #elif defined(__WIN32__)
             GlobalFree(ptr);
 #endif

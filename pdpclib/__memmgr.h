@@ -52,19 +52,11 @@ typedef struct {
    sizeof(MEMMGRN) : \
    ((sizeof(MEMMGRN) / MEMMGR_ALIGN + 1) * MEMMGR_ALIGN))
 
-/* what we would like chunks of memory, including room for the
-   control block, to be as a minimum */
-/* there is a GCCMVS optimizer bug that prevents us from using 256 */
-/* #define MEMMGR_MINFREE_INTERNAL 256 */
-#define MEMMGR_MINFREE_INTERNAL (5 * MEMMGRN_SZ)
-
-/* minimum size we will give to an application for its data */
-#define MEMMGR_MINFREE_INT2 (MEMMGRN_SZ < MEMMGR_MINFREE_INTERNAL ? \
-    MEMMGR_MINFREE_INTERNAL - MEMMGRN_SZ : MEMMGRN_SZ)
-
-#define MEMMGR_MINFREE ((MEMMGR_MINFREE_INT2 % MEMMGR_ALIGN == 0) ? \
-    MEMMGR_MINFREE_INT2 : ((MEMMGR_MINFREE_INT2 / MEMMGR_ALIGN) + 1) \
-                           * MEMMGR_ALIGN)
+/* Let's make sure that the minimum free data area is at least
+   as big as the node itself, so that we don't have more than
+   50% of the available memory used up by control blocks due
+   to fragmentation */
+#define MEMMGR_MINFREE MEMMGRN_SZ
 
 /* total size of the minimum free area, including room for the
    control block */

@@ -693,10 +693,7 @@ NOPOOL   DS    0H
          N     R3,=X'FFFFFFC0'
 *
          AIF   ('&SYS' NE 'S380').N380GM1
-         LR    R0,R3              Load amount of S/380 memory to get
-         SLR   R1,R1              Clear register to indicate get
-         SVC   233                Issue SVC X'E9' C'Z'
-*        L     R1,=X'04100000'
+         GETMAIN RU,LV=(R3),SP=SUBPOOL,LOC=ANY
          AGO   .N380GM2
 .N380GM1 ANOP
          GETMAIN RU,LV=(R3),SP=SUBPOOL
@@ -729,14 +726,7 @@ RETURNGM DS    0H
          S     R2,=F'8'
          L     R3,0(,R2)
 *
-         AIF   ('&SYS' NE 'S380').N380FM1
-         LR    R0,R3              Load amount of S/380 memory to free
-         LR    R1,R2              Load address to free
-         SVC   233                Issue SVC X'E9' C'Z'
-         AGO   .N380FM2
-.N380FM1 ANOP
          FREEMAIN RU,LV=(R3),A=(R2),SP=SUBPOOL
-.N380FM2 ANOP
 *
 RETURNFM DS    0H
          RETURN (14,12),RC=(15)

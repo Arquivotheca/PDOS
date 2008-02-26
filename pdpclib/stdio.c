@@ -3603,6 +3603,10 @@ char *fgets(char *s, int n, FILE *stream)
             return (NULL);
         }
         len = ((dptr[0] << 8) | dptr[1]) - 4;
+        if ((len == 1) && (dptr[4] == ' '))
+        {
+            len = 0;
+        }
         if (n > (len + 1))
         {
             memcpy(s, dptr + 4, len);
@@ -3900,12 +3904,24 @@ size_t fwrite(const void *ptr, size_t size, size_t nmemb, FILE *stream)
                         sz = stream->lrecl;
                     }
                     __awrite(stream->hfile, &dptr);
-                    dptr[0] = (sz + 4) >> 8;
-                    dptr[1] = (sz + 4) & 0xff;
-                    dptr[2] = 0;
-                    dptr[3] = 0;
-                    memcpy(dptr + 4, ptr, sz);
-                    stream->bufStartR += (sz + 1);
+                    if(sz == 0)
+                    {
+                        dptr[0] = 0;
+                        dptr[1] = 5;
+                        dptr[2] = 0;
+                        dptr[3] = 0;
+                        dptr[4] = ' ';
+                        stream->bufStartR += 2;
+                    }
+                    else
+                    {
+                        dptr[0] = (sz + 4) >> 8;
+                        dptr[1] = (sz + 4) & 0xff;
+                        dptr[2] = 0;
+                        dptr[3] = 0;
+                        memcpy(dptr + 4, ptr, sz);
+                        stream->bufStartR += (sz + 1);
+                    }
                 }
                 else
                 {
@@ -3916,12 +3932,24 @@ size_t fwrite(const void *ptr, size_t size, size_t nmemb, FILE *stream)
                     memcpy(stream->upto, ptr, sz);
                     sz += (stream->upto - stream->fbuf);
                     __awrite(stream->hfile, &dptr);
-                    dptr[0] = (sz + 4) >> 8;
-                    dptr[1] = (sz + 4) & 0xff;
-                    dptr[2] = 0;
-                    dptr[3] = 0;
-                    memcpy(dptr + 4, stream->fbuf, sz);
-                    stream->bufStartR += (sz + 1);
+                    if(sz == 0)
+                    {
+                        dptr[0] = 0;
+                        dptr[1] = 5;
+                        dptr[2] = 0;
+                        dptr[3] = 0;
+                        dptr[4] = ' ';
+                        stream->bufStartR += 2;
+                    }
+                    else
+                    {
+                        dptr[0] = (sz + 4) >> 8;
+                        dptr[1] = (sz + 4) & 0xff;
+                        dptr[2] = 0;
+                        dptr[3] = 0;
+                        memcpy(dptr + 4, stream->fbuf, sz);
+                        stream->bufStartR += (sz + 1);
+                    }
                     stream->upto = stream->fbuf;
                 }
                 ptr = (char *)p + 1;
@@ -3937,12 +3965,24 @@ size_t fwrite(const void *ptr, size_t size, size_t nmemb, FILE *stream)
                             sz = stream->lrecl;
                         }
                         __awrite(stream->hfile, &dptr);
-                        dptr[0] = (sz + 4) >> 8;
-                        dptr[1] = (sz + 4) & 0xff;
-                        dptr[2] = 0;
-                        dptr[3] = 0;
-                        memcpy(dptr + 4, ptr, sz);
-                        stream->bufStartR += (sz + 1);
+                        if(sz == 0)
+                        {
+                            dptr[0] = 0;
+                            dptr[1] = 5;
+                            dptr[2] = 0;
+                            dptr[3] = 0;
+                            dptr[4] = ' ';
+                            stream->bufStartR += 2;
+                        }
+                        else
+                        {
+                            dptr[0] = (sz + 4) >> 8;
+                            dptr[1] = (sz + 4) & 0xff;
+                            dptr[2] = 0;
+                            dptr[3] = 0;
+                            memcpy(dptr + 4, ptr, sz);
+                            stream->bufStartR += (sz + 1);
+                        }
                         ptr = p + 1;
                         p = memchr(ptr, '\n', bytes);
                     }
@@ -4141,6 +4181,10 @@ size_t fread(void *ptr, size_t size, size_t nmemb, FILE *stream)
                 read = (dptr[0] << 8) | dptr[1];
                 read -= 4;
                 dptr += 4;
+                if ((read == 1) && (dptr[0] == ' '))
+                {
+                    read = 0;
+                }
 
                 if ((totalread + read) >= bytes)
                 {

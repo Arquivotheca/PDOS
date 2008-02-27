@@ -51,7 +51,7 @@ int main(int argc, char **argv)
     printf("deliberately looping!\n\n");
     for (;;) ;
 #endif
-    return (6);
+    return (0);
 #if 0
     fp = fopen("pdptest.in", "r+b");
     if (fp == NULL)

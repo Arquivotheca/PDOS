@@ -1,8 +1,8 @@
             Public Domain C runtime library
             -------------------------------
             
-Version : 0.85
-Released: 2007-12-16
+Version : 0.86
+Released: 2008-03-04
 
 Written by Paul Edwards.
 Released to the public domain.
@@ -267,7 +267,10 @@ HISTORY
 
 0.85  Support for S/380, bug fixes, memmgr option.
 
-0.86  Bug fixes to do with floating point.
+0.86  Bug fixes to do with floating point. On MVS, null variable
+      length records have a single blank as data, as per ISPF and
+      as IEBCOMPR expects. Macros are now provided for the different
+      compile environments (370, 380 and 390).
       
 
 CREDITS

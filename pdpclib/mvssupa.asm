@@ -763,6 +763,10 @@ RETURNGC DS    0H
          RETURN (14,12),RC=(15)
          LTORG
 *
+* S/370 doesn't support switching modes so this code is useless,
+* and won't compile anyway because "BSM" is not known.
+*
+         AIF   ('&SYS' EQ 'S370').NOMODE  If S/370 we can't switch mode
 * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
 *
 *  SETM24 - Set AMODE to 24
@@ -810,6 +814,8 @@ RETURN31 DS    0H
          LM    0,12,20(13)
          BR    14
          LTORG
+*
+.NOMODE  ANOP  ,                  S/370 doesn't support MODE switching
 *
 * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
 *

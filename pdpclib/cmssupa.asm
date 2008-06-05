@@ -93,7 +93,8 @@ SUBPOOL  EQU   0
 * DW * DID NOT COPY
 *        LA    R4,EOFR24
          LA    R4,ENDFILE    **** USE ORIGINAL ENDFILE CODE
-         USING IHADCB,R2
+         USING IHADCB,R8
+         LR    R8,R2
 * DW * THIS DOES NOT SEEM TO WORK ON VM/370
 *        STCM  R4,B'0111',DCBEODA
 *        STCM  R10,B'0111',DCBEXLSA
@@ -125,7 +126,8 @@ WRITING  DS    0H
          ICM   R10,B'1000',=X'87'
          ST    R10,JFCBPTR
          LA    R10,JFCBPTR
-         USING IHADCB,R2
+         USING IHADCB,R8
+         LR    R8,R2
 * DW * DOES NOT SEEM TO WORK ON VM/370
 *        STCM  R10,B'0111',DCBEXLSA
          ST    R10,DCBEXLST
@@ -147,7 +149,8 @@ WNOMEM   DS    0H
 * CAN'T USE MODE=31 ON MVS 3.8, OR WITH TYPE=J
          OPEN  ((R2),OUTPUT),MF=(E,WOPENMB),TYPE=J
 DONEOPEN DS    0H
-         USING IHADCB,R2
+         USING IHADCB,R9
+         LR    R9,R2
          SR    R6,R6
          LH    R6,DCBLRECL
          ST    R6,0(R8)
@@ -210,20 +213,23 @@ OUTDCBLN EQU   *-OUTDCB
          AMODESW SET,AMODE=24
 .NOMOD1  ANOP
          LR    R11,R1
-         AIF   ('&SYSPARM' NE 'IFOX00').BELOW1
+*         AIF   ('&SYSPARM' NE 'IFOX00').BELOW1
 * CAN'T USE "BELOW" ON MVS 3.8
-         GETMAIN R,LV=WORKLEN,SP=SUBPOOL
-         AGO   .NOBEL1
-.BELOW1  ANOP
-         GETMAIN R,LV=WORKLEN,SP=SUBPOOL,LOC=BELOW
-.NOBEL1  ANOP
+*         GETMAIN R,LV=WORKLEN,SP=SUBPOOL
+*         AGO   .NOBEL1
+*.BELOW1  ANOP
+*         GETMAIN R,LV=WORKLEN,SP=SUBPOOL,LOC=BELOW
+*.NOBEL1  ANOP
+         L     R2,0(R1)         R2 CONTAINS HANDLE
+         USING ZDCBAREA,R2
+         LA    R1,SAVEADCB
          ST    R13,4(R1)
          ST    R1,8(R13)
          LR    R13,R1
          LR    R1,R11
          USING WORKAREA,R13
 *
-         L     R2,0(R1)         R2 CONTAINS HANDLE
+*        L     R2,0(R1)         R2 CONTAINS HANDLE
          L     R3,4(R1)         R3 POINTS TO BUF POINTER
          LA    R6,0
          ST    R6,RDEOF
@@ -236,7 +242,7 @@ RETURNAR DS    0H
          LR    R1,R13
          L     R13,SAVEAREA+4
          LR    R14,R15
-         FREEMAIN R,LV=WORKLEN,A=(R1),SP=SUBPOOL
+*        FREEMAIN R,LV=WORKLEN,A=(R1),SP=SUBPOOL
          AIF ('&SYSPARM' EQ 'IFOX00').NOMOD2
          AMODESW SET,AMODE=31
 .NOMOD2  ANOP
@@ -254,20 +260,22 @@ RETURNAR DS    0H
          AMODESW SET,AMODE=24
 .NOMOD3  ANOP
          LR    R11,R1
-         AIF   ('&SYSPARM' NE 'IFOX00').BELOW2
+*         AIF   ('&SYSPARM' NE 'IFOX00').BELOW2
 * CAN'T USE "BELOW" ON MVS 3.8
-         GETMAIN R,LV=WORKLEN,SP=SUBPOOL
-         AGO   .NOBEL2
-.BELOW2  ANOP
-         GETMAIN R,LV=WORKLEN,SP=SUBPOOL,LOC=BELOW
-.NOBEL2  ANOP
+*         GETMAIN R,LV=WORKLEN,SP=SUBPOOL
+*         AGO   .NOBEL2
+*.BELOW2  ANOP
+*         GETMAIN R,LV=WORKLEN,SP=SUBPOOL,LOC=BELOW
+*.NOBEL2  ANOP
+         USING ZDCBAREA,R2
+         L     R2,0(R1)
+         LA    R1,SAVEADCB
          ST    R13,4(R1)
          ST    R1,8(R13)
          LR    R13,R1
          LR    R1,R11
          USING WORKAREA,R13
 *
-         L     R2,0(R1)         R2 CONTAINS HANDLE
          L     R3,4(R1)         R3 POINTS TO BUF POINTER
          PUT   (R2)
          ST    R1,0(R3)
@@ -280,7 +288,7 @@ RETURNAW DS    0H
          LR    R1,R13
          L     R13,SAVEAREA+4
          LR    R14,R15
-         FREEMAIN R,LV=WORKLEN,A=(R1),SP=SUBPOOL
+*         FREEMAIN R,LV=WORKLEN,A=(R1),SP=SUBPOOL
          LR    R15,R14
          RETURN (14,12),RC=(15)
 *
@@ -627,13 +635,6 @@ RETURNLR DS    0H
 *
 WORKAREA DSECT
 SAVEAREA DS    18F
-         DS    0F
-CLOSEMB  DS    CL(CLOSEMLN)
-         DS    0F
-OPENMB   DS    CL(OPENMLN)
-         DS    0F
-WOPENMB  DS    CL(WOPENMLN)
-RDEOF    DS    1F
 WORKLEN  EQU   *-WORKAREA
 ZDCBAREA DSECT
          DS    CL(INDCBLN)
@@ -644,6 +645,14 @@ JFCBPTR  DS    F
 JFCB     DS    0F
 *        IEFJFCBN
          DS    CL170
+SAVEADCB DS    18F                Register save area for PUT
+         DS    0F
+CLOSEMB  DS    CL(CLOSEMLN)
+         DS    0F
+OPENMB   DS    CL(OPENMLN)
+         DS    0F
+WOPENMB  DS    CL(WOPENMLN)
+RDEOF    DS    1F
 ZDCBLEN  EQU   *-ZDCBAREA
          DCBD  DSORG=PS
 RECF     EQU   X'80'                   FIXED RECORD FORMAT

@@ -924,7 +924,7 @@ int system(const char *string)
     
     /* all parms now available */
     /* we use 1 = batch or 2 = tso */
-    return (__system(__tso ? 2: 1, pgm_len, pgm, p, strlen(p)));
+    return (__system(__tso ? 2: 1, pgm_len, pgm, strlen(p), p));
 #endif
 #if defined(__CMS__)
     /* not implemented yet */

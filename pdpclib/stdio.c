@@ -582,8 +582,6 @@ static void osfopen(void)
     int len;
     char newfnm[FILENAME_MAX];
     char tmpdd[9];
-#endif
-
 
     if ((modeType == 1) || (modeType == 4))
     {
@@ -625,8 +623,8 @@ static void osfopen(void)
     }
 #elif defined(__MVS__)
     {
-        char rawf[FILENAME]; /* file name without member,
-                                suitable for dynamic allocation */
+        char rawf[FILENAME_MAX]; /* file name without member,
+                                    suitable for dynamic allocation */
 
         sprintf(newfnm, "PDP%03dHD", spareSpot);
         strcpy(tmpdd, newfnm);
@@ -2413,8 +2411,8 @@ int remove(const char *filename)
 #ifdef __MVS__
     char buf[FILENAME_MAX + 50];
     
-    sprintf(buf, "idcams delete %s", filename);
-    ret = __system(buf);
+    sprintf(buf, "delete %s", filename);
+    ret = __system(1, 6, "IDCAMS", strlen(buf), buf);
 #endif
     return (ret);
 }
@@ -2460,8 +2458,8 @@ int rename(const char *old, const char *new)
 #ifdef __MVS__
     char buf[FILENAME_MAX + FILENAME_MAX + 50];
     
-    sprintf(buf, "idcams rename %s %s", old, new);
-    ret = __system(buf);
+    sprintf(buf, "rename %s %s", old, new);
+    ret = __system(1, 6, "IDCAMS", strlen(buf), buf);
 #endif
     return (ret);
 }

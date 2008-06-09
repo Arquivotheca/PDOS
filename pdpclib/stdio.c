@@ -580,7 +580,7 @@ static void osfopen(void)
     int mode;
     char *p;
     int len;
-#ifdef __CMS__
+    char newfnm[FILENAME_MAX];
     char tmpdd[9];
 #endif
 
@@ -609,10 +609,8 @@ static void osfopen(void)
     else
 /* if we are in here then there is no "dd:" on front of file */
 /* if its CMS generate a ddname and issue a filedef for the file */
-#ifdef __CMS__
+#if defined(__CMS__)
     {
-        char newfnm[FILENAME_MAX];
-
 /* create a DD from the handle number */
         strcpy(newfnm, fnm);
         p = newfnm;
@@ -624,6 +622,57 @@ static void osfopen(void)
         sprintf(tmpdd, "PDP%03dHD", spareSpot);
         filedef(tmpdd, newfnm, mode);
         p = tmpdd;
+    }
+#elif defined(__MVS__)
+    {
+        char rawf[FILENAME]; /* file name without member,
+                                suitable for dynamic allocation */
+
+        sprintf(newfnm, "PDP%03dHD", spareSpot);
+        strcpy(tmpdd, newfnm);
+        strcpy(rawf, fnm);
+        
+        /* If we have a file such as "'FRED.C(MARY)'" we need to
+           convert this into PDP001HD(MARY) and do a dynamic
+           allocation of PDP001HD to "'FRED.C'". This involved
+           extracting the member name, eliminating the member
+           name and putting in a trailing "'" if required. */
+        p = strchr(rawf, '(');
+        if (p != NULL)
+        {
+            *p = '\0';
+            p++;
+            strcat(newfnm, "(");
+            strcat(newfnm, p);
+            
+            p = strchr(newfnm, ')');
+            if (p != NULL)
+            {
+                *(p + 1) = '\0';
+            }
+            if (rawf[0] == '\'')
+            {
+                strcat(rawf, "\'");
+            }            
+        }
+
+        /* MVS probably expects uppercase filenames */
+        p = rawf;
+        while (*p != '\0')
+        {
+            *p = toupper((unsigned char)*p);
+            p++;
+        }
+        
+        /* dynamically allocate file */
+        errno = __dynal(strlen(tmpdd), tmpdd, strlen(rawf), rawf);
+        if (errno != 0)
+        {
+            err = 1;
+            return;
+        }
+        
+        p = newfnm;
     }
 #else
     {
@@ -2361,6 +2410,12 @@ int remove(const char *filename)
     __remove(filename);
     ret = 0;
 #endif
+#ifdef __MVS__
+    char buf[FILENAME_MAX + 50];
+    
+    sprintf(buf, "idcams delete %s", filename);
+    ret = __system(buf);
+#endif
     return (ret);
 }
 
@@ -2401,6 +2456,12 @@ int rename(const char *old, const char *new)
 #ifdef __MSDOS__
     __rename(old, new);
     ret = 0;
+#endif
+#ifdef __MVS__
+    char buf[FILENAME_MAX + FILENAME_MAX + 50];
+    
+    sprintf(buf, "idcams rename %s %s", old, new);
+    ret = __system(buf);
 #endif
     return (ret);
 }

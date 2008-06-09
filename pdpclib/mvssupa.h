@@ -15,3 +15,13 @@ unsigned int __getclk(void *buf);
 void *__getm(size_t sz);
 #pragma linkage(__freem, OS)
 void __freem(void *ptr);
+
+#pragma linkage(__dynal, OS)
+int __dynal(size_t ddn_len, char *ddn, size_t dsn_len, char *dsn);
+
+#pragma linkage(__system, OS)
+int __system(int req_type, 
+             size_t pgm_len,
+             char *pgm,
+             size_t parm_len,
+             char *parm);

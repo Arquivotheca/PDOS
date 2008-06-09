@@ -41,6 +41,10 @@ extern unsigned char *__envptr;
 extern unsigned short __osver;
 #endif
 
+#ifdef __MVS__
+int __tso = 0; /* is this a TSO environment? */
+#endif
+
 int main(int argc, char **argv);
 
 void __exit(int status);
@@ -367,6 +371,7 @@ int CTYP __start(char *p)
             *p = '\0';
         }
         p[parmLen] = '\0';
+        __tso = 1;
     }
     else         /* batch or tso "call" */
     {

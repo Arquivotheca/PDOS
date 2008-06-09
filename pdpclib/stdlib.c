@@ -34,6 +34,10 @@
 #include "mvssupa.h"
 #endif
 
+#ifdef __MVS__
+extern int __tso;
+#endif
+
 #if USE_MEMMGR
 #include "__memmgr.h"
 #define MAX_CHUNK 30000000 /* maximum size we will store in memmgr */
@@ -887,7 +891,42 @@ int system(const char *string)
     __exec(cmd, &parmblock);
     return (0);
 #endif
-#if defined(__MVS__) || defined(__CMS__)
+#if defined(__MVS__)
+    char pgm[9];
+    size_t pgm_len;
+    size_t cnt;
+    char *p;
+    
+    p = strchr(string, ' ');
+    if (p == NULL)
+    {
+        p = strchr(string, '\0');
+    }
+    
+    pgm_len = p - string;
+    /* don't allow a program name greater than 8 */
+    
+    if (pgm_len > 8)
+    {
+        return (-1);
+    }
+    memcpy(pgm, string, pgm_len);
+    pgm[pgm_len] = '\0';
+    
+    /* uppercase the program name */
+    for (cnt = 0; cnt < pgm_len; cnt++)
+    {
+        pgm[cnt] = toupper((unsigned char)pgm[cnt]);
+    }
+    
+    /* point to parms */
+    p++;
+    
+    /* all parms now available */
+    /* we use 1 = batch or 2 = tso */
+    return (__system(__tso ? 2: 1, pgm_len, pgm, p, strlen(p)));
+#endif
+#if defined(__CMS__)
     /* not implemented yet */
     return (0);
 #endif

@@ -43,10 +43,58 @@
 * RC = -2064 Invalid FIND, no DCB address.
 *
 ***********************************************************************
+*   Changes by Gerhard Postpischil:
+*     EQU * for entry points deleted (placed labels on SAVE) to avoid
+*       0C6 abends when Equ follows a LTORG
+*     Fixed 0C4 abend in RECFM=Vxxx processing; fixed PUT length error.
+*     Deleted unnecessary and duplicated instructions
+*     Added @@SYSTEM and @@DYNAL routines                2008-06-10
+***********************************************************************
 *
+         MACRO ,             COMPILER DEPENDENT LOAD INTEGER
+&NM      LDINT &R,&A         LOAD INTEGER VALUE FROM PARM LIST
+         GBLC  &COMP         COMPILER GCC OR C/370
+&NM      L     &R,&A         LOAD PARM VALUE
+         AIF ('&COMP' EQ 'GCC').MEND
+* THIS LINE IS FOR ANYTHING NOT GCC: C/370
+         L     &R,0(,&R)     LOAD INTEGER VALUE
+.MEND    MEND  ,
+         SPACE 1
+         MACRO ,             PATTERN FOR @@DYNAL'S DYNAMIC WORK AREA
+&NM      DYNPAT &P=MISSING-PFX
+.*   NOTE THAT EXTRA FIELDS ARE DEFINED FOR FUTURE EXPANSION
+.*
+&NM      DS    0D            ALLOCATION FIELDS
+&P.ARBP  DC    0F'0',X'80',AL3(&P.ARB) RB POINTER
+&P.ARB   DC    0F'0',AL1(20,S99VRBAL,0,0)
+         DC    A(0,&P.ATXTP,0,0)       SVC 99 REQUEST BLOCK
+&P.ATXTP DC    10A(0)
+&P.AXVOL DC    Y(DALVLSER,1,6)
+&P.AVOL  DC    CL6' '
+&P.AXDSN DC    Y(DALDSNAM,1,44)
+&P.ADSN  DC    CL44' '
+&P.AXMEM DC    Y(DALMEMBR,1,8)
+&P.AMEM  DC    CL8' '
+&P.AXDSP DC    Y(DALSTATS,1,1)
+&P.ADSP  DC    X'08'         DISP=SHR
+&P.AXFRE DC    Y(DALCLOSE,0)   FREE=CLOSE
+&P.AXDDN DC    Y(DALDDNAM,1,8)    DALDDNAM OR DALRTDDN
+&P.ADDN  DC    CL8' '        SUPPLIED OR RETURNED DDNAME
+&P.ALEN  EQU   *-&P.ARBP       LENGTH OF REQUEST BLOCK
+         SPACE 1
+&P.URBP  DC    0F'0',X'80',AL3(&P.URB) RB POINTER
+&P.URB   DC    0F'0',AL1(20,S99VRBUN,0,0)
+         DC    A(0,&P.UTXTP,0,0)       SVC 99 REQUEST BLOCK
+&P.UTXTP DC    X'80',AL3(&P.UXDDN)
+&P.UXDDN DC    Y(DUNDDNAM,1,8)
+&P.UDDN  DC    CL8' '        RETURNED DDNAME
+&P.ULEN  EQU   *-&P.URBP       LENGTH OF REQUEST BLOCK
+&P.DYNLN EQU   *-&P.ARBP     LENGTH OF ALL DATA
+         MEND  ,
+         SPACE 2
          COPY  PDPTOP
 *
-         CSECT
+MVSSUPA  CSECT ,
          PRINT NOGEN
 * YREGS IS NOT AVAILABLE WITH IFOX
 *         YREGS
@@ -100,12 +148,11 @@ R15      EQU   15
 *
 * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
 *
-*  AOPEN- Open a dataset
+*  AOPEN- Open a data set
 *
 * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
          ENTRY @@AOPEN
-@@AOPEN  EQU   *
-         SAVE  (14,12),,@@AOPEN  Save caller's regs.
+@@AOPEN  SAVE  (14,12),,@@AOPEN  Save caller's regs.
          LR    R12,R15
          USING @@AOPEN,R12
          LR    R11,R1
@@ -137,65 +184,92 @@ R15      EQU   15
          USING IHADCB,R2          Give assembler DCB area base register
          LR    R0,R2              Load output DCB area address
          LA    R1,ZDCBLEN         Load output length of DCB area
-         LA    R10,0              No input location
          LA    R11,0              Pad of X'00' and no input length
          MVCL  R0,R10             Clear DCB area to binary zeroes
 *
+         CH    R4,H4              Call with value?
+         BL    *+8                Yes; else pointer
+         L     R4,0(,R4)          Load C/370 MODE.  0=input 1=output
+*
+*   Do as much common code for input and output before splitting
+*
+         LTR   R4,R4              In or Out
+         BNZ   OPREPOUT
+         MVC   ZDCBAREA(INDCBLN),INDCB  Move input DCB template to work
+         MVI   OPENCLOS,X'90'     INPUT/REREAD MODE=24 OPEN/CLOSE list
+         B     OPREPCOM
+OPREPOUT MVC   ZDCBAREA(OUTDCBLN),OUTDCB
+         MVI   OPENCLOS,X'8F'     Initialize MODE=24 OPEN/CLOSE list
+OPREPCOM LA    R10,JFCB
+* EXIT TYPE 07 + 80 (END OF LIST INDICATOR)
+         ICM   R10,B'1000',=X'87'
+         ST    R10,DCBXLST
+         LA    R10,DCBXLST
+         STCM  R10,B'0111',DCBEXLSA
+         MVC   DCBDDNAM,0(R3)
+         LA    R3,37(R4,R4)       Preset OPEN error code
+         DEVTYPE DCBDDNAM,DEVINFO   Check device type
+         BXH   R15,R15,FREEDCB    No DD card or ?
+         RDJFCB ((R2)),MF=(E,OPENCLOS)  Read JOB File Control Blk
+         CLI   DEVINFO+2,X'20' UCB3DACC   Is it a DASD device?
+         BNE   OPNODSCB           No; no member name supported
+* CAMLST CAMLST SEARCH,DSNAME,VOLSER,DSCB+44
+*
+         MVC   CAMLST(4),CAMDUM   Copy CAMLST flags to work area
+         LA    R15,JFCBDSNM       Load address of output data set name
+         LA    R0,JFCBVOLS        Load addr. of output data set volser
+         LA    R1,DS1FMTID        Load address of where to put DSCB
+         STM   R15,R1,CAMLST+4    Complete CAMLST addresses
+         OBTAIN CAMLST            Read the VTOC record
+OPNODSCB DS    0H
 * The member name may not be below the line, which may stuff up
 * the "FIND" macro, so make sure it is in 24-bit memory.
-*
          LTR   R9,R9              See if an address for the member name
          BZ    NOMEM              No member name, skip copying
          MVC   MEMBER24,0(R9)
          LA    R9,MEMBER24
 NOMEM    DS    0H
 *
-         AIF   ('&COMP' NE 'C370').GCCMODE
-         L     R4,0(,R4)          Load C/370 MODE.  0=input 1=output
-.GCCMODE ANOP
          LTR   R4,R4              See if OPEN input or output
          BNZ   WRITING
+*
 * READING
-         MVC   ZDCBAREA(INDCBLN),INDCB  Move input DCB template to work
-         LTR   R9,R9              See in an address for the member name
-         BZ    NEXTMVC            No member, leave DCB DSORG=PS
-         MVI   DCBDSRG1,DCBDSGPO  Replace DCB DSORG=PS with PO
-NEXTMVC  DS    0H
-         MVC   EOFR24(EOFRLEN),ENDFILE
+         MVC   EOFR24(EOFRLEN),ENDFILE   Put EOF code below the line
          MVC   DECB(READLEN),READDUM  MF=L READ MACRO to work area
-         LA    R10,JFCB
-         ST    R10,JFCBPTR
-         MVI   JFCBPTR,X'87'  Exit type 7 + 80 (End of list indicator)
-         LA    R10,JFCBPTR
          LA    R1,EOFR24
          STCM  R1,B'0111',DCBEODA
-         STCM  R10,B'0111',DCBEXLSA
-         MVC   DCBDDNAM,0(R3)
-         MVI   OPENCLOS,X'80'     Initialize MODE=24 OPEN/CLOSE list
-         LTR   R9,R9              See if an address for the member name
-         BNZ   OPENIN             Is member name, skip changing DCB
-         RDJFCB ((R2)),MF=(E,OPENCLOS)  Read JOB File Control Block
-         TM    JFCBIND1,JFCPDS    See if a member name in JCL
-         BO    OPENIN             Is member name, skip changing DCB
-         MVC   CAMLST,CAMDUM      Copy CAMLST template to work area
-         LA    R1,JFCB            Load address of input data set name
-         ST    R1,CAMLST+4        Store data set name address in CAMLST
-         LA    R1,JFCBVOLS        Load address of input data set volser
-         ST    R1,CAMLST+8        Store data set name volser in CAMLST
-         LA    R1,DSCB+44         Load address of where to put DSCB
-         ST    R1,CAMLST+12       Store CAMLST output loc. in CAMLST
-         OBTAIN CAMLST            Read the VTOC record
-* CAMLST CAMLST SEARCH,DSNAME,VOLSER,DSCB+44
+*   N.B. moved RDJFCB prior to member test to allow uniform OPEN and
+*        other code. Makes debugging and maintenance easier
+*
+         OI    JFCBTSDM,JFCNWRIT  Don't mess with DSCB
+         CLI   DEVINFO+2,X'20' UCB3DACC   Is it a DASD device?
+         BNE   OPENVSEQ           No; no member name supported
 * See if DSORG=PO but no member so set LRECL&BLKSIZE=256 read directory
          TM    DS1DSORG,DS1DSGPO  See if DSORG=PO
-         BZ    OPENIN             Not PDS, don't read PDS directory
+         BZ    OPENVSEQ           Not PDS, don't read PDS directory
+         LTR   R9,R9              See if an address for the member name
+         BNZ   OPENMEM            Is member name - BPAM access
+         TM    JFCBIND1,JFCPDS    See if a member name in JCL
+         BZ    OPENDIR            No; read directory
+         MVC   MEMBER24,JFCBELNM  Save the member name
+         NI    JFCBIND1,255-JFCPDS    Reset it
+         XC    JFCBELNM,JFCBELNM  Delete it
+         LA    R9,MEMBER24        Force FIND to prevent 013 abend
+         B     OPENMEM            Change DCB to BPAM PO
 * At this point, we have a PDS but no member name requested.
 * Request must be to read the PDS directory
-         MVI   DCBBLKSI,1         Set DCB BLKSIZE to 256
-         MVI   DCBLRECL,1         Set DCB LRECL to 256
-         MVI   DCBRECFM,DCBRECF   Set DCB RECFM to RECFM=F
+OPENDIR  MVC   DCBBLKSI,=H'256'   Set DCB BLKSIZE to 256
+         MVC   DCBLRECL,=H'256'   Set DCB LRECL to 256
+         MVI   DCBRECFM,DCBRECF   Set DCB RECFM to RECFM=F (notU?)
+         B     OPENIN
+OPENMEM  MVI   DCBDSRG1,DCBDSGPO  Replace DCB DSORG=PS with PO
+         OI    JFCBTSDM,JFCVSL    Force OPEN analysis of JFCB
+         B     OPENIN
+OPENVSEQ LTR   R9,R9              Member name for sequential?
+         BNZ   BADOPIN            Yes, fail
+         SPACE 1
 OPENIN   DS    0H
-         OPEN  ((R2),INPUT),MF=(E,OPENCLOS)
+         OPEN  MF=(E,OPENCLOS),TYPE=J  Open the data set
          TM    DCBOFLGS,DCBOFOPN  Did OPEN work?
          BZ    BADOPIN            OPEN failed, go return error code -37
          MVC   LRECL+2(2),DCBLRECL  Copy LRECL to a fullword
@@ -212,10 +286,9 @@ OPENIN   DS    0H
          SLL   R15,8              Shift return code for reason code
          OR    R15,R0             Combine return code and reason code
          LR    R3,R15             Number to generate return and reason
-         MVI   OPENCLOS,X'80'     Initialize MODE=24 OPEN/CLOSE list
-         CLOSE ((R2)),MF=(E,OPENCLOS)  Close, FREEPOOL not needed
+         CLOSE MF=(E,OPENCLOS)    Close, FREEPOOL not needed
 FREEDCB  DS    0H
-         FREEMAIN RU,LV=ZDCBLEN,A=(2),SP=SUBPOOL  Free DCB area
+         FREEMAIN RU,LV=ZDCBLEN,A=(R2),SP=SUBPOOL  Free DCB area
          LCR   R2,R3              Set return and reason code
          B     RETURNOP           Go return to caller with negative RC
 BADOPIN  DS    0H
@@ -224,12 +297,15 @@ BADOPIN  DS    0H
 BADOPOUT DS    0H
          LA    R3,39              Load OPEN output error return code
          B     FREEDCB            Go free the DCB area
+         SPACE 1
 GETBUFF  DS    0H
          L     R6,BLKSIZE         Load the input blocksize
          LA    R6,4(,R6)          Add 4 in case RECFM=U buffer
          GETMAIN RU,LV=(R6),SP=SUBPOOL  Get input buffer storage
          ST    R1,BUFFADDR        Save the buffer address for READ
          XC    0(4,R1),0(R1)      Clear the RECFM=U Record Desc. Word
+         TM    DCBRECFM,DCBRECU   RECFM=V possible?
+         BNM   DONEOPEN           No; done
          TM    DCBRECFM,DCBRECV+DCBRECSB  See if spanned records
          BNO   DONEOPEN           Not RECFM=VS, VBS, etc. spanned, go
          L     R6,LRECL           Load the input VBS LRECL
@@ -241,38 +317,22 @@ GETVBS   DS    0H
          ST    R1,VBSADDR         Save the VBS record build area addr.
          AR    R1,R6              Add size GETMAINed to find end
          ST    R1,VBSEND          Save address after VBS rec.build area
-*        XC    VBSCURR,VBSCURR    VBS current record location is zero
          B     DONEOPEN           Go return to caller with DCB info
 *
 WRITING  DS    0H
-         MVC   ZDCBAREA(OUTDCBLN),OUTDCB
-         LA    R10,JFCB
-* EXIT TYPE 07 + 80 (END OF LIST INDICATOR)
-         ICM   R10,B'1000',=X'87'
-         ST    R10,JFCBPTR
-         LA    R10,JFCBPTR
-         STCM  R10,B'0111',DCBEXLSA
-         MVC   DCBDDNAM,0(R3)
-         MVI   OPENCLOS,X'80'     Initialize MODE=24 OPEN/CLOSE list
-         RDJFCB ((R2)),MF=(E,OPENCLOS)  Read JOB File Control Blk
          LTR   R9,R9
          BZ    WNOMEM
+         CLI   DEVINFO+2,X'20'    UCB3DACC
+         BNE   BADOPOUT           Member name invalid
+         TM    DS1DSORG,DS1DSGPO  See if DSORG=PO
+         BZ    BADOPOUT           Is not PDS, fail request
          MVC   JFCBELNM,0(R9)
          OI    JFCBIND1,JFCPDS
-         OPEN  ((R2),OUTPUT),MF=(E,OPENCLOS),TYPE=J
-         B     WOPENEND           Go to move DCB info
+         OI    JFCBTSDM,JFCVSL    Just in case
+         B     WNOMEM2            Go to move DCB info
 WNOMEM   DS    0H
          TM    JFCBIND1,JFCPDS    See if a member name in JCL
          BO    WNOMEM2            Is member name, go to continue OPEN
-         MVC   CAMLST,CAMDUM      Copy CAMLST template to work area
-         LA    R1,JFCB            Load address of output data set name
-         ST    R1,CAMLST+4        Store data set name address in CAMLST
-         LA    R1,JFCBVOLS        Load addr. of output data set volser
-         ST    R1,CAMLST+8        Store data set name volser in CAMLST
-         LA    R1,DSCB+44         Load address of where to put DSCB
-         ST    R1,CAMLST+12       Store CAMLST output loc. in CAMLST
-         OBTAIN CAMLST            Read the VTOC record
-* CAMLST CAMLST SEARCH,DSNAME,VOLSER,DSCB+44
 * See if DSORG=PO but no member so OPEN output would destroy directory
          TM    DS1DSORG,DS1DSGPO  See if DSORG=PO
          BZ    WNOMEM2            Is not PDS, go OPEN
@@ -280,15 +340,30 @@ WNOMEM   DS    0H
          WTO   'MVSSUPA - Refuses to write over PDS directory',        C
                ROUTCDE=11
          ABEND 123                Abend without a dump
-         DC    H'0'               Insure that abend took
+         DC    H'0'               Ensure that abend took
 WNOMEM2  DS    0H
-         OPEN  ((R2),OUTPUT),MF=(E,OPENCLOS)
-WOPENEND DS    0H
+         OPEN  MF=(E,OPENCLOS),TYPE=J
          TM    DCBOFLGS,DCBOFOPN  Did OPEN work?
          BZ    BADOPOUT           OPEN failed, go return error code -39
          MVC   LRECL+2(2),DCBLRECL  Copy LRECL to a fullword
          MVC   BLKSIZE+2(2),DCBBLKSI  Copy BLKSIZE to a fullword
-DONEOPEN DS    0H
+         SPACE 1
+*   Lots of code tests DCBRECFM twice, to distinguish among F, V, and
+*     U formats. We set the index byte to 0,4,8 to allow a single test
+*     with a three-way branch.
+DONEOPEN LA    R0,8
+         TM    DCBRECFM,DCBRECU   Undefined ?
+         BO    SETINDEX           Yes
+         BM    GETINDFV           No
+         TM    DCBRECFM,DCBRECTO  RECFM=D
+         BZ    SETINDEX           No; treat as U
+         LA    R0,4               Yes; treat as V
+         B     SETINDEX
+GETINDFV LA    R0,4               Preset for V
+         TM    DCBRECFM,DCBRECV   Undefined ?
+         BO    SETINDEX           Yes
+         SR    R0,R0              Else set for F
+SETINDEX STC   R0,RECFMIX         Save for the duration
          L     R1,LRECL           Load RECFM F or V max. record length
          TM    DCBRECFM,DCBRECU   See if RECFM=U
          BNO   NOTU               Not RECFM=U, go leave LRECL as LRECL
@@ -298,23 +373,16 @@ DONEOPEN DS    0H
          LA    R1,4(,R1)          Add four for fake RECFM=U RDW
 NOTU     DS    0H
          ST    R1,0(,R8)          Return record length back to caller
-         TM    DCBRECFM,DCBRECU   See if RECFM=U
-         BO    SETRECU            Is RECFM=U, go find input or output?
-         TM    DCBRECFM,DCBRECV   See if RECFM=V
-         BO    SETRECV            Is RECFM=V, go return "1" to caller
-         B     SETRECF            Is RECFM=F, go return "0" to caller
+         SR    R1,R1              Set F
+         CLI   RECFMIX,4          See if RECFM=F, V, or U
+         BL    SETRECFM           Is RECFM=F, go return "0" to caller
+         LA    R1,1               Set V for V and U
+         BE    SETRECFM           if V
+         LTR   R4,R4              In or Out ?
+         BZ    SETRECFM           Input - set V
+         SR    R1,R1              Out - set F
 * RECFM=U on input  will tell caller that it is RECFM=V
 * RECFM=U on output will tell caller that it is RECFM=F
-SETRECU  DS    0H
-         LTR   R4,R4              See if OPEN input or output
-         BNZ   SETRECF            Is for output, go to set RECFM=F
-*        BZ    SETRECV            Else is for input, go to set RECFM=V
-SETRECV  DS    0H
-         LA    R1,1               Pass RECFM V to caller
-         B     SETRECFM           Go to set RECFM=V
-SETRECF  DS    0H
-         LA    R1,0               Pass RECFM F to caller
-*        B     SETRECFM           Go to set RECFM=F
 SETRECFM DS    0H
          ST    R1,0(,R5)          Pass either RECFM F or V to caller
 *        B     RETURNOP
@@ -332,8 +400,8 @@ ENDFILE  LA    R6,1               Indicate @@AREAD reached end-of-file
          BR    R14                Return to instruction after the GET
 EOFRLEN  EQU   *-ENDFILE
 *
-         LTORG
-INDCB    DCB   MACRF=R,DSORG=PS   If member name, will be changed to PO
+         LTORG ,
+INDCB    DCB   MACRF=RP,DSORG=PS  If member name, will be changed to PO
 INDCBLN  EQU   *-INDCB
 F32760   DC    F'32760'           Constant for compare
 F65536   DC    F'65536'           Maximum VBS record GETMAIN length
@@ -352,15 +420,15 @@ READLEN  EQU   *-READDUM
 * CAMDUM CAMLST SEARCH,DSNAME,VOLSER,DSCB+44
 CAMDUM   CAMLST SEARCH,*-*,*-*,*-*
 CAMLEN   EQU   *-CAMDUM           Length of CAMLST Template
+         ORG   CAMDUM+4           Don't need rest
 *
 * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
 *
-*  AREAD - Read from an open dataset
+*  AREAD - Read from an open data set
 *
 * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
          ENTRY @@AREAD
-@@AREAD  EQU   *
-         SAVE  (14,12),,@@AREAD
+@@AREAD  SAVE  (14,12),,@@AREAD
          LR    R12,R15
          USING @@AREAD,R12
          L     R2,0(,R1)          R2 contains GETMAINed address/handle
@@ -373,12 +441,15 @@ CAMLEN   EQU   *-CAMDUM           Length of CAMLST Template
          ST    R1,8(,R13)
          LR    R13,R1
          USING WORKAREA,R13
+         LA    R6,1               Prepare
+         TM    IOFLAGS,IOFLEOF    Prior EOF ?
+         BNZ   READEXIT           Yes; don't abend
+*   Return here for empty record or end-of-block
 *
-         SLR   R6,R6              Clear default end-of-file indicator
-         L     R4,BUFFADDR        Load address of input buffer
+REREAD   SLR   R6,R6              Clear default end-of-file indicator
          ICM   R5,B'1111',BUFFCURR  Load address of next record
          BNZ   DEBLOCK            Block in memory, go de-block it
-         USING IHADCB,R2
+         L     R4,BUFFADDR        Load address of input buffer
          TM    DCBRECFM,DCBRECU   See if RECFM=U
          BNO   READ               Not RECFM=U, go read a block
          LA    R4,4(,R4)          Read RECFM=U four bytes into buffer
@@ -406,10 +477,13 @@ READ     DS    0H
 * If RECFM=FB or U, store BUFFADDR in BUFFCURR
 * If RECFM=V, VB, VBS, etc. store BUFFADDR+4 in BUFFCURR
          LR    R5,R4              Copy buffer address to init BUFFCURR
-         TM    DCBRECFM,DCBRECU   See if RECFM=U
-         BO    NOTV               Is RECFM=U, so not RECFM=V
-         TM    DCBRECFM,DCBRECV   See if RECFM=V, VB, VBS, etc.
-         BNO   NOTV               Is not RECFM=V, so skip address bump
+         CLI   RECFMIX,4          See if RECFM=V
+         BNE   NOTV               Is RECFM=U or F, so not RECFM=V
+         LH    R0,0(,R4)          Get presumed block length
+         C     R0,BLKSIZE         Valid?
+         BH    BADBLOCK           No
+         ICM   R0,3,2(R4)         Garbage in BDW?
+         BNZ   BADBLOCK           Yes; fail
          LA    R5,4(,R4)          Bump buffer address past BDW
 NOTV     DS    0H
 * Subtract residual from BLKSIZE, add BUFFADDR, store as BUFFEND
@@ -429,10 +503,9 @@ DEBLOCK  DS    0H
 *        R4 has address of block buffer
 *        R5 has address of current record
 *        If RECFM=U, then R7 has size of block read in
-         TM    DCBRECFM,DCBRECU   Is data set RECFM=U
-         BO    DEBLOCKU           Is RECFM=U, go deblock it
-         TM    DCBRECFM,DCBRECF   Is data set RECFM=F, FB, etc.
-         BO    DEBLOCKF           Is RECFM=Fx, go deblock it
+         CLI   RECFMIX,4          Is data set RECFM=U
+         BH    DEBLOCKU           Is RECFM=U, go deblock it
+         BL    DEBLOCKF           Is RECFM=Fx, go deblock it
 *
 * Must be RECFM=V, VB, VBS, VS, VA, VM, VBA, VBM, VSA, VSM, VBSA, VBSM
 *  VBS SDW ( Segment Descriptor Word ):
@@ -442,97 +515,60 @@ DEBLOCK  DS    0H
 *  REC+2 2 is last seqment of record
 *  REC+2 3 is one of the middle segments of a record
 *        R5 has address of current record
-         CLI   2(R5),0            See if a spanned record segment
-         BE    DEBLOCKV           Not spanned, go deblock as RECFM=V
-         L     R6,VBSADDR         Load address of the VBS record area
-         CLI   2(R5),1            See if first spanned record segment
-         BE    DEFIRST            First segment of rec., go start build
-         CLI   2(R5),3            If a middle of spanned record segment
-         BE    DEMID              A middle segment of rec., go continue
-*        CLI   2(R5),3            See if last spanned record segment
-*        BE    DELAST             Last segment of rec., go complete rec
-* DELAST   DS    0H
-*        R5 has address of last record segment
-*        R6 has address of VBS record area
-         SLR   R7,R7              Clear work register
-         ICM   R7,B'0011',0(R5)   Load length of record segment
-         SH    R7,H4              Only want length of data
-         SLR   R8,R8              Clear work register
-         ICM   R8,B'0011',0(R6)   Load length of record so far
-         AR    R8,R7              Find length of complete record
-         STH   R8,0(,R6)          Store complete record length
-         L     R9,VBSCURR         Load old VBS current location
-         AR    R9,R8              See if past end of VBS record buffer
-         CL    R9,VBSEND          See if past end of VBS record buffer
-         BH    ABEND              Record too long, go abend
-         L     R8,VBSCURR         Location to put the record seqment
-         ST    R9,VBSCURR         Save new VBS next data address
-         LR    R9,R7              Length of data to move
-         LA    R10,4(,R5)         Location of input record data
-         LR    R11,R7             Length of data to move
-         MVCL  R8,R10             Move record segment to VBS rec.area
-         DC    H'0'               x
-*        If end of block, zero BUFFCURR
-*        If another record, bump BUFFCURR address
-         DC    H'0'               x
-         DC    H'0'               x
-         DC    H'0'               x
-         DC    H'0'               x
-         DC    H'0'               x
-         DC    H'0'               x
-         DC    H'0'               x
-         LR    R5,R6              Load address of completed record
-         B     RECBACK            Go store the record addr. for return
-DEFIRST  DS    0H
-* R5 has address of last record segment
-* R6 has address of VBS record area
-* Most of DEFIRST is the same as DEMID
-         XC    2(4,R6),0(R6)      Clear VBS record area RDW
-         LA    R7,4               Load four to setup RDW
-         STC   R7,1(,R6)          Set length of RDW in RDW
-         AL    R7,VBSADDR         Find address to put first data
-         ST    R7,VBSCURR         Save new VBS new data address
-DEMID    DS    0H
-         SLR   R7,R7              Clear work register
-         ICM   R7,B'0011',0(R5)   Load length of record segment
-         SH    R7,H4              Only want length of data
-         SLR   R8,R8              Clear work register
-         ICM   R8,B'0011',0(R6)   Load length of record so far
-         AR    R8,R7              Find length of complete record
-         STH   R8,0(,R6)          Store complete record length
-         L     R9,VBSCURR         Load old VBS current location
-         AR    R9,R8              See if past end of VBS record buffer
-         CL    R9,VBSEND          See if past end of VBS record buffer
-         BH    ABEND              Record too long, go abend
-         L     R8,VBSCURR         Location to put the record seqment
-         ST    R9,VBSCURR         Save new VBS next data address
-         LR    R9,R7              Length of data to move
-         LA    R10,4(,R5)         Location of input record data
-         LR    R11,R7             Length of data to move
-         MVCL  R8,R10             Move record segment to VBS rec.area
-         WTO   'RECFM=VBS is not supported yet',ROUTCDE=11
-         DC    H'0'               x
-         DC    H'0'               x
-*        If end of block, zero BUFFCURR
-*        If another record, bump BUFFCURR address
-         DC    H'0'               x
-*       Return to READ to get next seqment
-         DC    H'0'               x
-         DC    H'0'               x
-         DC    H'0'               x
-         DC    H'0'               x
-         DC    H'0'               x
-* ELSE add record length to BUFFCURR
+DEBLOCKV CLI   0(R5),X'80'   LOGICAL END OF BLOCK ?
+         BE    REREAD        YES; DONE WITH THIS BLOCK
+         LH    R8,0(,R5)     GET LENGTH FROM RDW
+         CH    R8,H4         AT LEAST MINIMUM ?
+         BL    BADBLOCK      NO; BAD RECORD OR BAD BLOCK
+         C     R8,LRECL      VALID LENGTH ?
+         BH    BADBLOCK      NO
+         LA    R7,0(R8,R5)   SET ADDRESS OF LAST BYTE +1
+         C     R7,BUFFEND    WILL IT FIT INTO BUFFER ?
+         BL    DEBVCURR      LOW - LEAVE IT
+         BH    BADBLOCK      NO; FAIL
+         SR    R7,R7         PRESET FOR BLOCK DONE
+DEBVCURR ST    R7,BUFFCURR        for recursion
+         TM    3(R5),X'FF'   CLEAN RDW ?
+         BNZ   BADBLOCK
+         TM    IOFLAGS,IOFLSDW    WAS PREVIOUS RECORD DONE ?
+         BO    DEBVAPND           NO
+         SPACE 1
+         CLI   2(R5),1            What is this?
+         BL    SETCURR            Simple record
+         BH    BADBLOCK           Not=1; have a sequence error
+         OI    IOFLAGS,IOFLSDW    Starting a new segment
+         L     R10,VBSADDR        Get start of buffer
+         MVC   0(4,R10),=X'00040000'   Preset null record
+         B     DEBVMOVE           And move this
+         SPACE 1
+DEBVAPND CLI   2(R5),3            IS THIS A MIDDLE SEGMENT ?
+         BE    DEBVMOVE           YES, PUT IT OUT
+         CLI   2(R5),2            IS THIS THE LAST SEGMENT ?
+         BNE   BADBLOCK           No; bad segment sequence
+         NI    IOFLAGS,255-IOFLSDW  INDICATE RECORD COMPLETE
+DEBVMOVE L     R15,VBSADDR        Get segment assembly area
+         SR    R11,R11
+         ICM   R11,3,0(R15)       Get amount used so far
+         LA    R10,0(R11,R15)     Address for next segment
+         LH    R1,0(,R5)          Length of addition
+         SH    R1,H4              Data length
+         LA    R0,4(,R5)          Skip SDW
+         LA    R14,0(R1,R11)      New length
+         STH   R14,0(,R15)        Update RDW
+         A     R14,VBSADDR        New end address
+         C     R14,VBSEND         Will it fit ?
+         BH    BADBLOCK
+         LR    R11,R1             Move all
+         MVCL  R10,R0             Append segment
+         TM    IOFLAGS,IOFLSDW    Did last segment?
+         BNZ   REREAD             No; get next one
+         L     R5,VBSADDR         Give user the assembled record
+         B     SETCURR            Done
+         SPACE 2
 * If BUFFCURR equal BUFFEND, zero BUFFCURR
-* Move record to VBS at VBSCURR, add to VBSADDR
-* If record incomplete, return to READ
-* Load VRSADDR into R5            x
-* zero VBSCURR                    x
-* Branch to RECBACK               x
-*                                 x
 *
 DEBLOCKU DS    0H
-* If RECFM=U, a block is a variable record
+* If RECFM=U, a block is treated a variable record
 *        R4 has address of block buffer
 *        R7 has size of block read in
          LA    R7,4(,R7)          Add four to block size for fake RDW
@@ -541,33 +577,22 @@ DEBLOCKU DS    0H
          XC    BUFFCURR,BUFFCURR  Indicate no next record in block
          B     RECBACK            Go store the record addr. for return
 *
-DEBLOCKV DS    0H
-* If RECFM=V, bump address RDW size
-*        R5 has address of current record
-         SLR   R7,R7              Clear DCB-LRECL work register
-         ICM   R7,B'0011',0(R5)   Load RECFM=V RDW length field
-         AR    R7,R5              Find the next record address
-* If address=BUFFEND, zero BUFFCURR
-         CL    R7,BUFFEND         Is it off end of block?
-         BL    SETCURR            Is not off, go store it
-         LA    R7,0               Clear the next record address
-         B     SETCURR            Go store next record addr.
-*
 DEBLOCKF DS    0H
 * If RECFM=FB, bump address by lrecl
 *        R5 has address of current record
          L     R7,LRECL           Load RECFM=F DCB LRECL
          AR    R7,R5              Find the next record address
 * If address=BUFFEND, zero BUFFCURR
-         CL    R7,BUFFEND         Is it off end of block?
-         BL    SETCURR            Is not off, go store it
+SETCURR  CL    R7,BUFFEND         Is it off end of block?
+         BL    SETCURS            Is not off, go store it
          LA    R7,0               Clear the next record address
-SETCURR  DS    0H
-         ST    R7,BUFFCURR        Store the next record address
+SETCURS  ST    R7,BUFFCURR        Store the next record address
 *        BNH   RECBACK            Go store the record addr. for return
 RECBACK  DS    0H
          ST    R5,0(,R3)          Store record address for caller
-READEOD  DS    0H
+         B     READEXIT
+READEOD  OI    IOFLAGS,IOFLEOF    Remeber that we hit EOF
+READEXIT DS    0H
 *        LR    R1,R13             Save temp.save area addr.for FREEMAIN
 *        L     R13,SAVEAREA+4     Restore Caller's save area address
          L     R13,SAVEADCB+4
@@ -575,23 +600,21 @@ READEOD  DS    0H
          LR    R15,R6             Set return code 1=EOF or 0=not-eof
          RETURN (14,12),RC=(15)   Return to caller
 *
-ABEND    DS    0H
-         WTO   'MVSSUPA - @@AREAD - encountered VBS record too long',  c
-               ROUTCDE=11         Send to programmer and listing
+BADBLOCK WTO   'MVSSUPA - @@AREAD - problem processing RECFM=V(bs) file*
+               ',ROUTCDE=11       Send to programmer and listing
          ABEND 1234,DUMP          Abend U1234 and allow a dump
 *
-         LTORG                    In case someone adds literals
+         LTORG ,                  In case someone adds literals
 *
-H4       DC    H'4'               Constant for subtraction
+H4       DC    H'4'               Constant for BDW/SDW/RDW handling
 *
 * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
 *
-*  AWRITE - Write to an open dataset
+*  AWRITE - Write to an open data set
 *
 * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
          ENTRY @@AWRITE
-@@AWRITE EQU   *
-         SAVE  (14,12),,@@AWRITE
+@@AWRITE SAVE  (14,12),,@@AWRITE
          LR    R12,R15
          USING @@AWRITE,R12
          L     R2,0(,R1)          R2 contains GETMAINed address
@@ -623,12 +646,11 @@ H4       DC    H'4'               Constant for subtraction
 *
 * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
 *
-*  ACLOSE - Close a dataset
+*  ACLOSE - Close a data set
 *
 * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
          ENTRY @@ACLOSE
-@@ACLOSE EQU   *
-         SAVE  (14,12),,@@ACLOSE
+@@ACLOSE SAVE  (14,12),,@@ACLOSE
          LR    R12,R15
          USING @@ACLOSE,R12
          L     R2,0(,R1)          R2 contains GETMAINed address/handle
@@ -649,9 +671,7 @@ FREEBUFF DS    0H
          L     R3,BLKSIZE         Load the BLKSIZE for buffer size
          LA    R0,4(,R3)          Add 4 bytes for RECFM=U
          FREEMAIN RU,LV=(0),A=(1),SP=SUBPOOL  Free input buffer
-CLOSE    DS    0H
-         MVI   OPENCLOS,X'80'     Initialize MODE=24 OPEN/CLOSE list
-         CLOSE ((R2)),MF=(E,OPENCLOS)
+CLOSE    CLOSE MF=(E,OPENCLOS)
          TM    DCBMACR1,DCBMRRD   See if using MACRF=R, no dynamic buff
          BO    NOPOOL             Is MACRF=R, skip FREEPOOL
          FREEPOOL ((R2))
@@ -662,7 +682,7 @@ NOPOOL   DS    0H
          L     R13,SAVEAREA+4
          FREEMAIN RU,LV=WORKLEN,A=(1),SP=SUBPOOL
          RETURN (14,12),RC=0
-         LTORG
+         LTORG ,
 *
 * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
 *
@@ -670,20 +690,11 @@ NOPOOL   DS    0H
 *
 * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
          ENTRY @@GETM
-@@GETM   EQU   *
-         SAVE  (14,12),,@@GETM
+@@GETM   SAVE  (14,12),,@@GETM
          LR    R12,R15
          USING @@GETM,R12
 *
-         L     R2,0(,R1)
-         AIF ('&COMP' NE 'GCC').GETMC
-* THIS LINE IS FOR GCC
-         LR    R3,R2
-         AGO   .GETMEND
-.GETMC   ANOP
-* THIS LINE IS FOR C/370
-         L     R3,0(,R2)
-.GETMEND ANOP
+         LDINT R3,0(,R1)          LOAD REQUESTED STORAGE SIZE
          LR    R4,R3
          LA    R3,8(,R3)
 *
@@ -709,7 +720,7 @@ NOPOOL   DS    0H
 *
 RETURNGM DS    0H
          RETURN (14,12),RC=(15)
-         LTORG
+         LTORG ,
 *
 * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
 *
@@ -717,8 +728,7 @@ RETURNGM DS    0H
 *
 * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
          ENTRY @@FREEM
-@@FREEM  EQU   *
-         SAVE  (14,12),,@@FREEM
+@@FREEM  SAVE  (14,12),,@@FREEM
          LR    R12,R15
          USING @@FREEM,R12
 *
@@ -730,7 +740,7 @@ RETURNGM DS    0H
 *
 RETURNFM DS    0H
          RETURN (14,12),RC=(15)
-         LTORG
+         LTORG ,
 * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
 *
 *  GETCLCK - GET THE VALUE OF THE MVS CLOCK TIMER AND MOVE IT TO AN
@@ -744,8 +754,7 @@ RETURNFM DS    0H
 *
 * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
          ENTRY @@GETCLK
-@@GETCLK EQU   *
-         SAVE  (14,12),,@@GETCLK
+@@GETCLK SAVE  (14,12),,@@GETCLK
          LR    R12,R15
          USING @@GETCLK,R12
 *
@@ -761,7 +770,7 @@ RETURNFM DS    0H
 *
 RETURNGC DS    0H
          RETURN (14,12),RC=(15)
-         LTORG
+         LTORG ,
 *
 * S/370 doesn't support switching modes so this code is useless,
 * and won't compile anyway because "BSM" is not known.
@@ -773,20 +782,9 @@ RETURNGC DS    0H
 *
 * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
          ENTRY @@SETM24
-@@SETM24 EQU   *
-         SAVE  (14,12),,@@SETM24
-         LR    R12,R15
-         USING @@SETM24,R12
-*
-         L     R6,=A(LAB24)
-         N     R6,=X'7FFFFFFF'
-         BSM   R0,R6
-LAB24    DS    0H
-         LA    R15,0
-*
-RETURN24 DS    0H
-         RETURN (14,12),RC=(15)
-         LTORG
+         USING @@SETM24,R15
+@@SETM24 ICM   R14,8,=X'00'       Sure hope caller is below the line
+         BSM   0,R14              Return in amode 24
 *
 * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
 *
@@ -794,26 +792,10 @@ RETURN24 DS    0H
 *
 * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
          ENTRY @@SETM31
-@@SETM31 EQU   *
-         SAVE  (14,12),,@@SETM31
-         LR    R12,R15
-         USING @@SETM31,R12
-*
-         L     R6,=A(LAB31)
-         O     R6,=X'80000000'
-         BSM   R0,R6
-LAB31    DS    0H
-         LA    R15,0
-*
-RETURN31 DS    0H
-* We can't use the RETURN macro because R14 is unreliable
-* As the BALR if done from 24-bit mode has corrupted the
-* high byte.
-         L     14,12(13,0)
-         N     14,=X'00FFFFFF'
-         LM    0,12,20(13)
-         BR    14
-         LTORG
+         USING @@SETM31,R15
+@@SETM31 ICM   R14,8,=X'80'       Set to switch mode
+         BSM   0,R14              Return in amode 31
+         LTORG ,
 *
 .NOMODE  ANOP  ,                  S/370 doesn't support MODE switching
 *
@@ -823,9 +805,7 @@ RETURN31 DS    0H
 *
 * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
          ENTRY @@SAVER
-@@SAVER EQU   *
-*
-         SAVE  (14,12),,@@SAVER    * SAVE REGS AS NORMAL
+@@SAVER  SAVE  (14,12),,@@SAVER    * SAVE REGS AS NORMAL
          LR    R12,R15
          USING @@SAVER,12
          L     R1,0(,R1)           * ADDRESS OF ENV TO R1
@@ -850,7 +830,7 @@ RETURN31 DS    0H
 RETURNSR DS    0H
          SR    R15,R15              * CLEAR RETURN CODE
          RETURN (14,12),RC=(15)
-         LTORG
+         LTORG ,
 *
 *
 *
@@ -860,9 +840,7 @@ RETURNSR DS    0H
 *
 * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
          ENTRY @@LOADR
-@@LOADR EQU   *
-*
-         BALR  R12,R0
+@@LOADR  BALR  R12,R0
          USING *,12
          L     R1,0(,R1)          * R1 POINTS TO ENV
          L     R2,8(,R1)          * R2 POINTS TO STACK
@@ -887,7 +865,362 @@ RETURNSR DS    0H
 RETURNLR DS    0H
          SR    R15,R15            * CLEAR RETURN CODE
          RETURN (14,12),RC=(15)
-         LTORG
+         LTORG ,
+         SPACE 3
+***********************************************************************
+**                                                                   **
+**   CALL @@SYSTEM,(req-type,pgm-len,pgm-name,parm-len,parm),VL      **
+**                                                                   **
+**   "-len" fields are self-defining values in the calling list,     **
+**       or else pointers to 32-bit signed integer values            **
+**                                                                   **
+**   "pgm-name" is the address of the name of the program to be      **
+**       executed (one to eight characters)                          **
+**                                                                   **
+**   "parm" is the address of a text string of length "parm-len",    **
+**       and may be zero to one hundred bytes (OS JCL limit)         **
+**                                                                   **
+**   "req-type" is or points to 1 for a program ATTACH               **
+**                              2 for TSO CP invocation              **
+**                                                                   **
+*---------------------------------------------------------------------*
+**                                                                   **
+**    Author:  Gerhard Postpischil                                   **
+**                                                                   **
+**    This program is placed in the public domain.                   **
+**                                                                   **
+*---------------------------------------------------------------------*
+**                                                                   **
+**    Assembly: Any MVS or later assembler may be used.              **
+**       Requires SYS1.MACLIB. TSO CP support requires additional    **
+**       macros from SYS1.MODGEN (SYS1.AMODGEN in MVS).              **
+**       Intended to work in any 24 and 31-bit environment.          **
+**                                                                   **
+**    Linker/Binder: RENT,REFR,REUS                                  **
+**                                                                   **
+*---------------------------------------------------------------------*
+**    Return codes:  when R15:0 R15 has return from program.         **
+**    Else R15 is 0480400n   GETMAIN failed                          **
+**      R15 is 04806nnn  ATTACH failed                               **
+**      R15 is 1400000n  PARM list error: n= 1,2, or 3 (req/pgm/parm)**
+***********************************************************************
+         SPACE 2
+         ENTRY @@SYSTEM START 0
+@@SYSTEM B     SYSATBEG-*(,R15)      SKIP ID
+         DC    AL1(9),C'@@SYSTEM &SYSDATE'
+SYSATBEG STM   R14,R12,12(R13)    SAVE CALLER'S REGISTERS
+         LR    R12,R15            ESTABLISH MY BASE
+         USING @@SYSTEM,R12       AND DECLARE IT
+         LA    R11,16(,R13)       REMEMBER THE RETURN CODE ADDRESS
+         MVC   0(4,R11),=X'04804000'  PRESET FOR GETMAIN FAILURE
+         LR    R9,R1              SAVE PARAMETER LIST ADDRESS
+         LA    R0,SYSATDLN        GET LENGTH OF SAVE AND WORK AREA
+         GETMAIN RC,LV=(0)        GET STORAGE
+         LTR   R15,R15            SUCCESSFUL ?
+         BZ    SYSATHAV           YES
+         STC   R15,3(,R11)        SET RETURN VALUES
+         B     SYSATRET           RELOAD AND RETURN
+         SPACE 1
+*    CLEAR GOTTEN STORAGE AND ESTABLISH SAVE AREA
+*
+SYSATHAV ST    R1,8(,R13)         LINK OURS TO CALLER'S SAVE AREA
+         ST    R13,4(,R1)         LINK CALLER'S TO OUR AREA
+         LR    R13,R1
+         USING SYSATWRK,R13
+         XC    SYSATZER,SYSATZER  CLEAR DYNAMIC STUFF
+         MVC   0(4,R11),=X'14000002'  PRESET FOR PARM ERROR
+         LDINT R4,0(,R9)          REQUEST TYPE
+         LDINT R5,4(,R9)          LENGTH OF PROGRAM NAME
+         L     R6,8(,R9)          -> PROGRAM NAME
+         LDINT R7,12(,R9)         LENGTH OF PARM
+         L     R8,16(,R9)         -> PARM TEXT
+*   NOTE THAT THE CALLER IS EITHER COMPILER CODE, OR A COMPILER
+*   LIBRARY ROUTINE, SO WE DO MINIMAL VALIDITY CHECKING
+*
+         SPACE 1
+*   EXAMINE PROGRAM NAME LENGTH AND STRING
+*
+         LTR   R5,R5              ANY LENGTH ?
+         BNP   SYSATEXT           NO; OOPS
+         CH    R5,=H'8'           NOT TOO LONG ?
+         BH    SYSATEXT           TOO LONG; TOO BAD
+         BCTR  R5,0
+         MVC   SYSATPGM(L'SYSATPGM+L'SYSATOTL),=CL10' '  PRE-BLANK
+         EX    R5,SYSAXPGM        MOVE PROGRAM NAME
+         CLC   SYSATPGM,=CL10' '  STILL BLANK ?
+         BE    SYSATEXT           YES; TOO BAD
+         SPACE 1
+*   BRANCH AND PROCESS ACCORDING TO REQUEST TYPE
+*
+         MVI   3(R11),1           SET BAD REQUEST TYPE
+         CH    R4,=H'2'           CP PROGRAM ATTACH ?
+         BE    SYSATCP            YES
+         CH    R4,=H'1'           OS PROGRAM ATTACH ?
+         BNE   SYSATEXT           NO; HAVE ERROR CODE
+         SPACE 2
+*   OS PROGRAM ATTACH - PREPARE PARM, ETC.
+*
+*   NOW LOOK AT PARM STRING
+         LTR   R7,R7              ANY LENGTH ?
+         BM    SYSATEXT           NO; OOPS
+         STH   R7,SYSATOTL        PASS LENGTH OF TEXT
+         BZ    SYSATNTX
+         CH    R7,=AL2(L'SYSATOTX)  NOT TOO LONG ?
+         BH    SYSATEXT           TOO LONG; TOO BAD
+         BCTR  R7,0
+         EX    R7,SYSAXTXT        MOVE PARM STRING
+SYSATNTX LA    R1,SYSATOTL        GET PARAMETER ADDRESS
+         ST    R1,SYSATPRM        SET IT
+         OI    SYSATPRM,X'80'     SET END OF LIST BIT
+         B     SYSATCOM           GO TO COMMON ATTACH ROUTINE
+         SPACE 2
+*   TSO CP REQUEST - PREPARE PARM, CPPL, ETC.
+*
+SYSATCP  LTR   R7,R7              ANY LENGTH ?
+         BM    SYSATEXT           NO; OOPS
+         LA    R1,SYSATOTX-SYSATOPL(,R7)  LENGTH WITH HEADER
+         STH   R1,SYSATOPL        PASS LENGTH OF COMMAND TEXT
+         LA    R1,1(,R7)
+         STH   R1,SYSATOPL+2      LENGTH PROCESSED BY PARSER
+         BZ    SYSATXNO
+         CH    R7,=AL2(L'SYSATOTX)  NOT TOO LONG ?
+         BH    SYSATEXT           TOO LONG; TOO BAD
+         BCTR  R7,0
+         EX    R7,SYSAXTXT        MOVE PARM STRING
+SYSATXNO LA    R1,SYSATOPL        GET PARAMETER ADDRESS
+         ST    R1,SYSATPRM        SET IT
+*   TO MAKE THIS WORK, WE NEED THE UPD, PSCB, AND ECT ADDRESS.
+*   THE FOLLOWING CODE WORKS PROVIDED THE CALLER WAS INVOKED AS A
+*   TSO CP, USED NORMAL SAVE AREA CONVENTIONS, AND HASN'T MESSED WITH
+*   THE TOP SAVE ARE.
+         MVI   3(R11),4           SET ERROR FOR BAD CP REQUEST
+         LA    R2,SYSATPRM+8      CPPLPSCB
+         EXTRACT (R2),FIELDS=PSB  GET THE PSCB
+         PUSH  USING
+         L     R1,PSATOLD-PSA     GET THE CURRENT TCB
+         USING TCB,R1
+         L     R1,TCBFSA          GET THE TOP LEVEL SAVE AREA
+         N     R1,=X'00FFFFFF'    KILL TCBIDF BYTE
+         POP   USING
+         L     R1,24(,R1)         ORIGINAL R1
+         LA    R1,0(,R1)            CLEAN IT
+         LTR   R1,R1              ANY?
+         BZ    SYSATEXT           NO; TOO BAD
+         TM    0(R1),X'80'        END OF LIST?
+         BNZ   SYSATEXT           YES; NOT CPPL
+         TM    4(R1),X'80'        END OF LIST?
+         BNZ   SYSATEXT           YES; NOT CPPL
+         TM    8(R1),X'80'        END OF LIST?
+         BNZ   SYSATEXT           YES; NOT CPPL
+         CLC   8(4,R1),SYSATPRM+8   MATCHES PSCB FROM EXTRACT?
+         BNE   SYSATEXT           NO; TOO BAD
+         MVC   SYSATPRM+4(3*4),4(R1)  COPY UPT, PSCB, ECT
+SYSATCOM LA    R1,SYSATPRM        PASS ADDRESS OF PARM ADDRESS
+         LA    R2,SYSATPGM        POINT TO NAME
+         LA    R3,SYSATECB        AND ECB
+         ATTACH EPLOC=(R2),       INVOKE THE REQUESTED PROGRAM         *
+               ECB=(R3),SF=(E,SYSATLST)
+         LTR   R0,R15             CHECK RETURN CODE
+         BZ    SYSATWET           GOOD
+         MVC   0(4,R11),=X'04806000'  ATTACH FAILED
+         STC   R15,3(,R11)        SET ERROR CODE
+         B     SYSATEXT           FAIL
+         SPACE 1
+SYSATWET ST    R1,SYSATTCB        SAVE FOR DETACH
+         WAIT  ECB=SYSATECB       WAIT FOR IT TO FINISH
+         MVC   1(3,R11),SYSATECB+1
+         MVI   0(R11),0           SHOW CODE FROM PROGRAM
+         DETACH SYSATTCB          GET RID OF SUBTASK
+         B     SYSATEXT           AND RETURN
+SYSAXPGM OC    SYSATPGM(0),0(R6)  MOVE NAME AND UPPER CASE
+SYSAXTXT MVC   SYSATOTX(0),0(R8)    MOVE PARM TEXT
+         SPACE 1
+*    PROGRAM EXIT, WITH APPROPRIATE RETURN CODES
+*
+SYSATEXT LR    R1,R13        COPY STORAGE ADDRESS
+         L     R9,4(,R13)    GET CALLER'S SAVE AREA
+         LA    R0,SYSATDLN   GET ORIGINAL LENGTH
+         FREEMAIN R,A=(1),LV=(0)  AND RELEASE THE STORAGE
+         L     R13,4(,R13)   RESTORE CALLER'S SAVE AREA
+SYSATRET LM    R14,R12,12(R13) RESTORE REGISTERS; SET RETURN CODES
+         BR    R14           RETURN TO CALLER
+         SPACE 2
+*    DYNAMICALLY ACQUIRED STORAGE
+*
+SYSATWRK DSECT ,             MAP STORAGE
+         DS    18A           OUR OS SAVE AREA
+         SPACE 1
+SYSATCLR DS    0F            START OF CLEARED AREA
+SYSATECB DS    F             EVENT CONTROL FOR SUBTASK
+SYSATTCB DS    A             ATTACH TOKEN FOR CLEAN-UP
+SYSATPRM DS    4A            PREFIX FOR CP
+SYSATOPL DS    2Y     1/4    PARM LENGTH / LENGTH SCANNED
+SYSATPGM DS    CL8    2/4    PROGRAM NAME (SEPARATOR)
+SYSATOTL DS    Y      3/4    OS PARM LENGTH / BLANKS FOR CP CALL
+SYSATOTX DS    CL100  4/4    NORMAL PARM TEXT STRING
+         SPACE 1
+SYSATLST ATTACH EPLOC=SYSATPGM,ECB=SYSATECB,SF=L
+SYSATZER EQU   SYSATCLR,*-SYSATCLR,C'X'   ADDRESS & SIZE TO CLEAR
+SYSATDLN EQU   *-SYSATWRK     LENGTH OF DYNAMIC STORAGE
+MVSSUPA  CSECT ,             RESTORE
+         SPACE 2
+***********************************************************************
+**                                                                   **
+**   CALL @@DYNAL,(ddn-len,ddn-adr,dsn-len,dsn-adr),VL               **
+**                                                                   **
+**   "-len" fields are self-defining values in the calling list,     **
+**       or else pointers to 32-bit signed integer values            **
+**                                                                   **
+**   "ddn-adr"  is the address of the DD name to be used. When the   **
+**       contents is hex zero or blank, and len=8, gets assigned.    **
+**                                                                   **
+**   "dsn-adr" is the address of a 1 to 44 byte data set name of an  **
+**       existing file (sequential or partitioned).                  **
+**                                                                   **
+**   Calling @@DYNAL with a DDNAME and a zero length for the DSN     **
+**   results in unallocation of that DD (and a PARM error).          **
+**                                                                   **
+*---------------------------------------------------------------------*
+**                                                                   **
+**    Author:  Gerhard Postpischil                                   **
+**                                                                   **
+**    This program is placed in the public domain.                   **
+**                                                                   **
+*---------------------------------------------------------------------*
+**                                                                   **
+**    Assembly: Any MVS or later assembler may be used.              **
+**       Requires SYS1.MACLIB                                        **
+**       Intended to work in any 24 and 31-bit environment.          **
+**                                                                   **
+**    Linker/Binder: RENT,REFR,REUS                                  **
+**                                                                   **
+*---------------------------------------------------------------------*
+**    Return codes:  R15:04sssnnn   it's a program error code:       **
+**    04804 - GETMAIN failed;  1400000n   PARM list error            **
+**                                                                   **
+**    Otherwise R15:0-1  the primary allocation return code, and     **
+**      R15:2-3 the reason codes.                                    **
+***********************************************************************
+*  Maintenance:                                     new on 2008-06-07 *
+*                                                                     *
+***********************************************************************
+         ENTRY @@DYNAL
+@@DYNAL  B     DYNALBEG-*(,R15)      SKIP ID
+         DC    AL1(9),C'@@SYSTEM &SYSDATE'
+DYNALBEG STM   R14,R12,12(R13)    SAVE CALLER'S REGISTERS
+         LR    R12,R15            ESTABLISH MY BASE
+         USING @@DYNAL,R12        AND DECLARE IT
+         LA    R11,16(,R13)       REMEMBER THE RETURN CODE ADDRESS
+         MVC   0(4,R11),=X'04804000'  PRESET
+         LR    R9,R1              SAVE PARAMETER LIST ADDRESS
+         LA    R0,DYNALDLN        GET LENGTH OF SAVE AND WORK AREA
+         GETMAIN RC,LV=(0)        GET STORAGE
+         LTR   R15,R15            SUCCESSFUL ?
+         BZ    DYNALHAV           YES
+         STC   R15,3(,R11)        SET RETURN VALUES
+         B     DYNALRET           RELOAD AND RETURN
+         SPACE 1
+*    CLEAR GOTTEN STORAGE AND ESTABLISH SAVE AREA
+*
+DYNALHAV ST    R1,8(,R13)         LINK OURS TO CALLER'S SAVE AREA
+         ST    R13,4(,R1)         LINK CALLER'S TO OUR AREA
+         LR    R13,R1
+         USING DYNALWRK,R13
+         MVC   0(4,R11),=X'14000001'  PRESET FOR PARM LIST ERROR
+         MVC   DYNLIST(ALLDYNLN),PATLIST  INITIALIZE EVERYTHING
+         LDINT R4,0(,R9)          DD NAME LENGTH
+         L     R5,4(,R9)          -> DD NAME
+         LDINT R6,8(,R9)          DSN LENGTH
+         L     R7,12(,R9)         -> DATA SET NAME
+         SPACE 1
+*   NOTE THAT THE CALLER IS EITHER COMPILER CODE, OR A COMPILER
+*   LIBRARY ROUTINE, SO WE DO MINIMAL VALIDITY CHECKING
+*
+         SPACE 1
+*   PREPARE DYNAMIC ALLOCATION REQUEST LISTS
+*
+         LA    R0,ALLARB
+         STCM  R0,7,ALLARBP+1     REQUEST POINTER
+         LA    R0,ALLATXTP
+         ST    R0,ALLARB+8        TEXT UNIT POINTER
+         LA    R0,ALLAXDSN
+         LA    R1,ALLAXDSP
+         LA    R2,ALLAXDDN
+         O     R2,=X'80000000'
+         STM   R0,R2,ALLATXTP     TEXT UNIT ADDRESSES
+         SPACE 1
+*   COMPLETE REQUEST WITH CALLER'S DATA
+*
+         LTR   R4,R4              CHECK DDN LENGTH
+         BNP   DYNALEXT           OOPS
+         CH    R4,=AL2(L'ALLADDN)   REASONABLE SIZE ?
+         BH    DYNALEXT           NO
+         BCTR  R4,0
+         EX    R4,DYNAXDDN        MOVE DD NAME
+         OC    ALLADDN,=CL10' '   CONVERT HEX ZEROES TO BLANKS
+         CLC   ALLADDN,=CL10' '   NAME SUPPLIED ?
+         BNE   DYNALDDN           YES
+         MVI   ALLAXDDN+1,DALRTDDN  REQUEST RETURN OF DD NAME
+         CH    R4,=AL2(L'ALLADDN-1)   CORRECT SIZE FOR RETURN ?
+         BE    DYNALNDD           AND LEAVE R5 NON-ZERO
+         B     DYNALEXT           NO
+         SPACE 1
+DYNALDDN SR    R5,R5              SIGNAL NO FEEDBACK
+*  WHEN USER SUPPLIES A DD NAME, DO AN UNCONDITIONAL UNALLOCATE ON IT
+         LA    R0,ALLURB
+         STCM  R0,7,ALLURBP+1     REQUEST POINTER
+         LA    R0,ALLUTXTP
+         ST    R0,ALLURB+8        TEXT UNIT POINTER
+         LA    R2,ALLUXDDN
+         O     R2,=X'80000000'
+         ST    R2,ALLUTXTP        TEXT UNIT ADDRESS
+         MVC   ALLUDDN,ALLADDN    SET DD NAME
+         LA    R1,ALLURBP         POINT TO REQUEST BLOCK POINTER
+         DYNALLOC ,               REQUEST ALLOCATION
+DYNALNDD LTR   R6,R6              CHECK DSN LENGTH
+         BNP   DYNALEXT           OOPS
+         CH    R6,=AL2(L'ALLADSN)   REASONABLE SIZE ?
+         BH    DYNALEXT           NO
+         STH   R6,ALLADSN-2       SET LENGTH INTO TEXT UNIT
+         BCTR  R6,0
+         EX    R6,DYNAXDSN        MOVE DS NAME
+         SPACE 1
+*    ALLOCATE
+         LA    R1,ALLARBP         POINT TO REQUEST BLOCK POINTER
+         DYNALLOC ,               REQUEST ALLOCATION
+         STH   R15,0(,R11)        PRIMARY RETURN CODE
+         STH   R0,2(,R11)         REASON CODES
+         LTR   R5,R5              NEED TO RETURN DDN ?
+         BZ    DYNALEXT           NO
+         MVC   0(8,R5),ALLADDN    RETURN NEW DDN, IF ANY
+         B     DYNALEXT           AND RETURN
+DYNAXDDN MVC   ALLADDN(0),0(R5)   COPY DD NAME
+DYNAXDSN MVC   ALLADSN(0),0(R7)   COPY DATA SET NAME
+         SPACE 1
+*    PROGRAM EXIT, WITH APPROPRIATE RETURN CODES
+*
+DYNALEXT LR    R1,R13        COPY STORAGE ADDRESS
+         L     R9,4(,R13)    GET CALLER'S SAVE AREA
+         LA    R0,DYNALDLN   GET ORIGINAL LENGTH
+         FREEMAIN R,A=(1),LV=(0)  AND RELEASE THE STORAGE
+         L     R13,4(,R13)   RESTORE CALLER'S SAVE AREA
+DYNALRET LM    R14,R12,12(R13) RESTORE REGISTERS; SET RETURN CODES
+         BR    R14           RETURN TO CALLER
+         SPACE 2
+         LTORG ,
+         PUSH  PRINT
+         PRINT NOGEN         DON'T NEED TWO COPIES
+PATLIST  DYNPAT P=PAT        EXPAND ALLOCATION DATA
+         POP   PRINT
+         SPACE 2
+*    DYNAMICALLY ACQUIRED STORAGE
+*
+DYNALWRK DSECT ,             MAP STORAGE
+         DS    18A           OUR OS SAVE AREA
+         SPACE 1
+DYNLIST  DYNPAT P=ALL        EXPAND ALLOCATION DATA
+DYNALDLN EQU   *-DYNALWRK     LENGTH OF DYNAMIC STORAGE
+MVSSUPA  CSECT ,             RESTORE
 *
          IEZIOB                   Input/Output Block
 *
@@ -900,30 +1233,44 @@ WORKLEN  EQU   *-WORKAREA
          ORG   IHADCB             Overlay the DCB DSECT
 ZDCBAREA DS    0H
          DS    CL(INDCBLN)
-         DS    CL(OUTDCBLN)
-OPENCLOS DS    F                  OPEN/CLOSE parameter list
-         DS    0H
+         ORG   IHADCB             Only using one DCB
+         DS    CL(OUTDCBLN)         so overlay this one
+         ORG   ,
+OPENCLOS DS    A                  OPEN/CLOSE parameter list
+DCBXLST  DS    A
 EOFR24   DS    CL(EOFRLEN)
          IHADECB DSECT=NO         Data Event Control Block
 BLKSIZE  DS    F                  Save area for input DCB BLKSIZE
 LRECL    DS    F                  Save area for input DCB LRECL
-BUFFADDR DS    F                  Location of the BLOCK Buffer
-BUFFEND  DS    F                  Address after end of current block
-BUFFCURR DS    F                  Current record in the buffer
-VBSADDR  DS    F                  Location of the VBS record build area
-VBSEND   DS    F                  Addr. after end VBS record build area
-VBSCURR  DS    F                  Location to store next byte
-JFCBPTR  DS    F
+BUFFADDR DS    A                  Location of the BLOCK Buffer
+BUFFEND  DS    A                  Address after end of current block
+BUFFCURR DS    A                  Current record in the buffer
+VBSADDR  DS    A                  Location of the VBS record build area
+VBSEND   DS    A                  Addr. after end VBS record build area
 JFCB     DS    0F
-         IEFJFCBN LIST=YES        SYS1.AMODGEN JOB File Control Block
+         IEFJFCBN LIST=YES        Job File Control Block
 CAMLST   DS    XL(CAMLEN)         CAMLST for OBTAIN to get VTOC entry
 * Format 1 Data Set Control Block
-DSCB     DS    0F
-         IECSDSL1 (1)             Map the Format 1 DSCB
+*   N.B. Current program logic does not use DS1DSNAM, leaving 44 bytes
+*     of available space
+         IECSDSL1 1               Map the Format 1 DSCB
 DSCBCCHH DS    CL5                CCHHR of DSCB returned by OBTAIN
          DS    CL47               Rest of OBTAIN's 148 byte work area
-SAVEADCB DS    18F                Register save area for PUT
+         ORG   DS1DSNAM           Reuse unused field
+DEVINFO  DS    2F                 UCB Type
 MEMBER24 DS    CL8
+RECFMIX  DS    X             Record format index: 0-F 4-V 8-U
+IOFLAGS  DS    X             Remember prior events
+IOFLEOF  EQU   1               Encountered an End-of-File
+IOFLSDW  EQU   2               Spanned record incomplete
+         ORG   ,
+SAVEADCB DS    18F                Register save area for PUT
 ZDCBLEN  EQU   *-ZDCBAREA
 *
+         SPACE 2
+         PRINT NOGEN
+         IHAPSA ,            MAP LOW STORAGE
+         IKJTCB ,            MAP TASK CONTROL BLOCK
+         IEFZB4D0 ,          MAP SVC 99 PARAMETER LIST
+         IEFZB4D2 ,          MAP SVC 99 PARAMETERS
          END

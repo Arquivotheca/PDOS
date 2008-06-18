@@ -49,6 +49,7 @@
 *     Fixed 0C4 abend in RECFM=Vxxx processing; fixed PUT length error.
 *     Deleted unnecessary and duplicated instructions
 *     Added @@SYSTEM and @@DYNAL routines                2008-06-10
+*     Added @@IDCAMS non-reentrant, non-refreshable      2008-06-17
 ***********************************************************************
 *
          MACRO ,             COMPILER DEPENDENT LOAD INTEGER
@@ -840,8 +841,8 @@ RETURNSR DS    0H
 *
 * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
          ENTRY @@LOADR
-@@LOADR  BALR  R12,R0
-         USING *,12
+@@LOADR  BALR  R12,0
+         USING *,R12
          L     R1,0(,R1)          * R1 POINTS TO ENV
          L     R2,8(,R1)          * R2 POINTS TO STACK
          L     R3,4(,R1)          * R3 HAS HOW LONG
@@ -905,7 +906,7 @@ RETURNLR DS    0H
 **      R15 is 1400000n  PARM list error: n= 1,2, or 3 (req/pgm/parm)**
 ***********************************************************************
          SPACE 2
-         ENTRY @@SYSTEM START 0
+         ENTRY @@SYSTEM
 @@SYSTEM B     SYSATBEG-*(,R15)      SKIP ID
          DC    AL1(9),C'@@SYSTEM &SYSDATE'
 SYSATBEG STM   R14,R12,12(R13)    SAVE CALLER'S REGISTERS
@@ -1063,6 +1064,139 @@ SYSATLST ATTACH EPLOC=SYSATPGM,ECB=SYSATECB,SF=L
 SYSATZER EQU   SYSATCLR,*-SYSATCLR,C'X'   ADDRESS & SIZE TO CLEAR
 SYSATDLN EQU   *-SYSATWRK     LENGTH OF DYNAMIC STORAGE
 MVSSUPA  CSECT ,             RESTORE
+         SPACE 2
+***********************************************************************
+**                                                                   **
+**   INVOKE IDCAMS: CALL @@IDCAMS,(@LEN,@TEXT)                       **
+**                                                                   **
+***********************************************************************
+         PUSH  USING
+         DROP  ,
+         ENTRY @@IDCAMS
+         USING @@IDCAMS,R15
+@@IDCAMS B     IDCBEG
+         DC    AL1(17),CL17'@@IDCAMS &SYSDATE'
+IDCBEG   STM   R14,R12,12(R13)    SAVE CALLER'S REGISTERS
+         LR    R12,R15            SET LOCAL BASE
+         DROP  R15
+         USING @@IDCAMS,R12       DECLARE PROGRAM BASE
+         LR    R10,R13            SAVE CALLER'S SAVE AREA
+         LA    R13,IDCSAVE        LOAD OUR SAVE AREA
+         ST    R10,4(,R13)        BACK LINK
+         ST    R13,8(,R10)        DOWN LINK
+         LA    R1,0(,R1)          ADDRESS OF IDCAMS REQUEST (V-CON)
+         ST    R1,IDC@REQ         SAVE REQUEST ADDRESS
+         MVI   EXFLAGS,0          INITIALIZE FLAGS
+         LA    R1,AMSPARM         PASS PARAMETER LIST
+         LINK  EP=IDCAMS          INVOKE UTILITY
+         ST    R15,16(,R10)       SAVE RETURN CODE
+         LR    R13,R10
+         LM    R14,R12,12(R13)    RESTORE CALLER'S REGS
+         BR    R14                RETURN
+         POP   USING
+         SPACE 2
+***************************************************************
+* IDCAMS ASYNCHRONOUS EXIT ROUTINE
+***************************************************************
+         SPACE 1
+         PUSH  USING
+         DROP  ,
+XIDCAMS  STM   R14,R12,12(R13)
+         LR    R12,R15
+         USING XIDCAMS,R12
+         LA    R9,XIDSAVE         SET MY SAVE AREA
+         ST    R13,4(,R9)         MAKE BACK LINK
+         ST    R9,8(,R13)         MAKE DOWN LINK
+         LR    R13,R9             MAKE ACTIVE SAVE AREA
+         SR    R15,R15            PRESET FOR GOOD RETURN
+         LM    R3,R5,0(R1)        LOAD PARM LIST ADDRESSES
+         SLR   R14,R14
+         IC    R14,0(,R4)         LOAD FUNCTION
+         B     *+4(R14)
+         B     XIDCEXIT   OPEN           CODE IN R14 = X'00'
+         B     XIDCEXIT   CLOSE          CODE IN R14 = X'04'
+         B     XIDCGET    GET SYSIN      CODE IN R14 = X'08'
+         B     XIDCPUT    PUT SYSPRINT   CODE IN R14 = X'0C'
+         SPACE 1
+XIDCGET  TM    EXFLAGS,EXFGET            X'FF' = PRIOR GET ISSUED ?
+         BNZ   XIDCGET4                  YES, SET RET CODE = 04
+         L     R1,IDC@REQ         GET REQUEST ADDRESS
+         LDINT R3,0(,R1)          LOAD LENGTH
+         L     R2,4(,R1)          LOAD TEXT POINTER
+         LA    R2,0(,R2)          CLEAR HIGH
+         STM   R2,R3,0(R5)        PLACE INTO IDCAMS LIST
+         OI    EXFLAGS,EXFGET            X'FF' = A GET HAS BEEN ISSUED
+         B     XIDCEXIT
+         SPACE 1
+XIDCGET4 LA    R15,4                     SET REG 15 = X'00000004'
+         B     XIDCEXIT
+         SPACE 1
+XIDCPUT  TM    EXFLAGS,EXFSUPP+EXFSKIP  ANY FORM OF SUPPRESSION?
+         BNZ   XIDCPUTZ           YES; DON'T BOTHER WITH REST
+         LM    R4,R5,0(R5)
+         LA    R4,1(,R4)          SKIP CARRIAGE CONTROL CHARACTER
+         BCTR  R5,0               FIX LENGTH
+         ICM   R5,8,=C' '         BLANK FILL
+         LA    R14,XIDCTEXT
+         LA    R15,L'XIDCTEXT
+         MVCL  R14,R4
+         TM    EXFLAGS,EXFMALL    PRINT ALL MESSAGES?
+         BNZ   XIDCSHOW           YES; PUT THEM ALL OUT
+         CLC   =C'IDCAMS ',XIDCTEXT    IDCAMS TITLE ?
+         BE    XIDCEXIT           YES; SKIP
+         CLC   XIDCTEXT+1(L'XIDCTEXT-1),XIDCTEXT   ALL BLANK OR SOME?
+         BE    XIDCEXIT           YES; SKIP
+*        CLC   DELETCMD(8),XIDCTEXT    OUR REQUEST?
+*        BE    XIDCEXIT           YES; SKIP
+         CLC   =C'IDC0002I',XIDCTEXT   AMS PGM END
+         BE    XIDCEXIT           YES; SKIP
+*PRINT   CLC   =C'IDC3012I',XIDCTEXT   DATASET NOT FOUND?
+*ALL     BE    XIDCSKIP           YES; THAT'S JUST FINE AND DANDY
+*RESULT  CLC   =C'IDC0550I',XIDCTEXT   DATASET DELETED?
+*MSGS    BE    XIDCSKIP           YES; THAT'S JUST FINE AND DANDY
+XIDCSHOW WTO   MF=(E,AMSPRINT)    SHOW MESSAGE
+XIDCPUTZ SR    R15,R15
+         B     XIDCEXIT
+XIDCSKIP OI    EXFLAGS,EXFSKIP    SKIP THIS AND REMAINING MESSAGES
+         SR    R15,R15
+         SPACE 2
+***************************************************************
+* IDCAMS ASYNC EXIT ROUTINE - EXIT, CONSTANTS & WORKAREAS
+***************************************************************
+         SPACE 1
+XIDCEXIT L     R13,4(,R13)        GET CALLER'S SAVE AREA
+         L     R14,12(,R13)
+         RETURN (0,12)            RESTORE AND RETURN TO IDCAMS
+         SPACE 1
+IDCSAVE  DC    18F'0'             MAIN ROUTINE'S REG SAVEAREA
+XIDSAVE  DC    18F'0'             ASYNC ROUTINE'S REG SAVEAREA
+         SPACE 1
+AMSPRINT DC    0A(0),AL2(4+L'XIDCTEXT,0)
+XIDCTEXT DC    CL132' '
+         SPACE 1
+AMSPARM  DC    A(HALF00,HALF00,HALF00,X'80000000'+ADDRLIST)
+         SPACE 1
+ADDRLIST DC    F'2'
+         DC    A(DDNAME01)
+         DC    A(XIDCAMS)
+IDC@REQ  DC    A(0)               ADDRESS OF REQUEST POINTER
+         DC    A(DDNAME02)
+         DC    A(XIDCAMS)
+         DC    A(0)
+         SPACE 1
+HALF00   DC    H'0'
+DDNAME01 DC    CL10'DDSYSIN   '
+DDNAME02 DC    CL10'DDSYSPRINT'
+         SPACE 1
+EXFLAGS  DC    X'08'              EXIT PROCESSING FLAGS
+EXFGET   EQU   X'01'                PRIOR GET WAS ISSUED
+EXFNOM   EQU   X'04'                SUPPRESS ERROR WTOS
+EXFRET   EQU   X'08'                NO ABEND; RETURN WITH COND.CODE
+EXFMALL  EQU   X'10'                ALWAYS PRINT MESSAGES
+EXFSUPP  EQU   X'20'                ALWAYS SUPPRESS MESSAGES
+EXFSKIP  EQU   X'40'                SKIP SUBSEQUENT MESSAGES
+EXFGLOB  EQU   EXFMALL+EXFSUPP+EXFRET  GLOBAL FLAGS
+         POP   USING
          SPACE 2
 ***********************************************************************
 **                                                                   **

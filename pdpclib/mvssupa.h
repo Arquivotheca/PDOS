@@ -19,6 +19,9 @@ void __freem(void *ptr);
 #pragma linkage(__dynal, OS)
 int __dynal(size_t ddn_len, char *ddn, size_t dsn_len, char *dsn);
 
+#pragma linkage(__idcams, OS)
+int __idcams(size_t len, char *data);
+
 #pragma linkage(__system, OS)
 int __system(int req_type, 
              size_t pgm_len,

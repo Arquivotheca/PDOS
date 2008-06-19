@@ -628,13 +628,20 @@ static void osfopen(void)
 
         sprintf(newfnm, "PDP%03dHD", spareSpot);
         strcpy(tmpdd, newfnm);
+        
+        /* strip any single quote */
+        if (fnm[0] == '\'')
+        {
+            fnm++;
+        }
         strcpy(rawf, fnm);
         
         /* If we have a file such as "'FRED.C(MARY)'" we need to
            convert this into PDP001HD(MARY) and do a dynamic
-           allocation of PDP001HD to "'FRED.C'". This involved
-           extracting the member name, eliminating the member
-           name and putting in a trailing "'" if required. */
+           allocation of PDP001HD to "FRED.C". We don't yet have
+           the ability to add a prefix. So this involves
+           extracting the member name and then eliminating the member
+           name and any single quotes */
         p = strchr(rawf, '(');
         if (p != NULL)
         {
@@ -648,10 +655,15 @@ static void osfopen(void)
             {
                 *(p + 1) = '\0';
             }
-            if (rawf[0] == '\'')
+        }
+        else
+        {
+            /* strip any single quote */
+            p = strchr(rawf, '\'');
+            if (p != NULL)
             {
-                strcat(rawf, "\'");
-            }            
+                *p = '\0';
+            }
         }
 
         /* MVS probably expects uppercase filenames */

@@ -663,12 +663,9 @@ static void osfopen(void)
         }
         
         /* dynamically allocate file */
-        printf("allocating %d %s %d %s\n\n",
-               strlen(tmpdd), tmpdd, strlen(rawf), rawf);
         errno = __dynal(strlen(tmpdd), tmpdd, strlen(rawf), rawf);
         if (errno != 0)
         {
-            printf("errno is %d\n", errno);
             err = 1;
             return;
         }

@@ -663,9 +663,12 @@ static void osfopen(void)
         }
         
         /* dynamically allocate file */
+        printf("allocating %d %s %d %s\n\n",
+               strlen(tmpdd), tmpdd, strlen(rawf), rawf);
         errno = __dynal(strlen(tmpdd), tmpdd, strlen(rawf), rawf);
         if (errno != 0)
         {
+            printf("errno is %d\n", errno);
             err = 1;
             return;
         }
@@ -2410,9 +2413,16 @@ int remove(const char *filename)
 #endif
 #ifdef __MVS__
     char buf[FILENAME_MAX + 50];
+    char *p;
     
-    sprintf(buf, "delete %s", filename);
-    ret = __system(1, 6, "IDCAMS", strlen(buf), buf);
+    sprintf(buf, " DELETE %s", filename);
+    p = buf;
+    while (*p != '\0')
+    {
+       *p = toupper((unsigned char)*p);
+       p++;
+    }
+    ret = __idcams(strlen(buf), buf);
 #endif
     return (ret);
 }
@@ -2457,9 +2467,16 @@ int rename(const char *old, const char *new)
 #endif
 #ifdef __MVS__
     char buf[FILENAME_MAX + FILENAME_MAX + 50];
+    char *p;
     
-    sprintf(buf, "rename %s %s", old, new);
-    ret = __system(1, 6, "IDCAMS", strlen(buf), buf);
+    sprintf(buf, " ALTER %s NEWNAME(%s)", old, new);
+    p = buf;
+    while (*p != '\0')
+    {
+       *p = toupper((unsigned char)*p);
+       p++;
+    }
+    ret = __idcams(strlen(buf), buf);
 #endif
     return (ret);
 }

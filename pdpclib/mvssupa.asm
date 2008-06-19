@@ -95,7 +95,7 @@
          SPACE 2
          COPY  PDPTOP
 *
-MVSSUPA  CSECT ,
+         CSECT ,
          PRINT NOGEN
 * YREGS IS NOT AVAILABLE WITH IFOX
 *         YREGS
@@ -1063,7 +1063,7 @@ SYSATOTX DS    CL100  4/4    NORMAL PARM TEXT STRING
 SYSATLST ATTACH EPLOC=SYSATPGM,ECB=SYSATECB,SF=L
 SYSATZER EQU   SYSATCLR,*-SYSATCLR,C'X'   ADDRESS & SIZE TO CLEAR
 SYSATDLN EQU   *-SYSATWRK     LENGTH OF DYNAMIC STORAGE
-MVSSUPA  CSECT ,             RESTORE
+         CSECT ,             RESTORE
          SPACE 2
 ***********************************************************************
 **                                                                   **
@@ -1354,7 +1354,7 @@ DYNALWRK DSECT ,             MAP STORAGE
          SPACE 1
 DYNLIST  DYNPAT P=ALL        EXPAND ALLOCATION DATA
 DYNALDLN EQU   *-DYNALWRK     LENGTH OF DYNAMIC STORAGE
-MVSSUPA  CSECT ,             RESTORE
+         CSECT ,             RESTORE
 *
          IEZIOB                   Input/Output Block
 *

@@ -371,7 +371,9 @@ int CTYP __start(char *p)
             *p = '\0';
         }
         p[parmLen] = '\0';
+#ifdef __MVS__
         __tso = 1;
+#endif
     }
     else         /* batch or tso "call" */
     {

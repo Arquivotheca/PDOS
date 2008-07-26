@@ -4370,6 +4370,7 @@ static void filedef(char *fdddname, char *fnm, int mymode)
     ftype =  strtok(NULL, " ");
     if (ftype == NULL) ftype = "TYPE";
     fmode =  strtok(NULL, " ");
+    if (fmode == NULL) fmode = "A1";
 
 /*
  Now build the SVC 202 string
@@ -4398,6 +4399,7 @@ static void filedef(char *fdddname, char *fnm, int mymode)
         if (mymode)
         {
             memcpy ( &s202parm[40] , "A1      " , 8);
+            memcpy ( &s202parm[40] , fmode, strlen(fmode));
         }
         else
         {
@@ -4417,6 +4419,11 @@ static void filedef(char *fdddname, char *fnm, int mymode)
             memcpy ( &s202parm[64] , "V       " , 8 );
             memcpy ( &s202parm[72] , "LRECL   " , 8 );
             memcpy ( &s202parm[80] , "2000    " , 8 );
+            if (modeType == 5)
+            {
+                memcpy ( &s202parm[64] , "F       " , 8 );
+                memcpy ( &s202parm[80] , "80      " , 8 );
+            }
             s202parm[88]=s202parm[89]=s202parm[90]=s202parm[91]=
                 s202parm[92]=s202parm[93]=s202parm[94]=s202parm[95]=0xff;
        }

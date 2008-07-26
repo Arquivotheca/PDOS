@@ -32,6 +32,6 @@
 * hybrid, although mvssupa.asm doesn't quite handle that at the
 * moment (a temporary condition).
 *
-         AMODE 31
-         RMODE 24
+*        AMODE 31
+*        RMODE 24
 *

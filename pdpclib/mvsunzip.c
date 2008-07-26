@@ -24,19 +24,22 @@ static int onefile(FILE *infile);
 static char *ascii2l(char *buf);
 static char *outn;
 static int binary = 0;
+#ifdef __CMS__
+static int disk = '\0';
+#endif
 
 int main(int argc, char **argv)
 {
     FILE *infile;
 
 #ifdef __CMS__
-    if (argc <= 1)
+    if ((argc <= 1) || ((argc >= 4) && (strcmp(argv[3], "BINARY") != 0)))
 #else
-    if ((argc <= 2) || ((argc >=4) && (strcmp(argv[3], "binary") != 0)))
+    if ((argc <= 2) || ((argc >= 4) && (strcmp(argv[3], "binary") != 0)))
 #endif
     {
 #ifdef __CMS__
-        printf("usage: mvsunzip <infile>\n");
+        printf("usage: mvsunzip <infile> [disk] [BINARY]\n");
         printf("where infile is a sequential file\n");
         printf("e.g. mvsunzip dd:input\n");
 #else
@@ -49,11 +52,16 @@ int main(int argc, char **argv)
     }
 #ifndef __CMS__
     outn = *(argv+2);
+#else
+    if (argc >= 3)
+    {
+        disk = argv[2][0];
+    }
+#endif
     if (argc >= 4)
     {
         binary = 1;
     }
-#endif
     printf("processing data from %s\n", *(argv + 1));
     infile = fopen(*(argv+1), "rb");
     if (infile == NULL)
@@ -176,7 +184,15 @@ static int onefile(FILE *infile)
 #endif
 
 #ifdef __CMS__
-    sprintf(newfnm, "%s", p);
+    if (strchr(p, '.') != NULL) *strchr(p, '.') = ' ';
+    if (disk != '\0')
+    {
+        sprintf(newfnm, "%s %c", p, disk);
+    }
+    else
+    {
+        sprintf(newfnm, "%s", p);
+    }
 #else
     sprintf(newfnm, "%s(%s)", outn, p);
 #endif

@@ -9,9 +9,7 @@
 *  CMSSTART - STARTUP ROUTINES FOR CMS FOR USE WITH GCC.             *
 *                                                                    *
 **********************************************************************
-         AIF ('&SYSPARM' EQ 'IFOX00').NOMODE
-         AMODE ANY
-         RMODE ANY
+         COPY  PDPTOP
 .NOMODE ANOP
 *        PRINT NOGEN
 * YREGS IS NOT AVAILABLE WITH IFOX

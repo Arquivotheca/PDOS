@@ -19,14 +19,7 @@
 *  CMSSUPA - SUPPORT ROUTINES FOR PDPCLIB UNDER CMS                  *
 *                                                                    *
 **********************************************************************
-         AIF ('&SYSPARM' EQ 'IFOX00').NOMODE
-* BECAUSE OF THE "LOC=ABOVE", WE NEED TO FORCE 31
-* SEARCH FOR "LOC=RES" TO FIND OUT HOW TO FIX
-         AMODE 31
-* SEARCH FOR "LOC=RES" TO FIND OUT WHY THIS IS BEING
-* HELD BACK AT RMODE 24
-         RMODE 24
-.NOMODE ANOP
+         COPY  PDPTOP
          PRINT GEN  * WAS NO GEN
 * YREGS IS NOT AVAILABLE WITH IFOX
 *         YREGS
@@ -66,7 +59,7 @@ SUBPOOL  EQU   0
          L     R5,8(R1)         R5 POINTS TO RECFM
          L     R8,12(R1)        R8 POINTS TO LRECL
          L     R9,16(R1)        R9 POINTS TO MEMBER NAME (OF PDS)
-         AIF   ('&SYSPARM' NE 'IFOX00').BELOW
+         AIF   ('&SYS' NE 'S370').BELOW
 * CAN'T USE "BELOW" ON MVS 3.8
          GETMAIN R,LV=ZDCBLEN,SP=SUBPOOL
          AGO   .CHKBLWE
@@ -203,11 +196,11 @@ OUTDCBLN EQU   *-OUTDCB
          SAVE  (14,12),,@@AREAD
          LR    R12,R15
          USING @@AREAD,R12
-         AIF ('&SYSPARM' EQ 'IFOX00').NOMOD1
+         AIF ('&SYS' EQ 'S370').NOMOD1
          AMODESW SET,AMODE=24
 .NOMOD1  ANOP
          LR    R11,R1
-*         AIF   ('&SYSPARM' NE 'IFOX00').BELOW1
+*         AIF   ('&SYS' NE 'S370').BELOW1
 * CAN'T USE "BELOW" ON MVS 3.8
 *         GETMAIN R,LV=WORKLEN,SP=SUBPOOL
 *         AGO   .NOBEL1
@@ -237,7 +230,7 @@ RETURNAR DS    0H
          L     R13,SAVEAREA+4
          LR    R14,R15
 *        FREEMAIN R,LV=WORKLEN,A=(R1),SP=SUBPOOL
-         AIF ('&SYSPARM' EQ 'IFOX00').NOMOD2
+         AIF ('&SYS' EQ 'S370').NOMOD2
          AMODESW SET,AMODE=31
 .NOMOD2  ANOP
          LR    R15,R14
@@ -250,11 +243,11 @@ RETURNAR DS    0H
          SAVE  (14,12),,@@AWRITE
          LR    R12,R15
          USING @@AWRITE,R12
-         AIF ('&SYSPARM' EQ 'IFOX00').NOMOD3
+         AIF ('&SYS' EQ 'S370').NOMOD3
          AMODESW SET,AMODE=24
 .NOMOD3  ANOP
          LR    R11,R1
-*         AIF   ('&SYSPARM' NE 'IFOX00').BELOW2
+*         AIF   ('&SYS' NE 'S370').BELOW2
 * CAN'T USE "BELOW" ON MVS 3.8
 *         GETMAIN R,LV=WORKLEN,SP=SUBPOOL
 *         AGO   .NOBEL2
@@ -273,7 +266,7 @@ RETURNAR DS    0H
          L     R3,4(R1)         R3 POINTS TO BUF POINTER
          PUT   (R2)
          ST    R1,0(R3)
-         AIF ('&SYSPARM' EQ 'IFOX00').NOMOD4
+         AIF ('&SYS' EQ 'S370').NOMOD4
          AMODESW SET,AMODE=31
 .NOMOD4  ANOP
          LA    R15,0
@@ -294,7 +287,7 @@ RETURNAW DS    0H
          LR    R12,R15
          USING @@ACLOSE,R12
          LR    R11,R1
-         AIF   ('&SYSPARM' NE 'IFOX00').BELOW3
+         AIF   ('&SYS' NE 'S370').BELOW3
 * CAN'T USE "BELOW" ON MVS 3.8
          GETMAIN R,LV=WORKLEN,SP=SUBPOOL
          AGO   .NOBEL3
@@ -356,7 +349,7 @@ CLOSEMLN EQU   *-CLOSEMAC
 * EXECUTABLES FROM RESIDING ABOVE THE LINE, HENCE THIS
 * HACK TO ALLOCATE MOST STORAGE ABOVE THE LINE
 *
-         AIF   ('&SYSPARM' NE 'IFOX00').ANYCHKY
+         AIF   ('&SYS' NE 'S370').ANYCHKY
 * CAN'T USE "ANY" ON MVS 3.8
          GETMAIN R,LV=(R3),SP=SUBPOOL
          AGO   .ANYCHKE
@@ -548,6 +541,36 @@ RETURNGC DS    0H
          LTORG
 *
 *
+* S/370 doesn't support switching modes so this code is useless,
+* and won't compile anyway because "BSM" is not known.
+*
+         AIF   ('&SYS' EQ 'S370').NOMODE2 If S/370 we can't switch mode
+* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+*
+*  SETM24 - Set AMODE to 24
+*
+* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+         ENTRY @@SETM24
+         USING @@SETM24,R15
+@@SETM24 ICM   R14,8,=X'00'       Sure hope caller is below the line
+         DC    X'0B0E'            BSM   0,14  Return in amode 31
+*         BSM   0,R14              Return in amode 24
+*
+* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+*
+*  SETM31 - Set AMODE to 31
+*
+* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+         ENTRY @@SETM31
+         USING @@SETM31,R15
+@@SETM31 ICM   R14,8,=X'80'       Set to switch mode
+         DC    X'0B0E'            BSM   0,14  Return in amode 31
+*         BSM   0,R14              Return in amode 31
+         LTORG ,
+*
+.NOMODE2 ANOP  ,                  S/370 doesn't support MODE switching
+*
+*
 *
 **********************************************************************
 *                                                                    *
@@ -566,7 +589,7 @@ RETURNGC DS    0H
          LR    R5,R3               * AND R5
          LR    R9,R1               * R9 NOW CONTAINS ADDRESS OF ENV
 * GET A SAVE AREA
-         AIF   ('&SYSPARM' NE 'IFOX00').ANYY
+         AIF   ('&SYS' NE 'S370').ANYY
 * CAN'T USE "ANY" ON MVS 3.8
          GETMAIN R,LV=(R3),SP=SUBPOOL
          AGO   .ANYE

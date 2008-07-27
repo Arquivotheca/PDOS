@@ -4422,7 +4422,7 @@ static void filedef(char *fdddname, char *fnm, int mymode)
             if (modeType == 5)
             {
                 memcpy ( &s202parm[64] , "F       " , 8 );
-                memcpy ( &s202parm[80] , "80      " , 8 );
+                memcpy ( &s202parm[80] , "800     " , 8 );
             }
             s202parm[88]=s202parm[89]=s202parm[90]=s202parm[91]=
                 s202parm[92]=s202parm[93]=s202parm[94]=s202parm[95]=0xff;

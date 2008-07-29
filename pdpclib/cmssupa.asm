@@ -59,7 +59,10 @@ SUBPOOL  EQU   0
          L     R5,8(R1)         R5 POINTS TO RECFM
          L     R8,12(R1)        R8 POINTS TO LRECL
          L     R9,16(R1)        R9 POINTS TO MEMBER NAME (OF PDS)
-         AIF   ('&SYS' NE 'S370').BELOW
+         AIF ('&SYS' EQ 'S370').NOMODO1
+         CALL  @@SETM24
+.NOMODO1 ANOP
+         AIF   ('&SYS' EQ 'S390').BELOW
 * CAN'T USE "BELOW" ON MVS 3.8
          GETMAIN R,LV=ZDCBLEN,SP=SUBPOOL
          AGO   .CHKBLWE
@@ -166,6 +169,9 @@ ENDFILE  LA    R6,1
 EOFRLEN  EQU   *-ENDFILE
 *
 RETURNOP DS    0H
+         AIF ('&SYS' EQ 'S370').NOMODO2
+         CALL  @@SETM31
+.NOMODO2 ANOP
          LR    R1,R13
          L     R13,SAVEAREA+4
          LR    R14,R15
@@ -196,10 +202,10 @@ OUTDCBLN EQU   *-OUTDCB
          SAVE  (14,12),,@@AREAD
          LR    R12,R15
          USING @@AREAD,R12
-         AIF ('&SYS' EQ 'S370').NOMOD1
-         AMODESW SET,AMODE=24
-.NOMOD1  ANOP
          LR    R11,R1
+         AIF ('&SYS' EQ 'S370').NOMOD1
+         CALL  @@SETM24
+.NOMOD1  ANOP
 *         AIF   ('&SYS' NE 'S370').BELOW1
 * CAN'T USE "BELOW" ON MVS 3.8
 *         GETMAIN R,LV=WORKLEN,SP=SUBPOOL
@@ -231,7 +237,7 @@ RETURNAR DS    0H
          LR    R14,R15
 *        FREEMAIN R,LV=WORKLEN,A=(R1),SP=SUBPOOL
          AIF ('&SYS' EQ 'S370').NOMOD2
-         AMODESW SET,AMODE=31
+         CALL  @@SETM31
 .NOMOD2  ANOP
          LR    R15,R14
          RETURN (14,12),RC=(15)
@@ -243,10 +249,10 @@ RETURNAR DS    0H
          SAVE  (14,12),,@@AWRITE
          LR    R12,R15
          USING @@AWRITE,R12
-         AIF ('&SYS' EQ 'S370').NOMOD3
-         AMODESW SET,AMODE=24
-.NOMOD3  ANOP
          LR    R11,R1
+         AIF ('&SYS' EQ 'S370').NOMOD3
+         CALL  @@SETM24
+.NOMOD3  ANOP
 *         AIF   ('&SYS' NE 'S370').BELOW2
 * CAN'T USE "BELOW" ON MVS 3.8
 *         GETMAIN R,LV=WORKLEN,SP=SUBPOOL
@@ -267,7 +273,7 @@ RETURNAR DS    0H
          PUT   (R2)
          ST    R1,0(R3)
          AIF ('&SYS' EQ 'S370').NOMOD4
-         AMODESW SET,AMODE=31
+         CALL  @@SETM31
 .NOMOD4  ANOP
          LA    R15,0
 *
@@ -287,7 +293,7 @@ RETURNAW DS    0H
          LR    R12,R15
          USING @@ACLOSE,R12
          LR    R11,R1
-         AIF   ('&SYS' NE 'S370').BELOW3
+         AIF   ('&SYS' EQ 'S390').BELOW3
 * CAN'T USE "BELOW" ON MVS 3.8
          GETMAIN R,LV=WORKLEN,SP=SUBPOOL
          AGO   .NOBEL3
@@ -349,7 +355,12 @@ CLOSEMLN EQU   *-CLOSEMAC
 * EXECUTABLES FROM RESIDING ABOVE THE LINE, HENCE THIS
 * HACK TO ALLOCATE MOST STORAGE ABOVE THE LINE
 *
-         AIF   ('&SYS' NE 'S370').ANYCHKY
+         AIF   ('&SYS' EQ 'S390').ANYCHKY
+         AIF   ('&SYS' EQ 'S370').GOT370
+* For S/380, hardcode address
+         L     R1,=X'04100000'
+         AGO   .ANYCHKE
+.GOT370  ANOP
 * CAN'T USE "ANY" ON MVS 3.8
          GETMAIN R,LV=(R3),SP=SUBPOOL
          AGO   .ANYCHKE
@@ -589,7 +600,7 @@ RETURNGC DS    0H
          LR    R5,R3               * AND R5
          LR    R9,R1               * R9 NOW CONTAINS ADDRESS OF ENV
 * GET A SAVE AREA
-         AIF   ('&SYS' NE 'S370').ANYY
+         AIF   ('&SYS' EQ 'S390').ANYY
 * CAN'T USE "ANY" ON MVS 3.8
          GETMAIN R,LV=(R3),SP=SUBPOOL
          AGO   .ANYE

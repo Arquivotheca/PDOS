@@ -81,7 +81,16 @@ SUBPOOL  EQU   0
          ST    R5,SAVER13
 *
          LA    R1,PARMLIST
+*
+         AIF   ('&SYS' NE 'S380').NOT380A
+         CALL  @@SETM31
+.NOT380A ANOP
+*
          CALL  @@START
+*
+         AIF   ('&SYS' NE 'S380').NOT380B
+         CALL  @@SETM24
+.NOT380B ANOP
 *
 RETURNMS DS    0H
          LR    R1,R13

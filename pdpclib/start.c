@@ -187,8 +187,63 @@ int CTYP __start(char *p)
     int code;
     int parm;
     int ret;
+
 /*
- Now build the SVC 202 string
+ Now build the SVC 202 string for sysprint
+*/
+    memcpy ( &s202parm[0] ,  "FILEDEF ", 8);
+    memcpy ( &s202parm[8] ,  "SYSPRINT", 8);
+    memcpy ( &s202parm[16] , "(       ", 8);
+    memcpy ( &s202parm[24] , "NOCHANGE", 8);
+    s202parm[32]=s202parm[33]=s202parm[34]=s202parm[35]=
+        s202parm[36]=s202parm[37]=s202parm[38]=s202parm[39]=0xff;
+/*
+  and issue the SVC
+*/
+    ret = __SVC202 ( s202parm, &code, &parm );
+    if (ret == 24)
+    { /* we need to issue filedef */
+        memcpy ( &s202parm[16] , "TERM    ", 8);
+        memcpy ( &s202parm[24] , "(       ", 8);
+        memcpy ( &s202parm[32] , "LRECL   ", 8);
+        memcpy ( &s202parm[40] , "80      ", 8);
+        memcpy ( &s202parm[48] , "RECFM   ", 8);
+        memcpy ( &s202parm[56] , "F       ", 8);
+        s202parm[64]=s202parm[65]=s202parm[66]=s202parm[67]=
+            s202parm[68]=s202parm[69]=s202parm[70]=s202parm[71]=0xff;
+
+        ret = __SVC202 ( s202parm, &code, &parm );
+    }
+
+/*
+ Now build the SVC 202 string for systerm
+*/
+    memcpy ( &s202parm[0] ,  "FILEDEF ", 8);
+    memcpy ( &s202parm[8] ,  "SYSTERM ", 8);
+    memcpy ( &s202parm[16] , "(       ", 8);
+    memcpy ( &s202parm[24] , "NOCHANGE", 8);
+    s202parm[32]=s202parm[33]=s202parm[34]=s202parm[35]=
+        s202parm[36]=s202parm[37]=s202parm[38]=s202parm[39]=0xff;
+/*
+  and issue the SVC
+*/
+    ret = __SVC202 ( s202parm, &code, &parm );
+    if (ret == 24)
+    { /* we need to issue filedef */
+        memcpy ( &s202parm[16] , "TERM    ", 8);
+        memcpy ( &s202parm[24] , "(       ", 8);
+        memcpy ( &s202parm[32] , "LRECL   ", 8);
+        memcpy ( &s202parm[40] , "80      ", 8);
+        memcpy ( &s202parm[48] , "RECFM   ", 8);
+        memcpy ( &s202parm[56] , "F       ", 8);
+        s202parm[64]=s202parm[65]=s202parm[66]=s202parm[67]=
+            s202parm[68]=s202parm[69]=s202parm[70]=s202parm[71]=0xff;
+
+        ret = __SVC202 ( s202parm, &code, &parm );
+    }
+
+/*
+ Now build the SVC 202 string for sysin
 */
     memcpy ( &s202parm[0] ,  "FILEDEF ", 8);
     memcpy ( &s202parm[8] ,  "SYSIN   ", 8);
@@ -215,61 +270,6 @@ int CTYP __start(char *p)
         ret = __SVC202 ( s202parm, &code, &parm );
     }
 
-/* now for sysprint */
-/*
- Now build the SVC 202 string
-*/
-    memcpy ( &s202parm[0] ,  "FILEDEF ", 8);
-    memcpy ( &s202parm[8] ,  "SYSPRINT", 8);
-    memcpy ( &s202parm[16] , "(       ", 8);
-    memcpy ( &s202parm[24] , "NOCHANGE", 8);
-    s202parm[32]=s202parm[33]=s202parm[34]=s202parm[35]=
-        s202parm[36]=s202parm[37]=s202parm[38]=s202parm[39]=0xff;
-/*
-  and issue the SVC
-*/
-    ret = __SVC202 ( s202parm, &code, &parm );
-    if (ret == 24)
-    { /* we need to issue filedef */
-        memcpy ( &s202parm[16] , "TERM    ", 8);
-        memcpy ( &s202parm[24] , "(       ", 8);
-        memcpy ( &s202parm[32] , "LRECL   ", 8);
-        memcpy ( &s202parm[40] , "80      ", 8);
-        memcpy ( &s202parm[48] , "RECFM   ", 8);
-        memcpy ( &s202parm[56] , "F       ", 8);
-        s202parm[64]=s202parm[65]=s202parm[66]=s202parm[67]=
-            s202parm[68]=s202parm[69]=s202parm[70]=s202parm[71]=0xff;
-
-        ret = __SVC202 ( s202parm, &code, &parm );
-    }
-
-/* now for systerm */
-/*
- Now build the SVC 202 string
-*/
-    memcpy ( &s202parm[0] ,  "FILEDEF ", 8);
-    memcpy ( &s202parm[8] ,  "SYSTERM ", 8);
-    memcpy ( &s202parm[16] , "(       ", 8);
-    memcpy ( &s202parm[24] , "NOCHANGE", 8);
-    s202parm[32]=s202parm[33]=s202parm[34]=s202parm[35]=
-        s202parm[36]=s202parm[37]=s202parm[38]=s202parm[39]=0xff;
-/*
-  and issue the SVC
-*/
-    ret = __SVC202 ( s202parm, &code, &parm );
-    if (ret == 24)
-    { /* we need to issue filedef */
-        memcpy ( &s202parm[16] , "TERM    ", 8);
-        memcpy ( &s202parm[24] , "(       ", 8);
-        memcpy ( &s202parm[32] , "LRECL   ", 8);
-        memcpy ( &s202parm[40] , "80      ", 8);
-        memcpy ( &s202parm[48] , "RECFM   ", 8);
-        memcpy ( &s202parm[56] , "F       ", 8);
-        s202parm[64]=s202parm[65]=s202parm[66]=s202parm[67]=
-            s202parm[68]=s202parm[69]=s202parm[70]=s202parm[71]=0xff;
-
-        ret = __SVC202 ( s202parm, &code, &parm );
-    }
 #endif
 #if USE_MEMMGR
     memmgrDefaults(&__memmgr);

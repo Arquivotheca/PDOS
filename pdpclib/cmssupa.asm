@@ -264,12 +264,12 @@ OUTDCBLN EQU   *-OUTDCB
 RETURNAR DS    0H
          LR    R1,R13
          L     R13,SAVEAREA+4
-         LR    R14,R15
+         LR    R7,R15
 *        FREEMAIN R,LV=WORKLEN,A=(R1),SP=SUBPOOL
          AIF ('&SYS' EQ 'S370').NOMOD2
          CALL  @@SETM31
 .NOMOD2  ANOP
-         LR    R15,R14
+         LR    R15,R7
          RETURN (14,12),RC=(15)
 *
 *
@@ -324,6 +324,9 @@ RETURNAW DS    0H
          USING @@ACLOSE,R12
          LR    R11,R1
          AIF   ('&SYS' EQ 'S390').BELOW3
+         AIF ('&SYS' EQ 'S370').NOMODCT
+         CALL  @@SETM24
+.NOMODCT ANOP
 * CAN'T USE "BELOW" ON MVS 3.8
          GETMAIN R,LV=WORKLEN,SP=SUBPOOL
          AGO   .NOBEL3
@@ -348,9 +351,12 @@ RETURNAW DS    0H
 RETURNAC DS    0H
          LR    R1,R13
          L     R13,SAVEAREA+4
-         LR    R14,R15
+         LR    R7,R15
          FREEMAIN R,LV=WORKLEN,A=(R1),SP=SUBPOOL
-         LR    R15,R14
+         AIF ('&SYS' EQ 'S370').NOMODCB
+         CALL  @@SETM31
+.NOMODCB ANOP
+         LR    R15,R7
          RETURN (14,12),RC=(15)
          LTORG
 * CLOSEMAC CLOSE (),MF=L,MODE=31
@@ -638,11 +644,17 @@ RETURNGC DS    0H
 * GET A SAVE AREA
          AIF   ('&SYS' EQ 'S390').ANYY
 * CAN'T USE "ANY" ON MVS 3.8
+         AIF ('&SYS' EQ 'S370').NOMODX1
+         CALL  @@SETM24
+.NOMODX1 ANOP
          GETMAIN R,LV=(R3),SP=SUBPOOL
          AGO   .ANYE
 .ANYY    ANOP
          GETMAIN R,LV=(R3),SP=SUBPOOL,LOC=ANY
 .ANYE    ANOP
+         AIF ('&SYS' EQ 'S370').NOMODX2
+         CALL  @@SETM31
+.NOMODX2 ANOP
          ST    R1,0(R9)            * SAVE IT IN FIRST WORK OF ENV
          ST    R5,4(R9)            * SAVE LENGTH IN SECOND WORD OF ENV
          ST    R2,8(R9)            * NOTE WHERE WE GOT IT FROM
@@ -683,7 +695,13 @@ RETURNSR DS    0H
          ST    R6,24(R1)          * SAVE VAL IN ENV
          L     R6,=F'1'
          ST    R6,20(R1)          * AND SET LONGJ TO 1.
+         AIF ('&SYS' EQ 'S370').NOMODL1
+         CALL  @@SETM24
+.NOMODL1 ANOP
          FREEMAIN R,LV=(R3),A=(R4),SP=SUBPOOL
+         AIF ('&SYS' EQ 'S370').NOMODL2
+         CALL  @@SETM31
+.NOMODL2 ANOP
 *        L     R14,16(R1)          * AND RETURN ADDRESS
 *        B     RETURNSR            * AND BACK INTO SETJMP
 *        L     R15,64(R1)                 RESTORE PSW

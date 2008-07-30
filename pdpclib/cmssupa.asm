@@ -59,9 +59,9 @@ SUBPOOL  EQU   0
          L     R5,8(R1)         R5 POINTS TO RECFM
          L     R8,12(R1)        R8 POINTS TO LRECL
          L     R9,16(R1)        R9 POINTS TO MEMBER NAME (OF PDS)
-         AIF ('&SYS' EQ 'S370').NOMODO1
+         AIF ('&SYS' EQ 'S370').NOMODO9
          CALL  @@SETM24
-.NOMODO1 ANOP
+.NOMODO9 ANOP
          AIF   ('&SYS' EQ 'S390').BELOW
 * CAN'T USE "BELOW" ON MVS 3.8
          GETMAIN R,LV=ZDCBLEN,SP=SUBPOOL
@@ -70,6 +70,9 @@ SUBPOOL  EQU   0
          GETMAIN R,LV=ZDCBLEN,SP=SUBPOOL,LOC=BELOW
 .CHKBLWE ANOP
          LR    R2,R1
+         AIF ('&SYS' EQ 'S370').NOMODOA
+         CALL  @@SETM31
+.NOMODOA ANOP
 * THIS LINE IS FOR GCC
          LR    R6,R4
 * THIS LINE IS FOR C/370
@@ -98,7 +101,13 @@ SUBPOOL  EQU   0
          MVC   DCBDDNAM,0(R3)
          MVC   OPENMB,OPENMAC
 * NOTE THAT THIS IS CURRENTLY NOT REENTRANT AND SHOULD BE MADE SO
+         AIF ('&SYS' EQ 'S370').NOMODO1
+         CALL  @@SETM24
+.NOMODO1 ANOP
          RDJFCB ((R2),INPUT)
+         AIF ('&SYS' EQ 'S370').NOMODO2
+         CALL  @@SETM31
+.NOMODO2 ANOP
          LTR   R9,R9
 * DW * DON'T SUPPORT MEMBER NAME FOR NOW
 *        BZ    NOMEM
@@ -110,7 +119,13 @@ SUBPOOL  EQU   0
 NOMEM    DS    0H
 *         OPEN  ((R2),INPUT),MF=(E,OPENMB),MODE=31,TYPE=J
 * CAN'T USE MODE=31 ON MVS 3.8, OR WITH TYPE=J
+         AIF ('&SYS' EQ 'S370').NOMODO3
+         CALL  @@SETM24
+.NOMODO3 ANOP
          OPEN  ((R2),INPUT),MF=(E,OPENMB),TYPE=J
+         AIF ('&SYS' EQ 'S370').NOMODO4
+         CALL  @@SETM31
+.NOMODO4 ANOP
          B     DONEOPEN
 WRITING  DS    0H
          USING ZDCBAREA,R2
@@ -127,7 +142,13 @@ WRITING  DS    0H
          MVC   DCBDDNAM,0(R3)
          MVC   WOPENMB,WOPENMAC
 * NOTE THAT THIS IS CURRENTLY NOT REENTRANT AND SHOULD BE MADE SO
+         AIF ('&SYS' EQ 'S370').NOMODO5
+         CALL  @@SETM24
+.NOMODO5 ANOP
          RDJFCB ((R2),OUTPUT)
+         AIF ('&SYS' EQ 'S370').NOMODO6
+         CALL  @@SETM31
+.NOMODO6 ANOP
          LTR   R9,R9
 * DW * NO MEMBER ON VM/370
 *        BZ    WNOMEM
@@ -139,7 +160,13 @@ WRITING  DS    0H
 WNOMEM   DS    0H
 *         OPEN  ((R2),OUTPUT),MF=(E,WOPENMB),MODE=31,TYPE=J
 * CAN'T USE MODE=31 ON MVS 3.8, OR WITH TYPE=J
+         AIF ('&SYS' EQ 'S370').NOMODO7
+         CALL  @@SETM24
+.NOMODO7 ANOP
          OPEN  ((R2),OUTPUT),MF=(E,WOPENMB),TYPE=J
+         AIF ('&SYS' EQ 'S370').NOMODO8
+         CALL  @@SETM31
+.NOMODO8 ANOP
 DONEOPEN DS    0H
          SR    R6,R6
          LH    R6,DCBLRECL
@@ -169,14 +196,17 @@ ENDFILE  LA    R6,1
 EOFRLEN  EQU   *-ENDFILE
 *
 RETURNOP DS    0H
-         AIF ('&SYS' EQ 'S370').NOMODO2
-         CALL  @@SETM31
-.NOMODO2 ANOP
          LR    R1,R13
          L     R13,SAVEAREA+4
-         LR    R14,R15
+         LR    R7,R15
+         AIF ('&SYS' EQ 'S370').NOMODOB
+         CALL  @@SETM24
+.NOMODOB ANOP
          FREEMAIN R,LV=WORKLEN,A=(R1),SP=SUBPOOL
-         LR    R15,R14
+         AIF ('&SYS' EQ 'S370').NOMODOC
+         CALL  @@SETM31
+.NOMODOC ANOP
+         LR    R15,R7
          RETURN (14,12),RC=(15)
          LTORG
 * OPENMAC  OPEN  (,INPUT),MF=L,MODE=31
@@ -425,6 +455,9 @@ RETURNFM DS    0H
          LR    R12,R15
          USING @@SVC202,R12
          LR    R11,R1           NEED TO RESTORE R1 FOR C
+         AIF ('&SYS' EQ 'S370').NOMODS1
+         CALL  @@SETM24
+.NOMODS1 ANOP
          L     R3,0(R1)         R3 POINTS TO SVC202 PARM LIST
          L     R4,4(R1)         R4 POINTS TO CODE
          L     R5,8(R1)         R5 POINTS TO RETURN CODE
@@ -434,6 +467,9 @@ RETURNFM DS    0H
          SVC   202              ISSUE COMMAND
          DC    AL4(SV202ER)      ERROR
 SV202RT  EQU    *
+         AIF ('&SYS' EQ 'S370').NOMODS2
+         CALL  @@SETM31
+.NOMODS2 ANOP
          LR     R1,R11
          RETURN (14,12),RC=(15)
 SV202ER  EQU    *

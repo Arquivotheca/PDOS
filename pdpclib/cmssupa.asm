@@ -477,13 +477,13 @@ SV202RT  EQU    *
          AIF ('&SYS' EQ 'S370').NOMODS2
          CALL  @@SETM31
 .NOMODS2 ANOP
-         LR     R15,R7
-         LR     R1,R11
+         LR    R15,R7
+         LR    R1,R11
          RETURN (14,12),RC=(15)
-SV202ER  EQU    *
-         L      R3,=F'-1'
-         ST     R3,0(R5)
-         B      SV202RT
+SV202ER  EQU   *
+         L     R3,=F'-1'
+         ST    R3,0(R5)
+         B     SV202RT
          LTORG
 *
 *

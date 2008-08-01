@@ -473,9 +473,11 @@ RETURNFM DS    0H
          SVC   202              ISSUE COMMAND
          DC    AL4(SV202ER)      ERROR
 SV202RT  EQU    *
+         LR    R7,R15
          AIF ('&SYS' EQ 'S370').NOMODS2
          CALL  @@SETM31
 .NOMODS2 ANOP
+         LR     R15,R7
          LR     R1,R11
          RETURN (14,12),RC=(15)
 SV202ER  EQU    *

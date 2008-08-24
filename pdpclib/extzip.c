@@ -12,6 +12,7 @@
 
 #include <stdio.h>
 #include <string.h>
+#include <ctype.h>
 
 static char buf[800];
 
@@ -21,10 +22,20 @@ int main(void)
     
     while (fgets(buf, sizeof buf, stdin) != NULL)
     {
-        if (memcmp(buf, "\f504B", 5) == 0)
+        /* allow a formfeed to be represented as any
+           one or two control characters */
+        if (iscntrl((unsigned char)buf[0]))
         {
             memmove(buf, buf + 1, strlen(buf));
-            write = 1;
+            if (iscntrl((unsigned char)buf[0]))
+            {
+                memmove(buf, buf + 1, strlen(buf));
+            }
+            if (memcmp(buf, "504B", 4) == 0)
+            {
+                write = 1;
+            }
+        
         }
         else if (buf[0] == '\f')
         {

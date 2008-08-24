@@ -124,13 +124,8 @@ combination.
 
 For 32-bit Windows (pdpclib-win32), the standard is to use 
 the gcc compiler.  Use a decent "make" that doesn't need tabs 
-and then go "make -f makefile.w32". Note that you will first 
-need to copy the following ".a" files into the directory 
-containing PDPCLIB:
-libkernel32.a
-libgcc.a
-You should get these from a "mingw" directory to use mingw
-rather than cygwin.
+(e.g. Borland's make or Microsoft's nmake) and then go 
+"make -f makefile.w32".
 
 
 PERFORMANCE

@@ -18,7 +18,7 @@
 #include "__memmgr.h"
 #endif
 
-#define MAXPARMS 19 /* maximum number of arguments we can handle */
+#define MAXPARMS 50 /* maximum number of arguments we can handle */
 
 #ifdef __OS2__
 #define INCL_DOS

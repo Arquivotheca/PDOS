@@ -65,7 +65,7 @@ char *__vidptr;
 #endif
 
 #if defined(__CMS__)
-int __start(char *p, char *pgmname)
+int __start(char *p, char *pgmname, char *ep)
 #elif defined(__MVS__)
 int __start(char *p, char *pgmname, int tso)
 #elif defined(__PDOS__)

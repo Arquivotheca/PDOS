@@ -12,5 +12,5 @@ gcccms -DXXX_MEMMGR -S -I . math.c
 gcccms -DXXX_MEMMGR -S -I . setjmp.c
 gcccms -DXXX_MEMMGR -S -I . signal.c
 gcccms -DXXX_MEMMGR -S -I . pdptest.c
-zip -0X pdpcms *.s *.exec *.mac
+zip -0X pdpcms *.s *.exec *.asm *.mac
 call runcms pdpcms.exec output.txt pdpcms.zip

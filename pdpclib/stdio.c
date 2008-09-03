@@ -3257,13 +3257,9 @@ static int vvscanf(const char *format, va_list arg, FILE *fp, const char *s)
     int informatitem;  /* nonzero if % format item started */
            /* informatitem is 1 if we have processed "%l" but not the
               type letter (s,d,e,f,g,...) yet. */
-    int prevwasc;  /* Switch: nonzero if the preceding item in this
-              scan was type 'c' (%c). This tells type coding to start by
-              reading a character. */
 
     inch();
     informatitem = 0;   /* init */
-    prevwasc = 0;
     if ((fp != NULL && ch == EOF) || (fp == NULL && ch == 0)) return EOF;
                                /* initially at EOF or end of string */
     while (!fin)
@@ -3282,8 +3278,6 @@ static int vvscanf(const char *format, va_list arg, FILE *fp, const char *s)
             }
             if (*format == '%')   /* %% */
             {
-                if (prevwasc) inch();
-                prevwasc = 0;
                 if (ch != '%') return (cnt);
                 inch();
                 informatitem=0;
@@ -3305,8 +3299,6 @@ static int vvscanf(const char *format, va_list arg, FILE *fp, const char *s)
                 informatitem=0;   /* end of format item */
                 if (*format == 's')
                 {
-                    if (prevwasc) inch();
-                    prevwasc = 0;
                     cptr = va_arg(arg, char *);
                     /* Skip leading whitespace: */
                     while (ch>=0 && isspace(ch)) inch();
@@ -3336,14 +3328,6 @@ static int vvscanf(const char *format, va_list arg, FILE *fp, const char *s)
                 }
                 else if (*format == 'c')
                 {
-                    if (prevwasc) inch();
-                        /* The previous item in this scan was 'c',
-                           therefore we need to get the next char. This switch
-                           is needed because 'c' coding cannot read the next
-                           char after processing a char, since that would
-                           cause multiple scanf() calls with one %c each to
-                           skip every 2nd char. */
-                    prevwasc = 1;
                     cptr = va_arg(arg, char *);
                     if ((fp != NULL && ch == EOF)
                         || (fp == NULL && ch == 0)) fin = 1;
@@ -3359,8 +3343,6 @@ static int vvscanf(const char *format, va_list arg, FILE *fp, const char *s)
                     int neg = 0;
                     long lval;
 
-                    if (prevwasc) inch();
-                    prevwasc = 0;
                     if (*format != 'u')
                     {
                         if (modlong) lptr = va_arg(arg, long *);
@@ -3420,8 +3402,6 @@ static int vvscanf(const char *format, va_list arg, FILE *fp, const char *s)
                     int ntrailzer,expnum,expsignsw;
                     double fpval,pow10;
 
-                    if (prevwasc) inch();
-                    prevwasc = 0;
                     if (modlong) dptr = va_arg(arg, double *);
                     else fptr = va_arg(arg, float *);
                     negsw1=0;   /* init */
@@ -3530,8 +3510,6 @@ static int vvscanf(const char *format, va_list arg, FILE *fp, const char *s)
             /* Whitespace char in format string: skip next whitespace
                chars in input data. This supports input of multiple
                data items. */
-            if (prevwasc) inch();
-            prevwasc = 0;
             while (ch>=0 && isspace(ch))
             {
                 inch();
@@ -3539,8 +3517,6 @@ static int vvscanf(const char *format, va_list arg, FILE *fp, const char *s)
         }
         else   /* some other character in the format string */
         {
-            if (prevwasc) inch();
-            prevwasc = 0;
             if (ch != *format) return (cnt);
             inch();
         }

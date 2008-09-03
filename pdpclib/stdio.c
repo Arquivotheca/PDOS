@@ -3548,6 +3548,7 @@ static int vvscanf(const char *format, va_list arg, FILE *fp, const char *s)
         if ((fp != NULL && ch == EOF) || (fp == NULL && ch == 0)) fin = 1;
             /* EOF */
     }
+    if (fp != NULL) ungetc(ch, fp);
     return (cnt);
 }
 

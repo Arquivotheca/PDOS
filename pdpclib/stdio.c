@@ -3336,6 +3336,7 @@ static int vvscanf(const char *format, va_list arg, FILE *fp, const char *s)
                     {
                         *cptr = ch;
                         cnt++;
+                        inch();
                     }
                 }
                 else if (*format == 'd' || *format == 'u')

@@ -1030,7 +1030,6 @@ static void freadSlowT(void *ptr,
     {
         if (stream->upto == stream->endbuf)
         {
-            stream->bufStartR += (stream->upto - stream->fbuf);
 #ifdef __OS2__
             rc = DosRead(stream->hfile,
                          stream->fbuf,
@@ -1073,6 +1072,7 @@ static void freadSlowT(void *ptr,
                 stream->eofInd = 1;
                 break;
             }
+            stream->bufStartR += (stream->upto - stream->fbuf);
             stream->endbuf = stream->fbuf + tempRead;
             *stream->endbuf = '\n';
             stream->upto = stream->fbuf;

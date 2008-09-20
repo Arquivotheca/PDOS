@@ -254,8 +254,8 @@ static char *ascii2l(char *buf)
         c = fasc(*p);
         if (c == '\0')
         {
-            printf("error translating %x\n", *p);
-            exit(0);
+            printf("warning - converting x'%02X' to space\n", *p);
+            c = ' ';
         }
         if (c != '\r')
         {

@@ -187,7 +187,14 @@ static int onefile(FILE *infile)
     if (strchr(p, '.') != NULL) *strchr(p, '.') = ' ';
     if (disk != '\0')
     {
-        sprintf(newfnm, "%s %c", p, disk);
+        if (strchr(p, ' ') != NULL)
+        {
+            sprintf(newfnm, "%s %c", p, disk);
+        }
+        else
+        {
+            sprintf(newfnm, "%s FILE %c", p, disk);
+        }
     }
     else
     {

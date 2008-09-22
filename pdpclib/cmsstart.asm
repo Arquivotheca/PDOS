@@ -39,8 +39,7 @@ SUBPOOL  EQU   0
          SAVE  (14,12),,@@CRT0
          LR    R10,R15
          USING @@CRT0,R10
-         LR    R11,R1            SAVE PLIST
-         LR    R9,R0             SAVE EPLIST
+         LR    R11,R1
          GETMAIN R,LV=STACKLEN,SP=SUBPOOL
          ST    R13,4(R1)
          ST    R1,8(R13)
@@ -66,24 +65,13 @@ SUBPOOL  EQU   0
          ST    R2,12(R12)        TOP OF STACK POINTER
          LA    R2,0
          ST    R2,116(R12)       ADDR OF MEMORY ALLOCATION ROUTINE
-         ST    R2,ARGPTR         THIS LOOKS REDUNDANT
+         ST    R2,ARGPTR
 *
          USING NUCON,R0
          MVC   PGMNAME,CMNDLINE
-         LR    R2,R11            THIS LOOKS REDUNDANT
+         LR    R2,R11
          LA    R2,8(R11)
          ST    R2,ARGPTR
-*
-* GET EPLIST
-         LR    R2,R11            GET R1=PLIST
-         N     R2,=X'01000000'   SEE IF BIT 7 (0-BASED FROM LEFT) IS 1
-         BZ    NOEP
-* GOT AN EPLIST, LET'S USE IT
-         LR    R2,R9
-         DC    H'0'              CAN'T GET HERE ON 4-PACK
-NOEP     DS    0H
-* R2 WILL EITHER POINT TO EPLIST OR BE ZERO
-         ST    R2,ARGPTRE
 *
          LA    R2,PGMNAME
          ST    R2,PGMNPTR
@@ -138,7 +126,6 @@ THEIRSTK DS    F
 PARMLIST DS    0F
 ARGPTR   DS    F
 PGMNPTR  DS    F
-ARGPTRE  DS    F
 TYPE     DS    F
 PGMNAME  DS    CL8
 PGMNAMEN DS    C                 NUL BYTE FOR C

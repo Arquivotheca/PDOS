@@ -596,36 +596,6 @@ RETURNGC DS    0H
          LTORG
 *
 *
-* S/370 doesn't support switching modes so this code is useless,
-* and won't compile anyway because "BSM" is not known.
-*
-         AIF   ('&SYS' EQ 'S370').NOMODE2 If S/370 we can't switch mode
-* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
-*
-*  SETM24 - Set AMODE to 24
-*
-* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
-         ENTRY @@SETM24
-         USING @@SETM24,R15
-@@SETM24 ICM   R14,8,=X'00'       Sure hope caller is below the line
-         DC    X'0B0E'            BSM   0,14  Return in amode 31
-*         BSM   0,R14              Return in amode 24
-*
-* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
-*
-*  SETM31 - Set AMODE to 31
-*
-* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
-         ENTRY @@SETM31
-         USING @@SETM31,R15
-@@SETM31 ICM   R14,8,=X'80'       Set to switch mode
-         DC    X'0B0E'            BSM   0,14  Return in amode 31
-*         BSM   0,R14              Return in amode 31
-         LTORG ,
-*
-.NOMODE2 ANOP  ,                  S/370 doesn't support MODE switching
-*
-*
 *
 **********************************************************************
 *                                                                    *
@@ -714,6 +684,38 @@ RETURNLR DS    0H
          SR    R15,R15            * CLEAR RETURN CODE
          RETURN (14,12),RC=(15)
          LTORG
+*
+*
+*
+* S/370 doesn't support switching modes so this code is useless,
+* and won't compile anyway because "BSM" is not known.
+*
+         AIF   ('&SYS' EQ 'S370').NOMODE2 If S/370 we can't switch mode
+* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+*
+*  SETM24 - Set AMODE to 24
+*
+* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+         DROP  R12
+         ENTRY @@SETM24
+         USING @@SETM24,R15
+@@SETM24 ICM   R14,8,=X'00'       Sure hope caller is below the line
+         DC    X'0B0E'            BSM   0,14  Return in amode 31
+*         BSM   0,R14              Return in amode 24
+*
+* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+*
+*  SETM31 - Set AMODE to 31
+*
+* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+         ENTRY @@SETM31
+         USING @@SETM31,R15
+@@SETM31 ICM   R14,8,=X'80'       Set to switch mode
+         DC    X'0B0E'            BSM   0,14  Return in amode 31
+*         BSM   0,R14              Return in amode 31
+         LTORG ,
+*
+.NOMODE2 ANOP  ,                  S/370 doesn't support MODE switching
 *
 *
 *

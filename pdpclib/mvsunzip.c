@@ -126,7 +126,8 @@ static int onefile(FILE *infile)
     size = (c << 24) | size;
     if ((size > MAXBUF) && !binary)
     {
-        printf("warning - file is too big - ending early\n");
+        printf("warning - file is too big (%d) at pos %d - ending early\n",
+               size, ftell(infile));
         return (0);
     }
     c = fgetc(infile);

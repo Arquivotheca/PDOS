@@ -24,6 +24,7 @@
 &SYS     SETC 'S390'              Define either S370, S380 or S390
 *
 * S/390 has no AMODE/RMODE restrictions
+* Although under CMS you will need RMODE 24
 *
          AMODE ANY
          RMODE ANY

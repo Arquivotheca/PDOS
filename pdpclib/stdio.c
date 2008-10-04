@@ -4338,6 +4338,11 @@ static void filedef(char *fdddname, char *fnm, int mymode)
     char *p;
     int console;
 
+/* 
+    Skip leading blanks because sometimes people do that in CMS
+*/
+    while (fnm[0] == ' ') fnm++;
+
 /*
     first parse the file name
 */

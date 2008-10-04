@@ -383,7 +383,7 @@ CLOSEMLN EQU   *-CLOSEMAC
 * THIS LINE IS FOR C/370
 *         L     R3,0(R2)
          LR    R4,R3
-         A     R3,=F'16'
+         A     R3,=F'8'
 *
 * THIS SHOULD NOT BE NECESSARY. THE DEFAULT OF LOC=RES
 * SHOULD BE SUFFICIENT. HOWEVER, CURRENTLY THERE IS AN
@@ -409,7 +409,7 @@ CLOSEMLN EQU   *-CLOSEMAC
 * AND JUST BELOW THE VALUE WE RETURN TO THE CALLER, WE SAVE
 * THE AMOUNT THEY REQUESTED
          ST    R4,12(R1)
-         A     R1,=F'16'
+         A     R1,=F'8'
          LR    R15,R1
 *
 RETURNGM DS    0H
@@ -430,7 +430,7 @@ RETURNGM DS    0H
          USING @@FREEM,R12
 *
          L     R2,0(R1)
-         S     R2,=F'16'
+         S     R2,=F'8'
          L     R3,0(R2)
          AIF   ('&SYS' EQ 'S390').UFREE
          FREEMAIN R,LV=(R3),A=(R2),SP=SUBPOOL

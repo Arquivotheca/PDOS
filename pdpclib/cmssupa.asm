@@ -324,7 +324,7 @@ RETURNAW DS    0H
          USING @@ACLOSE,R12
          LR    R11,R1
          AIF   ('&SYS' EQ 'S390').BELOW3
-         AIF ('&SYS' EQ 'S370').NOMODCT
+         AIF ('&SYS' NE 'S380').NOMODCT
          CALL  @@SETM24
 .NOMODCT ANOP
 * CAN'T USE "BELOW" ON MVS 3.8
@@ -353,7 +353,7 @@ RETURNAC DS    0H
          L     R13,SAVEAREA+4
          LR    R7,R15
          FREEMAIN R,LV=WORKLEN,A=(R1),SP=SUBPOOL
-         AIF ('&SYS' EQ 'S370').NOMODCB
+         AIF ('&SYS' NE 'S380').NOMODCB
          CALL  @@SETM31
 .NOMODCB ANOP
          LR    R15,R7
@@ -466,7 +466,7 @@ RETURNFM DS    0H
          LR    R12,R15
          USING @@SVC202,R12
          LR    R11,R1           NEED TO RESTORE R1 FOR C
-         AIF ('&SYS' EQ 'S370').NOMODS1
+         AIF ('&SYS' NE 'S380').NOMODS1
          CALL  @@SETM24
 .NOMODS1 ANOP
          L     R3,0(R1)         R3 POINTS TO SVC202 PARM LIST
@@ -479,7 +479,7 @@ RETURNFM DS    0H
          DC    AL4(SV202ER)      ERROR
 SV202RT  EQU    *
          LR    R7,R15
-         AIF ('&SYS' EQ 'S370').NOMODS2
+         AIF ('&SYS' NE 'S380').NOMODS2
          CALL  @@SETM31
 .NOMODS2 ANOP
          LR    R15,R7
@@ -621,7 +621,7 @@ RETURNGC DS    0H
 * GET A SAVE AREA
          AIF   ('&SYS' EQ 'S390').ANYY
 * CAN'T USE "ANY" ON MVS 3.8
-         AIF ('&SYS' EQ 'S370').NOMODX1
+         AIF ('&SYS' NE 'S380').NOMODX1
          CALL  @@SETM24
 .NOMODX1 ANOP
          GETMAIN R,LV=(R3),SP=SUBPOOL
@@ -629,7 +629,7 @@ RETURNGC DS    0H
 .ANYY    ANOP
          GETMAIN R,LV=(R3),SP=SUBPOOL,LOC=ANY
 .ANYE    ANOP
-         AIF ('&SYS' EQ 'S370').NOMODX2
+         AIF ('&SYS' NE 'S380').NOMODX2
          CALL  @@SETM31
 .NOMODX2 ANOP
          ST    R1,0(R9)            * SAVE IT IN FIRST WORK OF ENV
@@ -672,11 +672,11 @@ RETURNSR DS    0H
          ST    R6,24(R1)          * SAVE VAL IN ENV
          L     R6,=F'1'
          ST    R6,20(R1)          * AND SET LONGJ TO 1.
-         AIF ('&SYS' EQ 'S370').NOMODL1
+         AIF ('&SYS' NE 'S380').NOMODL1
          CALL  @@SETM24
 .NOMODL1 ANOP
          FREEMAIN R,LV=(R3),A=(R4),SP=SUBPOOL
-         AIF ('&SYS' EQ 'S370').NOMODL2
+         AIF ('&SYS' NE 'S380').NOMODL2
          CALL  @@SETM31
 .NOMODL2 ANOP
 *        L     R14,16(R1)          * AND RETURN ADDRESS

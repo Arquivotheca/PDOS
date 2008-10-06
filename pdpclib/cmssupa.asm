@@ -190,7 +190,6 @@ ENDFILE  LA    R6,1
 * FOLLOWING INSERTED BY DW *
          ST    R6,RDEOF
          LR    R15,R6
-         ST    R1,0(R3)
 *DW END OF MOD
          BR    R14
 EOFRLEN  EQU   *-ENDFILE

@@ -408,7 +408,7 @@ CLOSEMLN EQU   *-CLOSEMAC
          ST    R3,0(R1)
 * AND JUST BELOW THE VALUE WE RETURN TO THE CALLER, WE SAVE
 * THE AMOUNT THEY REQUESTED
-         ST    R4,12(R1)
+         ST    R4,4(R1)
          A     R1,=F'8'
          LR    R15,R1
 *

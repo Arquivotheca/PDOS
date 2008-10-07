@@ -18,6 +18,12 @@
 *                                                                    *
 *  CMSSUPA - SUPPORT ROUTINES FOR PDPCLIB UNDER CMS                  *
 *                                                                    *
+*  Note that it is necessary for these routines to stay below the    *
+*  line because they are using macros like "GET" that are documented *
+*  in z/VM as needing to be executed in AMODE 24. In order to lift   *
+*  this 24-bit restriction it will be necessary to switch to         *
+*  native CMS macros.                                                *
+*                                                                    *
 **********************************************************************
          COPY  PDPTOP
          PRINT NOGEN
@@ -41,6 +47,11 @@ R14      EQU   14
 R15      EQU   15
 SUBPOOL  EQU   0
          CSECT
+**********************************************************************
+*                                                                    *
+*  AOPEN - Open a file                                               *
+*                                                                    *
+**********************************************************************
          ENTRY @@AOPEN
 @@AOPEN  EQU   *
          SAVE  (14,12),,@@AOPEN
@@ -211,6 +222,11 @@ OUTDCBLN EQU   *-OUTDCB
 *
 *
 *
+**********************************************************************
+*                                                                    *
+*  AREAD - Read from file                                            *
+*                                                                    *
+**********************************************************************
          ENTRY @@AREAD
 @@AREAD  EQU   *
          SAVE  (14,12),,@@AREAD
@@ -257,6 +273,11 @@ RETURNAR DS    0H
 *
 *
 *
+**********************************************************************
+*                                                                    *
+*  AWRITE - Write to file                                            *
+*                                                                    *
+**********************************************************************
          ENTRY @@AWRITE
 @@AWRITE EQU   *
          SAVE  (14,12),,@@AWRITE
@@ -300,6 +321,11 @@ RETURNAW DS    0H
 *
 *
 *
+**********************************************************************
+*                                                                    *
+*  ACLOSE - Close file                                               *
+*                                                                    *
+**********************************************************************
          ENTRY @@ACLOSE
 @@ACLOSE EQU   *
          SAVE  (14,12),,@@ACLOSE
@@ -368,11 +394,11 @@ CLOSEMLN EQU   *-CLOSEMAC
          LR    R4,R3
          A     R3,=F'8'
 *
-* THIS SHOULD NOT BE NECESSARY. THE DEFAULT OF LOC=RES
-* SHOULD BE SUFFICIENT. HOWEVER, CURRENTLY THERE IS AN
-* UNKNOWN PROBLEM, PROBABLY WITH RDJFCB, WHICH PREVENTS
-* EXECUTABLES FROM RESIDING ABOVE THE LINE, HENCE THIS
-* HACK TO ALLOCATE MOST STORAGE ABOVE THE LINE
+* It would be nice to allocate memory with the default
+* LOC=RES. However, due to the fact that we need to be
+* in AMODE 24 to use things like "GET", it is necessary
+* for this program to reside below the line. As such,
+* we need to use LOC=ANY to get ATL memory.
 *
          AIF   ('&SYS' EQ 'S390').ANYCHKY
          AIF   ('&SYS' EQ 'S370').GOT370
@@ -728,6 +754,7 @@ EOFR24   DS    CL(EOFRLEN)
 JFCBPTR  DS    F
 JFCB     DS    0F
 *        IEFJFCBN
+* z/VM manual says to use 176 characters
          DS    CL176
 SAVEADCB DS    18F                Register save area for PUT
          DS    0F

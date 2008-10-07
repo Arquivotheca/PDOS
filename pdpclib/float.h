@@ -21,7 +21,7 @@
   GCC does not implement this and "long double" is same as "double"
 */
 
-/* rounding direction is unpredicatable */
+/* rounding direction is unpredictable */
 #define FLT_ROUNDS 0
 
 /* Floating point is HEX so RADIX is base 16 */
@@ -57,7 +57,7 @@
 #define LDBL_MAX_10_EXP 75
 
 /*
-  This is a temporoary fiddle to get round bug in GCC
+  This is a temporary fiddle to get round bug in GCC
   scanning of ASCII to Floats.
 */
 typedef union {

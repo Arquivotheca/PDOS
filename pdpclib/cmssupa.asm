@@ -82,25 +82,17 @@ SUBPOOL  EQU   0
 * READING
          USING IHADCB,R2
          MVC   ZDCBAREA(INDCBLN),INDCB
-* NO NEED TO COPY ON VM/370
-*        MVC   EOFR24(EOFRLEN),ENDFILE
          LA    R10,JFCB
 * EXIT TYPE 07 + 80 (END OF LIST INDICATOR)
          ICM   R10,B'1000',=X'87'
          ST    R10,JFCBPTR
          LA    R10,JFCBPTR
-* DW * DID NOT COPY
-*        LA    R4,EOFR24
-         LA    R4,ENDFILE    **** USE ORIGINAL ENDFILE CODE
-* DW * THIS DOES NOT SEEM TO WORK ON VM/370
-*        STCM  R4,B'0111',DCBEODA
-*        STCM  R10,B'0111',DCBEXLSA
+         LA    R4,ENDFILE
          ST    R4,DCBEODAD
          ST    R10,DCBEXLST
-* END OF MOD
          MVC   DCBDDNAM,0(R3)
          MVC   OPENMB,OPENMAC
-* NOTE THAT THIS IS CURRENTLY NOT REENTRANT AND SHOULD BE MADE SO
+*
          AIF ('&SYS' NE 'S380').NOMODO1
          CALL  @@SETM24
 .NOMODO1 ANOP
@@ -135,13 +127,10 @@ WRITING  DS    0H
          ICM   R10,B'1000',=X'87'
          ST    R10,JFCBPTR
          LA    R10,JFCBPTR
-* DW * DOES NOT SEEM TO WORK ON VM/370
-*        STCM  R10,B'0111',DCBEXLSA
          ST    R10,DCBEXLST
-* DW * END OF MOD
          MVC   DCBDDNAM,0(R3)
          MVC   WOPENMB,WOPENMAC
-* NOTE THAT THIS IS CURRENTLY NOT REENTRANT AND SHOULD BE MADE SO
+*
          AIF ('&SYS' NE 'S380').NOMODO5
          CALL  @@SETM24
 .NOMODO5 ANOP
@@ -185,12 +174,8 @@ DONESET  DS    0H
          LR    R15,R2
          B     RETURNOP
 *
-* THIS IS NOT EXECUTED DIRECTLY, BUT COPIED INTO 24-BIT STORAGE
 ENDFILE  LA    R6,1
-* FOLLOWING INSERTED BY DW *
          ST    R6,RDEOF
-         LR    R15,R6
-*DW END OF MOD
          BR    R14
 EOFRLEN  EQU   *-ENDFILE
 *
@@ -257,7 +242,6 @@ OUTDCBLN EQU   *-OUTDCB
          ST    R6,RDEOF
          GET   (R2)
          ST    R1,0(R3)
-*        LR    R15,R6
          L     R15,RDEOF
 *
 RETURNAR DS    0H
@@ -702,11 +686,11 @@ RETURNLR DS    0H
 * and won't compile anyway because "BSM" is not known.
 *
          AIF   ('&SYS' EQ 'S370').NOMODE2 If S/370 we can't switch mode
-* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
-*
-*  SETM24 - Set AMODE to 24
-*
-* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+**********************************************************************
+*                                                                    *
+*  SETM24 - Set AMODE to 24                                          *
+*                                                                    *
+**********************************************************************
          DROP  R12
          ENTRY @@SETM24
          USING @@SETM24,R15
@@ -714,11 +698,11 @@ RETURNLR DS    0H
          DC    X'0B0E'            BSM   0,14  Return in amode 31
 *         BSM   0,R14              Return in amode 24
 *
-* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
-*
-*  SETM31 - Set AMODE to 31
-*
-* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+**********************************************************************
+*                                                                    *
+*  SETM31 - Set AMODE to 31                                          *
+*                                                                    *
+**********************************************************************
          ENTRY @@SETM31
          USING @@SETM31,R15
 @@SETM31 ICM   R14,8,=X'80'       Set to switch mode

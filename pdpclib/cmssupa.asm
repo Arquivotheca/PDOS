@@ -10,7 +10,7 @@
 *
 *   1 - CHANGE REQUEST TYPE FROM RU TO R ON ALL GETMAIN/FREEMAIN
 *
-*   2 - REMOVE IEFJFCB AND REPLACE WITH DS 170
+*   2 - REMOVE IEFJFCB AND REPLACE WITH DS 176
 *
 *   3 - ADD SVC 202 ROUTINE TO ALLOW CMS FUNCTIONS TO BE CALLED
 *
@@ -466,8 +466,15 @@ RETURNFM DS    0H
          SR    R6,R6            CLEAR R6
          ST    R6,0(R5)         AND SAVE IN RETURN CODE
          LR    R1,R3
+*
+         AIF   ('&SYS' EQ 'S390').DOCALL
          SVC   202              ISSUE COMMAND
-         DC    AL4(SV202ER)      ERROR
+         DC    AL4(SV202ER)     ERROR
+         AGO   .FINCALL
+.DOCALL  ANOP
+         CMSCALL ERROR=SV202ER
+.FINCALL ANOP
+*
 SV202RT  EQU    *
          LR    R7,R15
          AIF ('&SYS' NE 'S380').NOMODS2
@@ -729,7 +736,7 @@ EOFR24   DS    CL(EOFRLEN)
 JFCBPTR  DS    F
 JFCB     DS    0F
 *        IEFJFCBN
-         DS    CL170
+         DS    CL176
 SAVEADCB DS    18F                Register save area for PUT
          DS    0F
 CLOSEMB  DS    CL(CLOSEMLN)

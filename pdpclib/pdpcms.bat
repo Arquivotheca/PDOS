@@ -19,4 +19,4 @@ call runcms pdpcms.exec output.txt pdpcms.zip
 
 rem Useful for z/VM
 rem mvsendec encb pdpcms.zip pdpcms.dat
-rem loc2ebc pdpcms.dat transfer.card 80
+rem loc2ebc pdpcms.dat xfer.card 80

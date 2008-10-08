@@ -95,12 +95,19 @@ typedef unsigned long fpos_t;
 #define _IOFBF 1
 #define _IOLBF 2
 #define _IONBF 3
+
 /*#define BUFSIZ 409600*/
 /* #define BUFSIZ 8192 */
 /*#define BUFSIZ 5120*/
-#if defined(__MVS__) || defined(__CMS__)
+
+#if defined(__MVS__)
 /* set it to maximum possible LRECL to simplify processing */
+/* also add in room for a RDW and dword align it just to be
+   on the safe side */
 #define BUFSIZ 32768
+#elif defined(__CMS__)
+/* similar considerations for CMS as MVS */
+#define BUFSIZ 65544
 #else
 #define BUFSIZ 6144
 #endif

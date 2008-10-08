@@ -773,33 +773,6 @@ RETURNGC DS    0H
          RETURN (14,12),RC=(15)
          LTORG ,
 *
-* S/370 doesn't support switching modes so this code is useless,
-* and won't compile anyway because "BSM" is not known.
-*
-         AIF   ('&SYS' EQ 'S370').NOMODE  If S/370 we can't switch mode
-* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
-*
-*  SETM24 - Set AMODE to 24
-*
-* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
-         ENTRY @@SETM24
-         USING @@SETM24,R15
-@@SETM24 ICM   R14,8,=X'00'       Sure hope caller is below the line
-         BSM   0,R14              Return in amode 24
-*
-* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
-*
-*  SETM31 - Set AMODE to 31
-*
-* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
-         ENTRY @@SETM31
-         USING @@SETM31,R15
-@@SETM31 ICM   R14,8,=X'80'       Set to switch mode
-         BSM   0,R14              Return in amode 31
-         LTORG ,
-*
-.NOMODE  ANOP  ,                  S/370 doesn't support MODE switching
-*
 * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
 *
 *  SAVER - SAVE REGISTERS AND PSW INTO ENV_BUF
@@ -1357,8 +1330,41 @@ DYNLIST  DYNPAT P=ALL        EXPAND ALLOCATION DATA
 DYNALDLN EQU   *-DYNALWRK     LENGTH OF DYNAMIC STORAGE
          CSECT ,             RESTORE
 *
-         IEZIOB                   Input/Output Block
 *
+*
+* Keep this code last because it uses different base register
+*
+* S/370 doesn't support switching modes so this code is useless,
+* and won't compile anyway because "BSM" is not known.
+*
+         AIF   ('&SYS' EQ 'S370').NOMODE  If S/370 we can't switch mode
+         DROP  R12
+* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+*
+*  SETM24 - Set AMODE to 24
+*
+* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+         ENTRY @@SETM24
+         USING @@SETM24,R15
+@@SETM24 ICM   R14,8,=X'00'       Sure hope caller is below the line
+         BSM   0,R14              Return in amode 24
+*
+* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+*
+*  SETM31 - Set AMODE to 31
+*
+* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+         ENTRY @@SETM31
+         USING @@SETM31,R15
+@@SETM31 ICM   R14,8,=X'80'       Set to switch mode
+         BSM   0,R14              Return in amode 31
+         LTORG ,
+*
+.NOMODE  ANOP  ,                  S/370 doesn't support MODE switching
+*
+*
+*
+         IEZIOB                   Input/Output Block
 *
 WORKAREA DSECT
 SAVEAREA DS    18F

@@ -594,7 +594,15 @@ static void osfopen(void)
     else
     {
         mode = 2;
+        
+        /* because we don't have the ability to update files
+           at the moment on MVS or CMS, just return with an
+           error immediately */
+        err = 1;
+        errno = 2;
+        return;
     }
+
 /* dw */
 /* This code needs changing for VM */
     p = strchr(fnm, ':');

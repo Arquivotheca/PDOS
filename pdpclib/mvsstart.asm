@@ -116,13 +116,26 @@ CEESTART EQU   *
          LA    R1,PARMLIST
 *
          AIF   ('&SYS' NE 'S380').N380ST1
+*
+* Set R4 to true if we were called in 31-bit mode
+*
+         LA    R4,0
+         BSM   R4,R0
+* If we were called in AMODE 31, don't bother setting mode now
+         LTR   R4,R4
+         BNZ   IN31
          CALL  @@SETM31
+IN31     DS    0H
 .N380ST1 ANOP
 *
          CALL  @@START
 *
          AIF   ('&SYS' NE 'S380').N380ST2
+* If we were called in AMODE 31, don't switch back to 24-bit
+         LTR   R4,R4
+         BNZ   IN31B
          CALL  @@SETM24
+IN31B    DS    0H
 .N380ST2 ANOP
 *
 RETURNMS DS    0H

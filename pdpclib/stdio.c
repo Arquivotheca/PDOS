@@ -3871,17 +3871,105 @@ size_t fwrite(const void *ptr, size_t size, size_t nmemb, FILE *stream)
             break;
 
         case VARIABLE_BINARY:
-            for (x = 0; x < nmemb; x++)
+            bytes = nmemb * size;            
+            while (bytes > 0)
             {
-                memcpy(stream->fbuf + 4, ptr, size);
-                stream->fbuf[0] = (size + 4) >> 8;
-                stream->fbuf[1] = (size + 4) & 0xff;
-                stream->fbuf[2] = 0;
-                stream->fbuf[3] = 0;
-                __awrite(stream->hfile, &dptr);
-                memcpy(dptr, stream->fbuf, size + 4);
-                ptr = (char *)ptr + size;
-                stream->bufStartR += size;
+                int fulllen;
+                
+                if (stream->errorInd) break;
+                sz = stream->upto - stream->fbuf;
+                if (sz < 4)
+                {
+                    if ((bytes + sz) < 4)
+                    {
+                        memcpy(stream->upto, ptr, bytes);
+                        stream->upto += bytes;
+                        bytes = 0;
+                        break; 
+                    }
+                    else
+                    {
+                        memcpy(stream->upto, ptr, 4 - sz);
+                        ptr = (char *)ptr + (4 - sz);
+                        bytes -= (4 - sz);
+                        stream->upto += (4 - sz);
+                        sz = 4;
+                        if (memcmp(stream->fbuf + 2, "\0\0", 2) != 0)
+                        {
+                            stream->errorInd = 1;
+                            break;
+                        }
+                        fulllen = (stream->fbuf[0] << 8) | stream->fbuf[1];
+                        if (fulllen == 0)                        
+                        {
+                            /* here we allow for the possibility that
+                               they are copying a data source that has
+                               terminating NULs added - so long as all
+                               remaining charactes are NUL, it will be
+                               allowed. Otherwise we rely on the above
+                               validation to catch a problem - checking
+                               2 bytes at a time, which shouldn't be a
+                               problem since this is only at the end of
+                               the file */
+                            stream->upto = stream->fbuf + 2;
+                            continue;
+                        }
+                        else if (fulllen < 4)
+                        {
+                            stream->errorInd = 1;
+                            break;
+                        }
+                    }
+                }
+                
+                /* we have 4 bytes, validated */
+                fulllen = (stream->fbuf[0] << 8) | stream->fbuf[1];
+                
+                /* If we have enough data, write it out */
+                if ((sz + bytes) >= fulllen)
+                {
+                    /* silently truncate long records to give
+                       user more flexibility */
+                    if (fulllen > stream->lrecl)
+                    {
+                        stream->fbuf[0] = stream->lrecl >> 8;
+                        stream->fbuf[1] = stream->lrecl & 0xff;
+                    }
+                    __awrite(stream->hfile, &dptr);
+                    memcpy(dptr,
+                           stream->fbuf,
+                           fulllen <= stream->lrecl
+                           ? fulllen : stream->lrecl);
+                    stream->bufStartR += fulllen;
+                    stream->upto = stream->fbuf;
+                    bytes -= (fulllen - sz);
+                    ptr = (char *)ptr + (fulllen - sz);
+                }
+                
+                /* less data than required, store it, without
+                   overflowing our buffer */
+                else if ((sz + bytes) > stream->lrecl)
+                {
+                    memcpy(stream->upto,
+                           ptr,
+                           stream->lrecl - sz);
+                    /* here we allow upto to exceed our buffer.
+                       shouldn't be a problem as we never write
+                       to that memory. alternative is to make
+                       BUFSIZ 64k. */
+                    stream->upto += bytes;
+                    ptr = (char *)ptr + bytes;
+                    bytes = 0;
+                }
+                
+                /* enough room to fit data */
+                else
+                {
+                    memcpy(stream->upto, ptr, bytes);
+                    stream->upto += bytes;
+                    ptr = (char *)ptr + bytes;
+                    bytes = 0;
+                }
             }
             break;
 

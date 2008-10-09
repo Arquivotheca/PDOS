@@ -3302,6 +3302,7 @@ static int vvscanf(const char *format, va_list arg, FILE *fp, const char *s)
     unsigned short *huptr;
     double *dptr;
     float *fptr;
+    int skipvar; /* nonzero if we are skipping this variable */
     int modlong;   /* nonzero if "l" modifier found */
     int modshort;   /* nonzero if "h" modifier found */
     int informatitem;  /* nonzero if % format item started */
@@ -3325,6 +3326,12 @@ static int vvscanf(const char *format, va_list arg, FILE *fp, const char *s)
                 format++;
                 modlong=0;   /* init */
                 modshort=0;
+                skipvar = 0;
+                if (*format == '*')
+                {
+                    skipvar = 1;
+                    format++;
+                }
             }
             if (*format == '%')   /* %% */
             {
@@ -3349,14 +3356,20 @@ static int vvscanf(const char *format, va_list arg, FILE *fp, const char *s)
                 informatitem=0;   /* end of format item */
                 if (*format == 's')
                 {
-                    cptr = va_arg(arg, char *);
+                    if (!skipvar)
+                    {
+                        cptr = va_arg(arg, char *);
+                    }
                     /* Skip leading whitespace: */
                     while (ch>=0 && isspace(ch)) inch();
                     if ((fp != NULL && ch == EOF) || (fp == NULL && ch == 0))
                                          /* at EOF or end of string */
                     {
                         fin = 1;
-                        *cptr = 0;   /* give a null string */
+                        if (!skipvar)
+                        {
+                            *cptr = 0;   /* give a null string */
+                        }
                     }
                     else
                     {
@@ -3369,22 +3382,34 @@ static int vvscanf(const char *format, va_list arg, FILE *fp, const char *s)
                                 fin = 1;
                                 break;
                             }
-                            *cptr++ = (char)ch;
+                            if (!skipvar)
+                            {
+                                *cptr++ = (char)ch;
+                            }
                             inch();
                         }
-                        *cptr = '\0';
+                        if (!skipvar)
+                        {
+                            *cptr = '\0';
+                        }
                         cnt++;
                     }
                 }
                 else if (*format == 'c')
                 {
-                    cptr = va_arg(arg, char *);
+                    if (!skipvar)
+                    {
+                        cptr = va_arg(arg, char *);
+                    }
                     if ((fp != NULL && ch == EOF)
                         || (fp == NULL && ch == 0)) fin = 1;
                                           /* at EOF or end of string */
                     else
                     {
-                        *cptr = ch;
+                        if (!skipvar)
+                        {
+                            *cptr = ch;
+                        }
                         cnt++;
                         inch();
                     }
@@ -3394,18 +3419,21 @@ static int vvscanf(const char *format, va_list arg, FILE *fp, const char *s)
                     int neg = 0;
                     long lval;
 
-                    if (*format != 'u')
+                    if (!skipvar)
                     {
-                        if (modlong) lptr = va_arg(arg, long *);
-                        else if (modshort) hptr = va_arg(arg, short *);
-                        else iptr = va_arg(arg, int *);
-                    }
-                    else
-                    {
-                        if (modlong) luptr = va_arg(arg, unsigned long *);
-                        else if (modshort) huptr =
-                                 va_arg(arg, unsigned short *);
-                        else uptr = va_arg(arg, unsigned int *);
+                        if (*format != 'u')
+                        {
+                            if (modlong) lptr = va_arg(arg, long *);
+                            else if (modshort) hptr = va_arg(arg, short *);
+                            else iptr = va_arg(arg, int *);
+                        }
+                        else
+                        {
+                            if (modlong) luptr = va_arg(arg, unsigned long *);
+                            else if (modshort) huptr =
+                                     va_arg(arg, unsigned short *);
+                            else uptr = va_arg(arg, unsigned int *);
+                        }
                     }
                     /* Skip leading whitespace: */
                     while (ch>=0 && isspace(ch)) inch();
@@ -3429,19 +3457,22 @@ static int vvscanf(const char *format, va_list arg, FILE *fp, const char *s)
                     {
                         lval = -lval;
                     }
-                    if (*format != 'u')
+                    if (!skipvar)
                     {
-                        if (modlong) *lptr=lval;
-                            /* l modifier: assign to long */
-                        else if (modshort) *hptr = (short)lval;
-                            /* h modifier */
-                        else *iptr=(int)lval;
-                    }
-                    else
-                    {
-                        if (modlong) *luptr = (unsigned long)lval;
-                        else if (modshort) *huptr = (unsigned short)lval;
-                        else *uptr = (unsigned int)lval;
+                        if (*format != 'u')
+                        {
+                            if (modlong) *lptr=lval;
+                                /* l modifier: assign to long */
+                            else if (modshort) *hptr = (short)lval;
+                                /* h modifier */
+                            else *iptr=(int)lval;
+                        }
+                        else
+                        {
+                            if (modlong) *luptr = (unsigned long)lval;
+                            else if (modshort) *huptr = (unsigned short)lval;
+                            else *uptr = (unsigned int)lval;
+                        }
                     }
                     cnt++;
                 }
@@ -3453,8 +3484,11 @@ static int vvscanf(const char *format, va_list arg, FILE *fp, const char *s)
                     int ntrailzer,expnum,expsignsw;
                     double fpval,pow10;
 
-                    if (modlong) dptr = va_arg(arg, double *);
-                    else fptr = va_arg(arg, float *);
+                    if (!skipvar)                    
+                    {
+                        if (modlong) dptr = va_arg(arg, double *);
+                        else fptr = va_arg(arg, float *);
+                    }
                     negsw1=0;   /* init */
                     negsw2=0;
                     dotsw=0;
@@ -3550,8 +3584,12 @@ static int vvscanf(const char *format, va_list arg, FILE *fp, const char *s)
                         }
                     }
                     if (negsw1) fpval=-fpval;
-                    if (modlong) *dptr=fpval; /* l modifier: assign to double */
-                    else *fptr=(float)fpval;
+                    if (!skipvar)
+                    {
+                        /* l modifier: assign to double */
+                        if (modlong) *dptr=fpval;
+                        else *fptr=(float)fpval;
+                    }
                     cnt++;
                 }
             }

@@ -159,6 +159,7 @@ static void freadSlowB(void *ptr,
 
 static int examine(const char **formt, FILE *fq, char *s, va_list *arg,
                    int chcount);
+static int brackfind(const char *first, int ch, size_t n);
 
 #ifdef __CMS__
 extern void __SVC202 ( char *s202parm, int *code, int *parm );
@@ -3395,6 +3396,59 @@ static int vvscanf(const char *format, va_list arg, FILE *fp, const char *s)
                         cnt++;
                     }
                 }
+                else if (*format == '[')
+                {
+                    int reverse = 0;
+                    int found;
+                    const char *first;
+                    const char *last;
+                    size_t size;
+                    size_t mcnt = 0;
+                    
+                    if (!skipvar)
+                    {
+                        cptr = va_arg(arg, char *);
+                    }
+                    format++;
+                    if (*format == '^')
+                    {
+                        reverse = 1;
+                        format++;
+                    }
+                    if (*format == '\0') break;
+                    first = format;
+                    format++;
+                    last = strchr(format, ']');                    
+                    if (last == NULL) break;
+                    size = last - first;
+                    while (1)
+                    {
+                        found = brackfind(first, ch, size);
+                        if (found && reverse) break;
+                        if (!found && !reverse) break;
+                        if (!skipvar)
+                        {
+                            *cptr++ = (char)ch;
+                        }
+                        mcnt++;
+                        inch();
+                        /* if at EOF or end of string, bug out */
+                        if ((fp != NULL && ch == EOF) 
+                            || (fp == NULL && ch == 0))
+                        {
+                            break;
+                        }
+                    }
+                    if (mcnt > 0)
+                    {
+                        if (!skipvar)
+                        {
+                            *cptr++ = '\0';
+                        }
+                        cnt++;
+                    }
+                    format = last + 1;
+                }
                 else if (*format == 'c')
                 {
                     if (!skipvar)
@@ -3615,6 +3669,21 @@ static int vvscanf(const char *format, va_list arg, FILE *fp, const char *s)
     }
     if (fp != NULL) ungetc(ch, fp);
     return (cnt);
+}
+
+static int brackfind(const char *first, int ch, size_t n)
+{
+    const char *loc;
+    
+    loc = memchr(first, ch, n);
+    if (loc == NULL)
+    {
+        return (0);
+    }
+    else
+    {
+        return (1);
+    }
 }
 
 char *gets(char *s)

@@ -746,6 +746,7 @@ static void osfopen(void)
     {
         myfile->reallyu = 1;
         myfile->quickBin = 0; /* switch off to be on the safe side */
+        myfile->lrecl -= 4; /* lrecl from assembler includes BDW */
         
         /* if open for writing, kludge to switch to fixed */
         if (mode == 1)
@@ -3872,6 +3873,10 @@ size_t fwrite(const void *ptr, size_t size, size_t nmemb, FILE *stream)
                 /* ready to write a record - request some space
                    from MVS */
                 __awrite(stream->hfile, &dptr);
+                if (stream->reallyu)
+                {
+                    dptr += 4;
+                }
                 sz = stream->endbuf - stream->upto;
                 memcpy(dptr, stream->fbuf, stream->szfbuf - sz);
                 memcpy(dptr + stream->szfbuf - sz, ptr, sz);
@@ -3887,6 +3892,10 @@ size_t fwrite(const void *ptr, size_t size, size_t nmemb, FILE *stream)
             while (bytes >= stream->szfbuf)
             {
                 __awrite(stream->hfile, &dptr);
+                if (stream->reallyu)
+                {
+                    dptr += 4;
+                }
                 memcpy(dptr, ptr, stream->szfbuf);
                 ptr = (char *)ptr + stream->szfbuf;
                 bytes -= stream->szfbuf;

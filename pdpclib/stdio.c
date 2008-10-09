@@ -747,8 +747,7 @@ static void osfopen(void)
     {
         myfile->reallyu = 1;
         myfile->quickBin = 0; /* switch off to be on the safe side */
-        myfile->lrecl -= 4; /* lrecl from assembler includes BDW */
-        
+
         /* if open for writing, kludge to switch to fixed */
         if (mode == 1)
         {
@@ -758,6 +757,7 @@ static void osfopen(void)
         else if (mode == 0)
         {
             myfile->recfm = 1;
+            myfile->lrecl -= 4; /* lrecl from assembler includes BDW */
         }
     }
 

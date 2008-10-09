@@ -4565,7 +4565,7 @@ size_t fread(void *ptr, size_t size, size_t nmemb, FILE *stream)
                         {
                             read = p - dptr;
                         }
-                    }                    
+                    }
                 }
 
                 if ((totalread + read) > bytes)

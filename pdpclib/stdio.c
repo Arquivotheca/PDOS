@@ -823,7 +823,7 @@ int fclose(FILE *stream)
 #if defined(__MVS__) || defined(__CMS__)
     if ((stream->mode == __WRITE_MODE) && (stream->upto != stream->fbuf))
     {
-        if (stream->textMode)
+        if ((stream->textMode) && !stream->reallyu)
         {
             putc('\n', stream);
         }

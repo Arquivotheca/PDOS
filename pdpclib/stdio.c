@@ -824,7 +824,21 @@ int fclose(FILE *stream)
 #if defined(__MVS__) || defined(__CMS__)
     if ((stream->mode == __WRITE_MODE) && (stream->upto != stream->fbuf))
     {
-        if ((stream->textMode) && !stream->reallyu)
+        if (stream->reallyu)
+        {
+            size_t last;
+            char *dptr;
+            
+            last = stream->upto - stream->fbuf;
+            __awrite(stream->hfile, &dptr);
+            memcpy(dptr + 4, stream->fbuf, last);
+            last += 4;
+            dptr[0] = last >> 8;
+            dptr[1] = last & 0xff;
+            dptr[2] = 0;
+            dptr[3] = 0;
+        }
+        else if (stream->textMode)
         {
             putc('\n', stream);
         }

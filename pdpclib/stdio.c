@@ -831,13 +831,9 @@ int fclose(FILE *stream)
             char *dptr;
             
             last = stream->upto - stream->fbuf;
+            __asetl(stream->hfile, last);
             __awrite(stream->hfile, &dptr);
-            memcpy(dptr + 4, stream->fbuf, last);
-            last += 4;
-            dptr[0] = last >> 8;
-            dptr[1] = last & 0xff;
-            dptr[2] = 0;
-            dptr[3] = 0;
+            memcpy(dptr, stream->fbuf, last);
         }
         else if (stream->textMode)
         {
@@ -3994,10 +3990,6 @@ size_t fwrite(const void *ptr, size_t size, size_t nmemb, FILE *stream)
                 /* ready to write a record - request some space
                    from MVS */
                 __awrite(stream->hfile, &dptr);
-                if (stream->reallyu)
-                {
-                    dptr += 4;
-                }
                 sz = stream->endbuf - stream->upto;
                 memcpy(dptr, stream->fbuf, stream->szfbuf - sz);
                 memcpy(dptr + stream->szfbuf - sz, ptr, sz);
@@ -4013,10 +4005,6 @@ size_t fwrite(const void *ptr, size_t size, size_t nmemb, FILE *stream)
             while (bytes >= stream->szfbuf)
             {
                 __awrite(stream->hfile, &dptr);
-                if (stream->reallyu)
-                {
-                    dptr += 4;
-                }
                 memcpy(dptr, ptr, stream->szfbuf);
                 ptr = (char *)ptr + stream->szfbuf;
                 bytes -= stream->szfbuf;

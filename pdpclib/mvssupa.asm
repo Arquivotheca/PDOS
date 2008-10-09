@@ -649,6 +649,23 @@ H4       DC    H'4'               Constant for BDW/SDW/RDW handling
 *
 * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
 *
+*  ASETL - Set length of last record
+*
+* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+         ENTRY @@ASETL
+@@ASETL  SAVE  (14,12),,@@ASETL
+         LR    R12,R15
+         USING @@ASETL,R12
+         L     R2,0(,R1)          R2 contains handle
+         LDINT R3,4(,R1)          R3 points to length of next record
+         USING ZDCBAREA,R2
+*
+         STCM  R3,B'0011',DCBLRECL
+*
+         RETURN (14,12),RC=0
+*
+* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+]*
 *  ACLOSE - Close a data set
 *
 * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *

@@ -379,11 +379,13 @@ NOTU     DS    0H
          BL    SETRECFM           Is RECFM=F, go return "0" to caller
          LA    R1,1               Set V for V and U
          BE    SETRECFM           if V
-         LTR   R4,R4              In or Out ?
-         BZ    SETRECFM           Input - set V
-         SR    R1,R1              Out - set F
+*        LTR   R4,R4              In or Out ?
+*        BZ    SETRECFM           Input - set V
+*        SR    R1,R1              Out - set F
+         LA    R1,2
 * RECFM=U on input  will tell caller that it is RECFM=V
 * RECFM=U on output will tell caller that it is RECFM=F
+* This logic now moved to the C code
 SETRECFM DS    0H
          ST    R1,0(,R5)          Pass either RECFM F or V to caller
 *        B     RETURNOP

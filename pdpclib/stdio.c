@@ -730,6 +730,8 @@ static void osfopen(void)
         }
         p = myfile->pdsmem;
     }
+    myfile->reallyu = 0;
+    myfile->reallyt = 0;
     myfile->hfile =
         __aopen(myfile->ddname, mode, &myfile->recfm, &myfile->lrecl, p);
 
@@ -740,6 +742,22 @@ static void osfopen(void)
         errno = -(int)myfile->hfile;
         return;
     }
+    if (myfile->recfm == 2)
+    {
+        myfile->reallyu = 1;
+        myfile->quickBin = 0; /* switch off to be on the safe side */
+        
+        /* if open for writing, kludge to switch to fixed */
+        if (mode == 1)
+        {
+            myfile->recfm = 0;
+        }
+        /* if open for reading, kludg to switch to variable */
+        else if (mode == 0)
+        {
+            myfile->recfm = 1;
+        }
+    }
 
     if ((modeType == 4) || (modeType == 5))
     {
@@ -748,8 +766,17 @@ static void osfopen(void)
     else
     {
         myfile->style = 2; /* text */
+        /* for RECFM=U we use binary mode when reading or writing
+           text files as we don't want any translation done. But
+           record the fact that it was really text mode */
+        if (myfile->reallyu)
+        {
+            myfile->reallyt = 1;
+            myfile->style = 0;
+        }
     }
     myfile->style += myfile->recfm;
+
     if (myfile->style == VARIABLE_TEXT)
     {
         myfile->quickText = 1;
@@ -4404,6 +4431,24 @@ size_t fread(void *ptr, size_t size, size_t nmemb, FILE *stream)
                 }
 
                 read = (dptr[0] << 8) | dptr[1];
+                
+                if (stream->reallyu)
+                {
+                    /* skip over the RDW */
+                    dptr += 4;
+                    read -= 4;
+                    if (stream->reallyt)
+                    {
+                        unsigned char *p;
+                        
+                        /* get rid of any trailing NULs in text mode */
+                        p = memchr(dptr, '\0', read);
+                        if (p != NULL)
+                        {
+                            read = p - dptr;
+                        }
+                    }                    
+                }
 
                 if ((totalread + read) > bytes)
                 {

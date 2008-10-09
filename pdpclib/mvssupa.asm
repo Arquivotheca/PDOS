@@ -575,6 +575,7 @@ DEBLOCKU DS    0H
 *        R4 has address of block buffer
 *        R7 has size of block read in
          LA    R7,4(,R7)          Add four to block size for fake RDW
+         S     R4,=F'4'           Go back to BDW
          STH   R7,0(,R4)          Store variable RDW for RECFM=U
          LR    R5,R4              Indicate start of buffer is record
          XC    BUFFCURR,BUFFCURR  Indicate no next record in block

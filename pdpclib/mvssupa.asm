@@ -665,7 +665,7 @@ H4       DC    H'4'               Constant for BDW/SDW/RDW handling
          RETURN (14,12),RC=0
 *
 * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
-]*
+*
 *  ACLOSE - Close a data set
 *
 * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *

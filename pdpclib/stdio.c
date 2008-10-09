@@ -3934,12 +3934,23 @@ size_t fwrite(const void *ptr, size_t size, size_t nmemb, FILE *stream)
                     {
                         stream->fbuf[0] = stream->lrecl >> 8;
                         stream->fbuf[1] = stream->lrecl & 0xff;
+                        __awrite(stream->hfile, &dptr);
+                        if (sz >= stream->lrecl)
+                        {
+                            memcpy(dptr, stream->fbuf, stream->lrecl);
+                        }
+                        else
+                        {
+                            memcpy(dptr, stream->fbuf, sz);
+                            memcpy(dptr + sz, ptr, stream->lrecl - sz);
+                        }
                     }
-                    __awrite(stream->hfile, &dptr);
-                    memcpy(dptr,
-                           stream->fbuf,
-                           fulllen <= stream->lrecl
-                           ? fulllen : stream->lrecl);
+                    else
+                    {
+                        __awrite(stream->hfile, &dptr);
+                        memcpy(dptr, stream->fbuf, sz);
+                        memcpy(dptr + sz, ptr, fulllen - sz);
+                    }
                     stream->bufStartR += fulllen;
                     stream->upto = stream->fbuf;
                     bytes -= (fulllen - sz);

@@ -277,7 +277,12 @@ HISTORY
       this is now version 1.00, after 14 years! If you see
       anything that isn't implemented, let me know and I'll
       check the standard and try to add it. Or better yet,
-      submit the code fix with the bug report. :-)
+      submit the code fix with the bug report. :-) Note that
+      opening files for update isn't implemented yet, but I
+      think that it's still conformant without that facility,
+      so long as an error is returned on open. It just means
+      that it's usability is downgraded. Similar to it not
+      being able to open VSAM datasets.
       
 
 CREDITS

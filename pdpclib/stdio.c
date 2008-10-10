@@ -3491,6 +3491,7 @@ static int vvscanf(const char *format, va_list arg, FILE *fp, const char *s)
                 else if (*format == 'd' || *format == 'u')
                 {
                     int neg = 0;
+                    unsigned long ulval;
                     long lval;
 
                     if (!skipvar)
@@ -3518,23 +3519,27 @@ static int vvscanf(const char *format, va_list arg, FILE *fp, const char *s)
                     }
                     else if(ch == '+') inch();
                     if (!isdigit((unsigned char)ch)) return (cnt);
-                    lval = ch - '0';
+                    ulval = ch - '0';
                     inch();
                     while ((ch >= 0) && (isdigit(ch)))
                     {
-                        lval = lval * 10 + (ch - '0');
+                        ulval = ulval * 10 + (ch - '0');
                         inch();
                     }
                     if ((fp != NULL && ch == EOF)
                         || (fp == NULL && ch == 0)) fin = 1;
-                    if (neg)
-                    {
-                        lval = -lval;
-                    }
                     if (!skipvar)
                     {
                         if (*format != 'u')
                         {
+                            if (neg)
+                            {
+                                lval = (long)-ulval;
+                            }
+                            else
+                            {
+                                lval = (long)ulval;
+                            }
                             if (modlong) *lptr=lval;
                                 /* l modifier: assign to long */
                             else if (modshort) *hptr = (short)lval;
@@ -3543,9 +3548,9 @@ static int vvscanf(const char *format, va_list arg, FILE *fp, const char *s)
                         }
                         else
                         {
-                            if (modlong) *luptr = (unsigned long)lval;
-                            else if (modshort) *huptr = (unsigned short)lval;
-                            else *uptr = (unsigned int)lval;
+                            if (modlong) *luptr = (unsigned long)ulval;
+                            else if (modshort) *huptr = (unsigned short)ulval;
+                            else *uptr = (unsigned int)ulval;
                         }
                     }
                     cnt++;

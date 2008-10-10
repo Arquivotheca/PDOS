@@ -551,20 +551,14 @@ long int atol(const char *nptr)
     return (strtol(nptr, (char **)NULL, 10));
 }
 
-long int strtol(const char *nptr, char **endptr, int base)
+unsigned long int strtoul(const char *nptr, char **endptr, int base)
 {
-    long x = 0;
+    unsigned long x = 0;
     int undecided = 0;
-    int neg = 0;
 
     if (base == 0)
     {
         undecided = 1;
-    }
-    if (*nptr == '-')
-    {
-        neg = 1;
-        nptr++;
     }
     while (1)
     {
@@ -595,6 +589,11 @@ long int strtol(const char *nptr, char **endptr, int base)
                     undecided = 0;
                     nptr++;
                 }
+                else if (base == 16)
+                {
+                    /* hex values are allowed to have an optional 0x */
+                    nptr++;
+                }
                 else
                 {
                     break;
@@ -611,10 +610,6 @@ long int strtol(const char *nptr, char **endptr, int base)
             break;
         }
     }
-    if (neg)
-    {
-        x = -x;
-    }
     if (endptr != NULL)
     {
         *endptr = (char *)nptr;
@@ -622,30 +617,24 @@ long int strtol(const char *nptr, char **endptr, int base)
     return (x);
 }
 
-unsigned long int strtoul(const char *nptr, char **endptr, int base)
+long int strtol(const char *nptr, char **endptr, int base)
 {
-    unsigned long x = 0;
+    long x = 0;
+    int neg = 0;
 
-    while (1)
+    if (*nptr == '-')
     {
-        if (isdigit((unsigned char)*nptr))
-        {
-            x = x * base + (*nptr - '0');
-            nptr++;
-        }
-        else if (isalpha((unsigned char)*nptr) && (base > 10))
-        {
-            x = x * base + (toupper((unsigned char)*nptr) - 'A') + 10;
-            nptr++;
-        }
-        else
-        {
-            break;
-        }
+        neg = 1;
+        nptr++;
     }
-    if (endptr != NULL)
+    else if (*nptr == '+')
     {
-        *endptr = (char *)nptr;
+        nptr++;
+    }
+    x = (long)strtoul(nptr, endptr, base);
+    if (neg)
+    {
+        x = -x;
     }
     return (x);
 }

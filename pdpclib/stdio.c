@@ -159,7 +159,6 @@ static void freadSlowB(void *ptr,
 
 static int examine(const char **formt, FILE *fq, char *s, va_list *arg,
                    int chcount);
-static int brackfind(const char *first, int ch, size_t n);
 
 #ifdef __CMS__
 extern void __SVC202 ( char *s202parm, int *code, int *parm );
@@ -3299,6 +3298,8 @@ static int vvscanf(const char *format, va_list arg, FILE *fp, const char *s)
     unsigned short *huptr;
     double *dptr;
     float *fptr;
+    long startpos;
+    const char *startp;
     int skipvar; /* nonzero if we are skipping this variable */
     int modlong;   /* nonzero if "l" modifier found */
     int modshort;   /* nonzero if "h" modifier found */
@@ -3306,6 +3307,14 @@ static int vvscanf(const char *format, va_list arg, FILE *fp, const char *s)
            /* informatitem is 1 if we have processed "%l" but not the
               type letter (s,d,e,f,g,...) yet. */
 
+    if (fp != NULL)
+    {
+        startpos = ftell(fp);
+    }
+    else
+    {
+        startp = s;
+    }
     inch();
     informatitem = 0;   /* init */
     if ((fp != NULL && ch == EOF) || (fp == NULL && ch == 0)) return EOF;
@@ -3415,11 +3424,14 @@ static int vvscanf(const char *format, va_list arg, FILE *fp, const char *s)
                     first = format;
                     format++;
                     last = strchr(format, ']');                    
-                    if (last == NULL) break;
+                    if (last == NULL) return (cnt);
                     size = last - first;
                     while (1)
                     {
-                        found = brackfind(first, ch, size);
+                        /* note that C90 doesn't require special
+                           processing for '-' so it hasn't been
+                           added */
+                        found = (memchr(first, ch, size) != NULL);
                         if (found && reverse) break;
                         if (!found && !reverse) break;
                         if (!skipvar)
@@ -3463,6 +3475,18 @@ static int vvscanf(const char *format, va_list arg, FILE *fp, const char *s)
                         cnt++;
                         inch();
                     }
+                }
+                else if (*format == 'n')
+                {
+                    uptr = va_arg(arg, unsigned int *);
+                    if (fp != NULL)
+                    {
+                        *uptr = ftell(fp) - startpos;
+                    }
+                    else
+                    {
+                        *uptr = startp - s;
+                    }                    
                 }
                 else if (*format == 'd' || *format == 'u')
                 {
@@ -3665,21 +3689,6 @@ static int vvscanf(const char *format, va_list arg, FILE *fp, const char *s)
     }
     if (fp != NULL) ungetc(ch, fp);
     return (cnt);
-}
-
-static int brackfind(const char *first, int ch, size_t n)
-{
-    const char *loc;
-    
-    loc = memchr(first, ch, n);
-    if (loc == NULL)
-    {
-        return (0);
-    }
-    else
-    {
-        return (1);
-    }
 }
 
 char *gets(char *s)

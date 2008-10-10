@@ -3488,15 +3488,24 @@ static int vvscanf(const char *format, va_list arg, FILE *fp, const char *s)
                         *uptr = startp - s;
                     }                    
                 }
-                else if (*format == 'd' || *format == 'u')
+                else if (*format == 'd' || *format == 'u'
+                         || *format == 'x' || *format == 'o'
+                         || *format == 'p'
+                         || *format == 'i')                         
                 {
                     int neg = 0;
-                    unsigned long ulval;
-                    long lval;
+                    unsigned long x = 0;
+                    int undecided = 0;
+                    int base = 10;
+                    int reallyp = 0;
 
+                    if (*format == 'x') base = 16;
+                    else if (*format == 'p') base = 16;
+                    else if (*format == 'o') base = 8;
+                    else if (*format == 'i') base = 0;
                     if (!skipvar)
                     {
-                        if (*format != 'u')
+                        if ((*format == 'd') || (*format == 'i'))
                         {
                             if (modlong) lptr = va_arg(arg, long *);
                             else if (modshort) hptr = va_arg(arg, short *);
@@ -3518,27 +3527,91 @@ static int vvscanf(const char *format, va_list arg, FILE *fp, const char *s)
                         inch();
                     }
                     else if(ch == '+') inch();
-                    if (!isdigit((unsigned char)ch)) return (cnt);
-                    ulval = ch - '0';
-                    inch();
-                    while ((ch >= 0) && (isdigit(ch)))
+                    
+                    /* this logic is the same as strtoul so if you
+                       change this, change that one too */
+
+                    if (base == 0)
                     {
-                        ulval = ulval * 10 + (ch - '0');
-                        inch();
+                        undecided = 1;
                     }
-                    if ((fp != NULL && ch == EOF)
-                        || (fp == NULL && ch == 0)) fin = 1;
+                    while (!((fp != NULL && ch == EOF)
+                             || (fp == NULL && ch == 0)))
+                    {
+                        if (isdigit((unsigned char)ch))
+                        {
+                            if (base == 0)
+                            {
+                                if (ch == '0')
+                                {
+                                    base = 8;
+                                }
+                                else
+                                {
+                                    base = 10;
+                                    undecided = 0;
+                                }
+                            }
+                            x = x * base + (ch - '0');
+                            inch();
+                        }
+                        else if (isalpha((unsigned char)ch))
+                        {
+                            if ((ch == 'X') || (ch == 'x'))
+                            {
+                                if ((base == 0) || ((base == 8) && undecided))
+                                {
+                                    base = 16;
+                                    undecided = 0;
+                                    inch();
+                                }
+                                else if (base == 16)
+                                {
+                                    /* hex values are allowed to have an 
+                                       optional 0x */
+                                    inch();
+                                }
+                                else
+                                {
+                                    break;
+                                }
+                            }
+/* DOS has a ':' in the pointer - skip that */
+#ifdef __MSDOS__
+                            else if ((*format == 'p') && (ch == ':'))
+                            {
+                                inch();
+                            }
+#endif
+                            else
+                            {
+                                x = x * base + 
+                                    (toupper((unsigned char)ch) - 'A') + 10;
+                                inch();
+                            }
+                        }
+                        else
+                        {
+                            break;
+                        }
+                    }
+                    
+                    /* end of strtoul logic */
+
+                    
                     if (!skipvar)
                     {
-                        if (*format != 'u')
+                        if ((*format == 'd') || (*format == 'i'))
                         {
+                            int lval;
+                            
                             if (neg)
                             {
-                                lval = (long)-ulval;
+                                lval = (long)-x;
                             }
                             else
                             {
-                                lval = (long)ulval;
+                                lval = (long)x;
                             }
                             if (modlong) *lptr=lval;
                                 /* l modifier: assign to long */
@@ -3548,9 +3621,9 @@ static int vvscanf(const char *format, va_list arg, FILE *fp, const char *s)
                         }
                         else
                         {
-                            if (modlong) *luptr = (unsigned long)ulval;
-                            else if (modshort) *huptr = (unsigned short)ulval;
-                            else *uptr = (unsigned int)ulval;
+                            if (modlong) *luptr = (unsigned long)x;
+                            else if (modshort) *huptr = (unsigned short)x;
+                            else *uptr = (unsigned int)x;
                         }
                     }
                     cnt++;

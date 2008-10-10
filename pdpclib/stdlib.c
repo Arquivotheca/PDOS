@@ -602,6 +602,10 @@ unsigned long int strtoul(const char *nptr, char **endptr, int base)
                     break;
                 }
             }
+            else if (base <= 10)
+            {
+                break;
+            }
             else
             {
                 x = x * base + (toupper((unsigned char)*nptr) - 'A') + 10;
@@ -622,7 +626,8 @@ unsigned long int strtoul(const char *nptr, char **endptr, int base)
 
 long int strtol(const char *nptr, char **endptr, int base)
 {
-    long x = 0;
+    unsigned long y;
+    long x;
     int neg = 0;
 
     if (*nptr == '-')
@@ -634,10 +639,14 @@ long int strtol(const char *nptr, char **endptr, int base)
     {
         nptr++;
     }
-    x = (long)strtoul(nptr, endptr, base);
+    y = strtoul(nptr, endptr, base);
     if (neg)
     {
-        x = -x;
+        x = (long)-y;
+    }
+    else
+    {
+        x = (long)y;
     }
     return (x);
 }

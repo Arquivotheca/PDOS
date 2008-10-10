@@ -3555,6 +3555,13 @@ static int vvscanf(const char *format, va_list arg, FILE *fp, const char *s)
                             x = x * base + (ch - '0');
                             inch();
                         }
+/* DOS has a ':' in the pointer - skip that */
+#ifdef __MSDOS__
+                        else if ((*format == 'p') && (ch == ':'))
+                        {
+                            inch();
+                        }
+#endif
                         else if (isalpha((unsigned char)ch))
                         {
                             if ((ch == 'X') || (ch == 'x'))
@@ -3576,13 +3583,10 @@ static int vvscanf(const char *format, va_list arg, FILE *fp, const char *s)
                                     break;
                                 }
                             }
-/* DOS has a ':' in the pointer - skip that */
-#ifdef __MSDOS__
-                            else if ((*format == 'p') && (ch == ':'))
+                            else if (base <= 10)
                             {
-                                inch();
+                                break;
                             }
-#endif
                             else
                             {
                                 x = x * base + 

@@ -29,8 +29,7 @@
 * On S/390 there is no restriction
 *
 * MVS/XA and earlier versions of MVS/ESA should use the S/380
-* hybrid, although mvssupa.asm doesn't quite handle that at the
-* moment (a temporary condition).
+* hybrid
 *
 *        AMODE 31
 *        RMODE 24

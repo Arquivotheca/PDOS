@@ -551,6 +551,9 @@ long int atol(const char *nptr)
     return (strtol(nptr, (char **)NULL, 10));
 }
 
+/* this logic is also in vvscanf - if you update this, update
+   that one too */
+
 unsigned long int strtoul(const char *nptr, char **endptr, int base)
 {
     unsigned long x = 0;

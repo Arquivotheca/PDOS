@@ -64,6 +64,10 @@ unsigned char *__envptr;
 char *__vidptr;
 #endif
 
+#if USE_MEMMGR
+extern void *__lastsup; /* last thing supplied to memmgr */
+#endif
+
 #if defined(__CMS__)
 int __start(char *p, char *pgmname)
 #elif defined(__MVS__)
@@ -527,9 +531,22 @@ void __exit(int status)
     fclose(stdout);
     fclose(stderr);
 #endif
+
+
 #if USE_MEMMGR
     memmgrTerm(&__memmgr);
+
+/* release memory for most circumstances, although a
+   better solution will be required eventually */
+#if defined(__MVS__) || defined(__CMS__)
+    if (__lastsup != NULL)
+    {
+        __freem(__lastsup);
+    }
 #endif
+#endif /* USE_MEMMGR */
+
+
 #ifdef __WIN32__
     ExitProcess(status);
 #else

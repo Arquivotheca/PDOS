@@ -44,6 +44,7 @@ extern int __tso;
     /* Note that you can set MAX_CHUNK to less than REQ_CHUNK */
     /* But don't do this until MVS/380 has been fixed */
 #define REQ_CHUNK 30000000 /* size that we request from OS */
+void *__lastsup = NULL; /* last thing supplied to memmgr */
 #endif
 
 #ifdef __MSDOS__
@@ -129,6 +130,7 @@ void *malloc(size_t size)
             {
                 return (NULL);
             }
+            __lastsup = ptr2;
             memmgrSupply(&__memmgr, ptr2, REQ_CHUNK);
             ptr = memmgrAllocate(&__memmgr, size, 0);
         }

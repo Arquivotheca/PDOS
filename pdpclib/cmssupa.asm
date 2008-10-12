@@ -402,8 +402,11 @@ CLOSEMLN EQU   *-CLOSEMAC
 *
          AIF   ('&SYS' EQ 'S390').ANYCHKY
          AIF   ('&SYS' EQ 'S370').GOT370
-* For S/380, hardcode address
-         L     R1,=X'04100000'
+* For S/380, need to switch to AMODE 24 before
+* requesting ATL memory
+         CALL  @@SETM24
+         GETMAIN RU,LV=(R3),SP=SUBPOOL,LOC=ANY
+         CALL  @@SETM31
          AGO   .ANYCHKE
 .GOT370  ANOP
 * CAN'T USE "ANY" ON MVS 3.8
@@ -442,6 +445,14 @@ RETURNGM DS    0H
          S     R2,=F'8'
          L     R3,0(R2)
          AIF   ('&SYS' EQ 'S390').UFREE
+         AIF   ('&SYS' EQ 'S370').RFREE
+* For S/380, need to switch to AMODE 24 before
+* freeing ATL memory
+         CALL  @@SETM24
+         FREEMAIN RU,LV=(R3),A=(R2),SP=SUBPOOL
+         CALL  @@SETM31
+         AGO   .FINFREE
+.RFREE
          FREEMAIN R,LV=(R3),A=(R2),SP=SUBPOOL
          AGO   .FINFREE
 .UFREE   ANOP
@@ -721,8 +732,7 @@ RETURNLR DS    0H
          ENTRY @@SETM24
          USING @@SETM24,R15
 @@SETM24 ICM   R14,8,=X'00'       Sure hope caller is below the line
-         DC    X'0B0E'            BSM   0,14  Return in amode 31
-*         BSM   0,R14              Return in amode 24
+         BSM   0,R14              Return in amode 24
 *
 **********************************************************************
 *                                                                    *
@@ -732,8 +742,7 @@ RETURNLR DS    0H
          ENTRY @@SETM31
          USING @@SETM31,R15
 @@SETM31 ICM   R14,8,=X'80'       Set to switch mode
-         DC    X'0B0E'            BSM   0,14  Return in amode 31
-*         BSM   0,R14              Return in amode 31
+         BSM   0,R14              Return in amode 31
          LTORG ,
 *
 .NOMODE2 ANOP  ,                  S/370 doesn't support MODE switching

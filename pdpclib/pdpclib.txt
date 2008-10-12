@@ -1,7 +1,7 @@
             Public Domain C runtime library
             -------------------------------
             
-Version : 0.86
+Version : 0.8x
 Released: 2008-03-04
 
 Written by Paul Edwards.
@@ -267,7 +267,7 @@ HISTORY
       as IEBCOMPR expects. Macros are now provided for the different
       compile environments (370, 380 and 390).
 
-1.00  Supports VM/380, writing to variable-blocked datasets,
+0.8x  Supports VM/380, writing to variable-blocked datasets,
       reading and writing RECFM=U on MVS, rename and remove
       on MVS, scanf has been updated to support all formats.
       There is now no longer anything I know of that hasn't

@@ -331,7 +331,7 @@ RETURNAW DS    0H
          LR    R12,R15
          USING @@ASETL,R12
          L     R2,0(,R1)          R2 contains handle
-         LDINT R3,4(,R1)          R3 points to length of next record
+         L     R3,4(,R1)          R3 points to length of next record
          USING ZDCBAREA,R2
 *
          STH   R3,DCBLRECL

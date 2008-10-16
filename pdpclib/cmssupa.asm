@@ -461,19 +461,20 @@ RETURNGM DS    0H
          L     R2,0(R1)
          S     R2,=F'8'
          L     R3,0(R2)
-         AIF   ('&SYS' EQ 'S390').UFREE
-         AIF   ('&SYS' EQ 'S370').RFREE
+         AIF   ('&SYS' NE 'S390').NF390
+         FREEMAIN RU,LV=(R3),A=(R2),SP=SUBPOOL
+         AGO   .FINFREE
+.NF390   ANOP
+         AIF   ('&SYS' NE 'S380').NF380
 * For S/380, need to switch to AMODE 24 before
 * freeing ATL memory
          CALL  @@SETM24
          FREEMAIN RU,LV=(R3),A=(R2),SP=SUBPOOL
          CALL  @@SETM31
          AGO   .FINFREE
-.RFREE
+.NF380   ANOP
+* S/370
          FREEMAIN R,LV=(R3),A=(R2),SP=SUBPOOL
-         AGO   .FINFREE
-.UFREE   ANOP
-         FREEMAIN RU,LV=(R3),A=(R2),SP=SUBPOOL
 .FINFREE ANOP
 *
 RETURNFM DS    0H

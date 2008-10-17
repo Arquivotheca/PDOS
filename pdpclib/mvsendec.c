@@ -14,6 +14,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <limits.h>
+#include <ctype.h>
 
 #define CHUNKSZ 40
 
@@ -135,6 +136,12 @@ int main(int argc, char **argv)
             count = fread(inbuf, 1, CHUNKSZ * 2 + 1, fp);
             for (x = 0; (x + 1) < count; x += 2)
             {
+                if (!isxdigit((unsigned char)inbuf[x])
+                    || !isxdigit((unsigned char)inbuf[x + 1]))
+                {
+                    count = x;
+                    break;
+                }
                 outbuf[x / 2] = (fromhex[inbuf[x]] << 4)
                                 | fromhex[inbuf[x + 1]];
             }

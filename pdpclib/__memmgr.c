@@ -637,6 +637,12 @@ int memmgrRealloc(MEMMGR *memmgr, void *ptr, size_t newsize)
     {
         return (-1);
     }
+    
+    /* if they are passing a NULL pointer, bail out also */
+    if (ptr == NULL)
+    {
+        return (-1);
+    }
 
 
     p = (MEMMGRN *)((char *)ptr - MEMMGRN_SZ);

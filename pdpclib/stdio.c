@@ -3455,6 +3455,10 @@ static int vvscanf(const char *format, va_list arg, FILE *fp, const char *s)
                         }
                         cnt++;
                     }
+                    else
+                    {
+                        break;
+                    }
                     format = last + 1;
                 }
                 else if (*format == 'c')
@@ -3498,6 +3502,7 @@ static int vvscanf(const char *format, va_list arg, FILE *fp, const char *s)
                     int undecided = 0;
                     int base = 10;
                     int reallyp = 0;
+                    int mcnt = 0;
 
                     if (*format == 'x') base = 16;
                     else if (*format == 'p') base = 16;
@@ -3598,9 +3603,17 @@ static int vvscanf(const char *format, va_list arg, FILE *fp, const char *s)
                         {
                             break;
                         }
+                        mcnt++;
                     }
                     
                     /* end of strtoul logic */
+                    
+                    /* If we didn't get any characters, don't go any
+                       further */
+                    if (mcnt == 0)
+                    {
+                        break;
+                    }
 
                     
                     if (!skipvar)

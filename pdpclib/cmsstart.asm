@@ -40,7 +40,7 @@ SUBPOOL  EQU   0
          LR    R10,R15
          USING @@CRT0,R10
          LR    R11,R1            save R1 so we can get the PLIST
-         LR    R12,R0            save R0 so we can get the EPLIST
+         LR    R8,R0             save R0 so we can get the EPLIST
          GETMAIN R,LV=STACKLEN,SP=SUBPOOL
          ST    R13,4(R1)
          ST    R1,8(R13)
@@ -71,9 +71,10 @@ SUBPOOL  EQU   0
          MVC   PGMNAME,CMNDLINE  get the name of this program
          LA    R2,8(R11)         point to first parameter
          ST    R2,ARGPTR         store first argument for C
+         LR    R2,R11
          LTR   R10,R10           determine our addressing mode
          BNM   AMODE24
-         L     R2,96(R13)        get old style R1 flag byte
+*        L     R2,96(R13)        get old style R1 flag byte
 AMODE24  EQU   *
 * At this point, the high order byte of R2 contains the
 * traditional R1 flag byte.  A x'0B' or x'01' indicates the
@@ -86,7 +87,7 @@ NOEPLIST EQU   *
          LA    R2,0              signal no eplist available
          B     ONWARD
 EPLIST   EQU   *
-         L     R2,R12            point to eplist
+         LR    R2,R8             point to eplist
 ONWARD   EQU   *
 *
          ST    R2,ARGPTRE        store eplist for C
@@ -94,7 +95,7 @@ ONWARD   EQU   *
          ST    R2,PGMNPTR        store program name
 *
 * FOR GCC WE NEED TO BE ABLE TO RESTORE R13
-         L     R5,SAVEAREA+4
+         LA    R5,SAVEAREA
          ST    R5,SAVER13
 *
          LA    R1,PARMLIST
@@ -105,6 +106,7 @@ ONWARD   EQU   *
 *
          LA    R4,0
          BSM   R4,R0
+         ST    R4,SAVER4
 * If we were called in AMODE 31, don't bother setting mode now
          LTR   R4,R4
          BNZ   IN31
@@ -113,6 +115,7 @@ IN31     DS    0H
 .N380ST1 ANOP
 *
          CALL  @@START
+         LR    R9,R15
 *
          AIF   ('&SYS' NE 'S380').N380ST2
 * If we were called in AMODE 31, don't switch back to 24-bit
@@ -125,27 +128,36 @@ IN31B    DS    0H
 RETURNMS DS    0H
          LR    R1,R13
          L     R13,SAVEAREA+4
-         LR    R14,R15
+         LR    R14,R9
          FREEMAIN R,LV=STACKLEN,A=(R1),SP=SUBPOOL
          LR    R15,R14
          RETURN (14,12),RC=(15)
+SAVER4   DS    F
 SAVER13  DS    F
          LTORG
 *         ENTRY CEESG003
 *CEESG003 EQU   *
-         ENTRY @@EXITA
+         DS    0H
+         ENTRY @@EXITA         
 @@EXITA  EQU   *
-* THIS WAS FOR C/370. THE GCC CODE MAY OR MAY NOT BE
-* SUITABLE FOR C/370.
-*         L     R14,0(R12)
-*         L     R15,0(R1)
-*         BR    R14
-* FOR GCC, WE HAVE TO USE OUR SAVED R13
-         DROP  R10
-         USING @@EXITA,R15
+* SWITCH BACK TO OUR OLD SAVE AREA
+         LR    R10,R15         
+         USING @@EXITA,R10
+         L     R9,0(R1)
          L     R13,=A(SAVER13)
          L     R13,0(R13)
-         L     R15,0(R1)
+*
+         AIF   ('&SYS' NE 'S380').N380ST3
+         L     R4,=A(SAVER4)
+         L     R4,0(R4)
+* If we were called in AMODE 31, don't switch back to 24-bit
+         LTR   R4,R4
+         BNZ   IN31C
+         CALL  @@SETM24
+IN31C    DS    0H
+.N380ST3 ANOP
+*
+         LR    R15,R9
          RETURN (14,12),RC=(15)
          LTORG
 *

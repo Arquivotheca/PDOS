@@ -69,7 +69,8 @@ SUBPOOL  EQU   0
 * Now let's get the program name and parameter list.
          USING NUCON,R0          why do this?
          MVC   PGMNAME,CMNDLINE  get the name of this program
-         LR    R2,R11
+         LA    R2,8(R11)         point to first parameter
+         ST    R2,ARGPTR         store first argument for C
          LTR   R10,R10           determine our addressing mode
          BNM   AMODE24
          L     R2,96(R13)        get old style R1 flag byte
@@ -82,13 +83,13 @@ AMODE24  EQU   *
          CLM   R2,8,=X'0B'       called from command line?
          BE    EPLIST
 NOEPLIST EQU   *
-         LA    R2,8(R11)         point to first parameter
+         LA    R2,0              signal no eplist available
          B     ONWARD
 EPLIST   EQU   *
-         L     R2,4(12)          point to start of arguments
+         L     R2,R12            point to eplist
 ONWARD   EQU   *
 *
-         ST    R2,ARGPTR         store arguments for GCC
+         ST    R2,ARGPTRE        store eplist for C
          LA    R2,PGMNAME
          ST    R2,PGMNPTR        store program name
 *
@@ -155,6 +156,7 @@ THEIRSTK DS    F
 PARMLIST DS    0F
 ARGPTR   DS    F
 PGMNPTR  DS    F
+ARGPTRE  DS    F
 TYPE     DS    F
 PGMNAME  DS    CL8
 PGMNAMEN DS    C                 NUL BYTE FOR C

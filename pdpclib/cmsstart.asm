@@ -39,12 +39,13 @@ SUBPOOL  EQU   0
          SAVE  (14,12),,@@CRT0
          LR    R10,R15
          USING @@CRT0,R10
-         LR    R11,R1
+         LR    R11,R1            save R1 so we can get the PLIST
+         LR    R12,R0            save R0 so we can get the EPLIST
          GETMAIN R,LV=STACKLEN,SP=SUBPOOL
          ST    R13,4(R1)
          ST    R1,8(R13)
          LR    R13,R1
-         LR    R1,R11
+         LR    R1,R11            don't think this is needed
          USING STACK,R13
 *DW* SAVE STACK POINTER FOR SETJMP/LONGJMP
          EXTRN @@MANSTK
@@ -65,16 +66,31 @@ SUBPOOL  EQU   0
          ST    R2,12(R12)        TOP OF STACK POINTER
          LA    R2,0
          ST    R2,116(R12)       ADDR OF MEMORY ALLOCATION ROUTINE
-         ST    R2,ARGPTR
-*
-         USING NUCON,R0
-         MVC   PGMNAME,CMNDLINE
+* Now let's get the program name and parameter list.
+         USING NUCON,R0          why do this?
+         MVC   PGMNAME,CMNDLINE  get the name of this program
          LR    R2,R11
-         LA    R2,8(R11)
-         ST    R2,ARGPTR
+         LTR   R10,R10           determine our addressing mode
+         BNM   AMODE24
+         L     R2,96(R13)        get old style R1 flag byte
+AMODE24  EQU   *
+* At this point, the high order byte of R2 contains the
+* traditional R1 flag byte.  A x'0B' or x'01' indicates the
+* presence of an extended parameter accessable via R0.
+         CLM   R2,8,=X'01'       called from EXEC 2 or REXX?
+         BE    EPLIST
+         CLM   R2,8,=X'0B'       called from command line?
+         BE    EPLIST
+NOEPLIST EQU   *
+         LA    R2,8(R11)         point to first parameter
+         B     ONWARD
+EPLIST   EQU   *
+         L     R2,4(12)          point to start of arguments
+ONWARD   EQU   *
 *
+         ST    R2,ARGPTR         store arguments for GCC
          LA    R2,PGMNAME
-         ST    R2,PGMNPTR
+         ST    R2,PGMNPTR        store program name
 *
 * FOR GCC WE NEED TO BE ABLE TO RESTORE R13
          L     R5,SAVEAREA+4

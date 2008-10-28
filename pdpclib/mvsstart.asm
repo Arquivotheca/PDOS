@@ -171,8 +171,11 @@ SAVER13  DS    F
 IN31C    DS    0H
 .N380ST3 ANOP
 *
-         LR    R15,R9
+         LR    R1,R13
          L     R13,4(R13)
+         LR    R14,R9
+         FREEMAIN RU,LV=STACKLEN,A=(R1),SP=SUBPOOL
+         LR    R15,R14
          RETURN (14,12),RC=(15)
          LTORG
 *

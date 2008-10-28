@@ -121,6 +121,7 @@ CEESTART EQU   *
 *
          LA    R4,0
          BSM   R4,R0
+         ST    R4,SAVER4
 * If we were called in AMODE 31, don't bother setting mode now
          LTR   R4,R4
          BNZ   IN31
@@ -145,23 +146,32 @@ RETURNMS DS    0H
          FREEMAIN RU,LV=STACKLEN,A=(R1),SP=SUBPOOL
          LR    R15,R14
          RETURN (14,12),RC=(15)
+SAVER4   DS    F
 SAVER13  DS    F
          LTORG
+         DS    0H
 *         ENTRY CEESG003
 *CEESG003 EQU   *
-         ENTRY @@EXITA
+         ENTRY @@EXITA         
 @@EXITA  EQU   *
-* THIS WAS THE C/370 CODE BUT I DON'T KNOW WHETHER
-* THE GCC REPLACEMENT CODE IS GOOD ENOUGH.
-*         L     R14,0(R12)
-*         L     R15,0(R1)
-*         BR    R14
-* FOR GCC, WE HAVE TO USE OUR SAVED R13
-         DROP  R10
-         USING @@EXITA,R15
+* SWITCH BACK TO OUR OLD SAVE AREA
+         LR    R10,R15         
+         USING @@EXITA,R10
+         L     R9,0(R1)
          L     R13,=A(SAVER13)
          L     R13,0(R13)
-         L     R15,0(R1)
+*
+         AIF   ('&SYS' NE 'S380').N380ST3
+         L     R4,=A(SAVER4)
+         L     R4,0(R4)
+* If we were called in AMODE 31, don't switch back to 24-bit
+         LTR   R4,R4
+         BNZ   IN31C
+         CALL  @@SETM24
+IN31C    DS    0H
+.N380ST3 ANOP
+*
+         LR    R15,R9
          RETURN (14,12),RC=(15)
          LTORG
 *

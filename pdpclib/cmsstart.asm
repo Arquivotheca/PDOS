@@ -45,7 +45,6 @@ SUBPOOL  EQU   0
          ST    R13,4(R1)
          ST    R1,8(R13)
          LR    R13,R1
-         LR    R1,R11            don't think this is needed
          USING STACK,R13
 *DW* SAVE STACK POINTER FOR SETJMP/LONGJMP
          EXTRN @@MANSTK
@@ -67,14 +66,22 @@ SUBPOOL  EQU   0
          LA    R2,0
          ST    R2,116(R12)       ADDR OF MEMORY ALLOCATION ROUTINE
 * Now let's get the program name and parameter list.
-         USING NUCON,R0          why do this?
+         USING NUCON,R0          why do this? to access cmndline!
          MVC   PGMNAME,CMNDLINE  get the name of this program
-         LA    R2,8(R11)         point to first parameter
+         LA    R2,8(R11)         point to first parameter in PLIST
          ST    R2,ARGPTR         store first argument for C
-         LR    R2,R11
-         LTR   R10,R10           determine our addressing mode
-         BNM   AMODE24
-*        L     R2,96(R13)        get old style R1 flag byte
+*
+* Set R4 to true if we were called in 31-bit mode
+*
+         LA    R4,0
+         AIF   ('&SYS' EQ 'S370').NOBSM
+         BSM   R4,R0
+.NOBSM   ANOP
+         ST    R4,SAVER4
+         LR    R2,R11            get original R1
+         LTR   R4,R4
+         BZ    AMODE24
+         L     R2,96(R13)        get old style R1 flag byte
 AMODE24  EQU   *
 * At this point, the high order byte of R2 contains the
 * traditional R1 flag byte.  A x'0B' or x'01' indicates the
@@ -101,12 +108,6 @@ ONWARD   EQU   *
          LA    R1,PARMLIST
 *
          AIF   ('&SYS' NE 'S380').N380ST1
-*
-* Set R4 to true if we were called in 31-bit mode
-*
-         LA    R4,0
-         BSM   R4,R0
-         ST    R4,SAVER4
 * If we were called in AMODE 31, don't bother setting mode now
          LTR   R4,R4
          BNZ   IN31

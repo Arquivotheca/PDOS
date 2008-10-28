@@ -95,7 +95,7 @@ ONWARD   EQU   *
          ST    R2,PGMNPTR        store program name
 *
 * FOR GCC WE NEED TO BE ABLE TO RESTORE R13
-         LA    R5,SAVEAREA
+         L     R5,SAVEAREA+4
          ST    R5,SAVER13
 *
          LA    R1,PARMLIST

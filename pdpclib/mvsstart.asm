@@ -110,7 +110,7 @@ CEESTART EQU   *
          ST    R2,PGMNPTR
 *
 * FOR GCC WE NEED TO BE ABLE TO RESTORE R13
-         L     R5,SAVEAREA+4
+         LA    R5,SAVEAREA
          ST    R5,SAVER13
 *
          LA    R1,PARMLIST
@@ -172,6 +172,7 @@ IN31C    DS    0H
 .N380ST3 ANOP
 *
          LR    R15,R9
+         L     R13,4(R13)
          RETURN (14,12),RC=(15)
          LTORG
 *

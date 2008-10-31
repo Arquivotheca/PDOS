@@ -11,7 +11,7 @@
 /*  be NUL-padded. This program allows for that.                     */
 /*                                                                   */
 /*  The intention of this program is to provide example PDPCLIB      */
-/*  behaviour that should occur regarless of RECFM=F/V/U when        */
+/*  behaviour that should occur regardless of RECFM=F/V/U when       */
 /*  opened in binary mode.                                           */
 /*                                                                   */
 /*********************************************************************/

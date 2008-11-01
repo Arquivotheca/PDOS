@@ -623,6 +623,7 @@ H4       DC    H'4'               Constant for BDW/SDW/RDW handling
          USING @@AWRITE,R12
          L     R2,0(,R1)          R2 contains GETMAINed address
          L     R3,4(,R1)          R3 points to the record address
+         L     R4,8(,R1)          R4 points to length of data to write
          USING ZDCBAREA,R2
 *        GETMAIN RU,LV=WORKLEN,SP=SUBPOOL
          LA    R1,SAVEADCB
@@ -635,6 +636,7 @@ H4       DC    H'4'               Constant for BDW/SDW/RDW handling
          CALL  @@SETM24
 .N380WR1 ANOP
 *
+         STCM  R4,B'0011',DCBLRECL
          PUT   (R2)
 *
          AIF   ('&SYS' NE 'S380').N380WR2
@@ -646,23 +648,6 @@ H4       DC    H'4'               Constant for BDW/SDW/RDW handling
 *        L     R13,SAVEAREA+4
          L     R13,SAVEADCB+4
 *        FREEMAIN RU,LV=WORKLEN,A=(1),SP=SUBPOOL
-         RETURN (14,12),RC=0
-*
-* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
-*
-*  ASETL - Set length of last record
-*
-* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
-         ENTRY @@ASETL
-@@ASETL  SAVE  (14,12),,@@ASETL
-         LR    R12,R15
-         USING @@ASETL,R12
-         L     R2,0(,R1)          R2 contains handle
-         LDINT R3,4(,R1)          R3 points to length of next record
-         USING ZDCBAREA,R2
-*
-         STCM  R3,B'0011',DCBLRECL
-*
          RETURN (14,12),RC=0
 *
 * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *

@@ -830,8 +830,7 @@ int fclose(FILE *stream)
             char *dptr;
             
             last = stream->upto - stream->fbuf;
-            __asetl(stream->hfile, last);
-            __awrite(stream->hfile, &dptr);
+            __awrite(stream->hfile, &dptr, last);
             memcpy(dptr, stream->fbuf, last);
         }
         else if (stream->textMode)
@@ -4012,7 +4011,7 @@ int fputs(const char *s, FILE *stream)
             {
                 len = stream->lrecl;
             }
-            __awrite(stream->hfile, &dptr);
+            __awrite(stream->hfile, &dptr, len);
             memcpy(dptr + 4, s, len);
             dptr[0] = (len + 4) >> 8;
             dptr[1] = (len + 4) & 0xff;
@@ -4038,7 +4037,7 @@ int fputs(const char *s, FILE *stream)
                     && (stream->upto == stream->fbuf)
                     && (len <= stream->lrecl))
                 {
-                    __awrite(stream->hfile, &dptr);
+                    __awrite(stream->hfile, &dptr, stream->lrecl);
                     memcpy(dptr, s, len);
                     memset(dptr + len, ' ', stream->szfbuf - len);
                     stream->bufStartR += len;
@@ -4070,7 +4069,7 @@ size_t fwrite(const void *ptr, size_t size, size_t nmemb, FILE *stream)
     {
         if ((nmemb == 1) && (size == stream->lrecl))
         {
-            __awrite(stream->hfile, &dptr);
+            __awrite(stream->hfile, &dptr, stream->lrecl);
             memcpy(dptr, ptr, size);
             stream->bufStartR += size;
             return (1);
@@ -4093,7 +4092,7 @@ size_t fwrite(const void *ptr, size_t size, size_t nmemb, FILE *stream)
             {
                 /* ready to write a record - request some space
                    from MVS */
-                __awrite(stream->hfile, &dptr);
+                __awrite(stream->hfile, &dptr, stream->lrecl);
                 sz = stream->endbuf - stream->upto;
                 memcpy(dptr, stream->fbuf, stream->szfbuf - sz);
                 memcpy(dptr + stream->szfbuf - sz, ptr, sz);
@@ -4108,7 +4107,7 @@ size_t fwrite(const void *ptr, size_t size, size_t nmemb, FILE *stream)
                to an MVS-provided area. */
             while (bytes >= stream->szfbuf)
             {
-                __awrite(stream->hfile, &dptr);
+                __awrite(stream->hfile, &dptr, stream->lrecl);
                 memcpy(dptr, ptr, stream->szfbuf);
                 ptr = (char *)ptr + stream->szfbuf;
                 bytes -= stream->szfbuf;
@@ -4183,7 +4182,7 @@ size_t fwrite(const void *ptr, size_t size, size_t nmemb, FILE *stream)
                     {
                         stream->fbuf[0] = stream->lrecl >> 8;
                         stream->fbuf[1] = stream->lrecl & 0xff;
-                        __awrite(stream->hfile, &dptr);
+                        __awrite(stream->hfile, &dptr, stream->lrecl);
                         if (sz >= stream->lrecl)
                         {
                             memcpy(dptr, stream->fbuf, stream->lrecl);
@@ -4196,7 +4195,7 @@ size_t fwrite(const void *ptr, size_t size, size_t nmemb, FILE *stream)
                     }
                     else
                     {
-                        __awrite(stream->hfile, &dptr);
+                        __awrite(stream->hfile, &dptr, fulllen);
                         memcpy(dptr, stream->fbuf, sz);
                         memcpy(dptr + sz, ptr, fulllen - sz);
                     }
@@ -4246,7 +4245,7 @@ size_t fwrite(const void *ptr, size_t size, size_t nmemb, FILE *stream)
                     {
                         sz = stream->lrecl;
                     }
-                    __awrite(stream->hfile, &dptr);
+                    __awrite(stream->hfile, &dptr, stream->lrecl);
                     memcpy(dptr, ptr, sz);
                     memset(dptr + sz, ' ', stream->szfbuf - sz);
                     stream->bufStartR += sz;
@@ -4259,7 +4258,7 @@ size_t fwrite(const void *ptr, size_t size, size_t nmemb, FILE *stream)
                     }
                     memcpy(stream->upto, ptr, sz);
                     sz += (stream->upto - stream->fbuf);
-                    __awrite(stream->hfile, &dptr);
+                    __awrite(stream->hfile, &dptr, stream->lrecl);
                     memcpy(dptr, stream->fbuf, sz);
                     memset(dptr + sz, ' ', stream->lrecl - sz);
                     stream->bufStartR += sz;
@@ -4277,7 +4276,7 @@ size_t fwrite(const void *ptr, size_t size, size_t nmemb, FILE *stream)
                         {
                             sz = stream->lrecl;
                         }
-                        __awrite(stream->hfile, &dptr);
+                        __awrite(stream->hfile, &dptr, stream->lrecl);
                         memcpy(dptr, ptr, sz);
                         memset(dptr + sz, ' ', stream->szfbuf - sz);
                         stream->bufStartR += sz;
@@ -4322,7 +4321,7 @@ size_t fwrite(const void *ptr, size_t size, size_t nmemb, FILE *stream)
                     {
                         sz = stream->lrecl;
                     }
-                    __awrite(stream->hfile, &dptr);
+                    __awrite(stream->hfile, &dptr, (sz == 0) ? 5 : sz + 4);
                     if(sz == 0)
                     {
                         dptr[0] = 0;
@@ -4353,7 +4352,7 @@ size_t fwrite(const void *ptr, size_t size, size_t nmemb, FILE *stream)
                     }
                     memcpy(stream->upto, ptr, sz);
                     sz += (stream->upto - stream->fbuf);
-                    __awrite(stream->hfile, &dptr);
+                    __awrite(stream->hfile, &dptr, (sz == 0) ? 5 : sz + 4);
                     if(sz == 0)
                     {
                         dptr[0] = 0;
@@ -4386,7 +4385,7 @@ size_t fwrite(const void *ptr, size_t size, size_t nmemb, FILE *stream)
                         {
                             sz = stream->lrecl;
                         }
-                        __awrite(stream->hfile, &dptr);
+                        __awrite(stream->hfile, &dptr, (sz == 0) ? 5 : sz + 4);
                         if(sz == 0)
                         {
                             dptr[0] = 0;

@@ -304,6 +304,10 @@ RETURNAR DS    0H
          USING WORKAREA,R13
 *
          L     R3,4(R1)         R3 POINTS TO BUF POINTER
+* Another parameter is passed, containing record length,
+* but we can ignore this in CMS, since for both F and V
+* we can just request a full sized buffer from the OS
+* without ill-effect
          PUT   (R2)
          ST    R1,0(R3)
          AIF ('&SYS' EQ 'S370').NOMOD4

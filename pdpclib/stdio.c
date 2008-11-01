@@ -4330,7 +4330,10 @@ size_t fwrite(const void *ptr, size_t size, size_t nmemb, FILE *stream)
                         dptr[2] = 0;
                         dptr[3] = 0;
                         dptr[4] = ' ';
-                        stream->bufStartR += 2;
+                        /* note that the bufStartR needs to reflect
+                           just the newline, and not the dummy space
+                           we added */
+                        stream->bufStartR += 1;
                     }
                     else
                     {
@@ -4358,7 +4361,7 @@ size_t fwrite(const void *ptr, size_t size, size_t nmemb, FILE *stream)
                         dptr[2] = 0;
                         dptr[3] = 0;
                         dptr[4] = ' ';
-                        stream->bufStartR += 2;
+                        stream->bufStartR += 1;
                     }
                     else
                     {
@@ -4391,7 +4394,7 @@ size_t fwrite(const void *ptr, size_t size, size_t nmemb, FILE *stream)
                             dptr[2] = 0;
                             dptr[3] = 0;
                             dptr[4] = ' ';
-                            stream->bufStartR += 2;
+                            stream->bufStartR += 1;
                         }
                         else
                         {

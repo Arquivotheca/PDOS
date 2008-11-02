@@ -458,6 +458,9 @@ RETURNFM DS    0H
          LR    R12,R15
          USING @@SVC202,R12
          LR    R11,R1           NEED TO RESTORE R1 FOR C
+         AIF ('&SYS' NE 'S380').NOMODS1
+         CALL  @@SETM24
+.NOMODS1 ANOP
          L     R3,0(R1)         R3 POINTS TO SVC202 PARM LIST
          L     R4,4(R1)         R4 POINTS TO CODE
          L     R5,8(R1)         R5 POINTS TO RETURN CODE
@@ -475,6 +478,9 @@ RETURNFM DS    0H
 *
 SV202RT  EQU    *
          LR    R7,R15
+         AIF ('&SYS' NE 'S380').NOMODS2
+         CALL  @@SETM31
+.NOMODS2 ANOP
          LR    R15,R7
          LR    R1,R11
          RETURN (14,12),RC=(15)

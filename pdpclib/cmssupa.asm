@@ -612,19 +612,14 @@ RETURNGC DS    0H
          LR    R5,R3               * AND R5
          LR    R9,R1               * R9 NOW CONTAINS ADDRESS OF ENV
 * GET A SAVE AREA
-         AIF   ('&SYS' EQ 'S390').ANYY
-* CAN'T USE "ANY" ON MVS 3.8
-         AIF ('&SYS' NE 'S380').NOMODX1
-         CALL  @@SETM24
-.NOMODX1 ANOP
+         AIF   ('&SYS' NE 'S370').ANYY
+* Can't use "ANY" on VM/370
+* Also can't do multiple ANY requests on VM/380 at the moment
          GETMAIN R,LV=(R3),SP=SUBPOOL
          AGO   .ANYE
 .ANYY    ANOP
          GETMAIN R,LV=(R3),SP=SUBPOOL,LOC=ANY
 .ANYE    ANOP
-         AIF ('&SYS' NE 'S380').NOMODX2
-         CALL  @@SETM31
-.NOMODX2 ANOP
          ST    R1,0(R9)            * SAVE IT IN FIRST WORK OF ENV
          ST    R5,4(R9)            * SAVE LENGTH IN SECOND WORD OF ENV
          ST    R2,8(R9)            * NOTE WHERE WE GOT IT FROM
@@ -665,13 +660,7 @@ RETURNSR DS    0H
          ST    R6,24(R1)          * SAVE VAL IN ENV
          L     R6,=F'1'
          ST    R6,20(R1)          * AND SET LONGJ TO 1.
-         AIF ('&SYS' NE 'S380').NOMODL1
-         CALL  @@SETM24
-.NOMODL1 ANOP
          FREEMAIN R,LV=(R3),A=(R4),SP=SUBPOOL
-         AIF ('&SYS' NE 'S380').NOMODL2
-         CALL  @@SETM31
-.NOMODL2 ANOP
 *        L     R14,16(R1)          * AND RETURN ADDRESS
 *        B     RETURNSR            * AND BACK INTO SETJMP
 *        L     R15,64(R1)                 RESTORE PSW

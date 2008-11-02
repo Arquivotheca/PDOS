@@ -70,9 +70,6 @@ SUBPOOL  EQU   0
          L     R5,8(R1)         R5 POINTS TO RECFM
          L     R8,12(R1)        R8 POINTS TO LRECL
          L     R9,16(R1)        R9 POINTS TO MEMBER NAME (OF PDS)
-         AIF ('&SYS' NE 'S380').NOMODO9
-         CALL  @@SETM24
-.NOMODO9 ANOP
          AIF   ('&SYS' EQ 'S390').BELOW
 * CAN'T USE "BELOW" ON MVS 3.8
          GETMAIN R,LV=ZDCBLEN,SP=SUBPOOL
@@ -81,9 +78,6 @@ SUBPOOL  EQU   0
          GETMAIN R,LV=ZDCBLEN,SP=SUBPOOL,LOC=BELOW
 .CHKBLWE ANOP
          LR    R2,R1
-         AIF ('&SYS' NE 'S380').NOMODOA
-         CALL  @@SETM31
-.NOMODOA ANOP
 * THIS LINE IS FOR GCC
          LR    R6,R4
 * THIS LINE IS FOR C/370
@@ -104,13 +98,7 @@ SUBPOOL  EQU   0
          MVC   DCBDDNAM,0(R3)
          MVC   OPENMB,OPENMAC
 *
-         AIF ('&SYS' NE 'S380').NOMODO1
-         CALL  @@SETM24
-.NOMODO1 ANOP
          RDJFCB ((R2),INPUT)
-         AIF ('&SYS' NE 'S380').NOMODO2
-         CALL  @@SETM31
-.NOMODO2 ANOP
          LTR   R9,R9
 * DW * DON'T SUPPORT MEMBER NAME FOR NOW
 *        BZ    NOMEM
@@ -122,13 +110,7 @@ SUBPOOL  EQU   0
 NOMEM    DS    0H
 *         OPEN  ((R2),INPUT),MF=(E,OPENMB),MODE=31,TYPE=J
 * CAN'T USE MODE=31 ON MVS 3.8, OR WITH TYPE=J
-         AIF ('&SYS' NE 'S380').NOMODO3
-         CALL  @@SETM24
-.NOMODO3 ANOP
          OPEN  ((R2),INPUT),MF=(E,OPENMB),TYPE=J
-         AIF ('&SYS' NE 'S380').NOMODO4
-         CALL  @@SETM31
-.NOMODO4 ANOP
          B     DONEOPEN
 WRITING  DS    0H
          USING ZDCBAREA,R2
@@ -142,13 +124,7 @@ WRITING  DS    0H
          MVC   DCBDDNAM,0(R3)
          MVC   WOPENMB,WOPENMAC
 *
-         AIF ('&SYS' NE 'S380').NOMODO5
-         CALL  @@SETM24
-.NOMODO5 ANOP
          RDJFCB ((R2),OUTPUT)
-         AIF ('&SYS' NE 'S380').NOMODO6
-         CALL  @@SETM31
-.NOMODO6 ANOP
          LTR   R9,R9
 * DW * NO MEMBER ON VM/370
 *        BZ    WNOMEM
@@ -188,13 +164,7 @@ RETURNOP DS    0H
          LR    R1,R13
          L     R13,SAVEAREA+4
          LR    R7,R15
-         AIF ('&SYS' NE 'S380').NOMODOB
-         CALL  @@SETM24
-.NOMODOB ANOP
          FREEMAIN R,LV=WORKLEN,A=(R1),SP=SUBPOOL
-         AIF ('&SYS' NE 'S380').NOMODOC
-         CALL  @@SETM31
-.NOMODOC ANOP
          LR    R15,R7
          RETURN (14,12),RC=(15)
          LTORG
@@ -348,9 +318,6 @@ RETURNAW DS    0H
          USING @@ACLOSE,R12
          LR    R11,R1
          AIF   ('&SYS' EQ 'S390').BELOW3
-         AIF ('&SYS' NE 'S380').NOMODCT
-         CALL  @@SETM24
-.NOMODCT ANOP
 * CAN'T USE "BELOW" ON MVS 3.8
          GETMAIN R,LV=WORKLEN,SP=SUBPOOL
          AGO   .NOBEL3
@@ -377,9 +344,6 @@ RETURNAC DS    0H
          L     R13,SAVEAREA+4
          LR    R7,R15
          FREEMAIN R,LV=WORKLEN,A=(R1),SP=SUBPOOL
-         AIF ('&SYS' NE 'S380').NOMODCB
-         CALL  @@SETM31
-.NOMODCB ANOP
          LR    R15,R7
          RETURN (14,12),RC=(15)
          LTORG
@@ -459,18 +423,10 @@ RETURNGM DS    0H
          L     R2,0(R1)
          S     R2,=F'8'
          L     R3,0(R2)
-         AIF   ('&SYS' NE 'S390').NF390
+         AIF   ('&SYS' EQ 'S370').F370
          FREEMAIN RU,LV=(R3),A=(R2),SP=SUBPOOL
          AGO   .FINFREE
-.NF390   ANOP
-         AIF   ('&SYS' NE 'S380').NF380
-* For S/380, need to switch to AMODE 24 before
-* freeing ATL memory
-         CALL  @@SETM24
-         FREEMAIN RU,LV=(R3),A=(R2),SP=SUBPOOL
-         CALL  @@SETM31
-         AGO   .FINFREE
-.NF380   ANOP
+.F370    ANOP
 * S/370
          FREEMAIN R,LV=(R3),A=(R2),SP=SUBPOOL
 .FINFREE ANOP
@@ -502,9 +458,6 @@ RETURNFM DS    0H
          LR    R12,R15
          USING @@SVC202,R12
          LR    R11,R1           NEED TO RESTORE R1 FOR C
-         AIF ('&SYS' NE 'S380').NOMODS1
-         CALL  @@SETM24
-.NOMODS1 ANOP
          L     R3,0(R1)         R3 POINTS TO SVC202 PARM LIST
          L     R4,4(R1)         R4 POINTS TO CODE
          L     R5,8(R1)         R5 POINTS TO RETURN CODE
@@ -522,9 +475,6 @@ RETURNFM DS    0H
 *
 SV202RT  EQU    *
          LR    R7,R15
-         AIF ('&SYS' NE 'S380').NOMODS2
-         CALL  @@SETM31
-.NOMODS2 ANOP
          LR    R15,R7
          LR    R1,R11
          RETURN (14,12),RC=(15)

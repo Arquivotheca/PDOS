@@ -7,6 +7,8 @@ void *__aopen(const char *ddname, int mode, int *recfm,
 int __aread(void *handle, void *buf);
 #pragma linkage(__awrite, OS)
 int __awrite(void *handle, const void *buf, size_t sz);
+#pragma linkage(__atrunc, OS)
+int __atrunc(void *handle);
 #pragma linkage(__aclose, OS)
 void __aclose(void *handle);
 #pragma linkage(__getclk, OS)

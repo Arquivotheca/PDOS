@@ -167,6 +167,13 @@ static char *int_strtok(char *s1, const char *s2);
 #define strtok int_strtok
 #endif
 
+#if 0 /* def __MVS__ */
+#define finwrite(stream) __atrunc((stream)->hfile)
+#else
+#define finwrite(stream)
+#endif
+
+
 int printf(const char *format, ...)
 {
     va_list arg;
@@ -832,6 +839,7 @@ int fclose(FILE *stream)
             last = stream->upto - stream->fbuf;
             __awrite(stream->hfile, &dptr, last);
             memcpy(dptr, stream->fbuf, last);
+            finwrite(stream);
         }
         else if (stream->textMode)
         {
@@ -4017,6 +4025,7 @@ int fputs(const char *s, FILE *stream)
             dptr[1] = (len + 4) & 0xff;
             dptr[2] = 0;
             dptr[3] = 0;
+            finwrite(stream);
             stream->bufStartR += (len + 1);
             if (*(p + 1) == '\0')
             {
@@ -4040,6 +4049,7 @@ int fputs(const char *s, FILE *stream)
                     __awrite(stream->hfile, &dptr, stream->lrecl);
                     memcpy(dptr, s, len);
                     memset(dptr + len, ' ', stream->szfbuf - len);
+                    finwrite(stream);
                     stream->bufStartR += len;
                 }
                 else
@@ -4071,6 +4081,7 @@ size_t fwrite(const void *ptr, size_t size, size_t nmemb, FILE *stream)
         {
             __awrite(stream->hfile, &dptr, stream->lrecl);
             memcpy(dptr, ptr, size);
+            finwrite(stream);
             stream->bufStartR += size;
             return (1);
         }
@@ -4096,6 +4107,7 @@ size_t fwrite(const void *ptr, size_t size, size_t nmemb, FILE *stream)
                 sz = stream->endbuf - stream->upto;
                 memcpy(dptr, stream->fbuf, stream->szfbuf - sz);
                 memcpy(dptr + stream->szfbuf - sz, ptr, sz);
+                finwrite(stream);
                 ptr = (char *)ptr + sz;
                 bytes -= sz;
                 stream->upto = stream->fbuf;
@@ -4109,6 +4121,7 @@ size_t fwrite(const void *ptr, size_t size, size_t nmemb, FILE *stream)
             {
                 __awrite(stream->hfile, &dptr, stream->lrecl);
                 memcpy(dptr, ptr, stream->szfbuf);
+                finwrite(stream);
                 ptr = (char *)ptr + stream->szfbuf;
                 bytes -= stream->szfbuf;
                 stream->bufStartR += stream->szfbuf;
@@ -4199,6 +4212,7 @@ size_t fwrite(const void *ptr, size_t size, size_t nmemb, FILE *stream)
                         memcpy(dptr, stream->fbuf, sz);
                         memcpy(dptr + sz, ptr, fulllen - sz);
                     }
+                    finwrite(stream);
                     stream->bufStartR += fulllen;
                     stream->upto = stream->fbuf;
                     bytes -= (fulllen - sz);
@@ -4248,6 +4262,7 @@ size_t fwrite(const void *ptr, size_t size, size_t nmemb, FILE *stream)
                     __awrite(stream->hfile, &dptr, stream->lrecl);
                     memcpy(dptr, ptr, sz);
                     memset(dptr + sz, ' ', stream->szfbuf - sz);
+                    finwrite(stream);
                     stream->bufStartR += sz;
                 }
                 else
@@ -4261,6 +4276,7 @@ size_t fwrite(const void *ptr, size_t size, size_t nmemb, FILE *stream)
                     __awrite(stream->hfile, &dptr, stream->lrecl);
                     memcpy(dptr, stream->fbuf, sz);
                     memset(dptr + sz, ' ', stream->lrecl - sz);
+                    finwrite(stream);
                     stream->bufStartR += sz;
                     stream->upto = stream->fbuf;
                 }
@@ -4279,6 +4295,7 @@ size_t fwrite(const void *ptr, size_t size, size_t nmemb, FILE *stream)
                         __awrite(stream->hfile, &dptr, stream->lrecl);
                         memcpy(dptr, ptr, sz);
                         memset(dptr + sz, ' ', stream->szfbuf - sz);
+                        finwrite(stream);
                         stream->bufStartR += sz;
                         ptr = p + 1;
                         p = memchr(ptr, '\n', bytes);
@@ -4329,9 +4346,10 @@ size_t fwrite(const void *ptr, size_t size, size_t nmemb, FILE *stream)
                         dptr[2] = 0;
                         dptr[3] = 0;
                         dptr[4] = ' ';
+                        finwrite(stream);
                         /* note that the bufStartR needs to reflect
                            just the newline, and not the dummy space
-                           we added */
+                           we added */                        
                         stream->bufStartR += 1;
                     }
                     else
@@ -4341,6 +4359,7 @@ size_t fwrite(const void *ptr, size_t size, size_t nmemb, FILE *stream)
                         dptr[2] = 0;
                         dptr[3] = 0;
                         memcpy(dptr + 4, ptr, sz);
+                        finwrite(stream);
                         stream->bufStartR += (sz + 1);
                     }
                 }
@@ -4360,6 +4379,7 @@ size_t fwrite(const void *ptr, size_t size, size_t nmemb, FILE *stream)
                         dptr[2] = 0;
                         dptr[3] = 0;
                         dptr[4] = ' ';
+                        finwrite(stream);
                         stream->bufStartR += 1;
                     }
                     else
@@ -4369,6 +4389,7 @@ size_t fwrite(const void *ptr, size_t size, size_t nmemb, FILE *stream)
                         dptr[2] = 0;
                         dptr[3] = 0;
                         memcpy(dptr + 4, stream->fbuf, sz);
+                        finwrite(stream);
                         stream->bufStartR += (sz + 1);
                     }
                     stream->upto = stream->fbuf;
@@ -4393,6 +4414,7 @@ size_t fwrite(const void *ptr, size_t size, size_t nmemb, FILE *stream)
                             dptr[2] = 0;
                             dptr[3] = 0;
                             dptr[4] = ' ';
+                            finwrite(stream);
                             stream->bufStartR += 1;
                         }
                         else
@@ -4402,6 +4424,7 @@ size_t fwrite(const void *ptr, size_t size, size_t nmemb, FILE *stream)
                             dptr[2] = 0;
                             dptr[3] = 0;
                             memcpy(dptr + 4, ptr, sz);
+                            finwrite(stream);
                             stream->bufStartR += (sz + 1);
                         }
                         ptr = p + 1;

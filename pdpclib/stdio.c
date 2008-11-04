@@ -109,6 +109,11 @@ static FILE permFiles[3];
 #define inch() ((fp == NULL) ? \
     (ch = (unsigned char)*s++) : (ch = getc(fp)))
 
+/* We don't have anything to do at the moment after
+   populating an output record on MVS and CMS, but
+   maybe later we will */
+#define finwrite(stream)
+
 FILE *stdin = &permFiles[0];
 FILE *stdout = &permFiles[1];
 FILE *stderr = &permFiles[2];
@@ -165,12 +170,6 @@ extern void __SVC202 ( char *s202parm, int *code, int *parm );
 static void filedef(char *fdddname, char *fnm, int mymode);
 static char *int_strtok(char *s1, const char *s2);
 #define strtok int_strtok
-#endif
-
-#if 0 /* def __MVS__ */
-#define finwrite(stream) __atrunc((stream)->hfile)
-#else
-#define finwrite(stream)
 #endif
 
 

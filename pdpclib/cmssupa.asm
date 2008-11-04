@@ -291,6 +291,37 @@ RETURNAW DS    0H
 *
 **********************************************************************
 *                                                                    *
+*  ATRUNC - Inform MVS that the record is ready                      *
+*                                                                    *
+**********************************************************************
+         ENTRY @@ATRUNC
+@@ATRUNC SAVE  (14,12),,@@ATRUNC
+         LR    R12,R15
+         USING @@ATRUNC,R12
+         L     R2,0(,R1)          R2 contains GETMAINed address
+         USING ZDCBAREA,R2
+         LA    R1,SAVEADCB
+         ST    R13,4(,R1)
+         ST    R1,8(,R13)
+         LR    R13,R1
+*
+         AIF   ('&SYS' NE 'S380').N380TR1
+         CALL  @@SETM24
+.N380TR1 ANOP
+*
+         TRUNC (R2)
+*
+         AIF   ('&SYS' NE 'S380').N380TR2
+         CALL  @@SETM31
+.N380TR2 ANOP
+*
+         L     R13,SAVEADCB+4
+         RETURN (14,12),RC=0
+*
+*
+*
+**********************************************************************
+*                                                                    *
 *  ASETL - Set length of last record                                 *
 *                                                                    *
 **********************************************************************

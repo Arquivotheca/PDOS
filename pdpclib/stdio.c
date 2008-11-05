@@ -109,11 +109,15 @@ static FILE permFiles[3];
 #define inch() ((fp == NULL) ? \
     (ch = (unsigned char)*s++) : (ch = getc(fp)))
 
-/* We don't have anything to do at the moment after
-   populating an output record on MVS and CMS, but
-   maybe later we will */
+/* We need to choose whether we are doing move mode or
+   locate mode */
+#if MOVEMODE
+#define begwrite(stream, len) (lenwrite = len, dptr = (stream)->asmbuf)
+#define finwrite(stream) (__awrite((stream)->hfile, NULL, lenwrite)
+#else /* locate mode */
 #define begwrite(stream, len) (__awrite((stream)->hfile, &dptr, len))
 #define finwrite(stream)
+#endif
 
 static unsigned char *dptr;
 static size_t lenwrite;
@@ -745,6 +749,15 @@ static void osfopen(void)
     myfile->reallyt = 0;
     myfile->hfile =
         __aopen(myfile->ddname, mode, &myfile->recfm, &myfile->lrecl, p);
+#if MOVEMODE
+    /* in move mode, the returned handle is actually a control
+       block, and we need to switch, so that we can get the
+       assembler buffer */
+    myfile->oldhfile = myfile->hfile;
+    myfile->asmbuf = *(((void **)myfile->hfile) + 1);
+    myfile->hfile = *((void **)myfile->hfile);
+#endif
+
 
     /* errors from MVS __aopen are negative numbers */
     if ((int)myfile->hfile <= 0)

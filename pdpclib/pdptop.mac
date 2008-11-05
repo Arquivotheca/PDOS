@@ -24,6 +24,11 @@
          GBLC &SYS                Declare variable for system
 &SYS     SETC 'S380'              Define either S370, S380 or S390
 *
+* Are PUTs done in locate or move mode?
+         GBLC &OUTM
+&OUTM    SETC 'L'                 Indicate locate mode
+* &OUTM    SETC 'M'                 Indicate move mode
+*
 * AMODE/RMODE not available on S370
 * On S/380 they are a hybrid (currently)
 * On S/390 there is no restriction

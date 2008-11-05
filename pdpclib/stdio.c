@@ -112,7 +112,12 @@ static FILE permFiles[3];
 /* We don't have anything to do at the moment after
    populating an output record on MVS and CMS, but
    maybe later we will */
+#define begwrite(stream, len) (__awrite((stream)->hfile, &dptr, len))
 #define finwrite(stream)
+
+static unsigned char *dptr;
+static size_t lenwrite;
+
 
 FILE *stdin = &permFiles[0];
 FILE *stdout = &permFiles[1];
@@ -833,10 +838,9 @@ int fclose(FILE *stream)
         if (stream->reallyu)
         {
             size_t last;
-            char *dptr;
             
             last = stream->upto - stream->fbuf;
-            __awrite(stream->hfile, &dptr, last);
+            begwrite(stream, last);
             memcpy(dptr, stream->fbuf, last);
             finwrite(stream);
         }
@@ -3914,7 +3918,6 @@ fgets: if variable record + no remainder
 #if defined(__MVS__) || defined(__CMS__)
 char *fgets(char *s, int n, FILE *stream)
 {
-    unsigned char *dptr;
     unsigned char *eptr;
     size_t len;
     int cnt;
@@ -4006,7 +4009,6 @@ int fputs(const char *s, FILE *stream)
 {
     const char *p;
     size_t len;
-    char *dptr;
 
     if (stream->quickText)
     {
@@ -4018,7 +4020,7 @@ int fputs(const char *s, FILE *stream)
             {
                 len = stream->lrecl;
             }
-            __awrite(stream->hfile, &dptr, len);
+            begwrite(stream, len);
             memcpy(dptr + 4, s, len);
             dptr[0] = (len + 4) >> 8;
             dptr[1] = (len + 4) & 0xff;
@@ -4045,7 +4047,7 @@ int fputs(const char *s, FILE *stream)
                     && (stream->upto == stream->fbuf)
                     && (len <= stream->lrecl))
                 {
-                    __awrite(stream->hfile, &dptr, stream->lrecl);
+                    begwrite(stream, stream->lrecl);
                     memcpy(dptr, s, len);
                     memset(dptr + len, ' ', stream->szfbuf - len);
                     finwrite(stream);
@@ -4072,13 +4074,12 @@ size_t fwrite(const void *ptr, size_t size, size_t nmemb, FILE *stream)
     size_t sz;
     char *p;
     int x;
-    char *dptr;
 
     if (stream->quickBin)
     {
         if ((nmemb == 1) && (size == stream->lrecl))
         {
-            __awrite(stream->hfile, &dptr, stream->lrecl);
+            begwrite(stream, stream->lrecl);
             memcpy(dptr, ptr, size);
             finwrite(stream);
             stream->bufStartR += size;
@@ -4102,7 +4103,7 @@ size_t fwrite(const void *ptr, size_t size, size_t nmemb, FILE *stream)
             {
                 /* ready to write a record - request some space
                    from MVS */
-                __awrite(stream->hfile, &dptr, stream->lrecl);
+                begwrite(stream, stream->lrecl);
                 sz = stream->endbuf - stream->upto;
                 memcpy(dptr, stream->fbuf, stream->szfbuf - sz);
                 memcpy(dptr + stream->szfbuf - sz, ptr, sz);
@@ -4118,7 +4119,7 @@ size_t fwrite(const void *ptr, size_t size, size_t nmemb, FILE *stream)
                to an MVS-provided area. */
             while (bytes >= stream->szfbuf)
             {
-                __awrite(stream->hfile, &dptr, stream->lrecl);
+                begwrite(stream, stream->lrecl);
                 memcpy(dptr, ptr, stream->szfbuf);
                 finwrite(stream);
                 ptr = (char *)ptr + stream->szfbuf;
@@ -4194,7 +4195,7 @@ size_t fwrite(const void *ptr, size_t size, size_t nmemb, FILE *stream)
                     {
                         stream->fbuf[0] = stream->lrecl >> 8;
                         stream->fbuf[1] = stream->lrecl & 0xff;
-                        __awrite(stream->hfile, &dptr, stream->lrecl);
+                        begwrite(stream, stream->lrecl);
                         if (sz >= stream->lrecl)
                         {
                             memcpy(dptr, stream->fbuf, stream->lrecl);
@@ -4207,7 +4208,7 @@ size_t fwrite(const void *ptr, size_t size, size_t nmemb, FILE *stream)
                     }
                     else
                     {
-                        __awrite(stream->hfile, &dptr, fulllen);
+                        begwrite(stream, fulllen);
                         memcpy(dptr, stream->fbuf, sz);
                         memcpy(dptr + sz, ptr, fulllen - sz);
                     }
@@ -4258,7 +4259,7 @@ size_t fwrite(const void *ptr, size_t size, size_t nmemb, FILE *stream)
                     {
                         sz = stream->lrecl;
                     }
-                    __awrite(stream->hfile, &dptr, stream->lrecl);
+                    begwrite(stream, stream->lrecl);
                     memcpy(dptr, ptr, sz);
                     memset(dptr + sz, ' ', stream->szfbuf - sz);
                     finwrite(stream);
@@ -4272,7 +4273,7 @@ size_t fwrite(const void *ptr, size_t size, size_t nmemb, FILE *stream)
                     }
                     memcpy(stream->upto, ptr, sz);
                     sz += (stream->upto - stream->fbuf);
-                    __awrite(stream->hfile, &dptr, stream->lrecl);
+                    begwrite(stream, stream->lrecl);
                     memcpy(dptr, stream->fbuf, sz);
                     memset(dptr + sz, ' ', stream->lrecl - sz);
                     finwrite(stream);
@@ -4291,7 +4292,7 @@ size_t fwrite(const void *ptr, size_t size, size_t nmemb, FILE *stream)
                         {
                             sz = stream->lrecl;
                         }
-                        __awrite(stream->hfile, &dptr, stream->lrecl);
+                        begwrite(stream, stream->lrecl);
                         memcpy(dptr, ptr, sz);
                         memset(dptr + sz, ' ', stream->szfbuf - sz);
                         finwrite(stream);
@@ -4337,7 +4338,7 @@ size_t fwrite(const void *ptr, size_t size, size_t nmemb, FILE *stream)
                     {
                         sz = stream->lrecl;
                     }
-                    __awrite(stream->hfile, &dptr, (sz == 0) ? 5 : sz + 4);
+                    begwrite(stream, (sz == 0) ? 5 : sz + 4);
                     if(sz == 0)
                     {
                         dptr[0] = 0;
@@ -4370,7 +4371,7 @@ size_t fwrite(const void *ptr, size_t size, size_t nmemb, FILE *stream)
                     }
                     memcpy(stream->upto, ptr, sz);
                     sz += (stream->upto - stream->fbuf);
-                    __awrite(stream->hfile, &dptr, (sz == 0) ? 5 : sz + 4);
+                    begwrite(stream, (sz == 0) ? 5 : sz + 4);
                     if(sz == 0)
                     {
                         dptr[0] = 0;
@@ -4405,7 +4406,7 @@ size_t fwrite(const void *ptr, size_t size, size_t nmemb, FILE *stream)
                         {
                             sz = stream->lrecl;
                         }
-                        __awrite(stream->hfile, &dptr, (sz == 0) ? 5 : sz + 4);
+                        begwrite(stream, (sz == 0) ? 5 : sz + 4);
                         if(sz == 0)
                         {
                             dptr[0] = 0;
@@ -4462,7 +4463,6 @@ size_t fread(void *ptr, size_t size, size_t nmemb, FILE *stream)
     size_t read;
     size_t totalread;
     size_t extra;
-    unsigned char *dptr;
     unsigned char *eptr;
 
     if (stream->quickBin)

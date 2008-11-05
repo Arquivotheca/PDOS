@@ -349,7 +349,7 @@ WNOMEM2  DS    0H
          MVC   LRECL+2(2),DCBLRECL  Copy LRECL to a fullword
          MVC   BLKSIZE+2(2),DCBBLKSI  Copy BLKSIZE to a fullword
          AIF   ('&OUTM' NE 'M').NMM4
-         L     R6,F32760
+         L     R6,=F'32768'
 * Give caller an internal buffer to write to. Below the line!
 *
 * S/370 can't handle LOC=BELOW
@@ -364,13 +364,16 @@ WNOMEM2  DS    0H
 * In move move mode, we will return this two fullword control
 * block instead of the DCB area
          ST    R2,BEGINDCB
-         LA    R2,BEGINDCB
+         LA    R7,BEGINDCB
+         B     DONEOPEW
 .NMM4    ANOP
          SPACE 1
 *   Lots of code tests DCBRECFM twice, to distinguish among F, V, and
 *     U formats. We set the index byte to 0,4,8 to allow a single test
 *     with a three-way branch.
-DONEOPEN LA    R0,8
+DONEOPEN LR    R7,R2
+DONEOPEW DS    0H
+         LA    R0,8
          TM    DCBRECFM,DCBRECU   Undefined ?
          BO    SETINDEX           Yes
          BM    GETINDFV           No
@@ -406,14 +409,16 @@ NOTU     DS    0H
 * This logic now moved to the C code
 SETRECFM DS    0H
          ST    R1,0(,R5)          Pass either RECFM F or V to caller
-*        B     RETURNOP
+         B     RETURNOQ
 *
 RETURNOP DS    0H
+         LR    R7,R2
+RETURNOQ DS    0H
          LR    R1,R13
          L     R13,SAVEAREA+4
          FREEMAIN RU,LV=WORKLEN,A=(1),SP=SUBPOOL
 *
-         LR    R15,R2             Return neg.RC or GETMAINed area addr.
+         LR    R15,R7             Return neg.RC or GETMAINed area addr.
          RETURN (14,12),RC=(15)   Return to caller
 *
 * This is not executed directly, but copied into 24-bit storage
@@ -669,7 +674,8 @@ H4       DC    H'4'               Constant for BDW/SDW/RDW handling
 .NLM2    ANOP
          AIF   ('&OUTM' NE 'M').NMM2
 * In move mode, always use our internal buffer. Ignore passed parm.
-         PUT   (R2),ASMBUF
+         L     R3,ASMBUF
+         PUT   (R2),(R3)
 .NMM2    ANOP
 *
          AIF   ('&SYS' NE 'S380').N380WR2
@@ -695,6 +701,7 @@ H4       DC    H'4'               Constant for BDW/SDW/RDW handling
          LR    R12,R15
          USING @@ACLOSE,R12
          L     R2,0(,R1)          R2 contains GETMAINed address/handle
+         USING ZDCBAREA,R2
          GETMAIN RU,LV=WORKLEN,SP=SUBPOOL
          ST    R13,4(,R1)
          ST    R1,8(,R13)
@@ -704,7 +711,11 @@ H4       DC    H'4'               Constant for BDW/SDW/RDW handling
 * If we are doing move mode, free internal assembler buffer
          AIF   ('&OUTM' NE 'M').NMM6
          L     R5,ASMBUF
-         FREEMAIN RU,LV=ZDCBLEN,A=(R5),SP=SUBPOOL
+         LTR   R5,R5
+         BZ    NFRCL
+         L     R6,=F'32768'
+         FREEMAIN RU,LV=(R6),A=(R5),SP=SUBPOOL
+NFRCL    DS    0H
 .NMM6    ANOP
          ICM   R1,B'1111',VBSADDR  Load VBS record area
          BZ    FREEBUFF           No area, skip free of it

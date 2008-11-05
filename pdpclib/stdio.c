@@ -753,9 +753,12 @@ static void osfopen(void)
     /* in move mode, the returned handle is actually a control
        block, and we need to switch, so that we can get the
        assembler buffer */
-    myfile->oldhfile = myfile->hfile;
-    myfile->asmbuf = *(((void **)myfile->hfile) + 1);
-    myfile->hfile = *((void **)myfile->hfile);
+    if ((int)myfile->hfile > 0)
+    {
+        myfile->oldhfile = myfile->hfile;
+        myfile->asmbuf = *(((void **)myfile->hfile) + 1);
+        myfile->hfile = *((void **)myfile->hfile);
+    }
 #endif
 
 

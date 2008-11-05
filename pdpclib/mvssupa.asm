@@ -348,6 +348,24 @@ WNOMEM2  DS    0H
          BZ    BADOPOUT           OPEN failed, go return error code -39
          MVC   LRECL+2(2),DCBLRECL  Copy LRECL to a fullword
          MVC   BLKSIZE+2(2),DCBBLKSI  Copy BLKSIZE to a fullword
+         AIF   ('&OUTM' NE 'M').NMM4
+         L     R6,F32760
+* Give caller an internal buffer to write to. Below the line!
+*
+* S/370 can't handle LOC=BELOW
+*
+         AIF   ('&SYS' NE 'S370').MVT8090  If not S/370 then 380 or 390
+         GETMAIN RU,LV=(R6),SP=SUBPOOL  No LOC= for S/370
+         AGO   .GETOENE
+.MVT8090 ANOP  ,                  S/380 or S/390
+         GETMAIN RU,LV=(R6),SP=SUBPOOL,LOC=BELOW
+.GETOENE ANOP
+         ST    R1,ASMBUF
+* In move move mode, we will return this two fullword control
+* block instead of the DCB area
+         ST    R2,BEGINDCB
+         LA    R2,BEGINDCB
+.NMM4    ANOP
          SPACE 1
 *   Lots of code tests DCBRECFM twice, to distinguish among F, V, and
 *     U formats. We set the index byte to 0,4,8 to allow a single test
@@ -408,7 +426,15 @@ INDCB    DCB   MACRF=R,DSORG=PS   If member name, will be changed to PO
 INDCBLN  EQU   *-INDCB
 F32760   DC    F'32760'           Constant for compare
 F65536   DC    F'65536'           Maximum VBS record GETMAIN length
+*
+* OUTDCB changes depending on whether we are in LOCATE mode or
+* MOVE mode
+         AIF   ('&OUTM' NE 'L').NLM1
 OUTDCB   DCB   MACRF=PL,DSORG=PS
+.NLM1    ANOP
+         AIF   ('&OUTM' NE 'M').NMM1
+OUTDCB   DCB   MACRF=PM,DSORG=PS
+.NMM1    ANOP
 OUTDCBLN EQU   *-OUTDCB
 *
 READDUM  READ  NONE,              Read record Data Event Control Block C
@@ -637,13 +663,22 @@ H4       DC    H'4'               Constant for BDW/SDW/RDW handling
 .N380WR1 ANOP
 *
          STCM  R4,B'0011',DCBLRECL
+*
+         AIF   ('&OUTM' NE 'L').NLM2
          PUT   (R2)
+.NLM2    ANOP
+         AIF   ('&OUTM' NE 'M').NMM2
+* In move mode, always use our internal buffer. Ignore passed parm.
+         PUT   (R2),ASMBUF
+.NMM2    ANOP
 *
          AIF   ('&SYS' NE 'S380').N380WR2
          CALL  @@SETM31
 .N380WR2 ANOP
 *
+         AIF   ('&OUTM' NE 'L').NLM3
          ST    R1,0(,R3)
+.NLM3    ANOP
 *        LR    R1,R13
 *        L     R13,SAVEAREA+4
          L     R13,SAVEADCB+4
@@ -666,6 +701,11 @@ H4       DC    H'4'               Constant for BDW/SDW/RDW handling
          LR    R13,R1
          USING WORKAREA,R13
 *
+* If we are doing move mode, free internal assembler buffer
+         AIF   ('&OUTM' NE 'M').NMM6
+         L     R5,ASMBUF
+         FREEMAIN RU,LV=ZDCBLEN,A=(R5),SP=SUBPOOL
+.NMM6    ANOP
          ICM   R1,B'1111',VBSADDR  Load VBS record area
          BZ    FREEBUFF           No area, skip free of it
          L     R0,VBSEND          Load address past end of VBS area
@@ -1385,6 +1425,11 @@ ZDCBAREA DS    0H
 OPENCLOS DS    A                  OPEN/CLOSE parameter list
 DCBXLST  DS    A
 EOFR24   DS    CL(EOFRLEN)
+* This is for when we are using move mode, and need to
+* pass back extra information
+BEGINDCB DS    A                  The beginning of this entire block
+ASMBUF   DS    A                  Pointer to an area for PUTting data
+*
          IHADECB DSECT=NO         Data Event Control Block
 BLKSIZE  DS    F                  Save area for input DCB BLKSIZE
 LRECL    DS    F                  Save area for input DCB LRECL

@@ -190,5 +190,5 @@ STACKLEN EQU   *-STACK
          NUCON
          AIF   ('&SYS' NE 'S380').N380ST4
          USERSAVE
-.N380ST3 ANOP
+.N380ST4 ANOP
          END

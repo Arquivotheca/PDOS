@@ -68,6 +68,8 @@ char *__vidptr;
 extern void *__lastsup; /* last thing supplied to memmgr */
 #endif
 
+char **__ep;
+
 #if defined(__CMS__)
 int __start(char *p, char *pgmname, char **ep)
 #elif defined(__MVS__)
@@ -303,6 +305,7 @@ int CTYP __start(char *p)
     }
     stdin->permfile = 1;
 #if defined(__CMS__)
+    __ep = ep;
     /* if no parameters are provided, the tokenized
        plist will start with x'ff' */
     if (p[0] == 0xff)

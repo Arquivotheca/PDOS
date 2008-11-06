@@ -338,23 +338,6 @@ RETURNAW DS    0H
 *
 **********************************************************************
 *                                                                    *
-*  ASETL - Set length of last record                                 *
-*                                                                    *
-**********************************************************************
-         ENTRY @@ASETL
-@@ASETL  SAVE  (14,12),,@@ASETL
-         LR    R12,R15
-         USING @@ASETL,R12
-         L     R2,0(,R1)          R2 contains handle
-         L     R3,4(,R1)          R3 points to length of next record
-         USING ZDCBAREA,R2
-*
-         STH   R3,DCBLRECL
-*
-         RETURN (14,12),RC=0
-*
-**********************************************************************
-*                                                                    *
 *  ACLOSE - Close file                                               *
 *                                                                    *
 **********************************************************************

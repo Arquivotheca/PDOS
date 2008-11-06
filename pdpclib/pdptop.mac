@@ -26,8 +26,8 @@
 *
 * Are PUTs done in locate or move mode?
          GBLC &OUTM
-&OUTM    SETC 'L'                 Indicate locate mode
-* &OUTM    SETC 'M'                 Indicate move mode
+&OUTM    SETC 'M'                 Indicate move mode
+* &OUTM    SETC 'L'               Indicate locate mode
 *
 * AMODE/RMODE not available on S370
 * On S/380 they are a hybrid (currently)

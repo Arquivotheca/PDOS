@@ -111,7 +111,7 @@ static FILE permFiles[3];
 
 /* We need to choose whether we are doing move mode or
    locate mode */
-#if MOVEMODE
+#if !LOCMODE /* move mode */
 #define begwrite(stream, len) (lenwrite = (len), dptr = (stream)->asmbuf)
 #define finwrite(stream) (__awrite((stream)->hfile, NULL, lenwrite))
 #else /* locate mode */
@@ -749,7 +749,7 @@ static void osfopen(void)
     myfile->reallyt = 0;
     myfile->hfile =
         __aopen(myfile->ddname, mode, &myfile->recfm, &myfile->lrecl, p);
-#if MOVEMODE
+#if !LOCMODE
     /* in move mode, the returned handle is actually a control
        block, and we need to switch, so that we can get the
        assembler buffer */

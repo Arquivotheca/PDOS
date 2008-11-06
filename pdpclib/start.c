@@ -41,6 +41,10 @@ extern unsigned char *__envptr;
 extern unsigned short __osver;
 #endif
 
+#ifdef __VSE__
+#undef __CMS__
+#endif
+
 #ifdef __MVS__
 int __tso = 0; /* is this a TSO environment? */
 #endif
@@ -50,7 +54,7 @@ int main(int argc, char **argv);
 void __exit(int status);
 void CTYP __exita(int status);
 
-#if !defined(__MVS__) && !defined(__CMS__)
+#if !defined(__MVS__) && !defined(__CMS__) && !defined(__VSE__)
 static char buffer1[BUFSIZ + 8];
 static char buffer2[BUFSIZ + 8];
 static char buffer3[BUFSIZ + 8];
@@ -71,6 +75,8 @@ extern void *__lastsup; /* last thing supplied to memmgr */
 char **__ep;
 
 #if defined(__CMS__)
+int __start(char *p, char *pgmname, char **ep)
+#elif defined(__VSE__)
 int __start(char *p, char *pgmname, char **ep)
 #elif defined(__MVS__)
 int __start(char *p, char *pgmname, int tso)
@@ -94,7 +100,7 @@ int CTYP __start(char *p)
 #ifdef __MSDOS__
     unsigned char *env;
 #endif
-#if defined(__MVS__) || defined(__CMS__)
+#if defined(__MVS__) || defined(__CMS__) || defined(__VSE__)
     int parmLen;
     int progLen;
     char parmbuf[300];
@@ -110,7 +116,7 @@ int CTYP __start(char *p)
     p = GetCommandLine();
 #endif
 
-#if !defined(__MVS__) && !defined(__CMS__)
+#if !defined(__MVS__) && !defined(__CMS__) && !defined(__VSE__)
 #ifdef __WIN32__
     stdin->hfile = GetStdHandle(STD_INPUT_HANDLE);
     stdout->hfile = GetStdHandle(STD_OUTPUT_HANDLE);
@@ -350,6 +356,8 @@ int CTYP __start(char *p)
         parmbuf[2 + x * 9] = '\0';
         parmLen = strlen(parmbuf + 2);
     }
+#elif defined(__VSE__)
+    parmLen = 0;
 #else
     parmLen = ((unsigned int)p[0] << 8) | (unsigned int)p[1];
     if (parmLen >= sizeof parmbuf - 2)

@@ -78,6 +78,10 @@ SUBPOOL  EQU   0
          GETMAIN R,LV=ZDCBLEN,SP=SUBPOOL,LOC=BELOW
 .CHKBLWE ANOP
          LR    R2,R1
+         LR    R0,R2              Load output DCB area address
+         LA    R1,ZDCBLEN         Load output length of DCB area
+         LA    R11,0              Pad of X'00' and no input length
+         MVCL  R0,R10             Clear DCB area to binary zeroes
 * THIS LINE IS FOR GCC
          LR    R6,R4
 * THIS LINE IS FOR C/370
@@ -137,7 +141,32 @@ WNOMEM   DS    0H
 *         OPEN  ((R2),OUTPUT),MF=(E,WOPENMB),MODE=31,TYPE=J
 * CAN'T USE MODE=31 ON MVS 3.8, OR WITH TYPE=J
          OPEN  ((R2),OUTPUT),MF=(E,WOPENMB),TYPE=J
+*
+* Handle will be returned in R7
+*
+         LR    R7,R2
+         AIF   ('&OUTM' NE 'M').NMM4
+         L     R6,=F'32768'
+* Give caller an internal buffer to write to. Below the line!
+*
+* S/370 can't handle LOC=BELOW
+*
+         AIF   ('&SYS' NE 'S370').MVT8090  If not S/370 then 380 or 390
+         GETMAIN R,LV=(R6),SP=SUBPOOL  No LOC= for S/370
+         AGO   .GETOENE
+.MVT8090 ANOP  ,                  S/380 or S/390
+         GETMAIN R,LV=(R6),SP=SUBPOOL,LOC=BELOW
+.GETOENE ANOP
+         ST    R1,ASMBUF
+* In move move mode, we will return this two fullword control
+* block instead of the DCB area
+         ST    R2,BEGINDCB
+         LA    R7,BEGINDCB
+         B     DONEOPEW
+.NMM4    ANOP
 DONEOPEN DS    0H
+         LR    R7,R2
+DONEOPEW DS    0H
          SR    R6,R6
          LH    R6,DCBLRECL
          ST    R6,0(R8)
@@ -152,7 +181,7 @@ VARIABLE DS    0H
          L     R6,=F'1'
 DONESET  DS    0H
          ST    R6,0(R5)
-         LR    R15,R2
+         LR    R15,R7
          B     RETURNOP
 *
 ENDFILE  LA    R6,1
@@ -181,7 +210,15 @@ WOPENMLN EQU   *-WOPENMAC
 INDCB    DCB   MACRF=GL,DSORG=PS,EODAD=ENDFILE,EXLST=JPTR
 INDCBLN  EQU   *-INDCB
 JPTR     DS    F
+*
+* OUTDCB changes depending on whether we are in LOCATE mode or
+* MOVE mode
+         AIF   ('&OUTM' NE 'L').NLM1
 OUTDCB   DCB   MACRF=PL,DSORG=PS
+.NLM1    ANOP
+         AIF   ('&OUTM' NE 'M').NMM1
+OUTDCB   DCB   MACRF=PM,DSORG=PS
+.NMM1    ANOP
 OUTDCBLN EQU   *-OUTDCB
 *
 *
@@ -272,8 +309,18 @@ RETURNAR DS    0H
 * but we can ignore this in CMS, since for both F and V
 * we can just request a full sized buffer from the OS
 * without ill-effect
+*
+         AIF   ('&OUTM' NE 'L').NLM2
          PUT   (R2)
+.NLM2    ANOP
+         AIF   ('&OUTM' NE 'M').NMM2
+* In move mode, always use our internal buffer. Ignore passed parm.
+         L     R3,ASMBUF
+         PUT   (R2),(R3)
+.NMM2    ANOP
+         AIF   ('&OUTM' NE 'L').NLM3
          ST    R1,0(R3)
+.NLM3    ANOP
          AIF ('&SYS' EQ 'S370').NOMOD4
          CALL  @@SETM31
 .NOMOD4  ANOP
@@ -331,6 +378,16 @@ RETURNAW DS    0H
          USING WORKAREA,R13
 *
          L     R2,0(R1)         R2 CONTAINS HANDLE
+         USING ZDCBAREA,R2
+* If we are doing move mode, free internal assembler buffer
+         AIF   ('&OUTM' NE 'M').NMM6
+         L     R5,ASMBUF
+         LTR   R5,R5
+         BZ    NFRCL
+         L     R6,=F'32768'
+         FREEMAIN R,LV=(R6),A=(R5),SP=SUBPOOL
+NFRCL    DS    0H
+.NMM6    ANOP
          MVC   CLOSEMB,CLOSEMAC
 *         CLOSE ((R2)),MF=(E,CLOSEMB),MODE=31
 * CAN'T USE MODE=31 WITH MVS 3.8
@@ -734,6 +791,11 @@ OPENMB   DS    CL(OPENMLN)
          DS    0F
 WOPENMB  DS    CL(WOPENMLN)
 RDEOF    DS    1F
+* This is for when we are using move mode, and need to
+* pass back extra information
+BEGINDCB DS    A                  The beginning of this entire block
+ASMBUF   DS    A                  Pointer to an area for PUTting data
+*
 ZDCBLEN  EQU   *-ZDCBAREA
 RECF     EQU   X'80'                   FIXED RECORD FORMAT
 RECV     EQU   X'40'                   VARYING RECORD FORMAT

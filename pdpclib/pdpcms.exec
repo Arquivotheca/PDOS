@@ -1,3 +1,5 @@
+&TRACE
+
 * Compile sample program
 * If using z/VM, set ZVM to 1
 
@@ -65,4 +67,4 @@ INCLUDE PDPTEST (NOLIBE NOAUTO
 GENMOD PDPTEST
 ERASE LOAD MAP A
 
-PDPTEST aBc DeF
+PDPTEST aBc DeFghijklmn

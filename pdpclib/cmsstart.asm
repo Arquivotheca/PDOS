@@ -41,6 +41,7 @@ SUBPOOL  EQU   0
          USING @@CRT0,R10
          LR    R11,R1            save R1 so we can get the PLIST
          LR    R8,R0             save R0 so we can get the EPLIST
+         LR    R9,R13            save R13 so we can get flag byte
          GETMAIN R,LV=STACKLEN,SP=SUBPOOL
          ST    R13,4(R1)
          ST    R1,8(R13)
@@ -81,15 +82,18 @@ SUBPOOL  EQU   0
          LR    R2,R11            get original R1
          LTR   R4,R4
          BZ    AMODE24
-         L     R2,96(R13)        get old style R1 flag byte
+         AIF   ('&SYS' EQ 'S370').NOSAVE
+         USING USERSAVE,R9
+         L     R2,USEMFLG        get old style R1 flag byte
+.NOSAVE  ANOP
 AMODE24  EQU   *
 * At this point, the high order byte of R2 contains the
-* traditional R1 flag byte.  A x'0B' or x'01' indicates the
+* traditional CMS R1 flag byte.  A x'0B' or x'01' indicates the
 * presence of an extended parameter accessable via R0.
-         CLM   R2,8,=X'01'       called from EXEC 2 or REXX?
-         BE    EPLIST
+         CLM   R2,8,=X'01'       called from EXEC, EXEC 2 or REXX?
+         BE    EPLIST            yes use the eplist
          CLM   R2,8,=X'0B'       called from command line?
-         BE    EPLIST
+         BE    EPLIST            yes, use the eplist
 NOEPLIST EQU   *
          LA    R2,0              signal no eplist available
          B     ONWARD
@@ -139,10 +143,10 @@ SAVER13  DS    F
 *         ENTRY CEESG003
 *CEESG003 EQU   *
          DS    0H
-         ENTRY @@EXITA         
+         ENTRY @@EXITA
 @@EXITA  EQU   *
 * SWITCH BACK TO OUR OLD SAVE AREA
-         LR    R10,R15         
+         LR    R10,R15
          USING @@EXITA,R10
          L     R9,0(R1)
          L     R13,=A(SAVER13)
@@ -184,4 +188,7 @@ MAINSTK  DS    32000F
 MAINLEN  EQU   *-MAINSTK
 STACKLEN EQU   *-STACK
          NUCON
+         AIF   ('&SYS' NE 'S380').N380ST4
+         USERSAVE
+.N380ST3 ANOP
          END

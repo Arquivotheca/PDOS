@@ -2273,6 +2273,10 @@ static int examine(const char **formt, FILE *fq, char *s, va_list *arg,
         {
             work[x++] = '-';
         }
+        else if (flagPlus)
+        {
+            work[x++] = '+';
+        }
         if (flagZero)
         {
             fillCh = '0';

@@ -84,7 +84,7 @@ SUBPOOL  EQU   0
          BZ    AMODE24
          AIF   ('&SYS' EQ 'S370').NOSAVE
          USING USERSAVE,R9
-         L     R2,USEMFLG        get old style R1 flag byte
+         L     R2,USECTYP        get old style R1 flag byte
 .NOSAVE  ANOP
 AMODE24  EQU   *
 * At this point, the high order byte of R2 contains the

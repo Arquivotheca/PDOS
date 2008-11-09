@@ -17,8 +17,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-extern char **__eplist;
-
 int main(int argc, char **argv)
 {
 #if 1
@@ -41,23 +39,12 @@ int main(int argc, char **argv)
     fputs(buf, fq);
     fclose(fq);
 #endif
+    printf("hello there\n");
     printf("argc = %d\n" , argc);
     for (i = 0; i < argc; i++)
     {
         printf("arg %d is <%s>\n", i, argv[i]);
     }
-    printf("__eplist is %p\n\n", __eplist);
-    if (__eplist != NULL)
-    {
-        printf("__eplist[1] is %p\n", __eplist[1]);
-        printf("__eplist[2] is %p\n", __eplist[2]);
-        printf("diff is %d\n", __eplist[2] - __eplist[1]);
-        for (x = 0; x < (__eplist[2] - __eplist[1]); x++)
-        {
-            printf("char %d is %c\n", x, __eplist[1][x]);
-        }
-    }
-    
 #ifdef LOOP
     /* note - we use two newlines because of PDPCLIB's MVS
        implementation (MACRF=PL) */

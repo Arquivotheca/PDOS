@@ -26,7 +26,7 @@
 *                                                                    *
 **********************************************************************
          COPY  PDPTOP
-         PRINT NOGEN
+         PRINT GEN
 * YREGS IS NOT AVAILABLE WITH IFOX
 *         YREGS
 R0       EQU   0

@@ -402,7 +402,7 @@ int CTYP __start(char *p)
             {
                 cnt++;
                 c = tolower((unsigned char)*r);
-                if (shift)
+                if (shift && (c != ' '))
                 {
                     c = toupper((unsigned char)*r);
                     shift = 0;
@@ -432,7 +432,7 @@ int CTYP __start(char *p)
                         shift = 0;
                     }
                 }
-                else
+                else if (c != ' ')
                 {
                     *q++ = c;
                 }

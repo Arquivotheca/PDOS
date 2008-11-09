@@ -87,6 +87,7 @@ void * _Builtin __memmove(void *s1, const void *s2, size_t n);
 
 #if defined (__GNUC__) && __GNUC__ >= 3
 #define memcpy(a,b,c) (__builtin_memcpy((a),(b),(c)))
+#define memcmp(s1,s2,n) (__builtin_memcmp((s1),(s2),(n)))
 #endif
 
 /* We don't activate these GCC builtins, because they
@@ -95,7 +96,6 @@ void * _Builtin __memmove(void *s1, const void *s2, size_t n);
    code! Also, they appear to be buggy on MVS. */
 
 #if 0
-#define memcmp(s1,s2,n) (__builtin_memcmp((s1),(s2),(n))) /* see bug22 */
 #define strcat(s1,s2) (__builtin_strcat((s1),(s2)))
 #define strchr(s,c) (__builtin_strchr((s),(c)))
 #define strcmp(s1,s2) (__builtin_strcmp((s1),(s2)))

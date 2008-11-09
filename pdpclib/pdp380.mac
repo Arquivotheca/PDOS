@@ -28,6 +28,13 @@
 &OUTM    SETC 'M'                 Indicate move mode
 * &OUTM    SETC 'L'               Indicate locate mode
 *
+* Which OS are we targetting?
+*
+         GBLC &OS                 Declare compiler switch
+&OS      SETC 'UNKNOWN'           Indicate that the OS is not known
+* &OS      SETC 'MVS'             Indicate that this is for MVS
+* &OS      SETC 'MUSIC'           Indicate that this is for MUSIC/SP
+*
 * S/380 is a hybrid currently
 *
          AMODE 31

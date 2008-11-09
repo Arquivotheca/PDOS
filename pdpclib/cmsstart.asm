@@ -69,7 +69,7 @@ SUBPOOL  EQU   0
 * Now let's get the program name and parameter list.
          USING NUCON,R0          why do this? to access cmndline!
          MVC   PGMNAME,CMNDLINE  get the name of this program
-         LA    R2,8(R11)         point to first parameter in PLIST
+         LA    R2,0(R11)         clean up PLIST
          ST    R2,ARGPTR         store first argument for C
 *
 * Set R4 to true if we were called in 31-bit mode

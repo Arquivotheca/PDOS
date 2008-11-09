@@ -72,10 +72,11 @@ char *__vidptr;
 extern void *__lastsup; /* last thing supplied to memmgr */
 #endif
 
-char **__ep;
+char **__eplist;
+char *__plist;
 
 #if defined(__CMS__)
-int __start(char *p, char *pgmname, char **ep)
+int __start(char *plist, char *pgmname, char **eplist)
 #elif defined(__VSE__)
 int __start(char *p, char *pgmname, char **ep)
 #elif defined(__MVS__)
@@ -86,7 +87,7 @@ int __start(int *i1, int *i2, int *i3, POS_EPARMS *exep)
 int CTYP __start(char *p)
 #endif
 {
-#ifdef __PDOS__
+#if defined(__PDOS__) || defined(__CMS__)
     char *p;
 #endif
     int x;
@@ -311,7 +312,29 @@ int CTYP __start(char *p)
     }
     stdin->permfile = 1;
 #if defined(__CMS__)
-    __ep = ep;
+    __eplist = eplist;
+    __plist = plist;
+    p = plist + 8; /* point to the actual parameters */
+
+#if 0
+/*
+ Now build the SVC 202 string for systerm
+*/
+    memcpy ( &s202parm[0] ,  "FILEDEF ", 8);
+    memcpy ( &s202parm[8] ,  "SYSPARM ", 8);
+    memcpy ( &s202parm[16] , "(       ", 8);
+    memcpy ( &s202parm[24] , "NOCHANGE", 8);
+    s202parm[32]=s202parm[33]=s202parm[34]=s202parm[35]=
+        s202parm[36]=s202parm[37]=s202parm[38]=s202parm[39]=0xff;
+/*
+  and issue the SVC
+*/
+    ret = __SVC202 ( s202parm, &code, &parm );
+    if (ret == 24)
+    { /* we need to issue filedef */
+    }
+#endif
+
     /* if no parameters are provided, the tokenized
        plist will start with x'ff' */
     if (p[0] == 0xff)

@@ -393,18 +393,41 @@ int CTYP __start(char *p)
             int cnt = 0;
             int c;
             int shift = 0;
+            int rev = 0; /* reverse logic */
             
             q = parmbuf + 2;
             r = q;
             lock = q;
             
+            /* reverse the case switching when _+ is specified
+               as the first parameter */
+            if (memcmp(r, "_+", 2) == 0)
+            {
+                rev = 1;
+                cnt += 2;
+                r += 2;
+            }
             while (*r != '\0')
             {
                 cnt++;
-                c = tolower((unsigned char)*r);
-                if (shift && (c != ' '))
+                if (rev)
                 {
                     c = toupper((unsigned char)*r);
+                }
+                else
+                {
+                    c = tolower((unsigned char)*r);
+                }
+                if (shift && (c != ' '))
+                {
+                    if (rev)
+                    {
+                        c = tolower((unsigned char)*r);
+                    }
+                    else
+                    {
+                        c = toupper((unsigned char)*r);
+                    }
                     shift = 0;
                 }
                 if (c == '_')

@@ -58,7 +58,7 @@ CEESTART EQU   *
          AIF   ('&OS' NE 'MUSIC').NOTMUS1
          L     R15,=V(TEXTLC)    MUSIC/SP: CALL TEXTLC
          BALR  R14,R15
-.NOTMUS1
+.NOTMUS1 ANOP
          GETMAIN RU,LV=STACKLEN,SP=SUBPOOL
          ST    R13,4(R1)
          ST    R1,8(R13)

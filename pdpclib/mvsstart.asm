@@ -55,6 +55,10 @@ CEESTART EQU   *
          LR    R10,R15
          USING @@CRT0,R10
          LR    R11,R1
+         AIF   ('&OS' NE 'MUSIC').NOTMUS1
+         L     R15,=V(TEXTLC)    MUSIC/SP: CALL TEXTLC
+         BALR  R14,R15
+.NOTMUS1
          GETMAIN RU,LV=STACKLEN,SP=SUBPOOL
          ST    R13,4(R1)
          ST    R1,8(R13)
@@ -179,7 +183,9 @@ IN31C    DS    0H
          RETURN (14,12),RC=(15)
          LTORG
 *
+         AIF   ('&OS' EQ 'MUSIC').MUSIC1
          CVT   DSECT=YES
+.MUSIC1  ANOP
          IKJTCB
          IEZJSCB
          IHAPSA

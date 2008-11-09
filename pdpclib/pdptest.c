@@ -17,7 +17,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-extern char **__ep;
+extern char **__eplist;
 
 int main(int argc, char **argv)
 {
@@ -46,15 +46,15 @@ int main(int argc, char **argv)
     {
         printf("arg %d is <%s>\n", i, argv[i]);
     }
-    printf("__ep is %p\n\n", __ep);
-    if (__ep != NULL)
+    printf("__eplist is %p\n\n", __eplist);
+    if (__eplist != NULL)
     {
-        printf("__ep[1] is %p\n", __ep[1]);
-        printf("__ep[2] is %p\n", __ep[2]);
-        printf("diff is %d\n", __ep[2] - __ep[1]);
-        for (x = 0; x < (__ep[2] - __ep[1]); x++)
+        printf("__eplist[1] is %p\n", __eplist[1]);
+        printf("__eplist[2] is %p\n", __eplist[2]);
+        printf("diff is %d\n", __eplist[2] - __eplist[1]);
+        for (x = 0; x < (__eplist[2] - __eplist[1]); x++)
         {
-            printf("char %d is %c\n", x, __ep[1][x]);
+            printf("char %d is %c\n", x, __eplist[1][x]);
         }
     }
     

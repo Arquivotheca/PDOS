@@ -200,6 +200,7 @@ int CTYP __start(char *p)
     int code;
     int parm;
     int ret;
+    int have_sysparm;
 
 /*
  Now build the SVC 202 string for sysprint
@@ -316,60 +317,62 @@ int CTYP __start(char *p)
     __plist = plist;
     p = plist + 8; /* point to the actual parameters */
 
-#if 0
-/*
- Now build the SVC 202 string for systerm
-*/
+    /* Now build the SVC 202 string for sysparm */
     memcpy ( &s202parm[0] ,  "FILEDEF ", 8);
     memcpy ( &s202parm[8] ,  "SYSPARM ", 8);
     memcpy ( &s202parm[16] , "(       ", 8);
     memcpy ( &s202parm[24] , "NOCHANGE", 8);
     s202parm[32]=s202parm[33]=s202parm[34]=s202parm[35]=
         s202parm[36]=s202parm[37]=s202parm[38]=s202parm[39]=0xff;
-/*
-  and issue the SVC
-*/
+    /* and issue the SVC */
     ret = __SVC202 ( s202parm, &code, &parm );
-    if (ret == 24)
-    { /* we need to issue filedef */
-    }
-#endif
+    
+    have_sysparm = (ret != 24);
+    
 
     /* if no parameters are provided, the tokenized
-       plist will start with x'ff' */
+       plist will start with x'ff'. However, if they
+       have provided a SYSPARM, then we'll use that
+       as the parameter. But only if they haven't
+       provided any parameters! If they have provided
+       parameters then we instead lowercase everything
+       and go to special processing (useful when in
+       an EXEC with CONTROL MSG etc). */
+       
+    /* No parameters */
     if (p[0] == 0xff)
     {
         parmLen = 0;
-    }
-    else if ((p[0] == '?') && (p[1] == ' '))
-    {
-        /* if the user starts the program with a single '?'
-           then that is a signal to read the parameter string
-           from dd:SYSPARM */
-        FILE *pf;
 
-        pf = fopen("dd:SYSPARM", "r");
-        if (pf != NULL)
+        if (have_sysparm)
         {
-            fgets(parmbuf + 2, sizeof parmbuf - 2, pf);
-            fclose(pf);
-            p = strchr(parmbuf + 2, '\n');
-            if (p != NULL)
+            FILE *pf;
+
+            /* have a parameter file - let's use it */
+            pf = fopen("dd:SYSPARM", "r");
+            if (pf != NULL)
             {
-                *p = '\0';
+                fgets(parmbuf + 2, sizeof parmbuf - 2, pf);
+                fclose(pf);
+                p = strchr(parmbuf + 2, '\n');
+                if (p != NULL)
+                {
+                    *p = '\0';
+                }
+                parmLen = strlen(parmbuf + 2);
             }
-            parmLen = strlen(parmbuf + 2);
-        }
-        else
-        {
-            parmLen = 0;
         }
     }
-    else
+    /* If there is no EPLIST, or there is a SYSPARM so
+       they are invoking special processing, then we
+       will be using the PLIST only. */
+    else if ((eplist == NULL) || have_sysparm)
     {
         /* copy across the tokenized plist, which
            consists of 8 character chunks, space-padded,
-           and terminated by x'ff' */
+           and terminated by x'ff'. Note that the first
+           2 characters of parmbuf are reserved for an
+           (unused) length, so we must skip them */
         for (x = 0; x < sizeof parmbuf / 9 - 1; x++)
         {
             if (p[x * 8] == 0xff) break;
@@ -378,10 +381,81 @@ int CTYP __start(char *p)
         }
         parmbuf[2 + x * 9] = '\0';
         parmLen = strlen(parmbuf + 2);
+        
+        /* even though we have a SYSPARM, we don't use it,
+           we just use it as a signal to do some serious
+           underscore searching! */
+        if (have_sysparm)
+        {
+            char *q;
+            char *r;
+            char *lock;
+            int cnt = 0;
+            int c;
+            int shift = 0;
+            
+            q = parmbuf + 2;
+            r = q;
+            lock = q;
+            
+            while (*r != '\0')
+            {
+                cnt++;
+                c = tolower((unsigned char)*r);
+                if (shift)
+                {
+                    c = toupper((unsigned char)*r);
+                    shift = 0;
+                }
+                if (c == '_')
+                {
+                    shift = 1;
+                }
+                /* if we've reached the inter-parameter space, then
+                   collapse it - a space requires a shift */
+                else if (cnt == 9)
+                {
+                    while (q > lock)
+                    {
+                        q--;                        
+                        if (*q != ' ')
+                        {
+                            q++;
+                            lock = q;
+                            break;
+                        }
+                    }
+                    cnt = 0;
+                    if (shift)
+                    {
+                        *q++ = ' ';
+                        shift = 0;
+                    }
+                }
+                else
+                {
+                    *q++ = c;
+                }
+                r++;
+            }
+            *q = '\0';
+            parmLen = strlen(parmbuf + 2);
+        }
+    }
+    /* else, we have an eplist, and no sysparm, so use that */
+    else
+    {
+        parmLen = eplist[2] - eplist[1];
+        /* 2 bytes reserved for an unused length, 1 byte for NUL */
+        if (parmLen >= sizeof parmbuf - 2)
+        {
+            parmLen = sizeof parmbuf - 1 - 2;
+        }
+        memcpy(parmbuf + 2, eplist[1], parmLen);
     }
 #elif defined(__VSE__)
     parmLen = 0;
-#else
+#else /* MVS etc */
     parmLen = ((unsigned int)p[0] << 8) | (unsigned int)p[1];
     if (parmLen >= sizeof parmbuf - 2)
     {
@@ -394,7 +468,11 @@ int CTYP __start(char *p)
     memcpy(parmbuf, p, parmLen + 2);
 #endif
     p = parmbuf;
+#ifdef __MVS__
     if ((parmLen > 0) && (p[2] == 0))     /* assume TSO */
+#else
+    if (0)
+#endif
     {
         progLen = ((unsigned int)p[2] << 8) | (unsigned int)p[3];
         parmLen -= (progLen + 4);
@@ -427,7 +505,7 @@ int CTYP __start(char *p)
         if (parmLen > 0)
         {
             p[parmLen] = '\0';
-        }
+        }        
         else
         {
             p = "";

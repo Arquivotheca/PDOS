@@ -115,6 +115,10 @@ NOMEM    DS    0H
 *         OPEN  ((R2),INPUT),MF=(E,OPENMB),MODE=31,TYPE=J
 * CAN'T USE MODE=31 ON MVS 3.8, OR WITH TYPE=J
          OPEN  ((R2),INPUT),MF=(E,OPENMB),TYPE=J
+* CMS is missing this flag
+*         TM    DCBOFLGS,DCBOFOPN  Did OPEN work?
+         TM    DCBOFLGS,OFOPN     Did OPEN work?
+         BZ    BADOPEN            OPEN failed
          B     DONEOPEN
 WRITING  DS    0H
          USING ZDCBAREA,R2
@@ -141,6 +145,10 @@ WNOMEM   DS    0H
 *         OPEN  ((R2),OUTPUT),MF=(E,WOPENMB),MODE=31,TYPE=J
 * CAN'T USE MODE=31 ON MVS 3.8, OR WITH TYPE=J
          OPEN  ((R2),OUTPUT),MF=(E,WOPENMB),TYPE=J
+* CMS is missing this flag
+*         TM    DCBOFLGS,DCBOFOPN  Did OPEN work?
+         TM    DCBOFLGS,OFOPN  Did OPEN work?
+         BZ    BADOPEN            OPEN failed
 *
 * Handle will be returned in R7
 *
@@ -183,6 +191,10 @@ DONESET  DS    0H
          ST    R6,0(R5)
          LR    R15,R7
          B     RETURNOP
+BADOPEN  DS    0H
+         FREEMAIN RU,LV=ZDCBLEN,A=(R2),SP=SUBPOOL  Free DCB area
+         L     R15,=F'-1'
+         B     RETURNOP           Go return to caller with negative RC
 *
 ENDFILE  LA    R6,1
          ST    R6,RDEOF
@@ -785,5 +797,6 @@ RECV     EQU   X'40'                   VARYING RECORD FORMAT
 RECU     EQU   X'C0'                   UNDEFINED RECORD FORMAT
 RECUV    EQU   X'40'                   U OR V RECORD FORMAT
 RECUF    EQU   X'80'                   U OR F RECORD FORMAT
+OFOPN    EQU   X'10'                   OPEN SUCCESSFUL
          NUCON
          END

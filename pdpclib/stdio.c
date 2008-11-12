@@ -177,6 +177,7 @@ static int examine(const char **formt, FILE *fq, char *s, va_list *arg,
 #ifdef __CMS__
 extern void __SVC202 ( char *s202parm, int *code, int *parm );
 static void filedef(char *fdddname, char *fnm, int mymode);
+static void fdclr(char *ddname);
 static char *int_strtok(char *s1, const char *s2);
 #define strtok int_strtok
 #endif
@@ -618,6 +619,7 @@ static void osfopen(void)
         return;
     }
 
+    myfile->dynal = 0;
 /* dw */
 /* This code needs changing for VM */
     p = strchr(fnm, ':');
@@ -642,6 +644,7 @@ static void osfopen(void)
         }
         sprintf(tmpdd, "PDP%03dHD", spareSpot);
         filedef(tmpdd, newfnm, mode);
+        myfile->dynal = 1;
         p = tmpdd;
     }
 #elif defined(__MVS__)
@@ -704,6 +707,7 @@ static void osfopen(void)
             err = 1;
             return;
         }
+        myfile->dynal = 1;
         
         p = newfnm;
     }
@@ -877,6 +881,12 @@ int fclose(FILE *stream)
         }
     }
     __aclose(stream->hfile);
+#ifdef __CMS__
+    if (stream->dynal)
+    {
+        fdclr(stream->ddname);
+    }
+#endif
 #endif
     if (!stream->theirBuffer)
     {
@@ -4835,6 +4845,22 @@ static void filedef(char *fdddname, char *fnm, int mymode)
        }
    }
    __SVC202 ( s202parm, &code, &parm );
+}
+
+static void fdclr(char *ddname)
+{
+    char s202parm [800];
+    int code;
+    int parm;
+
+    /* build the SVC 202 string */
+    memcpy( &s202parm[0] , "FILEDEF ", 8);
+    memcpy( &s202parm[8] , ddname, 8);
+    memcpy( &s202parm[16] , "CLEAR   ", 8);
+    memset( &s202parm[24], 0xff, 8);
+
+    __SVC202 ( s202parm, &code, &parm );
+    return;
 }
 
 static char *int_strtok(char *s1, const char *s2)

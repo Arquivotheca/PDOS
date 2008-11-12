@@ -71,6 +71,7 @@ typedef struct
     char pdsmem[9];
     int reallyu;    /* 1 = this is really a RECFM=U file */
     int reallyt;    /* 1 = this is really a text file */
+    int dynal;      /* 1 = this file was dynamically allocated */
 #endif
     int quickBin;  /* 1 = do DosRead NOW!!!! */
     int quickText; /* 1 = quick text mode */

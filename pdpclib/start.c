@@ -191,6 +191,9 @@ int CTYP __start(char *p)
     stderr->permfile = 1;
     stderr->isopen = 1;
 #else
+    int dyna_sysprint = 0;
+    int dyna_systerm = 0;
+    int dyna_sysin = 0;
 #if defined(__CMS__)
 /*
   This code checks to see if DDs exist for SYSIN, SYSPRINT & SYSTERM
@@ -227,6 +230,7 @@ int CTYP __start(char *p)
             s202parm[68]=s202parm[69]=s202parm[70]=s202parm[71]=0xff;
 
         ret = __SVC202 ( s202parm, &code, &parm );
+        dyna_sysprint = 1;
     }
 
 /*
@@ -254,6 +258,7 @@ int CTYP __start(char *p)
             s202parm[68]=s202parm[69]=s202parm[70]=s202parm[71]=0xff;
 
         ret = __SVC202 ( s202parm, &code, &parm );
+        dyna_systerm = 1;
     }
 
 /*
@@ -282,6 +287,7 @@ int CTYP __start(char *p)
             s202parm[68]=s202parm[69]=s202parm[70]=s202parm[71]=0xff;
 
         ret = __SVC202 ( s202parm, &code, &parm );
+        dyna_sysin = 1;
     }
 
 #endif
@@ -295,23 +301,28 @@ int CTYP __start(char *p)
         __exita(EXIT_FAILURE);
     }
     stdout->permfile = 1;
+    stdout->dynal = dyna_sysprint;
 
     stderr = fopen("dd:SYSTERM", "w");
     if (stderr == NULL)
     {
         printf("SYSTERM DD not defined\n");
+        fclose(stdout);
         __exita(EXIT_FAILURE);
     }
     stderr->permfile = 1;
+    stderr->dynal = dyna_systerm;
 
     stdin = fopen("dd:SYSIN", "r");
     if (stdin == NULL)
     {
         fprintf(stderr, "SYSIN DD not defined\n");
         fclose(stdout);
+        fclose(stderr);
         __exita(EXIT_FAILURE);
     }
     stdin->permfile = 1;
+    stdin->dynal = dyna_sysin;
 #if defined(__CMS__)
     __eplist = eplist;
     __plist = plist;

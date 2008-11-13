@@ -3174,6 +3174,12 @@ FILE *freopen(const char *filename, const char *mode, FILE *stream)
 {
     int perm;
 
+#ifdef __CMS__
+    int dyna;
+
+    dyna = stream->dynal;
+    stream->dynal = 0;
+#endif
     perm = stream->permfile;
     stream->permfile = 1;
     fclose(stream);
@@ -3190,6 +3196,9 @@ FILE *freopen(const char *filename, const char *mode, FILE *stream)
         free(stream);
     }
     stream->permfile = perm;
+#ifdef __CMS__
+    stream->dynal = dyna;
+#endif
     if (err)
     {
         return (NULL);

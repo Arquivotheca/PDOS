@@ -1,6 +1,7 @@
 **********************************************************************
 *                                                                    *
-*  This program written by Paul Edwards, Louis and others.           *
+*  This program written by Paul Edwards, Dave Wade, Louis,           *
+*  John Baker and others.                                            *
 *  Released to the public domain                                     *
 *                                                                    *
 **********************************************************************
@@ -25,12 +26,11 @@
 *  If mode is 0 (read) then make this function return address of     *
 *  ZDCBAREA directly                                                 *
 *                                                                    *
-*  Ignore all other parameters for now. And it doesn't matter what   *
-*  ZDCBAREA contains.                                                *
+*  It doesn't matter what ZDCBAREA contains                          *
 *                                                                    *
+*  Set the RECFM to 2 (Undefined)                                    *
+*  Set the LRECL to 32761 (max VSE supports)                         *
 *                                                                    *
-*  Also, set the LRECL to 80, the RECFM to 0 to make C write fixed   *
-*  80-byte records.                                                  *
 *                                                                    *
 **********************************************************************
          ENTRY @@AOPEN
@@ -208,6 +208,10 @@ OUTDCBLN EQU   *-OUTDCB
 *                                                                    *
 *  AREAD - Read from file                                            *
 *                                                                    *
+*  HANDLE - address of ZDCBAREA you returned in AOPEN                *
+*  BUF - an area of memory which you must fill in with a fake RDW    *
+*  plus the next record's data. This makes RECFM=U look like RECFM=V *
+*                                                                    *
 **********************************************************************
          ENTRY @@AREAD
 @@AREAD  EQU   *
@@ -264,8 +268,8 @@ RETURNAR DS    0H
 *  2. A pointer which should be ignored                              *
 *  3. A length                                                       *
 *                                                                    *
-*  Use the length, get that data out of ASMBUF, and write it to      *
-*  the screen                                                        *
+*  Use the length, get that amount of data out of ASMBUF, and write  *
+*  it to the file.                                                   *
 *                                                                    *
 **********************************************************************
          ENTRY @@AWRITE
@@ -338,6 +342,8 @@ CCW      CCW   X09',LINE,0,121
 **********************************************************************
 *                                                                    *
 *  ACLOSE - Close file                                               *
+*                                                                    *
+*  HANDLE - address of ZDCBAREA                                      *
 *                                                                    *
 **********************************************************************
          ENTRY @@ACLOSE

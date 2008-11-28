@@ -47,6 +47,21 @@ R14      EQU   14
 R15      EQU   15
 SUBPOOL  EQU   0
          CSECT
+*
+* External variables. Note that these variables will eventually need
+* to be moved into a CRAB or something to allow reentrancy. Note that
+* GCC doesn't currently produce reentrant code, so you will need to
+* solve that problem first.
+*
+* MANSTK contains the address of the main stack. MANSTL has the length
+* of that stack. This is used for setjmp/longjmp so that the stack can
+* be copied.
+*
+         ENTRY @@MANSTK
+@@MANSTK DS    F
+         ENTRY @@MANSTL
+@@MANSTL DS    F
+*
 **********************************************************************
 *                                                                    *
 *  AOPEN - Open a file                                               *
@@ -659,14 +674,14 @@ RETURNGC DS    0H
 *                                                                    *
 **********************************************************************
          ENTRY @@SAVER
-@@SAVER EQU   *
-*
-         SAVE  (14,12),,@@SAVER    * SAVE REGS AS NORMAL
+@@SAVER  SAVE  (14,12),,@@SAVER    * SAVE REGS AS NORMAL
          LR    R12,R15
          USING @@SAVER,12
-         L     R1,0(R1)            * ADDRESS OF ENV TO R1
-         L     R2,@@MANSTK         * R2 POINTS TO START OF STACK
-         L     R3,@@MANSTK+4       * R3 HAS LENGTH OF STACK
+         L     R1,0(,R1)           * ADDRESS OF ENV TO R1
+         L     R2,=A(@@MANSTK)
+         L     R2,0(R2)            * R2 POINTS TO START OF STACK
+         L     R3,=A(@@MANSTL)
+         L     R3,0(R3)            * R3 HAS LENGTH OF STACK
          LR    R5,R3               * AND R5
          LR    R9,R1               * R9 NOW CONTAINS ADDRESS OF ENV
 * GET A SAVE AREA
@@ -686,14 +701,12 @@ RETURNGC DS    0H
          MVCL  R4,R2               * COPY SETJMP'S SAVE AREA TO ENV
 *        STM   R0,R15,0(R1)               SAVE REGISTERS
 *        BALR  R15,0                     GET PSW INTO R15
-*        ST    R15,64(R1)                 SAVE PSW
+*        ST    R15,64(,R1)                SAVE PSW
 *
 RETURNSR DS    0H
          SR    R15,R15              * CLEAR RETURN CODE
          RETURN (14,12),RC=(15)
-         ENTRY   @@MANSTK
-@@MANSTK DS    2F
-         LTORG
+         LTORG ,
 *
 *
 *
@@ -703,33 +716,32 @@ RETURNSR DS    0H
 *                                                                    *
 **********************************************************************
          ENTRY @@LOADR
-@@LOADR EQU   *
-*
-         BALR  R12,R0
-         USING *,12
-         L     R1,0(R1)           * R1 POINTS TO ENV
-         L     R2,8(R1)           * R2 POINTS TO STACK
-         L     R3,4(R1)           * R3 HAS HOW LONG
+@@LOADR  BALR  R12,0
+         USING *,R12
+         L     R1,0(,R1)          * R1 POINTS TO ENV
+         L     R2,8(,R1)          * R2 POINTS TO STACK
+         L     R3,4(,R1)          * R3 HAS HOW LONG
          LR    R5,R3              * AS DOES R5
-         L     R6,24(R1)          * R6 HAS RETURN CODE
-         L     R4,0(R1)           * OUR SAVE AREA
-         L     R13,12(R1)         * GET OLD STACK POINTER
+         L     R6,24(,R1)         * R6 HAS RETURN CODE
+         L     R4,0(,R1)          * OUR SAVE AREA
+         L     R13,12(,R1)        * GET OLD STACK POINTER
+         LR    R8,R4              * Save before clobbered by MVCL
+         LR    R7,R5              * Save before clobbered by MVCL
          MVCL  R2,R4              * AND RESTORE STACK
-         ST    R6,24(R1)          * SAVE VAL IN ENV
+         ST    R6,24(,R1)         * SAVE VAL IN ENV
          L     R6,=F'1'
          ST    R6,20(R1)          * AND SET LONGJ TO 1.
-         FREEMAIN R,LV=(R3),A=(R4),SP=SUBPOOL
+         FREEMAIN R,LV=(R7),A=(R8),SP=SUBPOOL
 *        L     R14,16(R1)          * AND RETURN ADDRESS
 *        B     RETURNSR            * AND BACK INTO SETJMP
-*        L     R15,64(R1)                 RESTORE PSW
+*        L     R15,64(,R1)                RESTORE PSW
 *        LM    R0,R15,0(R1)               RESTORE REGISTERS
 *        BR    R15                        JUMP TO SAVED PSW
 *
 RETURNLR DS    0H
          SR    R15,R15            * CLEAR RETURN CODE
          RETURN (14,12),RC=(15)
-         LTORG
-*
+         LTORG ,
 *
 *
 * S/370 doesn't support switching modes so this code is useless,

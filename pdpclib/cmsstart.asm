@@ -32,6 +32,15 @@ R14      EQU   14
 R15      EQU   15
 SUBPOOL  EQU   0
          CSECT
+*
+* External variables references. Don't store actual external
+* variables here. Allow the entry point of @@CRT0 to be zero.
+* The actual variables themselves should be stored in
+* mvssupa.asm which is the main assembler support code.
+*
+         EXTRN @@MANSTK
+         EXTRN @@MANSTL
+*
          ENTRY @@CRT0
 @@CRT0   EQU   *
 *         ENTRY CEESTART
@@ -48,11 +57,11 @@ SUBPOOL  EQU   0
          LR    R13,R1
          USING STACK,R13
 *DW* SAVE STACK POINTER FOR SETJMP/LONGJMP
-         EXTRN @@MANSTK
          L     R3,=V(@@MANSTK)
          ST    R13,0(R3)
          L     R2,=A(STACKLEN)
-         ST    R2,4(R3)
+         L     R3,=V(@@MANSTL)
+         ST    R2,0(R3)
 *DW END OF MOD
 *
          LA    R2,0

@@ -446,15 +446,7 @@ CLOSEMLN EQU   *-CLOSEMAC
 * for this program to reside below the line. As such,
 * we need to use LOC=ANY to get ATL memory.
 *
-         AIF   ('&SYS' EQ 'S390').ANYCHKY
-         AIF   ('&SYS' EQ 'S370').GOT370
-* For S/380, need to switch to AMODE 24 before
-* requesting ATL memory
-         CALL  @@SETM24
-         GETMAIN RU,LV=(R3),SP=SUBPOOL,LOC=ANY
-         CALL  @@SETM31
-         AGO   .ANYCHKE
-.GOT370  ANOP
+         AIF   ('&SYS' NE 'S370').ANYCHKY
 * CAN'T USE "ANY" ON MVS 3.8
          GETMAIN R,LV=(R3),SP=SUBPOOL
          AGO   .ANYCHKE
@@ -685,7 +677,7 @@ RETURNGC DS    0H
          LR    R5,R3               * AND R5
          LR    R9,R1               * R9 NOW CONTAINS ADDRESS OF ENV
 * GET A SAVE AREA
-         AIF   ('&SYS' NE 'S370').ANYY
+         AIF   ('&SYS' EQ 'S390').ANYY
 * Can't use "ANY" on VM/370
 * Also can't do multiple ANY requests on VM/380 at the moment
          GETMAIN R,LV=(R3),SP=SUBPOOL

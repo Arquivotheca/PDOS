@@ -899,7 +899,11 @@ int fclose(FILE *stream)
     }
     else
     {
+#if defined(__MVS__) || defined(__CMS__)
+        free(stream);
+#else
         stream->isopen = 0;
+#endif
     }
 #ifdef __OS2__
     if (rc != 0)

@@ -85,9 +85,6 @@ SUBPOOL  EQU   0
          L     R5,8(R1)         R5 POINTS TO RECFM
          L     R8,12(R1)        R8 POINTS TO LRECL
          L     R9,16(R1)        R9 POINTS TO MEMBER NAME (OF PDS)
-         AIF ('&SYS' NE 'S380').NOMODO9
-         CALL  @@SETM24
-.NOMODO9 ANOP
          AIF   ('&SYS' EQ 'S390').BELOW
 * CAN'T USE "BELOW" ON MVS 3.8
          GETMAIN R,LV=ZDCBLEN,SP=SUBPOOL
@@ -96,9 +93,6 @@ SUBPOOL  EQU   0
          GETMAIN R,LV=ZDCBLEN,SP=SUBPOOL,LOC=BELOW
 .CHKBLWE ANOP
          LR    R2,R1
-         AIF ('&SYS' NE 'S380').NOMODOA
-         CALL  @@SETM31
-.NOMODOA ANOP
          LR    R0,R2              Load output DCB area address
          LA    R1,ZDCBLEN         Load output length of DCB area
          LA    R11,0              Pad of X'00' and no input length
@@ -123,13 +117,7 @@ SUBPOOL  EQU   0
          MVC   DCBDDNAM,0(R3)
          MVC   OPENMB,OPENMAC
 *
-         AIF ('&SYS' NE 'S380').NOMODO1
-         CALL  @@SETM24
-.NOMODO1 ANOP
          RDJFCB ((R2),INPUT)
-         AIF ('&SYS' NE 'S380').NOMODO2
-         CALL  @@SETM31
-.NOMODO2 ANOP
          LTR   R9,R9
 * DW * DON'T SUPPORT MEMBER NAME FOR NOW
 *        BZ    NOMEM
@@ -141,13 +129,7 @@ SUBPOOL  EQU   0
 NOMEM    DS    0H
 *         OPEN  ((R2),INPUT),MF=(E,OPENMB),MODE=31,TYPE=J
 * CAN'T USE MODE=31 ON MVS 3.8, OR WITH TYPE=J
-         AIF ('&SYS' NE 'S380').NOMODO3
-         CALL  @@SETM24
-.NOMODO3 ANOP
          OPEN  ((R2),INPUT),MF=(E,OPENMB),TYPE=J
-         AIF ('&SYS' NE 'S380').NOMODO4
-         CALL  @@SETM31
-.NOMODO4 ANOP
 * CMS is missing this flag
 *         TM    DCBOFLGS,DCBOFOPN  Did OPEN work?
          TM    DCBOFLGS,OFOPN     Did OPEN work?
@@ -165,13 +147,7 @@ WRITING  DS    0H
          MVC   DCBDDNAM,0(R3)
          MVC   WOPENMB,WOPENMAC
 *
-         AIF ('&SYS' NE 'S380').NOMODO5
-         CALL  @@SETM24
-.NOMODO5 ANOP
          RDJFCB ((R2),OUTPUT)
-         AIF ('&SYS' NE 'S380').NOMODO6
-         CALL  @@SETM31
-.NOMODO6 ANOP
          LTR   R9,R9
 * DW * NO MEMBER ON VM/370
 *        BZ    WNOMEM
@@ -183,13 +159,7 @@ WRITING  DS    0H
 WNOMEM   DS    0H
 *         OPEN  ((R2),OUTPUT),MF=(E,WOPENMB),MODE=31,TYPE=J
 * CAN'T USE MODE=31 ON MVS 3.8, OR WITH TYPE=J
-         AIF ('&SYS' NE 'S380').NOMODO7
-         CALL  @@SETM24
-.NOMODO7 ANOP
          OPEN  ((R2),OUTPUT),MF=(E,WOPENMB),TYPE=J
-         AIF ('&SYS' NE 'S380').NOMODO8
-         CALL  @@SETM31
-.NOMODO8 ANOP
 * CMS is missing this flag
 *         TM    DCBOFLGS,DCBOFOPN  Did OPEN work?
          TM    DCBOFLGS,OFOPN  Did OPEN work?
@@ -250,13 +220,7 @@ RETURNOP DS    0H
          LR    R1,R13
          L     R13,SAVEAREA+4
          LR    R7,R15
-         AIF ('&SYS' NE 'S380').NOMODOB
-         CALL  @@SETM24
-.NOMODOB ANOP
          FREEMAIN R,LV=WORKLEN,A=(R1),SP=SUBPOOL
-         AIF ('&SYS' NE 'S380').NOMODOC
-         CALL  @@SETM31
-.NOMODOC ANOP
          LR    R15,R7
          RETURN (14,12),RC=(15)
          LTORG
@@ -411,9 +375,6 @@ RETURNAW DS    0H
          USING @@ACLOSE,R12
          LR    R11,R1
          AIF   ('&SYS' EQ 'S390').BELOW3
-         AIF ('&SYS' NE 'S380').NOMODCT
-         CALL  @@SETM24
-.NOMODCT ANOP
 * CAN'T USE "BELOW" ON MVS 3.8
          GETMAIN R,LV=WORKLEN,SP=SUBPOOL
          AGO   .NOBEL3
@@ -450,9 +411,6 @@ RETURNAC DS    0H
          L     R13,SAVEAREA+4
          LR    R7,R15
          FREEMAIN R,LV=WORKLEN,A=(R1),SP=SUBPOOL
-         AIF ('&SYS' NE 'S380').NOMODCB
-         CALL  @@SETM31
-.NOMODCB ANOP
          LR    R15,R7
          RETURN (14,12),RC=(15)
          LTORG
@@ -524,18 +482,10 @@ RETURNGM DS    0H
          L     R2,0(R1)
          S     R2,=F'8'
          L     R3,0(R2)
-         AIF   ('&SYS' NE 'S390').NF390
+         AIF   ('&SYS' EQ 'S370').F370
          FREEMAIN RU,LV=(R3),A=(R2),SP=SUBPOOL
          AGO   .FINFREE
-.NF390   ANOP
-         AIF   ('&SYS' NE 'S380').NF380
-* For S/380, need to switch to AMODE 24 before
-* freeing ATL memory
-         CALL  @@SETM24
-         FREEMAIN RU,LV=(R3),A=(R2),SP=SUBPOOL
-         CALL  @@SETM31
-         AGO   .FINFREE
-.NF380   ANOP
+.F370    ANOP
 * S/370
          FREEMAIN R,LV=(R3),A=(R2),SP=SUBPOOL
 .FINFREE ANOP
@@ -730,17 +680,11 @@ RETURNGC DS    0H
          AIF   ('&SYS' EQ 'S390').ANYY
 * Can't use "ANY" on VM/370
 * Also can't do multiple ANY requests on VM/380 at the moment
-         AIF ('&SYS' NE 'S380').NOMODX1
-         CALL  @@SETM24
-.NOMODX1 ANOP
          GETMAIN R,LV=(R3),SP=SUBPOOL
          AGO   .ANYE
 .ANYY    ANOP
          GETMAIN R,LV=(R3),SP=SUBPOOL,LOC=ANY
 .ANYE    ANOP
-         AIF ('&SYS' NE 'S380').NOMODX2
-         CALL  @@SETM31
-.NOMODX2 ANOP
          ST    R1,0(R9)            * SAVE IT IN FIRST WORK OF ENV
          ST    R5,4(R9)            * SAVE LENGTH IN SECOND WORD OF ENV
          ST    R2,8(R9)            * NOTE WHERE WE GOT IT FROM
@@ -779,13 +723,7 @@ RETURNSR DS    0H
          ST    R6,24(,R1)         * SAVE VAL IN ENV
          L     R6,=F'1'
          ST    R6,20(R1)          * AND SET LONGJ TO 1.
-         AIF ('&SYS' NE 'S380').NOMODL1
-         CALL  @@SETM24
-.NOMODL1 ANOP
          FREEMAIN R,LV=(R7),A=(R8),SP=SUBPOOL
-         AIF ('&SYS' NE 'S380').NOMODL2
-         CALL  @@SETM31
-.NOMODL2 ANOP
 *        L     R14,16(R1)          * AND RETURN ADDRESS
 *        B     RETURNSR            * AND BACK INTO SETJMP
 *        L     R15,64(,R1)                RESTORE PSW

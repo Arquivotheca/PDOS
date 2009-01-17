@@ -901,6 +901,20 @@ int fclose(FILE *stream)
     {
 #if defined(__MVS__) || defined(__CMS__)
         free(stream);
+        /* need to protect against the app closing the file
+           which it is allowed to */
+        if (stream == stdin)
+        {
+            stdin = NULL;
+        }
+        else if (stream == stdout)
+        {
+            stdout = NULL;
+        }
+        else if (stream == stderr)
+        {
+            stderr = NULL;
+        }
 #else
         stream->isopen = 0;
 #endif

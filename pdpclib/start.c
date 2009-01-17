@@ -670,12 +670,12 @@ void __exit(int status)
             fclose(__userFiles[x]);
         }
     }
-    fflush(stdout);
-    fflush(stderr);
+    if (stdout != NULL) fflush(stdout);
+    if (stderr != NULL) fflush(stderr);
 #if defined(__MVS__) || defined(__CMS__)
-    fclose(stdin);
-    fclose(stdout);
-    fclose(stderr);
+    if (stdin != NULL) fclose(stdin);
+    if (stdout != NULL) fclose(stdout);
+    if (stderr != NULL) fclose(stderr);
 #endif
 
 

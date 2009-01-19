@@ -575,15 +575,15 @@ static void osfopen(void)
 
     if ((modeType == 1) || (modeType == 4))
     {
-        mode = 0;
+        mode = 0; /* read */
     }
     else if ((modeType == 2) || (modeType == 5))
     {
-        mode = 1;
+        mode = 1; /* write */
     }
     else
     {
-        mode = 2;
+        mode = 2; /* update or otherwise unsupported */
     }
     myfile->hfile = __open(fnm, mode, &errind);
     if (errind)
@@ -4806,9 +4806,10 @@ static void filedef(char *fdddname, char *fnm, int mymode)
     while ( NULL != (p = strchr(fnm, '.')) )*p=' '; /* replace . with   */
     fname =  strtok(fnm, " ");
     ftype =  strtok(NULL, " ");
-    if (ftype == NULL) ftype = "TYPE";
+    if (ftype == NULL) ftype = "";
     fmode =  strtok(NULL, " ");
-    if (fmode == NULL) fmode = "A1";
+    if (fmode == NULL) fmode = "";
+    
 
 /*
  Now build the SVC 202 string
@@ -4837,41 +4838,43 @@ static void filedef(char *fdddname, char *fnm, int mymode)
         if (mymode)
         {
             memcpy ( &s202parm[40] , "A1      " , 8);
-            memcpy ( &s202parm[40] , fmode, strlen(fmode));
+            if (fmode[0] != '\0')
+            {
+                memcpy ( &s202parm[40] , fmode, strlen(fmode));
+            }
         }
         else
         {
             memcpy ( &s202parm[40] , "*       " , 8);
+            memcpy ( &s202parm[40] , fmode , strlen(fmode) );
         }
 
         memcpy ( &s202parm[24] , fname ,
                  ( strlen(fname) > 8 ) ? 8 : strlen(fname)  );
         memcpy ( &s202parm[32] , ftype ,
                  ( strlen(ftype) >8 ) ? 8 : strlen(ftype) );
-/*  memcpy ( &s202parm[40] , fmode , strlen(fmode) ); */
-
-       if ( mymode )
-       {
-            memcpy ( &s202parm[48] , "(       " , 8 );
-            memcpy ( &s202parm[56] , "RECFM   " , 8 );
-            memcpy ( &s202parm[64] , "V       " , 8 );
-            memcpy ( &s202parm[72] , "LRECL   " , 8 );
-            memcpy ( &s202parm[80] , "2000    " , 8 );
-            if (modeType == 5)
-            {
-                memcpy ( &s202parm[64] , "F       " , 8 );
-                memcpy ( &s202parm[80] , "800     " , 8 );
-            }
-            s202parm[88]=s202parm[89]=s202parm[90]=s202parm[91]=
-                s202parm[92]=s202parm[93]=s202parm[94]=s202parm[95]=0xff;
-       }
-       else
-       {
-            s202parm[48]=s202parm[49]=s202parm[50]=s202parm[51]=
-                s202parm[52]=s202parm[53]=s202parm[54]=s202parm[55]=0xff;
-       }
-   }
-   __SVC202 ( s202parm, &code, &parm );
+        if ( mymode )
+        {
+             memcpy ( &s202parm[48] , "(       " , 8 );
+             memcpy ( &s202parm[56] , "RECFM   " , 8 );
+             memcpy ( &s202parm[64] , "V       " , 8 );
+             memcpy ( &s202parm[72] , "LRECL   " , 8 );
+             memcpy ( &s202parm[80] , "2000    " , 8 );
+             if (modeType == 5)
+             {
+                 memcpy ( &s202parm[64] , "F       " , 8 );
+                 memcpy ( &s202parm[80] , "800     " , 8 );
+             }
+             s202parm[88]=s202parm[89]=s202parm[90]=s202parm[91]=
+                 s202parm[92]=s202parm[93]=s202parm[94]=s202parm[95]=0xff;
+        }
+        else
+        {
+             s202parm[48]=s202parm[49]=s202parm[50]=s202parm[51]=
+                 s202parm[52]=s202parm[53]=s202parm[54]=s202parm[55]=0xff;
+        }
+    }
+    __SVC202 ( s202parm, &code, &parm );
 }
 
 static void fdclr(char *ddname)

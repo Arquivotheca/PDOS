@@ -41,6 +41,9 @@ SUBPOOL  EQU   0
 * The actual variables themselves should be stored in 
 * mvssupa.asm which is the main assembler support code.
 *
+* Put an eyecatcher here to ensure program has been linked
+* correctly.
+         DC    C'PDPCLIB!'
          EXTRN @@MANSTK
          EXTRN @@MANSTL
          EXTRN @@PGMPRM

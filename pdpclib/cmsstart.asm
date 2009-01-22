@@ -41,6 +41,9 @@ SUBPOOL  EQU   0
          EXTRN @@MANSTK
          EXTRN @@MANSTL
 *
+* Put an eyecatcher here to ensure program has been linked
+* correctly.
+         DC    C'PDPCLIB!'
          ENTRY @@CRT0
 @@CRT0   EQU   *
 *         ENTRY CEESTART

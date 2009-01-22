@@ -131,6 +131,7 @@ FILE *__userFiles[__NFILE];
 static FILE  *myfile;
 static int    spareSpot;
 static int    err;
+static int    inreopen = 0;
 
 static const char *fnm;
 static const char *modus;
@@ -296,7 +297,10 @@ static void fopen3(void)
         myfile->eofInd = 0;
         myfile->ungetCh = -1;
         myfile->update = 0;
-        myfile->permfile = 0;
+        if (!inreopen)
+        {
+            myfile->permfile = 0;
+        }
         myfile->isopen = 1;
 #if !defined(__MVS__) && !defined(__CMS__)
         if (!myfile->textMode)
@@ -892,7 +896,7 @@ int fclose(FILE *stream)
     {
         free(stream->intBuffer);
     }
-    if (!stream->permfile)
+    if (!stream->permfile && !inreopen)
     {
         __userFiles[stream->intFno] = NULL;
         free(stream);
@@ -900,20 +904,25 @@ int fclose(FILE *stream)
     else
     {
 #if defined(__MVS__) || defined(__CMS__)
-        free(stream);
-        /* need to protect against the app closing the file
-           which it is allowed to */
-        if (stream == stdin)
+        /* if we're not in the middle of freopen ... */
+        __userFiles[stream->intFno] = NULL;
+        if (!inreopen)
         {
-            stdin = NULL;
-        }
-        else if (stream == stdout)
-        {
-            stdout = NULL;
-        }
-        else if (stream == stderr)
-        {
-            stderr = NULL;
+            free(stream);
+            /* need to protect against the app closing the file
+               which it is allowed to */
+            if (stream == stdin)
+            {
+                stdin = NULL;
+            }
+            else if (stream == stdout)
+            {
+                stdout = NULL;
+            }
+            else if (stream == stderr)
+            {
+                stderr = NULL;
+            }
         }
 #else
         stream->isopen = 0;
@@ -3190,16 +3199,13 @@ int setbuf(FILE *stream, char *buf)
 
 FILE *freopen(const char *filename, const char *mode, FILE *stream)
 {
-    int perm;
-
 #ifdef __CMS__
     int dyna;
 
     dyna = stream->dynal;
     stream->dynal = 0;
 #endif
-    perm = stream->permfile;
-    stream->permfile = 1;
+    inreopen = 1;
     fclose(stream);
 
     myfile = stream;
@@ -3208,14 +3214,37 @@ FILE *freopen(const char *filename, const char *mode, FILE *stream)
     err = 0;
     spareSpot = stream->intFno;
     fopen2();
-    if (err && !perm)
+    if (err && !stream->permfile)
     {
         __userFiles[stream->intFno] = NULL;
         free(stream);
     }
-    stream->permfile = perm;
+#if defined(__MVS__) || defined(__CMS__)
+    else if (err)
+    {
+        free(stream);
+        /* need to protect against the app closing the file
+           which it is allowed to */
+        if (stream == stdin)
+        {
+            stdin = NULL;
+        }
+        else if (stream == stdout)
+        {
+            stdout = NULL;
+        }
+        else if (stream == stderr)
+        {
+            stderr = NULL;
+        }
+    }
+#endif
+    inreopen = 0;
 #ifdef __CMS__
-    stream->dynal = dyna;
+    if (!err)
+    {
+        stream->dynal = dyna;
+    }
 #endif
     if (err)
     {

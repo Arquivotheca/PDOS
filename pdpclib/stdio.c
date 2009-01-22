@@ -3199,12 +3199,6 @@ int setbuf(FILE *stream, char *buf)
 
 FILE *freopen(const char *filename, const char *mode, FILE *stream)
 {
-#ifdef __CMS__
-    int dyna;
-
-    dyna = stream->dynal;
-    stream->dynal = 0;
-#endif
     inreopen = 1;
     fclose(stream);
 
@@ -3240,12 +3234,6 @@ FILE *freopen(const char *filename, const char *mode, FILE *stream)
     }
 #endif
     inreopen = 0;
-#ifdef __CMS__
-    if (!err)
-    {
-        stream->dynal = dyna;
-    }
-#endif
     if (err)
     {
         return (NULL);

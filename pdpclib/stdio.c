@@ -132,6 +132,7 @@ static FILE  *myfile;
 static int    spareSpot;
 static int    err;
 static int    inreopen = 0;
+static int    inseek = 0;
 
 static const char *fnm;
 static const char *modus;
@@ -623,7 +624,10 @@ static void osfopen(void)
         return;
     }
 
-    myfile->dynal = 0;
+    if (!inseek)
+    {
+        myfile->dynal = 0;
+    }
 /* dw */
 /* This code needs changing for VM */
     p = strchr(fnm, ':');
@@ -886,7 +890,7 @@ int fclose(FILE *stream)
     }
     __aclose(stream->hfile);
 #ifdef __CMS__
-    if (stream->dynal)
+    if (stream->dynal && !inseek)
     {
         fdclr(stream->ddname);
     }
@@ -3046,7 +3050,9 @@ int fseek(FILE *stream, long int offset, int whence)
         {
             strcpy(fnm, "dd:");
             strcat(fnm, stream->ddname);
+            inseek = 1;
             freopen(fnm, stream->modeStr, stream);
+            inseek = 0;
             oldpos = 0;
         }
         y = (newpos - oldpos) % sizeof buf;

@@ -119,8 +119,11 @@ static FILE permFiles[3];
 #define finwrite(stream)
 #endif
 
+#if defined(__MVS__) || defined(__CMS__)
 static unsigned char *dptr;
 static size_t lenwrite;
+static int    inseek = 0;
+#endif
 
 
 FILE *stdin = &permFiles[0];
@@ -132,7 +135,6 @@ static FILE  *myfile;
 static int    spareSpot;
 static int    err;
 static int    inreopen = 0;
-static int    inseek = 0;
 
 static const char *fnm;
 static const char *modus;
@@ -3515,7 +3517,7 @@ static int vvscanf(const char *format, va_list arg, FILE *fp, const char *s)
                     format++;
                     last = strchr(format, ']');                    
                     if (last == NULL) return (cnt);
-                    size = last - first;
+                    size = (size_t)(last - first);
                     while (1)
                     {
                         /* note that C90 doesn't require special
@@ -3575,11 +3577,11 @@ static int vvscanf(const char *format, va_list arg, FILE *fp, const char *s)
                     uptr = va_arg(arg, unsigned int *);
                     if (fp != NULL)
                     {
-                        *uptr = ftell(fp) - startpos;
+                        *uptr = (unsigned int)(ftell(fp) - startpos);
                     }
                     else
                     {
-                        *uptr = startp - s;
+                        *uptr = (unsigned int)(startp - s);
                     }                    
                 }
                 else if (*format == 'd' || *format == 'u'
@@ -3591,7 +3593,6 @@ static int vvscanf(const char *format, va_list arg, FILE *fp, const char *s)
                     unsigned long x = 0;
                     int undecided = 0;
                     int base = 10;
-                    int reallyp = 0;
                     int mcnt = 0;
 
                     if (*format == 'x') base = 16;
@@ -3710,7 +3711,7 @@ static int vvscanf(const char *format, va_list arg, FILE *fp, const char *s)
                     {
                         if ((*format == 'd') || (*format == 'i'))
                         {
-                            int lval;
+                            long lval;
                             
                             if (neg)
                             {

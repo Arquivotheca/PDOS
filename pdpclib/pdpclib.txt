@@ -303,11 +303,21 @@ FUTURE DIRECTION
 ----------------
 
 VM/CMS port that uses native CMS macros instead of OS emulation.
+Get DD overrides implemented for MVS the same way that SMP calls
+  IEBCOPY etc and perhaps detect more environments such as CICS
+  and check the general interface.
+Stack checking at least for stack overwrite on termination.
+Check IBM's use of CRAB/DSA prior to getting code reentrant again.
 Get the latest version working under MUSIC/SP again.
-Get it working (again) with other C compilers such as C/370.
+Get it working (again) with other MVS C compilers such as C/370.
+Read/write blocks instead of records on mainframe.
+Allow open for update and append on various environments.
+setjmp/longjmp to be implemented on PC platforms.
+long arithmetic to be implemented on MSDOS.
 A port to DOS/VS(E).
 A port to Unix.
-Some of the more obscure main
+Ports to some of the more obscure mainframe environments such as TSS.
+A port to z/TPF.
 
 
 CREDITS

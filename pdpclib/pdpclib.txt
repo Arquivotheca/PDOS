@@ -22,7 +22,7 @@ developers.  Anyone wishing to contribute to this project, please contact
 Paul Edwards at fight.subjugation@gmail.com.
 
 The official method for obtaining PDPCLIB is to download it from:
-http://sourceforge.net/projects/pdos
+http://pdos.sourceforge.net
 
 
 
@@ -39,17 +39,24 @@ MAIN DESIGN GOALS
 CURRENT STATUS
 --------------
 
-All routines have an implementation, but some are not
-fully functional, specifically the format specifiers
-in scanf() and printf() and file update, append and
-random access in fopen() etc, plus longjmp/setjmp
-for environments besides the mainframe. The DOS
-version doesn't do full long arithmetic.
+All routines have been implemented according to the
+ISO C90 standard, although there are restrictions on
+some operations, such as opening a file for update or
+append. However, I do not believe these restrictions
+prevent it from being a conforming implementation on
+the mainframe. Windows, DOS, OS/2 and PDOS don't
+have setjmp/longjmp properly implemented so are
+still non-conforming. Also the DOS version doesn't
+do full long arithmetic I believe so is not fully
+conforming there either. Since the main use for
+PDPCLIB currently is the mainframe, there was no reason
+to hold back on a version 1.0.
+
 
 The following environments have been used:
 
 Win32 for:
-gcc 2.91.57
+gcc 3.4.4
 
 DOS for:
 Turbo C++ 1.01
@@ -78,9 +85,9 @@ WHO WANTS IT?
 It is expected that this archive will interest the following groups of
 people:
 
-1. People who have a commercial compiler, such as CSET, but would like
-to have the source code to the C runtime library, so that they can 
-have control over it.
+1. People who have a commercial compiler, such as IBM CSET (OS/2), 
+but would like to have the source code to the C runtime library, 
+so that they can have control over it.
 
 2. People who have a commercial compiler, such as Borland, where
 although they have the runtime source, Borland have some restrictions
@@ -116,13 +123,13 @@ then compiling your programs in the same way that the "pdptest" program
 is compiled.  Note that code that refers to __32BIT__ is for compiling
 programs using EMX 0.9d for DOS.
 
-For 16-bit DOS, the standard is to use the free C Turbo C++ 1.01
+For 16-bit DOS, the default is to use the free C Turbo C++ 1.01
 (in order to get the C compiler) and the free Open Watcom 1.6
 (in order to get the assembler), so that you have a totally free
 16-bit DOS development system. Just type "compile" to use this
 combination.
 
-For 32-bit Windows (pdpclib-win32), the standard is to use 
+For 32-bit Windows (pdpclib-win32), the default is to use 
 the gcc compiler.  Use a decent "make" that doesn't need tabs 
 (e.g. Borland's make or Microsoft's nmake) and then go 
 "make -f makefile.w32".
@@ -200,6 +207,13 @@ wcc = Watcom 10.0b
 p* = PDPCLIB compiled with one of the above compilers.
 
 
+Sorry I don't have up-to-date stats or mainframe stats.
+I wouldn't expect pdpclib on the mainframe to be better 
+than the commercial compilers because it does record reads
+rather than block reads. Hopefully one day this will be
+rectified.
+
+
 HISTORY
 -------
 
@@ -274,7 +288,7 @@ HISTORY
       been implemented. It would require going through the
       ISO standard to check that, which I haven't done. Since
       I don't know of anything that hasn't been implemented,
-      this is now version 1.00, after 14 years! If you see
+      this is now version 1.00, after 15 years! If you see
       anything that isn't implemented, let me know and I'll
       check the standard and try to add it. Or better yet,
       submit the code fix with the bug report. :-) Note that
@@ -284,6 +298,17 @@ HISTORY
       that it's usability is downgraded. Similar to it not
       being able to open VSAM datasets.
       
+
+FUTURE DIRECTION
+----------------
+
+VM/CMS port that uses native CMS macros instead of OS emulation.
+Get the latest version working under MUSIC/SP again.
+Get it working (again) with other C compilers such as C/370.
+A port to DOS/VS(E).
+A port to Unix.
+Some of the more obscure main
+
 
 CREDITS
 -------
@@ -295,6 +320,9 @@ Dave Edwards (RIP) for various bug fixes/enhancements.
 Phil Roberts for helping to debug the MVS port.
 Gerhard Postpischil for various assembler mods, and for
   his extremely important work on MVS/380 too.
+Robert O'Hara for getting EPLIST support working in CMS
+  and for making the mods to CMS (in VM/380) to support 
+  a 31-bit environment for PDPCLIB to use.
 Ray Gardner for making his date routines public domain, plus
   the qsort routine.
 Jim Nutt and Rob Duff for releasing strftime to the public domain.
@@ -304,7 +332,14 @@ And last but not least, my wife, for putting up with me in
   the many many man-days it took me to write this, when I should 
   have been doing family-related things.
 
-Also, I have used code from both of these other public domain
-C runtime libraries:
+Also, I have used a small amount of code from both of these 
+other public domain C runtime libraries:
 http://sourceforge.net/projects/libnix
 http://sourceforge.net/projects/pdclib
+
+Unfortunately the former wasn't known to me until most of
+PDPCLIB was already written, and the latter was inspired by
+this project, so the code feed was mainly in the other
+direction. Although most work was in stdio.c anyway, and
+due to different designs, especially for the mainframe,
+is not really conducive to picking up bits.

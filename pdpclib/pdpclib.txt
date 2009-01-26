@@ -307,6 +307,8 @@ Get DD overrides implemented for MVS the same way that SMP calls
   IEBCOPY etc and perhaps detect more environments such as CICS
   and check the general interface.
 Stack checking at least for stack overwrite on termination.
+Get rid of clumping of parameters in AOPEN and check buffer sizes
+  are not excessive.
 Check IBM's use of CRAB/DSA prior to getting code reentrant again.
 Get the latest version working under MUSIC/SP again.
 Get it working (again) with other MVS C compilers such as C/370.

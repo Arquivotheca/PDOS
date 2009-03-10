@@ -331,7 +331,11 @@ char *strstr(const char *s1, const char *s2)
         {
             p1 = p;
             p2 = s2;
-            while ((*p2 != '\0') && (*p1++ == *p2++)) ;
+            while ((*p2 != '\0') && (*p1 == *p2))
+            {
+                p1++;
+                p2++;
+            }
             if (*p2 == '\0')
             {
                 return (char *)p;

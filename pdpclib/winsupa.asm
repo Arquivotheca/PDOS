@@ -19,7 +19,6 @@ public __setj
 __setj proc env:dword
         mov eax, env
         push ebx
-        push ebp
         mov ebx, esp
         push ebx               ; esp
         
@@ -31,7 +30,7 @@ __setj proc env:dword
         
         pop ebx
         mov [eax + 20], ebx    ; esp
-        pop ebx
+        mov ebx, [ebp + 0]
         mov [eax + 24], ebx    ; ebp
         
         mov ebx, [ebp + 4]     ; return address
@@ -49,10 +48,8 @@ __longj proc env:dword
         mov eax, env
         mov ebp, [eax + 20]        
         mov esp, ebp
-        mov ebp, [eax + 24]
-        pop ebx                ; position of old ebp
         pop ebx                ; position of old ebx
-        pop ebx                ; another old ebp
+        pop ebx                ; position of old ebp
         pop ebx                ; position of old return address
         
         mov ebx, [eax + 28]    ; return address
@@ -60,6 +57,7 @@ __longj proc env:dword
         
         mov ebx, [eax + 24]    ; ebp saved as normal
         push ebx
+        mov ebp, esp
         
         mov ebx, [eax + 0]
         mov ecx, [eax + 4]

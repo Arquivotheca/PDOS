@@ -1,3 +1,6 @@
+# For the 32-bit version of PDOS we define __PDOS__
+# but the 16-bit version is just MSDOS
+
 CC=gcc
 COPTS=-c -s -O -I. -I..\src -D__PDOS__
 

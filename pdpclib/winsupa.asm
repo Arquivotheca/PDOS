@@ -22,7 +22,6 @@ __setj proc env:dword
         mov ebx, esp
         push ebx               ; esp
         
-        mov [eax + 0], ebx
         mov [eax + 4], ecx
         mov [eax + 8], edx
         mov [eax + 12], edi
@@ -37,6 +36,7 @@ __setj proc env:dword
         mov [eax + 28], ebx    ; return address
 
         pop ebx
+        mov [eax + 0], ebx
         mov eax, 0
         
         ret

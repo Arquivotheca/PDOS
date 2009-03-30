@@ -40,17 +40,14 @@ CURRENT STATUS
 --------------
 
 All routines have been implemented according to the
-ISO C90 standard, although there are restrictions on
-some operations, such as opening a file for update or
-append. However, I do not believe these restrictions
-prevent it from being a conforming implementation on
-the mainframe. Windows, DOS, OS/2 and PDOS don't
-have setjmp/longjmp properly implemented so are
-still non-conforming. Also the DOS version doesn't
-do full long arithmetic I believe so is not fully
-conforming there either. Since the main use for
-PDPCLIB currently is the mainframe, there was no reason
-to hold back on a version 1.0.
+ISO C90 standard on MVS, CMS and Win32, although there 
+are restrictions on some operations, such as opening 
+a file for update or append. However, these restrictions 
+do not prevent it from being a conforming implementation.
+DOS, OS/2 and PDOS don't have setjmp/longjmp properly 
+implemented so are still non-conforming. Also I believe
+the DOS version doesn't do full long arithmetic so that
+is another thing that is non-conforming.
 
 
 The following environments have been used:
@@ -130,17 +127,17 @@ For 16-bit DOS, the default is to use the free C Turbo C++ 1.01
 combination.
 
 For 32-bit Windows (pdpclib-win32), the default is to use 
-the gcc compiler.  Use a decent "make" that doesn't need tabs 
-(e.g. Borland's make or Microsoft's nmake) and then go 
-"make -f makefile.w32".
+the gcc compiler and jwasm as the assembler.  Use a decent 
+"make" that doesn't need tabs (e.g. Borland's make or 
+Microsoft's nmake) and then go "make -f makefile.w32".
 
 
 PERFORMANCE
 -----------
 
-I have done performance testing (of version 0.07 of PDPCLIB) of the 
-stated objectives, using perf*.c as the testing tool, and got the 
-following results (on OS/2):
+A long time ago I did performance testing (of version 0.07 of 
+PDPCLIB) of the stated objectives, using perf*.c as the testing 
+tool, and got the following results (on OS/2):
 
                 fgets on text files
                 -------------------
@@ -299,6 +296,10 @@ HISTORY
       being able to open VSAM datasets.
       
 
+1.01  Bug fix for strstr. setjmp & longjmp implemented
+      properly for Win32, making it compliant too.
+      
+
 FUTURE DIRECTION
 ----------------
 
@@ -316,7 +317,7 @@ Add code on MVS to detect a real terminal and do appropriate
   flushing for use on interactive programs.
 Read/write blocks instead of records on mainframe.
 Allow open for update and append on various environments.
-setjmp/longjmp to be implemented on PC platforms.
+setjmp/longjmp to be implemented on other PC platforms.
 long arithmetic to be implemented on MSDOS.
 A port to DOS/VS(E).
 A port to Unix.

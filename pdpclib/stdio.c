@@ -67,6 +67,8 @@
 #include "limits.h"
 
 /* PDOS and MSDOS use the same interface most of the time */
+/* Note that PDOS is for the 32-bit version, since the 16-bit
+   version uses the MSDOS version since it is compatible with it */
 #ifdef __PDOS__
 #define __MSDOS__
 #endif

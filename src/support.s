@@ -6,6 +6,8 @@
         .globl _int86x
         .globl _enable
         .globl _disable
+        .globl __setj
+        .globl __longj
 
         .text
 
@@ -75,7 +77,9 @@ fintry:
         mov     %ecx, 8(%esi)
         mov     %edx, 12(%esi)
         mov     %edi, 20(%esi)
-        pop     %eax  / actually esi
+
+/ this is actually esi
+        pop     %eax
         mov     %eax, 16(%esi)
         mov     $0, %eax
         mov     %eax, 24(%esi)
@@ -99,4 +103,77 @@ _enable:
 
 _disable:
         cli
+        ret
+
+
+/ setjmp and longjmp are untested under PDOS32 due to the
+/ test environment currently not being available
+
+__setj:
+        push    %ebp
+        mov     %esp, %ebp
+        mov     12(%ebp), %eax
+        push    %ebx
+        mov     %esp, %ebx
+
+/ really esp
+        push    %ebx
+        
+        mov     %ecx, 4(%eax)
+        mov     %edx, 8(%eax)
+        mov     %edi, 12(%eax)
+        mov     %esi, 16(%eax)
+        
+        pop     %ebx
+/ really esp
+        mov     %ebx, 20(%eax)
+        mov     0(%ebp), %ebx
+/ really ebp
+        mov     %ebx, 24(%eax)
+
+/ return address
+        mov     4(%ebp), %ebx
+        mov     %ebx, 20(%eax)
+
+        pop     %ebx
+        mov     %ebx, 0(%eax)
+        mov     0, %eax
+
+        pop     %ebp        
+        ret
+
+
+__longj:
+        push    %ebp
+        mov     %esp, %ebp
+        mov     12(%ebp), %eax
+        mov     20(%eax), %ebp
+        mov     %ebp, %esp
+
+/ position of old ebx
+        pop     %ebx
+/ position of old ebp
+        pop     %ebx
+/ position of old return address
+        pop     %ebx
+
+/ return address
+        mov     28(%eax), %ebx
+        push    %ebx
+
+/ ebp saved as normal
+        mov     24(%eax), %ebx
+        push    %ebx
+        mov     %esp, %ebp
+        
+        mov     0(%eax), %ebx
+        mov     4(%eax), %ecx
+        mov     8(%eax), %edx
+        mov     12(%eax), %edi
+        mov     16(%eax), %esi
+
+/ return value
+        mov     32(%eax), %eax
+
+        pop     %ebp
         ret

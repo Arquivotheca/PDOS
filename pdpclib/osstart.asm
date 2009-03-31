@@ -62,6 +62,10 @@ __main proc
 __main endp
 
 
+; Note that setjmp/longjmp are untested under OS/2 since
+; I don't have that environment readily available at the
+; moment
+
 public __setj
 __setj proc env:dword
         mov eax, env

@@ -1292,6 +1292,7 @@ DYNALDLN EQU   *-DYNALWRK     LENGTH OF DYNAMIC STORAGE
 *
 * Keep this code last because it uses different base register
 *
+         DROP  R12
 * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
 *
 *  SETJ - SAVE REGISTERS INTO ENV
@@ -1322,7 +1323,6 @@ DYNALDLN EQU   *-DYNALWRK     LENGTH OF DYNAMIC STORAGE
 * and won't compile anyway because "BSM" is not known.
 *
          AIF   ('&SYS' EQ 'S370').NOMODE  If S/370 we can't switch mode
-         DROP  R12
 * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
 *
 *  SETM24 - Set AMODE to 24

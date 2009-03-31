@@ -20,7 +20,7 @@ int __longj(void *);
 #endif
 
 #if !defined(__WIN32__) && !defined(__MSDOS__) && !defined(__DOS__) \
-  && !defined(__POWERC)
+  && !defined(__POWERC) && !defined(__OS2__)
 int setjmp(jmp_buf env)
 {
 #if defined(__MVS__) || defined(__CMS__)

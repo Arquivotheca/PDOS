@@ -12,23 +12,7 @@
 
 #include "setjmp.h"
 
-#if defined(__MVS__) || defined(__CMS__)
-int __saver(jmp_buf env);
-int __loadr(jmp_buf env);
-#else
 int __longj(void *);
-#endif
-
-#if !defined(__WIN32__) && !defined(__MSDOS__) && !defined(__DOS__) \
-  && !defined(__POWERC) && !defined(__OS2__)
-int setjmp(jmp_buf env)
-{
-#if defined(__MVS__) || defined(__CMS__)
-    __saver(env);
-#endif
-    return (0);
-}
-#endif
 
 void longjmp(jmp_buf env, int val)
 {
@@ -38,10 +22,6 @@ void longjmp(jmp_buf env, int val)
     }
     env[0].retval = val;
     /* load regs */
-#if defined(__MVS__) || defined(__CMS__)
-    __loadr(env);
-#else
     __longj(env);
-#endif
     return;
 }

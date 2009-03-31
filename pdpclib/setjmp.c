@@ -15,11 +15,12 @@
 #if defined(__MVS__) || defined(__CMS__)
 int __saver(jmp_buf env);
 int __loadr(jmp_buf env);
-#elif defined(__WIN32__)
+#else
 int __longj(void *);
 #endif
 
-#if !defined(__WIN32__)
+#if !defined(__WIN32__) && !defined(__MSDOS__) && !defined(__DOS__) \
+  && !defined(__POWERC)
 int setjmp(jmp_buf env)
 {
 #if defined(__MVS__) || defined(__CMS__)
@@ -39,7 +40,7 @@ void longjmp(jmp_buf env, int val)
     /* load regs */
 #if defined(__MVS__) || defined(__CMS__)
     __loadr(env);
-#elif defined(__WIN32__)
+#else
     __longj(env);
 #endif
     return;

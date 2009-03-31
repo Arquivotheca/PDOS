@@ -296,7 +296,8 @@ HISTORY
 
 1.01  Bug fix for strstr. setjmp & longjmp implemented
       properly for all PC environments, making them
-      compliant too.
+      compliant too. setjmp & longjmp revamped on MVS
+      and CMS to stop saving the entire stack.
       
 
 FUTURE DIRECTION

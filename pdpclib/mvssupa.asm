@@ -831,6 +831,32 @@ RETURNGC DS    0H
 *
 * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
 *
+*  SETJ - SAVE REGISTERS INTO ENV_BUF
+*
+* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+         ENTRY @@SETJ
+         USING @@SETJ,R15
+@@SETJ   L     R15,0(R1)       get the env variable
+         STM   R0,R14,0(R15)   save registers that need to be restored
+         LA    R15,0           setjmp needs to return 0
+         BR    R14             return to caller
+         LTORG ,
+*
+* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+*
+*  LONGJ - RESTORE REGISTERS FROM ENV_BUF
+*
+* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+         ENTRY @@LONGJ
+         USING @@LONGJ,R15
+@@LONGJ  L     R2,0(R1)        get the env variable
+         L     R15,60(R2)      get the return code
+         LM    R0,R14,0(R2)    restore registers
+         BR    R14             return to caller
+         LTORG ,
+*
+* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+*
 *  SAVER - SAVE REGISTERS AND PSW INTO ENV_BUF
 *
 * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *

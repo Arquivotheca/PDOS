@@ -304,6 +304,99 @@ ret
 ___freemem endp
 
 
+public ___setj
+___setj proc
+        push bp
+        mov bp,sp
+        push ds
+
+        mov ax, [bp + 6]
+        mov ds, [bp + 8]
+        push bx
+        push bp
+        mov bp, sp
+        mov bx, bp
+        pop bp
+        push bx               ; sp
+        
+        mov bx,ax
+        mov [bx + 2], cx
+        mov [bx + 4], dx
+        mov [bx + 6], di
+        mov [bx + 8], si
+        
+        pop ax
+        mov [bx + 10], bx    ; sp
+        mov ax, [bp + 0]     ; bp
+        mov [bx + 12], ax    ; bp
+        
+        mov ax, [bp + 2]     ; return address        
+        mov [bx + 14], ax    ; return address
+        mov ax, [bp + 4]     ; return address
+        mov [bx + 16], ax    ; return address
+
+        pop ax               ; bx
+        mov [bx + 0], ax
+        pop ax               ; ds
+        push ax
+        mov [bx + 18], ax
+        mov ax, es
+        mov [bx + 20], ax    ; es
+        mov ax, [bx + 0]     ; bx
+        mov bx, ax
+
+        mov ax, 0
+
+        pop ds
+        pop bp
+        ret
+___setj endp
+
+
+public ___longj
+___longj proc
+        push bp
+        mov bp, sp
+
+        mov bx, [bp + 6]
+        mov ds, [bp + 8]
+        mov bp, [bx + 10]        
+        mov sp, bp
+        mov bp, [bx + 12]
+        pop ax               ; position of old bx
+        pop ax               ; position of old ds
+        pop ax               ; position of old bp
+        pop ax               ; position of old return address
+        pop ax               ; position of old return address
+        
+        mov ax, [bx + 16]    ; return address
+        push ax
+        mov ax, [bx + 14]    ; return address
+        push ax
+        
+        mov ax, [bx + 12]    ; bp saved as normal
+        push ax
+        
+        mov cx, [bx + 2]
+        mov dx, [bx + 4]
+        mov di, [bx + 6]
+        mov si, [bx + 8]
+        
+        mov ax, [bx + 0]
+        push ax              ; bx
+        mov ax, [bx + 18]    ; ds        
+        push ax
+        mov ax, [bx + 20]    ; es
+        mov es, ax
+        mov ax, [bx + 22]    ; return value
+        pop ds
+        pop bx
+
+        pop bp
+        ret
+___longj endp
+
+
 ; full path, parm block
 public ___exec
 ___exec proc

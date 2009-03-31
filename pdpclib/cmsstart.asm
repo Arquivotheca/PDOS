@@ -33,14 +33,6 @@ R15      EQU   15
 SUBPOOL  EQU   0
          CSECT
 *
-* External variables references. Don't store actual external
-* variables here. Allow the entry point of @@CRT0 to be zero.
-* The actual variables themselves should be stored in
-* mvssupa.asm which is the main assembler support code.
-*
-         EXTRN @@MANSTK
-         EXTRN @@MANSTL
-*
 * Put an eyecatcher here to ensure program has been linked
 * correctly.
          DC    C'PDPCLIB!'
@@ -59,13 +51,6 @@ SUBPOOL  EQU   0
          ST    R1,8(R13)
          LR    R13,R1
          USING STACK,R13
-*DW* SAVE STACK POINTER FOR SETJMP/LONGJMP
-         L     R3,=V(@@MANSTK)
-         ST    R13,0(R3)
-         L     R2,=A(STACKLEN)
-         L     R3,=V(@@MANSTL)
-         ST    R2,0(R3)
-*DW END OF MOD
 *
          LA    R2,0
          ST    R2,DUMMYPTR       WHO KNOWS WHAT THIS IS USED FOR

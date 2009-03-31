@@ -48,20 +48,6 @@ R15      EQU   15
 SUBPOOL  EQU   0
          CSECT
 *
-* External variables. Note that these variables will eventually need
-* to be moved into a CRAB or something to allow reentrancy. Note that
-* GCC doesn't currently produce reentrant code, so you will need to
-* solve that problem first.
-*
-* MANSTK contains the address of the main stack. MANSTL has the length
-* of that stack. This is used for setjmp/longjmp so that the stack can
-* be copied.
-*
-         ENTRY @@MANSTK
-@@MANSTK DS    F
-         ENTRY @@MANSTL
-@@MANSTL DS    F
-*
 **********************************************************************
 *                                                                    *
 *  AOPEN - Open a file                                               *
@@ -660,6 +646,9 @@ RETURNGC DS    0H
 *
 *
 *
+* Keep this code last because it uses a different base register
+*
+         DROP  R12
 **********************************************************************
 *                                                                    *
 *  SETJ - SAVE REGISTERS INTO ENV                                    *
@@ -690,82 +679,6 @@ RETURNGC DS    0H
 *
 *
 *
-**********************************************************************
-*                                                                    *
-*  SAVER - SAVE REGISTERS AND PSW INTO ENV_BUF                       *
-*                                                                    *
-**********************************************************************
-         ENTRY @@SAVER
-@@SAVER  SAVE  (14,12),,@@SAVER    * SAVE REGS AS NORMAL
-         LR    R12,R15
-         USING @@SAVER,12
-         L     R1,0(,R1)           * ADDRESS OF ENV TO R1
-         L     R2,=A(@@MANSTK)
-         L     R2,0(R2)            * R2 POINTS TO START OF STACK
-         L     R3,=A(@@MANSTL)
-         L     R3,0(R3)            * R3 HAS LENGTH OF STACK
-         LR    R5,R3               * AND R5
-         LR    R9,R1               * R9 NOW CONTAINS ADDRESS OF ENV
-* GET A SAVE AREA
-         AIF   ('&SYS' EQ 'S390').ANYY
-* Can't use "ANY" on VM/370
-* Also can't do multiple ANY requests on VM/380 at the moment
-         GETMAIN R,LV=(R3),SP=SUBPOOL
-         AGO   .ANYE
-.ANYY    ANOP
-         GETMAIN R,LV=(R3),SP=SUBPOOL,LOC=ANY
-.ANYE    ANOP
-         ST    R1,0(R9)            * SAVE IT IN FIRST WORK OF ENV
-         ST    R5,4(R9)            * SAVE LENGTH IN SECOND WORD OF ENV
-         ST    R2,8(R9)            * NOTE WHERE WE GOT IT FROM
-         ST    R13,12(R9)          * AND R13
-         LR    R4,R1               * AND R4
-         MVCL  R4,R2               * COPY SETJMP'S SAVE AREA TO ENV
-*        STM   R0,R15,0(R1)               SAVE REGISTERS
-*        BALR  R15,0                     GET PSW INTO R15
-*        ST    R15,64(,R1)                SAVE PSW
-*
-RETURNSR DS    0H
-         SR    R15,R15              * CLEAR RETURN CODE
-         RETURN (14,12),RC=(15)
-         LTORG ,
-*
-*
-*
-**********************************************************************
-*                                                                    *
-*  LOADR - LOAD REGISTERS AND PSW FROM ENV_BUF                       *
-*                                                                    *
-**********************************************************************
-         ENTRY @@LOADR
-@@LOADR  BALR  R12,0
-         USING *,R12
-         L     R1,0(,R1)          * R1 POINTS TO ENV
-         L     R2,8(,R1)          * R2 POINTS TO STACK
-         L     R3,4(,R1)          * R3 HAS HOW LONG
-         LR    R5,R3              * AS DOES R5
-         L     R6,24(,R1)         * R6 HAS RETURN CODE
-         L     R4,0(,R1)          * OUR SAVE AREA
-         L     R13,12(,R1)        * GET OLD STACK POINTER
-         LR    R8,R4              * Save before clobbered by MVCL
-         LR    R7,R5              * Save before clobbered by MVCL
-         MVCL  R2,R4              * AND RESTORE STACK
-         ST    R6,24(,R1)         * SAVE VAL IN ENV
-         L     R6,=F'1'
-         ST    R6,20(R1)          * AND SET LONGJ TO 1.
-         FREEMAIN R,LV=(R7),A=(R8),SP=SUBPOOL
-*        L     R14,16(R1)          * AND RETURN ADDRESS
-*        B     RETURNSR            * AND BACK INTO SETJMP
-*        L     R15,64(,R1)                RESTORE PSW
-*        LM    R0,R15,0(R1)               RESTORE REGISTERS
-*        BR    R15                        JUMP TO SAVED PSW
-*
-RETURNLR DS    0H
-         SR    R15,R15            * CLEAR RETURN CODE
-         RETURN (14,12),RC=(15)
-         LTORG ,
-*
-*
 * S/370 doesn't support switching modes so this code is useless,
 * and won't compile anyway because "BSM" is not known.
 *
@@ -775,7 +688,6 @@ RETURNLR DS    0H
 *  SETM24 - Set AMODE to 24                                          *
 *                                                                    *
 **********************************************************************
-         DROP  R12
          ENTRY @@SETM24
          USING @@SETM24,R15
 @@SETM24 ICM   R14,8,=X'00'       Sure hope caller is below the line

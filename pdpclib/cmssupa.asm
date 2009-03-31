@@ -667,10 +667,10 @@ RETURNGC DS    0H
 **********************************************************************
          ENTRY @@SETJ
          USING @@SETJ,R15
-@@SETJ   L     R15,0(R1)       get the env variable
-         STM   R0,R14,0(R15)   save registers that need to be restored
-         LA    R15,0           setjmp needs to return 0
-         BR    R14             return to caller
+@@SETJ   L     R15,0(R1)        get the env variable
+         STM   R0,R14,0(R15)    save registers to be restored
+         LA    R15,0            setjmp needs to return 0
+         BR    R14              return to caller
          LTORG ,
 *
 *
@@ -682,10 +682,10 @@ RETURNGC DS    0H
 **********************************************************************
          ENTRY @@LONGJ
          USING @@LONGJ,R15
-@@LONGJ  L     R2,0(R1)        get the env variable
-         L     R15,60(R2)      get the return code
-         LM    R0,R14,0(R2)    restore registers
-         BR    R14             return to caller
+@@LONGJ  L     R2,0(R1)         get the env variable
+         L     R15,60(R2)       get the return code
+         LM    R0,R14,0(R2)     restore registers
+         BR    R14              return to caller
          LTORG ,
 *
 *

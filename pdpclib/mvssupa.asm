@@ -96,7 +96,7 @@
          COPY  PDPTOP
 *
          CSECT ,
-         PRINT NOGEN
+         PRINT GEN
 * YREGS IS NOT AVAILABLE WITH IFOX
 *         YREGS
 SUBPOOL  EQU   0
@@ -116,36 +116,6 @@ R12      EQU   12
 R13      EQU   13
 R14      EQU   14
 R15      EQU   15
-*
-* External variables. Note that these variables will eventually need
-* to be moved into a CRAB or something to allow reentrancy. Note that
-* GCC doesn't currently produce reentrant code, so you will need to
-* solve that problem first.
-*
-* MANSTK contains the address of the main stack. MANSTL has the length
-* of that stack. This is used for setjmp/longjmp so that the stack can
-* be copied.
-*
-         ENTRY   @@MANSTK
-@@MANSTK DS    F
-         ENTRY   @@MANSTL
-@@MANSTL DS    F
-*
-* PGMPRM contains the R1 that was passed to the main program, ie
-* when you go EXEC PGM=xxx,PARM='hello there' - that "hello there"
-* is passed to the program, although not directly, I think R1
-* points to a list of parameters that you'll need to map via
-* some appropriate macro. Note that the address stored here will
-* be 31-bit clean.
-*
-         ENTRY   @@PGMPRM
-@@PGMPRM DS    F
-*
-* SYSANC contains an anchor for the use of @@SYSTEM which
-* needs to figure out its operating environment.
-*
-         ENTRY   @@SYSANC
-@@SYSANC DC    A(0)
 *
 * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
 *
@@ -348,11 +318,32 @@ WNOMEM2  DS    0H
          BZ    BADOPOUT           OPEN failed, go return error code -39
          MVC   LRECL+2(2),DCBLRECL  Copy LRECL to a fullword
          MVC   BLKSIZE+2(2),DCBBLKSI  Copy BLKSIZE to a fullword
+         AIF   ('&OUTM' NE 'M').NMM4
+         L     R6,=F'32768'
+* Give caller an internal buffer to write to. Below the line!
+*
+* S/370 can't handle LOC=BELOW
+*
+         AIF   ('&SYS' NE 'S370').MVT8090  If not S/370 then 380 or 390
+         GETMAIN RU,LV=(R6),SP=SUBPOOL  No LOC= for S/370
+         AGO   .GETOENE
+.MVT8090 ANOP  ,                  S/380 or S/390
+         GETMAIN RU,LV=(R6),SP=SUBPOOL,LOC=BELOW
+.GETOENE ANOP
+         ST    R1,ASMBUF
+* In move move mode, we will return this two fullword control
+* block instead of the DCB area
+         ST    R2,BEGINDCB
+         LA    R7,BEGINDCB
+         B     DONEOPEW
+.NMM4    ANOP
          SPACE 1
 *   Lots of code tests DCBRECFM twice, to distinguish among F, V, and
 *     U formats. We set the index byte to 0,4,8 to allow a single test
 *     with a three-way branch.
-DONEOPEN LA    R0,8
+DONEOPEN LR    R7,R2
+DONEOPEW DS    0H
+         LA    R0,8
          TM    DCBRECFM,DCBRECU   Undefined ?
          BO    SETINDEX           Yes
          BM    GETINDFV           No
@@ -379,21 +370,25 @@ NOTU     DS    0H
          BL    SETRECFM           Is RECFM=F, go return "0" to caller
          LA    R1,1               Set V for V and U
          BE    SETRECFM           if V
-         LTR   R4,R4              In or Out ?
-         BZ    SETRECFM           Input - set V
-         SR    R1,R1              Out - set F
+*        LTR   R4,R4              In or Out ?
+*        BZ    SETRECFM           Input - set V
+*        SR    R1,R1              Out - set F
+         LA    R1,2
 * RECFM=U on input  will tell caller that it is RECFM=V
 * RECFM=U on output will tell caller that it is RECFM=F
+* This logic now moved to the C code
 SETRECFM DS    0H
          ST    R1,0(,R5)          Pass either RECFM F or V to caller
-*        B     RETURNOP
+         B     RETURNOQ
 *
 RETURNOP DS    0H
+         LR    R7,R2
+RETURNOQ DS    0H
          LR    R1,R13
          L     R13,SAVEAREA+4
          FREEMAIN RU,LV=WORKLEN,A=(1),SP=SUBPOOL
 *
-         LR    R15,R2             Return neg.RC or GETMAINed area addr.
+         LR    R15,R7             Return neg.RC or GETMAINed area addr.
          RETURN (14,12),RC=(15)   Return to caller
 *
 * This is not executed directly, but copied into 24-bit storage
@@ -406,7 +401,15 @@ INDCB    DCB   MACRF=R,DSORG=PS   If member name, will be changed to PO
 INDCBLN  EQU   *-INDCB
 F32760   DC    F'32760'           Constant for compare
 F65536   DC    F'65536'           Maximum VBS record GETMAIN length
+*
+* OUTDCB changes depending on whether we are in LOCATE mode or
+* MOVE mode
+         AIF   ('&OUTM' NE 'L').NLM1
 OUTDCB   DCB   MACRF=PL,DSORG=PS
+.NLM1    ANOP
+         AIF   ('&OUTM' NE 'M').NMM1
+OUTDCB   DCB   MACRF=PM,DSORG=PS
+.NMM1    ANOP
 OUTDCBLN EQU   *-OUTDCB
 *
 READDUM  READ  NONE,              Read record Data Event Control Block C
@@ -573,6 +576,7 @@ DEBLOCKU DS    0H
 *        R4 has address of block buffer
 *        R7 has size of block read in
          LA    R7,4(,R7)          Add four to block size for fake RDW
+         S     R4,=F'4'           Go back to BDW
          STH   R7,0(,R4)          Store variable RDW for RECFM=U
          LR    R5,R4              Indicate start of buffer is record
          XC    BUFFCURR,BUFFCURR  Indicate no next record in block
@@ -620,6 +624,7 @@ H4       DC    H'4'               Constant for BDW/SDW/RDW handling
          USING @@AWRITE,R12
          L     R2,0(,R1)          R2 contains GETMAINed address
          L     R3,4(,R1)          R3 points to the record address
+         L     R4,8(,R1)          R4 points to length of data to write
          USING ZDCBAREA,R2
 *        GETMAIN RU,LV=WORKLEN,SP=SUBPOOL
          LA    R1,SAVEADCB
@@ -632,13 +637,24 @@ H4       DC    H'4'               Constant for BDW/SDW/RDW handling
          CALL  @@SETM24
 .N380WR1 ANOP
 *
+         STCM  R4,B'0011',DCBLRECL
+*
+         AIF   ('&OUTM' NE 'L').NLM2
          PUT   (R2)
+.NLM2    ANOP
+         AIF   ('&OUTM' NE 'M').NMM2
+* In move mode, always use our internal buffer. Ignore passed parm.
+         L     R3,ASMBUF
+         PUT   (R2),(R3)
+.NMM2    ANOP
 *
          AIF   ('&SYS' NE 'S380').N380WR2
          CALL  @@SETM31
 .N380WR2 ANOP
 *
+         AIF   ('&OUTM' NE 'L').NLM3
          ST    R1,0(,R3)
+.NLM3    ANOP
 *        LR    R1,R13
 *        L     R13,SAVEAREA+4
          L     R13,SAVEADCB+4
@@ -655,12 +671,22 @@ H4       DC    H'4'               Constant for BDW/SDW/RDW handling
          LR    R12,R15
          USING @@ACLOSE,R12
          L     R2,0(,R1)          R2 contains GETMAINed address/handle
+         USING ZDCBAREA,R2
          GETMAIN RU,LV=WORKLEN,SP=SUBPOOL
          ST    R13,4(,R1)
          ST    R1,8(,R13)
          LR    R13,R1
          USING WORKAREA,R13
 *
+* If we are doing move mode, free internal assembler buffer
+         AIF   ('&OUTM' NE 'M').NMM6
+         L     R5,ASMBUF
+         LTR   R5,R5
+         BZ    NFRCL
+         L     R6,=F'32768'
+         FREEMAIN RU,LV=(R6),A=(R5),SP=SUBPOOL
+NFRCL    DS    0H
+.NMM6    ANOP
          ICM   R1,B'1111',VBSADDR  Load VBS record area
          BZ    FREEBUFF           No area, skip free of it
          L     R0,VBSEND          Load address past end of VBS area
@@ -773,101 +799,6 @@ RETURNGC DS    0H
          RETURN (14,12),RC=(15)
          LTORG ,
 *
-* S/370 doesn't support switching modes so this code is useless,
-* and won't compile anyway because "BSM" is not known.
-*
-         AIF   ('&SYS' EQ 'S370').NOMODE  If S/370 we can't switch mode
-* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
-*
-*  SETM24 - Set AMODE to 24
-*
-* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
-         ENTRY @@SETM24
-         USING @@SETM24,R15
-@@SETM24 ICM   R14,8,=X'00'       Sure hope caller is below the line
-         BSM   0,R14              Return in amode 24
-*
-* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
-*
-*  SETM31 - Set AMODE to 31
-*
-* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
-         ENTRY @@SETM31
-         USING @@SETM31,R15
-@@SETM31 ICM   R14,8,=X'80'       Set to switch mode
-         BSM   0,R14              Return in amode 31
-         LTORG ,
-*
-.NOMODE  ANOP  ,                  S/370 doesn't support MODE switching
-*
-* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
-*
-*  SAVER - SAVE REGISTERS AND PSW INTO ENV_BUF
-*
-* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
-         ENTRY @@SAVER
-@@SAVER  SAVE  (14,12),,@@SAVER    * SAVE REGS AS NORMAL
-         LR    R12,R15
-         USING @@SAVER,12
-         L     R1,0(,R1)           * ADDRESS OF ENV TO R1
-         L     R2,=A(@@MANSTK)
-         L     R2,0(R2)            * R2 POINTS TO START OF STACK
-         L     R3,=A(@@MANSTL)
-         L     R3,0(R3)            * R3 HAS LENGTH OF STACK
-         LR    R5,R3               * AND R5
-         LR    R9,R1               * R9 NOW CONTAINS ADDRESS OF ENV
-* GET A SAVE AREA
-         GETMAIN RU,LV=(R3),SP=SUBPOOL
-         ST    R1,0(R9)            * SAVE IT IN FIRST WORK OF ENV
-         ST    R5,4(R9)            * SAVE LENGTH IN SECOND WORD OF ENV
-         ST    R2,8(R9)            * NOTE WHERE WE GOT IT FROM
-         ST    R13,12(R9)          * AND R13
-         LR    R4,R1               * AND R4
-         MVCL  R4,R2               * COPY SETJMP'S SAVE AREA TO ENV
-*        STM   R0,R15,0(R1)               SAVE REGISTERS
-*        BALR  R15,0                     GET PSW INTO R15
-*        ST    R15,64(,R1)                SAVE PSW
-*
-RETURNSR DS    0H
-         SR    R15,R15              * CLEAR RETURN CODE
-         RETURN (14,12),RC=(15)
-         LTORG ,
-*
-*
-*
-* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
-*
-*  LOADR - LOAD REGISTERS AND PSW FROM ENV_BUF
-*
-* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
-         ENTRY @@LOADR
-@@LOADR  BALR  R12,0
-         USING *,R12
-         L     R1,0(,R1)          * R1 POINTS TO ENV
-         L     R2,8(,R1)          * R2 POINTS TO STACK
-         L     R3,4(,R1)          * R3 HAS HOW LONG
-         LR    R5,R3              * AS DOES R5
-         L     R6,24(,R1)         * R6 HAS RETURN CODE
-         L     R4,0(,R1)          * OUR SAVE AREA
-         L     R13,12(,R1)        * GET OLD STACK POINTER
-         LR    R8,R4              * Save before clobbered by MVCL
-         LR    R7,R5              * Save before clobbered by MVCL
-         MVCL  R2,R4              * AND RESTORE STACK
-         ST    R6,24(,R1)         * SAVE VAL IN ENV
-         L     R6,=F'1'
-         ST    R6,20(R1)          * AND SET LONGJ TO 1.
-         FREEMAIN RU,LV=(R7),A=(R8),SP=SUBPOOL
-*        L     R14,16(R1)          * AND RETURN ADDRESS
-*        B     RETURNSR            * AND BACK INTO SETJMP
-*        L     R15,64(,R1)                RESTORE PSW
-*        LM    R0,R15,0(R1)               RESTORE REGISTERS
-*        BR    R15                        JUMP TO SAVED PSW
-*
-RETURNLR DS    0H
-         SR    R15,R15            * CLEAR RETURN CODE
-         RETURN (14,12),RC=(15)
-         LTORG ,
-         SPACE 3
 ***********************************************************************
 **                                                                   **
 **   CALL @@SYSTEM,(req-type,pgm-len,pgm-name,parm-len,parm),VL      **
@@ -907,9 +838,7 @@ RETURNLR DS    0H
 ***********************************************************************
          SPACE 2
          ENTRY @@SYSTEM
-@@SYSTEM B     SYSATBEG-*(,R15)      SKIP ID
-         DC    AL1(9),C'@@SYSTEM &SYSDATE'
-SYSATBEG STM   R14,R12,12(R13)    SAVE CALLER'S REGISTERS
+@@SYSTEM STM   R14,R12,12(R13)    SAVE CALLER'S REGISTERS
          LR    R12,R15            ESTABLISH MY BASE
          USING @@SYSTEM,R12       AND DECLARE IT
          LA    R11,16(,R13)       REMEMBER THE RETURN CODE ADDRESS
@@ -1094,9 +1023,7 @@ SYSATDLN EQU   *-SYSATWRK     LENGTH OF DYNAMIC STORAGE
          DROP  ,
          ENTRY @@IDCAMS
          USING @@IDCAMS,R15
-@@IDCAMS B     IDCBEG
-         DC    AL1(17),CL17'@@IDCAMS &SYSDATE'
-IDCBEG   STM   R14,R12,12(R13)    SAVE CALLER'S REGISTERS
+@@IDCAMS STM   R14,R12,12(R13)    SAVE CALLER'S REGISTERS
          LR    R12,R15            SET LOCAL BASE
          DROP  R15
          USING @@IDCAMS,R12       DECLARE PROGRAM BASE
@@ -1254,9 +1181,7 @@ EXFGLOB  EQU   EXFMALL+EXFSUPP+EXFRET  GLOBAL FLAGS
 *                                                                     *
 ***********************************************************************
          ENTRY @@DYNAL
-@@DYNAL  B     DYNALBEG-*(,R15)      SKIP ID
-         DC    AL1(9),C'@@SYSTEM &SYSDATE'
-DYNALBEG STM   R14,R12,12(R13)    SAVE CALLER'S REGISTERS
+@@DYNAL  STM   R14,R12,12(R13)    SAVE CALLER'S REGISTERS
          LR    R12,R15            ESTABLISH MY BASE
          USING @@DYNAL,R12        AND DECLARE IT
          LA    R11,16(,R13)       REMEMBER THE RETURN CODE ADDRESS
@@ -1371,8 +1296,67 @@ DYNLIST  DYNPAT P=ALL        EXPAND ALLOCATION DATA
 DYNALDLN EQU   *-DYNALWRK     LENGTH OF DYNAMIC STORAGE
          CSECT ,             RESTORE
 *
-         IEZIOB                   Input/Output Block
 *
+*
+* Keep this code last because it uses different base register
+*
+         DROP  R12
+* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+*
+*  SETJ - SAVE REGISTERS INTO ENV
+*
+* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+         ENTRY @@SETJ
+         USING @@SETJ,R15
+@@SETJ   L     R15,0(R1)          get the env variable
+         STM   R0,R14,0(R15)      save registers to be restored
+         LA    R15,0              setjmp needs to return 0
+         BR    R14                return to caller
+         LTORG ,
+*
+* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+*
+*  LONGJ - RESTORE REGISTERS FROM ENV
+*
+* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+         ENTRY @@LONGJ
+         USING @@LONGJ,R15
+@@LONGJ  L     R2,0(R1)           get the env variable
+         L     R15,60(R2)         get the return code
+         LM    R0,R14,0(R2)       restore registers
+         BR    R14                return to caller
+         LTORG ,
+*
+* S/370 doesn't support switching modes so this code is useless,
+* and won't compile anyway because "BSM" is not known.
+*
+         AIF   ('&SYS' EQ 'S370').NOMODE  If S/370 we can't switch mode
+* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+*
+*  SETM24 - Set AMODE to 24
+*
+* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+         ENTRY @@SETM24
+         USING @@SETM24,R15
+@@SETM24 ICM   R14,8,=X'00'       Sure hope caller is below the line
+         BSM   0,R14              Return in amode 24
+*
+* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+*
+*  SETM31 - Set AMODE to 31
+*
+* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+         ENTRY @@SETM31
+         USING @@SETM31,R15
+@@SETM31 ICM   R14,8,=X'80'       Set to switch mode
+         BSM   0,R14              Return in amode 31
+         LTORG ,
+*
+.NOMODE  ANOP  ,                  S/370 doesn't support MODE switching
+*
+*
+*
+         IEZIOB                   Input/Output Block
 *
 WORKAREA DSECT
 SAVEAREA DS    18F
@@ -1388,6 +1372,11 @@ ZDCBAREA DS    0H
 OPENCLOS DS    A                  OPEN/CLOSE parameter list
 DCBXLST  DS    A
 EOFR24   DS    CL(EOFRLEN)
+* This is for when we are using move mode, and need to
+* pass back extra information
+BEGINDCB DS    A                  The beginning of this entire block
+ASMBUF   DS    A                  Pointer to an area for PUTting data
+*
          IHADECB DSECT=NO         Data Event Control Block
 BLKSIZE  DS    F                  Save area for input DCB BLKSIZE
 LRECL    DS    F                  Save area for input DCB LRECL

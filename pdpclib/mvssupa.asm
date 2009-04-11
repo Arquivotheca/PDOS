@@ -1172,7 +1172,7 @@ EXFGLOB  EQU   EXFMALL+EXFSUPP+EXFRET  GLOBAL FLAGS
 ***********************************************************************
          ENTRY @@DYNAL
 @@DYNAL  B     DYNALBEG-*(,R15)      SKIP ID
-         DC    AL1(9),C'@@SYSTEM &SYSDATE'
+         DC    AL1(9),C'@@DYNAL &SYSDATE'
 DYNALBEG STM   R14,R12,12(R13)    SAVE CALLER'S REGISTERS
          LR    R12,R15            ESTABLISH MY BASE
          USING @@DYNAL,R12        AND DECLARE IT

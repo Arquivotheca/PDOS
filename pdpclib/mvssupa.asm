@@ -912,7 +912,7 @@ SYSATCP  LTR   R7,R7              ANY LENGTH ?
          BM    SYSATEXT           NO; OOPS
          LA    R1,SYSATOTX-SYSATOPL(,R7)  LENGTH WITH HEADER
          STH   R1,SYSATOPL        PASS LENGTH OF COMMAND TEXT
-         LA    R1,1(,R7)
+         LA    R1,1(,R5)
          STH   R1,SYSATOPL+2      LENGTH PROCESSED BY PARSER
          BZ    SYSATXNO
          CH    R7,=AL2(L'SYSATOTX)  NOT TOO LONG ?

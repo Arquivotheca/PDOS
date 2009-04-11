@@ -235,7 +235,15 @@ FILE *fopen(const char *filename, const char *mode)
         }
         else
         {
-            fopen2();
+            myfile->dont_touch = 0;
+            if (strcmp(filename, "dd:SYSPRINT") == 0)
+            {
+                myfile->dont_touch = 1;
+            }
+            else
+            {
+                fopen2();
+            }
             if (err)
             {
                 free(myfile);
@@ -850,6 +858,11 @@ int fclose(FILE *stream)
     BOOL rc;
 #endif
 
+    if (stream->dont_touch)
+    {
+        free(stream);
+        return (0);
+    }
     if (!stream->isopen)
     {
         return (EOF);

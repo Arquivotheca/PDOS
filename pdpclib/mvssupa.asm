@@ -838,9 +838,7 @@ RETURNGC DS    0H
 ***********************************************************************
          SPACE 2
          ENTRY @@SYSTEM
-@@SYSTEM B     SYSATBEG-*(,R15)      SKIP ID
-         DC    AL1(9),C'@@SYSTEM &SYSDATE'
-SYSATBEG STM   R14,R12,12(R13)    SAVE CALLER'S REGISTERS
+@@SYSTEM STM   R14,R12,12(R13)    SAVE CALLER'S REGISTERS
          LR    R12,R15            ESTABLISH MY BASE
          USING @@SYSTEM,R12       AND DECLARE IT
          LA    R11,16(,R13)       REMEMBER THE RETURN CODE ADDRESS
@@ -1005,9 +1003,7 @@ SYSATDLN EQU   *-SYSATWRK     LENGTH OF DYNAMIC STORAGE
          DROP  ,
          ENTRY @@IDCAMS
          USING @@IDCAMS,R15
-@@IDCAMS B     IDCBEG
-         DC    AL1(17),CL17'@@IDCAMS &SYSDATE'
-IDCBEG   STM   R14,R12,12(R13)    SAVE CALLER'S REGISTERS
+@@IDCAMS STM   R14,R12,12(R13)    SAVE CALLER'S REGISTERS
          LR    R12,R15            SET LOCAL BASE
          DROP  R15
          USING @@IDCAMS,R12       DECLARE PROGRAM BASE
@@ -1171,9 +1167,7 @@ EXFGLOB  EQU   EXFMALL+EXFSUPP+EXFRET  GLOBAL FLAGS
 *                                                                     *
 ***********************************************************************
          ENTRY @@DYNAL
-@@DYNAL  B     DYNALBEG-*(,R15)      SKIP ID
-         DC    AL1(9),C'@@DYNAL &SYSDATE'
-DYNALBEG STM   R14,R12,12(R13)    SAVE CALLER'S REGISTERS
+@@DYNAL  STM   R14,R12,12(R13)    SAVE CALLER'S REGISTERS
          LR    R12,R15            ESTABLISH MY BASE
          USING @@DYNAL,R12        AND DECLARE IT
          LA    R11,16(,R13)       REMEMBER THE RETURN CODE ADDRESS

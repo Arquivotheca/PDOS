@@ -949,7 +949,7 @@ SYSATXNO LA    R1,SYSATOPL        GET PARAMETER ADDRESS
          LA    R1,0(,R1)     CLEAR EOL BIT IN EITHER AMODE      GP09101
          LTR   R1,R1         ANY ADDRESS?                       GP09101
          BZ    SYSATCOM      NO; SKIP                           GP09101
-         PUSH  USING         (FOR LATER ADDIOTIONS?)            GP09101
+         PUSH  USING         (FOR LATER ADDITIONS?)             GP09101
          USING ECT,R1        DECLARE ECT                        GP09101
          LM    R14,R15,SYSATPGM   GET COMMAND NAME              GP09101
          LA    R0,7          MAX TEST/SHIFT                     GP09101

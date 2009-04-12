@@ -923,7 +923,10 @@ int system(const char *string)
     }
     
     /* point to parms */
-    p++;
+    if (*p != '\0')
+    {
+        p++;
+    }
     
     /* all parms now available */
     /* we use 1 = batch or 2 = tso */

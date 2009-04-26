@@ -13,15 +13,21 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
+
+static char buf[6144]; /* arbitrary buffer size */
 
 int main(int argc, char **argv)
 {
     FILE *fp;
     FILE *fq;
+    char *in_name;
+    char *out_name;
     int c;
     int off = 0;
     char *in = "r";
     char *out = "w";
+    unsigned long total = 0;
     
     if (argc < 3)
     {
@@ -45,23 +51,35 @@ int main(int argc, char **argv)
             off++;
         }
     }
-    fp = fopen(*(argv + off + 1), in);
+    in_name = *(argv + off + 1);
+    fp = fopen(in_name, in);
     if (fp == NULL)
     {
-        printf("failed to open %s for reading\n", *(argv + off + 1));
+        printf("failed to open %s for reading\n", in_name);
         return (EXIT_FAILURE);
     }
 
-    fq = fopen(*(argv + off + 2), out);
+    out_name = *(argv + off + 2);
+    fq = fopen(out_name, out);
     if (fq == NULL)
     {
-        printf("failed to open %s for writing\n", *(argv + off + 2));
+        printf("failed to open %s for writing\n", out_name);
         return (EXIT_FAILURE);
     }
 
-    while ((c = fgetc(fp)) != EOF)
+    printf("copying from file %s, mode %s\n",
+           in_name,
+           (strlen(in) == 1) ? "text" : "binary");
+        
+    printf("to file %s, mode %s\n",
+           out_name,
+           (strlen(out) == 1) ? "text" : "binary");
+        
+    while ((c = fread(buf, 1, sizeof buf, fp)) > 0)
     {
-        fputc(c, fq);
+        total += c;
+        fwrite(buf, 1, c, fq);
+        if (ferror(fq)) break;
     }
 
     if (ferror(fp) || ferror(fq))
@@ -69,6 +87,7 @@ int main(int argc, char **argv)
         printf("i/o error\n");
         return (EXIT_FAILURE);
     }
+    printf("%lu bytes copied\n", total);
     
     return (0);
 }

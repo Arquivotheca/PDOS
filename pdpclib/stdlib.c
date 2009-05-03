@@ -565,6 +565,10 @@ unsigned long int strtoul(const char *nptr, char **endptr, int base)
     {
         undecided = 1;
     }
+    while (isspace((unsigned char)*nptr))
+    {
+        nptr++;
+    }
     while (1)
     {
         if (isdigit((unsigned char)*nptr))
@@ -632,6 +636,10 @@ long int strtol(const char *nptr, char **endptr, int base)
     long x;
     int neg = 0;
 
+    while (isspace((unsigned char)*nptr))
+    {
+        nptr++;
+    }
     if (*nptr == '-')
     {
         neg = 1;

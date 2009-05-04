@@ -5022,7 +5022,14 @@ static void dblcvt(double num, char cnvtype, size_t nwidth,
             break;
         case 'f':
         case 'F':
-            if ( exp >= 0 ) format = 1; else format = -1;
+            if ( exp >= 0 )
+            {
+                format = 1;
+            }
+            else
+            {
+                format = -1;
+            }
             break;
         default:
             /* Style e is used if the exponent from its
@@ -5082,7 +5089,7 @@ static void dblcvt(double num, char cnvtype, size_t nwidth,
             }
             break;
 
-            case 1:      /* we have a number > 1  */
+        case 1:      /* we have a number > 1  */
                          /* need to round at the exp + nprecisionth digit */
                 if (exp + nprecision < DBL_MANT_DIG) /* we need to round */
                 {

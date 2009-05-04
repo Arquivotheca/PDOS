@@ -5077,7 +5077,7 @@ static void dblcvt(double num, char cnvtype, size_t nwidth,
             break;
 
             case 1:      /* we have a number > 1  */
-                         /* need to round at the exp + nprescionth digit */
+                         /* need to round at the exp + nprecisionth digit */
                 if (exp + nprecision < DBL_MANT_DIG) /* we need to round */
                 {
                     j = exp + nprecision;
@@ -5189,22 +5189,10 @@ static void dblcvt(double num, char cnvtype, size_t nwidth,
             }
             b = b - i;
             b = b * 10.0;
-            /* the following test needs to be adjusted to
-               allow for numeric fuzz */
-            if ( ( (nprecision-pdigits-1) > exp) && (b < 0.1E-15 ) )
-            {
-               if (cnvtype != 'G' && cnvtype != 'g')
-               {
-                   strcat(result,"0");
-               }
-            }
-            else
-            {
-                i = b;
-                work[0] = (char)('0' + i % 10);
-                work[1] = 0x00;
-                strcat(result,work);
-            }
+            i = b;
+            work[0] = (char)('0' + i % 10);
+            work[1] = 0x00;
+            strcat(result,work);
         }
     }
     /*
@@ -5250,7 +5238,31 @@ static void dblcvt(double num, char cnvtype, size_t nwidth,
         work[4] = 0x00;
         strcat(result, work);
     }
-    /* printf(" Final Answer = <%s> fprintf goves=%g\n",
+    else
+    {
+        /* get rid of trailing zeros for g specifier */
+        if (cnvtype == 'G' || cnvtype == 'g')
+        {
+            char *p;
+            
+            p = strchr(result, '.');
+            if (p != NULL)
+            {
+                p++;
+                p = p + strlen(p) - 1;                
+                while (*p != '.' && *p == '0')
+                {
+                    *p = '\0';
+                    p--;
+                }
+                if (*p == '.')
+                {
+                    *p = '\0';
+                }
+            }
+        }
+     }
+    /* printf(" Final Answer = <%s> fprintf gives=%g\n",
                 result,num); */
     /*
      do we need to pad

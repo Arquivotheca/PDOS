@@ -4982,7 +4982,7 @@ static void dblcvt(double num, char cnvtype, size_t nwidth,
     exp = 0;
     if( b > 1.0 )
     {
-        while(b >= 10.0)
+        while ((b >= 10.0) && (exp < 35))
         {
             ++exp;
             b=b / 10.0;
@@ -4992,15 +4992,21 @@ static void dblcvt(double num, char cnvtype, size_t nwidth,
     {
         exp=0;
     }
+    /* 1.0 will get exp = 0 */
     else if ( b < 1.0 )
     {
-        while(b < 1.0)
+        while ((b < 1.0) && (exp > -35))
         {
             --exp;
             b=b*10.0;
         }
     }
-
+    if ((exp <= -35) || (exp >= 35))
+    {
+        exp = 0;
+        b = 0.0;
+    }
+    
     /*
       now decide how to print and save in FORMAT.
          -1 => we need leading digits

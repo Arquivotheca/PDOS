@@ -4634,7 +4634,7 @@ size_t fread(void *ptr, size_t size, size_t nmemb, FILE *stream)
                     stream->bufStartR++;
                 }
             }
-            return (totalread / size);
+            return ((size == 0) ? 0 : (totalread / size));
             break;
 
         case FIXED_BINARY:
@@ -4676,7 +4676,7 @@ size_t fread(void *ptr, size_t size, size_t nmemb, FILE *stream)
                 totalread += read;
                 stream->bufStartR += read;
             }
-            return (totalread / size);
+            return ((size == 0) ? 0 : (totalread / size));
             break;
 
         case VARIABLE_TEXT:
@@ -4731,7 +4731,7 @@ size_t fread(void *ptr, size_t size, size_t nmemb, FILE *stream)
                     stream->bufStartR++;
                 }
             }
-            return (totalread / size);
+            return ((size == 0) ? 0 : (totalread / size));
             break;
 
         case VARIABLE_BINARY:
@@ -4791,7 +4791,7 @@ size_t fread(void *ptr, size_t size, size_t nmemb, FILE *stream)
                 totalread += read;
                 stream->bufStartR += read;
             }
-            return (totalread / size);
+            return ((size == 0) ? 0 : (totalread / size));
             break;
 
         default:

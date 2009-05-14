@@ -105,7 +105,7 @@ void *memmgrAllocate(MEMMGR *memmgr, size_t bytes, int id)
 #ifdef __MEMMGR_DEBUG
     if (memmgrDebug)
     {
-        printf("***+++allocating size %d\n\n", bytes);
+        printf("***allocating size %d\n\n", bytes);
     }
 #endif
 #ifdef __MEMMGR_INTEGRITY
@@ -122,10 +122,12 @@ void *memmgrAllocate(MEMMGR *memmgr, size_t bytes, int id)
                 * MEMMGR_MINFRTOT;
     }
 
+#ifdef __MEMMGR_DEBUG
     if (memmgrDebug)
     {
-        printf("***+++converted to %d\n\n", bytes);
+        printf("***converted to %d\n\n", bytes);
     }
+#endif
     /* if they have exceeded the limits of the data type,
        bail out now. */
     if (bytes < oldbytes)
@@ -238,7 +240,7 @@ void *memmgrAllocate(MEMMGR *memmgr, size_t bytes, int id)
 #ifdef __MEMMGR_DEBUG
         if (memmgrDebug)
         {
-            printf("***+++alloc returning NULL!\n\n");
+            printf("***alloc returning NULL!\n\n");
         }
 #endif
         return (p);
@@ -252,7 +254,7 @@ void *memmgrAllocate(MEMMGR *memmgr, size_t bytes, int id)
 #ifdef __MEMMGR_DEBUG
         if (memmgrDebug)
         {
-            printf("***+++alloc returning %p\n\n", p);
+            printf("***alloc returning %p\n\n", p);
         }
 #endif
 #ifdef __MEMMGR_INTEGRITY
@@ -273,7 +275,7 @@ void memmgrFree(MEMMGR *memmgr, void *ptr)
 #ifdef __MEMMGR_DEBUG
     if (memmgrDebug)
     {
-        printf("***+++freeing size %d block %p\n\n", p->size, p);
+        printf("***freeing size %d block %p\n\n", p->size, p);
     }
 #endif
 #ifdef __MEMMGR_INTEGRITY
@@ -433,7 +435,7 @@ void memmgrFree(MEMMGR *memmgr, void *ptr)
 #ifdef __MEMMGR_DEBUG
     if (memmgrDebug)
     {
-        printf("***+++free returning\n\n");
+        printf("***free returning\n\n");
     }
 #endif
 #ifdef __MEMMGR_INTEGRITY
@@ -618,7 +620,7 @@ int memmgrRealloc(MEMMGR *memmgr, void *ptr, size_t newsize)
 #ifdef __MEMMGR_DEBUG
     if (memmgrDebug)
     {
-        printf("***+++reallocating %p\n\n", ptr);
+        printf("***reallocating %p\n\n", ptr);
     }
 #endif
 #ifdef __MEMMGR_INTEGRITY
@@ -839,7 +841,7 @@ int memmgrRealloc(MEMMGR *memmgr, void *ptr, size_t newsize)
 #ifdef __MEMMGR_DEBUG
     if (memmgrDebug)
     {
-        printf("***+++returning from realloc\n\n");
+        printf("***returning from realloc\n\n");
     }
 #endif
 #ifdef __MEMMGR_INTEGRITY

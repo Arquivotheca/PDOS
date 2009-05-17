@@ -1029,7 +1029,14 @@ size_t fread(void *ptr, size_t size, size_t nmemb, FILE *stream)
         }
         else
         {
-            elemRead = actualRead / size;
+            if (size == 0)
+            {
+                elemRead = 0;
+            }
+            else
+            {
+                elemRead = actualRead / size;
+            }
         }
         return (elemRead);
     }
@@ -1100,7 +1107,14 @@ size_t fread(void *ptr, size_t size, size_t nmemb, FILE *stream)
         }
         else
         {
-            elemRead = actualRead / size;
+            if (size == 0)
+            {
+                elemRead = 0;
+            }
+            else
+            {
+                elemRead = actualRead / size;
+            }
             if (toread != actualRead)
             {
                 stream->eofInd = 1;

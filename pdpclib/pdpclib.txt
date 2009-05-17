@@ -294,11 +294,11 @@ HISTORY
       being able to open VSAM datasets.
       
 
-1.10  Bug fix for strstr. setjmp & longjmp implemented
-      properly for all PC environments, making them
-      compliant too. setjmp & longjmp revamped on MVS
-      and CMS to stop saving the entire stack.
-      
+1.xx  setjmp & longjmp implemented properly for all PC environments,
+      making them compliant too. setjmp & longjmp revamped on MVS
+      and CMS to stop saving the entire stack. Several bug fixes.
+      And hack for MVS taken out now that the compiler bug has
+      been fixed.
 
 FUTURE DIRECTION
 ----------------

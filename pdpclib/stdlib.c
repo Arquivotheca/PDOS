@@ -288,132 +288,77 @@ void exit(int status)
 #endif
 }
 
-/******************************************************************/
-/* qsort.c  --  ISO C qsort() function                            */
-/*                                                                */
-/* Public domain by Raymond Gardner, Englewood CO  February 1991  */
-/* Minor mods by Paul Edwards also public domain                  */
-/* Mods by Martin Baute also public domain                        */
-/*                                                                */
-/* Usage:                                                         */
-/*     qsort(base, nbr_elements, width_bytes, compare_function);  */
-/*        void *base;                                             */
-/*        size_t nbr_elements, width_bytes;                       */
-/*        int (*compare_function)(const void *, const void *);    */
-/*                                                                */
-/* Sorts an array starting at base, of length nbr_elements, each  */
-/* element of size width_bytes, ordered via compare_function,     */
-/* which is called as  (*compare_function)(ptr_to_element1,       */
-/* ptr_to_element2) and returns < 0 if element1 < element2,       */
-/* 0 if element1 = element2, > 0 if element1 > element2.          */
-/* Most refinements are due to R. Sedgewick. See "Implementing    */
-/* Quicksort Programs", Comm. ACM, Oct. 1978, and Corrigendum,    */
-/* Comm. ACM, June 1979.                                          */
-/******************************************************************/
-
-static void memswp(char *i, char *j, size_t size)
-{
-     char tmp;
-
-     while (size-- > 0)
-     {
-         tmp = *i;
-         *i++ = *j;
-         *j++ = tmp;
-     };
-     return;
-}
-
-/* For small sets, insertion sort is faster than quicksort.
-   T is the threshold below which insertion sort will be used.
-   Must be 3 or larger.
-*/
-#define T 7
+/* This qsort routine was obtained from libnix (also public domain),
+ * and then reformatted.
+ *
+ * This qsort function does a little trick:
+ * To reduce stackspace it iterates the larger interval instead of doing
+ * the recursion on both intervals. 
+ * So stackspace is limited to 32*stack_for_1_iteration = 
+ * 32*4*(4 arguments+1 returnaddress+11 stored registers) = 2048 Bytes,
+ * which is small enough for everybodys use.
+ * (And this is the worst case if you own 4GB and sort an array of chars.)
+ * Sparing the function calling overhead does improve performance, too.
+ */
 
 void qsort(void *base,
            size_t nmemb,
            size_t size,
            int (*compar)(const void *, const void *))
 {
-    char * i;
-    char * j;
-    size_t thresh     = T * size;
-    char * base_      = (char *)base;
-    char * limit      = base_ + nmemb * size;
-
-    if ( ( nmemb == 0 ) || ( size == 0 ) || ( base == NULL ) )
+    char *base2 = (char *)base;
+    size_t i,a,b,c;
+  
+    while (nmemb > 1)
     {
-        return;
-    }
-
-    for ( ;; )
-    {
-        if ( limit - base_ > thresh ) /* QSort for more than T elements. */
+        a = 0;
+        b = nmemb-1;
+        c = (a+b)/2; /* Middle element */
+        for (;;)
         {
-            /* We work from second to last - first will be pivot element. */
-            i = base_ + size;
-            j = limit - size;
-            /* We swap first with middle element, then sort that with second
-            and last element so that eventually first element is the median
-            of the three - avoiding pathological pivots.
-            */
-            memswp( ( ( ( (size_t)( limit - base_ ) ) / size ) / 2 )
-                    * size + base_, base_, size );
-            if ( compar( i, j ) > 0 ) memswp( i, j, size );
-            if ( compar( base_, j ) > 0 ) memswp( base_, j, size );
-            if ( compar( i, base_ ) > 0 ) memswp( i, base_, size );
-            /* Now we have the median for pivot element, entering main
-               Quicksort. */
-            for ( ;; )
+            while ((*compar)(&base2[size*c],&base2[size*a]) > 0) 
             {
-                do
-                {
-                    /* move i right until *i >= pivot */
-                    i += size;
-                } while ( compar( i, base_ ) < 0 );
-                do
-                {
-                    /* move j left until *j <= pivot */
-                    j -= size;
-                } while ( compar( j, base_ ) > 0 );
-                if ( i > j )
-                {
-                    /* break loop if pointers crossed */
-                    break;
-                }
-                /* else swap elements, keep scanning */
-                memswp( i, j, size );
+                a++; /* Look for one >= middle */
             }
-            /* move pivot into correct place */
-            memswp( base_, j, size );
-            /* recurse into larger subpartition, iterate on smaller */
-            if ( j - base_ > limit - i )
+            while ((*compar)(&base2[size*c],&base2[size*b]) < 0)
             {
-                /* left is larger */
-                qsort( base, ( j - base_ ) / size, size, compar );
-                base_ = i;
+                b--; /* Look for one <= middle */
             }
-            else
+            if (a >= b)
             {
-                /* right is larger */
-                qsort( i, ( limit - i ) / size, size, compar );
-                limit = j;
+                break; /* We found no pair */
             }
+            for (i=0; i<size; i++) /* swap them */
+            {
+                char tmp=base2[size*a+i];
+
+                base2[size*a+i]=base2[size*b+i];
+                base2[size*b+i]=tmp;
+            }
+            if (c == a) /* Keep track of middle element */
+            {
+                c = b;
+            }
+            else if (c == b)                
+            {
+                c = a;
+            }
+            a++; /* These two are already sorted */
+            b--;
+        } /* a points to first element of right interval now 
+             (b to last of left) */
+        b++;
+        if (b < nmemb-b) /* do recursion on smaller interval and 
+                            iteration on larger one */
+        {
+            qsort(base2,b,size,compar);
+            base2=&base2[size*b];
+            nmemb=nmemb-b;
         }
-        else /* insertion sort for less than T elements */
+        else
         {
-            for ( j = base_, i = j + size; i < limit; j = i, i += size )
-            {
-                for ( ; compar( j, j + size ) > 0; j -= size )
-                {
-                    memswp( j, j + size, size );
-                    if ( j == base_ )
-                    {
-                        break;
-                    }
-                }
-            }
-            break;
+            qsort(&base2[size*b],nmemb-b,size,compar);
+            nmemb=b;
         }
     }
     return;

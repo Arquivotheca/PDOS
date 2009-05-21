@@ -300,6 +300,7 @@ HISTORY
       And hack for MVS taken out now that the compiler bug has
       been fixed.
 
+
 FUTURE DIRECTION
 ----------------
 
@@ -339,7 +340,7 @@ Robert O'Hara for getting EPLIST support working in CMS
   and for making the mods to CMS (in VM/380) to support 
   a 31-bit environment for PDPCLIB to use.
 Ray Gardner for making his date routines public domain, plus
-  the qsort routine.
+  the original qsort routine (since replaced with libnix).
 Jim Nutt and Rob Duff for releasing strftime to the public domain.
 Rowan Crowe for some mods to memcpy.
 Matthew Parker for getting the program name under MSDOS.

@@ -127,7 +127,7 @@ combination.
 For 32-bit Windows (pdpclib-win32), the default is to use 
 the (free) gcc compiler and the (free) jwasm as the assembler.
 Use a decent "make" that doesn't need tabs (e.g. Borland's make
-or  Microsoft's nmake) and then go "make -f makefile.w32".
+or Microsoft's nmake) and then go "make -f makefile.w32".
 
 
 PERFORMANCE
@@ -318,7 +318,6 @@ Add code on MVS to detect a real terminal and do appropriate
   flushing for use on interactive programs.
 Read/write blocks instead of records on mainframe.
 Allow open for update and append on various environments.
-setjmp/longjmp to be implemented on other PC platforms.
 long arithmetic to be implemented on MSDOS.
 A port to DOS/VS(E).
 A port to Unix.

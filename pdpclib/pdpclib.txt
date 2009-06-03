@@ -1,8 +1,8 @@
             Public Domain C runtime library
             -------------------------------
             
-Version : 1.00
-Released: 2009-01-26
+Version : 1.50
+Released: 2009-06-04
 
 Written by Paul Edwards.
 Released to the public domain.
@@ -294,7 +294,7 @@ HISTORY
       being able to open VSAM datasets.
       
 
-1.xx  setjmp & longjmp implemented properly for all PC environments,
+1.50  setjmp & longjmp implemented properly for all PC environments,
       making them compliant too. setjmp & longjmp revamped on MVS
       and CMS to stop saving the entire stack. Several bug fixes.
       And hack for MVS taken out now that the compiler bug has

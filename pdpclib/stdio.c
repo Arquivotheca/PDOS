@@ -143,7 +143,7 @@ static const char *modus;
 static int modeType;
 
 static void dblcvt(double num, char cnvtype, size_t nwidth,
-                   size_t nprecision, char *result);
+                   int nprecision, char *result);
 static int vvprintf(const char *format, va_list arg, FILE *fq, char *s);
 static int vvscanf(const char *format, va_list arg, FILE *fp, const char *s);
 static void fopen2(void);
@@ -1980,7 +1980,7 @@ static int vvprintf(const char *format, va_list arg, FILE *fq, char *s)
     int vint;
     double vdbl;
     unsigned int uvint;
-    char *vcptr;
+    const char *vcptr;
     int chcount = 0;
     size_t len;
     char numbuf[50];
@@ -2041,7 +2041,7 @@ static int vvprintf(const char *format, va_list arg, FILE *fq, char *s)
             }
             else if (*format == 's')
             {
-                vcptr = va_arg(arg, char *);
+                vcptr = va_arg(arg, const char *);
                 if (vcptr == NULL)
                 {
                     vcptr = "(null)";
@@ -4970,7 +4970,7 @@ static char *int_strtok(char *s1, const char *s2)
 */
 
 static void dblcvt(double num, char cnvtype, size_t nwidth,
-            size_t nprecision, char *result)
+            int nprecision, char *result)
 {
     double b,round;
     int i,j,exp,pdigits,format;

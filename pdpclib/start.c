@@ -81,6 +81,8 @@ int __start(char *plist, char *pgmname, char **eplist)
 int __start(char *p, char *pgmname, char **ep)
 #elif defined(__MVS__)
 int __start(char *p, char *pgmname, int tso)
+#elif defined(__gnu_linux__)
+int __start(int argc, char **argv)
 #elif defined(__PDOS__)
 int __start(int *i1, int *i2, int *i3, POS_EPARMS *exep)
 #else
@@ -91,8 +93,10 @@ int CTYP __start(char *p)
     char *p;
 #endif
     int x;
+#if !defined(__gnu_linux__)
     int argc;
     static char *argv[MAXPARMS + 1];
+#endif
     int rc;
 #ifdef __OS2__
     ULONG maxFH;
@@ -601,6 +605,7 @@ int CTYP __start(char *p)
     p[*p + 1] = '\0';
     p++;
 #endif
+#if !defined(__gnu_linux__)
     while (*p == ' ')
     {
         p++;
@@ -639,6 +644,7 @@ int CTYP __start(char *p)
         argv[x] = NULL;
         argc = x;
     }
+#endif
 #ifdef PDOS_MAIN_ENTRY
     *i1 = argc;
     *i2 = (int)argv;

@@ -16,7 +16,8 @@
 typedef struct {
 #if defined(__MVS__) || defined(__CMS__)
     int regs[15];
-#elif defined(__WIN32__) || defined(__32BIT__) || defined(__OS2__)
+#elif defined(__WIN32__) || defined(__32BIT__) || defined(__OS2__) \
+    || defined(__gnu_linux__)
     int ebx;
     int ecx;
     int edx;

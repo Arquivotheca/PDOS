@@ -69,11 +69,12 @@
 /* PDOS and MSDOS use the same interface most of the time */
 /* Note that PDOS is for the 32-bit version, since the 16-bit
    version uses the MSDOS version since it is compatible with it */
-#ifdef __PDOS__
+/* linux is pretty similar too */
+#if defined(__PDOS__) || defined(__gnu_linux__)
 #define __MSDOS__
 #endif
 
-#ifdef __MSDOS__
+#if defined(__MSDOS__) && !defined(__gnu_linux__)
 #ifdef __WATCOMC__
 #define CTYP __cdecl
 #else
@@ -102,6 +103,54 @@ extern void CTYP __rename(const char *old, const char *new);
 #define VARIABLE_BINARY 1
 #define FIXED_TEXT 2
 #define VARIABLE_TEXT 3
+#endif
+
+#if defined(__gnu_linux__)
+
+#define __KERNEL__
+#include <asm-i486/unistd.h>
+#define open xxopen
+#include <fcntl.h>
+#undef open
+
+static _syscall3(int, open, const char *, fnm, int, flags, int, perm);
+static _syscall3(int, read, int, handle, void *, buf, size_t, len);
+static _syscall3(int, write, int, handle, const char *, buf, size_t, len);
+static _syscall1(int, close, int, handle);
+static _syscall3(int, lseek, int, handle, long, offset, int, whence);
+static _syscall1(int, unlink, const char *, fnm);
+#define rename rename2
+static _syscall2(int, rename, const char *, from, const char *, to);
+
+/* we call the static functions above - not pollute the namespace */
+static int __open(const char *a, int b, int *c)
+{
+    int ret;
+    
+    *c = 0;
+    if (b)
+    {
+        ret = open(a, O_WRONLY | O_CREAT | O_TRUNC, 0664);
+    }
+    else
+    {
+        ret = open(a, O_RDONLY, 0);
+    }
+    if (ret < 0)
+    {
+        *c = 1;
+    }
+    return (ret);
+}
+
+#define __read(a,b,c,d) (*(d) = 0, read(a,b,c))
+#define __write(a,b,c,d) (*(d) = 0, write(a,b,c))
+#define __close(a) close(a)
+#define __seek(handle, offset, whence) (lseek((handle), (offset), (whence)))
+#define __remove(a) (unlink((a)))
+#define __rename(a,b) (rename2((a),(b)))
+#undef rename
+
 #endif
 
 static FILE permFiles[3];
@@ -1681,12 +1730,14 @@ static void fwriteSlowT(const void *ptr,
             stream->upto = stream->fbuf;
             stream->bufStartR += tempWritten;
         }
+#ifndef __gnu_linux__
         if (stream->textMode)
         {
             memcpy(stream->upto, "\r\n", 2);
             stream->upto += 2;
         }
         else
+#endif
         {
             memcpy(stream->upto, "\n", 1);
             stream->upto += 1;
@@ -2225,7 +2276,7 @@ static int examine(const char **formt, FILE *fq, char *s, va_list *arg,
         {
             precision = 1;
         }
-#if defined(__MSDOS__) && !defined(__PDOS__)
+#if defined(__MSDOS__) && !defined(__PDOS__) && !defined(__gnu_linux__)
         if (specifier == 'p')
         {
             lng = 1;
@@ -2257,7 +2308,7 @@ static int examine(const char **formt, FILE *fq, char *s, va_list *arg,
         {
             neg = 0;
         }
-#if defined(__MSDOS__)
+#if defined(__MSDOS__) && !defined(__PDOS__) && !defined(__gnu_linux__)
         if (!lng)
         {
             ulvalue &= 0xffff;
@@ -2280,7 +2331,7 @@ static int examine(const char **formt, FILE *fq, char *s, va_list *arg,
 #if defined(__OS2__) || defined(__PDOS__) || defined(__WIN32__)
             precision = 8;
 #endif
-#if defined(__MSDOS__) && !defined(__PDOS__)
+#if defined(__MSDOS__) && !defined(__PDOS__) && !defined(__gnu_linux__)
             precision = 9;
 #endif
         }
@@ -2304,7 +2355,7 @@ static int examine(const char **formt, FILE *fq, char *s, va_list *arg,
                 }
             }
             x++;
-#if defined(__MSDOS__) && !defined(__PDOS__)
+#if defined(__MSDOS__) && !defined(__PDOS__) && !defined(__gnu_linux__)
             if ((x == 4) && (specifier == 'p'))
             {
                 work[x] = ':';
@@ -2313,7 +2364,7 @@ static int examine(const char **formt, FILE *fq, char *s, va_list *arg,
 #endif
             ulvalue = ulvalue / base;
         }
-#if defined(__MSDOS__) && !defined(__PDOS__)
+#if defined(__MSDOS__) && !defined(__PDOS__) && !defined(__gnu_linux__)
         if (specifier == 'p')
         {
             while (x < 5)
@@ -3668,7 +3719,7 @@ static int vvscanf(const char *format, va_list arg, FILE *fp, const char *s)
                             inch();
                         }
 /* DOS has a ':' in the pointer - skip that */
-#ifdef __MSDOS__
+#if defined(__MSDOS__) && !defined(__PDOS__) && !defined(__gnu_linux__)
                         else if ((*format == 'p') && (ch == ':'))
                         {
                             inch();

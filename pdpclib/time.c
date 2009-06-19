@@ -38,6 +38,10 @@
 void CTYP __datetime(void *ptr);
 #endif
 
+#ifdef __gnu_linux__
+unsigned long __time(void);
+#endif
+
 /* scalar date routines    --    public domain by Ray Gardner
 ** These will work over the range 1-01-01 thru 14699-12-31
 ** The functions written by Ray are isleap, months_to_days,
@@ -139,11 +143,13 @@ time_t time(time_t *timer)
     tt = tt * 60 + dt.wMinute;
     tt = tt * 60 + dt.wSecond;
 #endif
-#ifdef __MSDOS__
+#if defined(__MSDOS__)
     __datetime(&dt);
 #endif
 #if defined(__MVS__) || defined(__CMS__)
     tt = __getclk(clk);
+#elif defined(__gnu_linux__)
+    tt = __time();
 #elif !defined(__WIN32__)
 
     {

@@ -59,6 +59,10 @@ extern unsigned char *__envptr;
 void CTYP __exec(char *cmd, void *env);
 #endif
 
+#ifdef __gnu_linux__
+void *__allocmem(size_t size);
+#endif
+
 void (*__userExit[__NATEXIT])(void);
 
 void *malloc(size_t size)
@@ -88,12 +92,19 @@ void *malloc(size_t size)
 
     if (size > MAX_CHUNK)
     {
-#if defined(__MVS__) || defined(__CMS__)
+#if defined(__MVS__) || defined(__CMS__) || defined(__gnu_linux__)
         /* don't allow this until MVS/380 is fixed */
         /* ptr = __getm(size); */
         ptr = NULL;
 #elif defined(__WIN32__)
         ptr = GlobalAlloc(0, size + sizeof(size_t));
+        if (ptr != NULL)
+        {
+            *(size_t *)ptr = size;
+            ptr = (char *)ptr + sizeof(size_t);
+        }
+#elif defined(__gnu_linux__)
+        ptr = __allocmem(size + sizeof(size_t));
         if (ptr != NULL)
         {
             *(size_t *)ptr = size;
@@ -125,6 +136,13 @@ void *malloc(size_t size)
                 *(size_t *)ptr2 = size;
                 ptr2 = (char *)ptr2 + sizeof(size_t);
             }
+#elif defined(__gnu_linux__)
+            ptr2 = __allocmem(REQ_CHUNK);
+            if (ptr2 != NULL)
+            {
+                *(size_t *)ptr2 = size;
+                ptr2 = (char *)ptr2 + sizeof(size_t);
+            }
 #endif
             if (ptr2 == NULL)
             {
@@ -139,11 +157,20 @@ void *malloc(size_t size)
 #else /* not MEMMGR */
 #if defined(__MVS__) || defined(__CMS__)
     return (__getm(size));
-#endif
-#ifdef __WIN32__
+#elif defined(__WIN32__)
     void *ptr;
 
     ptr = GlobalAlloc(0, size + sizeof(size_t));
+    if (ptr != NULL)
+    {
+        *(size_t *)ptr = size;
+        ptr = (char *)ptr + sizeof(size_t);
+    }
+    return (ptr);
+#elif defined(__gnu_linux__)
+    void *ptr;
+
+    ptr = __allocmem(size + sizeof(size_t));
     if (ptr != NULL)
     {
         *(size_t *)ptr = size;
@@ -269,12 +296,14 @@ void abort(void)
 {
     raise(SIGABRT);
     exit(EXIT_FAILURE);
-#if !defined(__EMX__) && !defined(__GCC__) && !defined(__WIN32__)
+#if !defined(__EMX__) && !defined(__GCC__) && !defined(__WIN32__) \
+  && !defined(__gnu_linux__)
     return;
 #endif
 }
 
-#if !defined(__EMX__) && !defined(__GCC__) && !defined(__WIN32__)
+#if !defined(__EMX__) && !defined(__GCC__) && !defined(__WIN32__) \
+  && !defined(__gnu_linux__)
 void __exit(int status);
 #else
 void __exit(int status) __attribute__((noreturn));
@@ -283,7 +312,8 @@ void __exit(int status) __attribute__((noreturn));
 void exit(int status)
 {
     __exit(status);
-#if !defined(__EMX__) && !defined(__GCC__) && !defined(__WIN32__)
+#if !defined(__EMX__) && !defined(__GCC__) && !defined(__WIN32__) \
+  && !defined(__gnu_linux__)
     return;
 #endif
 }

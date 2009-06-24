@@ -330,8 +330,16 @@ int CTYP __start(char *p)
 #if defined(__CMS__)
     __eplist = eplist;
     __plist = plist;
-    p = plist + 8; /* point to the actual parameters */
 
+    if (plist[0] == '\xff')  /* are we at the fence already? */
+    {
+        p = plist;   /* yes, this is also the start of the plist */
+    }
+    else
+    {
+        p = plist + 8; /* no, so jump past the command name */
+    }
+               
     /* Now build the SVC 202 string for sysparm */
     memcpy ( &s202parm[0] ,  "FILEDEF ", 8);
     memcpy ( &s202parm[8] ,  "SYSPARM ", 8);

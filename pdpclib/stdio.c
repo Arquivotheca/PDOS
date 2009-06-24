@@ -2328,11 +2328,10 @@ static int examine(const char **formt, FILE *fq, char *s, va_list *arg,
         }
         if (specifier == 'p')
         {
-#if defined(__OS2__) || defined(__PDOS__) || defined(__WIN32__)
-            precision = 8;
-#endif
 #if defined(__MSDOS__) && !defined(__PDOS__) && !defined(__gnu_linux__)
             precision = 9;
+#else
+            precision = 8;
 #endif
         }
         x = 0;

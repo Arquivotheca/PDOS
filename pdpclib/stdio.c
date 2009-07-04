@@ -642,6 +642,12 @@ static void osfopen(void)
     else
     {
         mode = 2; /* update or otherwise unsupported */
+        /* because we don't have the ability to update files
+           at the moment on MSDOS, just return with an
+           error immediately */
+        err = 1;
+        errno = 2;
+        return;
     }
     myfile->hfile = __open(fnm, mode, &errind);
     if (errind)

@@ -50,8 +50,13 @@ void *malloc(size_t size);
 void *calloc(size_t nmemb, size_t size);
 void *realloc(void *ptr, size_t size);
 void free(void *ptr);
+#if defined(__MVS__) || defined(__CMS__)
+void abort(void) __attribute__((noreturn));
+void exit(int status) __attribute__((noreturn));
+#else
 void abort(void);
 void exit(int status);
+#endif
 void qsort(void *, size_t, size_t,
                            int (*)(const void *, const void *));
 void srand(unsigned int seed);

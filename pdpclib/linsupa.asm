@@ -66,3 +66,174 @@ movl 32(%eax), %eax
 pop %ebp
 
 ret
+
+
+.globl __write
+__write:
+push %ebp
+mov %esp, %ebp
+push %ebx
+push %ecx
+push %edx
+
+# function code 4 = write
+movl $4, %eax
+# handle
+movl 8(%ebp), %ebx
+# data pointer
+movl 12(%ebp), %ecx
+# length
+movl 16(%ebp), %edx
+int $0x80
+pop %edx
+pop %ecx
+pop %ebx
+pop %ebp
+ret
+
+
+.globl __read
+__read:
+push %ebp
+mov %esp, %ebp
+push %ebx
+push %ecx
+push %edx
+
+# function code 3 = read
+movl $3, %eax
+# handle
+movl 8(%ebp), %ebx
+# data pointer
+movl 12(%ebp), %ecx
+# length
+movl 16(%ebp), %edx
+int $0x80
+pop %edx
+pop %ecx
+pop %ebx
+pop %ebp
+ret
+
+
+
+.globl __open
+__open:
+push %ebp
+mov %esp, %ebp
+push %ebx
+push %ecx
+push %edx
+
+# function code 5 = open
+movl $5, %eax
+# filename
+movl 8(%ebp), %ebx
+# flag
+movl 12(%ebp), %ecx
+# mode
+movl 16(%ebp), %edx
+int $0x80
+pop %edx
+pop %ecx
+pop %ebx
+pop %ebp
+ret
+
+
+
+.globl __seek
+__seek:
+push %ebp
+mov %esp, %ebp
+push %ebx
+push %ecx
+push %edx
+
+# function code 19 = lseek
+movl $19, %eax
+# handle
+movl 8(%ebp), %ebx
+# offset
+movl 12(%ebp), %ecx
+# whence
+movl 16(%ebp), %edx
+int $0x80
+pop %edx
+pop %ecx
+pop %ebx
+pop %ebp
+ret
+
+
+
+.globl __rename
+__rename:
+push %ebp
+mov %esp, %ebp
+push %ebx
+push %ecx
+
+# function code 38 = rename
+movl $38, %eax
+# old file
+movl 8(%ebp), %ebx
+# new file
+movl 12(%ebp), %ecx
+int $0x80
+pop %ecx
+pop %ebx
+pop %ebp
+
+
+.globl __remove
+__remove:
+push %ebp
+mov %esp, %ebp
+push %ebx
+# function code 10 = unlink
+movl $10, %eax 
+# filename
+movl 8(%ebp), %ebx
+int $0x80
+pop %ebx
+pop %ebp
+ret
+
+
+.globl __close
+__close:
+push %ebp
+mov %esp, %ebp
+push %ebx
+# function code 6 = close
+movl $6, %eax 
+# handle
+movl 8(%ebp), %ebx
+int $0x80
+pop %ebx
+pop %ebp
+ret
+
+
+.globl __exita
+__exita:
+# exit/terminate
+movl $1, %eax
+int $0x80
+ret
+
+
+.globl __time
+__time:
+push %ebp
+mov %esp, %ebp
+push %ebx
+# function code 13 = retrieve current time
+movl $13, %eax 
+# pointer to time_t
+movl 8(%ebp), %ebx
+int $0x80
+pop %ebx
+pop %ebp
+ret

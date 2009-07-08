@@ -80,7 +80,6 @@
 #else
 #define CTYP
 #endif
-extern int CTYP __open(const char *filename, int mode, int *errind);
 extern int CTYP __read(int handle, void *buf, size_t len, int *errind);
 extern int CTYP __write(int handle, const void *buf, size_t len, int *errind);
 extern void CTYP __seek(int handle, long offset, int whence);
@@ -107,34 +106,27 @@ extern void CTYP __rename(const char *old, const char *new);
 
 #if defined(__gnu_linux__)
 
-#define __KERNEL__
-#include <asm-i486/unistd.h>
-#define open xxopen
-#include <fcntl.h>
-#undef open
+extern int __open(const char *a, int b, int c);
+extern int __write(int a, const void *b, int c);
+extern int __read(int a, void *b, int c);
 
-static _syscall3(int, open, const char *, fnm, int, flags, int, perm);
-static _syscall3(int, read, int, handle, void *, buf, size_t, len);
-static _syscall3(int, write, int, handle, const char *, buf, size_t, len);
-static _syscall1(int, close, int, handle);
-static _syscall3(int, lseek, int, handle, long, offset, int, whence);
-static _syscall1(int, unlink, const char *, fnm);
-#define rename rename2
-static _syscall2(int, rename, const char *, from, const char *, to);
+#define O_WRONLY 0x1
+#define O_CREAT  0x40
+#define O_TRUNC  0x200
+#define O_RDONLY 0x0
 
-/* we call the static functions above - not pollute the namespace */
-static int __open(const char *a, int b, int *c)
+static int open(const char *a, int b, int *c)
 {
     int ret;
     
     *c = 0;
     if (b)
     {
-        ret = open(a, O_WRONLY | O_CREAT | O_TRUNC, 0664);
+        ret = __open(a, O_WRONLY | O_CREAT | O_TRUNC, 0664);
     }
     else
     {
-        ret = open(a, O_RDONLY, 0);
+        ret = __open(a, O_RDONLY, 0);
     }
     if (ret < 0)
     {
@@ -143,13 +135,9 @@ static int __open(const char *a, int b, int *c)
     return (ret);
 }
 
-#define __read(a,b,c,d) (*(d) = 0, read(a,b,c))
-#define __write(a,b,c,d) (*(d) = 0, write(a,b,c))
-#define __close(a) close(a)
-#define __seek(handle, offset, whence) (lseek((handle), (offset), (whence)))
-#define __remove(a) (unlink((a)))
-#define __rename(a,b) (rename2((a),(b)))
-#undef rename
+#define __open(a,b,c) (open((a),(b),(c)))
+#define __write(a,b,c,d) (*(d) = 0, (__write)((a),(b),(c)))
+#define __read(a,b,c,d) (*(d) = 0, (__read)((a),(b),(c)))
 
 #endif
 

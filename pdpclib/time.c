@@ -39,7 +39,7 @@ void CTYP __datetime(void *ptr);
 #endif
 
 #ifdef __gnu_linux__
-unsigned long __time(void);
+unsigned long __time(unsigned long *);
 #endif
 
 /* scalar date routines    --    public domain by Ray Gardner
@@ -149,7 +149,7 @@ time_t time(time_t *timer)
 #if defined(__MVS__) || defined(__CMS__)
     tt = __getclk(clk);
 #elif defined(__gnu_linux__)
-    tt = __time();
+    tt = __time(NULL);
 #elif !defined(__WIN32__)
 
     {

@@ -3,7 +3,7 @@
 #
 
 CC=gcc
-COPTS=-c -O2 -fno-builtin -DUSE_MEMMGR -I . -I /usr/include
+COPTS=-c -O2 -fno-builtin -DUSE_MEMMGR -I .
 
 pdptest: linstart.o linsupa.o pdptest.o stdio.o string.o stdlib.o \
        start.o time.o errno.o assert.o signal.o locale.o \

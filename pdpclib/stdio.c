@@ -945,6 +945,10 @@ int fclose(FILE *stream)
 #endif
     if (!stream->theirBuffer)
     {
+#if !defined(__MVS__) && !defined(__CMS__) && !defined(__VSE__)
+        /* on the PC, permanent files have a static buffer */
+        if (!stream->permfile)
+#endif
         free(stream->intBuffer);
     }
     if (!stream->permfile && !inreopen)

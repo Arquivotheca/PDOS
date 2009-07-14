@@ -2198,6 +2198,11 @@ static int examine(const char **formt, FILE *fq, char *s, va_list *arg,
             case '0': flagZero = 1;
                       break;
             case '*': width = va_arg(*arg, int);
+                      if (width < 0)
+                      {
+                          flagMinus = 1;
+                          width = -width;
+                      }
                       break;
             default:  fin = 1;
                       break;

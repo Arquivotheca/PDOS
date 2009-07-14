@@ -2034,6 +2034,7 @@ static int vvprintf(const char *format, va_list arg, FILE *fq, char *s)
     size_t len;
     char numbuf[50];
     char *nptr;
+    int *viptr;
 
     while (!fin)
     {
@@ -2113,6 +2114,11 @@ static int vvprintf(const char *format, va_list arg, FILE *fq, char *s)
                 vint = va_arg(arg, int);
                 outch(vint);
                 chcount++;
+            }
+            else if (*format == 'n')
+            {
+                viptr = va_arg(arg, int *);
+                *viptr = chcount;
             }
             else if (*format == '%')
             {

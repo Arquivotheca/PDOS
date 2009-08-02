@@ -19,7 +19,7 @@
 
 /* Here is an example of transferring a VB file with
    "Hello there"
-   "folks"
+   "Folks"
    in it to the PC, preserving the RDW (Record Descriptor Word)
 */
 

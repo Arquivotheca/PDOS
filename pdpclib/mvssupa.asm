@@ -10,17 +10,13 @@
 *  MVSSUPA - Support routines for PDPCLIB under MVS
 *
 *  It is currently coded for GCC, but C/370 functionality is
-*  still there, it's just being tested after any change.
+*  still there, it's just not being tested after any change.
 *
 ***********************************************************************
 *
 * Note that the VBS support may not be properly implemented.
 * Note that this code issues WTOs. It should be changed to just
-* set a return code an exit gracefully instead. I'm not talking
-* about that dummy WTO. But on the subject of that dummy WTO - it
-* should be made consistent with the rest of PDPCLIB which doesn't
-* use that to set the RMODE/AMODE. It should be consistent one way
-* or the other.
+* set a return code an exit gracefully instead. 
 *
 * Here are some of the errors reported:
 *

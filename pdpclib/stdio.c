@@ -838,7 +838,7 @@ static void osfopen(void)
         {
             myfile->recfm = 0;
         }
-        /* if open for reading, kludg to switch to variable */
+        /* if open for reading, kludge to switch to variable */
         else if (mode == 0)
         {
             myfile->recfm = 1;

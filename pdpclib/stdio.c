@@ -807,6 +807,23 @@ static void osfopen(void)
     myfile->reallyu = 0;
     myfile->reallyt = 0;
     myfile->asmbuf = 0;
+    
+    /* Set some default DCB info. Stress - this will not interfere
+       in any way with DCB information the user provides in JCL,
+       or on an existing dataset. It is only used when all else
+       fails */
+    if (myfile->textMode)
+    {
+        myfile->recfm = 1; /* VB */
+        myfile->lrecl = 255;
+        myfile->blksize = 6233;
+    }
+    else
+    {
+        myfile->recfm = 2; /* U */
+        myfile->lrecl = 0;
+        myfile->blksize = 6233;
+    }
     myfile->hfile =
         __aopen(myfile->ddname, mode, &myfile->recfm, &myfile->lrecl, 
                 &myfile->blksize, &myfile->asmbuf, p);

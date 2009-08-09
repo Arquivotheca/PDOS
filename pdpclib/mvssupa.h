@@ -2,7 +2,7 @@
 
 #pragma linkage(__aopen, OS)
 void *__aopen(const char *ddname, int mode, int *recfm,
-              int *lrecl, const char *mem);
+              int *lrecl, int *blksize, const char *mem);
 #pragma linkage(__aread, OS)
 int __aread(void *handle, void *buf);
 #pragma linkage(__awrite, OS)

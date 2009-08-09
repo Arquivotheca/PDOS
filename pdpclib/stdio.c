@@ -807,7 +807,8 @@ static void osfopen(void)
     myfile->reallyu = 0;
     myfile->reallyt = 0;
     myfile->hfile =
-        __aopen(myfile->ddname, mode, &myfile->recfm, &myfile->lrecl, p);
+        __aopen(myfile->ddname, mode, &myfile->recfm, &myfile->lrecl, 
+                &myfile->blksize, p);
 #if !LOCMODE
     /* in move mode, the returned handle is actually a control
        block, and we need to switch, so that we can get the

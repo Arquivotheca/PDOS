@@ -69,6 +69,7 @@ typedef struct
     int recfm;
     int style;
     int lrecl;
+    int blksize;
     char ddname[9];
     char pdsmem[9];
     int reallyu;    /* 1 = this is really a RECFM=U file */

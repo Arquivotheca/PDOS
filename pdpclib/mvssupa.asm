@@ -117,6 +117,20 @@ R15      EQU   15
 *
 *  AOPEN- Open a data set
 *
+*  Parameters are:
+*  DDNAME - space-padded, 8 character DDNAME to be opened
+*  MODE - 0 = READ, 1 = WRITE, 2 = UPDATE (update not supported)
+*  RECFM - 0 = F, 1 = V, 2 = U. This is an output from this function.
+*  LRECL - This function will determine the LRECL
+*  BLKSIZE - This function will determine the block size
+*  MEMBER - *pointer* to space-padded, 8 character member name.
+*    If pointer is 0 (NULL), no member is requested
+*
+*  Return value:
+*  An internal "handle" that allows the assembler routines to
+*  keep track of what's what when READ etc are subsequently
+*  called.
+*
 * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
          ENTRY @@AOPEN
 @@AOPEN  SAVE  (14,12),,@@AOPEN  Save caller's regs.
@@ -136,7 +150,8 @@ R15      EQU   15
 * 08(,R1) has RECFM
 * Note that R5 is used as a scratch register
          L     R8,12(,R1)         R8 POINTS TO LRECL
-         L     R9,16(,R1)         R9 POINTS TO MEMBER NAME (OF PDS)
+* 16(,R1) has BLKSIZE         
+         L     R9,20(,R1)         R9 POINTS TO MEMBER NAME (OF PDS)
          LA    R9,00(,R9)         Strip off high-order bit or byte
 *
 * S/370 can't handle LOC=BELOW

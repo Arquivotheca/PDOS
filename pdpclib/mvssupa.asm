@@ -128,12 +128,13 @@ R15      EQU   15
          ST    R13,4(,R1)
          ST    R1,8(,R13)
          LR    R13,R1
-         LR    R1,R11
+         LR    R1,R11             KEEP R11 FOR PARAMETERS
          USING WORKAREA,R13
 *
          L     R3,00(,R1)         R3 POINTS TO DDNAME
          L     R4,04(,R1)         R4 is the MODE.  0=input 1=output
-         L     R5,08(,R1)         R5 POINTS TO RECFM
+* 08(,R1) has RECFM
+* Note that R5 is used as a scratch register
          L     R8,12(,R1)         R8 POINTS TO LRECL
          L     R9,16(,R1)         R9 POINTS TO MEMBER NAME (OF PDS)
          LA    R9,00(,R9)         Strip off high-order bit or byte
@@ -151,9 +152,11 @@ R15      EQU   15
          USING IHADCB,R2          Give assembler DCB area base register
          LR    R0,R2              Load output DCB area address
          LA    R1,ZDCBLEN         Load output length of DCB area
+         LR    R5,R11             Preserve parameter list
          LA    R11,0              Pad of X'00' and no input length
          MVCL  R0,R10             Clear DCB area to binary zeroes
-*
+         LR    R11,R5             Restore parameter list
+* R5 free again
          CH    R4,H4              Call with value?
          BL    *+8                Yes; else pointer
          L     R4,0(,R4)          Load C/370 MODE.  0=input 1=output
@@ -374,7 +377,9 @@ NOTU     DS    0H
 * RECFM=U on output will tell caller that it is RECFM=F
 * This logic now moved to the C code
 SETRECFM DS    0H
+         L     R5,08(,R11)        POINT TO RECFM
          ST    R1,0(,R5)          Pass either RECFM F or V to caller
+* Finished with R5 now
          B     RETURNOQ
 *
 RETURNOP DS    0H

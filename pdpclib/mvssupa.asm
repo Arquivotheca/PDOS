@@ -123,6 +123,8 @@ R15      EQU   15
 *  RECFM - 0 = F, 1 = V, 2 = U. This is an output from this function.
 *  LRECL - This function will determine the LRECL
 *  BLKSIZE - This function will determine the block size
+*  ASMBUF - pointer to a 32K area which can be written to (only
+*    needs to be set in move mode)
 *  MEMBER - *pointer* to space-padded, 8 character member name.
 *    If pointer is 0 (NULL), no member is requested
 *
@@ -150,8 +152,9 @@ R15      EQU   15
 * 08(,R1) has RECFM
 * Note that R5 is used as a scratch register
          L     R8,12(,R1)         R8 POINTS TO LRECL
-* 16(,R1) has BLKSIZE         
-         L     R9,20(,R1)         R9 POINTS TO MEMBER NAME (OF PDS)
+* 16(,R1) has BLKSIZE
+* 20(,R1) has ASMBUF pointer
+         L     R9,24(,R1)         R9 POINTS TO MEMBER NAME (OF PDS)
          LA    R9,00(,R9)         Strip off high-order bit or byte
 *
 * S/370 can't handle LOC=BELOW
@@ -345,6 +348,10 @@ WNOMEM2  DS    0H
          GETMAIN RU,LV=(R6),SP=SUBPOOL,LOC=BELOW
 .GETOENE ANOP
          ST    R1,ASMBUF
+         L     R5,20(,R11)        R5 points to ASMBUF
+         ST    R1,0(R5)           save the pointer
+* R5 now free again
+*
 * In move move mode, we will return this two fullword control
 * block instead of the DCB area
          ST    R2,BEGINDCB

@@ -817,7 +817,6 @@ static void osfopen(void)
     if (((int)myfile->hfile > 0) && (mode == 1))
     {
         myfile->oldhfile = myfile->hfile;
-        myfile->asmbuf = *(((void **)myfile->hfile) + 1);
         myfile->hfile = *((void **)myfile->hfile);
     }
 #endif

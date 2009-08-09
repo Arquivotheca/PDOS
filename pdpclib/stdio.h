@@ -64,7 +64,6 @@ typedef struct
 #endif
 #if (defined(__MVS__) || defined(__CMS__))
     void *hfile;
-    void *oldhfile;
     void *asmbuf;
     int recfm;
     int style;

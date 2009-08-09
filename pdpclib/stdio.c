@@ -810,17 +810,6 @@ static void osfopen(void)
     myfile->hfile =
         __aopen(myfile->ddname, mode, &myfile->recfm, &myfile->lrecl, 
                 &myfile->blksize, &myfile->asmbuf, p);
-#if !LOCMODE
-    /* in move mode, the returned handle is actually a control
-       block, and we need to switch, so that we can get the
-       assembler buffer */
-    if (((int)myfile->hfile > 0) && (mode == 1))
-    {
-        myfile->oldhfile = myfile->hfile;
-        myfile->hfile = *((void **)myfile->hfile);
-    }
-#endif
-
 
     /* errors from MVS __aopen are negative numbers */
     if ((int)myfile->hfile <= 0)

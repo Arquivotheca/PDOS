@@ -352,18 +352,12 @@ WNOMEM2  DS    0H
          ST    R1,0(R5)           save the pointer
 * R5 now free again
 *
-* In move move mode, we will return this two fullword control
-* block instead of the DCB area
-         ST    R2,BEGINDCB
-         LA    R7,BEGINDCB
-         B     DONEOPEW
 .NMM4    ANOP
          SPACE 1
 *   Lots of code tests DCBRECFM twice, to distinguish among F, V, and
 *     U formats. We set the index byte to 0,4,8 to allow a single test
 *     with a three-way branch.
 DONEOPEN LR    R7,R2
-DONEOPEW DS    0H
          LA    R0,8
          TM    DCBRECFM,DCBRECU   Undefined ?
          BO    SETINDEX           Yes
@@ -1395,9 +1389,6 @@ ZDCBAREA DS    0H
 OPENCLOS DS    A                  OPEN/CLOSE parameter list
 DCBXLST  DS    A
 EOFR24   DS    CL(EOFRLEN)
-* This is for when we are using move mode, and need to
-* pass back extra information
-BEGINDCB DS    A                  The beginning of this entire block
 ASMBUF   DS    A                  Pointer to an area for PUTting data
 *
          IHADECB DSECT=NO         Data Event Control Block

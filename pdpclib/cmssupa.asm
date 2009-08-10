@@ -208,6 +208,14 @@ DONEOPEN DS    0H
          TM    DCBRECFM,RECF
 * END
          BNO   VARIABLE
+* This looks really whacky, but is correct
+* We check for V, in order to split between F and U
+* Because U has both F and V
+         TM    DCBRECFM,RECV
+         BNO   FIXED
+         L     R6,=F'2'
+         B     DONESET
+FIXED    DS    0H
          L     R6,=F'0'
          B     DONESET
 VARIABLE DS    0H

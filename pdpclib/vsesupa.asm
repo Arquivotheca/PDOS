@@ -18,16 +18,25 @@
 *                                                                    *
 *  AOPEN - Open a file                                               *
 *                                                                    *
-*  If mode is 1 (write) then make this function return a pointer to  *
-*  a block that contains:                                            *
-*  1. Address of ZDCBAREA                                            *
-*  2. Address of a 32k chunk of storage (ASMBUF)                     *
-*                                                                    *
-*  If mode is 0 (read) then make this function return address of     *
-*  ZDCBAREA directly                                                 *
-*                                                                    *
 *  It doesn't matter what ZDCBAREA contains                          *
 *                                                                    *
+*  Parameters are:                                                   *
+*  DDNAME - space-padded, 8 character DDNAME to be opened            *
+*  MODE - 0 = READ, 1 = WRITE, 2 = UPDATE (update not supported)     *
+*  RECFM - 0 = F, 1 = V, 2 = U. This is an output from this function *
+*  LRECL - This function will determine the LRECL                    *
+*  BLKSIZE - This function will determine the block size             *
+*  ASMBUF - pointer to a 32K area which can be written to (only      *
+*    needs to be set in move mode)                                   *
+*  MEMBER - *pointer* to space-padded, 8 character member name.      *
+*    If pointer is 0 (NULL), no member is requested                  *
+*                                                                    *
+*  Return value:                                                     *
+*  An internal "handle" that allows the assembler routines to        *
+*  keep track of what's what when READ etc are subsequently          *
+*  called.                                                           *
+*                                                                    *
+*  For VSE, the following should be set:                             *
 *  Set the RECFM to 2 (Undefined)                                    *
 *  Set the LRECL to 32761 (max VSE supports)                         *
 *                                                                    *
@@ -47,7 +56,14 @@
          USING WORKAREA,R13
 *
          L     R3,0(R1)         R3 POINTS TO DDNAME
-         L     R4,4(R1)         R4 POINTS TO MODE
+         L     R4,4(R1)         R4 POINTS TO MODE         
+* 08(,R1) has RECFM
+* Note that R5 is used as a scratch register
+         L     R8,12(,R1)         R8 POINTS TO LRECL
+* 16(,R1) has BLKSIZE
+* 20(,R1) has ASMBUF pointer
+         L     R9,24(,R1)         R9 POINTS TO MEMBER NAME (OF PDS)
+         LA    R9,00(,R9)         Strip off high-order bit or byte
          L     R5,8(R1)         R5 POINTS TO RECFM
          L     R8,12(R1)        R8 POINTS TO LRECL
          L     R9,16(R1)        R9 POINTS TO MEMBER NAME (OF PDS)
@@ -61,8 +77,11 @@
          LR    R2,R1
          LR    R0,R2              Load output DCB area address
          LA    R1,ZDCBLEN         Load output length of DCB area
+         LR    R5,R11             Preserve parameter list
          LA    R11,0              Pad of X'00' and no input length
          MVCL  R0,R10             Clear DCB area to binary zeroes
+         LR    R11,R5             Restore parameter list
+* R5 free again
 * THIS LINE IS FOR GCC
          LR    R6,R4
 * THIS LINE IS FOR C/370
@@ -139,15 +158,13 @@ WNOMEM   DS    0H
          GETMAIN R,LV=(R6),SP=SUBPOOL,LOC=BELOW
 .GETOENE ANOP
          ST    R1,ASMBUF
-* In move move mode, we will return this two fullword control
-* block instead of the DCB area
-         ST    R2,BEGINDCB
-         LA    R7,BEGINDCB
-         B     DONEOPEW
+         L     R5,20(,R11)        R5 points to ASMBUF
+         ST    R1,0(R5)           save the pointer
+* R5 now free again
+*
 .NMM4    ANOP
 DONEOPEN DS    0H
          LR    R7,R2
-DONEOPEW DS    0H
          SR    R6,R6
          LH    R6,DCBLRECL
          ST    R6,0(R8)
@@ -782,9 +799,6 @@ OPENMB   DS    CL(OPENMLN)
          DS    0F
 WOPENMB  DS    CL(WOPENMLN)
 RDEOF    DS    1F
-* This is for when we are using move mode, and need to
-* pass back extra information
-BEGINDCB DS    A                  The beginning of this entire block
 ASMBUF   DS    A                  Pointer to an area for PUTting data
 *
 ZDCBLEN  EQU   *-ZDCBAREA

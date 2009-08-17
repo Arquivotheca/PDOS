@@ -5058,17 +5058,32 @@ static int cmsremove(const char *filename)
     const char *q;
 
     memset(s202parm, ' ', sizeof s202parm);
-    p = strchr(filename, ' ');
-    if (p == NULL) return (-1);
-    q = strchr(p + 1, ' ');
-    if (q == NULL) return (-1);
 
     /* build the SVC 202 string */
     memcpy( &s202parm[0] , "ERASE   ", 8);
-    memcpy( &s202parm[8] , filename, p - filename);
-    memcpy( &s202parm[16] , p + 1, q - p - 1);
-    memcpy( &s202parm[24] , q + 1, strlen(q + 1));
-    memset( &s202parm[32], 0xff, 8);
+
+    p = strchr(filename, ' ');
+    if (p == NULL)
+    {
+        memcpy( &s202parm[8] , filename, strlen(filename));
+        memset( &s202parm[16], 0xff, 8);
+    }
+    else
+    {
+        memcpy( &s202parm[8] , filename, p - filename);
+        q = strchr(p + 1, ' ');
+        if (q == NULL)
+        {
+            memcpy( &s202parm[16] , p + 1, strlen(p + 1));
+            memset( &s202parm[24], 0xff, 8);
+        }
+        else
+        {
+            memcpy( &s202parm[16] , p + 1, q - p - 1);
+            memcpy( &s202parm[24] , q + 1, strlen(q + 1));
+            memset( &s202parm[32], 0xff, 8);
+        }
+    }
 
     __SVC202 ( s202parm, &code, &parm );
     return (parm);

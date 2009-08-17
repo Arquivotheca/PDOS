@@ -221,6 +221,7 @@ static int examine(const char **formt, FILE *fq, char *s, va_list *arg,
 extern void __SVC202 ( char *s202parm, int *code, int *parm );
 static void filedef(char *fdddname, char *fnm, int mymode);
 static void fdclr(char *ddname);
+static int cmsrename(const char *old, const char *new);
 static char *int_strtok(char *s1, const char *s2);
 #define strtok int_strtok
 #endif
@@ -2688,6 +2689,9 @@ int rename(const char *old, const char *new)
     }
     ret = __idcams(strlen(buf), buf);
 #endif
+#ifdef __CMS__
+    ret = cmsrename(old, new);
+#endif
     return (ret);
 }
 
@@ -4997,6 +5001,44 @@ static void fdclr(char *ddname)
 
     __SVC202 ( s202parm, &code, &parm );
     return;
+}
+
+/*
+   Following code does a rename for CMS
+*/
+
+static int cmsrename(const char *old, const char *new)
+{
+    char s202parm[8*8];
+    int code;
+    int parm;
+    const char *p;
+    const char *q;
+    const char *r;
+    const char *s;
+
+    memset(s202parm, ' ', sizeof s202parm);
+    p = strchr(old, ' ');
+    if (p == NULL) return (-1);
+    q = strchr(p + 1, ' ');
+    if (q == NULL) return (-1);
+    r = strchr(new, ' ');
+    if (r == NULL) return (-1);
+    s = strchr(r + 1, ' ');
+    if (s == NULL) return (-1);
+
+    /* build the SVC 202 string */
+    memcpy( &s202parm[0] , "RENAME  ", 8);
+    memcpy( &s202parm[8] , old, p - old);
+    memcpy( &s202parm[16] , p + 1, q - p - 1);
+    memcpy( &s202parm[24] , q + 1, strlen(q + 1));
+    memcpy( &s202parm[32] , new, r - new);
+    memcpy( &s202parm[40] , r + 1, s - r - 1);
+    memcpy( &s202parm[48] , s + 1, strlen(s + 1));
+    memset( &s202parm[56], 0xff, 8);
+
+    __SVC202 ( s202parm, &code, &parm );
+    return (parm);
 }
 
 static char *int_strtok(char *s1, const char *s2)

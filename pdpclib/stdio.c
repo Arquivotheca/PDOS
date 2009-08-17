@@ -222,6 +222,7 @@ extern void __SVC202 ( char *s202parm, int *code, int *parm );
 static void filedef(char *fdddname, char *fnm, int mymode);
 static void fdclr(char *ddname);
 static int cmsrename(const char *old, const char *new);
+static int cmsremove(const char *filename);
 static char *int_strtok(char *s1, const char *s2);
 #define strtok int_strtok
 #endif
@@ -2635,6 +2636,9 @@ int remove(const char *filename)
     }
     ret = __idcams(strlen(buf), buf);
 #endif
+#ifdef __CMS__
+    ret = cmsremove(filename);
+#endif
     return (ret);
 }
 
@@ -5036,6 +5040,35 @@ static int cmsrename(const char *old, const char *new)
     memcpy( &s202parm[40] , r + 1, s - r - 1);
     memcpy( &s202parm[48] , s + 1, strlen(s + 1));
     memset( &s202parm[56], 0xff, 8);
+
+    __SVC202 ( s202parm, &code, &parm );
+    return (parm);
+}
+
+/*
+   Following code does a remove for CMS
+*/
+
+static int cmsremove(const char *filename)
+{
+    char s202parm[5*8];
+    int code;
+    int parm;
+    const char *p;
+    const char *q;
+
+    memset(s202parm, ' ', sizeof s202parm);
+    p = strchr(filename, ' ');
+    if (p == NULL) return (-1);
+    q = strchr(p + 1, ' ');
+    if (q == NULL) return (-1);
+
+    /* build the SVC 202 string */
+    memcpy( &s202parm[0] , "ERASE   ", 8);
+    memcpy( &s202parm[8] , filename, p - filename);
+    memcpy( &s202parm[16] , p + 1, q - p - 1);
+    memcpy( &s202parm[24] , q + 1, strlen(q + 1));
+    memset( &s202parm[32], 0xff, 8);
 
     __SVC202 ( s202parm, &code, &parm );
     return (parm);

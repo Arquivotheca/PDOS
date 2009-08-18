@@ -1,8 +1,8 @@
             Public Domain C runtime library
             -------------------------------
             
-Version : 1.50
-Released: 2009-06-04
+Version : 1.xx
+Released: 2009-xx-xx
 
 Written by Paul Edwards.
 Released to the public domain.
@@ -15,10 +15,15 @@ INTRODUCTION
 ------------
             
 This project is to create a public domain runtime library which 
-conforms to ISO/IEC 9899:1990.  It is expected to be highly OS-specific, 
-but hopefully not too compiler-specific.  It is the job of C library 
-developers to make unportable but fast code, not that of the application 
-developers.  Anyone wishing to contribute to this project, please contact 
+conforms to ISO/IEC 9899:1990.  Although originally intended
+to be OS-specific (based on the principle that it is the C
+library's job to do unportable but fast processing rather than
+the application developer), but not compiler-specific, an enormous
+amount of the C library turned out to be sharable, with the
+notable exception that the I/O is mostly divided into mainframe
+and non-mainframe versions.
+
+Anyone wishing to contribute to this project, please contact 
 Paul Edwards at fight.subjugation@gmail.com.
 
 The official method for obtaining PDPCLIB is to download it from:
@@ -34,7 +39,8 @@ MAIN DESIGN GOALS
    
 2. Application developers should not have to resort to using binary mode to
    get better performance for fgets in text mode.
-   
+
+
 
 CURRENT STATUS
 --------------
@@ -74,6 +80,7 @@ PDOS for:
 EMX 0.9d
 
 
+
 WHO WANTS IT?
 -------------
 
@@ -109,6 +116,7 @@ speed improvement.
 7. Mainframe users who don't have any other choice to use with GCC.
 
 
+
 USAGE
 -----
 
@@ -128,6 +136,7 @@ For 32-bit Windows (pdpclib-win32), the default is to use
 the (free) gcc compiler and the (free) jwasm as the assembler.
 Use a decent "make" that doesn't need tabs (e.g. Borland's make
 or Microsoft's nmake) and then go "make -f makefile.w32".
+
 
 
 PERFORMANCE
@@ -207,6 +216,7 @@ I wouldn't expect pdpclib on the mainframe to be better
 than the commercial compilers because it does record reads
 rather than block reads. Hopefully one day this will be
 rectified.
+
 
 
 HISTORY
@@ -292,13 +302,16 @@ HISTORY
       so long as an error is returned on open. It just means
       that it's usability is downgraded. Similar to it not
       being able to open VSAM datasets.
-      
 
 1.50  setjmp & longjmp implemented properly for all PC environments,
       making them compliant too. setjmp & longjmp revamped on MVS
       and CMS to stop saving the entire stack. Several bug fixes.
       And hack for MVS taken out now that the compiler bug has
       been fixed.
+
+1.xx  Linux version added. Some missing functionality in CMS
+      added. Some bugs fixed. Some parameters unclumped.
+
 
 
 FUTURE DIRECTION
@@ -320,9 +333,9 @@ Read/write blocks instead of records on mainframe.
 Allow open for update and append on various environments.
 long arithmetic to be implemented on MSDOS.
 A port to DOS/VS(E).
-A port to Unix.
 Ports to some of the more obscure mainframe environments such as TSS.
 A port to z/TPF.
+
 
 
 CREDITS

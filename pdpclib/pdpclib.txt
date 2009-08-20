@@ -1,8 +1,8 @@
             Public Domain C runtime library
             -------------------------------
             
-Version : 1.xx
-Released: 2009-xx-xx
+Version : 2.00
+Released: 2009-08-21
 
 Written by Paul Edwards.
 Released to the public domain.
@@ -309,7 +309,7 @@ HISTORY
       And hack for MVS taken out now that the compiler bug has
       been fixed.
 
-1.xx  Linux version added. Some missing functionality in CMS
+2.00  Linux version added. Some missing functionality in CMS
       added. Some bugs fixed. Some parameters unclumped.
 
 

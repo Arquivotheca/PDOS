@@ -3142,6 +3142,10 @@ int fseek(FILE *stream, long int offset, int whence)
         {
             strcpy(fnm, "dd:");
             strcat(fnm, stream->ddname);
+            if (stream->pdsmem[0] != '\0')
+            {
+                sprintf(fnm + strlen(fnm), "(%s)", stream->pdsmem);
+            }
             inseek = 1;
             freopen(fnm, stream->modeStr, stream);
             inseek = 0;

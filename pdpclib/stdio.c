@@ -3147,7 +3147,11 @@ int fseek(FILE *stream, long int offset, int whence)
                 sprintf(fnm + strlen(fnm), "(%s)", stream->pdsmem);
             }
             inseek = 1;
-            freopen(fnm, stream->modeStr, stream);
+            if (freopen(fnm, stream->modeStr, stream) == NULL)
+            {
+                stream->errorInd = 1;
+                return (-1);
+            }
             inseek = 0;
             oldpos = 0;
         }
@@ -3156,6 +3160,10 @@ int fseek(FILE *stream, long int offset, int whence)
         for (x = oldpos + y; x < newpos; x += sizeof buf)
         {
             fread(buf, sizeof buf, 1, stream);
+        }
+        if (stream->errorInd)
+        {
+            return (-1);
         }
 #endif
     }

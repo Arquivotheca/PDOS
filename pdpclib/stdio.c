@@ -672,6 +672,8 @@ static void osfopen(void)
         errno = 2;
         return;
     }
+    
+    myfile->pdsmem[0] = '\0'; /* seek needs to know if member provided */
 
     if (!inseek)
     {

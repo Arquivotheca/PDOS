@@ -40,11 +40,11 @@ int main(int argc, char **argv)
     {
         if (argv[1][0] == '-')
         {
-            if (argv[1][1] == 'b')
+            if ((argv[1][1] == 'b') || (argv[1][1] == 'B'))
             {
                 in = "rb";
             }
-            if (argv[1][2] == 'b')
+            if ((argv[1][2] == 'b') || (argv[1][2] == 'B'))
             {
                 out = "wb";
             }

@@ -335,6 +335,13 @@ WNOMEM2  DS    0H
          BZ    BADOPOUT           OPEN failed, go return error code -39
          MVC   LRECL+2(2),DCBLRECL  Copy LRECL to a fullword
          MVC   BLKSIZE+2(2),DCBBLKSI  Copy BLKSIZE to a fullword
+         L     R6,BLKSIZE         If file is dummy, and a block size
+         LTR   R6,R6              of 0, then we will go into a loop
+         BNZ   WNZERO             unless we can fudge it
+         LA    R6,1
+         ST    R6,BLKSIZE
+         ST    R6,LRECL
+WNZERO   DS    0H
          AIF   ('&OUTM' NE 'M').NMM4
          L     R6,=F'32768'
 * Give caller an internal buffer to write to. Below the line!

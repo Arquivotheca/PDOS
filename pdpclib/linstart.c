@@ -23,7 +23,7 @@ int _start(char *p)
     return (rc);
 }
 
-static char membuf[31000000];
+static char membuf[61000000];
 
 void *__allocmem(size_t size)
 {

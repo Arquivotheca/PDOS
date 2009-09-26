@@ -40,12 +40,10 @@ extern int __tso;
 
 #if USE_MEMMGR
 #include "__memmgr.h"
-/* GCCMVS 3.4.6 requires 49 MB minimum for full optimization */
-/* so we give it 60 */
-#define MAX_CHUNK 60000000 /* maximum size we will store in memmgr */
+#define MAX_CHUNK 30000000 /* maximum size we will store in memmgr */
     /* Note that you can set MAX_CHUNK to less than REQ_CHUNK */
     /* But don't do this until MVS/380 has been fixed */
-#define REQ_CHUNK 60000000 /* size that we request from OS */
+#define REQ_CHUNK 30000000 /* size that we request from OS */
 void *__lastsup = NULL; /* last thing supplied to memmgr */
 #endif
 

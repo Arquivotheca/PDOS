@@ -1,8 +1,8 @@
             Public Domain C runtime library
             -------------------------------
             
-Version : 2.00
-Released: 2009-08-21
+Version : 2.01
+Released: 2009-09-26
 
 Written by Paul Edwards.
 Released to the public domain.
@@ -312,6 +312,7 @@ HISTORY
 2.00  Linux version added. Some missing functionality in CMS
       added. Some bugs fixed. Some parameters unclumped.
 
+2.01  Bug fixes and minor enhancements, mainly for MVS.
 
 
 FUTURE DIRECTION

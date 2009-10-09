@@ -40,10 +40,15 @@ extern int __tso;
 
 #if USE_MEMMGR
 #include "__memmgr.h"
+#if defined(MUSIC)
+#define MAX_CHUNK 15000000
+#define REQ_CHUNK 15000000
+#else
 #define MAX_CHUNK 30000000 /* maximum size we will store in memmgr */
     /* Note that you can set MAX_CHUNK to less than REQ_CHUNK */
     /* But don't do this until MVS/380 has been fixed */
 #define REQ_CHUNK 30000000 /* size that we request from OS */
+#endif
 void *__lastsup = NULL; /* last thing supplied to memmgr */
 #endif
 
@@ -93,9 +98,12 @@ void *malloc(size_t size)
     if (size > MAX_CHUNK)
     {
 #if defined(__MVS__) || defined(__CMS__) || defined(__gnu_linux__)
-        /* don't allow this until MVS/380 is fixed */
-        /* ptr = __getm(size); */
+#if defined(MUSIC)
+        /* Only MUSIC supports multiple requests currently */
+        ptr = __getm(size);
+#else
         ptr = NULL;
+#endif
 #elif defined(__WIN32__)
         ptr = GlobalAlloc(0, size + sizeof(size_t));
         if (ptr != NULL)
@@ -120,8 +128,13 @@ void *malloc(size_t size)
             void *ptr2;
 
 #if defined(__MVS__) || defined(__CMS__)
-            /* until MVS/380 is fixed, don't do an additional request */
+            /* until MVS/380 is fixed, don't do an additional request,
+               except for MUSIC */
+#if defined(MUSIC)
+            if (1)
+#else
             if (__memmgr.start == NULL)
+#endif
             {
                 ptr2 = __getm(REQ_CHUNK);
             }
@@ -264,8 +277,10 @@ void free(void *ptr)
         if (size > MAX_CHUNK)
         {
 #if defined(__MVS__) || defined(__CMS__)
-            /* Just ignore this until MVS/380 is fixed */
-            /* __freem(ptr); */
+#if defined(MUSIC)
+            /* Ignore, except for MUSIC, until MVS/380 is fixed */
+            __freem(ptr);
+#endif
 #elif defined(__WIN32__)
             GlobalFree(ptr);
 #endif

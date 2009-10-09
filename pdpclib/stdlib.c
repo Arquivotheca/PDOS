@@ -41,8 +41,8 @@ extern int __tso;
 #if USE_MEMMGR
 #include "__memmgr.h"
 #if defined(MUSIC)
-#define MAX_CHUNK 15000000
-#define REQ_CHUNK 15000000
+#define MAX_CHUNK 30000000
+#define REQ_CHUNK 30000000
 #else
 #define MAX_CHUNK 30000000 /* maximum size we will store in memmgr */
     /* Note that you can set MAX_CHUNK to less than REQ_CHUNK */

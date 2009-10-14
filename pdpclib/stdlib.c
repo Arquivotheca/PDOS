@@ -40,7 +40,7 @@ extern int __tso;
 
 #if USE_MEMMGR
 #include "__memmgr.h"
-#if defined(MUSIC)
+#if defined(MULMEM)
 #define MAX_CHUNK 30000000
 #define REQ_CHUNK 30000000
 #else
@@ -98,8 +98,8 @@ void *malloc(size_t size)
     if (size > MAX_CHUNK)
     {
 #if defined(__MVS__) || defined(__CMS__) || defined(__gnu_linux__)
-#if defined(MUSIC)
-        /* Only MUSIC supports multiple requests currently */
+#if defined(MULMEM)
+        /* If we support multiple memory requests */
         ptr = __getm(size);
 #else
         ptr = NULL;
@@ -129,8 +129,8 @@ void *malloc(size_t size)
 
 #if defined(__MVS__) || defined(__CMS__)
             /* until MVS/380 is fixed, don't do an additional request,
-               except for MUSIC */
-#if defined(MUSIC)
+               unless MULMEM is defined */
+#if defined(MULMEM)
             if (1)
 #else
             if (__memmgr.start == NULL)
@@ -277,8 +277,8 @@ void free(void *ptr)
         if (size > MAX_CHUNK)
         {
 #if defined(__MVS__) || defined(__CMS__)
-#if defined(MUSIC)
-            /* Ignore, except for MUSIC, until MVS/380 is fixed */
+#if defined(MULMEM)
+            /* Ignore, unless MULMEM is defined, until MVS/380 is fixed */
             __freem(ptr);
 #endif
 #elif defined(__WIN32__)

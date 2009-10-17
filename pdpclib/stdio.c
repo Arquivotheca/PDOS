@@ -80,6 +80,7 @@
 #else
 #define CTYP
 #endif
+extern int CTYP __open(const char *filename, int mode, int *errind);
 extern int CTYP __read(int handle, void *buf, size_t len, int *errind);
 extern int CTYP __write(int handle, const void *buf, size_t len, int *errind);
 extern void CTYP __seek(int handle, long offset, int whence);

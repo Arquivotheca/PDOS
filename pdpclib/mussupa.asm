@@ -711,8 +711,13 @@ RETURNGM DS    0H
          S     R2,=F'8'
          L     R3,0(,R2)
 *
-* Nothing to free - memory permanently available
+         AIF   ('&SYS' NE 'S380').N380FM1
+* On S/380, nothing to free - using preallocated memory block
 *         FREEMAIN RU,LV=(R3),A=(R2),SP=SUBPOOL
+         AGO   .N380FM2
+.N380FM1 ANOP
+         FREEMAIN RU,LV=(R3),A=(R2),SP=SUBPOOL
+.N380FM2 ANOP
 *
 RETURNFM DS    0H
          RETURN (14,12),RC=(15)

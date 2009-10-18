@@ -1,6 +1,7 @@
 rem update pdptop.mac to specify MUSIC before running this
 rem also choose between S/380 and S/370. If choosing S/370,
-rem you should not use MEMMGR
+rem you should not use MEMMGR (unless you adjust the
+rem constants in stdlib.c). If using S/380 you must use MEMMGR.
 
 gccmvs -DLOCMODE -DUSE_MEMMGR -S -I . start.c
 gccmvs -DLOCMODE -DUSE_MEMMGR -S -I . stdio.c

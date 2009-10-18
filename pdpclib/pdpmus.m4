@@ -1,0 +1,150 @@
+/ID SAVE-JOB-123456 $000 000 999 999 999
+/PASSWORD=MUSIC
+/SAVE PDPTOP.MAC REPL
+undivert(pdptop.mac)/END
+
+/ID SAVE-JOB-123456 $000 000 999 999 999
+/PASSWORD=MUSIC
+/SAVE PDPPRLG.MAC REPL
+undivert(pdpepil.mac)/END
+
+/ID SAVE-JOB-123456 $000 000 999 999 999
+/PASSWORD=MUSIC
+/SAVE PDPTOP.MAC REPL
+undivert(pdpepil.mac)/END
+
+/ID SAVE-JOB-123456 $000 000 999 999 999
+/PASSWORD=MUSIC
+/SAVE MUSSTART.ASM REPL
+undivert(musstart.asm)/END
+
+/ID SAVE-JOB-123456 $000 000 999 999 999
+/PASSWORD=MUSIC
+/SAVE MUSSUPA.ASM REPL
+undivert(mussupa.asm)/END
+
+/ID SAVE-JOB-123456 $000 000 999 999 999
+/PASSWORD=MUSIC
+/SAVE START.ASM REPL
+undivert(start.s)/END
+
+/ID SAVE-JOB-123456 $000 000 999 999 999
+/PASSWORD=MUSIC
+/SAVE STDIO.ASM REPL
+undivert(stdio.s)/END
+
+/ID SAVE-JOB-123456 $000 000 999 999 999
+/PASSWORD=MUSIC
+/SAVE STDLIB.ASM REPL
+undivert(stdlib.s)/END
+
+/ID SAVE-JOB-123456 $000 000 999 999 999
+/PASSWORD=MUSIC
+/SAVE CTYPE.ASM REPL
+undivert(ctype.s)/END
+
+/ID SAVE-JOB-123456 $000 000 999 999 999
+/PASSWORD=MUSIC
+/SAVE STRING.ASM REPL
+undivert(string.s)/END
+
+/ID SAVE-JOB-123456 $000 000 999 999 999
+/PASSWORD=MUSIC
+/SAVE TIME.ASM REPL
+undivert(time.s)/END
+
+/ID SAVE-JOB-123456 $000 000 999 999 999
+/PASSWORD=MUSIC
+/SAVE ERRNO.ASM REPL
+undivert(errno.s)/END
+
+/ID SAVE-JOB-123456 $000 000 999 999 999
+/PASSWORD=MUSIC
+/SAVE ASSERT.ASM REPL
+undivert(assert.s)/END
+
+/ID SAVE-JOB-123456 $000 000 999 999 999
+/PASSWORD=MUSIC
+/SAVE LOCALE.ASM REPL
+undivert(locale.s)/END
+
+/ID SAVE-JOB-123456 $000 000 999 999 999
+/PASSWORD=MUSIC
+/SAVE MATH.ASM REPL
+undivert(math.s)/END
+
+/ID SAVE-JOB-123456 $000 000 999 999 999
+/PASSWORD=MUSIC
+/SAVE SETJMP.ASM REPL
+undivert(setjmp.s)/END
+
+/ID SAVE-JOB-123456 $000 000 999 999 999
+/PASSWORD=MUSIC
+/SAVE SIGNAL.ASM REPL
+undivert(signal.s)/END
+
+/ID SAVE-JOB-123456 $000 000 999 999 999
+/PASSWORD=MUSIC
+/SAVE __MEMMGR.ASM REPL
+undivert(__memmgr.s)/END
+
+/ID SAVE-JOB-123456 $000 000 999 999 999
+/PASSWORD=MUSIC
+/SAVE PDPTEST.ASM REPL
+undivert(pdptest.s)/END
+
+/ID SAVE-JOB-123456 $000 000 999 999 999
+/PASSWORD=MUSIC
+/inc rexx
+'gccasm start'
+'gccasm stdio'
+'gccasm stdlib'
+'gccasm ctype'
+'gccasm string'
+'gccasm time'
+'gccasm errno'
+'gccasm assert'
+'gccasm locale'
+'gccasm math'
+'gccasm setjmp'
+'gccasm signal'
+'gccasm __memmgr'
+'gccasm mussupa -sys'
+'gccasm musstart -sys'
+'gccasm pdptest'
+/END
+
+/ID SAVE-JOB-123456 $000 000 999 999 999
+/PASSWORD=MUSIC
+/sys region=9999
+/file lmod n(pdptest.lmod) new(repl) lr(128) recfm(f) sp(100) shr
+/load lked
+/job map,nogo,print,stats,mode=os,name=gcclked
+.org 4a00
+/inc pdptest.obj
+/INC MUSSTART.OBJ     GCCMU RUN-TIME LIBRARY MODULES
+/INC MUSSUPA.OBJ
+/INC __MEMMGR.OBJ
+/INC ASSERT.OBJ
+/INC CTYPE.OBJ
+/INC ERRNO.OBJ
+/INC LOCALE.OBJ
+/INC MATH.OBJ
+/INC SETJMP.OBJ
+/INC SIGNAL.OBJ
+/INC START.OBJ
+/INC STDIO.OBJ
+/INC STDLIB.OBJ
+/INC STRING.OBJ
+/INC TIME.OBJ
+ ENTRY @@CRT0
+/END
+
+/ID SAVE-JOB-123456 $000 000 999 999 999
+/PASSWORD=MUSIC
+/sys region=4096,xregion=60m
+/file sysprint prt osrecfm(f) oslrecl(256)
+/parm Hi there DeeeeeFerDog
+/load xmon
+gcclked n(pdptest.lmod) lcparm v(256)
+/END

@@ -13,10 +13,13 @@
 #include "stdio.h"
 #include "stdlib.h"
 #include "string.h"
+#include "stddef.h"
 
 #if USE_MEMMGR
 #include "__memmgr.h"
 #endif
+
+extern FILE *__userFiles[__NFILE];
 
 #define MAXPARMS 50 /* maximum number of arguments we can handle */
 
@@ -49,7 +52,15 @@ extern unsigned short __osver;
 int __tso = 0; /* is this a TSO environment? */
 #endif
 
+#ifdef __MAIN_FP__
+int (*__main_fp)(int argc, char **argv);
+
+__PDPCLIB_API__ void **__get_main_fp()
+    { return((void **)(&__main_fp)); }
+
+#else
 int main(int argc, char **argv);
+#endif
 
 void __exit(int status);
 void CTYP __exita(int status);
@@ -86,7 +97,7 @@ int __start(int argc, char **argv)
 #elif defined(__PDOS__)
 int __start(int *i1, int *i2, int *i3, POS_EPARMS *exep)
 #else
-int CTYP __start(char *p)
+__PDPCLIB_API__ int CTYP __start(char *p)
 #endif
 {
 #if defined(__PDOS__) || defined(__CMS__)
@@ -658,7 +669,12 @@ int CTYP __start(char *p)
     *i2 = (int)argv;
     return (0);
 #else
+
+#ifdef __MAIN_FP__
+    rc = __main_fp(argc, argv);
+#else
     rc = main(argc, argv);
+#endif
     __exit(rc);
     return (rc);
 #endif

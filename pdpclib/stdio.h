@@ -13,6 +13,9 @@
 #ifndef __STDIO_INCLUDED
 #define __STDIO_INCLUDED
 
+/* Perhaps should copy these definitions in instead */
+#include <stdarg.h>
+
 #ifndef __SIZE_T_DEFINED
 #define __SIZE_T_DEFINED
 #if (defined(__OS2__) || defined(__32BIT__) || defined(__MVS__) \
@@ -142,11 +145,21 @@ typedef unsigned long fpos_t;
 #define __WRITE_MODE 1
 #define __READ_MODE 2
 
+#if 0
 extern FILE *stdin;
 extern FILE *stdout;
 extern FILE *stderr;
 
 extern FILE *__userFiles[__NFILE];
+#endif
+
+FILE **__gtin(void);
+FILE **__gtout(void);
+FILE **__gterr(void);
+
+#define stdin (*(__gtin()))
+#define stdout (*(__gtout()))
+#define stderr (*(__gterr()))
 
 int printf(const char *format, ...);
 FILE *fopen(const char *filename, const char *mode);
@@ -156,11 +169,11 @@ size_t fwrite(const void *ptr, size_t size, size_t nmemb, FILE *stream);
 int fputc(int c, FILE *stream);
 int fputs(const char *s, FILE *stream);
 int fprintf(FILE *stream, const char *format, ...);
-int vfprintf(FILE *stream, const char *format, char *arg);
+int vfprintf(FILE *stream, const char *format, va_list arg);
 int remove(const char *filename);
 int rename(const char *old, const char *new);
 int sprintf(char *s, const char *format, ...);
-int vsprintf(char *s, const char *format, char *arg);
+int vsprintf(char *s, const char *format, va_list arg);
 char *fgets(char *s, int n, FILE *stream);
 int ungetc(int c, FILE *stream);
 int fgetc(FILE *stream);

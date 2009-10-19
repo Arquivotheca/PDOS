@@ -35,4 +35,11 @@ typedef char wchar_t;
 #define NULL ((void *)0)
 #define offsetof(x, y) (size_t)&(((x *)0)->y)
 
+#ifdef __PDPCLIB_DLL
+#define __PDPCLIB_API__ __declspec(dllexport)
+#define __MAIN_FP__
+#else
+#define __PDPCLIB_API__
+#endif
+
 #endif

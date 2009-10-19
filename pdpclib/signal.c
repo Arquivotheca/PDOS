@@ -12,6 +12,7 @@
 
 #include "signal.h"
 #include "stdlib.h"
+#include "stddef.h"
 
 static void (*handlers[])(int) = {
     __sigdfl,
@@ -30,20 +31,20 @@ void __sigign(int sig);
 #define SIG_ERR __sigerr
 #define SIG_IGN __sigign
 
-void (*signal(int sig, void (*func)(int)))(int)
+__PDPCLIB_API__ void (*signal(int sig, void (*func)(int)))(int)
 {
     handlers[sig] = func;
     return (func);
 }
 
 
-int raise(int sig)
+__PDPCLIB_API__ int raise(int sig)
 {
     (handlers[sig])(sig);
     return (0);
 }
 
-void __sigdfl(int sig)
+__PDPCLIB_API__ void __sigdfl(int sig)
 {
     handlers[sig] = SIG_DFL;
     if (sig == SIGABRT)
@@ -53,13 +54,13 @@ void __sigdfl(int sig)
     return;
 }
 
-void __sigerr(int sig)
+__PDPCLIB_API__ void __sigerr(int sig)
 {
     (void)sig;
     return;
 }
 
-void __sigign(int sig)
+__PDPCLIB_API__ void __sigign(int sig)
 {
     (void)sig;
     return;

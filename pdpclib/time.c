@@ -102,7 +102,7 @@ static void scalar_to_ymd(long scalar,
    return;
 }
 
-time_t time(time_t *timer)
+__PDPCLIB_API__ time_t time(time_t *timer)
 {
     time_t tt;
 #ifdef __OS2__
@@ -167,17 +167,17 @@ time_t time(time_t *timer)
     return (tt);
 }
 
-clock_t clock(void)
+__PDPCLIB_API__ clock_t clock(void)
 {
     return ((clock_t)-1);
 }
 
-double difftime(time_t time1, time_t time0)
+__PDPCLIB_API__ double difftime(time_t time1, time_t time0)
 {
     return ((double)(time1 - time0));
 }
 
-time_t mktime(struct tm *timeptr)
+__PDPCLIB_API__ time_t mktime(struct tm *timeptr)
 {
     time_t tt;
 
@@ -198,7 +198,7 @@ time_t mktime(struct tm *timeptr)
     return (tt);
 }
 
-char *asctime(const struct tm *timeptr)
+__PDPCLIB_API__ char *asctime(const struct tm *timeptr)
 {
     static const char wday_name[7][3] = {
           "Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"
@@ -218,12 +218,12 @@ char *asctime(const struct tm *timeptr)
     return result;
 }
 
-char *ctime(const time_t *timer)
+__PDPCLIB_API__ char *ctime(const time_t *timer)
 {
     return (asctime(localtime(timer)));
 }
 
-struct tm *gmtime(const time_t *timer)
+__PDPCLIB_API__ struct tm *gmtime(const time_t *timer)
 {
     return (localtime(timer));
 }
@@ -250,7 +250,7 @@ struct tm *gmtime(const time_t *timer)
 
 static struct tm tms;
 
-struct tm *localtime(const time_t *timer)
+__PDPCLIB_API__ struct tm *localtime(const time_t *timer)
 {
     unsigned yr, mo, da;
     unsigned long secs;
@@ -377,7 +377,7 @@ static void strfmt(char *str, const char *fmt, ...);
  *
 **/
 
-size_t strftime(char *s, size_t maxs, const char *f, const struct tm *t)
+__PDPCLIB_API__ size_t strftime(char *s, size_t maxs, const char *f, const struct tm *t)
 {
       int w;
       char *p, *q, *r;

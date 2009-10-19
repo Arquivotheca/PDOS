@@ -14,6 +14,7 @@
 #include "signal.h"
 #include "string.h"
 #include "ctype.h"
+#include "stddef.h"
 
 /* PDOS and MSDOS use the same interface most of the time */
 #ifdef __PDOS__
@@ -70,7 +71,7 @@ void *__allocmem(size_t size);
 
 void (*__userExit[__NATEXIT])(void);
 
-void *malloc(size_t size)
+__PDPCLIB_API__ void *malloc(size_t size)
 {
 #ifdef __OS2__
     PVOID BaseAddress;
@@ -194,7 +195,7 @@ void *malloc(size_t size)
 #endif /* not MEMMGR */
 }
 
-void *calloc(size_t nmemb, size_t size)
+__PDPCLIB_API__ void *calloc(size_t nmemb, size_t size)
 {
     void *ptr;
     size_t total;
@@ -219,7 +220,7 @@ void *calloc(size_t nmemb, size_t size)
     return (ptr);
 }
 
-void *realloc(void *ptr, size_t size)
+__PDPCLIB_API__ void *realloc(void *ptr, size_t size)
 {
     char *newptr;
     size_t oldsize;
@@ -253,7 +254,7 @@ void *realloc(void *ptr, size_t size)
     return (newptr);
 }
 
-void free(void *ptr)
+__PDPCLIB_API__ void free(void *ptr)
 {
 #ifdef __OS2__
     if (ptr != NULL)
@@ -307,7 +308,7 @@ void free(void *ptr)
     return;
 }
 
-void abort(void)
+__PDPCLIB_API__ void abort(void)
 {
     raise(SIGABRT);
     exit(EXIT_FAILURE);
@@ -324,7 +325,7 @@ void __exit(int status);
 void __exit(int status) __attribute__((noreturn));
 #endif
 
-void exit(int status)
+__PDPCLIB_API__ void exit(int status)
 {
     __exit(status);
 #if !defined(__EMX__) && !defined(__GCC__) && !defined(__WIN32__) \
@@ -346,7 +347,7 @@ void exit(int status)
  * Sparing the function calling overhead does improve performance, too.
  */
 
-void qsort(void *base,
+__PDPCLIB_API__ void qsort(void *base,
            size_t nmemb,
            size_t size,
            int (*compar)(const void *, const void *))
@@ -412,13 +413,13 @@ void qsort(void *base,
 
 static unsigned long myseed = 1;
 
-void srand(unsigned int seed)
+__PDPCLIB_API__ void srand(unsigned int seed)
 {
     myseed = seed;
     return;
 }
 
-int rand(void)
+__PDPCLIB_API__ int rand(void)
 {
     int ret;
 
@@ -427,12 +428,12 @@ int rand(void)
     return (ret);
 }
 
-double atof(const char *nptr)
+__PDPCLIB_API__ double atof(const char *nptr)
 {
     return (strtod(nptr, (char **)NULL));
 }
 
-double strtod(const char *nptr, char **endptr)
+__PDPCLIB_API__ double strtod(const char *nptr, char **endptr)
 {
     double x = 0.0;
     double xs= 1.0;
@@ -526,12 +527,12 @@ double strtod(const char *nptr, char **endptr)
     return (x);
 }
 
-int atoi(const char *nptr)
+__PDPCLIB_API__ int atoi(const char *nptr)
 {
     return ((int)strtol(nptr, (char **)NULL, 10));
 }
 
-long int atol(const char *nptr)
+__PDPCLIB_API__ long int atol(const char *nptr)
 {
     return (strtol(nptr, (char **)NULL, 10));
 }
@@ -539,7 +540,8 @@ long int atol(const char *nptr)
 /* this logic is also in vvscanf - if you update this, update
    that one too */
 
-unsigned long int strtoul(const char *nptr, char **endptr, int base)
+__PDPCLIB_API__ unsigned long int strtoul(
+    const char *nptr, char **endptr, int base)
 {
     unsigned long x = 0;
     int undecided = 0;
@@ -613,7 +615,7 @@ unsigned long int strtoul(const char *nptr, char **endptr, int base)
     return (x);
 }
 
-long int strtol(const char *nptr, char **endptr, int base)
+__PDPCLIB_API__ long int strtol(const char *nptr, char **endptr, int base)
 {
     unsigned long y;
     long x;
@@ -644,7 +646,7 @@ long int strtol(const char *nptr, char **endptr, int base)
     return (x);
 }
 
-int mblen(const char *s, size_t n)
+__PDPCLIB_API__ int mblen(const char *s, size_t n)
 {
     if (s == NULL)
     {
@@ -660,7 +662,7 @@ int mblen(const char *s, size_t n)
     }
 }
 
-int mbtowc(wchar_t *pwc, const char *s, size_t n)
+__PDPCLIB_API__ int mbtowc(wchar_t *pwc, const char *s, size_t n)
 {
     if (s == NULL)
     {
@@ -680,7 +682,7 @@ int mbtowc(wchar_t *pwc, const char *s, size_t n)
     }
 }
 
-int wctomb(char *s, wchar_t wchar)
+__PDPCLIB_API__ int wctomb(char *s, wchar_t wchar)
 {
     if (s != NULL)
     {
@@ -693,7 +695,7 @@ int wctomb(char *s, wchar_t wchar)
     }
 }
 
-size_t mbstowcs(wchar_t *pwcs, const char *s, size_t n)
+__PDPCLIB_API__ size_t mbstowcs(wchar_t *pwcs, const char *s, size_t n)
 {
     strncpy((char *)pwcs, s, n);
     if (strlen(s) >= n)
@@ -703,7 +705,7 @@ size_t mbstowcs(wchar_t *pwcs, const char *s, size_t n)
     return (strlen((char *)pwcs));
 }
 
-size_t wcstombs(char *s, const wchar_t *pwcs, size_t n)
+__PDPCLIB_API__ size_t wcstombs(char *s, const wchar_t *pwcs, size_t n)
 {
     strncpy(s, (const char *)pwcs, n);
     if (strlen((const char *)pwcs) >= n)
@@ -716,7 +718,7 @@ size_t wcstombs(char *s, const wchar_t *pwcs, size_t n)
 #ifdef abs
 #undef abs
 #endif
-int abs(int j)
+__PDPCLIB_API__ int abs(int j)
 {
     if (j < 0)
     {
@@ -725,7 +727,7 @@ int abs(int j)
     return (j);
 }
 
-div_t div(int numer, int denom)
+__PDPCLIB_API__ div_t div(int numer, int denom)
 {
     div_t x;
 
@@ -737,7 +739,7 @@ div_t div(int numer, int denom)
 #ifdef labs
 #undef labs
 #endif
-long int labs(long int j)
+__PDPCLIB_API__ long int labs(long int j)
 {
     if (j < 0)
     {
@@ -746,7 +748,7 @@ long int labs(long int j)
     return (j);
 }
 
-ldiv_t ldiv(long int numer, long int denom)
+__PDPCLIB_API__ ldiv_t ldiv(long int numer, long int denom)
 {
     ldiv_t x;
 
@@ -755,7 +757,7 @@ ldiv_t ldiv(long int numer, long int denom)
     return (x);
 }
 
-int atexit(void (*func)(void))
+__PDPCLIB_API__ int atexit(void (*func)(void))
 {
     int x;
 
@@ -770,7 +772,7 @@ int atexit(void (*func)(void))
     return (-1);
 }
 
-char *getenv(const char *name)
+__PDPCLIB_API__ char *getenv(const char *name)
 {
 #ifdef __OS2__
     PSZ result;
@@ -809,7 +811,7 @@ char *getenv(const char *name)
    and adapted to create a system() function.  The code is all
    public domain */
 
-int system(const char *string)
+__PDPCLIB_API__ int system(const char *string)
 {
 #ifdef __OS2__
     char err_obj[100];
@@ -929,7 +931,7 @@ int system(const char *string)
 #endif
 }
 
-void *bsearch(const void *key, const void *base,
+__PDPCLIB_API__ void *bsearch(const void *key, const void *base,
               size_t nmemb, size_t size,
               int (*compar)(const void *, const void *))
 {

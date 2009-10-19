@@ -65,6 +65,7 @@
 #include "errno.h"
 #include "float.h"
 #include "limits.h"
+#include "stddef.h"
 
 /* PDOS and MSDOS use the same interface most of the time */
 /* Note that PDOS is for the 32-bit version, since the 16-bit
@@ -166,9 +167,9 @@ static int    inseek = 0;
 #endif
 
 
-FILE *stdin = &permFiles[0];
-FILE *stdout = &permFiles[1];
-FILE *stderr = &permFiles[2];
+FILE *__stdin = &permFiles[0];
+FILE *__stdout = &permFiles[1];
+FILE *__stderr = &permFiles[2];
 
 FILE *__userFiles[__NFILE];
 static FILE  *myfile;
@@ -179,6 +180,13 @@ static int    inreopen = 0;
 static const char *fnm;
 static const char *modus;
 static int modeType;
+
+__PDPCLIB_API__ FILE **__gtin()
+    { return(&__stdin); }
+__PDPCLIB_API__ FILE **__gtout()
+    { return(&__stdout); }
+__PDPCLIB_API__ FILE **__gterr()
+    { return(&__stderr); }
 
 static void dblcvt(double num, char cnvtype, size_t nwidth,
                    int nprecision, char *result);
@@ -229,7 +237,7 @@ static char *int_strtok(char *s1, const char *s2);
 #endif
 
 
-int printf(const char *format, ...)
+__PDPCLIB_API__ int printf(const char *format, ...)
 {
     va_list arg;
     int ret;
@@ -240,7 +248,7 @@ int printf(const char *format, ...)
     return (ret);
 }
 
-int fprintf(FILE *stream, const char *format, ...)
+__PDPCLIB_API__ int fprintf(FILE *stream, const char *format, ...)
 {
     va_list arg;
     int ret;
@@ -251,7 +259,7 @@ int fprintf(FILE *stream, const char *format, ...)
     return (ret);
 }
 
-int vfprintf(FILE *stream, const char *format, va_list arg)
+__PDPCLIB_API__ int vfprintf(FILE *stream, const char *format, va_list arg)
 {
     int ret;
 
@@ -260,7 +268,7 @@ int vfprintf(FILE *stream, const char *format, va_list arg)
     return (ret);
 }
 
-FILE *fopen(const char *filename, const char *mode)
+__PDPCLIB_API__ FILE *fopen(const char *filename, const char *mode)
 {
     fnm = filename;
     modus = mode;
@@ -896,7 +904,7 @@ static void osfopen(void)
     return;
 }
 
-int fclose(FILE *stream)
+__PDPCLIB_API__ int fclose(FILE *stream)
 {
 #ifdef __OS2__
     APIRET rc;
@@ -1013,7 +1021,10 @@ int fclose(FILE *stream)
 }
 
 #if !defined(__MVS__) && !defined(__CMS__)
-size_t fread(void *ptr, size_t size, size_t nmemb, FILE *stream)
+__PDPCLIB_API__ size_t fread(void *ptr,
+                             size_t size,
+                             size_t nmemb,
+                             FILE *stream)
 {
     size_t toread;
     size_t elemRead;
@@ -1450,7 +1461,10 @@ static void freadSlowB(void *ptr,
 #endif
 
 #if !defined(__MVS__) && !defined(__CMS__)
-size_t fwrite(const void *ptr, size_t size, size_t nmemb, FILE *stream)
+__PDPCLIB_API__ size_t fwrite(const void *ptr,
+                              size_t size,
+                              size_t nmemb,
+                              FILE *stream)
 {
     size_t towrite;
     size_t elemWritten;
@@ -2309,7 +2323,8 @@ static int examine(const char **formt, FILE *fq, char *s, va_list *arg,
         }
         else if (half)
         {
-            hvalue = va_arg(*arg, short);
+            /* short is promoted to int, so use int */
+            hvalue = va_arg(*arg, int);
             if (specifier == 'u') lvalue = (unsigned short)hvalue;
             else lvalue = hvalue;
         }
@@ -2526,7 +2541,7 @@ static int examine(const char **formt, FILE *fq, char *s, va_list *arg,
     return (extraCh);
 }
 
-int fputc(int c, FILE *stream)
+__PDPCLIB_API__ int fputc(int c, FILE *stream)
 {
     char buf[1];
 
@@ -2576,7 +2591,7 @@ int fputc(int c, FILE *stream)
 }
 
 #if !defined(__MVS__) && !defined(__CMS__)
-int fputs(const char *s, FILE *stream)
+__PDPCLIB_API__ int fputs(const char *s, FILE *stream)
 {
     size_t len;
     size_t ret;
@@ -2588,7 +2603,7 @@ int fputs(const char *s, FILE *stream)
 }
 #endif
 
-int remove(const char *filename)
+__PDPCLIB_API__ int remove(const char *filename)
 {
     int ret;
 #ifdef __OS2__
@@ -2645,7 +2660,7 @@ int remove(const char *filename)
     return (ret);
 }
 
-int rename(const char *old, const char *new)
+__PDPCLIB_API__ int rename(const char *old, const char *new)
 {
     int ret;
 #ifdef __OS2__
@@ -2702,7 +2717,7 @@ int rename(const char *old, const char *new)
     return (ret);
 }
 
-int sprintf(char *s, const char *format, ...)
+__PDPCLIB_API__ int sprintf(char *s, const char *format, ...)
 {
     va_list arg;
     int ret;
@@ -2713,7 +2728,7 @@ int sprintf(char *s, const char *format, ...)
     return (ret);
 }
 
-int vsprintf(char *s, const char *format, va_list arg)
+__PDPCLIB_API__ int vsprintf(char *s, const char *format, va_list arg)
 {
     int ret;
 
@@ -2735,7 +2750,7 @@ In fgets, we have the following possibilites...
 
 */
 #if !defined(__MVS__) && !defined(__CMS__)
-char *fgets(char *s, int n, FILE *stream)
+__PDPCLIB_API__ char *fgets(char *s, int n, FILE *stream)
 {
     char *p;
     register char *t;
@@ -3032,7 +3047,7 @@ char *fgets(char *s, int n, FILE *stream)
 }
 #endif
 
-int ungetc(int c, FILE *stream)
+__PDPCLIB_API__ int ungetc(int c, FILE *stream)
 {
     if ((stream->ungetCh != -1) || (c == EOF))
     {
@@ -3044,7 +3059,7 @@ int ungetc(int c, FILE *stream)
     return ((unsigned char)c);
 }
 
-int fgetc(FILE *stream)
+__PDPCLIB_API__ int fgetc(FILE *stream)
 {
     unsigned char x[1];
     size_t ret;
@@ -3057,7 +3072,7 @@ int fgetc(FILE *stream)
     return ((int)x[0]);
 }
 
-int fseek(FILE *stream, long int offset, int whence)
+__PDPCLIB_API__ int fseek(FILE *stream, long int offset, int whence)
 {
     long oldpos;
     long newpos;
@@ -3176,37 +3191,37 @@ int fseek(FILE *stream, long int offset, int whence)
     return (0);
 }
 
-long int ftell(FILE *stream)
+__PDPCLIB_API__ long int ftell(FILE *stream)
 {
     return (stream->bufStartR + (stream->upto - stream->fbuf));
 }
 
-int fsetpos(FILE *stream, const fpos_t *pos)
+__PDPCLIB_API__ int fsetpos(FILE *stream, const fpos_t *pos)
 {
     fseek(stream, *pos, SEEK_SET);
     return (0);
 }
 
-int fgetpos(FILE *stream, fpos_t *pos)
+__PDPCLIB_API__ int fgetpos(FILE *stream, fpos_t *pos)
 {
     *pos = ftell(stream);
     return (0);
 }
 
-void rewind(FILE *stream)
+__PDPCLIB_API__ void rewind(FILE *stream)
 {
     fseek(stream, 0L, SEEK_SET);
     return;
 }
 
-void clearerr(FILE *stream)
+__PDPCLIB_API__ void clearerr(FILE *stream)
 {
     stream->errorInd = 0;
     stream->eofInd = 0;
     return;
 }
 
-void perror(const char *s)
+__PDPCLIB_API__ void perror(const char *s)
 {
     if ((s != NULL) && (*s != '\0'))
     {
@@ -3232,7 +3247,7 @@ buf  + L = setup
 buf  + N = ignore, return success
 */
 
-int setvbuf(FILE *stream, char *buf, int mode, size_t size)
+__PDPCLIB_API__ int setvbuf(FILE *stream, char *buf, int mode, size_t size)
 {
     char *mybuf;
 
@@ -3295,7 +3310,7 @@ int setvbuf(FILE *stream, char *buf, int mode, size_t size)
     return (0);
 }
 
-int setbuf(FILE *stream, char *buf)
+__PDPCLIB_API__ int setbuf(FILE *stream, char *buf)
 {
     int ret;
 
@@ -3310,7 +3325,7 @@ int setbuf(FILE *stream, char *buf)
     return (ret);
 }
 
-FILE *freopen(const char *filename, const char *mode, FILE *stream)
+__PDPCLIB_API__ FILE *freopen(const char *filename, const char *mode, FILE *stream)
 {
     inreopen = 1;
     fclose(stream);
@@ -3354,7 +3369,7 @@ FILE *freopen(const char *filename, const char *mode, FILE *stream)
     return (stream);
 }
 
-int fflush(FILE *stream)
+__PDPCLIB_API__ int fflush(FILE *stream)
 {
 #if !defined(__MVS__) && !defined(__CMS__)
 #ifdef __OS2__
@@ -3416,7 +3431,7 @@ int fflush(FILE *stream)
     return (0);
 }
 
-char *tmpnam(char *s)
+__PDPCLIB_API__ char *tmpnam(char *s)
 {
 #if defined(__MVS__) || defined(__CMS__)
     static char buf[] = "dd:ZZZZZZZA";
@@ -3437,7 +3452,7 @@ char *tmpnam(char *s)
     return (s);
 }
 
-FILE *tmpfile(void)
+__PDPCLIB_API__ FILE *tmpfile(void)
 {
 #if defined(__MVS__) || defined(__CMS__)
     return (fopen("dd:ZZZZZZZA", "wb+"));
@@ -3446,7 +3461,7 @@ FILE *tmpfile(void)
 #endif
 }
 
-int fscanf(FILE *stream, const char *format, ...)
+__PDPCLIB_API__ int fscanf(FILE *stream, const char *format, ...)
 {
     va_list arg;
     int ret;
@@ -3457,7 +3472,7 @@ int fscanf(FILE *stream, const char *format, ...)
     return (ret);
 }
 
-int scanf(const char *format, ...)
+__PDPCLIB_API__ int scanf(const char *format, ...)
 {
     va_list arg;
     int ret;
@@ -3468,7 +3483,7 @@ int scanf(const char *format, ...)
     return (ret);
 }
 
-int sscanf(const char *s, const char *format, ...)
+__PDPCLIB_API__ int sscanf(const char *s, const char *format, ...)
 {
     va_list arg;
     int ret;
@@ -3982,7 +3997,7 @@ static int vvscanf(const char *format, va_list arg, FILE *fp, const char *s)
     return (cnt);
 }
 
-char *gets(char *s)
+__PDPCLIB_API__ char *gets(char *s)
 {
     char *ret;
 
@@ -3994,7 +4009,7 @@ char *gets(char *s)
     return (ret);
 }
 
-int puts(const char *s)
+__PDPCLIB_API__ int puts(const char *s)
 {
     int ret;
 
@@ -4015,32 +4030,32 @@ int puts(const char *s)
 #undef feof
 #undef ferror
 
-int getc(FILE *stream)
+__PDPCLIB_API__ int getc(FILE *stream)
 {
     return (fgetc(stream));
 }
 
-int putc(int c, FILE *stream)
+__PDPCLIB_API__ int putc(int c, FILE *stream)
 {
     return (fputc(c, stream));
 }
 
-int getchar(void)
+__PDPCLIB_API__ int getchar(void)
 {
     return (getc(stdin));
 }
 
-int putchar(int c)
+__PDPCLIB_API__ int putchar(int c)
 {
     return (putc(c, stdout));
 }
 
-int feof(FILE *stream)
+__PDPCLIB_API__ int feof(FILE *stream)
 {
     return (stream->eofInd);
 }
 
-int ferror(FILE *stream)
+__PDPCLIB_API__ int ferror(FILE *stream)
 {
     return (stream->errorInd);
 }
@@ -4102,7 +4117,7 @@ fgets: if variable record + no remainder
 #endif
 
 #if defined(__MVS__) || defined(__CMS__)
-char *fgets(char *s, int n, FILE *stream)
+__PDPCLIB_API__ char *fgets(char *s, int n, FILE *stream)
 {
     unsigned char *eptr;
     size_t len;
@@ -4191,7 +4206,7 @@ char *fgets(char *s, int n, FILE *stream)
     return (s);
 }
 
-int fputs(const char *s, FILE *stream)
+__PDPCLIB_API__ int fputs(const char *s, FILE *stream)
 {
     const char *p;
     size_t len;
@@ -4254,7 +4269,7 @@ int fputs(const char *s, FILE *stream)
     return (0);
 }
 
-size_t fwrite(const void *ptr, size_t size, size_t nmemb, FILE *stream)
+__PDPCLIB_API__ size_t fwrite(const void *ptr, size_t size, size_t nmemb, FILE *stream)
 {
     size_t bytes;
     size_t sz;
@@ -4643,7 +4658,7 @@ size_t fwrite(const void *ptr, size_t size, size_t nmemb, FILE *stream)
     return (nmemb);
 }
 
-size_t fread(void *ptr, size_t size, size_t nmemb, FILE *stream)
+__PDPCLIB_API__ size_t fread(void *ptr, size_t size, size_t nmemb, FILE *stream)
 {
     size_t bytes;
     size_t read;

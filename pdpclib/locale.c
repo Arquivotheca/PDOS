@@ -13,6 +13,7 @@
 #include "locale.h"
 #include "limits.h"
 #include "string.h"
+#include "stddef.h"
 
 static struct lconv thislocale = {
     ".",
@@ -35,7 +36,7 @@ static struct lconv thislocale = {
     CHAR_MAX
 };
 
-char *setlocale(int category, const char *locale)
+__PDPCLIB_API__ char *setlocale(int category, const char *locale)
 {
     (void)category;
     if (locale == NULL)
@@ -53,7 +54,7 @@ char *setlocale(int category, const char *locale)
     }
 }
 
-struct lconv *localeconv(void)
+__PDPCLIB_API__ struct lconv *localeconv(void)
 {
     return (&thislocale);
 }

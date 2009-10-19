@@ -10,5 +10,10 @@
 /*                                                                   */
 /*********************************************************************/
 
-int errno = 0;
+#include "stddef.h"
+
+int __errno = 0;
+
+__PDPCLIB_API__ int *__get_errno()
+    { return(&__errno); }
 

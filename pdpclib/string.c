@@ -10,12 +10,14 @@
 /*                                                                   */
 /*********************************************************************/
 
+#include "stdio.h"
 #include "string.h"
+#include "stddef.h"
 
 #ifdef memmove
 #undef memmove
 #endif
-void *memmove(void *s1, const void *s2, size_t n)
+__PDPCLIB_API__ void *memmove(void *s1, const void *s2, size_t n)
 {
     char *p = s1;
     const char *cs2 = s2;
@@ -47,7 +49,7 @@ void *memmove(void *s1, const void *s2, size_t n)
 #ifdef strcpy
 #undef strcpy
 #endif
-char *strcpy(char *s1, const char *s2)
+__PDPCLIB_API__ char *strcpy(char *s1, const char *s2)
 {
     char *p = s1;
 
@@ -58,7 +60,7 @@ char *strcpy(char *s1, const char *s2)
 #ifdef strncpy
 #undef strncpy
 #endif
-char *strncpy(char *s1, const char *s2, size_t n)
+__PDPCLIB_API__ char *strncpy(char *s1, const char *s2, size_t n)
 {
     char *p = s1;
     size_t x;
@@ -80,7 +82,7 @@ char *strncpy(char *s1, const char *s2, size_t n)
 #ifdef strcat
 #undef strcat
 #endif
-char *strcat(char *s1, const char *s2)
+__PDPCLIB_API__ char *strcat(char *s1, const char *s2)
 {
     char *p = s1;
 
@@ -96,7 +98,7 @@ char *strcat(char *s1, const char *s2)
 #ifdef strncat
 #undef strncat
 #endif
-char *strncat(char *s1, const char *s2, size_t n)
+__PDPCLIB_API__ char *strncat(char *s1, const char *s2, size_t n)
 {
     char *p = s1;
     size_t x = 0;
@@ -116,7 +118,7 @@ char *strncat(char *s1, const char *s2, size_t n)
 #ifdef memcmp
 #undef memcmp
 #endif
-int memcmp(const void *s1, const void *s2, size_t n)
+__PDPCLIB_API__ int memcmp(const void *s1, const void *s2, size_t n)
 {
     const unsigned char *p1;
     const unsigned char *p2;
@@ -136,7 +138,7 @@ int memcmp(const void *s1, const void *s2, size_t n)
 #ifdef strcmp
 #undef strcmp
 #endif
-int strcmp(const char *s1, const char *s2)
+__PDPCLIB_API__ int strcmp(const char *s1, const char *s2)
 {
     const unsigned char *p1;
     const unsigned char *p2;
@@ -157,7 +159,7 @@ int strcmp(const char *s1, const char *s2)
 #ifdef strcoll
 #undef strcoll
 #endif
-int strcoll(const char *s1, const char *s2)
+__PDPCLIB_API__ int strcoll(const char *s1, const char *s2)
 {
     return (strcmp(s1, s2));
 }
@@ -165,7 +167,7 @@ int strcoll(const char *s1, const char *s2)
 #ifdef strncmp
 #undef strncmp
 #endif
-int strncmp(const char *s1, const char *s2, size_t n)
+__PDPCLIB_API__ int strncmp(const char *s1, const char *s2, size_t n)
 {
     const unsigned char *p1;
     const unsigned char *p2;
@@ -186,7 +188,7 @@ int strncmp(const char *s1, const char *s2, size_t n)
 #ifdef strxfrm
 #undef strxfrm
 #endif
-size_t strxfrm(char *s1, const char *s2, size_t n)
+__PDPCLIB_API__ size_t strxfrm(char *s1, const char *s2, size_t n)
 {
     size_t oldlen;
 
@@ -202,7 +204,7 @@ size_t strxfrm(char *s1, const char *s2, size_t n)
 #ifdef memchr
 #undef memchr
 #endif
-void *memchr(const void *s, int c, size_t n)
+__PDPCLIB_API__ void *memchr(const void *s, int c, size_t n)
 {
     const unsigned char *p;
     size_t x = 0;
@@ -220,7 +222,7 @@ void *memchr(const void *s, int c, size_t n)
 #ifdef strchr
 #undef strchr
 #endif
-char *strchr(const char *s, int c)
+__PDPCLIB_API__ char *strchr(const char *s, int c)
 {
     while (*s != '\0')
     {
@@ -234,7 +236,7 @@ char *strchr(const char *s, int c)
 #ifdef strcspn
 #undef strcspn
 #endif
-size_t strcspn(const char *s1, const char *s2)
+__PDPCLIB_API__ size_t strcspn(const char *s1, const char *s2)
 {
     const char *p1;
     const char *p2;
@@ -256,7 +258,7 @@ size_t strcspn(const char *s1, const char *s2)
 #ifdef strpbrk
 #undef strpbrk
 #endif
-char *strpbrk(const char *s1, const char *s2)
+__PDPCLIB_API__ char *strpbrk(const char *s1, const char *s2)
 {
     const char *p1;
     const char *p2;
@@ -278,7 +280,7 @@ char *strpbrk(const char *s1, const char *s2)
 #ifdef strrchr
 #undef strrchr
 #endif
-char *strrchr(const char *s, int c)
+__PDPCLIB_API__ char *strrchr(const char *s, int c)
 {
     const char *p;
 
@@ -294,7 +296,7 @@ char *strrchr(const char *s, int c)
 #ifdef strspn
 #undef strspn
 #endif
-size_t strspn(const char *s1, const char *s2)
+__PDPCLIB_API__ size_t strspn(const char *s1, const char *s2)
 {
     const char *p1;
     const char *p2;
@@ -321,7 +323,7 @@ size_t strspn(const char *s1, const char *s2)
 #ifdef strstr
 #undef strstr
 #endif
-char *strstr(const char *s1, const char *s2)
+__PDPCLIB_API__ char *strstr(const char *s1, const char *s2)
 {
     const char *p = s1, *p1, *p2 = s2;
 
@@ -349,7 +351,7 @@ char *strstr(const char *s1, const char *s2)
 #ifdef strtok
 #undef strtok
 #endif
-char *strtok(char *s1, const char *s2)
+__PDPCLIB_API__ char *strtok(char *s1, const char *s2)
 {
     static char *old = NULL;
     char *p;
@@ -374,7 +376,7 @@ char *strtok(char *s1, const char *s2)
 #ifdef memset
 #undef memset
 #endif
-void *memset(void *s, int c, size_t n)
+__PDPCLIB_API__ void *memset(void *s, int c, size_t n)
 {
     size_t x = 0;
 
@@ -388,7 +390,7 @@ void *memset(void *s, int c, size_t n)
 #ifdef strerror
 #undef strerror
 #endif
-char *strerror(int errnum)
+__PDPCLIB_API__ char *strerror(int errnum)
 {
     if (errnum == 0) return ("No error has occurred\n");
     else return ("An error has occurred\n");
@@ -397,7 +399,7 @@ char *strerror(int errnum)
 #ifdef strlen
 #undef strlen
 #endif
-size_t strlen(const char *s)
+__PDPCLIB_API__ size_t strlen(const char *s)
 {
     const char *p;
 
@@ -411,7 +413,7 @@ size_t strlen(const char *s)
 #undef memcpy
 #endif
 #ifndef __32BIT__
-void *memcpy(void *s1, const void *s2, size_t n)
+__PDPCLIB_API__ void *memcpy(void *s1, const void *s2, size_t n)
 {
     register const unsigned char *f = s2;
     register const unsigned char *fe;
@@ -425,7 +427,7 @@ void *memcpy(void *s1, const void *s2, size_t n)
     return (s1);
 }
 #else
-void *memcpy(void *s1, const void *s2, size_t n)
+__PDPCLIB_API__ void *memcpy(void *s1, const void *s2, size_t n)
 {
     register unsigned int *p = (unsigned int *)s1;
     register unsigned int *cs2 = (unsigned int *)s2;

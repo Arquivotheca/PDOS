@@ -45,6 +45,7 @@
 #include "math.h"
 #include "float.h"
 #include "errno.h"
+#include "stddef.h"
 
 /*
 
@@ -57,7 +58,7 @@ static const double ln10 = 2.3025850929940456840179914546844;
 static const double ln2 = 0.69314718055994530941723212145818 ;
 
 
-double ceil(double x)
+__PDPCLIB_API__ double ceil(double x)
 {
     int y;
 
@@ -72,7 +73,7 @@ double ceil(double x)
 #ifdef fabs
 #undef fabs
 #endif
-double fabs(double x)
+__PDPCLIB_API__ double fabs(double x)
 {
     if (x < 0.0)
     {
@@ -81,7 +82,7 @@ double fabs(double x)
     return (x);
 }
 
-double floor(double x)
+__PDPCLIB_API__ double floor(double x)
 {
     int y;
 
@@ -100,7 +101,7 @@ double floor(double x)
     return ((double)y);
 }
 
-double fmod(double x, double y)
+__PDPCLIB_API__ double fmod(double x, double y)
 {
     int imod;
     if(y == 0.0) return (0.0);
@@ -118,7 +119,7 @@ double fmod(double x, double y)
   to use to ensure quickest convergence.
 
 */
-double acos(double x)
+__PDPCLIB_API__ double acos(double x)
 {
 
 /*
@@ -148,7 +149,7 @@ double acos(double x)
 
 */
 
-double asin (double y)
+__PDPCLIB_API__ double asin (double y)
 {
     int i;
     double term,answer,work,x,powx,coef;
@@ -232,7 +233,7 @@ double asin (double y)
 
 */
 
-double atan (double x)
+__PDPCLIB_API__ double atan (double x)
 {
     int i;
     double term,answer,work,powx;
@@ -286,7 +287,7 @@ double atan (double x)
 
 /* atan2 was taken from libnix and modified slightly */
 
-double atan2(double y,double x)
+__PDPCLIB_API__ double atan2(double y,double x)
 {
     return (x >= y) ?
                (x >= -y ? atan(y/x) : -pi/2 - atan(x/y))
@@ -300,7 +301,7 @@ double atan2(double y,double x)
 #ifdef cos
 #undef cos
 #endif
-double cos(double x)
+__PDPCLIB_API__ double cos(double x)
 {
 /*
 
@@ -345,7 +346,7 @@ double cos(double x)
 #ifdef sin
 #undef sin
 #endif
-double sin(double x)
+__PDPCLIB_API__ double sin(double x)
 {
 /*
 
@@ -392,7 +393,7 @@ double sin(double x)
 #ifdef tan
 #undef tan
 #endif
-double tan (double x)
+__PDPCLIB_API__ double tan (double x)
 {
 /*
 
@@ -421,7 +422,7 @@ double tan (double x)
   COSH(X) = (E**X+E**(-1))/2
 
 */
-double cosh(double x)
+__PDPCLIB_API__ double cosh(double x)
 {
     double dexpx;
 
@@ -431,7 +432,7 @@ double cosh(double x)
 
 }
 
-double sinh(double x)
+__PDPCLIB_API__ double sinh(double x)
 {
     double dexpx;
 
@@ -444,7 +445,7 @@ double sinh(double x)
     tanh returns the hyperbolic area tangent of floating point argument x.
 */
 
-double tanh(double x)
+__PDPCLIB_API__ double tanh(double x)
 {
     double dexp2;
 
@@ -457,7 +458,7 @@ double tanh(double x)
 exp(x) = 1 + x + x2/2 + x3/6 + x4/24 + x5/120 + ... + xn/n! + ...
 
 */
-double exp (double x)
+__PDPCLIB_API__ double exp (double x)
 {
     int i;
     double term,answer,work;
@@ -490,7 +491,7 @@ double exp (double x)
    Note this only works for small x so we scale....
 
 */
-double log (double x)
+__PDPCLIB_API__ double log (double x)
 {
     int i,scale;
     double term,answer,work,xs;
@@ -534,7 +535,7 @@ double log (double x)
 }
 
 
-double log10(double x)
+__PDPCLIB_API__ double log10(double x)
 {
     return ( log(x) / ln10 );
 }
@@ -547,7 +548,7 @@ double log10(double x)
 
 */
 
-double pow(double x,double y)
+__PDPCLIB_API__ double pow(double x,double y)
 {
     int j,neg;
     double yy,xx;
@@ -590,7 +591,7 @@ double pow(double x,double y)
 
 */
 
-double sqrt(double x)
+__PDPCLIB_API__ double sqrt(double x)
 {
     double xs,yn,ynn;
     double pow1;
@@ -633,7 +634,7 @@ double sqrt(double x)
 }
 
 
-double frexp(double x, int *exp)
+__PDPCLIB_API__ double frexp(double x, int *exp)
 {
 /*
   split float into fraction and mantissa
@@ -665,7 +666,8 @@ double frexp(double x, int *exp)
     /*    */
     return(split.d);
 }
-double ldexp(double x, int exp)
+
+__PDPCLIB_API__ double ldexp(double x, int exp)
 {
 /*
   note this is not so easy for IBM as it uses HEX float
@@ -699,7 +701,7 @@ double ldexp(double x, int exp)
     return(split.d);
 }
 
-double modf(double value, double *iptr)
+__PDPCLIB_API__ double modf(double value, double *iptr)
 {
     int neg = 0;
     long i;

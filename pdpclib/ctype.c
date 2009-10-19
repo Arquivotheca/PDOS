@@ -10,6 +10,8 @@
 /*                                                                   */
 /*********************************************************************/
 
+#include "stddef.h"
+
 #if !defined(__MVS__) && !defined(__CMS__)
 static unsigned short __isbufR[257] = {
     0x0000U, /* EOF */
@@ -1573,67 +1575,67 @@ unsigned short *__isbuf = &__isbufR[1];
 short *__tolow = &__tolowR[1];
 short *__toup = &__toupR[1];
 
-int isalnum(int c)
+__PDPCLIB_API__ int isalnum(int c)
 {
     return (__isbuf[(c)] & 0x0001U);
 }
 
-int isalpha(int c)
+__PDPCLIB_API__ int isalpha(int c)
 {
     return (__isbuf[(c)] & 0x0002U);
 }
 
-int iscntrl(int c)
+__PDPCLIB_API__ int iscntrl(int c)
 {
     return (__isbuf[(c)] & 0x0004U);
 }
 
-int isdigit(int c)
+__PDPCLIB_API__ int isdigit(int c)
 {
     return (__isbuf[(c)] & 0x0008U);
 }
 
-int isgraph(int c)
+__PDPCLIB_API__ int isgraph(int c)
 {
     return (__isbuf[(c)] & 0x0010U);
 }
 
-int islower(int c)
+__PDPCLIB_API__ int islower(int c)
 {
     return (__isbuf[(c)] & 0x0020U);
 }
 
-int isprint(int c)
+__PDPCLIB_API__ int isprint(int c)
 {
     return (__isbuf[(c)] & 0x0040U);
 }
 
-int ispunct(int c)
+__PDPCLIB_API__ int ispunct(int c)
 {
     return (__isbuf[(c)] & 0x0080U);
 }
 
-int isspace(int c)
+__PDPCLIB_API__ int isspace(int c)
 {
     return (__isbuf[(c)] & 0x0100U);
 }
 
-int isupper(int c)
+__PDPCLIB_API__ int isupper(int c)
 {
     return (__isbuf[(c)] & 0x0200U);
 }
 
-int isxdigit(int c)
+__PDPCLIB_API__ int isxdigit(int c)
 {
     return (__isbuf[(c)] & 0x0400U);
 }
 
-int tolower(int c)
+__PDPCLIB_API__ int tolower(int c)
 {
     return (__tolow[(c)]);
 }
 
-int toupper(int c)
+__PDPCLIB_API__ int toupper(int c)
 {
     return (__toup[(c)]);
 }

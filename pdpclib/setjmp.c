@@ -11,10 +11,11 @@
 /*********************************************************************/
 
 #include "setjmp.h"
+#include "stddef.h"
 
 int __longj(void *);
 
-void longjmp(jmp_buf env, int val)
+__PDPCLIB_API__ void longjmp(jmp_buf env, int val)
 {
     if (val == 0)
     {

@@ -3325,7 +3325,9 @@ __PDPCLIB_API__ int setbuf(FILE *stream, char *buf)
     return (ret);
 }
 
-__PDPCLIB_API__ FILE *freopen(const char *filename, const char *mode, FILE *stream)
+__PDPCLIB_API__ FILE *freopen(const char *filename, 
+                              const char *mode, 
+                              FILE *stream)
 {
     inreopen = 1;
     fclose(stream);
@@ -4269,7 +4271,10 @@ __PDPCLIB_API__ int fputs(const char *s, FILE *stream)
     return (0);
 }
 
-__PDPCLIB_API__ size_t fwrite(const void *ptr, size_t size, size_t nmemb, FILE *stream)
+__PDPCLIB_API__ size_t fwrite(const void *ptr, 
+                              size_t size, 
+                              size_t nmemb, 
+                              FILE *stream)
 {
     size_t bytes;
     size_t sz;

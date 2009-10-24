@@ -677,7 +677,7 @@ NOPOOL   DS    0H
 *         GETMAIN RU,LV=(R3),SP=SUBPOOL,LOC=ANY
 * Hardcode the ATL memory area provided by latest MUSIC.
 * Note that this function will only work if the C library
-* is compiled with MEMGR option.
+* is compiled with MEMMGR option.
          L     R1,=X'02000000'
          AGO   .N380GM2
 .N380GM1 ANOP

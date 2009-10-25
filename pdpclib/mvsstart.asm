@@ -52,8 +52,9 @@ CEESTART EQU   *
          USING @@CRT0,R10
          LR    R11,R1
          AIF   ('&OS' NE 'MUSIC').NOTMUS1
-         L     R15,=V(TEXTLC)    MUSIC/SP: CALL TEXTLC
-         BALR  R14,R15
+* MUSIC doesn't require this - can be done via command instead
+*         L     R15,=V(TEXTLC)    MUSIC/SP: CALL TEXTLC
+*         BALR  R14,R15
 .NOTMUS1 ANOP
          GETMAIN RU,LV=STACKLEN,SP=SUBPOOL
          ST    R13,4(R1)

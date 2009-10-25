@@ -302,10 +302,12 @@ OUTDCBLN EQU   *-OUTDCB
 *
 *        L     R2,0(R1)         R2 CONTAINS HANDLE
          L     R3,4(R1)         R3 POINTS TO BUF POINTER
+         L     R4,8(R1)         R4 point to a length
          LA    R6,0
          ST    R6,RDEOF
          GET   (R2)
          ST    R1,0(R3)
+         LH    R5,DCBLRECL
          L     R15,RDEOF
 *
 RETURNAR DS    0H
@@ -316,6 +318,7 @@ RETURNAR DS    0H
          AIF ('&SYS' EQ 'S370').NOMOD2
          CALL  @@SETM31
 .NOMOD2  ANOP
+         ST    R5,0(R4)         Tell caller the length read
          LR    R15,R7
          RETURN (14,12),RC=(15)
 *
@@ -332,30 +335,22 @@ RETURNAR DS    0H
          LR    R12,R15
          USING @@AWRITE,R12
          LR    R11,R1
+         L     R2,0(R1)         
+         USING ZDCBAREA,R2
+         L     R4,8(R1)         R4 points to length to write
+         L     R4,0(R4)         R4 = length to write
+         STH   R4,DCBLRECL      store length to write
+         L     R3,4(R1)         R3 POINTS TO BUF POINTER
+*
          AIF ('&SYS' EQ 'S370').NOMOD3
          CALL  @@SETM24
 .NOMOD3  ANOP
-*         AIF   ('&SYS' NE 'S370').BELOW2
-* CAN'T USE "BELOW" ON MVS 3.8
-*         GETMAIN R,LV=WORKLEN,SP=SUBPOOL
-*         AGO   .NOBEL2
-*.BELOW2  ANOP
-*         GETMAIN R,LV=WORKLEN,SP=SUBPOOL,LOC=BELOW
-*.NOBEL2  ANOP
-         USING ZDCBAREA,R2
-         L     R2,0(R1)
          LA    R1,SAVEADCB
          ST    R13,4(R1)
          ST    R1,8(R13)
          LR    R13,R1
          LR    R1,R11
          USING WORKAREA,R13
-*
-         L     R3,4(R1)         R3 POINTS TO BUF POINTER
-* Another parameter is passed, containing record length,
-* but we can ignore this in CMS, since for both F and V
-* we can just request a full sized buffer from the OS
-* without ill-effect
 *
          AIF   ('&OUTM' NE 'L').NLM2
          PUT   (R2)

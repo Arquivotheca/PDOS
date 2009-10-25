@@ -1,12 +1,12 @@
 #include <stddef.h>
 
 #pragma linkage(__aopen, OS)
-void *__aopen(const char *ddname, int mode, int *recfm,
+void *__aopen(const char *ddname, int *mode, int *recfm,
               int *lrecl, int *blksize, void **asmbuf, const char *mem);
 #pragma linkage(__aread, OS)
-int __aread(void *handle, void *buf);
+int __aread(void *handle, void *buf, size_t *len);
 #pragma linkage(__awrite, OS)
-int __awrite(void *handle, const void *buf, size_t sz);
+int __awrite(void *handle, unsigned char **buf, size_t *sz);
 #pragma linkage(__aclose, OS)
 void __aclose(void *handle);
 #pragma linkage(__getclk, OS)

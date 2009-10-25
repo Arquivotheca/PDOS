@@ -154,7 +154,7 @@ static FILE permFiles[3];
    locate mode */
 #if !LOCMODE /* move mode */
 #define begwrite(stream, len) (lenwrite = (len), dptr = (stream)->asmbuf)
-#define finwrite(stream) (__awrite((stream)->hfile, NULL, lenwrite))
+#define finwrite(stream) (__awrite((stream)->hfile, &dptr, &lenwrite))
 #else /* locate mode */
 #define begwrite(stream, len) (__awrite((stream)->hfile, &dptr, len))
 #define finwrite(stream)
@@ -164,6 +164,8 @@ static FILE permFiles[3];
 static unsigned char *dptr;
 static size_t lenwrite;
 static int    inseek = 0;
+static size_t lenread;
+#define __aread(a,b) ((__aread)((a),(b),&lenread))
 #endif
 
 
@@ -838,7 +840,7 @@ static void osfopen(void)
         myfile->blksize = 6233;
     }
     myfile->hfile =
-        __aopen(myfile->ddname, mode, &myfile->recfm, &myfile->lrecl, 
+        __aopen(myfile->ddname, &mode, &myfile->recfm, &myfile->lrecl, 
                 &myfile->blksize, &myfile->asmbuf, p);
 
     /* errors from MVS __aopen are negative numbers */
@@ -4882,13 +4884,20 @@ __PDPCLIB_API__ size_t fread(void *ptr, size_t size, size_t nmemb, FILE *stream)
                     break;
                 }
 
-                read = (dptr[0] << 8) | dptr[1];
-                
-                if (stream->reallyu)
+                if (!stream->reallyu)
                 {
+                    read = (dptr[0] << 8) | dptr[1];
+                }                
+                else
+                {
+#ifdef OLD_RECFMU
+                    read = (dptr[0] << 8) | dptr[1];
                     /* skip over the RDW */
                     dptr += 4;
                     read -= 4;
+#else
+                    read = lenread;
+#endif
                     if (stream->reallyt)
                     {
                         unsigned char *p;

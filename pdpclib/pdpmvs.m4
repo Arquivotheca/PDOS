@@ -2,7 +2,7 @@
 //*
 //PDPASM   PROC MEMBER=''
 //ASM      EXEC PGM=ASMA90,
-//   PARM='DECK,LIST'
+//   PARM='DECK,NOLIST'
 //SYSLIB   DD DSN=SYS1.MACLIB,DISP=SHR
 //         DD DSN=&&MACLIB,DISP=(OLD,PASS)
 //         DD DSN=SYS1.MODGEN,DISP=SHR
@@ -51,6 +51,13 @@ undivert(pdpprlg.mac)/*
 //SYSUT2   DD  DSN=&&MACLIB(PDPEPIL),DISP=(OLD,PASS)
 //SYSUT1   DD  *
 undivert(pdpepil.mac)/*
+//SYSPRINT DD  SYSOUT=*
+//SYSIN    DD  DUMMY
+//*
+//MVSMACS  EXEC PGM=IEBGENER
+//SYSUT2   DD  DSN=&&MACLIB(MVSMACS),DISP=(OLD,PASS)
+//SYSUT1   DD  *
+undivert(mvsmacs.mac)/*
 //SYSPRINT DD  SYSOUT=*
 //SYSIN    DD  DUMMY
 //*

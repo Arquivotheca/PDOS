@@ -88,7 +88,9 @@ R15      EQU   15
          USING WORKAREA,R13
 *
          L     R3,00(,R1)         R3 POINTS TO DDNAME
-         L     R4,04(,R1)         R4 is the MODE.  0=input 1=output
+         L     R4,04(,R1)         R4 is pointer to the MODE.
+*                                 0=input 1=output
+         L     R4,0(R4)           R4 has the value of mode.
          L     R5,08(,R1)         R5 POINTS TO RECFM
          L     R8,12(,R1)         R8 POINTS TO LRECL
 * 16 has blksize

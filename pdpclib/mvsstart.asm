@@ -1,3 +1,4 @@
+MVSSTART TITLE 'M V S S T A R T  ***  STARTUP ROUTINE FOR C'
 **********************************************************************
 *                                                                    *
 *  THIS PROGRAM WRITTEN BY PAUL EDWARDS.                             *
@@ -139,10 +140,10 @@ SAVER13  DS    F
          DS    0H
 *         ENTRY CEESG003
 *CEESG003 EQU   *
-         ENTRY @@EXITA         
+         ENTRY @@EXITA
 @@EXITA  EQU   *
 * SWITCH BACK TO OUR OLD SAVE AREA
-         LR    R10,R15         
+         LR    R10,R15
          USING @@EXITA,R10
          L     R9,0(R1)
          L     R13,=A(SAVER13)

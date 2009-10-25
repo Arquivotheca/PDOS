@@ -1,0 +1,213 @@
+***********************************************************************
+*
+*  Macros to support MVS
+*  Written by Gerhard Postpischil
+*  Released to the public domain
+*
+***********************************************************************
+         MACRO ,
+&NM      AMUSE &WRK1=R14,&WRK2=R15                   ADDED ON GP2009225
+         GBLC  &SYS
+.*
+.*   AMUSE sets addressing mode to back to the csller's
+.*         expands nothing or label for S370
+.*         Required after SAM24 call to return data to caller
+.*
+         AIF   ('&SYS' EQ 'S370').OLDSYS
+&NM      L     &WRK1,4(,R13)      Old save area
+         L     &WRK1,12(,R14)     Caller's mode in high bit
+         N     &WRK1,=X'80000000'   Kill address
+         LA    &WRK2,*+4+2+2      Get new mode and address
+         OR    &WRK1,&WRK2
+         DC    0H'0',AL.4(0,X'0B',0,&WRK1)  CONTINUE IN USER MODE
+         MEXIT ,
+.OLDSYS  AIF   ('&NM' EQ '').MEND
+&NM      DS    0H            DEFINE LABEL ONLY
+.MEND    MEND  ,
+         MACRO ,                                                GP09234
+&NM      FUNEXIT &RC=                                           GP09234
+         GBLC  &SYS,&ZZSETSA,&ZZSETSL,&ZZSETSP                  GP09234
+         GBLB  &ZZSETAM                                         GP09234
+         LCLC  &LBL                                             GP09234
+&LBL     SETC  '&NM'                                            GP09234
+         AIF   ('&ZZSETSL' NE '' AND '&RC' EQ '').JUSTF         GP09234
+         AIF   ('&ZZSETSA' EQ '').SAMESA                        GP09234
+         AIF   ('&ZZSETSL' NE '').SAMESA                        GP09234
+&LBL     L     R13,4(,R13)        RESTORE HIGHER SA             GP09234
+&LBL     SETC  ''                                               GP09234
+.SAMESA  AIF   ('&RC' EQ '').LMALL                              GP09234
+         AIF   ('&RC' EQ '(15)' OR '&RC' EQ '(R15)').NORC       GP09234
+         AIF   (K'&RC LT 3).LA                                  GP09234
+         AIF   ('&RC'(1,1) NE '(' OR '&RC'(2,1) EQ '(').LA      GP09234
+         AIF   ('&RC'(K'&RC,1) NE ')' OR '&RC'(K'&RC-1,1) EQ ')').LA
+&LBL     LR    R15,&RC(1)                                       GP09234
+&LBL     SETC  ''                                               GP09234
+         AGO   .NORC                                            GP09234
+.LA      ANOP  ,                                                GP09234
+&LBL     LA    R15,&RC            SET RETURN CODE               GP09234
+&LBL     SETC  ''                                               GP09234
+.NORC    AIF   ('&ZZSETSL' EQ '').NOFRM                         GP09234
+         LR    R1,R13             SAVE CURRENT SA               GP09234
+         L     R13,4(,R13)        REGAIN CALLER'S SA            GP09234
+         ST    R15,16(,R13)       SAVE RETURN CODE              GP09234
+         FREEMAIN R,A=(1),LV=&ZZSETSL,SP=&ZZSETSP               GP09234
+         AGO   .LMALL             GOTTA LOVE SPAGHETTI CODE     GP09234
+.NOFRM   ANOP  ,                                                GP09234
+&LBL     L     R14,12(,R13)                                     GP09234
+         LM    R0,R12,20(R13)                                   GP09234
+         AGO   .EXMODE                                          GP09234
+.JUSTF   LR    R1,R13             SAVE CURRENT SA               GP09234
+         L     R13,4(,R13)        REGAIN CALLER'S SA            GP09234
+         FREEMAIN R,A=(1),LV=&ZZSETSL,SP=&ZZSETSP               GP09234
+.LMALL   ANOP  ,                                                GP09234
+&LBL     LM    R14,R12,12(R13)    RELOAD ALL                    GP09234
+.EXMODE  AIF   (&ZZSETAM).BSM                                   GP09234
+         BR    R14                                              GP09234
+         MEXIT ,                                                GP09234
+.BSM     DC    0H'0',X'0B0E'      BSM 0,14                      GP09234
+         MEND  ,                                                GP09234
+         MACRO ,                                                GP09234
+&NM      FUNHEAD &ID=YES,&IO=NO,&AM=NO,&SAVE=                   GP09234
+.*
+.*   MACRO TO BEGIN EACH FUNCTION
+.*     HANDLES STANDARD OS ENTRY CONVENTIONS
+.*   ID=  YES | NO      YES GENERATES DC WITH FUNCTION NAME
+.*   IO=  YES | NO      YES GENERATES LOAD / USING FOR ZDCBAREA
+.*   AM=  YES | NO      YES USES BSM TO PRESERVE CALER'S AMODE
+.*   SAVE=name          USES STATIC SAVE AREA OF THAT NAME,
+.*                           SETS R13, AND DECLARES ON USING
+.*   SAVE=(name,len{,subpool})   CREATES SAVE AREA WITH GETMAIN,
+.*                           SETS R13, AND DECLARES ON USING
+.*   Options used here are remembered and handled properly by
+.*     subsequent FUNEXIT macros
+.*
+         GBLC  &SYS,&ZZSETSA,&ZZSETSL,&ZZSETSP                  GP09234
+         GBLB  &ZZSETAM                                         GP09234
+         LCLC  &LBL                                             GP09234
+         LCLA  &I                                               GP09234
+&I       SETA  K'&NM                                            GP09234
+&I       SETA  ((&I)/2*2+1)       NEED ODD LENGTH FOR STM ALIGN GP09234
+&LBL     SETC  '&NM'                                            GP09234
+&ZZSETAM SETB  ('&AM' NE 'NO')                                  GP09234
+&ZZSETAM SETB  (&ZZSETAM AND '&SYS' NE 'S370')                  GP09234
+&ZZSETSA SETC  ''                                               GP09234
+&ZZSETSL SETC  ''                                               GP09234
+&ZZSETSP SETC  ''                                               GP09234
+         ENTRY &NM                                              GP09234
+         DROP  ,                  Isolate from other code       GP09234
+         AIF   ('&ID' EQ 'NO').SKIPID                           GP09234
+&LBL     B     *+4+1+&I-&NM.(,R15)    SKIP LABEL                GP09234
+         DC    AL1(&I),CL(&I)'&NM'    EXPAND LABEL              GP09234
+&LBL     SETC  ''                                               GP09234
+.SKIPID  AIF   ('&AM' EQ 'NO').SKIPAM                           GP09234
+&LBL     DC    0H'0',X'0BE0'      BSM 14,0  PRESERVE AMODE      GP09234
+&LBL     SETC  ''                                               GP09234
+.SKIPAM  ANOP  ,                                                GP09234
+&LBL     STM   R14,R12,12(R13)    SAVE CALLER'S REGISTERS       GP09234
+         LR    R12,R15                                          GP09234
+         USING &NM,R12                                          GP09234
+         AIF   ('&IO' EQ 'NO').SAVE                             GP09234
+         L     R10,0(,R1)         LOAD FILE WORK AREA           GP09263
+         USING IHADCB,R10                                       GP09263
+.SAVE    AIF   ('&SAVE' EQ '').MEND                             GP09234
+         AIF   (N'&SAVE EQ 1).STATIC                            GP09234
+         AIF   (N'&SAVE EQ 2).DYNAM                             GP09234
+&ZZSETSP SETC  '&SAVE(3)'                                       GP09234
+.DYNAM   ANOP  ,                                                GP09234
+&ZZSETSL SETC  '&SAVE(2)'                                       GP09234
+&ZZSETSA SETC  '&SAVE(1)'                                       GP09234
+         GETMAIN R,LV=&ZZSETSL,SP=&ZZSETSP                      GP09234
+         LR    R14,R1                                           GP09234
+         LA    R15,&ZZSETSL                                     GP09234
+         SR    R3,R3              ZERO FILL                     GP09234
+         MVCL  R14,R2             CLEAR GOTTEN STORAGE          GP09234
+         L     R3,32(,R13)        RESTORE R3                    GP09234
+         ST    R1,8(,R13)                                       GP09234
+         ST    R13,4(,R1)                                       GP09234
+         LR    R13,R1             NEW SAVE AREA                 GP09234
+         USING &SAVE(1),R13       DECLARE IT                    GP09234
+         L     R1,4(,R13)         OLD SAVE                      GP09234
+         LM    R14,R1,12(R1)      RESTORE FROM ENTRY            GP09234
+         MEXIT ,                                                GP09234
+.STATIC  LA    R15,&SAVE(1)                                     GP09234
+         ST    R15,8(,R13)                                      GP09234
+         ST    R13,4(,R15)                                      GP09234
+         LR    R13,R15                                          GP09234
+&ZZSETSA SETC  '&SAVE(1)'                                       GP09234
+         USING &SAVE(1),R13       DECLARE IT                    GP09234
+.MEND    MEND  ,                                                GP09234
+         MACRO ,
+&NM      MAPDSINF &PFX=DSI,&DSECT=
+.*
+.*   MAPPING FOR THE PARAMETER AREA FOR THE @@DSINFO ROUTINE.
+.*
+.*   0) PLACE BLANKS INTO THE (DSI)BLANK AREA
+.*   1) DD INFORMATION - CALLER SUPPLIES DDNAME
+.*       RETURN CONTAINS INFORMATION FROM THE DD ENTRY; IF CONCATENATED
+.*         ALSO THE LARGEST BLOCKSIZE AND OR'ED DSORG AND RECFM BITS
+.*
+.*   2) DS INFORMATION - CALLER SUPPLIES DSN, OPTIONALLY (DSI)VOL
+.*       RETURNS INFORMATION FROM THE JFCB, AND IF DASD RESIDENT,
+.*       MERGES THE JFCB INFO WITH THE DSCB1 INFO. FOR THE TIME BEING,
+.*       IT DOES NOT RETURN DIRECTORY BLOCK INFORMATION OR SPACE
+.*       FROM FORMAT 3 DSCBS.
+.*
+         LCLC  &P,&LBL
+&LBL     SETC  '&NM'
+&P       SETC  '&PFX'
+         AIF   ('&P' NE '').HAVEPFX
+&P       SETC  'DSI'
+.HAVEPFX AIF   ('&LBL' NE '').HAVELBL
+&LBL     SETC  '&P'.'SECT'
+.HAVELBL AIF   ('&DSECT' EQ 'NO').NODS
+&LBL     DSECT ,
+         AGO   .COM
+.NODS    ANOP  ,
+&LBL     DS    0F            DECLARE @@DSINFO PARAMETER STRING
+.COM     ANOP  ,
+&P.DDN   DC    CL8' '        DD NAME
+&P.DSN   DC    CL44' '       DATA SET NAME
+&P.MEM   DC    CL8' '        MEMBER NAME OR BLANKS
+&P.VOL   DC    CL6' '        FIRST OR ONLY VOLUME
+&P.BLANK EQU   &P.DDN,*-&P.DDN,C'C'   AREA TO BLANK
+&P.DEVT  DC    XL4'0'        UCB OR CATALOG DEVICE TYPE
+&P.CONC  DC    X'0'          CONCATENATION DATA
+&P.FSEQ  EQU   X'40'           SEQUENTIAL DS
+&P.FPDS  EQU   X'80'           PARTITIONED DS
+&P.FOTH  EQU   X'20'           OTHER - VSAM, ISAM, BDAM...
+&P.FFIX  EQU   X'08'           F/FB
+&P.FVAR  EQU   X'04'           V/VB
+&P.FUND  EQU   X'02'           U
+&P.FLAGS DC    X'0'          FLAGS
+&P.FNCAT EQU   X'80'           DATA SET NOT CATALOGED
+&P.FUCAT EQU   X'40'           CATALOGED, BUT NOT ON DSIVOL
+&P.FNVOL EQU   X'20'           DATA SET NOT ON VOLUME
+&P.VOLCT DC    X'0'          VOLUME COUNT
+&P.RECFM DC    X'0'          RECORD FORMAT
+&P.ORG   DC    XL2'0'        DSORG
+&P.LRECL DC    XL2'0'        RECORD LENGTH
+&P.BLKSI DC    XL2'0'        BLOCK SIZE
+&P.BLKMX DC    XL2'0'        DEVICE MAX SIZE (OR HALF-TRACK)
+&P.NUMTK DC    XL4'0'        TRACKS ALLOCATED IN DSCB1
+&P.NUMUS DC    XL4'0'        TRACKS USED
+&P.DIRCT DC    XL4'0'        RESERVED - PDS DIRECTORY COUNT
+&P.DIRUS DC    XL4'0'        RESERVED - D.E. USED
+&P.ZERO  EQU   &P.FLAGS,*-&P.FLAGS,C'X'
+&P.SLEN  EQU   *-&LBL          PARM LENGTH
+         MEND  ,
+         MACRO ,
+&NM      QBSM  &F1,&F2                               ADDED ON GP2009263
+         GBLC  &SYS
+.*
+.*   QBSM expands as as BSM on supporting systems (S380, S390)
+.*     otheriwse it expands as BASRENUMBR (for BSM 0,r)
+.*
+         AIF   ('&SYS' EQ 'S370').OLDSYS
+&NM      DC    0H'0',AL.4(0,X'B',&F1,&F2)   BSM
+         MEXIT ,
+.OLDSYS  AIF   ('&F1' EQ '0' OR '&F1' EQ 'R0').BR
+&NM      DC    0H'0',AL.4(0,X'D',&F1,&F2)   BASR
+         MEXIT ,
+.BR      ANOP  ,
+&NM      BR    &F2
+.MEND    MEND  ,

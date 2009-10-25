@@ -4891,14 +4891,7 @@ __PDPCLIB_API__ size_t fread(void *ptr, size_t size, size_t nmemb, FILE *stream)
                 }                
                 else
                 {
-#ifdef OLD_RECFMU
-                    read = (dptr[0] << 8) | dptr[1];
-                    /* skip over the RDW */
-                    dptr += 4;
-                    read -= 4;
-#else
                     read = lenread;
-#endif
                     if (stream->reallyt)
                     {
                         unsigned char *p;

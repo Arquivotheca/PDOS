@@ -345,6 +345,10 @@ CAMLEN   EQU   *-CAMDUM           Length of CAMLST Template
          L     R2,0(,R1)          R2 contains GETMAINed address/handle
          USING IHADCB,R2
          L     R3,4(,R1)  R3 points to where to store record pointer
+*        L     RX,8(,R1)  8(,R1) points to where to store read length
+*                         Currently unused in MUSIC since for V we
+*                         have a RDW and F we already know, and U is
+*                         unsupported!
          USING ZDCBAREA,R2
 *        GETMAIN RU,LV=WORKLEN,SP=SUBPOOL
          LA    R1,SAVEADCB
@@ -575,7 +579,8 @@ H4       DC    H'4'               Constant for subtraction
          USING @@AWRITE,R12
          L     R2,0(,R1)          R2 contains GETMAINed address
          L     R3,4(,R1)          R3 points to the record address
-         L     R4,8(,R1)          R4 contains the length
+         L     R4,8(,R1)          R4 points to the length
+         L     R4,0(,R4)          R4 now has actual length
          USING ZDCBAREA,R2
 *        GETMAIN RU,LV=WORKLEN,SP=SUBPOOL
          LA    R1,SAVEADCB

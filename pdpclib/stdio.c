@@ -156,7 +156,8 @@ static FILE permFiles[3];
 #define begwrite(stream, len) (lenwrite = (len), dptr = (stream)->asmbuf)
 #define finwrite(stream) (__awrite((stream)->hfile, &dptr, &lenwrite))
 #else /* locate mode */
-#define begwrite(stream, len) (__awrite((stream)->hfile, &dptr, len))
+#define begwrite(stream, len) (lenwrite = (len), \
+    __awrite((stream)->hfile, &dptr, &lenwrite))
 #define finwrite(stream)
 #endif
 

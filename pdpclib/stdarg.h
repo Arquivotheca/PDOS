@@ -13,7 +13,8 @@
 #ifndef __STDARG_INCLUDED
 #define __STDARG_INCLUDED
 
-#ifdef __GNUC__
+/* don't use builtins on MVS until they have been implemented */
+#if defined(__GNUC__) && !defined(__MVS__) && !defined(__CMS__)
 
 #ifndef __GNUC_VA_LIST
 #define __GNUC_VA_LIST

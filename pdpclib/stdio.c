@@ -4226,7 +4226,7 @@ __PDPCLIB_API__ int fputs(const char *s, FILE *stream)
             {
                 len = stream->lrecl;
             }
-            begwrite(stream, len);
+            begwrite(stream, len + 4);
             memcpy(dptr + 4, s, len);
             dptr[0] = (len + 4) >> 8;
             dptr[1] = (len + 4) & 0xff;
@@ -4404,7 +4404,7 @@ __PDPCLIB_API__ size_t fwrite(const void *ptr,
                     {
                         stream->fbuf[0] = stream->lrecl >> 8;
                         stream->fbuf[1] = stream->lrecl & 0xff;
-                        begwrite(stream, stream->lrecl);
+                        begwrite(stream, stream->lrecl + 4);
                         if (sz >= stream->lrecl)
                         {
                             memcpy(dptr, stream->fbuf, stream->lrecl);

@@ -1,7 +1,7 @@
             Public Domain C runtime library
             -------------------------------
             
-Version : 2.0x
+Version : 2.xx
 Released: 2009-09-26
 
 Written by Paul Edwards.
@@ -314,6 +314,9 @@ HISTORY
 
 2.01  Bug fixes and minor enhancements, mainly for MVS.
 
+2.xx  Major revamp of MVS assembler to support default DCB info.
+      Also MUSIC/SP has its own target.
+
 
 FUTURE DIRECTION
 ----------------
@@ -345,7 +348,9 @@ CREDITS
 Dave Wade for doing the CMS port, the maths functions
   and getting floating point supported and various other
   enhancements and bug fixes along the way.
-Dave Edwards (RIP) for various bug fixes/enhancements.
+Dave Edwards (RIP) for various bug fixes/enhancements and
+  MUSIC/SP support.
+Fausto Saporito for his work on the native MUSIC/SP port.
 Phil Roberts for helping to debug the MVS port.
 Gerhard Postpischil for various assembler mods, and for
   his extremely important work on MVS/380 too.

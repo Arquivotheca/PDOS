@@ -8,13 +8,7 @@
 /PASSWORD=BLD000
 /SAVE PDPASM REPL
 /inc rexx
-/* pdpasm - used to assemble pdpclib */
-/* written by Paul Edwards based on work by Dave Edwards */
-/* released to the public domain */
-
 parse arg name
-
-say "pdpasm: Assembling" name".asm to" name".obj"
 queue "/file syspunch n("name".obj) new(repl) sp(50) secsp(100%)"
 queue "/etc sp(100) secsp(100%)"
 queue "/file syslib"
@@ -152,25 +146,25 @@ undivert(pdptest.s)/END
 /sys region=9999
 /file lmod n(pdptest.lmod) new(repl) lr(128) recfm(f) sp(100) shr
 /load lked
-/job map,nogo,print,stats,mode=os,name=gcclked
+/job map,nogo,print,stats,mode=os,name=pdptest
 .org 4a00
 /inc pdptest.obj
-/INC MUSSTART.OBJ     GCCMU RUN-TIME LIBRARY MODULES
-/INC MUSSUPA.OBJ
-/INC __MEMMGR.OBJ
-/INC ASSERT.OBJ
-/INC CTYPE.OBJ
-/INC ERRNO.OBJ
-/INC LOCALE.OBJ
-/INC MATH.OBJ
-/INC SETJMP.OBJ
-/INC SIGNAL.OBJ
-/INC START.OBJ
-/INC STDIO.OBJ
-/INC STDLIB.OBJ
-/INC STRING.OBJ
-/INC TIME.OBJ
- ENTRY @@CRT0
+/inc musstart.obj
+/inc mussupa.obj
+/inc __memmgr.obj
+/inc assert.obj
+/inc ctype.obj
+/inc errno.obj
+/inc locale.obj
+/inc math.obj
+/inc setjmp.obj
+/inc signal.obj
+/inc start.obj
+/inc stdio.obj
+/inc stdlib.obj
+/inc string.obj
+/inc time.obj
+ ENTRY @@MAIN
 /END
 
 /ID SAVE-JOB-123456 @BLD000 9999 9999 9999 9999
@@ -186,5 +180,5 @@ undivert(pdptest.s)/END
 /file sysprint prt osrecfm(f) oslrecl(256)
 /parm Hi there DeeeeeFerDog
 /load xmon
-gcclked n(pdptest.lmod) lcparm v(256)
+pdptest n(pdptest.lmod) lcparm v(256)
 /END

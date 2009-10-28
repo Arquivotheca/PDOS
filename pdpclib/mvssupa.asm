@@ -1806,8 +1806,7 @@ EXFGLOB  EQU   EXFMALL+EXFSUPP+EXFRET  GLOBAL FLAGS
 *                                                                     *
 ***********************************************************************
 @@DYNAL  FUNHEAD ,                DYNAMIC ALLOCATION            GP09286
-         L     R15,4(,R13)        OLD SA                        GP09286
-         LA    R11,16(,R15)       REMEMBER THE RETURN CODE ADDRESS
+         LA    R11,16(,R13)       REMEMBER RETURN CODE ADDRESS
          MVC   0(4,R11),=X'04804000'  PRESET
          LR    R9,R1              SAVE PARAMETER LIST ADDRESS
          LA    R0,DYNALDLN        GET LENGTH OF SAVE AND WORK AREA
@@ -1894,7 +1893,7 @@ DYNALEXT LR    R1,R13        COPY STORAGE ADDRESS
          LA    R0,DYNALDLN   GET ORIGINAL LENGTH
          FREEMAIN R,A=(1),LV=(0)  AND RELEASE THE STORAGE
          L     R13,4(,R13)   RESTORE CALLER'S SAVE AREA
-DYNALRET FUNEXIT RC=(R15)    RESTORE REGS; SET RETURN CODES     GP09286
+DYNALRET FUNEXIT ,           RESTORE REGS; SET RETURN CODES     GP09286
          LTORG ,
          PUSH  PRINT
          PRINT NOGEN         DON'T NEED TWO COPIES

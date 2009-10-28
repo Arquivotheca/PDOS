@@ -1,0 +1,72 @@
+//PDPMVS   JOB CLASS=C,REGION=0K
+//*
+//* Test various formats
+//*
+//*
+//* Test of F
+//*
+//S1       EXEC PGM=COPYFILE,PARM='-tt dd:in dd:out'
+//STEPLIB  DD DSN=PDPCLIB.LINKLIB,DISP=SHR
+//SYSIN    DD DUMMY
+//SYSPRINT DD SYSOUT=*
+//SYSTERM  DD SYSOUT=*
+//IN       DD *
+line 1
+line two
+/*
+//OUT      DD DSN=&&TEMP1,DISP=(,PASS),
+// UNIT=SYSALLDA,SPACE=(CYL,(1,1)),
+// DCB=(RECFM=F,LRECL=20,BLKSIZE=20)
+//*
+//* We're expecting to see padding with blanks here
+//*
+//S2       EXEC PGM=HEXDUMP,PARM='dd:in'
+//STEPLIB  DD DSN=PDPCLIB.LINKLIB,DISP=SHR
+//SYSIN    DD DUMMY
+//SYSPRINT DD SYSOUT=*
+//SYSTERM  DD SYSOUT=*
+//IN       DD DSN=&&TEMP1,DISP=(OLD,PASS)
+//*
+//* Test of V
+//*
+//S3       EXEC PGM=COPYFILE,PARM='-tt dd:in dd:out'
+//STEPLIB  DD DSN=PDPCLIB.LINKLIB,DISP=SHR
+//SYSIN    DD DUMMY
+//SYSPRINT DD SYSOUT=*
+//SYSTERM  DD SYSOUT=*
+//IN       DD DSN=&&TEMP1,DISP=(OLD,PASS)
+//OUT      DD DSN=&&TEMP2,DISP=(,PASS),
+// UNIT=SYSALLDA,SPACE=(CYL,(1,1)),
+// DCB=(RECFM=V,LRECL=20,BLKSIZE=24)
+//*
+//* We're expecting no trailing blanks, and RDWs upfront
+//*
+//S4       EXEC PGM=HEXDUMP,PARM='dd:in'
+//STEPLIB  DD DSN=PDPCLIB.LINKLIB,DISP=SHR
+//SYSIN    DD DUMMY
+//SYSPRINT DD SYSOUT=*
+//SYSTERM  DD SYSOUT=*
+//IN       DD DSN=&&TEMP2,DISP=(OLD,PASS)
+//*
+//* Test of U
+//*
+//S5       EXEC PGM=COPYFILE,PARM='-tt dd:in dd:out'
+//STEPLIB  DD DSN=PDPCLIB.LINKLIB,DISP=SHR
+//SYSIN    DD DUMMY
+//SYSPRINT DD SYSOUT=*
+//SYSTERM  DD SYSOUT=*
+//IN       DD DSN=&&TEMP2,DISP=(OLD,PASS)
+//OUT      DD DSN=&&TEMP3,DISP=(,PASS),
+// UNIT=SYSALLDA,SPACE=(CYL,(1,1)),
+// DCB=(RECFM=U,LRECL=0,BLKSIZE=60)
+//*
+//* We're expecting newline characters, no blanks, no RDW
+//*
+//S6       EXEC PGM=HEXDUMP,PARM='dd:in'
+//STEPLIB  DD DSN=PDPCLIB.LINKLIB,DISP=SHR
+//SYSIN    DD DUMMY
+//SYSPRINT DD SYSOUT=*
+//SYSTERM  DD SYSOUT=*
+//IN       DD DSN=&&TEMP3,DISP=(OLD,PASS)
+//*
+//

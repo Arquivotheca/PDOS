@@ -12,6 +12,7 @@
 //SYSTERM  DD SYSOUT=*
 //IN       DD *
 line 1
+
 line two
 /*
 //OUT      DD DSN=&&FIX,DISP=(,PASS),
@@ -39,7 +40,9 @@ line two
 // UNIT=SYSALLDA,SPACE=(CYL,(1,1)),
 // DCB=(RECFM=VB,LRECL=20,BLKSIZE=44)
 //*
-//* We're expecting no trailing blanks, and RDWs upfront
+//* We're expecting no trailing blanks, and RDWs upfront,
+//* and the blank line should now be a single space, with
+//* the RDW being 5.
 //*
 //S4       EXEC PGM=HEXDUMP,PARM='dd:in'
 //STEPLIB  DD DSN=PDPCLIB.LINKLIB,DISP=SHR

@@ -17,8 +17,7 @@ queue a
 queue "/etc def"
 queue "/load asm"
 queue "/job nogo"
-queue "/opt deck"
-queue "/opt list"
+queue "/opt deck,list"
 queue "/inc" name".asm"
 "EXEC"
 

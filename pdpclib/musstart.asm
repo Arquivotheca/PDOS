@@ -170,7 +170,7 @@ IN31C    DS    0H
          LTORG
 *
          AIF   ('&OS' EQ 'MUSIC').MUSIC1
-         CVT   DSECT=YES
+*         CVT   DSECT=YES
 .MUSIC1  ANOP
          IKJTCB
          IEZJSCB

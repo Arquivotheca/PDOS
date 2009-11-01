@@ -97,7 +97,8 @@ R15      EQU   15
          L     R4,04(,R1)         R4 is pointer to the MODE.
 *                                 0=input 1=output
          L     R4,0(R4)           R4 has the value of mode.
-         L     R5,08(,R1)         R5 POINTS TO RECFM
+* 08(,R1) has RECFM
+* Note that R5 is used as a scratch register
          L     R8,12(,R1)         R8 POINTS TO LRECL
 * 16 has blksize
 * 20 has asmbuf
@@ -118,8 +119,10 @@ R15      EQU   15
          LR    R0,R2              Load output DCB area address
          LA    R1,ZDCBLEN         Load output length of DCB area
          LA    R10,0              No input location
+         LR    R5,R11             Preserve parameter list
          LA    R11,0              Pad of X'00' and no input length
          MVCL  R0,R10             Clear DCB area to binary zeroes
+         LR    R11,R5             Restore parameter list
 *
 * The member name may not be below the line, which may stuff up
 * the "FIND" macro, so make sure it is in 24-bit memory.
@@ -266,6 +269,25 @@ WNOMEM2  DS    0H
 WOPENEND DS    0H
          TM    DCBOFLGS,DCBOFOPN  Did OPEN work?
          BZ    BADOPOUT           OPEN failed, go return error code -39
+*
+         AIF   ('&OUTM' NE 'M').NMM4
+         L     R6,=F'32768'
+* Give caller an internal buffer to write to. Below the line!
+*
+* S/370 can't handle LOC=BELOW
+*
+         AIF   ('&SYS' NE 'S370').MVT8090  If not S/370 then 380 or 390
+         GETMAIN R,LV=(R6),SP=SUBPOOL  No LOC= for S/370
+         AGO   .GETOENE
+.MVT8090 ANOP  ,                  S/380 or S/390
+         GETMAIN R,LV=(R6),SP=SUBPOOL,LOC=BELOW
+.GETOENE ANOP
+         ST    R1,ASMBUF
+         L     R5,20(,R11)        R5 points to ASMBUF
+         ST    R1,0(R5)           save the pointer
+* R5 now free again
+*
+.NMM4    ANOP
          MVC   LRECL+2(2),DCBLRECL  Copy LRECL to a fullword
          MVC   BLKSIZE+2(2),DCBBLKSI  Copy BLKSIZE to a fullword
          L     R6,BLKSIZE         If file is dummy, and a block size
@@ -305,6 +327,7 @@ SETRECF  DS    0H
          LA    R1,0               Pass RECFM F to caller
 *        B     SETRECFM           Go to set RECFM=F
 SETRECFM DS    0H
+         L     R5,8(,R11)         Point to RECFM
          ST    R1,0(,R5)          Pass either RECFM F or V to caller
 *        B     RETURNOP
 *
@@ -326,7 +349,15 @@ INDCB    DCB   MACRF=R,DSORG=PS   If member name, will be changed to PO
 INDCBLN  EQU   *-INDCB
 F32760   DC    F'32760'           Constant for compare
 F65536   DC    F'65536'           Maximum VBS record GETMAIN length
+*
+* OUTDCB changes depending on whether we are in LOCATE mode or
+* MOVE mode
+         AIF   ('&OUTM' NE 'L').NLM1
 OUTDCB   DCB   MACRF=PL,DSORG=PS
+.NLM1    ANOP
+         AIF   ('&OUTM' NE 'M').NMM1
+OUTDCB   DCB   MACRF=PM,DSORG=PS
+.NMM1    ANOP
 OUTDCBLN EQU   *-OUTDCB
 *
 READDUM  READ  NONE,              Read record Data Event Control Block C
@@ -635,13 +666,23 @@ H4       DC    H'4'               Constant for subtraction
 .N380WR1 ANOP
 *
          STCM  R4,B'0011',DCBLRECL
+*
+         AIF   ('&OUTM' NE 'L').NLM2
          PUT   (R2)
+.NLM2    ANOP
+         AIF   ('&OUTM' NE 'M').NMM2
+* In move mode, always use our internal buffer. Ignore passed parm.
+         L     R3,ASMBUF
+         PUT   (R2),(R3)
+.NMM2    ANOP
+         AIF   ('&OUTM' NE 'L').NLM3
+         ST    R1,0(R3)
+.NLM3    ANOP
 *
          AIF   ('&SYS' NE 'S380').N380WR2
          CALL  @@SETM31
 .N380WR2 ANOP
 *
-         ST    R1,0(,R3)
 *        LR    R1,R13
 *        L     R13,SAVEAREA+4
          L     R13,SAVEADCB+4
@@ -664,6 +705,17 @@ H4       DC    H'4'               Constant for subtraction
          ST    R1,8(,R13)
          LR    R13,R1
          USING WORKAREA,R13
+*
+         USING ZDCBAREA,R2
+* If we are doing move mode, free internal assembler buffer
+         AIF   ('&OUTM' NE 'M').NMM6
+         L     R5,ASMBUF
+         LTR   R5,R5
+         BZ    NFRCL
+         L     R6,=F'32768'
+         FREEMAIN R,LV=(R6),A=(R5),SP=SUBPOOL
+NFRCL    DS    0H
+.NMM6    ANOP
 *
          ICM   R1,B'1111',VBSADDR  Load VBS record area
          BZ    FREEBUFF           No area, skip free of it
@@ -935,6 +987,7 @@ DSCB     DS    0F
 DSCBCCHH DS    CL5                CCHHR of DSCB returned by OBTAIN
          DS    CL47               Rest of OBTAIN's 148 byte work area
 SAVEADCB DS    18F                Register save area for PUT
+ASMBUF   DS    A                  Pointer to an area for PUTing data
 MEMBER24 DS    CL8
 ZDCBLEN  EQU   *-ZDCBAREA
 *

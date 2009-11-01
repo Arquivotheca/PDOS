@@ -38,10 +38,16 @@ int main(int argc, char **argv)
     if ((argc <= 2) || ((argc >= 4) && (strcmp(argv[3], "binary") != 0)))
 #endif
     {
-#ifdef __CMS__
+#if defined(__CMS__)
         printf("usage: mvsunzip <infile> [disk] [BINARY]\n");
         printf("where infile is a sequential file\n");
         printf("e.g. mvsunzip dd:input\n");
+#elif defined(MUSIC)
+        printf("usage: mvsunzip <infile> <outfile> [binary]\n");
+        printf("where infile is a sequential file\n");
+        printf("and outfile is a filename in the zip file\n");
+        printf("and PDP001HD has been preallocated\n");
+        printf("e.g. mvsunzip dd:input fred.c\n");
 #else
         printf("usage: mvsunzip <infile> <outfile> [binary]\n");
         printf("where infile is a sequential file\n");
@@ -178,13 +184,15 @@ static int onefile(FILE *infile)
         p = strrchr(p, '\\') + 1;
     }
 
-#ifndef __CMS__
+#if !defined(__CMS__) && !defined(MUSIC)
     if (strchr(p, '.') != NULL) *strchr(p, '.') = '\0';
     while (strchr(p, '-') != NULL) *strchr(p, '-') = '@';
     while (strchr(p, '_') != NULL) *strchr(p, '_') = '@';
 #endif
 
-#ifdef __CMS__
+#if defined(MUSIC)
+    strcpy(newfnm, p);
+#elif defined(__CMS__)
     if (strchr(p, '.') != NULL) *strchr(p, '.') = ' ';
     if (disk != '\0')
     {
@@ -203,6 +211,14 @@ static int onefile(FILE *infile)
     }
 #else
     sprintf(newfnm, "%s(%s)", outn, p);
+#endif
+
+#ifdef MUSIC
+    /* for MUSIC, only extract a single file */
+    if (strcmp(outn, newfnm) != 0)
+    {
+        return (1);
+    }
 #endif
 
     if (binary)
@@ -239,6 +255,9 @@ static int onefile(FILE *infile)
         fwrite(buf, strlen(buf), 1, newf);
     }
     fclose(newf);
+#ifdef MUSIC
+    return (0);
+#endif
     return (1);
 }
 

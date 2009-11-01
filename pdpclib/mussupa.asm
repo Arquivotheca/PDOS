@@ -47,7 +47,7 @@
          COPY  PDPTOP
 *
          CSECT
-         PRINT NOGEN
+         PRINT GEN
 * YREGS IS NOT AVAILABLE WITH IFOX
 *         YREGS
 SUBPOOL  EQU   0
@@ -71,6 +71,12 @@ R15      EQU   15
 * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
 *
 *  AOPEN- Open a dataset
+*
+*  Note that under MUSIC, RECFM=F is the only reliable thing. It is
+*  possible to use RECFM=V like this:
+*  /file myin tape osrecfm(v) lrecl(32756) vol(PCTOMF) old
+*  but it is being used outside the normal MVS interface. All this
+*  stuff really needs to be rewritten per normal MUSIC coding.
 *
 * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
          ENTRY @@AOPEN
@@ -287,8 +293,10 @@ NOTU     DS    0H
 * RECFM=U on input  will tell caller that it is RECFM=V
 * RECFM=U on output will tell caller that it is RECFM=F
 SETRECU  DS    0H
-         LTR   R4,R4              See if OPEN input or output
-         BNZ   SETRECF            Is for output, go to set RECFM=F
+         LA    R1,2
+         B     SETRECFM
+*        LTR   R4,R4              See if OPEN input or output
+*        BNZ   SETRECF            Is for output, go to set RECFM=F
 *        BZ    SETRECV            Else is for input, go to set RECFM=V
 SETRECV  DS    0H
          LA    R1,1               Pass RECFM V to caller
@@ -346,12 +354,14 @@ CAMLEN   EQU   *-CAMDUM           Length of CAMLST Template
          USING @@AREAD,R12
          L     R2,0(,R1)          R2 contains GETMAINed address/handle
          USING IHADCB,R2
-         L     R3,4(,R1)  R3 points to where to store record pointer
-*        L     RX,8(,R1)  8(,R1) points to where to store read length
-*                         Currently unused in MUSIC since for V we
-*                         have a RDW and F we already know, and U is
-*                         unsupported!
          USING ZDCBAREA,R2
+*
+* R3 is a scratch register
+         L     R3,4(,R1)     R3 points to where to store record pointer
+         ST    R3,RDRECPTR        Save pointer away
+         L     R3,8(,R1)     R3 points to where to store read length
+         ST    R3,RDLENPTR        Save pointer away
+*
 *        GETMAIN RU,LV=WORKLEN,SP=SUBPOOL
          LA    R1,SAVEADCB
          ST    R13,4(,R1)
@@ -382,6 +392,15 @@ READ     DS    0H
                MF=E               Execute a MF=L MACRO
 *                                 If EOF, R6 will be set to F'1'
          CHECK DECB               Wait for READ to complete
+*
+* Some debugging to see what MUSIC actually gives us, which
+* isn't pretty.
+*         LH    R8,DCBLRECL
+*         LH    R9,DCBBLKSI
+*         L     R10,0(R4)
+*         L     R11,4(R4)
+*         L     R12,8(R4)
+*         DC    H'0'
          AIF   ('&SYS' NE 'S380').N380RD2
          CALL  @@SETM31
 .N380RD2 ANOP
@@ -395,7 +414,16 @@ READ     DS    0H
          BO    NOTV               Is RECFM=U, so not RECFM=V
          TM    DCBRECFM,DCBRECV   See if RECFM=V, VB, VBS, etc.
          BNO   NOTV               Is not RECFM=V, so skip address bump
+* For MUSIC, get the length of the block from the BDW, which is
+* the only semi-reliable place there seems to be.
+         LH    R7,0(,R4)
+         LR    R8,R7
+*         DC    H'0'
          LA    R5,4(,R4)          Bump buffer address past BDW
+         ST    R5,BUFFCURR        Indicate data available
+         AL    R8,BUFFADDR        Find address after block read in
+         ST    R8,BUFFEND         Save address after end of input block
+         B     DEBLOCK
 NOTV     DS    0H
 * Subtract residual from BLKSIZE, add BUFFADDR, store as BUFFEND
          ST    R5,BUFFCURR        Indicate data available
@@ -406,6 +434,14 @@ NOTV     DS    0H
          DROP  R8                 Don't need IOB address base anymore
          L     R8,BLKSIZE         Load maximum block size
          SLR   R8,R7              Find block size read in
+*
+* Unfortunately MUSIC gives pretty bad values here. It is
+* not providing the length read anywhere. That's why we
+* have special processing for V previously, where we can
+* get the implied length from the data. For RECFM=F, a
+* single record is given in response to the block request,
+* so that is able to "work"
+*         DC    H'0'
          LR    R7,R8              Save size of block read in
          AL    R8,BUFFADDR        Find address after block read in
          ST    R8,BUFFEND         Save address after end of input block
@@ -520,8 +556,10 @@ DEBLOCKU DS    0H
 * If RECFM=U, a block is a variable record
 *        R4 has address of block buffer
 *        R7 has size of block read in
-         LA    R7,4(,R7)          Add four to block size for fake RDW
-         STH   R7,0(,R4)          Store variable RDW for RECFM=U
+*         LA    R7,4(,R7)          Add four to block size for fake RDW
+         L     R3,RDLENPTR        Where to store record length
+         ST    R7,0(,R3)          Save length
+*        STH   R7,0(,R4)          Store variable RDW for RECFM=U
          LR    R5,R4              Indicate start of buffer is record
          XC    BUFFCURR,BUFFCURR  Indicate no next record in block
          B     RECBACK            Go store the record addr. for return
@@ -551,6 +589,7 @@ SETCURR  DS    0H
          ST    R7,BUFFCURR        Store the next record address
 *        BNH   RECBACK            Go store the record addr. for return
 RECBACK  DS    0H
+         L     R3,RDRECPTR
          ST    R5,0(,R3)          Store record address for caller
 READEOD  DS    0H
 *        LR    R1,R13             Save temp.save area addr.for FREEMAIN
@@ -884,6 +923,8 @@ BUFFCURR DS    F                  Current record in the buffer
 VBSADDR  DS    F                  Location of the VBS record build area
 VBSEND   DS    F                  Addr. after end VBS record build area
 VBSCURR  DS    F                  Location to store next byte
+RDRECPTR DS    F                  Where to store record pointer
+RDLENPTR DS    F                  Where to store read length
 JFCBPTR  DS    F
 JFCB     DS    0F
          IEFJFCBN LIST=YES        SYS1.AMODGEN JOB File Control Block

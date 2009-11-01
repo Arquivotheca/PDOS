@@ -854,6 +854,7 @@ static void osfopen(void)
         errno = -(int)myfile->hfile;
         return;
     }
+    /* if we have a RECFM=U, do special processing */
     if (myfile->recfm == 2)
     {
         myfile->reallyu = 1;
@@ -868,7 +869,19 @@ static void osfopen(void)
         else if (mode == 0)
         {
             myfile->recfm = 1;
-            myfile->lrecl -= 4; /* lrecl from assembler includes BDW */
+        }
+        /* we need to work with a decent lrecl in case the
+           assembler routine set the real thing */
+        if (myfile->lrecl == 0)
+        {
+            myfile->lrecl = myfile->blksize;
+            if (myfile->lrecl == 0)
+            {
+                __aclose(myfile);
+                err = 1;
+                errno = 1;
+                return;
+            }
         }
     }
 
@@ -4122,7 +4135,7 @@ When the application writes a newline character to the data
 stream, it is treated as just another character and dutifully
 written out. Newlines are never added or stripped by the
 C library when a block boundary is encountered - not even in
-text mode. This marks a break from IBM's behaviour and is
+text mode. This marks a break from IBMs behaviour and is
 required in order to be able to read a RECFM=U in binary
 mode (e.g. the way zip would) and still preserve newline
 characters if the file being read happens to be a text file
@@ -4184,7 +4197,106 @@ want to use locate mode, and support for that may drop at
 some point.
 
 
-Here is some old design:
+The main assembler functions are as follows (note that
+__aopen in C becomes @@AOPEN in assembler):
+
+void *__aopen(const char *ddname,
+              int *mode,
+              int *recfm,
+              int *lrecl,
+              int *blksize,
+              void **asmbuf,
+              const char *member);
+
+This function opens an 8-character (right-padded with spaces)
+DDNAME. For dynamically-allocated datasets, a previous call
+to __dynal would have been done to a generated ddname of the
+form PDP001HD where 001 corresponds to a spare slot. The
+mode is passed by address. It is typically simply set to
+read or write, but if it is set to read, blocked, then the
+assembler routines have the option of setting this to just
+read, e.g. if the device is a terminal and block mode is
+inappropriate.
+
+Mode values are as follows:
+0 = input (read)
+1 = output (write)
+2 = update (read and write, initally read)
+3 = append
+4 = inout = read and write, initially read (same as update)
+5 = outin = write, then reread
+
+Additional mode flags:
+0x08 = Use EXCP if input file is tape.
+0x10 = Use block mode.
+0x80 = Use GETLINE/PUTLINE if TSO terminal detected
+
+recfm values are:
+0 = fixed
+1 = variable
+2 = undefined
+And again, the C program provides defaults but the assembler
+function has the final say.
+
+lrecl = default record/line length set by caller, with
+assembler deciding what to really do.
+
+blksize - default block size set by caller, assembler deciding
+what to really use.
+
+asmbuf - if file is opened in write mode, in the normal move
+mode, then this will be set to point to a buffer large enough
+to store the lrecl. Storage will be below the line so it is
+suitable for doing I/O from. Buffer will be freed when the
+dataset is closed.
+
+member - pointer to a PDS member to be opened. Member should
+be 8 characters, padded with spaces. If member is set to NULL,
+then this open is not for a member of a PDS (so this parameter
+is probably normally NULL).
+
+__aopen returns a "handle" on success, or a negative value
+(when cast to int) on failure. These values will probably
+be unclumped in the future.
+
+
+int __aread(void *handle, void *buf, size_t *len);
+
+This function takes the handle previously returned from __aopen
+and reads into the provided buffer a single record. It is
+assumed that the buffer is big enough to hold the LRECL
+previously returned by __aopen. *len will contain the length
+of the actual record returned, e.g. if RECFM=U this may
+change from record (block) to record (block). In the case
+of RECFM=V, the record includes a RDW.
+
+__aread returns 0 on success, non-zero on failure.
+
+
+int __awrite(void *handle, unsigned char **buf, size_t *sz);
+
+This function takes the handle previously returned from __aopen
+and writes the buffer pointed to by *buf. If operating in locate
+mode, it actually sets the *buf to where to write to, so the
+application can subsequently write there. *sz provides the
+length of the data to write, which is particularly necessary
+for RECFM=U where there is no other way to know the length.
+In the future, the assembler may update the size to reflect
+actual written in the case of a partial write.
+
+__awrite returns 0 on success, non-zero for failure.
+
+
+void __aclose(void *handle);
+
+This function takes the handle previously returned from __aopen
+and closes the file and releases any buffers that were allocated
+in the open.
+
+
+
+Here is some old documentation that might be worth updating
+one day:
 
 in/out function rec-type mode   method
 in     fread    fixed    bin    loop reading, remember remainder

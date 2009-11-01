@@ -111,7 +111,8 @@ R15      EQU   15
          GETMAIN RU,LV=ZDCBLEN,SP=SUBPOOL  No LOC= for S/370
          AGO   .GETOEND
 .MVS8090 ANOP  ,                  S/380 or S/390
-         GETMAIN RU,LV=ZDCBLEN,SP=SUBPOOL,LOC=BELOW
+*         GETMAIN RU,LV=ZDCBLEN,SP=SUBPOOL,LOC=BELOW
+         GETMAIN RU,LV=ZDCBLEN,SP=SUBPOOL
 .GETOEND ANOP
 *
          LR    R2,R1              Addr.of storage obtained to its base
@@ -280,7 +281,8 @@ WOPENEND DS    0H
          GETMAIN R,LV=(R6),SP=SUBPOOL  No LOC= for S/370
          AGO   .GETOENE
 .MVT8090 ANOP  ,                  S/380 or S/390
-         GETMAIN R,LV=(R6),SP=SUBPOOL,LOC=BELOW
+*         GETMAIN R,LV=(R6),SP=SUBPOOL,LOC=BELOW
+         GETMAIN R,LV=(R6),SP=SUBPOOL
 .GETOENE ANOP
          ST    R1,ASMBUF
          L     R5,20(,R11)        R5 points to ASMBUF

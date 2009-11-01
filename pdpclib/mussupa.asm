@@ -47,7 +47,7 @@
          COPY  PDPTOP
 *
          CSECT
-         PRINT GEN
+         PRINT NOGEN
 * YREGS IS NOT AVAILABLE WITH IFOX
 *         YREGS
 SUBPOOL  EQU   0

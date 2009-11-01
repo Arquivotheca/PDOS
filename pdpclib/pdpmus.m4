@@ -10,11 +10,7 @@
 /inc rexx
 parse arg name
 queue "/file syspunch n("name".obj) new(repl) sp(50) secsp(100%)"
-queue "/etc sp(100) secsp(100%)"
-queue "/file syslib"
-a="/etc pds(@BLD000:*.M,$MCU:*.M)"
-queue a
-queue "/etc def"
+queue "/file syslib pds(@BLD000:*.M,$MCU:*.M)"
 queue "/load asm"
 queue "/job nogo"
 queue "/opt deck,list"

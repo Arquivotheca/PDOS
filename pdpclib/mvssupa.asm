@@ -134,7 +134,7 @@ MVSSUPA  TITLE 'M V S S U P A  ***  MVS VERSION OF PDP CLIB SUPPORT'
 &LOCLOW  SETC  'LOC=BELOW'                                      GP09286
 &LOCANY  SETC  'LOC=ANY'                                        GP09286
 .NOLOCS  SPACE 1
-MVSSUPA  CSECT ,                                                GP09286
+         CSECT ,                                                GP09286
          PRINT GEN
          YREGS IS NOW AVAILABLE IN MVS MACLIB/MODGENM           GP09286
          SPACE 1
@@ -667,7 +667,7 @@ PARM5    DS    A              NEXT PARM                         GP09286
 PARM6    DS    A              NEXT PARM                         GP09286
 PARM7    DS    A              NEXT PARM                         GP09286
 PARM8    DS    A              NEXT PARM                         GP09286
-MVSSUPA  CSECT ,                                                GP09286
+         CSECT ,                                                GP09286
          SPACE 1
          ORG   CAMDUM+4           Don't need rest
          SPACE 2
@@ -1661,7 +1661,7 @@ SYSATOTX DS    CL100  4/4    NORMAL PARM TEXT STRING
 SYSATLST ATTACH EPLOC=SYSATPGM,ECB=SYSATECB,SF=L
 SYSATZER EQU   SYSATCLR,*-SYSATCLR,C'X'   ADDRESS & SIZE TO CLEAR
 SYSATDLN EQU   *-SYSATWRK     LENGTH OF DYNAMIC STORAGE
-MVSSUPA  CSECT ,             RESTORE
+         CSECT ,             RESTORE
          SPACE 2
 ***********************************************************************
 **                                                                   **
@@ -1905,7 +1905,7 @@ DYNALWRK DSECT ,             MAP STORAGE
          DS    18A           OUR OS SAVE AREA
 DYNLIST  DYNPAT P=ALL        EXPAND ALLOCATION DATA
 DYNALDLN EQU   *-DYNALWRK     LENGTH OF DYNAMIC STORAGE
-MVSSUPA  CSECT ,             RESTORE
+         CSECT ,             RESTORE
          SPACE 2
 *
 *

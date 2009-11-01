@@ -10,7 +10,10 @@
 /*                                                                   */
 /*  stdio.c - implementation of stuff in stdio.h                     */
 /*                                                                   */
-/*  The philosophy of this module is explained here.                 */
+/*  The philosophy of the PC/Unix/ASCII implementation is explained  */
+/*  here. For the MVS/CMS/EBCDIC implementation, see halfway down    */
+/*  this source file (or search for "design of MVS").                */
+/*                                                                   */
 /*  There is a static array containing pointers to file objects.     */
 /*  This is required in order to close all the files on program      */
 /*  termination.                                                     */
@@ -4068,6 +4071,121 @@ __PDPCLIB_API__ int ferror(FILE *stream)
 #if 0
 Design of MVS i/o routines
 
+The broad objectives of the MVS implementation are as follows:
+
+1. An application doing a binary fread equal to LRECL should
+get speed equivalent to doing the GET macro.
+
+2. An application doing a text fgets equal to or greater than
+LRECL should get speed equivalent to the GET macro.
+
+3. Variable-block files are encapsulated in terms of RDW files.
+RDW files are what is produced by certain implementations of
+ftp when the "rdw" option is chosen. Data is stored on the PC
+or whatever as a 2-byte big-endian length, then 2 NUL bytes,
+then the data. See the S/380 documentation that comes with
+MVS/380 for more information on this format. So a binary read
+of a V or VB file will produce a RDW stream (basically, BDWs
+are stripped, but not RDWs).
+
+4. If a binary copy is done from a V dataset to a U dataset,
+the RDW data stream will be preserved exactly. If the U data
+set is subsequently copied to an F dataset, there will
+necessarily be NUL-padding. If this dataset is then copied
+to a V dataset, the extraneous NULs (which comprise an
+invalid RDW) will be silently ignored/stripped.
+
+5. If a text copy is done from a V dataset to a U dataset,
+the U dataset will get x'15' (EBCDIC newline) characters
+added. The RDW will be stripped. Trailing spaces will be
+preserved. With one exception - a single blank character
+on a line will be removed.  If this dataset is then copied 
+to a F dataset, there will be trailing spaces added to fit 
+the LRECL. If this dataset is then copied to a V dataset, 
+the trailing spaces will all be truncated. If a line is
+empty, a single blank character will be inserted.
+
+6. If a long line is being written in text mode, it will
+be silently truncated regardless of whether the output file
+is RECFM=V or F. In binary mode, when writing to a RECFM=F,
+the data simply gets wrapped to the next record. For a binary
+write to a RECFM=V where the RDW signals a length greater
+than the LRECL, the record will be silently truncated. If
+writing to a RECFM=V in binary mode with insufficient data
+to match the RDW, it is considered an error. Similarly,
+more data than the RDW will cause a new record to be
+started. An invalid RDW in the data stream is considered
+a write error.
+
+7. In RECFM=U datasets, the block boundary is always ignored.
+When the application writes a newline character to the data
+stream, it is treated as just another character and dutifully
+written out. Newlines are never added or stripped by the
+C library when a block boundary is encountered - not even in
+text mode. This marks a break from IBM's behaviour and is
+required in order to be able to read a RECFM=U in binary
+mode (e.g. the way zip would) and still preserve newline
+characters if the file being read happens to be a text file
+(as opposed to e.g. another zip file - something zip has
+no way of knowing). NULs encountered when reading
+a RECFM=U in text mode may be stripped. Similarly, trailing
+NULs in the application data stream are stripped. This way,
+someone doing a binary copy of a file, and who has stored
+it in a RECFM=F dataset (where NUL padding is necessary),
+and then has copied it into a RECFM=U (where NULs must
+necessarily be preserved if doing binary copies) will be
+stripped by the first person who does a text read or
+write.
+
+8. DCB information provided by the user in JCL, or on a
+dataset, always has priority and the C library will adjust
+around that. Only if there is no existing DCB information
+available anywhere will the C library provide a default,
+which is RECFM=VB,LRECL=255,BLKSIZE=6233 for text, and
+RECFM=U,LRECL=0,BLKSIZE=6233 for binary. This blocksize
+is traditionally considered to be the universal blocksize.
+
+9. An open of a PDS with no member given will read the
+directory. Any attempt to open a PDS directory for writing
+will fail.
+
+10. RECFM=U allows you to preserve the exact length of
+data. RECFM=FB with a LRECL of 1 also achieves this, but
+is much more overhead. A special exception may be made in
+the future for binary reading of FB datasets to provide 
+the same performance as RECFM=U.
+
+11. Data is processed by the C library one record at a time.
+There is an intention to change to block reading in the
+future now that the assembler (for MVS at least) has that
+flexibility.
+
+
+The implementation has been based around 4 different processing
+concepts:
+
+1. Fixed text.
+2. Fixed binary.
+3. Variable text.
+4. Variable binary.
+
+RECFM=U was grafted on in terms of a faked variable binary
+for reading and a faked fixed binary for writing. There is
+a "reallyu" to record the fact that it was really U, and
+at various points the processing changes slightly to cope
+with that. There is also a "reallyt" variable that notes
+the fact that it was originally a text mode request, but
+that has been switched (to avoid translation of newlines
+into spaces or RDW etc).
+
+The code has been designed to work in both locate mode
+and in move mode, although it would be rare for anyone to
+want to use locate mode, and support for that may drop at
+some point.
+
+
+Here is some old design:
+
 in/out function rec-type mode   method
 in     fread    fixed    bin    loop reading, remember remainder
 in     fread    fixed    text   loop reading + truncing, remember rem
@@ -4095,26 +4213,6 @@ out    fputc    fixed    text   copy to rr until newline, then pad
 out    fputc    var      bin    copy to rr until rr == lrecl
 out    fputc    var      text   copy to rr until newline
 
-optimize for fread on binary files (read matching record length),
-especially fixed block files, and fgets on text files, especially
-variable blocked files.
-
-binary, variable block files are not a file type supported by this
-library as part of the conforming implementation.  Instead, they
-are considered to be record-oriented processing, similar to unix
-systems reading data from a pipe, where you can read less bytes
-than requested, without reaching EOF.  ISO 7.9.8.1 does not give you
-the flexibility of calling either of these things conforming.
-Basically, the C standard does not have a concept of operating
-system maintained length binary records, you have to do that
-yourself, e.g. by writing out the lengths yourself.  You can do
-this in a fixed block dataset on MVS, and if you are concerned
-about null-padding at the end of your data, use a lrecl of 1
-(and suffer the consequences!).  You could argue that this
-non-conformance should only be initiated if fopen has a parameter
-including ",type=record" or whatever.  Another option would
-be to make VB binary records include the record size as part of
-the stream.  Hmmm, sounds like that is the go actually.
 
 fread: if quickbin, if read elem size == lrecl, doit
 fgets: if variable record + no remainder

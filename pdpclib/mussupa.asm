@@ -78,6 +78,10 @@ R15      EQU   15
 *  but it is being used outside the normal MVS interface. All this
 *  stuff really needs to be rewritten per normal MUSIC coding.
 *
+*
+*  Note - more documentation for this and other I/O functions can
+*  be found halfway through the stdio.c file in PDPCLIB.
+*
 * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
          ENTRY @@AOPEN
 @@AOPEN  EQU   *

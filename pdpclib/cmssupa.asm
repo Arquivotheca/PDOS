@@ -68,6 +68,10 @@ SUBPOOL  EQU   0
 *  keep track of what's what when READ etc are subsequently          *
 *  called.                                                           *
 *                                                                    *
+*                                                                    *
+*  Note - more documentation for this and other I/O functions can    *
+*  be found halfway through the stdio.c file in PDPCLIB.             *
+*                                                                    *
 **********************************************************************
          ENTRY @@AOPEN
 @@AOPEN  EQU   *

@@ -226,40 +226,52 @@ HISTORY
       not.  However, there has been sufficient amount of work done
       to make it at least interesting reading.
 
-0.02  Further down the track, but not enough to go bananas about.
+0.02  Released 1994-12-29
+      Further down the track, but not enough to go bananas about.
       Main work was done in fopen(), which is far more robust now.
 
 0.03  Got it working on Watcom, CSET + GNU.  
 
 0.04  Miscellaneous additions
 
-0.05  There is a function for every single function except those in
+0.05  Released 1995-12-26
+      There is a function for every single function except those in
       the math library, but there are still holes in the system,
       especially with the File I/O.  But now I have all of the
       fundamental design in place.
       
-0.06  Much more robust file i/o.
+0.06  Released 1996-01-02
+      Much more robust file i/o.
 
-0.07  Many bug fixes and enhancements.
+0.07  Released 1996-02-04
+      Many bug fixes and enhancements.
 
-0.50  DOS support, and various bug fixes.
+0.50  Released 1997-05-03
+      DOS support, and various bug fixes.
 
-0.51  General tidy up.
+0.51  Released 1997-05-18 together with PDOS 0.10. 
+      General tidy up.
 
-0.52  Bug fixes for problems found whilst doing PDOS work.
+0.52  Released 1997-09-13
+      Bug fixes for problems found whilst doing PDOS work.
 
-0.60  Added MVS support, since I suddenly had an MVS machine available
+0.60  Released 1997-11-01
+      Added MVS support, since I suddenly had an MVS machine available
       and had always wondered how on earth C was able to be implemented
       on that environment.  Now I know some of the answers.
 
-0.61  Implemented a stub function required for some situations under
+0.61  Released 1997-12-28
+      Implemented a stub function required for some situations under
       MSDOS.
 
-0.70  Added PDOS support.
+0.70  Released 1998-01-05
+      Added PDOS support.
 
-0.71  Completed PDOS and fixed DOS bug.
+0.71  Released 1998-01-11
+      Completed PDOS and fixed DOS bug.
 
-0.73  Revamped interface to PDOS.
+0.73  Released 1998-04-07
+      Revamped interface to PDOS.
 
 0.80  Many changes to work with GCC (MVS port).
 

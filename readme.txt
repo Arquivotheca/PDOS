@@ -224,6 +224,34 @@ which is how many bytes need to be subtracted from an address in order
 for it to be able to access that absolute memory location.
 
 
+VERSION HISTORY
+---------------
+
+0.10  Released 1997-05-18 together with PDPCLIB 0.51
+
+0.20  Released 1997-05-24
+
+0.30  Released 1997-09-04
+
+0.40  Released 1997-09-13
+
+0.50  Released 1997-12-18
+
+0.60  Released 1997-12-28
+
+0.70  Released 1998-01-05
+
+0.71  Released 1998-01-11
+
+0.82  Released 1998-09-12
+
+0.83  Released 2001-06-02
+
+0.85  Released 2002-07-26
+
+0.86  Released 2007-08-23
+
+
 PROGRAM INTERFACE
 -----------------
 

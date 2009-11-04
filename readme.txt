@@ -227,6 +227,18 @@ for it to be able to access that absolute memory location.
 VERSION HISTORY
 ---------------
 
+On 1994-04-28 in the PUBLIC_DOMAIN Fidonet echo, the question
+was asked what was required to replace MSDOS, and experimentation
+began. By 1994-07-03 the POS/PDOS project was "formally" elaborated.
+On 1994-07-12 focus was switched to the C runtime library (PDPCLIB)
+to support it and to identify the high priority MSDOS interfaces
+that would be required by PDOS. First beta of PDPCLIB was made
+available on 1994-07-30.
+
+0.00  Released 1994-12-29 consisting of just some BIOS interface
+      routines. Much more work was required on PDPCLIB before
+      coming back to do PDOS-type work.
+
 0.10  Released 1997-05-18 together with PDPCLIB 0.51
 
 0.20  Released 1997-05-24

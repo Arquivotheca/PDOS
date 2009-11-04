@@ -273,17 +273,22 @@ HISTORY
 0.73  Released 1998-04-07
       Revamped interface to PDOS.
 
-0.80  Many changes to work with GCC (MVS port).
+0.80  Released 2004-03-17
+      Many changes to work with GCC (MVS port).
 
-0.81  Now works for CMS as well, and both CMS and MVS
+0.81  Released 2006-01-06
+      Now works for CMS as well, and both CMS and MVS
       have a working setjmp/longjmp.
 
-0.82  Made __CMS__ independent of __MVS__. Also fixed
+0.82  Released 2006-01-20
+      Made __CMS__ independent of __MVS__. Also fixed
       a bug.
 
-0.83  Whitespace change required to avoid assembly error.
+0.83  Released 2006-03-04
+      Whitespace change required to avoid assembly error.
 
-0.84  All math functions have been implemented, meaning
+0.84  Released 2007-08-23
+      All math functions have been implemented, meaning
       every function has now been implemented, although
       some still have limitations. Also, Win32 support has been
       added so you can use PDPCLIB in combination with gcc to
@@ -291,14 +296,17 @@ HISTORY
       significantly enhanced so that it can read PDS
       concatenations. Also, MVS executables are now 31-bit.
 
-0.85  Support for S/380, bug fixes, memmgr option.
+0.85  Released 2007-12-16
+      Support for S/380, bug fixes, memmgr option.
 
-0.86  Bug fixes to do with floating point. On MVS, null variable
+0.86  Released 2008-03-04
+      Bug fixes to do with floating point. On MVS, null variable
       length records have a single blank as data, as per ISPF and
       as IEBCOMPR expects. Macros are now provided for the different
       compile environments (370, 380 and 390).
 
-1.00  Supports VM/380, writing to variable-blocked datasets,
+1.00  Released 2009-01-26
+      Supports VM/380, writing to variable-blocked datasets,
       reading and writing RECFM=U on MVS, rename and remove
       on MVS, scanf has been updated to support all formats.
       There is now no longer anything I know of that hasn't
@@ -315,16 +323,19 @@ HISTORY
       that it's usability is downgraded. Similar to it not
       being able to open VSAM datasets.
 
-1.50  setjmp & longjmp implemented properly for all PC environments,
+1.50  Released 2009-06-04
+      setjmp & longjmp implemented properly for all PC environments,
       making them compliant too. setjmp & longjmp revamped on MVS
       and CMS to stop saving the entire stack. Several bug fixes.
       And hack for MVS taken out now that the compiler bug has
       been fixed.
 
-2.00  Linux version added. Some missing functionality in CMS
+2.00  Released 2009-08-21
+      Linux version added. Some missing functionality in CMS
       added. Some bugs fixed. Some parameters unclumped.
 
-2.01  Bug fixes and minor enhancements, mainly for MVS.
+2.01  Released 2009-09-26
+      Bug fixes and minor enhancements, mainly for MVS.
 
 2.xx  Major revamp of MVS assembler to support default DCB info.
       Also MUSIC/SP has its own target.

@@ -222,7 +222,16 @@ rectified.
 HISTORY
 -------
 
-0.01  A lot of stuff has been implemented, and a lot of stuff has
+On 1994-04-28 in the PUBLIC_DOMAIN Fidonet echo, the question
+was asked what was required to replace MSDOS, and experimentation
+began. By 1994-07-03 the POS/PDOS project was "formally" elaborated.
+On 1994-07-12 focus was switched to the C runtime library to
+support it and to identify the high priority MSDOS interfaces
+that would be required by PDOS. First beta of PDPCLIB was made 
+available on 1994-07-30.
+
+0.01  Released 1994-08-27
+      A lot of stuff has been implemented, and a lot of stuff has
       not.  However, there has been sufficient amount of work done
       to make it at least interesting reading.
 
@@ -230,9 +239,11 @@ HISTORY
       Further down the track, but not enough to go bananas about.
       Main work was done in fopen(), which is far more robust now.
 
-0.03  Got it working on Watcom, CSET + GNU.  
+0.03  Released 1995-01-07
+      Got it working on Watcom, CSET + GNU.  
 
-0.04  Miscellaneous additions
+0.04  Released 1995-08-06
+      Miscellaneous additions
 
 0.05  Released 1995-12-26
       There is a function for every single function except those in

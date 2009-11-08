@@ -23,8 +23,12 @@ int __dynal(size_t ddn_len, char *ddn, size_t dsn_len, char *dsn);
 int __idcams(size_t len, char *data);
 
 #pragma linkage(__system, OS)
+#ifdef MUSIC
+int __system(int len, const char *command);
+#else
 int __system(int req_type, 
              size_t pgm_len,
              char *pgm,
              size_t parm_len,
              char *parm);
+#endif

@@ -895,6 +895,40 @@ SYSTEMLN EQU   *-SYSTMWRK    LENGTH OF DYNAMIC STORAGE
          CSECT ,
 * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
 *
+*  TEXTLC - switch terminal to lower case mode
+*
+* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+         ENTRY @@TEXTLC
+@@TEXTLC EQU   *
+         SAVE  (14,12),,@@TEXTLC  Save caller's regs.
+         LR    R12,R15
+         USING @@TEXTLC,R12
+         LR    R11,R1
+*
+         GETMAIN RU,LV=WORKLEN,SP=SUBPOOL
+         ST    R13,4(,R1)
+         ST    R1,8(,R13)
+         LR    R13,R1
+         LR    R1,R11
+         USING WORKAREA,R13
+*
+         LA    R1,LCOPTS
+         SVC   $SETOPT
+*
+RETURNLC DS    0H
+         LR    R1,R13
+         L     R13,SAVEAREA+4
+         FREEMAIN RU,LV=WORKLEN,A=(1),SP=SUBPOOL
+*
+         LA    R15,0              Return success
+         RETURN (14,12),RC=(15)   Return to caller
+*
+LCOPTS   DC    X'A0'              Constant
+         DC    X'01'              Set bit on
+         DC    X'01'              Option byte 1 (1-based)
+         DC    X'06'              Bit number 6 (0-based)
+* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+*
 *  IDCAMS - dummy function to keep MVS happy
 *
 * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *

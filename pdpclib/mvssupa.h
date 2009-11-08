@@ -25,6 +25,7 @@ int __idcams(size_t len, char *data);
 #pragma linkage(__system, OS)
 #ifdef MUSIC
 int __system(int len, const char *command);
+int __textlc(void);
 #else
 int __system(int req_type, 
              size_t pgm_len,

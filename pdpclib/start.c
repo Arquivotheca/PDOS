@@ -310,6 +310,13 @@ __PDPCLIB_API__ int CTYP __start(char *p)
     memmgrDefaults(&__memmgr);
     memmgrInit(&__memmgr);
 #endif
+#if 0 /* MUSIC */
+    /* switch on lowercasing of input */
+    /* normal MUSIC default is to uppercase, and it's probably
+       better to let the user control that with the /TEXT LC
+       command instead */
+    __textlc();
+#endif
     stdout = fopen("dd:SYSPRINT", "w");
     if (stdout == NULL)
     {

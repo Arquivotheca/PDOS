@@ -48,25 +48,9 @@
 *
          CSECT
          PRINT NOGEN
-* YREGS IS NOT AVAILABLE WITH IFOX
-*         YREGS
+         REGS
+         MUSVC
 SUBPOOL  EQU   0
-R0       EQU   0
-R1       EQU   1
-R2       EQU   2
-R3       EQU   3
-R4       EQU   4
-R5       EQU   5
-R6       EQU   6
-R7       EQU   7
-R8       EQU   8
-R9       EQU   9
-R10      EQU   10
-R11      EQU   11
-R12      EQU   12
-R13      EQU   13
-R14      EQU   14
-R15      EQU   15
 *
 * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
 *
@@ -867,11 +851,48 @@ RETURNGC DS    0H
          SAVE  (14,12),,@@SYSTEM
          LR    R12,R15
          USING @@SYSTEM,R12
+         LR    R11,R1
+*
+         GETMAIN RU,LV=SYSTEMLN,SP=SUBPOOL
+         ST    R13,4(,R1)
+         ST    R1,8(,R13)
+         LR    R13,R1
+         LR    R1,R11
+         USING SYSTMWRK,R13
+*
+         MVC   CMDPREF,FIXEDPRF
+         L     R2,0(R1)
+         CL    R2,=F'200'
+         BL    LENOK
+         L     R2,=F'200'
+LENOK    DS    0H
+         STH   R2,CMDLEN
+         LA    R4,CMDTEXT
+         LR    R5,R2
+         L     R6,4(R1)
+         LR    R7,R2
+         MVCL  R4,R6
+         LA    R1,CMDPREF
+         SVC   $EXREQ
+*
+RETURNSY DS    0H
+         LR    R1,R13
+         L     R13,SYSTMWRK+4
+         FREEMAIN RU,LV=SYSTEMLN,A=(1),SP=SUBPOOL
 *
          LA    R15,0
-*
-         RETURN (14,12),RC=(15)
+         RETURN (14,12),RC=(15)   Return to caller
+* For documentation on this fixed prefix, see SVC 221
+* documentation.
+FIXEDPRF DC    X'7F01E000000000'
          LTORG
+SYSTMWRK DSECT ,             MAP STORAGE
+         DS    18A           OUR OS SAVE AREA
+CMDPREF  DS    CL8           FIXED PREFIX
+CMDLEN   DS    H             LENGTH OF COMMAND
+CMDTEXT  DS    CL200         COMMAND ITSELF
+SYSTEMLN EQU   *-SYSTMWRK    LENGTH OF DYNAMIC STORAGE
+         CSECT ,
 * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
 *
 *  IDCAMS - dummy function to keep MVS happy

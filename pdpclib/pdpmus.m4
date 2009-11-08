@@ -10,7 +10,7 @@
 /inc rexx
 parse arg name
 queue "/file syspunch n("name".obj) new(repl) sp(50) secsp(100%)"
-queue "/file syslib pds(@BLD000:*.M,$MCU:*.M)"
+queue "/file syslib pds(@BLD000:*.M,$MCU:*.M,$MCM:*.M)"
 queue "/load asm"
 queue "/job nogo"
 queue "/opt deck,list"
@@ -176,4 +176,24 @@ undivert(pdptest.s)/END
 /parm Hi there DeeeeeFerDog
 /load xmon
 pdptest n(pdptest.lmod) lcparm v(256)
+/END
+
+/ID SAVE-JOB-123456 @BLD000 9999 9999 9999 9999
+/PASSWORD=BLD000
+/SAVE RUNPDP REPL
+/inc rexx
+queue "/sys region=9999,xregion=64m"
+queue "/file sysprint prt osrecfm(f) oslrecl(256)"
+queue "/parm a1 b2"
+queue "/load xmon"
+queue "pdptest n(pdptest.lmod) lcparm v(256)"
+"EXEC"
+
+exit rc
+/END
+
+/ID SAVE-JOB-123456 @BLD000 9999 9999 9999 9999
+/PASSWORD=BLD000
+/inc rexx
+'runpdp'
 /END

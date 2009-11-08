@@ -843,7 +843,7 @@ RETURNGC DS    0H
          LTORG
 * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
 *
-*  SYSTEM - execute another program - not yet implemented
+*  SYSTEM - execute another command
 *
 * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
          ENTRY @@SYSTEM

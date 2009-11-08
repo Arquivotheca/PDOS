@@ -887,7 +887,9 @@ __PDPCLIB_API__ int system(const char *string)
     __exec(cmd, &parmblock);
     return (0);
 #endif
-#if defined(__MVS__)
+#if defined(MUSIC)
+    return (__system(strlen(string), string));
+#elif defined(__MVS__)
     char pgm[9];
     size_t pgm_len;
     size_t cnt;

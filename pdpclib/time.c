@@ -572,4 +572,3 @@ static void strfmt(char *str, const char *fmt, ...)
       *str = '\0';
       va_end(vp);
 }
-

@@ -41,14 +41,17 @@ extern int __tso;
 
 #if USE_MEMMGR
 #include "__memmgr.h"
+/* GCCMVS 3.4.6 requires 49 MB minimum for full optimization */
+/* so we give it 60. GCCMVS 3.2.3 only requires 20 MB */
+/* Note that you can set MAX_CHUNK to less than REQ_CHUNK */
+/* But don't do this until MVS/380 etc have been changed to */
+/* allow multiple memory requests. */
 #if defined(MULMEM)
-#define MAX_CHUNK 30000000
-#define REQ_CHUNK 30000000
+#define MAX_CHUNK 60000000
+#define REQ_CHUNK 60000000
 #else
-#define MAX_CHUNK 30000000 /* maximum size we will store in memmgr */
-    /* Note that you can set MAX_CHUNK to less than REQ_CHUNK */
-    /* But don't do this until MVS/380 has been fixed */
-#define REQ_CHUNK 30000000 /* size that we request from OS */
+#define MAX_CHUNK 60000000 /* maximum size we will store in memmgr */
+#define REQ_CHUNK 60000000 /* size that we request from OS */
 #endif
 void *__lastsup = NULL; /* last thing supplied to memmgr */
 #endif

@@ -20,6 +20,6 @@
 
 #define errno (*(__get_errno()))
 
-int *__get_errno();
+int *__get_errno(void);
 
 #endif

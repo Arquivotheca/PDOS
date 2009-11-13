@@ -167,7 +167,6 @@ static int onefile(FILE *infile)
     {
         fread(buf, size, 1, infile);
         buf[size] = '\0';
-        ascii2l(buf);
     }
     p = strrchr(fnm, '/');
     if (p != NULL)
@@ -252,6 +251,7 @@ static int onefile(FILE *infile)
             printf("file open failure on %s\n", newfnm);
             exit(EXIT_FAILURE);
         }
+        ascii2l(buf);
         fwrite(buf, strlen(buf), 1, newf);
     }
     fclose(newf);

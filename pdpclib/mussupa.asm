@@ -7,7 +7,7 @@
 *
 ***********************************************************************
 *
-*  MVSSUPA - Support routines for PDPCLIB under MVS
+*  MUSSUPA - Support routines for PDPCLIB under MUSIC
 *
 *  It is currently coded for GCC, but C/370 functionality is
 *  still there, it's just being tested after any change.
@@ -651,21 +651,55 @@ LCOPTS   DC    X'A0'              Constant
 *
          RETURN (14,12),RC=(15)
          LTORG
-* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
 *
-*  DYNAL - dynamic allocation dummy function to keep MVS happy
-*
-* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
-         ENTRY @@DYNAL
-@@DYNAL  EQU   *
-         SAVE  (14,12),,@@DYNAL
+***********************************************************************
+*                                                                     *
+*  CALL @@SVC99,(rb)                                                  *
+*                                                                     *
+*  Execute DYNALLOC (SVC 99)                                          *
+*                                                                     *
+*  Caller must provide a request block, in conformance with the       *
+*  MVS documentation for this (which is very complicated)             *
+*                                                                     *
+***********************************************************************
+         ENTRY @@SVC99
+@@SVC99  EQU   *
+         SAVE  (14,12),,@@SVC99   Save caller's regs.
          LR    R12,R15
-         USING @@DYNAL,R12
+         USING @@SVC99,R12
+         LR    R11,R1
 *
-         LA    R15,0
+         GETMAIN RU,LV=WORKLEN,SP=SUBPOOL
+         ST    R13,4(,R1)
+         ST    R1,8(,R13)
+         LR    R13,R1
+         LR    R1,R11
+         USING WORKAREA,R13
 *
-         RETURN (14,12),RC=(15)
-         LTORG
+* Note that the SVC requires a pointer to the pointer to the RB.
+* Because this function (not SVC) expects to receive a standard
+* parameter list, where R1 so happens to be a pointer to the
+* first parameter, which happens to be the address of the RB,
+* then we already have in R1 exactly what SVC 99 needs.
+*
+* One more issue. According to some documentation, the high
+* order bit of the pointer is meant to be on. But I don't know
+* which of those two pointers it needs to be. And MUSIC isn't
+* complaining about either of them having no high bit. So if
+* MUSIC doesn't care, neither do I.
+*
+*         L     R1,0(R1)  Don't want this
+*         O     R1,=X'80000000'   Don't know if this is the right one
+         SVC   99
+         LR    R2,R15
+*
+RETURN99 DS    0H
+         LR    R1,R13
+         L     R13,SAVEAREA+4
+         FREEMAIN RU,LV=WORKLEN,A=(1),SP=SUBPOOL
+*
+         LR    R15,R2             Return success
+         RETURN (14,12),RC=(15)   Return to caller
 *
          DROP  R12
 * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *

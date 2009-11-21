@@ -682,14 +682,14 @@ LCOPTS   DC    X'A0'              Constant
 * first parameter, which happens to be the address of the RB,
 * then we already have in R1 exactly what SVC 99 needs.
 *
-* One more issue. According to some documentation, the high
-* order bit of the pointer is meant to be on. But I don't know
-* which of those two pointers it needs to be. And MUSIC isn't
-* complaining about either of them having no high bit. So if
-* MUSIC doesn't care, neither do I.
+* Except for one thing. Technically, you're meant to have the
+* high bit of the pointer on. So we rely on the caller to have
+* the parameter in writable storage so that we can ensure that
+* we set that bit.
 *
-*         L     R1,0(R1)  Don't want this
-*         O     R1,=X'80000000'   Don't know if this is the right one
+         L     R2,0(R1)
+         O     R2,=X'80000000'
+         ST    R2,0(R1)
          SVC   99
          LR    R2,R15
 *

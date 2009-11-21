@@ -5189,6 +5189,8 @@ static struct {
 
 static void filedef(char *fdddname, char *fnm, int mymode)
 {
+    char *p = NULL;
+
     memset(&rb, 0x00, sizeof rb);
     rb.len = 20;
     rb.verb = 0x01; /* allocate */
@@ -5200,11 +5202,46 @@ static void filedef(char *fdddname, char *fnm, int mymode)
     tu[0].parm1_len = strlen(fdddname);
     strcpy(tu[0].parm1, fdddname);
     
+    if (strlen(fnm) > 17)
+    {
+        p = strchr(fnm, '/');
+        if (p == NULL)
+        {
+            p = strchr(fnm, '\\');
+        }
+        if (p != NULL)
+        {
+            /* can't handle directories */
+            err = 1;
+            return;
+        }
+        p = strrchr(fnm, '.');
+        if (p == NULL)
+        {
+            /* filename is too long */
+            err = 1;
+            return;
+        }
+        if (strlen(p) > 16)
+        {
+            /* extension is too long */
+            err = 1;
+            return;
+        }        
+    }
+
     tu_list[1] = &tu[1];
     tu[1].key = 0x0002; /* dsname */
     tu[1].numparms = 1;
     tu[1].parm1_len = strlen(fnm);
     strcpy(tu[1].parm1, fnm);
+    /* if the filename is too long, e.g. a filename being used
+       on the PC, then automatically truncate it to what would
+       be sensible for MUSIC */
+    if (p != NULL)
+    {
+        strcpy(tu[1].parm1 + 17 - strlen(p), p);
+    }
 
     tu_list[2] = &tu[2];
     tu[2].key = 0x0004; /* disp */

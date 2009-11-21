@@ -34,6 +34,8 @@ int main(int argc, char **argv)
 
 #ifdef __CMS__
     if ((argc <= 1) || ((argc >= 4) && (strcmp(argv[3], "BINARY") != 0)))
+#elif defined(MUSIC)
+    if ((argc <= 1) || ((argc >= 3) && (strcmp(argv[2], "binary") != 0)))
 #else
     if ((argc <= 2) || ((argc >= 4) && (strcmp(argv[3], "binary") != 0)))
 #endif
@@ -43,11 +45,9 @@ int main(int argc, char **argv)
         printf("where infile is a sequential file\n");
         printf("e.g. mvsunzip dd:input\n");
 #elif defined(MUSIC)
-        printf("usage: mvsunzip <infile> <outfile> [binary]\n");
+        printf("usage: mvsunzip <infile> [binary]\n");
         printf("where infile is a sequential file\n");
-        printf("and outfile is a filename in the zip file\n");
-        printf("and PDP001HD has been preallocated\n");
-        printf("e.g. mvsunzip dd:input fred.c\n");
+        printf("e.g. mvsunzip dd:input\n");
 #else
         printf("usage: mvsunzip <infile> <outfile> [binary]\n");
         printf("where infile is a sequential file\n");
@@ -64,7 +64,11 @@ int main(int argc, char **argv)
         disk = argv[2][0];
     }
 #endif
+#ifdef MUSIC
+    if (argc >= 3)
+#else
     if (argc >= 4)
+#endif
     {
         binary = 1;
     }
@@ -212,14 +216,6 @@ static int onefile(FILE *infile)
     sprintf(newfnm, "%s(%s)", outn, p);
 #endif
 
-#ifdef MUSIC
-    /* for MUSIC, only extract a single file */
-    if (strcmp(outn, newfnm) != 0)
-    {
-        return (1);
-    }
-#endif
-
     if (binary)
     {
         size_t x;
@@ -255,9 +251,6 @@ static int onefile(FILE *infile)
         fwrite(buf, strlen(buf), 1, newf);
     }
     fclose(newf);
-#ifdef MUSIC
-    return (0);
-#endif
     return (1);
 }
 

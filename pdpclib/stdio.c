@@ -734,6 +734,7 @@ static void osfopen(void)
         }
         /* create a DD from the handle number */
         sprintf(tmpdd, "PDP%03dHD", spareSpot);
+        fdclr(tmpdd); /* unconditionally clear */
         filedef(tmpdd, newfnm, mode);
         if (err) return;
         myfile->dynal = 1;
@@ -5211,7 +5212,6 @@ static void filedef(char *fdddname, char *fnm, int mymode)
     tu[2].parm1_len = 1;
     tu[2].parm1[0] = 0x08; /* SHR */
 
-    tu_list[2] = (void *)((unsigned int)tu_list[2] | 0x80000000);
     tu_list[3] = (void *)0x80000000;
 
     /* if open for write */
@@ -5230,10 +5230,12 @@ static void filedef(char *fdddname, char *fnm, int mymode)
     else
     {
         errno = __svc99(&rb);
-        err = 1;
-        return;
         if (errno != 0)
         {
+            if (rb.error_reason != 0)
+            {
+                errno = rb.error_reason;
+            }
             err = 1;
             return;
         }
@@ -5246,6 +5248,7 @@ static void fdclr(char *ddname)
     memset(&rb, 0x00, sizeof rb);
     rb.len = 20;
     rb.verb = 0x02; /* unallocate */
+    rb.tu_list = tu_list;
 
     tu_list[0] = &tu[0];
     tu[0].key = 0x0001; /* ddname */

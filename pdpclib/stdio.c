@@ -232,10 +232,12 @@ static void freadSlowB(void *ptr,
 static int examine(const char **formt, FILE *fq, char *s, va_list *arg,
                    int chcount);
 
-#ifdef __CMS__
-extern void __SVC202 ( char *s202parm, int *code, int *parm );
+#if defined(__CMS__) || defined(MUSIC)
 static void filedef(char *fdddname, char *fnm, int mymode);
 static void fdclr(char *ddname);
+#endif
+#ifdef __CMS__
+extern void __SVC202 ( char *s202parm, int *code, int *parm );
 static int cmsrename(const char *old, const char *new);
 static int cmsremove(const char *filename);
 static char *int_strtok(char *s1, const char *s2);
@@ -718,6 +720,22 @@ static void osfopen(void)
         }
         sprintf(tmpdd, "PDP%03dHD", spareSpot);
         filedef(tmpdd, newfnm, mode);
+        myfile->dynal = 1;
+        p = tmpdd;
+    }
+#elif defined(MUSIC)
+    {
+        strcpy(newfnm, fnm);
+        p = newfnm;
+        while (*p != '\0')
+        {
+            *p = toupper((unsigned char)*p);
+            p++;
+        }
+        /* create a DD from the handle number */
+        sprintf(tmpdd, "PDP%03dHD", spareSpot);
+        filedef(tmpdd, newfnm, mode);
+        if (err) return;
         myfile->dynal = 1;
         p = tmpdd;
     }
@@ -5137,6 +5155,111 @@ __PDPCLIB_API__ size_t fread(void *ptr, size_t size, size_t nmemb, FILE *stream)
 }
 
 #endif
+
+/*
+   Following code issues a FILEDEF for MUSIC
+*/
+
+#ifdef MUSIC
+
+static struct {
+  char len; /* length of request block, always 20 */
+  char verb; /* dynamic allocation function requested */
+  char flag1;
+  char flag2;
+  short error_reason; /* returned */
+  short info_reason; /* returned */
+  void *tu_list; /* list of pointers to text units */
+  int reserved;
+  char moreflags[4]; /* extraflags */
+} rb;
+
+static void *tu_list[10]; /* pointers to text units */
+
+static struct {
+  short key; /* key defining what this text unit is */
+  short numparms; /* number of parms that follow */
+  short parm1_len;
+  char parm1[98];
+  /* parm2_len etc would theoretically follow, but we
+  /* can't define them, because the length of 98 is probably
+     not correct in the first place */
+} tu[10];
+
+static void filedef(char *fdddname, char *fnm, int mymode)
+{
+    memset(&rb, 0x00, sizeof rb);
+    rb.len = 20;
+    rb.verb = 0x01; /* allocate */
+    rb.tu_list = tu_list;
+
+    tu_list[0] = &tu[0];
+    tu[0].key = 0x0001; /* ddname */
+    tu[0].numparms = 1;
+    tu[0].parm1_len = strlen(fdddname);
+    strcpy(tu[0].parm1, fdddname);
+    
+    tu_list[1] = &tu[1];
+    tu[1].key = 0x0002; /* dsname */
+    tu[1].numparms = 1;
+    tu[1].parm1_len = strlen(fnm);
+    strcpy(tu[1].parm1, fnm);
+
+    tu_list[2] = &tu[2];
+    tu[2].key = 0x0004; /* disp */
+    tu[2].numparms = 1;
+    tu[2].parm1_len = 1;
+    tu[2].parm1[0] = 0x08; /* SHR */
+
+    tu_list[2] = (void *)((unsigned int)tu_list[2] | 0x80000000);
+    tu_list[3] = (void *)0x80000000;
+
+    /* if open for write */
+    if ( mymode )
+    {
+        /* if binary */
+        if (modeType == 5)
+        {
+            /* F80 */
+        }
+        else
+        {
+            /* V255 */
+        }
+    }
+    else
+    {
+        errno = __svc99(&rb);
+        err = 1;
+        return;
+        if (errno != 0)
+        {
+            err = 1;
+            return;
+        }
+    }
+    return;
+}
+
+static void fdclr(char *ddname)
+{
+    memset(&rb, 0x00, sizeof rb);
+    rb.len = 20;
+    rb.verb = 0x02; /* unallocate */
+
+    tu_list[0] = &tu[0];
+    tu[0].key = 0x0001; /* ddname */
+    tu[0].numparms = 1;
+    tu[0].parm1_len = strlen(ddname);
+    strcpy(tu[0].parm1, ddname);
+
+    tu_list[1] = (void *)0x80000000;
+
+    __svc99(&rb);
+    return;
+}
+#endif
+
 
 /*
    Following code issues a FILEDEF for CMS

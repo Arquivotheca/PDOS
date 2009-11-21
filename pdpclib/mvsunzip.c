@@ -195,6 +195,15 @@ static int onefile(FILE *infile)
 
 #if defined(MUSIC)
     strcpy(newfnm, p);
+    /* automatically truncate filenames down to MUSIC length */
+    if (strlen(newfnm) > 17)
+    {
+        p = strrchr(newfnm, '.');
+        if (p != NULL)
+        {
+            memmove(p - (strlen(newfnm) - 17), p, strlen(p) + 1);
+        }
+    }
 #elif defined(__CMS__)
     if (strchr(p, '.') != NULL) *strchr(p, '.') = ' ';
     if (disk != '\0')

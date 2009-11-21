@@ -26,6 +26,7 @@ int __idcams(size_t len, char *data);
 #ifdef MUSIC
 int __system(int len, const char *command);
 int __textlc(void);
+int __svc99(void *rb);
 #else
 int __system(int req_type, 
              size_t pgm_len,

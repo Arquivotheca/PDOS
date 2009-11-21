@@ -5212,33 +5212,53 @@ static void filedef(char *fdddname, char *fnm, int mymode)
     tu[2].parm1_len = 1;
     tu[2].parm1[0] = 0x08; /* SHR */
 
-    tu_list[3] = (void *)0x80000000;
+    tu_list[3] = 0;
+    tu_list[4] = 0;
+    tu_list[5] = (void *)0x80000000;
 
-    /* if open for write */
-    if ( mymode )
+    errno = __svc99(&rb);
+    
+    /* if we had an error, then for datasets open for write,
+       try allocating a new dataset (this will be the normal
+       situation - it is abnormal is to find the dataset already
+       pre-allocated */
+    if (errno)
     {
-        /* if binary */
-        if (modeType == 5)
+        /* if open for write */
+        if ( mymode )
         {
-            /* F80 */
-        }
-        else
-        {
-            /* V255 */
-        }
-    }
-    else
-    {
-        errno = __svc99(&rb);
-        if (errno != 0)
-        {
-            if (rb.error_reason != 0)
+            tu[2].parm1[0] = 0x04; /* NEW */
+            /* if binary */
+            if (modeType == 5)
             {
-                errno = rb.error_reason;
+                /* F80, which is default */
             }
-            err = 1;
-            return;
+            else
+            {            
+                /* V255 */
+                tu_list[3] = &tu[3];
+                tu[3].key = 0x49; /* RECFM */
+                tu[3].numparms = 1;
+                tu[3].parm1_len = 1;
+                tu[3].parm1[0] = 0x40; /* V */
+
+                tu_list[4] = &tu[4];
+                tu[4].key = 0x42; /* LRECL */
+                tu[4].numparms = 1;
+                tu[4].parm1_len = 2;
+                tu[4].parm1[0] = 0; /* LRECL = 255 */
+                tu[4].parm1[1] = 255;
+            }
         }
+        errno = __svc99(&rb);
+    }
+    if (errno != 0)
+    {
+        if (rb.error_reason != 0)
+        {
+            errno = rb.error_reason;
+        }
+        err = 1;
     }
     return;
 }

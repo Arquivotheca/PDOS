@@ -175,7 +175,7 @@ undivert(pdptest.s)/END
 /file sysprint prt osrecfm(f) oslrecl(256)
 /parm Hi there DeeeeeFerDog
 /load xmon
-pdptest n(pdptest.lmod) lcparm v(256)
+pdptest n(pdptest.lmod) lcparm
 /END
 
 /ID SAVE-JOB-123456 @BLD000 9999 9999 9999 9999
@@ -186,7 +186,7 @@ queue "/sys region=9999,xregion=64m"
 queue "/file sysprint prt osrecfm(f) oslrecl(256)"
 queue "/parm a1 b2"
 queue "/load xmon"
-queue "pdptest n(pdptest.lmod) lcparm v(256)"
+queue "pdptest n(pdptest.lmod) lcparm"
 "EXEC"
 
 exit rc

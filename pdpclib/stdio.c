@@ -90,7 +90,7 @@ extern int CTYP __write(int handle, const void *buf, size_t len, int *errind);
 extern void CTYP __seek(int handle, long offset, int whence);
 extern void CTYP __close(int handle);
 extern void CTYP __remove(const char *filename);
-extern void CTYP __rename(const char *old, const char *new);
+extern void CTYP __rename(const char *old, const char *newnam);
 #endif
 
 #ifdef __OS2__
@@ -238,7 +238,7 @@ static void fdclr(char *ddname);
 #endif
 #ifdef __CMS__
 extern void __SVC202 ( char *s202parm, int *code, int *parm );
-static int cmsrename(const char *old, const char *new);
+static int cmsrename(const char *old, const char *newnam);
 static int cmsremove(const char *filename);
 static char *int_strtok(char *s1, const char *s2);
 #define strtok int_strtok
@@ -2698,7 +2698,7 @@ __PDPCLIB_API__ int remove(const char *filename)
     return (ret);
 }
 
-__PDPCLIB_API__ int rename(const char *old, const char *new)
+__PDPCLIB_API__ int rename(const char *old, const char *newnam)
 {
     int ret;
 #ifdef __OS2__
@@ -2709,7 +2709,7 @@ __PDPCLIB_API__ int rename(const char *old, const char *new)
 #endif
 
 #ifdef __OS2__
-    rc = DosMove((PSZ)old, (PSZ)new);
+    rc = DosMove((PSZ)old, (PSZ)newnam);
     if (rc != 0)
     {
         ret = 1;
@@ -2721,7 +2721,7 @@ __PDPCLIB_API__ int rename(const char *old, const char *new)
     }
 #endif
 #ifdef __WIN32__
-    rc = MoveFile(old, new);
+    rc = MoveFile(old, newnam);
     if (!rc)
     {
         ret = 1;
@@ -2733,14 +2733,14 @@ __PDPCLIB_API__ int rename(const char *old, const char *new)
     }
 #endif
 #ifdef __MSDOS__
-    __rename(old, new);
+    __rename(old, newnam);
     ret = 0;
 #endif
 #ifdef __MVS__
     char buf[FILENAME_MAX + FILENAME_MAX + 50];
     char *p;
     
-    sprintf(buf, " ALTER %s NEWNAME(%s)", old, new);
+    sprintf(buf, " ALTER %s NEWNAME(%s)", old, newnam);
     p = buf;
     while (*p != '\0')
     {
@@ -2750,7 +2750,7 @@ __PDPCLIB_API__ int rename(const char *old, const char *new)
     ret = __idcams(strlen(buf), buf);
 #endif
 #ifdef __CMS__
-    ret = cmsrename(old, new);
+    ret = cmsrename(old, newnam);
 #endif
     return (ret);
 }
@@ -5405,7 +5405,7 @@ static void fdclr(char *ddname)
    Following code does a rename for CMS
 */
 
-static int cmsrename(const char *old, const char *new)
+static int cmsrename(const char *old, const char *newnam)
 {
     char s202parm[8*8];
     int code;
@@ -5430,7 +5430,7 @@ static int cmsrename(const char *old, const char *new)
     memcpy( &s202parm[8] , old, p - old);
     memcpy( &s202parm[16] , p + 1, q - p - 1);
     memcpy( &s202parm[24] , q + 1, strlen(q + 1));
-    memcpy( &s202parm[32] , new, r - new);
+    memcpy( &s202parm[32] , new, r - newnam);
     memcpy( &s202parm[40] , r + 1, s - r - 1);
     memcpy( &s202parm[48] , s + 1, strlen(s + 1));
     memset( &s202parm[56], 0xff, 8);

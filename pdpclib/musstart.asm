@@ -59,11 +59,6 @@ CEESTART EQU   *
 *
          LA    R1,0(R1)          Clean up address (is this required?)
 *
-         LA    R2,MAINSTK        Load stack address
-         L     R3,=A(MAINLEN)    Load stack length
-         LA    R11,0             Pad of X'00' and no from info
-         MVCL  R2,R10            Clear stack to binary zeroes
-*
          LA    R2,0
          ST    R2,DUMMYPTR       WHO KNOWS WHAT THIS IS USED FOR
          LA    R2,MAINSTK

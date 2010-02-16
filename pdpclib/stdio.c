@@ -4435,6 +4435,7 @@ __PDPCLIB_API__ char *fgets(char *s, int n, FILE *stream)
         if (c == '\n') break;
         cnt++;
     }
+    if ((cnt == 0) && (c == EOF)) return (NULL);
     if (cnt < n) s[cnt++] = '\n';
     s[cnt] = '\0';
     return (s);

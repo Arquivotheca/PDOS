@@ -50,6 +50,7 @@ extern unsigned short __osver;
 
 #ifdef __MVS__
 int __tso = 0; /* is this a TSO environment? */
+extern int __doperm; /* are we doing the permanent datasets? */
 #endif
 
 #ifdef __MAIN_FP__
@@ -317,6 +318,17 @@ __PDPCLIB_API__ int CTYP __start(char *p)
        command instead */
     __textlc();
 #endif
+#ifdef __MVS__
+    /* need to know if this is a TSO environment straight away
+       because it determines how the permanent files will be
+       opened */
+    parmLen = ((unsigned int)p[0] << 8) | (unsigned int)p[1];
+    if ((parmLen > 0) && (p[2] == 0))     /* assume TSO */
+    {
+        __tso = 1;
+    }
+#endif /* MVS */
+    __doperm = 1;
     stdout = fopen("dd:SYSPRINT", "w");
     if (stdout == NULL)
     {
@@ -345,6 +357,7 @@ __PDPCLIB_API__ int CTYP __start(char *p)
     }
     stdin->permfile = 1;
     stdin->dynal = dyna_sysin;
+    __doperm = 0;
 #if defined(__CMS__)
     __eplist = eplist;
     __plist = plist;

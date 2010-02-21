@@ -165,6 +165,8 @@ static FILE permFiles[3];
 #endif
 
 #if defined(__MVS__) || defined(__CMS__)
+int __doperm = 0; /* are we doing the permanent datasets? */
+extern int __tso; /* are we in a TSO environment? */
 static unsigned char *dptr;
 static size_t lenwrite;
 static int    inseek = 0;
@@ -862,9 +864,27 @@ static void osfopen(void)
         myfile->lrecl = 0;
         myfile->blksize = 6233;
     }
+#if defined(__MVS__)
+    /* If we are dealing with SYSIN/SYSPRINT/SYSTERM and we are
+       in a TSO environment, then we should use GETLINE/PUTLINE
+       by default, as you would expect for any other TSO
+       command, like LISTCAT. If people don't want that, they
+       should do a "CALL" to invoke the program as a 
+       non-TSO-command-processor */
+    if (__tso
+        && (__doperm
+            || (myfile->permfile && inreopen))
+       )
+    {
+        mode |= 0x80; /* use PUTLINE/GETLINE if available */
+    }
+#endif
     myfile->hfile =
         __aopen(myfile->ddname, &mode, &myfile->recfm, &myfile->lrecl, 
                 &myfile->blksize, &myfile->asmbuf, p);
+#if defined(__MVS__)
+    mode &= ~0x80; /* don't expose other logic to GETLINE/PUTLINE */
+#endif
 
     /* errors from MVS __aopen are negative numbers */
     if ((int)myfile->hfile <= 0)

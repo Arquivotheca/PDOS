@@ -546,7 +546,7 @@ __PDPCLIB_API__ int CTYP __start(char *p)
 #endif
     p = parmbuf;
 #ifdef __MVS__
-    if ((parmLen > 0) && (p[2] == 0))     /* assume TSO */
+    if (__tso)
 #else
     if (0)
 #endif
@@ -564,9 +564,6 @@ __PDPCLIB_API__ int CTYP __start(char *p)
             *p = '\0';
         }
         p[parmLen] = '\0';
-#ifdef __MVS__
-        __tso = 1;
-#endif
     }
     else         /* batch or tso "call" */
     {

@@ -40,9 +40,6 @@ int main(int argc, char **argv)
     fclose(fq);
 #endif
     printf("hello there\n");
-    strcpy(buf, "dddeefer dog\n");
-    fgets(buf, sizeof buf, stdin);
-    printf(buf);
     printf("argc = %d\n" , argc);
     for (i = 0; i < argc; i++)
     {

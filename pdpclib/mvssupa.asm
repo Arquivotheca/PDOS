@@ -1033,8 +1033,10 @@ SETCURS  ST    R7,BUFFCURR        Store the next record address
 TGETREAD L     R6,ZIOECT          RESTORE ECT ADDRESS           GP09286
          L     R7,ZIOUPT          RESTORE UPT ADDRESS           GP09286
          MVI   ZGETLINE+2,X'80'   EXPECTED FLAG                 GP09286
+         SAM24
          GETLINE PARM=ZGETLINE,ECT=(R6),UPT=(R7),ECB=ZIOECB,    GP09286*
                MF=(E,ZIOPL)                                     GP09286
+         SAM31
          LR    R6,R15             COPY RETURN CODE              GP09286
          CH    R6,=H'16'          HIT BARRIER ?                 GP09286
          BE    READEOD2           YES; EOF, BUT ALLOW READS     GP09286
@@ -1215,8 +1217,10 @@ TPUTWRIV STH   R5,0(,R4)          FILL RDW                      GP09286
          STCM  R5,12,2(R4)          ZERO REST                   GP09286
          L     R6,ZIOECT          RESTORE ECT ADDRESS           GP09286
          L     R7,ZIOUPT          RESTORE UPT ADDRESS           GP09286
+         SAM24
          PUTLINE PARM=ZPUTLINE,ECT=(R6),UPT=(R7),ECB=ZIOECB,    GP09286*
                OUTPUT=((R4),DATA),TERMPUT=EDIT,MF=(E,ZIOPL)     GP09286
+         SAM31
          SPACE 1
 WRITEEX  TM    IOPFLAGS,IOFCURSE  RECURSION REQUESTED?          GP09286
          BNZ   WRITMORE                                         GP09286

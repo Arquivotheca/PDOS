@@ -48,7 +48,7 @@ extern unsigned short __osver;
 #undef __CMS__
 #endif
 
-#ifdef __MVS__
+#if defined(__MVS__) || defined(__CMS__)
 int __tso = 0; /* is this a TSO environment? */
 extern int __doperm; /* are we doing the permanent datasets? */
 #endif

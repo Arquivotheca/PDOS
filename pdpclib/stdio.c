@@ -5441,7 +5441,7 @@ static int cmsrename(const char *old, const char *newnam)
     if (p == NULL) return (-1);
     q = strchr(p + 1, ' ');
     if (q == NULL) return (-1);
-    r = strchr(new, ' ');
+    r = strchr(newnam, ' ');
     if (r == NULL) return (-1);
     s = strchr(r + 1, ' ');
     if (s == NULL) return (-1);
@@ -5451,7 +5451,7 @@ static int cmsrename(const char *old, const char *newnam)
     memcpy( &s202parm[8] , old, p - old);
     memcpy( &s202parm[16] , p + 1, q - p - 1);
     memcpy( &s202parm[24] , q + 1, strlen(q + 1));
-    memcpy( &s202parm[32] , new, r - newnam);
+    memcpy( &s202parm[32] , newnam, r - newnam);
     memcpy( &s202parm[40] , r + 1, s - r - 1);
     memcpy( &s202parm[48] , s + 1, strlen(s + 1));
     memset( &s202parm[56], 0xff, 8);

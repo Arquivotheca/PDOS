@@ -24,6 +24,9 @@
 .OLDSYS  AIF   ('&NM' EQ '').MEND
 &NM      DS    0H            DEFINE LABEL ONLY
 .MEND    MEND  ,
+*
+*
+*
          MACRO ,                                                GP09234
 &NM      FUNEXIT &RC=                                           GP09234
          GBLC  &SYS,&ZZSETSA,&ZZSETSL,&ZZSETSP                  GP09234
@@ -66,6 +69,9 @@
          MEXIT ,                                                GP09234
 .BSM     DC    0H'0',X'0B0E'      BSM 0,14                      GP09234
          MEND  ,                                                GP09234
+*
+*
+*
          MACRO ,                                                GP09234
 &NM      FUNHEAD &ID=YES,&IO=NO,&AM=NO,&SAVE=                   GP09234
 .*
@@ -136,6 +142,9 @@
 &ZZSETSA SETC  '&SAVE(1)'                                       GP09234
          USING &SAVE(1),R13       DECLARE IT                    GP09234
 .MEND    MEND  ,                                                GP09234
+*
+*
+*
          MACRO ,
 &NM      MAPDSINF &PFX=DSI,&DSECT=
 .*
@@ -195,6 +204,9 @@
 &P.ZERO  EQU   &P.FLAGS,*-&P.FLAGS,C'X'
 &P.SLEN  EQU   *-&LBL          PARM LENGTH
          MEND  ,
+*
+*
+*
          MACRO ,
 &NM      QBSM  &F1,&F2                               ADDED ON GP2009263
          GBLC  &SYS
@@ -210,4 +222,52 @@
          MEXIT ,
 .BR      ANOP  ,
 &NM      BR    &F2
+.MEND    MEND  ,
+*
+*
+*
+         MACRO ,
+&NM      SAM31 &WORK=R15                             ADDED ON GP2009225
+         GBLC  &SYS
+.*
+.*   SAM31 sets addressing mode to 31 for S380, etc.
+.*         expands nothing or label for S370
+.*         is never invoked by HLASM (valid hardware instruction)
+.*
+         AIF   ('&SYS' EQ 'S370').OLDSYS
+&NM      LA    &WORK,*+10    GET PAST BSM WITH BIT 0 ON
+         O     &WORK,=X'80000000'  SET MODE BIT
+         DC    0H'0',AL.4(0,X'0B',0,&WORK)  CONTINUE IN 31-BIT MODE
+         MEXIT ,
+.OLDSYS  AIF   ('&NM' EQ '').MEND
+&NM      DS    0H            DEFINE LABEL ONLY
+.MEND    MEND  ,
+*
+*
+*
+         MACRO ,
+&NM      SAM24 &WORK=R15                             ADDED ON GP2009225
+         GBLC  &SYS
+.*
+.*   SAM24 sets addressing mode to 24 for S380, etc.
+.*         expands nothing or label for S370
+.*         is never invoked by HLASM (valid hardware instruction)
+.*
+         AIF   ('&SYS' EQ 'S370').OLDSYS
+&NM      LA    &WORK,*+6     GET PAST BSM WITH BIT 0 OFF
+         DC    0H'0',AL.4(0,X'0B',0,&WORK)  CONTINUE IN 24-BIT MODE
+         MEXIT ,
+.OLDSYS  AIF   ('&NM' EQ '').MEND
+&NM      DS    0H            DEFINE LABEL ONLY
+*
+*
+*
+.MEND    MEND  ,
+         MACRO ,             COMPILER DEPENDENT LOAD INTEGER
+&NM      LDINT &R,&A         LOAD INTEGER VALUE FROM PARM LIST
+         GBLC  &COMP         COMPILER GCC OR C/370
+&NM      L     &R,&A         LOAD PARM VALUE
+         AIF ('&COMP' EQ 'GCC').MEND
+* THIS LINE IS FOR ANYTHING NOT GCC: C/370
+         L     &R,0(,&R)     LOAD INTEGER VALUE
 .MEND    MEND  ,

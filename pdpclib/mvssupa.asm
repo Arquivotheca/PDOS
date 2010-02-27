@@ -1,40 +1,4 @@
 MVSSUPA  TITLE 'M V S S U P A  ***  MVS VERSION OF PDP CLIB SUPPORT'
-         MACRO ,                                                GP09286
-&NM      FIXWRITE ,                                             GP09286
-&NM      L     R15,=A(TRUNCOUT)                                 GP09286
-         BALR  R14,R15       TRUNCATE CURRENT WRITE BLOCK       GP09286
-         MEND  ,                                                GP09286
-         MACRO ,
-&NM      SAM31 &WORK=R15                             ADDED ON GP2009225
-         GBLC  &SYS
-.*
-.*   SAM31 sets addressing mode to 31 for S380, etc.
-.*         expands nothing or label for S370
-.*         is never invoked by HLASM (valid hardware instruction)
-.*
-         AIF   ('&SYS' EQ 'S370').OLDSYS
-&NM      LA    &WORK,*+10    GET PAST BSM WITH BIT 0 ON
-         O     &WORK,=X'80000000'  SET MODE BIT
-         DC    0H'0',AL.4(0,X'0B',0,&WORK)  CONTINUE IN 31-BIT MODE
-         MEXIT ,
-.OLDSYS  AIF   ('&NM' EQ '').MEND
-&NM      DS    0H            DEFINE LABEL ONLY
-.MEND    MEND  ,
-         MACRO ,
-&NM      SAM24 &WORK=R15                             ADDED ON GP2009225
-         GBLC  &SYS
-.*
-.*   SAM24 sets addressing mode to 24 for S380, etc.
-.*         expands nothing or label for S370
-.*         is never invoked by HLASM (valid hardware instruction)
-.*
-         AIF   ('&SYS' EQ 'S370').OLDSYS
-&NM      LA    &WORK,*+6     GET PAST BSM WITH BIT 0 OFF
-         DC    0H'0',AL.4(0,X'0B',0,&WORK)  CONTINUE IN 24-BIT MODE
-         MEXIT ,
-.OLDSYS  AIF   ('&NM' EQ '').MEND
-&NM      DS    0H            DEFINE LABEL ONLY
-.MEND    MEND  ,
 ***********************************************************************
 *
 *  This program written by Paul Edwards.
@@ -86,14 +50,10 @@ MVSSUPA  TITLE 'M V S S U P A  ***  MVS VERSION OF PDP CLIB SUPPORT'
 *     Modified I/O for BSAM, EXCP, and terminal I/O             GP09286
 ***********************************************************************
 *
-         MACRO ,             COMPILER DEPENDENT LOAD INTEGER
-&NM      LDINT &R,&A         LOAD INTEGER VALUE FROM PARM LIST
-         GBLC  &COMP         COMPILER GCC OR C/370
-&NM      L     &R,&A         LOAD PARM VALUE
-         AIF ('&COMP' EQ 'GCC').MEND
-* THIS LINE IS FOR ANYTHING NOT GCC: C/370
-         L     &R,0(,&R)     LOAD INTEGER VALUE
-.MEND    MEND  ,
+* Internal macros
+*
+*
+*
          MACRO ,             PATTERN FOR @@DYNAL'S DYNAMIC WORK AREA
 &NM      DYNPAT &P=MISSING-PFX
 .*   NOTE THAT EXTRA FIELDS ARE DEFINED FOR FUTURE EXPANSION
@@ -125,6 +85,14 @@ MVSSUPA  TITLE 'M V S S U P A  ***  MVS VERSION OF PDP CLIB SUPPORT'
 &P.ULEN  EQU   *-&P.URBP       LENGTH OF REQUEST BLOCK
 &P.DYNLN EQU   *-&P.ARBP     LENGTH OF ALL DATA
          MEND  ,
+*
+*
+*
+         MACRO ,                                                GP09286
+&NM      FIXWRITE ,                                             GP09286
+&NM      L     R15,=A(TRUNCOUT)                                 GP09286
+         BALR  R14,R15       TRUNCATE CURRENT WRITE BLOCK       GP09286
+         MEND  ,                                                GP09286
          SPACE 1
          COPY  MVSMACS
          COPY  PDPTOP

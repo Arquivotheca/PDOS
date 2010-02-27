@@ -1,17 +1,17 @@
 MVSSTART TITLE 'M V S S T A R T  ***  STARTUP ROUTINE FOR C'
-**********************************************************************
-*                                                                    *
-*  THIS PROGRAM WRITTEN BY PAUL EDWARDS.                             *
-*  RELEASED TO THE PUBLIC DOMAIN                                     *
-*                                                                    *
-**********************************************************************
-**********************************************************************
-*                                                                    *
-*  MVSSTART - startup routines for MVS.                              *
-*  It is currently coded to work with GCC. To activate the C/370     *
-*  version change the "&COMP" switch.                                *
-*                                                                    *
-**********************************************************************
+***********************************************************************
+*                                                                     *
+*  THIS PROGRAM WRITTEN BY PAUL EDWARDS.                              *
+*  RELEASED TO THE PUBLIC DOMAIN                                      *
+*                                                                     *
+***********************************************************************
+***********************************************************************
+*                                                                     *
+*  MVSSTART - startup routines for MVS.                               *
+*  It is currently coded to work with GCC. To activate the C/370      *
+*  version change the "&COMP" switch.                                 *
+*                                                                     *
+***********************************************************************
 *
          COPY  PDPTOP
 *

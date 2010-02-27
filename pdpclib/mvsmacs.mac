@@ -1,9 +1,9 @@
 ***********************************************************************
-*
-*  Macros to support MVS
-*  Written by Gerhard Postpischil
-*  Released to the public domain
-*
+*                                                                     *
+*  Macros to support MVS                                              *
+*  Written by Gerhard Postpischil                                     *
+*  Released to the public domain                                      *
+*                                                                     *
 ***********************************************************************
          MACRO ,
 &NM      AMUSE &WRK1=R14,&WRK2=R15

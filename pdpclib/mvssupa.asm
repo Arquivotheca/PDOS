@@ -1,44 +1,27 @@
 MVSSUPA  TITLE 'M V S S U P A  ***  MVS VERSION OF PDP CLIB SUPPORT'
 ***********************************************************************
-*
-*  This program written by Paul Edwards.
-*  Released to the public domain
-*
-*  Extensively modified by others
-*
+*                                                                     *
+*  This program written by Paul Edwards.                              *
+*  Released to the public domain                                      *
+*                                                                     *
+*  Extensively modified by others                                     *
+*                                                                     *
 ***********************************************************************
-*
-*  MVSSUPA - Support routines for PDPCLIB under MVS
-*
-*  It is currently coded for GCC, but C/370 functionality is
-*  still there, it's just not being tested after any change.
-*
+*                                                                     *
+*  MVSSUPA - Support routines for PDPCLIB under MVS                   *
+*                                                                     *
+*  It is currently coded for GCC, but C/370 functionality is          *
+*  still there, it's just not being tested after any change.          *
+*                                                                     *
 ***********************************************************************
-*
-* Note that the VBS support may not be properly implemented.
-* Note that this code issues WTOs. It should be changed to just
-* set a return code and exit gracefully instead.
-*
-* Here are some of the errors reported:
-*
-*  OPEN input failed return code is: -37
-*  OPEN output failed return code is: -39
-*
-* FIND input member return codes are:
-* Original, before the return and reason codes had
-* negative translations added refer to copyrighted:
-* DFSMS Macro Instructions for Data Sets
-* RC = 0 Member was found.
-* RC = -1024 Member not found.
-* RC = -1028 RACF allows PDSE EXECUTE, not PDSE READ.
-* RC = -1032 PDSE share not available.
-* RC = -1036 PDSE is OPENed output to a different member.
-* RC = -2048 Directory I/O error.
-* RC = -2052 Out of virtual storage.
-* RC = -2056 Invalid DEB or DEB not on TCB or TCBs DEB chain.
-* RC = -2060 PDSE I/O error flushing system buffers.
-* RC = -2064 Invalid FIND, no DCB address.
-*
+*                                                                     *
+* Note that some of the functionality in here has not been exercised  *
+* to any great extent, since it is dependent on whether the C code    *
+* invokes it or not.                                                  *
+*                                                                     *
+* Note that this code issues WTOs. It should be changed to just       *
+* set a return code and exit gracefully instead.                      *
+*                                                                     *
 ***********************************************************************
 *   Changes by Gerhard Postpischil:
 *     EQU * for entry points deleted (placed labels on SAVE) to avoid
@@ -50,8 +33,8 @@ MVSSUPA  TITLE 'M V S S U P A  ***  MVS VERSION OF PDP CLIB SUPPORT'
 *     Modified I/O for BSAM, EXCP, and terminal I/O
 ***********************************************************************
 *
-* Internal macros
 *
+* Internal macros:
 *
 *
          MACRO ,             PATTERN FOR @@DYNAL'S DYNAMIC WORK AREA
@@ -93,6 +76,9 @@ MVSSUPA  TITLE 'M V S S U P A  ***  MVS VERSION OF PDP CLIB SUPPORT'
 &NM      L     R15,=A(TRUNCOUT)
          BALR  R14,R15       TRUNCATE CURRENT WRITE BLOCK
          MEND  ,
+*
+*
+*
          SPACE 1
          COPY  MVSMACS
          COPY  PDPTOP
@@ -102,48 +88,79 @@ MVSSUPA  TITLE 'M V S S U P A  ***  MVS VERSION OF PDP CLIB SUPPORT'
 &LOCLOW  SETC  'LOC=BELOW'
 &LOCANY  SETC  'LOC=ANY'
 .NOLOCS  SPACE 1
+*
+*
+*
          CSECT ,
          PRINT GEN
-         YREGS IS NOW AVAILABLE IN MVS MACLIB/MODGENM
+         YREGS
          SPACE 1
 *-----------------------ASSEMBLY OPTIONS------------------------------*
 SUBPOOL  EQU   0                                                      *
 *---------------------------------------------------------------------*
          SPACE 1
-* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
-*
-*  AOPEN- Open a data set
-*
-*  Parameters are:
-*1 DDNAME - space-padded, 8 character DDNAME to be opened
-*2 MODE =  0 INPUT  1 OUTPUT  2 UPDAT   3 APPEND      Record mode
-*  MODE =  4 INOUT  5 OUTIN
-*  MODE = 8/9 Use EXCP for tape, BSAM otherwise (or 32<=JFCPNCP<=65)
-*  MODE + 10 = Use BLOCK mode (valid 10-15)
-*  MODE = 80 = GETLINE, 81 = PUTLINE (other bits ignored)
-*3 RECFM - 0 = F, 1 = V, 2 = U. Default/preference set by caller;
-*                               actual value returned from open.
-*4 LRECL   - Default/preference set by caller; OPEN value returned.
-*5 BLKSIZE - Default/preference set by caller; OPEN value returned.
-*
-*  August 2009 revision - caller will pass preferred RECFM (coded 0-2)
-*    LRECL, and BLKSIZE values. DCB OPEN exit OCDCBEX will use these
-*    defaults when not specified on JCL or DSCB merge.
-*
-*6 ZBUFF2 - pointer to an area that may be written to (size is LRECL)
-*7 MEMBER - *pointer* to space-padded, 8 character member name.
-*    If pointer is 0 (NULL), no member is requested
-*
-*  Return value:
-*  An internal "handle" that allows the assembler routines to
-*  keep track of what's what when READ etc are subsequently
-*  called.
 *
 *
-*  Note - more documentation for this and other I/O functions can
-*  be found halfway through the stdio.c file in PDPCLIB.
 *
-* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+* Start of functions
+*
+*
+***********************************************************************
+*                                                                     *
+*  AOPEN - Open a data set                                            *
+*                                                                     *
+***********************************************************************
+*                                                                     *
+*  Parameters are:                                                    *
+*1 DDNAME - space-padded, 8 character DDNAME to be opened             *
+*2 MODE =  0 INPUT  1 OUTPUT  2 UPDAT   3 APPEND      Record mode     *
+*  MODE =  4 INOUT  5 OUTIN                                           *
+*  MODE = 8/9 Use EXCP for tape, BSAM otherwise (or 32<=JFCPNCP<=65)  *
+*  MODE + 10 = Use BLOCK mode (valid 10-15)                           *
+*  MODE = 80 = GETLINE, 81 = PUTLINE (other bits ignored)             *
+*3 RECFM - 0 = F, 1 = V, 2 = U. Default/preference set by caller;     *
+*                               actual value returned from open.      *
+*4 LRECL   - Default/preference set by caller; OPEN value returned.   *
+*5 BLKSIZE - Default/preference set by caller; OPEN value returned.   *
+*                                                                     *
+* August 2009 revision - caller will pass preferred RECFM (coded 0-2) *
+*    LRECL, and BLKSIZE values. DCB OPEN exit OCDCBEX will use these  *
+*    defaults when not specified on JCL or DSCB merge.                *
+*                                                                     *
+*6 ZBUFF2 - pointer to an area that may be written to (size is LRECL) *
+*7 MEMBER - *pointer* to space-padded, 8 character member name.       *
+*    If pointer is 0 (NULL), no member is requested                   *
+*                                                                     *
+*  Return value:                                                      *
+*  An internal "handle" that allows the assembler routines to         *
+*  keep track of what's what, when READ etc are subsequently          *
+*  called.                                                            *
+*                                                                     *
+*                                                                     *
+*  Note - more documentation for this and other I/O functions can     *
+*  be found halfway through the stdio.c file in PDPCLIB.              *
+*                                                                     *
+* Here are some of the errors reported:                               *
+*                                                                     *
+*  OPEN input failed return code is: -37                              *
+*  OPEN output failed return code is: -39                             *
+*                                                                     *
+* FIND input member return codes are:                                 *
+* Original, before the return and reason codes had                    *
+* negative translations added refer to copyrighted:                   *
+* DFSMS Macro Instructions for Data Sets                              *
+* RC = 0 Member was found.                                            *
+* RC = -1024 Member not found.                                        *
+* RC = -1028 RACF allows PDSE EXECUTE, not PDSE READ.                 *
+* RC = -1032 PDSE share not available.                                *
+* RC = -1036 PDSE is OPENed output to a different member.             *
+* RC = -2048 Directory I/O error.                                     *
+* RC = -2052 Out of virtual storage.                                  *
+* RC = -2056 Invalid DEB or DEB not on TCB or TCBs DEB chain.         *
+* RC = -2060 PDSE I/O error flushing system buffers.                  *
+* RC = -2064 Invalid FIND, no DCB address.                            *
+*                                                                     *
+***********************************************************************
          PUSH  USING
 @@AOPEN  FUNHEAD SAVE=(WORKAREA,OPENLEN,SUBPOOL)
          LR    R11,R1             KEEP R11 FOR PARAMETERS
@@ -316,8 +333,8 @@ OPREPJFC LA    R14,JFCB
          CLI   JFCNCP,65          NOT TOO HIGH ?
          BH    OPNOTBIG           TOO BAD
 *---------------------------------------------------------------------*
-*   Clear DCB wrk area and force RECFM=U,BLKSIZE>32K                  *
-*     and restart the OPEN processing                                 *
+*   Clear DCB wrk area and force RECFM=U,BLKSIZE>32K
+*     and restart the OPEN processing
 *---------------------------------------------------------------------*
          LR    R0,R10             Load output DCB area address
          LA    R1,ZDCBLEN         Load output length
@@ -345,7 +362,7 @@ OPVOLCNT SR    R1,R1
 OPNOTBIG CLI   DEVINFO+2,UCB3DACC   Is it a DASD device?
          BNE   OPNODSCB           No; no member name supported
 *---------------------------------------------------------------------*
-*   For a DASD resident file, get the format 1 DSCB                   *
+*   For a DASD resident file, get the format 1 DSCB
 *---------------------------------------------------------------------*
 * CAMLST CAMLST SEARCH,DSNAME,VOLSER,DSCB+44
 *
@@ -363,11 +380,11 @@ OPNODSCB LTR   R9,R9              See if an address for the member name
          MVC   MEMBER24,0(R9)
          LA    R9,MEMBER24
          SPACE 1
-***********************************************************************
-*   Split READ and WRITE paths                                        *
-*     Note that all references to DCBRECFM, DCBLRECL, and DCBBLKSI    *
-*     have been replaced by ZRECFM, LRECL, and BLKSIZE for EXCP use.  *
-***********************************************************************
+*---------------------------------------------------------------------*
+*   Split READ and WRITE paths
+*     Note that all references to DCBRECFM, DCBLRECL, and DCBBLKSI
+*     have been replaced by ZRECFM, LRECL, and BLKSIZE for EXCP use.
+*---------------------------------------------------------------------*
 NOMEM    TM    WWORK,1            See if OPEN input or output
          BNZ   WRITING
 *---------------------------------------------------------------------*
@@ -443,7 +460,7 @@ FREEDCB  FREEMAIN RU,LV=ZDCBLEN,A=(R10),SP=SUBPOOL  Free DCB area
          B     RETURNOP           Go return to caller with negative RC
          SPACE 1
 *---------------------------------------------------------------------*
-*   Process for OUTPUT mode                                           *
+*   Process for OUTPUT mode
 *---------------------------------------------------------------------*
 WRITING  LTR   R9,R9
          BZ    WNOMEM
@@ -473,8 +490,8 @@ WNOMEM2  OPEN  MF=(E,OPENCLOS),TYPE=J
          BZ    BADOPOUT           OPEN failed, go return error code -39
          SPACE 1
 *---------------------------------------------------------------------*
-*   Acquire one BLKSIZE buffer for our I/O; and one LRECL buffer      *
-*   for use by caller for @@AWRITE, and us for @@AREAD.               *
+*   Acquire one BLKSIZE buffer for our I/O; and one LRECL buffer
+*   for use by caller for @@AWRITE, and us for @@AREAD.
 *---------------------------------------------------------------------*
 GETBUFF  L     R5,BLKSIZE         Load the input blocksize
          LA    R6,4(,R5)          Add 4 in case RECFM=U buffer
@@ -501,8 +518,8 @@ GETBUFF  L     R5,BLKSIZE         Load the input blocksize
          SPACE 1
          PUSH  USING
 *---------------------------------------------------------------------*
-*   Establish ZDCBAREA for either @@AWRITE or @@AREAD processing to   *
-*   a terminal, or SYSTSIN/SYSTERM in batch.                          *
+*   Establish ZDCBAREA for either @@AWRITE or @@AREAD processing to
+*   a terminal, or SYSTSIN/SYSTERM in batch.
 *---------------------------------------------------------------------*
 TERMOPEN MVC   IOMFLAGS,WWORK     Save for duration
          NI    IOMFLAGS,IOFTERM+IOFOUT      IGNORE ALL OTHERS
@@ -584,11 +601,11 @@ EOFRLEN  EQU   *-ENDFILE
 BSAMDCB  DCB   MACRF=(RP,WP),DSORG=PS,DDNAME=BSAMDCB, input and output *
                EXLST=OCDCBEX      JCB and DCB exits added later
 BSAMDCBN EQU   *-BSAMDCB
-READDUM  READ  NONE,              Read record Data Event Control Block C
-               SF,                Read record Sequential Forward       C
-               ,       (R10),     Read record DCB address              C
-               ,       (R4),      Read record input buffer             C
-               ,       (R5),      Read BLKSIZE or 256 for PDS.DirectoryC
+READDUM  READ  NONE,              Read record Data Event Control Block *
+               SF,                Read record Sequential Forward       *
+               ,       (R10),     Read record DCB address              *
+               ,       (R4),      Read record input buffer             *
+               ,       (R5),      Read BLKSIZE or 256 for PDS.Directory*
                MF=L               List type MACRO
 READLEN  EQU   *-READDUM
 BSAMDCBL EQU   *-BSAMDCB
@@ -619,7 +636,7 @@ CAMLEN   EQU   *-CAMDUM           Length of CAMLST Template
          POP   USING
          SPACE 1
 *---------------------------------------------------------------------*
-*   Expand OPEN options for reference                                 *
+*   Expand OPEN options for reference
 *---------------------------------------------------------------------*
 ADHOC    DSECT ,
 OPENREF  OPEN  (BSAMDCB,INPUT),MF=L    QSAM, BSAM, any DEVTYPE
@@ -644,15 +661,15 @@ PARM8    DS    A              NEXT PARM
          ORG   CAMDUM+4           Don't need rest
          SPACE 2
 ***********************************************************************
-**                                                                   **
-**   OPEN DCB EXIT - if RECFM, LRECL, BLKSIZE preset, no change      **
-**                   for PDS directory read, F, 256, 256 are preset. **
-**   a) device is unit record - default U, device size, device size  **
-**   b) all others - default to values passed to AOPEN               **
-**                                                                   **
-**   For FB, if LRECL > BLKSIZE, make LRECL=BLKSIZE                  **
-**   For VB, if LRECL+3 > BLKSIZE, set spanned                       **
-**                                                                   **
+*                                                                     *
+*    OPEN DCB EXIT - if RECFM, LRECL, BLKSIZE preset, no change       *
+*                    for PDS directory read, F, 256, 256 are preset.  *
+*    a) device is unit record - default U, device size, device size   *
+*    b) all others - default to values passed to AOPEN                *
+*                                                                     *
+*    For FB, if LRECL > BLKSIZE, make LRECL=BLKSIZE                   *
+*    For VB, if LRECL+3 > BLKSIZE, set spanned                        *
+*                                                                     *
 ***********************************************************************
          PUSH  USING
          DROP  ,
@@ -744,12 +761,12 @@ OCDCBXX  STH   R3,DCBBLKSI   UPDATE POSSIBLY CHANGED BLOCK SIZE
          BR    R14           RETURN TO OPEN
          POP   USING
          SPACE 2
-* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
-*
-*  ALINE - See whether any more input is available
-*     R15=0 EOF     R15=1 More data available
-*
-* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+***********************************************************************
+*                                                                     *
+*  ALINE - See whether any more input is available                    *
+*     R15=0 EOF     R15=1 More data available                         *
+*                                                                     *
+***********************************************************************
 @@ALINE  FUNHEAD IO=YES,AM=YES,SAVE=(WORKAREA,WORKLEN,SUBPOOL)
          FIXWRITE ,
          TM    IOMFLAGS,IOFTERM   Terminal Input?
@@ -767,11 +784,11 @@ OCDCBXX  STH   R3,DCBBLKSI   UPDATE POSSIBLY CHANGED BLOCK SIZE
 ALINEYES LA    R15,1         ELSE RETURN ONE
 ALINEX   FUNEXIT RC=(R15)
          SPACE 2
-* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
-*
-*  AREAD - Read from an open data set
-*
-* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+***********************************************************************
+*                                                                     *
+*  AREAD - Read from an open data set                                 *
+*                                                                     *
+***********************************************************************
 @@AREAD  FUNHEAD IO=YES,AM=YES,SAVE=SAVEADCB   READ | GET
          L     R3,4(,R1)  R3 points to where to store record pointer
          L     R4,8(,R1)  R4 points to where to store record length
@@ -808,7 +825,7 @@ READ     SAM24 ,                  For old code
          TM    IOMFLAGS,IOFEXCP   EXCP mode?
          BZ    READBSAM           No, use BSAM
 *---------------------------------------------------------------------*
-*   EXCP read                                                         *
+*   EXCP read
 *---------------------------------------------------------------------*
 READEXCP STCM  R8,7,TAPECCW+1     Read buffer
          STH   R9,TAPECCW+6         max length
@@ -845,7 +862,7 @@ EXRDOK   SR    R0,R0
          B     POSTREAD           Go to common code
          SPACE 1
 *---------------------------------------------------------------------*
-*   BSAM read                                                         *
+*   BSAM read
 *---------------------------------------------------------------------*
 READBSAM SR    R6,R6              Reset EOF flag
          SAM24 ,                  Get low
@@ -1012,8 +1029,8 @@ TGETREAD L     R6,ZIOECT          RESTORE ECT ADDRESS
          BNL   READEXNG           ATTENTION INTERRUPT OR WORSE
          L     R1,ZGETLINE+4      GET INPUT LINE
 *---------------------------------------------------------------------*
-*   MVS 3.8 undocumented behavior: at end of input in batch execution,*
-*   returns text of 'END' instead of return code 16. Needs DOC fix    *
+*   MVS 3.8 undocumented behavior: at end of input in batch execution,
+*   returns text of 'END' instead of return code 16. Needs DOC fix
 *---------------------------------------------------------------------*
          CLC   =X'00070000C5D5C4',0(R1)  Undocumented EOF?
          BE    READEOD2           YES; QUIT
@@ -1051,11 +1068,11 @@ BADBLOCK WTO   'MVSSUPA - @@AREAD - problem processing RECFM=V(bs) file*
 *
          LTORG ,                  In case someone adds literals
          SPACE 2
-* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
-*
-*  AWRITE - Write to an open data set
-*
-* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+***********************************************************************
+*                                                                     *
+*  AWRITE - Write to an open data set                                 *
+*                                                                     *
+***********************************************************************
 @@AWRITE FUNHEAD IO=YES,AM=YES,SAVE=SAVEADCB   WRITE | PUT
          LR    R11,R1             SAVE PARM LIST
 WRITMORE NI    IOPFLAGS,255-IOFCURSE   RESET RECURSION
@@ -1194,11 +1211,11 @@ WRITEEX  TM    IOPFLAGS,IOFCURSE  RECURSION REQUESTED?
          BNZ   WRITMORE
          FUNEXIT RC=0
          SPACE 2
-* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
-*
-*  ANOTE  - Remember the position in the data set (BSAM/BPAM only)
-*
-* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+***********************************************************************
+*                                                                     *
+*  ANOTE  - Remember the position in the data set (BSAM/BPAM only)    *
+*                                                                     *
+***********************************************************************
 @@ANOTE  FUNHEAD IO=YES,AM=YES,SAVE=SAVEADCB   NOTE position
          L     R3,4(,R1)          R3 points to the return value
          FIXWRITE ,
@@ -1214,13 +1231,13 @@ NOTECOM  AMUSE ,
          ST    R4,0(,R3)          Return TTR0 to user
          FUNEXIT RC=0
          SPACE 2
-* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
-*
-*  APOINT - Restore the position in the data set (BSAM/BPAM only)
-*           Note that this does not fail; it just bombs on the
-*           next read or write if incorrect.
-*
-* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+***********************************************************************
+*                                                                     *
+*  APOINT - Restore the position in the data set (BSAM/BPAM only)     *
+*           Note that this does not fail; it just bombs on the        *
+*           next read or write if incorrect.                          *
+*                                                                     *
+***********************************************************************
 @@APOINT FUNHEAD IO=YES,AM=YES,SAVE=SAVEADCB   NOTE position
          L     R3,4(,R1)          R3 points to the TTR value
          L     R3,0(,R3)          Get the TTR
@@ -1251,11 +1268,11 @@ POINCOM  AMUSE ,
          XC    KEPTREC(8),KEPTREC      Also clear record data
          FUNEXIT RC=0
          SPACE 2
-* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
-*
-*  ACLOSE - Close a data set
-*
-* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+***********************************************************************
+*                                                                     *
+*  ACLOSE - Close a data set                                          *
+*                                                                     *
+***********************************************************************
 @@ACLOSE FUNHEAD IO=YES,SAVE=(WORKAREA,WORKLEN,SUBPOOL)  CLOSE
          TM    IOMFLAGS,IOFTERM   TERMINAL I/O MODE?
          BNZ   FREEBUFF           YES; JUST FREE STUFF
@@ -1284,10 +1301,9 @@ NOPOOL   DS    0H
          PUSH  USING
          DROP  ,
 *---------------------------------------------------------------------*
-*                                                                     *
-*  Physical Write - called by @@ACLOSE, switch from output to input   *
-*    mode, and whenever output buffer is full or needs to be emptied. *
-*  Works for EXCP and BSAM. Special processing for UPDAT mode         *
+*  Physical Write - called by @@ACLOSE, switch from output to input
+*    mode, and whenever output buffer is full or needs to be emptied.
+*  Works for EXCP and BSAM. Special processing for UPDAT mode
 *---------------------------------------------------------------------*
 TRUNCOUT B     *+14-TRUNCOUT(,R15)   SKIP LABEL
          DC    AL1(9),CL(9)'TRUNCOUT' EXPAND LABEL
@@ -1367,11 +1383,11 @@ TRUNCOEX L     R13,4(,R13)
          LTORG ,
          POP   USING ,
          SPACE 2
-* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
-*
-*  GETM - GET MEMORY
-*
-* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+***********************************************************************
+*                                                                     *
+*  GETM - GET MEMORY                                                  *
+*                                                                     *
+***********************************************************************
 @@GETM   FUNHEAD ,
 *
          LDINT R3,0(,R1)          LOAD REQUESTED STORAGE SIZE
@@ -1396,11 +1412,11 @@ TRUNCOEX L     R13,4(,R13)
 GETMEX   FUNEXIT RC=(R1)
          LTORG ,
          SPACE 2
-* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
-*
-*  FREEM - FREE MEMORY
-*
-* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+***********************************************************************
+*                                                                     *
+*  FREEM - FREE MEMORY                                                *
+*                                                                     *
+***********************************************************************
 @@FREEM  FUNHEAD ,
 *
          L     R1,0(,R1)
@@ -1412,18 +1428,18 @@ GETMEX   FUNEXIT RC=(R1)
          FUNEXIT RC=(15)
          LTORG ,
          SPACE 2
-* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
-*
-*  GETCLCK - GET THE VALUE OF THE MVS CLOCK TIMER AND MOVE IT TO AN
-*  8-BYTE FIELD.  THIS 8-BYTE FIELD DOES NOT NEED TO BE ALIGNED IN
-*  ANY PARTICULAR WAY.
-*
-*  E.G. CALL 'GETCLCK' USING WS-CLOCK1
-*
-*  THIS FUNCTION ALSO RETURNS THE NUMBER OF SECONDS SINCE 1970-01-01
-*  BY USING SOME EMPIRICALLY-DERIVED MAGIC NUMBERS
-*
-* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+***********************************************************************
+*                                                                     *
+*  GETCLCK - GET THE VALUE OF THE MVS CLOCK TIMER AND MOVE IT TO AN   *
+*  8-BYTE FIELD.  THIS 8-BYTE FIELD DOES NOT NEED TO BE ALIGNED IN    *
+*  ANY PARTICULAR WAY.                                                *
+*                                                                     *
+*  E.G. CALL 'GETCLCK' USING WS-CLOCK1                                *
+*                                                                     *
+*  THIS FUNCTION ALSO RETURNS THE NUMBER OF SECONDS SINCE 1970-01-01  *
+*  BY USING SOME EMPIRICALLY-DERIVED MAGIC NUMBERS                    *
+*                                                                     *
+***********************************************************************
 @@GETCLK FUNHEAD ,                GET TOD CLOCK VALUE
 *
          L     R2,0(,R1)
@@ -1439,41 +1455,42 @@ RETURNGC FUNEXIT RC=(R5)
          LTORG ,
          SPACE 2
 ***********************************************************************
-**                                                                   **
-**   CALL @@SYSTEM,(req-type,pgm-len,pgm-name,parm-len,parm),VL      **
-**                                                                   **
-**   "-len" fields are self-defining values in the calling list,     **
-**       or else pointers to 32-bit signed integer values            **
-**                                                                   **
-**   "pgm-name" is the address of the name of the program to be      **
-**       executed (one to eight characters)                          **
-**                                                                   **
-**   "parm" is the address of a text string of length "parm-len",    **
-**       and may be zero to one hundred bytes (OS JCL limit)         **
-**                                                                   **
-**   "req-type" is or points to 1 for a program ATTACH               **
-**                              2 for TSO CP invocation              **
-**                                                                   **
+*                                                                     *
+*    CALL @@SYSTEM,(req-type,pgm-len,pgm-name,parm-len,parm),VL       *
+*                                                                     *
+*    "-len" fields are self-defining values in the calling list,      *
+*        or else pointers to 32-bit signed integer values             *
+*                                                                     *
+*    "pgm-name" is the address of the name of the program to be       *
+*        executed (one to eight characters)                           *
+*                                                                     *
+*    "parm" is the address of a text string of length "parm-len",     *
+*        and may be zero to one hundred bytes (OS JCL limit)          *
+*                                                                     *
+*    "req-type" is or points to 1 for a program ATTACH                *
+*                               2 for TSO CP invocation               *
+*                                                                     *
 *---------------------------------------------------------------------*
-**                                                                   **
-**    Author:  Gerhard Postpischil                                   **
-**                                                                   **
-**    This program is placed in the public domain.                   **
-**                                                                   **
+*                                                                     *
+*     Author:  Gerhard Postpischil                                    *
+*                                                                     *
+*     This program is placed in the public domain.                    *
+*                                                                     *
 *---------------------------------------------------------------------*
-**                                                                   **
-**    Assembly: Any MVS or later assembler may be used.              **
-**       Requires SYS1.MACLIB. TSO CP support requires additional    **
-**       macros from SYS1.MODGEN (SYS1.AMODGEN in MVS).              **
-**       Intended to work in any 24 and 31-bit environment.          **
-**                                                                   **
-**    Linker/Binder: RENT,REFR,REUS                                  **
-**                                                                   **
+*                                                                     *
+*     Assembly: Any MVS or later assembler may be used.               *
+*        Requires SYS1.MACLIB. TSO CP support requires additional     *
+*        macros from SYS1.MODGEN (SYS1.AMODGEN in MVS).               *
+*        Intended to work in any 24 and 31-bit environment.           *
+*                                                                     *
+*     Linker/Binder: RENT,REFR,REUS                                   *
+*                                                                     *
 *---------------------------------------------------------------------*
-**    Return codes:  when R15:0 R15 has return from program.         **
-**    Else R15 is 0480400n   GETMAIN failed                          **
-**      R15 is 04806nnn  ATTACH failed                               **
-**      R15 is 1400000n  PARM list error: n= 1,2, or 3 (req/pgm/parm)**
+*     Return codes:  when R15:0 R15 has return from program.          *
+*     Else R15 is 0480400n   GETMAIN failed                           *
+*       R15 is 04806nnn  ATTACH failed                                *
+*       R15 is 1400000n  PARM list error: n= 1,2, or 3 (req/pgm/parm) *
+*                                                                     *
 ***********************************************************************
 @@SYSTEM FUNHEAD ,                ISSUE OS OR TSO COMMAND
          L     R15,4(,R13)        OLD SA
@@ -1640,9 +1657,9 @@ SYSATDLN EQU   *-SYSATWRK     LENGTH OF DYNAMIC STORAGE
          CSECT ,             RESTORE
          SPACE 2
 ***********************************************************************
-**                                                                   **
-**   INVOKE IDCAMS: CALL @@IDCAMS,(@LEN,@TEXT)                       **
-**                                                                   **
+*                                                                     *
+*    INVOKE IDCAMS: CALL @@IDCAMS,(@LEN,@TEXT)                        *
+*                                                                     *
 ***********************************************************************
          PUSH  USING
          DROP  ,
@@ -1655,9 +1672,11 @@ SYSATDLN EQU   *-SYSATWRK     LENGTH OF DYNAMIC STORAGE
          FUNEXIT RC=(15)          RESTORE CALLER'S REGS
          POP   USING
          SPACE 1
-***************************************************************
-* IDCAMS ASYNCHRONOUS EXIT ROUTINE
-***************************************************************
+***********************************************************************
+*                                                                     *
+* XIDCAMS - ASYNCHRONOUS EXIT ROUTINE                                 *
+*                                                                     *
+***********************************************************************
          PUSH  USING
          DROP  ,
 XIDCAMS  STM   R14,R12,12(R13)
@@ -1710,9 +1729,9 @@ XIDCPUTZ SR    R15,R15
          B     XIDCEXIT
 XIDCSKIP OI    EXFLAGS,EXFSKIP    SKIP THIS AND REMAINING MESSAGES
          SR    R15,R15
-***************************************************************
+*---------------------------------------------------------------------*
 * IDCAMS ASYNC EXIT ROUTINE - EXIT, CONSTANTS & WORKAREAS
-***************************************************************
+*---------------------------------------------------------------------*
 XIDCEXIT L     R13,4(,R13)        GET CALLER'S SAVE AREA
          L     R14,12(,R13)
          RETURN (0,12)            RESTORE AND RETURN TO IDCAMS
@@ -1742,41 +1761,41 @@ EXFGLOB  EQU   EXFMALL+EXFSUPP+EXFRET  GLOBAL FLAGS
          POP   USING
          SPACE 2
 ***********************************************************************
-**                                                                   **
-**   CALL @@DYNAL,(ddn-len,ddn-adr,dsn-len,dsn-adr),VL               **
-**                                                                   **
-**   "-len" fields are self-defining values in the calling list,     **
-**       or else pointers to 32-bit signed integer values            **
-**                                                                   **
-**   "ddn-adr"  is the address of the DD name to be used. When the   **
-**       contents is hex zero or blank, and len=8, gets assigned.    **
-**                                                                   **
-**   "dsn-adr" is the address of a 1 to 44 byte data set name of an  **
-**       existing file (sequential or partitioned).                  **
-**                                                                   **
-**   Calling @@DYNAL with a DDNAME and a zero length for the DSN     **
-**   results in unallocation of that DD (and a PARM error).          **
-**                                                                   **
+*                                                                     *
+*    CALL @@DYNAL,(ddn-len,ddn-adr,dsn-len,dsn-adr),VL                *
+*                                                                     *
+*    "-len" fields are self-defining values in the calling list,      *
+*        or else pointers to 32-bit signed integer values             *
+*                                                                     *
+*    "ddn-adr"  is the address of the DD name to be used. When the    *
+*        contents is hex zero or blank, and len=8, gets assigned.     *
+*                                                                     *
+*    "dsn-adr" is the address of a 1 to 44 byte data set name of an   *
+*        existing file (sequential or partitioned).                   *
+*                                                                     *
+*    Calling @@DYNAL with a DDNAME and a zero length for the DSN      *
+*    results in unallocation of that DD (and a PARM error).           *
+*                                                                     *
 *---------------------------------------------------------------------*
-**                                                                   **
-**    Author:  Gerhard Postpischil                                   **
-**                                                                   **
-**    This program is placed in the public domain.                   **
-**                                                                   **
+*                                                                     *
+*     Author:  Gerhard Postpischil                                    *
+*                                                                     *
+*     This program is placed in the public domain.                    *
+*                                                                     *
 *---------------------------------------------------------------------*
-**                                                                   **
-**    Assembly: Any MVS or later assembler may be used.              **
-**       Requires SYS1.MACLIB                                        **
-**       Intended to work in any 24 and 31-bit environment.          **
-**                                                                   **
-**    Linker/Binder: RENT,REFR,REUS                                  **
-**                                                                   **
+*                                                                     *
+*     Assembly: Any MVS or later assembler may be used.               *
+*        Requires SYS1.MACLIB                                         *
+*        Intended to work in any 24 and 31-bit environment.           *
+*                                                                     *
+*     Linker/Binder: RENT,REFR,REUS                                   *
+*                                                                     *
 *---------------------------------------------------------------------*
-**    Return codes:  R15:04sssnnn   it's a program error code:       **
-**    04804 - GETMAIN failed;  1400000n   PARM list error            **
-**                                                                   **
-**    Otherwise R15:0-1  the primary allocation return code, and     **
-**      R15:2-3 the reason codes.                                    **
+*     Return codes:  R15:04sssnnn   it's a program error code:        *
+*     04804 - GETMAIN failed;  1400000n   PARM list error             *
+*                                                                     *
+*     Otherwise R15:0-1  the primary allocation return code, and      *
+*       R15:2-3 the reason codes.                                     *
 ***********************************************************************
 *  Maintenance:                                     new on 2008-06-07 *
 *                                                                     *
@@ -1791,6 +1810,7 @@ EXFGLOB  EQU   EXFMALL+EXFSUPP+EXFRET  GLOBAL FLAGS
          BZ    DYNALHAV           YES
          STC   R15,3(,R11)        SET RETURN VALUES
          B     DYNALRET           RELOAD AND RETURN
+*
 *    CLEAR GOTTEN STORAGE AND ESTABLISH SAVE AREA
 *
 DYNALHAV ST    R1,8(,R13)         LINK OURS TO CALLER'S SAVE AREA
@@ -1889,11 +1909,11 @@ DYNALDLN EQU   *-DYNALWRK     LENGTH OF DYNAMIC STORAGE
 *
          PUSH  USING
          DROP  ,
-* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
-*
-*  SETJ - SAVE REGISTERS INTO ENV
-*
-* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+***********************************************************************
+*                                                                     *
+*  SETJ - SAVE REGISTERS INTO ENV                                     *
+*                                                                     *
+***********************************************************************
          ENTRY @@SETJ
          USING @@SETJ,R15
 @@SETJ   L     R15,0(,R1)         get the env variable
@@ -1904,11 +1924,11 @@ DYNALDLN EQU   *-DYNALWRK     LENGTH OF DYNAMIC STORAGE
          SPACE 1
          PUSH  USING
          DROP  ,
-* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
-*
-*  LONGJ - RESTORE REGISTERS FROM ENV
-*
-* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+***********************************************************************
+*                                                                     *
+*  LONGJ - RESTORE REGISTERS FROM ENV                                 *
+*                                                                     *
+***********************************************************************
          ENTRY @@LONGJ
          USING @@LONGJ,R15
 @@LONGJ  L     R2,0(,R1)          get the env variable
@@ -1917,25 +1937,26 @@ DYNALDLN EQU   *-DYNALWRK     LENGTH OF DYNAMIC STORAGE
          BR    R14                return to caller
          POP   USING
          SPACE 2
+*
 * S/370 doesn't support switching modes so this code is useless,
 * and won't compile anyway because "BSM" is not known.
 *
          AIF   ('&SYS' EQ 'S370').NOMODE  If S/370 we can't switch mode
-* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
-*
-*  SETM24 - Set AMODE to 24
-*
-* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+***********************************************************************
+*                                                                     *
+*  SETM24 - Set AMODE to 24                                           *
+*                                                                     *
+***********************************************************************
          ENTRY @@SETM24
          USING @@SETM24,R15
 @@SETM24 LA    R14,0(,R14)        Sure hope caller is below the line
          BSM   0,R14              Return in amode 24
          SPACE 1
-* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
-*
-*  SETM31 - Set AMODE to 31
-*
-* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+***********************************************************************
+*                                                                     *
+*  SETM31 - Set AMODE to 31                                           *
+*                                                                     *
+***********************************************************************
          ENTRY @@SETM31
          USING @@SETM31,R15
 @@SETM31 O     R14,=X'80000000'   Set to switch mode
@@ -1945,9 +1966,29 @@ DYNALDLN EQU   *-DYNALWRK     LENGTH OF DYNAMIC STORAGE
          LTORG ,
 *
 .NOMODE  ANOP  ,                  S/370 doesn't support MODE switching
+*
+*
+*
+***********************************************************************
+***********************************************************************
+*                                                                     *
+* End of functions, start of data areas                               *
+*                                                                     *
+***********************************************************************
+***********************************************************************
+*
+*
+*
          SPACE 2
 *EXTRA*  IEZIOB                   Input/Output Block
          SPACE 2
+*
+***********************************************************************
+*                                                                     *
+*  The work area includes both a register save area and various       *
+*  variables used by the different routines.                          *
+*                                                                     *
+***********************************************************************
 WORKAREA DSECT
 SAVEAREA DS    18F
 DWORK    DS    D                  Extra work space
@@ -1966,6 +2007,13 @@ DSCBCCHH DS    CL5                CCHHR of DSCB returned by OBTAIN
 OPENLEN  EQU   *-WORKAREA         Length for @@AOPEN processing
          SPACE 2
 ***********************************************************************
+*                                                                     *
+* ZDCBAREA - this is a chunk of memory that is used by the C caller   *
+* as a "handle". The block of memory has different contents depending *
+* on what sort of file is being opened, but it will be whatever the   *
+* assembler code is expecting, and the caller merely needs to         *
+* provide the handle (returned from AOPEN) in subsequent calls so     *
+* that the assembler can keep track of things.                        *
 *                                                                     *
 *   FILE ACCESS CONTROL BLOCK (N.B.-STARTS WITH DCBD DUE TO DSECT)    *
 *   CONTAINS DCB, DECB, JFCB, DSCB 1, BUFFER POINTERS, FLAGS, ETC.    *
@@ -2050,6 +2098,11 @@ ZRECFM   DS    X             Equivalent RECFM bits
 ZIOSAVE2 DS    18F           Save area for physical write
 SAVEADCB DS    18F                Register save area for PUT
 ZDCBLEN  EQU   *-ZDCBAREA
+*
+* End of handle/DCB area
+*
+*
+*
          SPACE 2
          PRINT NOGEN
          IHAPSA ,            MAP LOW STORAGE

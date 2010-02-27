@@ -17,14 +17,14 @@
 int main(int argc, char **argv)
 {
     char buf[500];
-    
+
     if (argc < 2)
     {
         fprintf(stderr, "usage: namcsect <csect name>\n");
         fprintf(stderr, "will read from stdin and write to stdout\n");
         return (EXIT_FAILURE);
     }
-    
+
     while (fgets(buf, sizeof buf, stdin) != NULL)
     {
         if (memcmp(buf, "         CSECT", 14) == 0)

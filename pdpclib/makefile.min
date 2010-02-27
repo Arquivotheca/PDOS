@@ -24,7 +24,7 @@ pdpwin32.a: $(OBJS)
 
 pdptest.exe: pdpwin32.a pdptest.o
  gcc -s -nostdlib -o pdptest.exe pdptest.o pdpwin32.a -lgcc -lkernel32
-  
+
 .c.o:
  $(CC) $(COPTS) $<
 

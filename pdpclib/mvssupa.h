@@ -28,7 +28,7 @@ int __system(int len, const char *command);
 int __textlc(void);
 int __svc99(void *rb);
 #else
-int __system(int req_type, 
+int __system(int req_type,
              size_t pgm_len,
              char *pgm,
              size_t parm_len,

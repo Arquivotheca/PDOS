@@ -17,7 +17,7 @@ in     fgetc    var      text   read, rr
 out    fwrite   fixed    bin    loop doing put, rr
 out    fwrite   fixed    text   search newline, copy + pad, put, rr
 out    fwrite   var      bin    if nelem != 1 copy to max lrecl
-out    fwrite   var      text   loop search nl, put, rr 
+out    fwrite   var      text   loop search nl, put, rr
 out    fputs    fixed    bin    loop doing put, rr
 out    fputs    fixed    text   search newline, copy + pad, put, rr
 out    fputs    var      bin    put
@@ -43,7 +43,7 @@ yourself, e.g. by writing out the lengths yourself.  You can do
 this in a fixed block dataset on MVS, and if you're concerned
 about null-padding at the end of your data, use a lrecl of 1
 (and suffer the consequences!).  You could argue that this
-non-conformance should only be initiated if fopen has a parameter 
+non-conformance should only be initiated if fopen has a parameter
 including ",type=record" or whatever.  Another option would
 be to make VB binary records include the record size as part of
 the stream.  Hmmm, sounds like that's the go actually.
@@ -56,7 +56,7 @@ char *fgets(char *buf, size_t szbuf, FILE *stream)
 {
     char *dptr;
     size_t len;
-    
+
     if (stream->quickText)
     {
         if (szbuf > (stream->lrecl + 1))
@@ -72,7 +72,7 @@ char *fgets(char *buf, size_t szbuf, FILE *stream)
 char *fputs(char *buf, FILE *stream)
 {
     char *p;
-    
+
     p = strchr(buf, '\n');
     __awrite(buf, p - buf, stream->hfile);
     return (buf);

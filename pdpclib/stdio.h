@@ -40,15 +40,15 @@ typedef unsigned int size_t;
     szfbuf is the size of the "visible" buffer, not the internal
     buffer.  The reason for the 2 junk characters at the beginning
     is to align the buffer on a 4-byte boundary.
-    
+
     Here is what memory would look like after an fwrite of "ABC"
     to an MVS LRECL=80, RECFM=F dataset:
-    
+
     intbuffer: x'50000'
     fbuf:      x'50004'
     upto:      x'50007'
     endbuf:    x'58004'
-    
+
     x'50004' = x'C1'
     x'50005' = x'C2'
     x'50006' = x'C3'

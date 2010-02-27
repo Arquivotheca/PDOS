@@ -81,7 +81,7 @@ void memmgrSupply(MEMMGR *memmgr, void *buffer, size_t szbuf)
     b->fixed = 1;
     b->size = szbuf;
     b->allocated = 0;
-    
+
     /* add this to the front of the list */
     b->nextf = memmgr->startf;
     if (b->nextf != NULL)
@@ -171,7 +171,7 @@ void *memmgrAllocate(MEMMGR *memmgr, size_t bytes, int id)
                 n->eyecheck1 = n->eyecheck2 = 0xa5a5a5a5;
 #endif
                 p->size = bytes;
-                
+
                 /* remove p this from the free chain and
                    replace with n */
                 n->nextf = p->nextf;
@@ -291,13 +291,13 @@ void memmgrFree(MEMMGR *memmgr, void *ptr)
 #endif
         exit(EXIT_FAILURE);
     }
-    
+
     p->allocated = 0;
     /* let's hope we're in the middle of a valid chain */
     l = p->prev;
     n = p->next;
-    
-    /* If the previous block is also free, just expand it's size 
+
+    /* If the previous block is also free, just expand it's size
        without any further fuss */
     if (!p->fixed && (l != NULL) && !l->allocated)
     {
@@ -314,7 +314,7 @@ void memmgrFree(MEMMGR *memmgr, void *ptr)
     {
         combnext = 1;
     }
-    
+
     /* We can have a fuss-free combination if the previous node
        was not combined */
     if (combnext && !combprev)
@@ -347,7 +347,7 @@ void memmgrFree(MEMMGR *memmgr, void *ptr)
             memmgr->startf = p;
         }
     }
-    
+
     /* this is the hairy situation. We're combining two existing
        free blocks into one. While the blocks themselves are
        contiguous, the two components are at random spots in the
@@ -355,7 +355,7 @@ void memmgrFree(MEMMGR *memmgr, void *ptr)
        A <-> B <-> C <-> D <-> E <-> F
        So what's the obvious thing to do? Give it up and become a
        Buddhist monk! The less obvious thing is to keep B in its
-       spot, just with an enhanced size, then get D and F to link 
+       spot, just with an enhanced size, then get D and F to link
        together. The special case of the two nodes actually already
        being linked together by happy coincidence doesn't need
        special handling. If it does, that monastery looks more
@@ -388,18 +388,18 @@ void memmgrFree(MEMMGR *memmgr, void *ptr)
 
         /* Ok, the free memory has been taken care of, now we go
            back to the newly combined node and combine it with
-           this one. */        
+           this one. */
         l->size += n->size;
         l->next = n->next;
         if (l->next != NULL)
         {
             l->next->prev = l;
         }
-        
+
         /* That wasn't so hairy after all */
         /* Actually it was */
     }
-    
+
     if (combnext)
     {
 #ifdef __MEMMGR_INTEGRITY
@@ -418,7 +418,7 @@ void memmgrFree(MEMMGR *memmgr, void *ptr)
         p->nextf = NULL;
         p->prevf = NULL;
     }
-    
+
     /* If we didn't do any combination, then add this new node to
        the front of the free chain */
     if (!combprev && !combnext)
@@ -639,7 +639,7 @@ int memmgrRealloc(MEMMGR *memmgr, void *ptr, size_t newsize)
     {
         return (-1);
     }
-    
+
     /* if they are passing a NULL pointer, bail out also */
     if (ptr == NULL)
     {
@@ -659,7 +659,7 @@ int memmgrRealloc(MEMMGR *memmgr, void *ptr, size_t newsize)
 #endif
         exit(EXIT_FAILURE);
     }
-    
+
     /* let's hope we're in the middle of a valid chain */
 
     /* Now we have 3 distinct scenarios.

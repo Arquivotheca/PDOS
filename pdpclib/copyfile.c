@@ -28,7 +28,7 @@ int main(int argc, char **argv)
     char *in = "r";
     char *out = "w";
     unsigned long total = 0;
-    
+
     if (argc < 3)
     {
         printf("usage: copyfile [-bb/-tt/-tb/-bt] <infile> <outfile>\n");
@@ -70,11 +70,11 @@ int main(int argc, char **argv)
     printf("copying from file %s, mode %s\n",
            in_name,
            (strlen(in) == 1) ? "text" : "binary");
-        
+
     printf("to file %s, mode %s\n",
            out_name,
            (strlen(out) == 1) ? "text" : "binary");
-        
+
     while ((c = fread(buf, 1, sizeof buf, fp)) > 0)
     {
         total += c;
@@ -88,6 +88,6 @@ int main(int argc, char **argv)
         return (EXIT_FAILURE);
     }
     printf("%lu bytes copied\n", total);
-    
+
     return (0);
 }

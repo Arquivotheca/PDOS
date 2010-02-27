@@ -54,20 +54,20 @@ int main(int argc, char **argv)
         printf("can't open %s\n", *(argv + 2));
         return (EXIT_FAILURE);
     }
-    
+
     from = *(argv + 3);
-    
+
     to = strchr(from, '/');
-    
+
     if (to == NULL)
     {
         printf("missing / in 3rd parameter\n");
         return (EXIT_FAILURE);
     }
-    
+
     *to = '\0';
     to++;
-    
+
     diff = strlen(to) - strlen(from);
 
     flen = strlen(from);
@@ -87,7 +87,7 @@ int main(int argc, char **argv)
             {
                 int i;
                 int dlen;
-                
+
                 i = 16;
 
                 /* add MLEN because the catalog name will be that */
@@ -111,7 +111,7 @@ int main(int argc, char **argv)
                         }
                         memcpy(&buf[i+MLEN+1], to, strlen(to));
                     }
-                    
+
                     i += (dlen + MLEN + 1);
                 }
             }
@@ -142,7 +142,7 @@ int main(int argc, char **argv)
             if (buf[10] == 0x10)
             {
                 int extadj; /* adjustment for number of extents */
-                
+
                 /* and the dsn prefix matches */
                 if (memcmp(&buf[44], from, strlen(from)) == 0)
                 {
@@ -174,7 +174,7 @@ int main(int argc, char **argv)
                         *(short *)&buf[6] = reclen;
                         *(short *)&buf[194+extadj] += diff;
                         buf[204+extadj] += diff;
-                        
+
                         /* change the subrecord length in dummy VVR */
                         *(short *)&buf[196+extadj] += diff;
                     }

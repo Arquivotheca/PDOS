@@ -12,7 +12,7 @@ pdptest.exe: osstart.obj pdptest.obj stdio.obj string.obj stdlib.obj \
   wlink File pdptest.obj \
         Name pdptest.exe \
         Library watcom.lib Library os2386.lib
-  
+
 osstart.obj: osstart.asm
   wasm -zq osstart.asm
 

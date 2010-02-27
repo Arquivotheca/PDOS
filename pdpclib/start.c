@@ -370,7 +370,7 @@ __PDPCLIB_API__ int CTYP __start(char *p)
     {
         p = plist + 8; /* no, so jump past the command name */
     }
-               
+
     /* Now build the SVC 202 string for sysparm */
     memcpy ( &s202parm[0] ,  "FILEDEF ", 8);
     memcpy ( &s202parm[8] ,  "SYSPARM ", 8);
@@ -380,9 +380,9 @@ __PDPCLIB_API__ int CTYP __start(char *p)
         s202parm[36]=s202parm[37]=s202parm[38]=s202parm[39]=0xff;
     /* and issue the SVC */
     ret = __SVC202 ( s202parm, &code, &parm );
-    
+
     have_sysparm = (ret != 24);
-    
+
 
     /* if no parameters are provided, the tokenized
        plist will start with x'ff'. However, if they
@@ -392,7 +392,7 @@ __PDPCLIB_API__ int CTYP __start(char *p)
        parameters then we instead lowercase everything
        and go to special processing (useful when in
        an EXEC with CONTROL MSG etc). */
-       
+
     /* No parameters */
     if (p[0] == 0xff)
     {
@@ -435,7 +435,7 @@ __PDPCLIB_API__ int CTYP __start(char *p)
         }
         parmbuf[2 + x * 9] = '\0';
         parmLen = strlen(parmbuf + 2);
-        
+
         /* even though we have a SYSPARM, we don't use it,
            we just use it as a signal to do some serious
            underscore searching! */
@@ -448,11 +448,11 @@ __PDPCLIB_API__ int CTYP __start(char *p)
             int c;
             int shift = 0;
             int rev = 0; /* reverse logic */
-            
+
             q = parmbuf + 2;
             r = q;
             lock = q;
-            
+
             /* reverse the case switching when _+ is specified
                as the first parameter */
             if (memcmp(r, "_+", 2) == 0)
@@ -494,7 +494,7 @@ __PDPCLIB_API__ int CTYP __start(char *p)
                 {
                     while (q > lock)
                     {
-                        q--;                        
+                        q--;
                         if (*q != ' ')
                         {
                             q++;
@@ -579,7 +579,7 @@ __PDPCLIB_API__ int CTYP __start(char *p)
         if (parmLen > 0)
         {
             p[parmLen] = '\0';
-        }        
+        }
         else
         {
             p = "";

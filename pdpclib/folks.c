@@ -65,7 +65,7 @@ int main(int argc, char **argv)
     {
         printf("usage: folks <fnm>\n");
         return (EXIT_FAILURE);
-    }    
+    }
     fp = fopen(*(argv + 1), "rb");
     if (fp == NULL)
     {

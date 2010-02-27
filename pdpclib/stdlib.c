@@ -342,8 +342,8 @@ __PDPCLIB_API__ void exit(int status)
  *
  * This qsort function does a little trick:
  * To reduce stackspace it iterates the larger interval instead of doing
- * the recursion on both intervals. 
- * So stackspace is limited to 32*stack_for_1_iteration = 
+ * the recursion on both intervals.
+ * So stackspace is limited to 32*stack_for_1_iteration =
  * 32*4*(4 arguments+1 returnaddress+11 stored registers) = 2048 Bytes,
  * which is small enough for everybodys use.
  * (And this is the worst case if you own 4GB and sort an array of chars.)
@@ -357,7 +357,7 @@ __PDPCLIB_API__ void qsort(void *base,
 {
     char *base2 = (char *)base;
     size_t i,a,b,c;
-  
+
     while (nmemb > 1)
     {
         a = 0;
@@ -365,7 +365,7 @@ __PDPCLIB_API__ void qsort(void *base,
         c = (a+b)/2; /* Middle element */
         for (;;)
         {
-            while ((*compar)(&base2[size*c],&base2[size*a]) > 0) 
+            while ((*compar)(&base2[size*c],&base2[size*a]) > 0)
             {
                 a++; /* Look for one >= middle */
             }
@@ -388,16 +388,16 @@ __PDPCLIB_API__ void qsort(void *base,
             {
                 c = b;
             }
-            else if (c == b)                
+            else if (c == b)
             {
                 c = a;
             }
             a++; /* These two are already sorted */
             b--;
-        } /* a points to first element of right interval now 
+        } /* a points to first element of right interval now
              (b to last of left) */
         b++;
-        if (b < nmemb-b) /* do recursion on smaller interval and 
+        if (b < nmemb-b) /* do recursion on smaller interval and
                             iteration on larger one */
         {
             qsort(base2,b,size,compar);
@@ -897,35 +897,35 @@ __PDPCLIB_API__ int system(const char *string)
     size_t pgm_len;
     size_t cnt;
     char *p;
-    
+
     p = strchr(string, ' ');
     if (p == NULL)
     {
         p = strchr(string, '\0');
     }
-    
+
     pgm_len = p - string;
     /* don't allow a program name greater than 8 */
-    
+
     if (pgm_len > 8)
     {
         return (-1);
     }
     memcpy(pgm, string, pgm_len);
     pgm[pgm_len] = '\0';
-    
+
     /* uppercase the program name */
     for (cnt = 0; cnt < pgm_len; cnt++)
     {
         pgm[cnt] = toupper((unsigned char)pgm[cnt]);
     }
-    
+
     /* point to parms */
     if (*p != '\0')
     {
         p++;
     }
-    
+
     /* all parms now available */
     /* we use 1 = batch or 2 = tso */
     return (__system(__tso ? 2: 1, pgm_len, pgm, strlen(p), p));

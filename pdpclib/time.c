@@ -377,9 +377,9 @@ static void strfmt(char *str, const char *fmt, ...);
  *
 **/
 
-__PDPCLIB_API__ size_t strftime(char *s, 
-                                size_t maxs, 
-                                const char *f, 
+__PDPCLIB_API__ size_t strftime(char *s,
+                                size_t maxs,
+                                const char *f,
                                 const struct tm *t)
 {
       int w;

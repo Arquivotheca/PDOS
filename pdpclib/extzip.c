@@ -19,7 +19,7 @@ static char buf[800];
 int main(void)
 {
     int write = 0;
-    
+
     while (fgets(buf, sizeof buf, stdin) != NULL)
     {
         /* allow a formfeed to be represented as any
@@ -35,7 +35,7 @@ int main(void)
             {
                 write = 1;
             }
-        
+
         }
         else if (buf[0] == '\f')
         {

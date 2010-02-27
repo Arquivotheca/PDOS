@@ -8,7 +8,7 @@ pdptest.exe: dosstart.mix stdio.mix string.mix stdlib.mix \
        ctype.mix setjmp.mix math.mix fpfuncsb.mix
   $(CC) $(COPTS) pdptest.c
   pcl pdptest,powerc
-  
+
 dosstart.mix: dosstart.asm
   tasm -mx -w2 dosstart.asm
 #  mix dosstart.obj dosstart.mix

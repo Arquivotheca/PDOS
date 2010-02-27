@@ -36,7 +36,7 @@ int main(int argc, char **argv)
     char *p;
     int x;
     int i;
-    
+
     x = 0;
     p = malloc(BSIZE);
     if (p == NULL)

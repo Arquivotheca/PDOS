@@ -123,7 +123,7 @@ extern int __read(int a, void *b, int c);
 static int open(const char *a, int b, int *c)
 {
     int ret;
-    
+
     *c = 0;
     if (b)
     {
@@ -683,7 +683,7 @@ static void osfopen(void)
     else
     {
         mode = 2;
-        
+
         /* because we don't have the ability to update files
            at the moment on MVS or CMS, just return with an
            error immediately */
@@ -691,7 +691,7 @@ static void osfopen(void)
         errno = 2;
         return;
     }
-    
+
     myfile->pdsmem[0] = '\0'; /* seek needs to know if member provided */
 
     if (!inseek)
@@ -749,14 +749,14 @@ static void osfopen(void)
 
         sprintf(newfnm, "PDP%03dHD", spareSpot);
         strcpy(tmpdd, newfnm);
-        
+
         /* strip any single quote */
         if (fnm[0] == '\'')
         {
             fnm++;
         }
         strcpy(rawf, fnm);
-        
+
         /* If we have a file such as "'FRED.C(MARY)'" we need to
            convert this into PDP001HD(MARY) and do a dynamic
            allocation of PDP001HD to "FRED.C". We don't yet have
@@ -770,7 +770,7 @@ static void osfopen(void)
             p++;
             strcat(newfnm, "(");
             strcat(newfnm, p);
-            
+
             p = strchr(newfnm, ')');
             if (p != NULL)
             {
@@ -794,7 +794,7 @@ static void osfopen(void)
             *p = toupper((unsigned char)*p);
             p++;
         }
-        
+
         /* dynamically allocate file */
         errno = __dynal(strlen(tmpdd), tmpdd, strlen(rawf), rawf);
         if (errno != 0)
@@ -803,7 +803,7 @@ static void osfopen(void)
             return;
         }
         myfile->dynal = 1;
-        
+
         p = newfnm;
     }
 #else
@@ -847,7 +847,7 @@ static void osfopen(void)
     myfile->reallyu = 0;
     myfile->reallyt = 0;
     myfile->asmbuf = 0;
-    
+
     /* Set some default DCB info. Stress - this will not interfere
        in any way with DCB information the user provides in JCL,
        or on an existing dataset. It is only used when all else
@@ -869,7 +869,7 @@ static void osfopen(void)
        in a TSO environment, then we should use GETLINE/PUTLINE
        by default, as you would expect for any other TSO
        command, like LISTCAT. If people don't want that, they
-       should do a "CALL" to invoke the program as a 
+       should do a "CALL" to invoke the program as a
        non-TSO-command-processor */
     if (__tso
         && (__doperm
@@ -880,7 +880,7 @@ static void osfopen(void)
     }
 #endif
     myfile->hfile =
-        __aopen(myfile->ddname, &mode, &myfile->recfm, &myfile->lrecl, 
+        __aopen(myfile->ddname, &mode, &myfile->recfm, &myfile->lrecl,
                 &myfile->blksize, &myfile->asmbuf, p);
 #if defined(__MVS__)
     mode &= ~0x80; /* don't expose other logic to GETLINE/PUTLINE */
@@ -991,7 +991,7 @@ __PDPCLIB_API__ int fclose(FILE *stream)
         if (stream->reallyu)
         {
             size_t last;
-            
+
             last = stream->upto - stream->fbuf;
             begwrite(stream, last);
             memcpy(dptr, stream->fbuf, last);
@@ -2702,7 +2702,7 @@ __PDPCLIB_API__ int remove(const char *filename)
 #ifdef __MVS__
     char buf[FILENAME_MAX + 50];
     char *p;
-    
+
     sprintf(buf, " DELETE %s", filename);
     p = buf;
     while (*p != '\0')
@@ -2759,7 +2759,7 @@ __PDPCLIB_API__ int rename(const char *old, const char *newnam)
 #ifdef __MVS__
     char buf[FILENAME_MAX + FILENAME_MAX + 50];
     char *p;
-    
+
     sprintf(buf, " ALTER %s NEWNAME(%s)", old, newnam);
     p = buf;
     while (*p != '\0')
@@ -3383,8 +3383,8 @@ __PDPCLIB_API__ int setbuf(FILE *stream, char *buf)
     return (ret);
 }
 
-__PDPCLIB_API__ FILE *freopen(const char *filename, 
-                              const char *mode, 
+__PDPCLIB_API__ FILE *freopen(const char *filename,
+                              const char *mode,
                               FILE *stream)
 {
     inreopen = 1;
@@ -3681,7 +3681,7 @@ static int vvscanf(const char *format, va_list arg, FILE *fp, const char *s)
                     const char *last;
                     size_t size;
                     size_t mcnt = 0;
-                    
+
                     if (!skipvar)
                     {
                         cptr = va_arg(arg, char *);
@@ -3695,7 +3695,7 @@ static int vvscanf(const char *format, va_list arg, FILE *fp, const char *s)
                     if (*format == '\0') break;
                     first = format;
                     format++;
-                    last = strchr(format, ']');                    
+                    last = strchr(format, ']');
                     if (last == NULL) return (cnt);
                     size = (size_t)(last - first);
                     while (1)
@@ -3713,7 +3713,7 @@ static int vvscanf(const char *format, va_list arg, FILE *fp, const char *s)
                         mcnt++;
                         inch();
                         /* if at EOF or end of string, bug out */
-                        if ((fp != NULL && ch == EOF) 
+                        if ((fp != NULL && ch == EOF)
                             || (fp == NULL && ch == 0))
                         {
                             break;
@@ -3762,12 +3762,12 @@ static int vvscanf(const char *format, va_list arg, FILE *fp, const char *s)
                     else
                     {
                         *uptr = (unsigned int)(startp - s);
-                    }                    
+                    }
                 }
                 else if (*format == 'd' || *format == 'u'
                          || *format == 'x' || *format == 'o'
                          || *format == 'p'
-                         || *format == 'i')                         
+                         || *format == 'i')
                 {
                     int neg = 0;
                     unsigned long x = 0;
@@ -3803,7 +3803,7 @@ static int vvscanf(const char *format, va_list arg, FILE *fp, const char *s)
                         inch();
                     }
                     else if(ch == '+') inch();
-                    
+
                     /* this logic is the same as strtoul so if you
                        change this, change that one too */
 
@@ -3850,7 +3850,7 @@ static int vvscanf(const char *format, va_list arg, FILE *fp, const char *s)
                                 }
                                 else if (base == 16)
                                 {
-                                    /* hex values are allowed to have an 
+                                    /* hex values are allowed to have an
                                        optional 0x */
                                     inch();
                                 }
@@ -3865,7 +3865,7 @@ static int vvscanf(const char *format, va_list arg, FILE *fp, const char *s)
                             }
                             else
                             {
-                                x = x * base + 
+                                x = x * base +
                                     (toupper((unsigned char)ch) - 'A') + 10;
                                 inch();
                             }
@@ -3876,9 +3876,9 @@ static int vvscanf(const char *format, va_list arg, FILE *fp, const char *s)
                         }
                         mcnt++;
                     }
-                    
+
                     /* end of strtoul logic */
-                    
+
                     /* If we didn't get any characters, don't go any
                        further */
                     if (mcnt == 0)
@@ -3886,13 +3886,13 @@ static int vvscanf(const char *format, va_list arg, FILE *fp, const char *s)
                         break;
                     }
 
-                    
+
                     if (!skipvar)
                     {
                         if ((*format == 'd') || (*format == 'i'))
                         {
                             long lval;
-                            
+
                             if (neg)
                             {
                                 lval = (long)-x;
@@ -3924,7 +3924,7 @@ static int vvscanf(const char *format, va_list arg, FILE *fp, const char *s)
                     int ntrailzer,expnum,expsignsw;
                     double fpval,pow10;
 
-                    if (!skipvar)                    
+                    if (!skipvar)
                     {
                         if (modlong) dptr = va_arg(arg, double *);
                         else fptr = va_arg(arg, float *);
@@ -4151,9 +4151,9 @@ invalid RDW) will be silently ignored/stripped.
 the U dataset will get x'15' (EBCDIC newline) characters
 added. The RDW will be stripped. Trailing spaces will be
 preserved. With one exception - a single blank character
-on a line will be removed.  If this dataset is then copied 
-to a F dataset, there will be trailing spaces added to fit 
-the LRECL. If this dataset is then copied to a V dataset, 
+on a line will be removed.  If this dataset is then copied
+to a F dataset, there will be trailing spaces added to fit
+the LRECL. If this dataset is then copied to a V dataset,
 the trailing spaces will all be truncated. If a line is
 empty, a single blank character will be inserted.
 
@@ -4204,7 +4204,7 @@ will fail.
 10. RECFM=U allows you to preserve the exact length of
 data. RECFM=FB with a LRECL of 1 also achieves this, but
 is much more overhead. A special exception may be made in
-the future for binary reading of FB datasets to provide 
+the future for binary reading of FB datasets to provide
 the same performance as RECFM=U.
 
 11. Data is processed by the C library one record at a time.
@@ -4524,9 +4524,9 @@ __PDPCLIB_API__ int fputs(const char *s, FILE *stream)
     return (0);
 }
 
-__PDPCLIB_API__ size_t fwrite(const void *ptr, 
-                              size_t size, 
-                              size_t nmemb, 
+__PDPCLIB_API__ size_t fwrite(const void *ptr,
+                              size_t size,
+                              size_t nmemb,
                               FILE *stream)
 {
     size_t bytes;
@@ -4591,11 +4591,11 @@ __PDPCLIB_API__ size_t fwrite(const void *ptr,
             break;
 
         case VARIABLE_BINARY:
-            bytes = nmemb * size;            
+            bytes = nmemb * size;
             while (bytes > 0)
             {
                 int fulllen;
-                
+
                 if (stream->errorInd) break;
                 sz = stream->upto - stream->fbuf;
                 if (sz < 4)
@@ -4605,7 +4605,7 @@ __PDPCLIB_API__ size_t fwrite(const void *ptr,
                         memcpy(stream->upto, ptr, bytes);
                         stream->upto += bytes;
                         bytes = 0;
-                        break; 
+                        break;
                     }
                     else
                     {
@@ -4620,7 +4620,7 @@ __PDPCLIB_API__ size_t fwrite(const void *ptr,
                             break;
                         }
                         fulllen = (stream->fbuf[0] << 8) | stream->fbuf[1];
-                        if (fulllen == 0)                        
+                        if (fulllen == 0)
                         {
                             /* here we allow for the possibility that
                                they are copying a data source that has
@@ -4641,10 +4641,10 @@ __PDPCLIB_API__ size_t fwrite(const void *ptr,
                         }
                     }
                 }
-                
+
                 /* we have 4 bytes, validated */
                 fulllen = (stream->fbuf[0] << 8) | stream->fbuf[1];
-                
+
                 /* If we have enough data, write it out */
                 if ((sz + bytes) >= fulllen)
                 {
@@ -4677,7 +4677,7 @@ __PDPCLIB_API__ size_t fwrite(const void *ptr,
                     bytes -= (fulllen - sz);
                     ptr = (char *)ptr + (fulllen - sz);
                 }
-                
+
                 /* less data than required, store it, without
                    overflowing our buffer */
                 else if ((sz + bytes) > stream->lrecl)
@@ -4693,7 +4693,7 @@ __PDPCLIB_API__ size_t fwrite(const void *ptr,
                     ptr = (char *)ptr + bytes;
                     bytes = 0;
                 }
-                
+
                 /* enough room to fit data */
                 else
                 {
@@ -4808,7 +4808,7 @@ __PDPCLIB_API__ size_t fwrite(const void *ptr,
                         finwrite(stream);
                         /* note that the bufStartR needs to reflect
                            just the newline, and not the dummy space
-                           we added */                        
+                           we added */
                         stream->bufStartR += 1;
                     }
                     else
@@ -5138,14 +5138,14 @@ __PDPCLIB_API__ size_t fread(void *ptr, size_t size, size_t nmemb, FILE *stream)
                 if (!stream->reallyu)
                 {
                     read = (dptr[0] << 8) | dptr[1];
-                }                
+                }
                 else
                 {
                     read = lenread;
                     if (stream->reallyt)
                     {
                         unsigned char *p;
-                        
+
                         /* get rid of any trailing NULs in text mode */
                         p = memchr(dptr, '\0', read);
                         if (p != NULL)
@@ -5220,7 +5220,7 @@ static void filedef(char *fdddname, char *fnm, int mymode)
     tu[0].numparms = 1;
     tu[0].parm1_len = strlen(fdddname);
     strcpy(tu[0].parm1, fdddname);
-    
+
     tu_list[1] = &tu[1];
     tu[1].key = 0x0002; /* dsname */
     tu[1].numparms = 1;
@@ -5238,7 +5238,7 @@ static void filedef(char *fdddname, char *fnm, int mymode)
     tu_list[5] = (void *)0x80000000;
 
     errno = __svc99(&rb);
-    
+
     /* if we had an error, then for datasets open for write,
        try allocating a new dataset (this will be the normal
        situation - it is abnormal is to find the dataset already
@@ -5255,7 +5255,7 @@ static void filedef(char *fdddname, char *fnm, int mymode)
                 /* F80, which is default */
             }
             else
-            {            
+            {
                 /* V255 */
                 tu_list[3] = &tu[3];
                 tu[3].key = 0x49; /* RECFM */
@@ -5322,7 +5322,7 @@ static void filedef(char *fdddname, char *fnm, int mymode)
     char *p;
     int console;
 
-/* 
+/*
     Skip leading blanks because sometimes people do that in CMS
 */
     while (fnm[0] == ' ') fnm++;
@@ -5338,7 +5338,7 @@ static void filedef(char *fdddname, char *fnm, int mymode)
     if (ftype == NULL) ftype = "";
     fmode =  strtok(NULL, " ");
     if (fmode == NULL) fmode = "";
-    
+
 
 /*
  Now build the SVC 202 string
@@ -5591,7 +5591,7 @@ static void dblcvt(double num, char cnvtype, size_t nwidth,
         exp = 0;
         b = 0.0;
     }
-    
+
     /*
       now decide how to print and save in FORMAT.
          -1 => we need leading digits
@@ -5842,12 +5842,12 @@ static void dblcvt(double num, char cnvtype, size_t nwidth,
         if (cnvtype == 'G' || cnvtype == 'g')
         {
             char *p;
-            
+
             p = strchr(result, '.');
             if (p != NULL)
             {
                 p++;
-                p = p + strlen(p) - 1;                
+                p = p + strlen(p) - 1;
                 while (*p != '.' && *p == '0')
                 {
                     *p = '\0';

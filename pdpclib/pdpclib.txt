@@ -1,6 +1,6 @@
             Public Domain C runtime library
             -------------------------------
-            
+
 Version : 2.xx
 Released: 2009-09-26
 
@@ -8,13 +8,13 @@ Written by Paul Edwards.
 Released to the public domain.
 You may use this entire package for any purpose whatsoever without
 restriction.
-            
-            
-            
+
+
+
 INTRODUCTION
 ------------
-            
-This project is to create a public domain runtime library which 
+
+This project is to create a public domain runtime library which
 conforms to ISO/IEC 9899:1990.  Although originally intended
 to be OS-specific (based on the principle that it is the C
 library's job to do unportable but fast processing rather than
@@ -23,7 +23,7 @@ amount of the C library turned out to be sharable, with the
 notable exception that the I/O is mostly divided into mainframe
 and non-mainframe versions.
 
-Anyone wishing to contribute to this project, please contact 
+Anyone wishing to contribute to this project, please contact
 Paul Edwards at fight.subjugation@gmail.com.
 
 The official method for obtaining PDPCLIB is to download it from:
@@ -34,9 +34,9 @@ http://pdos.sourceforge.net
 MAIN DESIGN GOALS
 -----------------
 
-1. Application developers should not have to resort to DosOpen, open et al 
+1. Application developers should not have to resort to DosOpen, open et al
    in order to get better performance for binary files.
-   
+
 2. Application developers should not have to resort to using binary mode to
    get better performance for fgets in text mode.
 
@@ -46,9 +46,9 @@ CURRENT STATUS
 --------------
 
 All routines have been implemented according to the
-ISO C90 standard on all environments, although there 
-are restrictions on some operations, such as opening 
-a file for update or append. However, these restrictions 
+ISO C90 standard on all environments, although there
+are restrictions on some operations, such as opening
+a file for update or append. However, these restrictions
 do not prevent it from being a conforming implementation.
 I believe the DOS version doesn't do full long arithmetic
 so that environment is possibly non-conforming.
@@ -87,8 +87,8 @@ WHO WANTS IT?
 It is expected that this archive will interest the following groups of
 people:
 
-1. People who have a commercial compiler, such as IBM CSET (OS/2), 
-but would like to have the source code to the C runtime library, 
+1. People who have a commercial compiler, such as IBM CSET (OS/2),
+but would like to have the source code to the C runtime library,
 so that they can have control over it.
 
 2. People who have a commercial compiler, such as Borland, where
@@ -132,7 +132,7 @@ For 16-bit DOS, the default is to use the free C Turbo C++ 1.01
 16-bit DOS development system. Just type "compile" to use this
 combination.
 
-For 32-bit Windows (pdpclib-win32), the default is to use 
+For 32-bit Windows (pdpclib-win32), the default is to use
 the (free) gcc compiler and the (free) jwasm as the assembler.
 Use a decent "make" that doesn't need tabs (e.g. Borland's make
 or Microsoft's nmake) and then go "make -f makefile.w32".
@@ -142,13 +142,13 @@ or Microsoft's nmake) and then go "make -f makefile.w32".
 PERFORMANCE
 -----------
 
-A long time ago I did performance testing (of version 0.07 of 
-PDPCLIB) of the stated objectives, using perf*.c as the testing 
+A long time ago I did performance testing (of version 0.07 of
+PDPCLIB) of the stated objectives, using perf*.c as the testing
 tool, and got the following results (on OS/2):
 
                 fgets on text files
                 -------------------
-                
+
 bcc - 12.98 12.98 13.10
 gcc - 12.59 12.51 12.45
 icc - 7.84 7.72 7.76
@@ -160,11 +160,11 @@ pwcc - 4.87 4.85 4.87
 
 summary - cset has the best library, watcom the worst.  pdpclib
 creams the lot.  gcc is the best compiler.
-                                
-                                
+
+
                 large freads on binary files
                 ----------------------------
-                
+
 bcc - 2.10 2.01 1.98
 gcc - 2.71 2.70 2.64
 icc - 3.87 3.88 3.93
@@ -192,9 +192,9 @@ pwcc - 3.21 3.20 3.21
 
 summary - Borland has the worst library, gcc has the best. pdpclib,
 as usual, beats the lot.  The compilers are basically equal,
-except that gcc is slightly worse, as it doesn't generate an 
-inline memcpy() for the situation I am using it in.  The main 
-reason for gcc having the best library is that it has a default 
+except that gcc is slightly worse, as it doesn't generate an
+inline memcpy() for the situation I am using it in.  The main
+reason for gcc having the best library is that it has a default
 buffer size of 5120 compared to the others at 4096.  Note - in
 other tests I did, gcc was coming out ahead of wcc, by about 5%,
 so I don't know why this particular set of tests had them level.
@@ -204,7 +204,7 @@ Information:
 I used a 486DX33 with a RAM disk in order to perform these tests,
 in an effort to concentrate the stats on the library itself rather
 than the physical hard disk.
-bcc = Borland C++ 1.5 
+bcc = Borland C++ 1.5
 gcc = EMX 0.9a
 icc = CSET++/2 2.0
 wcc = Watcom 10.0b
@@ -212,7 +212,7 @@ p* = PDPCLIB compiled with one of the above compilers.
 
 
 Sorry I don't have up-to-date stats or mainframe stats.
-I wouldn't expect pdpclib on the mainframe to be better 
+I wouldn't expect pdpclib on the mainframe to be better
 than the commercial compilers because it does record reads
 rather than block reads. Hopefully one day this will be
 rectified.
@@ -227,7 +227,7 @@ was asked what was required to replace MSDOS, and experimentation
 began. By 1994-07-03 the POS/PDOS project was "formally" elaborated.
 On 1994-07-12 focus was switched to the C runtime library to
 support it and to identify the high priority MSDOS interfaces
-that would be required by PDOS. First beta of PDPCLIB was made 
+that would be required by PDOS. First beta of PDPCLIB was made
 available on 1994-07-30.
 
 0.01  Released 1994-08-27
@@ -240,7 +240,7 @@ available on 1994-07-30.
       Main work was done in fopen(), which is far more robust now.
 
 0.03  Released 1995-01-07
-      Got it working on Watcom, CSET + GNU.  
+      Got it working on Watcom, CSET + GNU.
 
 0.04  Released 1995-08-06
       Miscellaneous additions
@@ -250,7 +250,7 @@ available on 1994-07-30.
       the math library, but there are still holes in the system,
       especially with the File I/O.  But now I have all of the
       fundamental design in place.
-      
+
 0.06  Released 1996-01-02
       Much more robust file i/o.
 
@@ -260,7 +260,7 @@ available on 1994-07-30.
 0.50  Released 1997-05-03
       DOS support, and various bug fixes.
 
-0.51  Released 1997-05-18 together with PDOS 0.10. 
+0.51  Released 1997-05-18 together with PDOS 0.10.
       General tidy up.
 
 0.52  Released 1997-09-13
@@ -389,15 +389,15 @@ Phil Roberts for helping to debug the MVS port.
 Gerhard Postpischil for various assembler mods, and for
   his extremely important work on MVS/380 too.
 Robert O'Hara for getting EPLIST support working in CMS
-  and for making the mods to CMS (in VM/380) to support 
+  and for making the mods to CMS (in VM/380) to support
   a 31-bit environment for PDPCLIB to use.
 Ray Gardner for making his date routines public domain, plus
   the original qsort routine (since replaced with libnix).
 Jim Nutt and Rob Duff for releasing strftime to the public domain.
 Rowan Crowe for some mods to memcpy.
 Matthew Parker for getting the program name under MSDOS.
-And last but not least, my wife, for putting up with me in 
-  the many many man-days it took me to write this, when I should 
+And last but not least, my wife, for putting up with me in
+  the many many man-days it took me to write this, when I should
   have been doing family-related things.
 
 Also, I have used a small amount of code from libnix,

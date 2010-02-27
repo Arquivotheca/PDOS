@@ -340,7 +340,7 @@ RETURNAR DS    0H
          LR    R12,R15
          USING @@AWRITE,R12
          LR    R11,R1
-         L     R2,0(R1)         
+         L     R2,0(R1)
          USING ZDCBAREA,R2
          L     R4,8(R1)         R4 points to length to write
          L     R4,0(R4)         R4 = length to write

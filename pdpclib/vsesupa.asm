@@ -56,7 +56,7 @@
          USING WORKAREA,R13
 *
          L     R3,0(R1)         R3 POINTS TO DDNAME
-         L     R4,4(R1)         R4 POINTS TO MODE         
+         L     R4,4(R1)         R4 POINTS TO MODE
 * 08(,R1) has RECFM
 * Note that R5 is used as a scratch register
          L     R8,12(,R1)         R8 POINTS TO LRECL

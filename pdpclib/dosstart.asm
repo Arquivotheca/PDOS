@@ -1,5 +1,5 @@
 ; dosstart.asm - startup code for C programs for DOS
-; 
+;
 ; This program written by Paul Edwards
 ; Released to the public domain
 
@@ -113,5 +113,5 @@ ___main endp
 
 
 _TEXT ends
-          
+
 end top

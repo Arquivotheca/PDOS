@@ -1,5 +1,5 @@
 # linsupa.asm - support code for C programs for Linux
-# 
+#
 # This program written by Paul Edwards
 # Released to the public domain
 
@@ -12,7 +12,7 @@ movl 8(%ebp), %eax
 push %ebp
 mov %esp, %ebx
 push %ebx # esp
-        
+
 movl %ecx, 4(%eax)
 movl %edx, 8(%eax)
 movl %edi, 12(%eax)
@@ -59,7 +59,7 @@ movl 0(%eax), %ebx
 movl 4(%eax), %ecx
 movl 8(%eax), %edx
 movl 12(%eax), %edi
-movl 16(%eax), %esi       
+movl 16(%eax), %esi
 
 movl 32(%eax), %eax
 
@@ -192,7 +192,7 @@ push %ebp
 mov %esp, %ebp
 push %ebx
 # function code 10 = unlink
-movl $10, %eax 
+movl $10, %eax
 # filename
 movl 8(%ebp), %ebx
 int $0x80
@@ -207,7 +207,7 @@ push %ebp
 mov %esp, %ebp
 push %ebx
 # function code 6 = close
-movl $6, %eax 
+movl $6, %eax
 # handle
 movl 8(%ebp), %ebx
 int $0x80
@@ -230,7 +230,7 @@ push %ebp
 mov %esp, %ebp
 push %ebx
 # function code 13 = retrieve current time
-movl $13, %eax 
+movl $13, %eax
 # pointer to time_t
 movl 8(%ebp), %ebx
 int $0x80

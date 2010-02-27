@@ -1,5 +1,5 @@
 ; stringa.asm - string assembler functions
-; 
+;
 ; This program written by Paul Edwards, kerravon@w3.to
 ; Released to the public domain
 ;
@@ -20,7 +20,7 @@ DGROUP  group   _DATA,_BSS
 _TEXT segment 'CODE'
 
 public memcpy
-memcpy proc 
+memcpy proc
 push ebp
 mov ebp, esp
 pushf
@@ -46,5 +46,5 @@ ret
 memcpy endp
 
 _TEXT ends
-          
+
 end

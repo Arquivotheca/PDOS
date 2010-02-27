@@ -1,5 +1,5 @@
 ; dossupa.asm - assembler support functions for DOS
-; 
+;
 ; This program written by Paul Edwards
 ; Released to the public domain
 
@@ -318,19 +318,19 @@ ___setj proc
         mov bx, bp
         pop bp
         push bx               ; sp
-        
+
         mov bx,ax
         mov [bx + 2], cx
         mov [bx + 4], dx
         mov [bx + 6], di
         mov [bx + 8], si
-        
+
         pop ax
         mov [bx + 10], bx    ; sp
         mov ax, [bp + 0]     ; bp
         mov [bx + 12], ax    ; bp
-        
-        mov ax, [bp + 2]     ; return address        
+
+        mov ax, [bp + 2]     ; return address
         mov [bx + 14], ax    ; return address
         mov ax, [bp + 4]     ; return address
         mov [bx + 16], ax    ; return address
@@ -360,7 +360,7 @@ ___longj proc
 
         mov bx, [bp + 6]
         mov ds, [bp + 8]
-        mov bp, [bx + 10]        
+        mov bp, [bx + 10]
         mov sp, bp
         mov bp, [bx + 12]
         pop ax               ; position of old bx
@@ -368,23 +368,23 @@ ___longj proc
         pop ax               ; position of old bp
         pop ax               ; position of old return address
         pop ax               ; position of old return address
-        
+
         mov ax, [bx + 16]    ; return address
         push ax
         mov ax, [bx + 14]    ; return address
         push ax
-        
+
         mov ax, [bx + 12]    ; bp saved as normal
         push ax
-        
+
         mov cx, [bx + 2]
         mov dx, [bx + 4]
         mov di, [bx + 6]
         mov si, [bx + 8]
-        
+
         mov ax, [bx + 0]
         push ax              ; bx
-        mov ax, [bx + 18]    ; ds        
+        mov ax, [bx + 18]    ; ds
         push ax
         mov ax, [bx + 20]    ; es
         mov es, ax
@@ -536,7 +536,7 @@ push word ptr [bp + 10]
 push word ptr [bp + 8]
 push word ptr [bp + 6]
 call far ptr ___divide
-add sp, 8 
+add sp, 8
 
 ludiv_fin:
 
@@ -589,7 +589,7 @@ push word ptr [bp + 10]
 push word ptr [bp + 8]
 push word ptr [bp + 6]
 call far ptr ___divide
-add sp, 8 
+add sp, 8
 
 ldiv_fin:
 
@@ -620,7 +620,7 @@ push word ptr [bp + 10]
 push word ptr [bp + 8]
 push word ptr [bp + 6]
 call far ptr ___modulo
-add sp, 8 
+add sp, 8
 
 lmod_fin:
 
@@ -653,7 +653,7 @@ push word ptr [bp + 10]
 push word ptr [bp + 8]
 push word ptr [bp + 6]
 call far ptr ___modulo
-add sp, 8 
+add sp, 8
 
 lumod_fin:
 

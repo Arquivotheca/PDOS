@@ -6,7 +6,7 @@
 *
 ***********************************************************************
          MACRO ,
-&NM      AMUSE &WRK1=R14,&WRK2=R15                   ADDED ON GP2009225
+&NM      AMUSE &WRK1=R14,&WRK2=R15                 
          GBLC  &SYS
 .*
 .*   AMUSE sets addressing mode to back to the csller's
@@ -27,53 +27,53 @@
 *
 *
 *
-         MACRO ,                                                GP09234
-&NM      FUNEXIT &RC=                                           GP09234
-         GBLC  &SYS,&ZZSETSA,&ZZSETSL,&ZZSETSP                  GP09234
-         GBLB  &ZZSETAM                                         GP09234
-         LCLC  &LBL                                             GP09234
-&LBL     SETC  '&NM'                                            GP09234
-         AIF   ('&ZZSETSL' NE '' AND '&RC' EQ '').JUSTF         GP09234
-         AIF   ('&ZZSETSA' EQ '').SAMESA                        GP09234
-         AIF   ('&ZZSETSL' NE '').SAMESA                        GP09234
-&LBL     L     R13,4(,R13)        RESTORE HIGHER SA             GP09234
-&LBL     SETC  ''                                               GP09234
-.SAMESA  AIF   ('&RC' EQ '').LMALL                              GP09234
-         AIF   ('&RC' EQ '(15)' OR '&RC' EQ '(R15)').NORC       GP09234
-         AIF   (K'&RC LT 3).LA                                  GP09234
-         AIF   ('&RC'(1,1) NE '(' OR '&RC'(2,1) EQ '(').LA      GP09234
+         MACRO ,                                                
+&NM      FUNEXIT &RC=                                           
+         GBLC  &SYS,&ZZSETSA,&ZZSETSL,&ZZSETSP                  
+         GBLB  &ZZSETAM                                         
+         LCLC  &LBL                                             
+&LBL     SETC  '&NM'                                            
+         AIF   ('&ZZSETSL' NE '' AND '&RC' EQ '').JUSTF         
+         AIF   ('&ZZSETSA' EQ '').SAMESA                        
+         AIF   ('&ZZSETSL' NE '').SAMESA                        
+&LBL     L     R13,4(,R13)        RESTORE HIGHER SA             
+&LBL     SETC  ''                                               
+.SAMESA  AIF   ('&RC' EQ '').LMALL                              
+         AIF   ('&RC' EQ '(15)' OR '&RC' EQ '(R15)').NORC       
+         AIF   (K'&RC LT 3).LA                                  
+         AIF   ('&RC'(1,1) NE '(' OR '&RC'(2,1) EQ '(').LA      
          AIF   ('&RC'(K'&RC,1) NE ')' OR '&RC'(K'&RC-1,1) EQ ')').LA
-&LBL     LR    R15,&RC(1)                                       GP09234
-&LBL     SETC  ''                                               GP09234
-         AGO   .NORC                                            GP09234
-.LA      ANOP  ,                                                GP09234
-&LBL     LA    R15,&RC            SET RETURN CODE               GP09234
-&LBL     SETC  ''                                               GP09234
-.NORC    AIF   ('&ZZSETSL' EQ '').NOFRM                         GP09234
-         LR    R1,R13             SAVE CURRENT SA               GP09234
-         L     R13,4(,R13)        REGAIN CALLER'S SA            GP09234
-         ST    R15,16(,R13)       SAVE RETURN CODE              GP09234
-         FREEMAIN R,A=(1),LV=&ZZSETSL,SP=&ZZSETSP               GP09234
-         AGO   .LMALL             GOTTA LOVE SPAGHETTI CODE     GP09234
-.NOFRM   ANOP  ,                                                GP09234
-&LBL     L     R14,12(,R13)                                     GP09234
-         LM    R0,R12,20(R13)                                   GP09234
-         AGO   .EXMODE                                          GP09234
-.JUSTF   LR    R1,R13             SAVE CURRENT SA               GP09234
-         L     R13,4(,R13)        REGAIN CALLER'S SA            GP09234
-         FREEMAIN R,A=(1),LV=&ZZSETSL,SP=&ZZSETSP               GP09234
-.LMALL   ANOP  ,                                                GP09234
-&LBL     LM    R14,R12,12(R13)    RELOAD ALL                    GP09234
-.EXMODE  AIF   (&ZZSETAM).BSM                                   GP09234
-         BR    R14                                              GP09234
-         MEXIT ,                                                GP09234
-.BSM     DC    0H'0',X'0B0E'      BSM 0,14                      GP09234
-         MEND  ,                                                GP09234
+&LBL     LR    R15,&RC(1)                                       
+&LBL     SETC  ''                                               
+         AGO   .NORC                                            
+.LA      ANOP  ,                                                
+&LBL     LA    R15,&RC            SET RETURN CODE               
+&LBL     SETC  ''                                               
+.NORC    AIF   ('&ZZSETSL' EQ '').NOFRM                         
+         LR    R1,R13             SAVE CURRENT SA               
+         L     R13,4(,R13)        REGAIN CALLER'S SA            
+         ST    R15,16(,R13)       SAVE RETURN CODE              
+         FREEMAIN R,A=(1),LV=&ZZSETSL,SP=&ZZSETSP               
+         AGO   .LMALL             GOTTA LOVE SPAGHETTI CODE     
+.NOFRM   ANOP  ,                                                
+&LBL     L     R14,12(,R13)                                     
+         LM    R0,R12,20(R13)                                   
+         AGO   .EXMODE                                          
+.JUSTF   LR    R1,R13             SAVE CURRENT SA               
+         L     R13,4(,R13)        REGAIN CALLER'S SA            
+         FREEMAIN R,A=(1),LV=&ZZSETSL,SP=&ZZSETSP               
+.LMALL   ANOP  ,                                                
+&LBL     LM    R14,R12,12(R13)    RELOAD ALL                    
+.EXMODE  AIF   (&ZZSETAM).BSM                                   
+         BR    R14                                              
+         MEXIT ,                                                
+.BSM     DC    0H'0',X'0B0E'      BSM 0,14                      
+         MEND  ,                                                
 *
 *
 *
-         MACRO ,                                                GP09234
-&NM      FUNHEAD &ID=YES,&IO=NO,&AM=NO,&SAVE=                   GP09234
+         MACRO ,                                                
+&NM      FUNHEAD &ID=YES,&IO=NO,&AM=NO,&SAVE=                   
 .*
 .*   MACRO TO BEGIN EACH FUNCTION
 .*     HANDLES STANDARD OS ENTRY CONVENTIONS
@@ -87,61 +87,61 @@
 .*   Options used here are remembered and handled properly by
 .*     subsequent FUNEXIT macros
 .*
-         GBLC  &SYS,&ZZSETSA,&ZZSETSL,&ZZSETSP                  GP09234
-         GBLB  &ZZSETAM                                         GP09234
-         LCLC  &LBL                                             GP09234
-         LCLA  &I                                               GP09234
-&I       SETA  K'&NM                                            GP09234
-&I       SETA  ((&I)/2*2+1)       NEED ODD LENGTH FOR STM ALIGN GP09234
-&LBL     SETC  '&NM'                                            GP09234
-&ZZSETAM SETB  ('&AM' NE 'NO')                                  GP09234
-&ZZSETAM SETB  (&ZZSETAM AND '&SYS' NE 'S370')                  GP09234
-&ZZSETSA SETC  ''                                               GP09234
-&ZZSETSL SETC  ''                                               GP09234
-&ZZSETSP SETC  ''                                               GP09234
-         ENTRY &NM                                              GP09234
-         DROP  ,                  Isolate from other code       GP09234
-         AIF   ('&ID' EQ 'NO').SKIPID                           GP09234
-&LBL     B     *+4+1+&I-&NM.(,R15)    SKIP LABEL                GP09234
-         DC    AL1(&I),CL(&I)'&NM'    EXPAND LABEL              GP09234
-&LBL     SETC  ''                                               GP09234
-.SKIPID  AIF   ('&AM' EQ 'NO').SKIPAM                           GP09234
-&LBL     DC    0H'0',X'0BE0'      BSM 14,0  PRESERVE AMODE      GP09234
-&LBL     SETC  ''                                               GP09234
-.SKIPAM  ANOP  ,                                                GP09234
-&LBL     STM   R14,R12,12(R13)    SAVE CALLER'S REGISTERS       GP09234
-         LR    R12,R15                                          GP09234
-         USING &NM,R12                                          GP09234
-         AIF   ('&IO' EQ 'NO').SAVE                             GP09234
-         L     R10,0(,R1)         LOAD FILE WORK AREA           GP09263
-         USING IHADCB,R10                                       GP09263
-.SAVE    AIF   ('&SAVE' EQ '').MEND                             GP09234
-         AIF   (N'&SAVE EQ 1).STATIC                            GP09234
-         AIF   (N'&SAVE EQ 2).DYNAM                             GP09234
-&ZZSETSP SETC  '&SAVE(3)'                                       GP09234
-.DYNAM   ANOP  ,                                                GP09234
-&ZZSETSL SETC  '&SAVE(2)'                                       GP09234
-&ZZSETSA SETC  '&SAVE(1)'                                       GP09234
-         GETMAIN R,LV=&ZZSETSL,SP=&ZZSETSP                      GP09234
-         LR    R14,R1                                           GP09234
-         LA    R15,&ZZSETSL                                     GP09234
-         SR    R3,R3              ZERO FILL                     GP09234
-         MVCL  R14,R2             CLEAR GOTTEN STORAGE          GP09234
-         L     R3,32(,R13)        RESTORE R3                    GP09234
-         ST    R1,8(,R13)                                       GP09234
-         ST    R13,4(,R1)                                       GP09234
-         LR    R13,R1             NEW SAVE AREA                 GP09234
-         USING &SAVE(1),R13       DECLARE IT                    GP09234
-         L     R1,4(,R13)         OLD SAVE                      GP09234
-         LM    R14,R1,12(R1)      RESTORE FROM ENTRY            GP09234
-         MEXIT ,                                                GP09234
-.STATIC  LA    R15,&SAVE(1)                                     GP09234
-         ST    R15,8(,R13)                                      GP09234
-         ST    R13,4(,R15)                                      GP09234
-         LR    R13,R15                                          GP09234
-&ZZSETSA SETC  '&SAVE(1)'                                       GP09234
-         USING &SAVE(1),R13       DECLARE IT                    GP09234
-.MEND    MEND  ,                                                GP09234
+         GBLC  &SYS,&ZZSETSA,&ZZSETSL,&ZZSETSP                  
+         GBLB  &ZZSETAM                                         
+         LCLC  &LBL                                             
+         LCLA  &I                                               
+&I       SETA  K'&NM                                            
+&I       SETA  ((&I)/2*2+1)       NEED ODD LENGTH FOR STM ALIGN 
+&LBL     SETC  '&NM'                                            
+&ZZSETAM SETB  ('&AM' NE 'NO')                                  
+&ZZSETAM SETB  (&ZZSETAM AND '&SYS' NE 'S370')                  
+&ZZSETSA SETC  ''                                               
+&ZZSETSL SETC  ''                                               
+&ZZSETSP SETC  ''                                               
+         ENTRY &NM                                              
+         DROP  ,                  Isolate from other code       
+         AIF   ('&ID' EQ 'NO').SKIPID                           
+&LBL     B     *+4+1+&I-&NM.(,R15)    SKIP LABEL                
+         DC    AL1(&I),CL(&I)'&NM'    EXPAND LABEL              
+&LBL     SETC  ''                                               
+.SKIPID  AIF   ('&AM' EQ 'NO').SKIPAM                           
+&LBL     DC    0H'0',X'0BE0'      BSM 14,0  PRESERVE AMODE      
+&LBL     SETC  ''                                               
+.SKIPAM  ANOP  ,                                                
+&LBL     STM   R14,R12,12(R13)    SAVE CALLER'S REGISTERS       
+         LR    R12,R15                                          
+         USING &NM,R12                                          
+         AIF   ('&IO' EQ 'NO').SAVE                             
+         L     R10,0(,R1)         LOAD FILE WORK AREA           
+         USING IHADCB,R10                                       
+.SAVE    AIF   ('&SAVE' EQ '').MEND                             
+         AIF   (N'&SAVE EQ 1).STATIC                            
+         AIF   (N'&SAVE EQ 2).DYNAM                             
+&ZZSETSP SETC  '&SAVE(3)'                                       
+.DYNAM   ANOP  ,                                                
+&ZZSETSL SETC  '&SAVE(2)'                                       
+&ZZSETSA SETC  '&SAVE(1)'                                       
+         GETMAIN R,LV=&ZZSETSL,SP=&ZZSETSP                      
+         LR    R14,R1                                           
+         LA    R15,&ZZSETSL                                     
+         SR    R3,R3              ZERO FILL                     
+         MVCL  R14,R2             CLEAR GOTTEN STORAGE          
+         L     R3,32(,R13)        RESTORE R3                    
+         ST    R1,8(,R13)                                       
+         ST    R13,4(,R1)                                       
+         LR    R13,R1             NEW SAVE AREA                 
+         USING &SAVE(1),R13       DECLARE IT                    
+         L     R1,4(,R13)         OLD SAVE                      
+         LM    R14,R1,12(R1)      RESTORE FROM ENTRY            
+         MEXIT ,                                                
+.STATIC  LA    R15,&SAVE(1)                                     
+         ST    R15,8(,R13)                                      
+         ST    R13,4(,R15)                                      
+         LR    R13,R15                                          
+&ZZSETSA SETC  '&SAVE(1)'                                       
+         USING &SAVE(1),R13       DECLARE IT                    
+.MEND    MEND  ,                                                
 *
 *
 *
@@ -208,7 +208,7 @@
 *
 *
          MACRO ,
-&NM      QBSM  &F1,&F2                               ADDED ON GP2009263
+&NM      QBSM  &F1,&F2 
          GBLC  &SYS
 .*
 .*   QBSM expands as as BSM on supporting systems (S380, S390)
@@ -227,7 +227,7 @@
 *
 *
          MACRO ,
-&NM      SAM31 &WORK=R15                             ADDED ON GP2009225
+&NM      SAM31 &WORK=R15  
          GBLC  &SYS
 .*
 .*   SAM31 sets addressing mode to 31 for S380, etc.
@@ -246,7 +246,7 @@
 *
 *
          MACRO ,
-&NM      SAM24 &WORK=R15                             ADDED ON GP2009225
+&NM      SAM24 &WORK=R15     
          GBLC  &SYS
 .*
 .*   SAM24 sets addressing mode to 24 for S380, etc.

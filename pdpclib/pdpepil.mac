@@ -10,5 +10,9 @@
          MACRO
 &N       PDPEPIL
 &N       L   13,4(13)
-         RETURN (14,12),RC=(15)
+         L     14,12(13,0)
+         LM    0,12,20(13)
+         BR    14
+* Dumb this down for DOS/VS
+*         RETURN (14,12),RC=(15)
          MEND

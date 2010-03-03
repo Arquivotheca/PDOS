@@ -16,6 +16,11 @@ ASSGN SYSPCH,DISK,VOL=WORK01,SHR
          MACRO
 &N       RMODE
          MEND
+         MACRO
+&LABEL   BSM   &R1,&R2
+         DS    0H
+&LABEL.  DC    0XL2'00',X'0B',AL.4(&R1.,&R2.)
+         MEND
 undivert(pdpprlg.mac)undivert(pdpepil.mac)         END
 /*
 // DLBL IJSYSIN,'WORK.FILE',0,SD
@@ -76,7 +81,7 @@ undivert(pdptest.s)/*
 // EXEC ASSEMBLY
 undivert(vsesupa.asm)/*
 *
-* Now link the whole ap
+* Now link the whole app
 *
 // EXEC LNKEDT
  ACTION NOREL

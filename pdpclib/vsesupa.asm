@@ -504,10 +504,11 @@ RETURNAC DS    0H
 *
          AIF   ('&SYS' NE 'S380').N380GM1
 *         GETMAIN RU,LV=(R3),SP=SUBPOOL,LOC=ANY
-* Hardcode the ATL memory area provided by latest MUSIC.
+* Hardcode the ATL memory area for DOS/VS until the SVC 61
+* intercept and macro are available.
 * Note that this function will only work if the C library
 * is compiled with MEMMGR option.
-         L     R1,=X'02000000'
+         L     R1,=X'04100000'
          AGO   .N380GM2
 .N380GM1 ANOP
          GETVIS LENGTH=(R3)

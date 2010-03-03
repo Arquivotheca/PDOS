@@ -260,9 +260,7 @@ RETURNOP DS    0H
          L     R0,=A(WORKLEN)
          FREEVIS
          LR    R15,R7
-         L     14,12(13,0)
-         LM    0,12,20(13)
-         BR    14
+         RETURN (14,12),RC=(15)
          LTORG
 * OPENMAC  OPEN  (,INPUT),MF=L,MODE=31
 * CAN'T USE MODE=31 ON MVS 3.8
@@ -340,9 +338,7 @@ RETURNAR DS    0H
 .NOMOD2  ANOP
          ST    R5,0(R4)         Tell caller the length read
          LR    R15,R7
-         L     14,12(13,0)
-         LM    0,12,20(13)
-         BR    14
+         RETURN (14,12),RC=(15)
 *
 *
 *
@@ -400,10 +396,8 @@ RETURNAR DS    0H
 *        L     R13,SAVEAREA+4
          L     R13,SAVEADCB+4
 *        FREEVIS LENGTH=WORKLEN
-         LR    R15,R0
-         L     14,12(13,0)
-         LM    0,12,20(13)
-         BR    14
+         LA    R15,0
+         RETURN (14,12),RC=(15)
 *
 MVCLINE  MVC   LINE(0),0(R3)
          LTORG
@@ -463,9 +457,7 @@ RETURNAC DS    0H
          L     R0,=A(WORKLEN)
          FREEVIS
          LR    R15,R7
-         L     14,12(13,0)
-         LM    0,12,20(13)
-         BR    14
+         RETURN (14,12),RC=(15)
          LTORG
 * CLOSEMAC CLOSE (),MF=L,MODE=31
 * CAN'T USE MODE=31 WITH MVS 3.8
@@ -535,9 +527,7 @@ RETURNAC DS    0H
          LR    R15,R1
 *
 RETURNGM DS    0H
-         L     14,12(13,0)
-         LM    0,12,20(13)
-         BR    14
+         RETURN (14,12),RC=(15)
          LTORG
 *
 * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
@@ -564,9 +554,7 @@ RETURNGM DS    0H
 .N380FM2 ANOP
 *
 RETURNFM DS    0H
-         L     14,12(13,0)
-         LM    0,12,20(13)
-         BR    14
+         RETURN (14,12),RC=(15)
          LTORG
 * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
 *
@@ -597,9 +585,7 @@ RETURNFM DS    0H
          LR    R15,R5
 *
 RETURNGC DS    0H
-         L     14,12(13,0)
-         LM    0,12,20(13)
-         BR    14
+         RETURN (14,12),RC=(15)
          LTORG
 * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
 *
@@ -641,9 +627,7 @@ RETURNSY DS    0H
 *         FREEMAIN RU,LV=SYSTEMLN,A=(1),SP=SUBPOOL
 *
          LA    R15,0
-         L     14,12(13,0)
-         LM    0,12,20(13)
-         BR    14
+         RETURN (14,12),RC=(15)
 * For documentation on this fixed prefix, see SVC 221
 * documentation.
 FIXEDPRF DC    X'7F01E000000000'
@@ -668,9 +652,7 @@ SYSTEMLN EQU   *-SYSTMWRK    LENGTH OF DYNAMIC STORAGE
 *
          LA    R15,0
 *
-         L     14,12(13,0)
-         LM    0,12,20(13)
-         BR    14
+         RETURN (14,12),RC=(15)
          LTORG
 *
 * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
@@ -686,9 +668,7 @@ SYSTEMLN EQU   *-SYSTMWRK    LENGTH OF DYNAMIC STORAGE
 *
          LA    R15,0
 *
-         L     14,12(13,0)
-         LM    0,12,20(13)
-         BR    14
+         RETURN (14,12),RC=(15)
          LTORG
 *
 * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *

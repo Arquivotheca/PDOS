@@ -43,6 +43,7 @@ SUBPOOL  EQU   0
          BALR  R15,0
          USING *,R10
          LR    R10,R15
+         LA    R10,0(R10)
 *         USING @@CRT0,R10
 *LOOP     LA    R5,1(R5)
 *         B     LOOP
@@ -177,6 +178,6 @@ MAINLEN  EQU   *-MAINSTK
 STKLTMP  EQU   *-STACK
 *         NUCON
          AIF   ('&SYS' NE 'S380').N380ST4
-         USERSAVE
+*         USERSAVE
 .N380ST4 ANOP
          END   @@CRT0

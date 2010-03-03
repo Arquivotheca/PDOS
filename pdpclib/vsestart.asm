@@ -77,7 +77,13 @@ SUBPOOL  EQU   0
          LA    R2,0
          ST    R2,116(R12)       ADDR OF MEMORY ALLOCATION ROUTINE
 * Now let's get the program name and parameter list.
-         LA    R2,0
+*
+* I don't know how to get the parameter in DOS/VS, so what
+* we'll do is just point it to a variable (ARGPTRE) that will be 
+* a string of zeros, which will be enough for the MVS code to 
+* recognize that as no parameter.
+*         LA    R2,0
+         LA    R2,ARGPTRE
          ST    R2,ARGPTR         store first argument for C
 *
 * Set R4 to true if we were called in 31-bit mode

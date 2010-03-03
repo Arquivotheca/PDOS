@@ -1,24 +1,74 @@
-**********************************************************************
-*                                                                    *
-*  This program written by Paul Edwards, Dave Wade, Louis,           *
-*  John Baker and others.                                            *
-*  Released to the public domain                                     *
-*                                                                    *
-**********************************************************************
-**********************************************************************
-*                                                                    *
-*  VSESUPA - SUPPORT ROUTINES FOR PDPCLIB UNDER DOS/VSE              *
-*                                                                    *
-**********************************************************************
+***********************************************************************
+*
+*  This program written by Paul Edwards.
+*  Released to the public domain
+*
+*  Extensively modified by others
+*
+***********************************************************************
+*
+*  VSESUPA - Support routines for PDPCLIB under DOS/VSE
+*
+*  It is currently coded for GCC, but C/370 functionality is
+*  still there, it's just being tested after any change.
+*
+***********************************************************************
+*
+* Note that the VBS support may not be properly implemented.
+* Note that this code issues WTOs. It should be changed to just
+* set a return code an exit gracefully instead. I'm not talking
+* about that dummy WTO. But on the subject of that dummy WTO - it
+* should be made consistent with the rest of PDPCLIB which doesn't
+* use that to set the RMODE/AMODE. It should be consistent one way
+* or the other.
+*
+* Here are some of the errors reported:
+*
+*  OPEN input failed return code is: -37
+*  OPEN output failed return code is: -39
+*
+* FIND input member return codes are:
+* Original, before the return and reason codes had
+* negative translations added refer to copyrighted:
+* DFSMS Macro Instructions for Data Sets
+* RC = 0 Member was found.
+* RC = -1024 Member not found.
+* RC = -1028 RACF allows PDSE EXECUTE, not PDSE READ.
+* RC = -1032 PDSE share not available.
+* RC = -1036 PDSE is OPENed output to a different member.
+* RC = -2048 Directory I/O error.
+* RC = -2052 Out of virtual storage.
+* RC = -2056 Invalid DEB or DEB not on TCB or TCBs DEB chain.
+* RC = -2060 PDSE I/O error flushing system buffers.
+* RC = -2064 Invalid FIND, no DCB address.
+*
+***********************************************************************
+*
          COPY  PDPTOP
+*
+@@VSESUP CSECT
          PRINT NOGEN
          REGEQU
-         CSECT
+SUBPOOL  EQU   0
+*
+* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+*
+*  AOPEN - Open a dataset
+*
+*  Note that under MUSIC, RECFM=F is the only reliable thing. It is
+*  possible to use RECFM=V like this:
+*  /file myin tape osrecfm(v) lrecl(32756) vol(PCTOMF) old
+*  but it is being used outside the normal MVS interface. All this
+*  stuff really needs to be rewritten per normal MUSIC coding.
+*
+*
+*  Note - more documentation for this and other I/O functions can
+*  be found halfway through the stdio.c file in PDPCLIB.
+*
+* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
 **********************************************************************
 *                                                                    *
 *  AOPEN - Open a file                                               *
-*                                                                    *
-*  It doesn't matter what ZDCBAREA contains                          *
 *                                                                    *
 *  Parameters are:                                                   *
 *  DDNAME - space-padded, 8 character DDNAME to be opened            *
@@ -36,10 +86,9 @@
 *  keep track of what's what when READ etc are subsequently          *
 *  called.                                                           *
 *                                                                    *
-*  For VSE, the following should be set:                             *
-*  Set the RECFM to 2 (Undefined)                                    *
-*  Set the LRECL to 32761 (max VSE supports)                         *
 *                                                                    *
+*  Note - more documentation for this and other I/O functions can    *
+*  be found halfway through the stdio.c file in PDPCLIB.             *
 *                                                                    *
 **********************************************************************
          ENTRY @@AOPEN
@@ -48,7 +97,7 @@
          LR    R12,R15
          USING @@AOPEN,R12
          LR    R11,R1
-         GETMAIN R,LV=WORKLEN,SP=SUBPOOL
+         GETVIS LENGTH=WORKLEN
          ST    R13,4(R1)
          ST    R1,8(R13)
          LR    R13,R1
@@ -57,22 +106,24 @@
 *
          L     R3,0(R1)         R3 POINTS TO DDNAME
          L     R4,4(R1)         R4 POINTS TO MODE
+         L     R4,0(R4)         R4 now has value of mode
 * 08(,R1) has RECFM
 * Note that R5 is used as a scratch register
          L     R8,12(,R1)         R8 POINTS TO LRECL
 * 16(,R1) has BLKSIZE
 * 20(,R1) has ASMBUF pointer
+*
          L     R9,24(,R1)         R9 POINTS TO MEMBER NAME (OF PDS)
-         LA    R9,00(,R9)         Strip off high-order bit or byte
-         L     R5,8(R1)         R5 POINTS TO RECFM
-         L     R8,12(R1)        R8 POINTS TO LRECL
-         L     R9,16(R1)        R9 POINTS TO MEMBER NAME (OF PDS)
+         LA    R9,0(,R9)          Strip off high-order bit or byte
+*
          AIF   ('&SYS' EQ 'S390').BELOW
 * CAN'T USE "BELOW" ON MVS 3.8
-         GETMAIN R,LV=ZDCBLEN,SP=SUBPOOL
+         L     R0,=A(ZDCBLEN)
+         GETVIS
          AGO   .CHKBLWE
 .BELOW   ANOP
-         GETMAIN R,LV=ZDCBLEN,SP=SUBPOOL,LOC=BELOW
+         L     R0,=A(ZDCBLEN)
+         GETVIS LOC=BELOW
 .CHKBLWE ANOP
          LR    R2,R1
          LR    R0,R2              Load output DCB area address
@@ -89,58 +140,57 @@
          LTR   R6,R6
          BNZ   WRITING
 * READING
-         USING IHADCB,R2
-         MVC   ZDCBAREA(INDCBLN),INDCB
-         LA    R10,JFCB
+*         USING IHADCB,R2
+*         MVC   ZDCBAREA(INDCBLN),INDCB
+*         LA    R10,JFCB
 * EXIT TYPE 07 + 80 (END OF LIST INDICATOR)
-         ICM   R10,B'1000',=X'87'
-         ST    R10,JFCBPTR
-         LA    R10,JFCBPTR
+*         ICM   R10,B'1000',=X'87'
+*         ST    R10,JFCBPTR
+*         LA    R10,JFCBPTR
          LA    R4,ENDFILE
-         ST    R4,DCBEODAD
-         ST    R10,DCBEXLST
-         MVC   DCBDDNAM,0(R3)
-         MVC   OPENMB,OPENMAC
+*         ST    R4,DCBEODAD
+*         ST    R10,DCBEXLST
+*         MVC   DCBDDNAM,0(R3)
+*         MVC   OPENMB,OPENMAC
 *
-         RDJFCB ((R2),INPUT)
+*         RDJFCB ((R2),INPUT)
          LTR   R9,R9
-* DW * DON'T SUPPORT MEMBER NAME FOR NOW
-*        BZ    NOMEM
-         B     NOMEM
+         BZ    NOMEM
          USING ZDCBAREA,R2
-*        MVC   JFCBELNM,0(R9)
-*        OI    JFCBIND1,JFCPDS
-* DW * END OF MOD
+*         MVC   JFCBELNM,0(R9)
+*         OI    JFCBIND1,JFCPDS
 NOMEM    DS    0H
 *         OPEN  ((R2),INPUT),MF=(E,OPENMB),MODE=31,TYPE=J
 * CAN'T USE MODE=31 ON MVS 3.8, OR WITH TYPE=J
-         OPEN  ((R2),INPUT),MF=(E,OPENMB),TYPE=J
+*         OPEN  ((R2),INPUT),MF=(E,OPENMB),TYPE=J
+*         TM    DCBOFLGS,DCBOFOPN  Did OPEN work?
+* +++ don't do anything for reading files for now
+*         BZ    BADOPEN            OPEN failed
          B     DONEOPEN
 WRITING  DS    0H
          USING ZDCBAREA,R2
-         MVC   ZDCBAREA(OUTDCBLN),OUTDCB
-         LA    R10,JFCB
+*         MVC   ZDCBAREA(OUTDCBLN),OUTDCB
+*         LA    R10,JFCB
 * EXIT TYPE 07 + 80 (END OF LIST INDICATOR)
-         ICM   R10,B'1000',=X'87'
-         ST    R10,JFCBPTR
-         LA    R10,JFCBPTR
-         ST    R10,DCBEXLST
-         MVC   DCBDDNAM,0(R3)
-         MVC   WOPENMB,WOPENMAC
+*         ICM   R10,B'1000',=X'87'
+*         ST    R10,JFCBPTR
+*         LA    R10,JFCBPTR
+*         ST    R10,DCBEXLST
+*         MVC   DCBDDNAM,0(R3)
+*         MVC   WOPENMB,WOPENMAC
 *
-         RDJFCB ((R2),OUTPUT)
-         LTR   R9,R9
-* DW * NO MEMBER ON VM/370
-*        BZ    WNOMEM
-         B     WNOMEM
+*         RDJFCB ((R2),OUTPUT)
+*        LTR   R9,R9
+         BZ    WNOMEM
          USING ZDCBAREA,R2
-*        MVC   JFCBELNM,0(R9)
-*        OI    JFCBIND1,JFCPDS
-* DW * END OF MOD
+*         MVC   JFCBELNM,0(R9)
+*         OI    JFCBIND1,JFCPDS
 WNOMEM   DS    0H
 *         OPEN  ((R2),OUTPUT),MF=(E,WOPENMB),MODE=31,TYPE=J
 * CAN'T USE MODE=31 ON MVS 3.8, OR WITH TYPE=J
-         OPEN  ((R2),OUTPUT),MF=(E,WOPENMB),TYPE=J
+*         OPEN  ((R2),OUTPUT),MF=(E,WOPENMB),TYPE=J
+*         TM    DCBOFLGS,DCBOFOPN  Did OPEN work?
+*         BZ    BADOPEN            OPEN failed
 *
 * Handle will be returned in R7
 *
@@ -152,10 +202,10 @@ WNOMEM   DS    0H
 * S/370 can't handle LOC=BELOW
 *
          AIF   ('&SYS' NE 'S370').MVT8090  If not S/370 then 380 or 390
-         GETMAIN R,LV=(R6),SP=SUBPOOL  No LOC= for S/370
+         GETVIS LENGTH=(R6)  No LOC= for S/370
          AGO   .GETOENE
 .MVT8090 ANOP  ,                  S/380 or S/390
-         GETMAIN R,LV=(R6),SP=SUBPOOL,LOC=BELOW
+         GETVIS LENGTH=(R6),LOC=BELOW
 .GETOENE ANOP
          ST    R1,ASMBUF
          L     R5,20(,R11)        R5 points to ASMBUF
@@ -166,21 +216,35 @@ WNOMEM   DS    0H
 DONEOPEN DS    0H
          LR    R7,R2
          SR    R6,R6
-         LH    R6,DCBLRECL
+*         LH    R6,DCBLRECL
+         L     R6,=F'80'  +++ hardcoded to lrecl=80
          ST    R6,0(R8)
-* DW * VM/370 IS MISSING THESE DEFS
-*        TM    DCBRECFM,DCBRECF
-         TM    DCBRECFM,RECF
-* END
-         BNO   VARIABLE
+*         TM    DCBRECFM,DCBRECF
+*         BNO   VARIABLE
+* This looks really whacky, but is correct
+* We check for V, in order to split between F and U
+* Because U has both F and V
+*         TM    DCBRECFM,DCBRECV
+         B     FIXED  +++ hardcoded to recfm=f
+         BNO   FIXED
+         L     R6,=F'2'
+         B     DONESET
+FIXED    DS    0H
          L     R6,=F'0'
          B     DONESET
 VARIABLE DS    0H
          L     R6,=F'1'
 DONESET  DS    0H
+         L     R5,8(,R11)         Point to RECFM
          ST    R6,0(R5)
+* Finished with R5 now
          LR    R15,R7
          B     RETURNOP
+BADOPEN  DS    0H
+         L     R0,=A(ZDCBLEN)
+         FREEVIS
+         L     R15,=F'-1'
+         B     RETURNOP           Go return to caller with negative RC
 *
 ENDFILE  LA    R6,1
          ST    R6,RDEOF
@@ -191,43 +255,42 @@ RETURNOP DS    0H
          LR    R1,R13
          L     R13,SAVEAREA+4
          LR    R7,R15
-         FREEMAIN R,LV=WORKLEN,A=(R1),SP=SUBPOOL
+         L     R0,=A(WORKLEN)
+         FREEVIS
          LR    R15,R7
-         RETURN (14,12),RC=(15)
+         L     14,12(13,0)
+         LM    0,12,20(13)
+         BR    14
          LTORG
 * OPENMAC  OPEN  (,INPUT),MF=L,MODE=31
 * CAN'T USE MODE=31 ON MVS 3.8
-OPENMAC  OPEN  (,INPUT),MF=L,TYPE=J
-OPENMLN  EQU   *-OPENMAC
+*OPENMAC  OPEN  (,INPUT),MF=L,TYPE=J
+*OPENMLN  EQU   *-OPENMAC
 * WOPENMAC OPEN  (,OUTPUT),MF=L,MODE=31
 * CAN'T USE MODE=31 ON MVS 3.8
-WOPENMAC OPEN  (,OUTPUT),MF=L
-WOPENMLN EQU   *-WOPENMAC
+*WOPENMAC OPEN  (,OUTPUT),MF=L
+*WOPENMLN EQU   *-WOPENMAC
 *INDCB    DCB   MACRF=GL,DSORG=PS,EODAD=ENDFILE,EXLST=JPTR
 * LEAVE OUT EODAD AND EXLST, FILLED IN LATER
-INDCB    DCB   MACRF=GL,DSORG=PS,EODAD=ENDFILE,EXLST=JPTR
-INDCBLN  EQU   *-INDCB
+*INDCB    DCB   MACRF=GL,DSORG=PS,EODAD=ENDFILE,EXLST=JPTR
+*INDCBLN  EQU   *-INDCB
 JPTR     DS    F
 *
 * OUTDCB changes depending on whether we are in LOCATE mode or
 * MOVE mode
          AIF   ('&OUTM' NE 'L').NLM1
-OUTDCB   DCB   MACRF=PL,DSORG=PS
+*OUTDCB   DCB   MACRF=PL,DSORG=PS
 .NLM1    ANOP
          AIF   ('&OUTM' NE 'M').NMM1
-OUTDCB   DCB   MACRF=PM,DSORG=PS
+*OUTDCB   DCB   MACRF=PM,DSORG=PS
 .NMM1    ANOP
-OUTDCBLN EQU   *-OUTDCB
+*OUTDCBLN EQU   *-OUTDCB
 *
 *
 *
 **********************************************************************
 *                                                                    *
 *  AREAD - Read from file                                            *
-*                                                                    *
-*  HANDLE - address of ZDCBAREA you returned in AOPEN                *
-*  BUF - an area of memory which you must fill in with a fake RDW    *
-*  plus the next record's data. This makes RECFM=U look like RECFM=V *
 *                                                                    *
 **********************************************************************
          ENTRY @@AREAD
@@ -257,110 +320,98 @@ OUTDCBLN EQU   *-OUTDCB
 *
 *        L     R2,0(R1)         R2 CONTAINS HANDLE
          L     R3,4(R1)         R3 POINTS TO BUF POINTER
+         L     R4,8(R1)         R4 point to a length
          LA    R6,0
          ST    R6,RDEOF
-         GET   (R2)
+*         GET   (R2)
          ST    R1,0(R3)
+*         LH    R5,DCBLRECL
          L     R15,RDEOF
 *
 RETURNAR DS    0H
          LR    R1,R13
          L     R13,SAVEAREA+4
          LR    R7,R15
-*        FREEMAIN R,LV=WORKLEN,A=(R1),SP=SUBPOOL
+*        FREEVIS LENGTH=WORKLEN
          AIF ('&SYS' EQ 'S370').NOMOD2
          CALL  @@SETM31
 .NOMOD2  ANOP
+         ST    R5,0(R4)         Tell caller the length read
          LR    R15,R7
-         RETURN (14,12),RC=(15)
+         L     14,12(13,0)
+         LM    0,12,20(13)
+         BR    14
 *
 *
 *
-**********************************************************************
-*                                                                    *
-*  AWRITE - Write to file                                            *
-*                                                                    *
-*  This function takes 3 parameters.                                 *
-*  1. ZDCBAREA which OPEN returned                                   *
-*  2. A pointer which should be ignored                              *
-*  3. A length                                                       *
-*                                                                    *
-*  Use the length, get that amount of data out of ASMBUF, and write  *
-*  it to the file.                                                   *
-*                                                                    *
-**********************************************************************
+* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+*
+*  AWRITE - Write to an open dataset
+*
+* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
          ENTRY @@AWRITE
 @@AWRITE EQU   *
          SAVE  (14,12),,@@AWRITE
          LR    R12,R15
          USING @@AWRITE,R12
-         LR    R11,R1
-         AIF ('&SYS' EQ 'S370').NOMOD3
-         CALL  @@SETM24
-.NOMOD3  ANOP
-*         AIF   ('&SYS' NE 'S370').BELOW2
-* CAN'T USE "BELOW" ON MVS 3.8
-*         GETMAIN R,LV=WORKLEN,SP=SUBPOOL
-*         AGO   .NOBEL2
-*.BELOW2  ANOP
-*         GETMAIN R,LV=WORKLEN,SP=SUBPOOL,LOC=BELOW
-*.NOBEL2  ANOP
+         L     R2,0(,R1)          R2 contains GETMAINed address
+         L     R3,4(,R1)          R3 points to the record address
+         L     R4,8(,R1)          R4 points to the length
+         L     R4,0(,R4)          R4 now has actual length
          USING ZDCBAREA,R2
-         L     R2,0(R1)
+*        GETMAIN RU,LV=WORKLEN,SP=SUBPOOL
          LA    R1,SAVEADCB
-         ST    R13,4(R1)
-         ST    R1,8(R13)
+         ST    R13,4(,R1)
+         ST    R1,8(,R13)
          LR    R13,R1
-         LR    R1,R11
-         USING WORKAREA,R13
+*        USING WORKAREA,R13
 *
-         L     R2,0(R1)        point to handle
-         USING ZDCBAREA,R2
-* Ignore passed buf pointer
-*         L     R8,4(R1)        R8 POINTS TO BUF POINTER
-         L     R8,ASMBUF
-         L     R9,8(R8)        R9 points to length
-         STCM  R9,B'0011',CCW+6
-         BCTR  R9,0
-         STC   R9,*+5
-* Instead of writing to
-         MVC   LINE,0(R8)
-         EXCP  CCB
-         WAIT  CCB
+         AIF   ('&SYS' NE 'S380').N380WR1
+         CALL  @@SETM24
+.N380WR1 ANOP
+*
+*         STCM  R4,B'0011',DCBLRECL
+*
          AIF   ('&OUTM' NE 'L').NLM2
-         PUT   (R2)
+*        PUT   (R2)
 .NLM2    ANOP
          AIF   ('&OUTM' NE 'M').NMM2
 * In move mode, always use our internal buffer. Ignore passed parm.
          L     R3,ASMBUF
-         PUT   (R2),(R3)
+*         PUT   (R2),(R3)
+*         L     R9,=F'80' +++++
+         STCM  R4,B'0011',CCW+6
+         BCTR  R4,0
+         EX    R4,MVCLINE
+         EXCP  CCB
+         WAIT  CCB
 .NMM2    ANOP
          AIF   ('&OUTM' NE 'L').NLM3
          ST    R1,0(R3)
 .NLM3    ANOP
-         AIF ('&SYS' EQ 'S370').NOMOD4
+*
+         AIF   ('&SYS' NE 'S380').N380WR2
          CALL  @@SETM31
-.NOMOD4  ANOP
-         LA    R15,0
+.N380WR2 ANOP
 *
-RETURNAW DS    0H
-         LR    R1,R13
-         L     R13,SAVEAREA+4
-         LR    R14,R15
-*         FREEMAIN R,LV=WORKLEN,A=(R1),SP=SUBPOOL
-         LR    R15,R14
-         RETURN (14,12),RC=(15)
+*        LR    R1,R13
+*        L     R13,SAVEAREA+4
+         L     R13,SAVEADCB+4
+*        FREEVIS LENGTH=WORKLEN
+         LR    R15,R0
+         L     14,12(13,0)
+         LM    0,12,20(13)
+         BR    14
+*
+MVCLINE  MVC   LINE(0),0(R3)
+         LTORG
 LINE     DS    CL256
-CCB      CCB   SYSLOG,CCW
-CCW      CCW   X09',LINE,0,121
-*
-*
+CCB      CCB   SYSLST,CCW
+CCW      CCW   X'09',LINE,0,121
 *
 **********************************************************************
 *                                                                    *
 *  ACLOSE - Close file                                               *
-*                                                                    *
-*  HANDLE - address of ZDCBAREA                                      *
 *                                                                    *
 **********************************************************************
          ENTRY @@ACLOSE
@@ -371,10 +422,12 @@ CCW      CCW   X09',LINE,0,121
          LR    R11,R1
          AIF   ('&SYS' EQ 'S390').BELOW3
 * CAN'T USE "BELOW" ON MVS 3.8
-         GETMAIN R,LV=WORKLEN,SP=SUBPOOL
+         L     R0,=A(WORKLEN)
+         GETVIS
          AGO   .NOBEL3
 .BELOW3  ANOP
-         GETMAIN R,LV=WORKLEN,SP=SUBPOOL,LOC=BELOW
+         L     R0,=A(WORKLEN)
+         GETVIS LOC=BELOW
 .NOBEL3  ANOP
          ST    R13,4(R1)
          ST    R1,8(R13)
@@ -390,75 +443,73 @@ CCW      CCW   X09',LINE,0,121
          LTR   R5,R5
          BZ    NFRCL
          L     R6,=F'32768'
-         FREEMAIN R,LV=(R6),A=(R5),SP=SUBPOOL
+         FREEVIS LENGTH=(R6),ADDRESS=(R5)
 NFRCL    DS    0H
 .NMM6    ANOP
-         MVC   CLOSEMB,CLOSEMAC
+*         MVC   CLOSEMB,CLOSEMAC
 *         CLOSE ((R2)),MF=(E,CLOSEMB),MODE=31
 * CAN'T USE MODE=31 WITH MVS 3.8
-         CLOSE ((R2)),MF=(E,CLOSEMB)
-         FREEPOOL ((R2))
-         FREEMAIN R,LV=ZDCBLEN,A=(R2),SP=SUBPOOL
+*         CLOSE ((R2)),MF=(E,CLOSEMB)
+*         FREEPOOL ((R2))
+*         FREEVIS LENGTH=ZDCBLEN,ADDRESS=(R2)
          LA    R15,0
 *
 RETURNAC DS    0H
          LR    R1,R13
          L     R13,SAVEAREA+4
          LR    R7,R15
-         FREEMAIN R,LV=WORKLEN,A=(R1),SP=SUBPOOL
+         L     R0,=A(WORKLEN)
+         FREEVIS
          LR    R15,R7
-         RETURN (14,12),RC=(15)
+         L     14,12(13,0)
+         LM    0,12,20(13)
+         BR    14
          LTORG
 * CLOSEMAC CLOSE (),MF=L,MODE=31
 * CAN'T USE MODE=31 WITH MVS 3.8
-CLOSEMAC CLOSE (),MF=L
-CLOSEMLN EQU   *-CLOSEMAC
+*CLOSEMAC CLOSE (),MF=L
+*CLOSEMLN EQU   *-CLOSEMAC
 *
 *
 *
-**********************************************************************
-*                                                                    *
-*  GETM - GET MEMORY                                                 *
-*                                                                    *
-*  This function takes a length as a parameter.                      *
-*  It needs to return an address of a block of that length in R15    *
-*                                                                    *
-**********************************************************************
+* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+*
+*  GETM - GET MEMORY
+*
+* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
          ENTRY @@GETM
 @@GETM   EQU   *
          SAVE  (14,12),,@@GETM
          LR    R12,R15
          USING @@GETM,R12
 *
-         L     R2,0(R1)
+         L     R2,0(,R1)
+         AIF ('&COMP' NE 'GCC').GETMC
 * THIS LINE IS FOR GCC
          LR    R3,R2
+         AGO   .GETMEND
+.GETMC   ANOP
 * THIS LINE IS FOR C/370
-*         L     R3,0(R2)
+         L     R3,0(,R2)
+.GETMEND ANOP
          LR    R4,R3
-         A     R3,=F'8'
+         LA    R3,8(,R3)
 *
-* It would be nice to allocate memory with the default
-* LOC=RES. However, due to the fact that we need to be
-* in AMODE 24 to use things like "GET", it is necessary
-* for this program to reside below the line. As such,
-* we need to use LOC=ANY to get ATL memory.
+* To avoid fragmentation, round up size to 64 byte multiple
 *
-         AIF   ('&SYS' EQ 'S390').ANYCHKY
-         AIF   ('&SYS' EQ 'S370').GOT370
-* For S/380, need to switch to AMODE 24 before
-* requesting ATL memory
-         CALL  @@SETM24
-         GETMAIN RU,LV=(R3),SP=SUBPOOL,LOC=ANY
-         CALL  @@SETM31
-         AGO   .ANYCHKE
-.GOT370  ANOP
-* CAN'T USE "ANY" ON MVS 3.8
-         GETMAIN R,LV=(R3),SP=SUBPOOL
-         AGO   .ANYCHKE
-.ANYCHKY ANOP
-         GETMAIN RU,LV=(R3),SP=SUBPOOL,LOC=ANY
-.ANYCHKE ANOP
+         A     R3,=A(64-1)
+         N     R3,=X'FFFFFFC0'
+*
+         AIF   ('&SYS' NE 'S380').N380GM1
+*         GETMAIN RU,LV=(R3),SP=SUBPOOL,LOC=ANY
+* Hardcode the ATL memory area provided by latest MUSIC.
+* Note that this function will only work if the C library
+* is compiled with MEMMGR option.
+         L     R1,=X'02000000'
+         AGO   .N380GM2
+.N380GM1 ANOP
+         GETVIS LENGTH=(R3)
+.N380GM2 ANOP
 *
 * WE STORE THE AMOUNT WE REQUESTED FROM MVS INTO THIS ADDRESS
          ST    R3,0(R1)
@@ -469,191 +520,61 @@ CLOSEMLN EQU   *-CLOSEMAC
          LR    R15,R1
 *
 RETURNGM DS    0H
-         RETURN (14,12),RC=(15)
+         L     14,12(13,0)
+         LM    0,12,20(13)
+         BR    14
          LTORG
 *
+* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
 *
+*  FREEM - FREE MEMORY
 *
-**********************************************************************
-*                                                                    *
-*  FREEM - FREE MEMORY                                               *
-*                                                                    *
-**********************************************************************
+* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
          ENTRY @@FREEM
 @@FREEM  EQU   *
          SAVE  (14,12),,@@FREEM
          LR    R12,R15
          USING @@FREEM,R12
 *
-         L     R2,0(R1)
+         L     R2,0(,R1)
          S     R2,=F'8'
-         L     R3,0(R2)
-         AIF   ('&SYS' EQ 'S370').F370
-         FREEMAIN RU,LV=(R3),A=(R2),SP=SUBPOOL
-         AGO   .FINFREE
-.F370    ANOP
-* S/370
-         FREEMAIN R,LV=(R3),A=(R2),SP=SUBPOOL
-.FINFREE ANOP
+         L     R3,0(,R2)
+*
+         AIF   ('&SYS' NE 'S380').N380FM1
+* On S/380, nothing to free - using preallocated memory block
+*         FREEMAIN LENGTH=(R3),ADDRESS=(R2)
+         AGO   .N380FM2
+.N380FM1 ANOP
+         FREEVIS LENGTH=(R3),ADDRESS=(R2)
+.N380FM2 ANOP
 *
 RETURNFM DS    0H
-         RETURN (14,12),RC=(15)
+         L     14,12(13,0)
+         LM    0,12,20(13)
+         BR    14
          LTORG
+* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
 *
+*  GETCLCK - GET THE VALUE OF THE MVS CLOCK TIMER AND MOVE IT TO AN
+*  8-BYTE FIELD.  THIS 8-BYTE FIELD DOES NOT NEED TO BE ALIGNED IN
+*  ANY PARTICULAR WAY.
 *
+*  E.G. CALL 'GETCLCK' USING WS-CLOCK1
 *
-**********************************************************************
+*  THIS FUNCTION ALSO RETURNS THE NUMBER OF SECONDS SINCE 1970-01-01
+*  BY USING SOME EMPERICALLY-DERIVED MAGIC NUMBERS
 *
-*  @@SVC202 - ISSUES AN SVC 202 CALL
-*
-*  E.G. @@SVC202(PARMS,CODE,ERROR)
-*
-* WHERE :-
-*
-*  PARMS IS A POINTER TO AN SVC202 PARAMETER LIST
-*
-*  CODE IS A CODE TO SAY OF &CONTROL IS ON OR OFF
-*
-* AND ERROR IS SET TO -1
-*
-**********************************************************************
-         ENTRY @@SVC202
-@@SVC202 EQU *
-         SAVE  (14,12),,@@SVC202
-         LR    R12,R15
-         USING @@SVC202,R12
-         LR    R11,R1           NEED TO RESTORE R1 FOR C
-         AIF ('&SYS' NE 'S380').NOMODS1
-         CALL  @@SETM24
-.NOMODS1 ANOP
-         L     R3,0(R1)         R3 POINTS TO SVC202 PARM LIST
-         L     R4,4(R1)         R4 POINTS TO CODE
-         L     R5,8(R1)         R5 POINTS TO RETURN CODE
-         SR    R6,R6            CLEAR R6
-         ST    R6,0(R5)         AND SAVE IN RETURN CODE
-         LR    R1,R3
-*
-         AIF   ('&SYS' EQ 'S390').DOCALL
-         SVC   202              ISSUE COMMAND
-         DC    AL4(SV202ER)     ERROR
-         AGO   .FINCALL
-.DOCALL  ANOP
-         CMSCALL ERROR=SV202ER
-.FINCALL ANOP
-*
-SV202RT  EQU    *
-         LR    R7,R15
-         AIF ('&SYS' NE 'S380').NOMODS2
-         CALL  @@SETM31
-.NOMODS2 ANOP
-         LR    R15,R7
-         LR    R1,R11
-         RETURN (14,12),RC=(15)
-SV202ER  EQU   *
-         L     R3,=F'-1'
-         ST    R3,0(R5)
-         B     SV202RT
-         LTORG
-*
-*
-*
-**********************************************************************
-*
-*  @@ATTN@@ - ISSUES AN SVC 202 CALL TO STACK A LINE
-*
-*  E.G. @@ATTN@@(LINE,LEN,ORDER)
-*
-* WHERE :-
-*
-*  LINE IS A POINTER TO LINE TO BE STACKED
-*
-*  LEN IS THE NUMBER OF CHARACTERS. (<256)
-*
-*  ORDER IS POINTER TO EITHER FIFO OR LIFO
-*
-**********************************************************************
-         ENTRY @@ATTN@@
-@@ATTN@@ EQU *
-         SAVE  (14,12),,@@ATTN@@
-         LR    R12,R15
-         USING @@ATTN@@,R12
-         LR    R11,R1           NEED TO RESTORE R1 FOR C
-         L     R3,0(R1)         R3 POINTS TO LINE TO STACK
-         ST    R3,ATTNLN        SAVE IN 202 PLIST
-         L     R4,4(R1)         R4 POINTS TO LENGTH OF LINE
-         MVC   ATTNLN,3(R4)     FIDDLE
-         L     R5,8(R1)         R5 POINTS TO LIFO OR FIFO
-         MVC   ATTNOD,0(R5)
-         SR    R6,R6            CLEAR R6
-*        ST    R6,0(R5)         AND SAVE IN RETURN CODE
-         LA    R1,ATTNPL
-         SVC   202              ISSUE COMMAND
-         DC    AL4(ATTNER)      ERROR
-ATTNRT   EQU    *
-         LR     R1,R11
-         RETURN (14,12),RC=(15)
-ATTNER   EQU    *
-*        L      R3,=F'-1'
-*        ST     R3,0(R5)
-         B      ATTNRT
-         LTORG
-*
-ATTNPL   DS   0D
-         DC   CL8'ATTN'
-ATTNOD   DC   CL4'XXXX'     WHERE ORDER MAY BE LIFO OR FIFO.
-*                            FIFO IS THE DEFAULT
-ATTNLN   DC   AL1(0)         LENGTH OF LINE TO BE STACKED
-ATTNAD   DC   AL3(ATTNAD)    ADDRESS OF LINE TO BE STACKED
-*
-*
-**********************************************************************
-*
-*  @@STACKN - RETURNS THE NUMBER OF LINES ON THE CONSOLE STACK
-*
-*  E.G. @@STACKN(COUNT)
-*
-* WHERE :-
-*
-*  COUNT IS A POINTER TO AN INT - NUMBER OF LINES TETURNED
-*
-*
-**********************************************************************
-         ENTRY @@STACKN
-@@STACKN EQU *
-         SAVE  (14,12),,@@STACKN
-         LR    R12,R15
-         USING @@STACKN,R12
-         USING NUCON,R0
-         LR    R11,R1           NEED TO RESTORE R1 FOR C
-         L     R3,0(R1)         R3 POINTS TO COUNT
-         LH    R2,NUMFINRD      R2 HAS COUNT OF LINES ON STACK
-         ST    R2,0(R3)         R2 TO COUNT
-         LR    R1,R11
-         RETURN (14,12),RC=(15)
-         LTORG
-*
-**********************************************************************
-*                                                                    *
-*  GETCLCK - GET THE VALUE OF THE MVS CLOCK TIMER AND MOVE IT TO AN  *
-*  8-BYTE FIELD.  THIS 8-BYTE FIELD DOES NOT NEED TO BE ALIGNED IN   *
-*  ANY PARTICULAR WAY.                                               *
-*                                                                    *
-*  E.G. CALL 'GETCLCK' USING WS-CLOCK1                               *
-*                                                                    *
-*  THIS FUNCTION ALSO RETURNS THE NUMBER OF SECONDS SINCE 1970-01-01 *
-*  BY USING SOME EMPERICALLY-DERIVED MAGIC NUMBERS                   *
-*                                                                    *
-**********************************************************************
+* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
          ENTRY @@GETCLK
 @@GETCLK EQU   *
          SAVE  (14,12),,@@GETCLK
          LR    R12,R15
          USING @@GETCLK,R12
 *
-         L     R2,0(R1)
+         L     R2,0(,R1)
          STCK  0(R2)
-         L     R4,0(R2)
-         L     R5,4(R2)
+         L     R4,0(,R2)
+         L     R5,4(,R2)
          SRDL  R4,12
          SL    R4,=X'0007D910'
          D     R4,=F'1000000'
@@ -661,151 +582,198 @@ ATTNAD   DC   AL3(ATTNAD)    ADDRESS OF LINE TO BE STACKED
          LR    R15,R5
 *
 RETURNGC DS    0H
-         RETURN (14,12),RC=(15)
+         L     14,12(13,0)
+         LM    0,12,20(13)
+         BR    14
          LTORG
+* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
 *
+*  SYSTEM - execute another command
 *
-*
-**********************************************************************
-*                                                                    *
-*  SAVER - SAVE REGISTERS AND PSW INTO ENV_BUF                       *
-*                                                                    *
-**********************************************************************
-         ENTRY @@SAVER
-@@SAVER EQU   *
-*
-         SAVE  (14,12),,@@SAVER    * SAVE REGS AS NORMAL
+* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+         ENTRY @@SYSTEM
+@@SYSTEM EQU   *
+         SAVE  (14,12),,@@SYSTEM
          LR    R12,R15
-         USING @@SAVER,12
-         L     R1,0(R1)            * ADDRESS OF ENV TO R1
-         L     R2,@@MANSTK         * R2 POINTS TO START OF STACK
-         L     R3,@@MANSTK+4       * R3 HAS LENGTH OF STACK
-         LR    R5,R3               * AND R5
-         LR    R9,R1               * R9 NOW CONTAINS ADDRESS OF ENV
-* GET A SAVE AREA
-         AIF   ('&SYS' NE 'S370').ANYY
-* Can't use "ANY" on VM/370
-* Also can't do multiple ANY requests on VM/380 at the moment
-         GETMAIN R,LV=(R3),SP=SUBPOOL
-         AGO   .ANYE
-.ANYY    ANOP
-         GETMAIN R,LV=(R3),SP=SUBPOOL,LOC=ANY
-.ANYE    ANOP
-         ST    R1,0(R9)            * SAVE IT IN FIRST WORK OF ENV
-         ST    R5,4(R9)            * SAVE LENGTH IN SECOND WORD OF ENV
-         ST    R2,8(R9)            * NOTE WHERE WE GOT IT FROM
-         ST    R13,12(R9)          * AND R13
-         LR    R4,R1               * AND R4
-         MVCL  R4,R2               * COPY SETJMP'S SAVE AREA TO ENV
-*        STM   R0,R15,0(R1)               SAVE REGISTERS
-*        BALR  R15,0                     GET PSW INTO R15
-*        ST    R15,64(R1)                 SAVE PSW
+         USING @@SYSTEM,R12
+         LR    R11,R1
 *
-RETURNSR DS    0H
-         SR    R15,R15              * CLEAR RETURN CODE
-         RETURN (14,12),RC=(15)
-         ENTRY   @@MANSTK
-@@MANSTK DS    2F
+*         GETVIS LENGTH=SYSTEMLN,SP=SUBPOOL
+         ST    R13,4(,R1)
+         ST    R1,8(,R13)
+         LR    R13,R1
+         LR    R1,R11
+         USING SYSTMWRK,R13
+*
+         MVC   CMDPREF,FIXEDPRF
+         L     R2,0(R1)
+         CL    R2,=F'200'
+         BL    LENOK
+         L     R2,=F'200'
+LENOK    DS    0H
+         STH   R2,CMDLEN
+         LA    R4,CMDTEXT
+         LR    R5,R2
+         L     R6,4(R1)
+         LR    R7,R2
+         MVCL  R4,R6
+         LA    R1,CMDPREF
+*         SVC   $EXREQ
+*
+RETURNSY DS    0H
+         LR    R1,R13
+         L     R13,SYSTMWRK+4
+*         FREEMAIN RU,LV=SYSTEMLN,A=(1),SP=SUBPOOL
+*
+         LA    R15,0
+         L     14,12(13,0)
+         LM    0,12,20(13)
+         BR    14
+* For documentation on this fixed prefix, see SVC 221
+* documentation.
+FIXEDPRF DC    X'7F01E000000000'
+         LTORG
+SYSTMWRK DSECT ,             MAP STORAGE
+         DS    18A           OUR OS SAVE AREA
+CMDPREF  DS    CL8           FIXED PREFIX
+CMDLEN   DS    H             LENGTH OF COMMAND
+CMDTEXT  DS    CL200         COMMAND ITSELF
+SYSTEMLN EQU   *-SYSTMWRK    LENGTH OF DYNAMIC STORAGE
+@@VSESUP CSECT ,
+* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+*
+*  IDCAMS - dummy function to keep MVS happy
+*
+* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+         ENTRY @@IDCAMS
+@@IDCAMS EQU   *
+         SAVE  (14,12),,@@IDCAMS
+         LR    R12,R15
+         USING @@IDCAMS,R12
+*
+         LA    R15,0
+*
+         L     14,12(13,0)
+         LM    0,12,20(13)
+         BR    14
          LTORG
 *
+* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
 *
+*  DYNAL - dummy function to keep MVS happy
 *
-**********************************************************************
-*                                                                    *
-*  LOADR - LOAD REGISTERS AND PSW FROM ENV_BUF                       *
-*                                                                    *
-**********************************************************************
-         ENTRY @@LOADR
-@@LOADR EQU   *
+* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+         ENTRY @@DYNAL
+@@DYNAL EQU   *
+         SAVE  (14,12),,@@DYNAL
+         LR    R12,R15
+         USING @@DYNAL,R12
 *
-         BALR  R12,R0
-         USING *,12
-         L     R1,0(R1)           * R1 POINTS TO ENV
-         L     R2,8(R1)           * R2 POINTS TO STACK
-         L     R3,4(R1)           * R3 HAS HOW LONG
-         LR    R5,R3              * AS DOES R5
-         L     R6,24(R1)          * R6 HAS RETURN CODE
-         L     R4,0(R1)           * OUR SAVE AREA
-         L     R13,12(R1)         * GET OLD STACK POINTER
-         MVCL  R2,R4              * AND RESTORE STACK
-         ST    R6,24(R1)          * SAVE VAL IN ENV
-         L     R6,=F'1'
-         ST    R6,20(R1)          * AND SET LONGJ TO 1.
-         FREEMAIN R,LV=(R3),A=(R4),SP=SUBPOOL
-*        L     R14,16(R1)          * AND RETURN ADDRESS
-*        B     RETURNSR            * AND BACK INTO SETJMP
-*        L     R15,64(R1)                 RESTORE PSW
-*        LM    R0,R15,0(R1)               RESTORE REGISTERS
-*        BR    R15                        JUMP TO SAVED PSW
+         LA    R15,0
 *
-RETURNLR DS    0H
-         SR    R15,R15            * CLEAR RETURN CODE
-         RETURN (14,12),RC=(15)
+         L     14,12(13,0)
+         LM    0,12,20(13)
+         BR    14
          LTORG
 *
+* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
 *
+*  SETJ - SAVE REGISTERS INTO ENV
+*
+* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+         ENTRY @@SETJ
+         USING @@SETJ,R15
+@@SETJ   L     R15,0(R1)          get the env variable
+         STM   R0,R14,0(R15)      save registers to be restored
+         LA    R15,0              setjmp needs to return 0
+         BR    R14                return to caller
+         LTORG ,
+*
+* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+*
+*  LONGJ - RESTORE REGISTERS FROM ENV
+*
+* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+         ENTRY @@LONGJ
+         USING @@LONGJ,R15
+@@LONGJ  L     R2,0(R1)           get the env variable
+         L     R15,60(R2)         get the return code
+         LM    R0,R14,0(R2)       restore registers
+         BR    R14                return to caller
+         LTORG ,
 *
 * S/370 doesn't support switching modes so this code is useless,
 * and won't compile anyway because "BSM" is not known.
 *
-         AIF   ('&SYS' EQ 'S370').NOMODE2 If S/370 we can't switch mode
-**********************************************************************
-*                                                                    *
-*  SETM24 - Set AMODE to 24                                          *
-*                                                                    *
-**********************************************************************
-         DROP  R12
+         AIF   ('&SYS' EQ 'S370').NOMODE  If S/370 we can't switch mode
+* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+*
+*  SETM24 - Set AMODE to 24
+*
+* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
          ENTRY @@SETM24
          USING @@SETM24,R15
 @@SETM24 ICM   R14,8,=X'00'       Sure hope caller is below the line
-         BSM   0,R14              Return in amode 24
+*         BSM   0,R14              Return in amode 24
 *
-**********************************************************************
-*                                                                    *
-*  SETM31 - Set AMODE to 31                                          *
-*                                                                    *
-**********************************************************************
+* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+*
+*  SETM31 - Set AMODE to 31
+*
+* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
          ENTRY @@SETM31
          USING @@SETM31,R15
 @@SETM31 ICM   R14,8,=X'80'       Set to switch mode
-         BSM   0,R14              Return in amode 31
+*         BSM   0,R14              Return in amode 31
          LTORG ,
 *
-.NOMODE2 ANOP  ,                  S/370 doesn't support MODE switching
+.NOMODE  ANOP  ,                  S/370 doesn't support MODE switching
 *
+*         IEZIOB                   Input/Output Block
 *
+*ZDCBLEN  EQU   =A(TDCBLEN)
+*WORKLEN  EQU   =A(TWRKLEN)
 *
 WORKAREA DSECT
 SAVEAREA DS    18F
 WORKLEN  EQU   *-WORKAREA
-         DCBD  DSORG=PS
-         ORG   IHADCB
+*
+*         DCBD  DSORG=PS,DEVD=DA   Map Data Control Block
+*         ORG   IHADCB             Overlay the DCB DSECT
 ZDCBAREA DS    0H
-         DS    CL(INDCBLN)
-         ORG   IHADCB
-         DS    CL(OUTDCBLN)
+*         DS    CL(INDCBLN)
+*         DS    CL(OUTDCBLN)
+OPENCLOS DS    F                  OPEN/CLOSE parameter list
          DS    0H
-EOFR24   DS    CL(EOFRLEN)
+*EOFR24   DS    CL(EOFRLEN)
+*         IHADECB DSECT=NO         Data Event Control Block
+BLKSIZE  DS    F                  Save area for input DCB BLKSIZE
+LRECL    DS    F                  Save area for input DCB LRECL
+BUFFADDR DS    F                  Location of the BLOCK Buffer
+BUFFEND  DS    F                  Address after end of current block
+BUFFCURR DS    F                  Current record in the buffer
+VBSADDR  DS    F                  Location of the VBS record build area
+VBSEND   DS    F                  Addr. after end VBS record build area
+VBSCURR  DS    F                  Location to store next byte
+RDRECPTR DS    F                  Where to store record pointer
+RDLENPTR DS    F                  Where to store read length
 JFCBPTR  DS    F
 JFCB     DS    0F
-*        IEFJFCBN
-* z/VM manual says to use 176 characters
-         DS    CL176
+*         IEFJFCBN LIST=YES        SYS1.AMODGEN JOB File Control Block
+* Format 1 Data Set Control Block
+DSCB     DS    0F
+*         IECSDSL1 (1)             Map the Format 1 DSCB
+DSCBCCHH DS    CL5                CCHHR of DSCB returned by OBTAIN
+         DS    CL47               Rest of OBTAIN's 148 byte work area
 SAVEADCB DS    18F                Register save area for PUT
+*CLOSEMB  DS    CL(CLOSEMLN)
          DS    0F
-CLOSEMB  DS    CL(CLOSEMLN)
+*OPENMB   DS    CL(OPENMLN)
          DS    0F
-OPENMB   DS    CL(OPENMLN)
-         DS    0F
-WOPENMB  DS    CL(WOPENMLN)
+*WOPENMB  DS    CL(WOPENMLN)
 RDEOF    DS    1F
-ASMBUF   DS    A                  Pointer to an area for PUTting data
-*
+ASMBUF   DS    A                  Pointer to an area for PUTing data
+MEMBER24 DS    CL8
 ZDCBLEN  EQU   *-ZDCBAREA
-RECF     EQU   X'80'                   FIXED RECORD FORMAT
-RECV     EQU   X'40'                   VARYING RECORD FORMAT
-RECU     EQU   X'C0'                   UNDEFINED RECORD FORMAT
-RECUV    EQU   X'40'                   U OR V RECORD FORMAT
-RECUF    EQU   X'80'                   U OR F RECORD FORMAT
-         NUCON
+*
          END

@@ -14,7 +14,7 @@
 **********************************************************************
          COPY  PDPTOP
 .NOMODE ANOP
-         PRINT NOGEN
+         PRINT GEN
 * YREGS IS NOT AVAILABLE WITH IFOX
 *         YREGS
 R0       EQU   0
@@ -34,28 +34,34 @@ R13      EQU   13
 R14      EQU   14
 R15      EQU   15
 SUBPOOL  EQU   0
-         CSECT
+@@VSESTR CSECT
          ENTRY @@CRT0
 @@CRT0   EQU   *
 *         ENTRY CEESTART
 *CEESTART EQU   *
-         SAVE  (14,12),,@@CRT0
+*         SAVE  (14,12),,@@CRT0
+         BALR  R15,0
+         USING *,R10
          LR    R10,R15
-         USING @@CRT0,R10
+*         USING @@CRT0,R10
+*LOOP     LA    R5,1(R5)
+*         B     LOOP
          LR    R11,R1            save R1 so we can get the PLIST
          LR    R8,R0             save R0 so we can get the EPLIST
          LR    R9,R13            save R13 so we can get flag byte
-         GETMAIN R,LV=STACKLEN,SP=SUBPOOL
+*         GETMAIN R,LV=STACKLEN,SP=SUBPOOL
+         GETVIS LENGTH=STACKLEN
+*LOOP     B     LOOP
          ST    R13,4(R1)
-         ST    R1,8(R13)
+*         ST    R1,8(R13)
          LR    R13,R1
          USING STACK,R13
 *DW* SAVE STACK POINTER FOR SETJMP/LONGJMP
-         EXTRN @@MANSTK
-         L     R3,=V(@@MANSTK)
-         ST    R13,0(R3)
-         L     R2,=A(STACKLEN)
-         ST    R2,4(R3)
+*         EXTRN @@MANSTK
+*         L     R3,=V(@@MANSTK)
+*         ST    R13,0(R3)
+*         L     R2,=A(STACKLEN)
+*         ST    R2,4(R3)
 *DW END OF MOD
 *
          LA    R2,0
@@ -114,9 +120,9 @@ RETURNMS DS    0H
          LR    R1,R13
          L     R13,SAVEAREA+4
          LR    R14,R9
-         FREEMAIN R,LV=STACKLEN,A=(R1),SP=SUBPOOL
+         FREEVIS LENGTH=STACKLEN
          LR    R15,R14
-         RETURN (14,12),RC=(15)
+         EOJ
 SAVER4   DS    F
 SAVER13  DS    F
          LTORG
@@ -145,10 +151,12 @@ IN31C    DS    0H
          LR    R1,R13
          L     R13,4(R13)
          LR    R14,R9
-         FREEMAIN RU,LV=STACKLEN,A=(R1),SP=SUBPOOL
+         FREEVIS LENGTH=STACKLEN
          LR    R15,R14
-         RETURN (14,12),RC=(15)
+*         RETURN (14,12),RC=(15)
+         EOJ
          LTORG
+STACKLEN DC    A(STKLTMP)
 *
 STACK    DSECT
 SAVEAREA DS    18F
@@ -166,9 +174,9 @@ EXITADDR DS    F
          DS    49F
 MAINSTK  DS    32000F
 MAINLEN  EQU   *-MAINSTK
-STACKLEN EQU   *-STACK
-         NUCON
+STKLTMP  EQU   *-STACK
+*         NUCON
          AIF   ('&SYS' NE 'S380').N380ST4
          USERSAVE
 .N380ST4 ANOP
-         END
+         END   @@CRT0

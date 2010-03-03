@@ -504,11 +504,23 @@ RETURNAC DS    0H
 *
          AIF   ('&SYS' NE 'S380').N380GM1
 *         GETMAIN RU,LV=(R3),SP=SUBPOOL,LOC=ANY
-* Hardcode the ATL memory area for DOS/VS until the SVC 61
-* intercept and macro are available.
+*
+* VSE/380 will work even without the LOC=ANY, but it will not
+* work on DOS/VSE that way. So it is necessary to update the
+* GETVIS macro to put in the proper expansion like this:
+*
+* L     0,LENGTH (or load from register as in our case)
+* CNOP  0,4                                          
+* BAL   15,*+8                                       
+* DC    B'00000000000000000010000000000000'
+* L     15,0(,15)
+* SVC   61
+*
 * Note that this function will only work if the C library
 * is compiled with MEMMGR option.
-         L     R1,=X'04100000'
+*
+*         GETVIS LENGTH=(R3),LOC=ANY
+         GETVIS LENGTH=(R3)
          AGO   .N380GM2
 .N380GM1 ANOP
          GETVIS LENGTH=(R3)

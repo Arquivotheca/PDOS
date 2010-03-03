@@ -318,6 +318,11 @@ __PDPCLIB_API__ int CTYP __start(char *p)
        command instead */
     __textlc();
 #endif
+
+#if defined(__VSE__)
+    p = "\0\0";
+#endif
+
 #ifdef __MVS__
     /* need to know if this is a TSO environment straight away
        because it determines how the permanent files will be
@@ -330,6 +335,7 @@ __PDPCLIB_API__ int CTYP __start(char *p)
 #endif /* MVS */
     __doperm = 1;
     stdout = fopen("dd:SYSPRINT", "w");
+
     if (stdout == NULL)
     {
         __exita(EXIT_FAILURE);

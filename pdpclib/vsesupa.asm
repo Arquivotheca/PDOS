@@ -205,7 +205,9 @@ WNOMEM   DS    0H
          GETVIS LENGTH=(R6)  No LOC= for S/370
          AGO   .GETOENE
 .MVT8090 ANOP  ,                  S/380 or S/390
-         GETVIS LENGTH=(R6),LOC=BELOW
+* +++ need to put back LOC=BELOW
+*         GETVIS LENGTH=(R6),LOC=BELOW
+         GETVIS LENGTH=(R6)
 .GETOENE ANOP
          ST    R1,ASMBUF
          L     R5,20(,R11)        R5 points to ASMBUF
@@ -714,7 +716,7 @@ SYSTEMLN EQU   *-SYSTMWRK    LENGTH OF DYNAMIC STORAGE
          ENTRY @@SETM24
          USING @@SETM24,R15
 @@SETM24 ICM   R14,8,=X'00'       Sure hope caller is below the line
-*         BSM   0,R14              Return in amode 24
+         BSM   0,R14              Return in amode 24
 *
 * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
 *
@@ -724,7 +726,7 @@ SYSTEMLN EQU   *-SYSTMWRK    LENGTH OF DYNAMIC STORAGE
          ENTRY @@SETM31
          USING @@SETM31,R15
 @@SETM31 ICM   R14,8,=X'80'       Set to switch mode
-*         BSM   0,R14              Return in amode 31
+         BSM   0,R14              Return in amode 31
          LTORG ,
 *
 .NOMODE  ANOP  ,                  S/370 doesn't support MODE switching

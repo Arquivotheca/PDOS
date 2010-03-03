@@ -116,13 +116,12 @@ SUBPOOL  EQU   0
          L     R9,24(,R1)         R9 POINTS TO MEMBER NAME (OF PDS)
          LA    R9,0(,R9)          Strip off high-order bit or byte
 *
-         AIF   ('&SYS' EQ 'S390').BELOW
-* CAN'T USE "BELOW" ON MVS 3.8
          L     R0,=A(ZDCBLEN)
+         AIF   ('&SYS' EQ 'S390').BELOW
+* USE DEFAULT LOC=RES for S/370 and S/380
          GETVIS
          AGO   .CHKBLWE
 .BELOW   ANOP
-         L     R0,=A(ZDCBLEN)
          GETVIS LOC=BELOW
 .CHKBLWE ANOP
          LR    R2,R1
@@ -201,13 +200,11 @@ WNOMEM   DS    0H
 *
 * S/370 can't handle LOC=BELOW
 *
-         AIF   ('&SYS' NE 'S370').MVT8090  If not S/370 then 380 or 390
-         GETVIS LENGTH=(R6)  No LOC= for S/370
+         AIF   ('&SYS' EQ 'S390').MVT8090  If not 390
+         GETVIS LENGTH=(R6)  Use default LOC=RES for S/370 and S/380
          AGO   .GETOENE
-.MVT8090 ANOP  ,                  S/380 or S/390
-* +++ need to put back LOC=BELOW
-*         GETVIS LENGTH=(R6),LOC=BELOW
-         GETVIS LENGTH=(R6)
+.MVT8090 ANOP  ,                  S/390
+         GETVIS LENGTH=(R6),LOC=BELOW
 .GETOENE ANOP
          ST    R1,ASMBUF
          L     R5,20(,R11)        R5 points to ASMBUF
@@ -416,13 +413,12 @@ CCW      CCW   X'09',LINE,0,121
          LR    R12,R15
          USING @@ACLOSE,R12
          LR    R11,R1
+         L     R0,=A(WORKLEN)
          AIF   ('&SYS' EQ 'S390').BELOW3
 * CAN'T USE "BELOW" ON MVS 3.8
-         L     R0,=A(WORKLEN)
          GETVIS
          AGO   .NOBEL3
 .BELOW3  ANOP
-         L     R0,=A(WORKLEN)
          GETVIS LOC=BELOW
 .NOBEL3  ANOP
          ST    R13,4(R1)

@@ -4305,9 +4305,9 @@ This function takes the handle previously returned from __aopen
 and reads into the provided buffer a single record. It is
 assumed that the buffer is big enough to hold the LRECL
 previously returned by __aopen. *len will contain the length
-of the actual record returned, e.g. if RECFM=U this may
-change from record (block) to record (block). In the case
-of RECFM=V, the record includes a RDW.
+of the actual record returned, e.g. if RECFM=U, then while
+reading each record (block), the length might change.
+In the case of RECFM=V, the record includes a RDW.
 
 __aread returns 0 on success, non-zero on failure.
 

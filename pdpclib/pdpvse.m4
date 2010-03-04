@@ -66,6 +66,76 @@ ASSGN SYSPCH,DISK,VOL=WORK01,SHR
          MEXIT
 .ERROR2  IHBERMAC 37,,&PARA
 .END     MEND
+         MACRO
+&NAME GETVIS &ERROR,&ADDRESS=,&LENGTH=,&PAGE=NO,&POOL=NO,&SVA=NO
+ LCLB &BLPAGE,&BLPOOL,&BLSVA
+* AM/VS ACCESS METHOD - GETVIS - 5745-SC-SUP - REL.29.0
+         AIF   (T'&ERROR EQ 'O').G0
+         MNOTE 4,'POSITIONAL PARAMETER SPECIFIED - MACRO IGNORED'
+         MEXIT
+.G0      ANOP
+         AIF   (T'&NAME EQ 'O').G1
+&NAME    DS    0H
+.G1      ANOP
+         AIF   (T'&LENGTH EQ 'O').G4
+         AIF   ('&LENGTH'(1,1) NE '(').G2
+         AIF   (T'&LENGTH(1) NE 'N').G15
+         AIF   (&LENGTH(1) EQ 0).G4
+.G15     ANOP
+         LR    0,&LENGTH(1)       LOAD LENGTH INTO REGISTER 0
+         AGO   .G4
+.G2      ANOP
+         AIF   (T'&LENGTH NE 'N').G3
+         MNOTE 4,'LENGTH PARAMETER INVALID  - MACRO IGNORED'
+         MEXIT
+.G3      ANOP
+         L     0,&LENGTH          LOAD LENGTH INTO REGISTER 0
+.G4      ANOP
+         AIF   ('&PAGE' EQ 'NO').G42
+         AIF   ('&PAGE' EQ 'YES').G41
+         MNOTE 3,'PAGE PARAMETER INCORRECT - ''NO'' ASSUMED'
+         AGO   .G42
+.G41     ANOP
+&BLPAGE  SETB  (1)
+.G42     ANOP
+         AIF   ('&POOL' EQ 'NO').G44
+         AIF   ('&POOL' EQ 'YES').G43
+         MNOTE 3,'POOL PARAMETER INCORRECT - ''NO'' ASSUMED'
+         AGO   .G44
+.G43     ANOP
+&BLPOOL  SETB  (1)
+.G44     ANOP
+         AIF   ('&SVA' EQ 'NO').G46
+         AIF   ('&SVA' EQ 'YES').G45
+         MNOTE 3,'SVA PARAMETER INCORRECT - ''NO'' ASSUMED'
+         AGO   .G46
+.G45     ANOP
+&BLSVA   SETB  (1)
+.G46     ANOP
+         AIF   (&BLPAGE OR &BLPOOL OR &BLSVA).G47
+         SR    15,15              CLEAR INDICATORS
+         AGO   .G48
+.G47     ANOP
+         LA    15,B'00000&BLSVA&BLPOOL&BLPAGE' SET INDICATORS
+.G48     ANOP
+         SVC   61                 ISSUE SVC FOR GETVIS
+         AIF   (T'&ADDRESS EQ 'O').G6
+         AIF   ('&ADDRESS'(1,1) EQ '(').G5
+         AIF   (T'&ADDRESS NE 'N').G49
+         MNOTE 3,'ADDRESS PARAMETER INVALID - IGNORED'
+         MEXIT
+.G49     ANOP
+         ST    1,&ADDRESS         STORE RETURNED ADDRESS
+         AGO   .G6
+.G5      ANOP
+         AIF   (T'&ADDRESS(1) NE 'N').G56
+         AIF   ('&ADDRESS(1)' EQ '1').G6
+         AIF   (&ADDRESS(1) NE 15).G56
+         MNOTE 4,'RETURN CODE IN REGISTER 15 WILL BE DESTROYED'
+.G56     ANOP
+         LR    &ADDRESS(1),1      LOAD RETURNED ADDRESS FROM REGISTER 1
+.G6      ANOP
+         MEND
 undivert(pdpprlg.mac)undivert(pdpepil.mac)         END
 /*
 // DLBL IJSYSIN,'WORK.FILE',0,SD

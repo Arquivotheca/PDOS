@@ -374,14 +374,7 @@ RETURNAR DS    0H
 * In move mode, always use our internal buffer. Ignore passed parm.
          L     R3,ASMBUF
 *         PUT   (R2),(R3)
-*         L     R9,=F'80' +++++
-*         STCM  R4,B'0011',CCW+6
-*         BCTR  R4,0
-*         EX    R4,MVCLINE
-*         EXCP  CCB
-*         WAIT  CCB
          DSPLY (R3),(R4),UPON=SYSLST
-*         DSPLY (R3),80
 .NMM2    ANOP
          AIF   ('&OUTM' NE 'L').NLM3
          ST    R1,0(R3)
@@ -398,12 +391,8 @@ RETURNAR DS    0H
          LA    R15,0
          RETURN (14,12),RC=(15)
 *
-*MVCLINE  MVC   LINE(0),0(R3)
          LTORG
          TYPER RELOC=NO
-*LINE     DS    CL256
-*CCB      CCB   SYSLST,CCW
-*CCW      CCW   X'09',LINE,0,121
 *
 **********************************************************************
 *                                                                    *

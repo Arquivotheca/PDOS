@@ -493,22 +493,12 @@ RETURNAC DS    0H
          AIF   ('&SYS' NE 'S380').N380GM1
 *         GETMAIN RU,LV=(R3),SP=SUBPOOL,LOC=ANY
 *
-* VSE/380 will work even without the LOC=ANY, but it will not
-* work on DOS/VSE that way. So it is necessary to update the
-* GETVIS macro to put in the proper expansion like this:
+* When in 380 mode, we need to keep the program below the
+* line, but we have the ability to use storage above the
+* line, and this is where we get it, with the LOC=ANY parameter.
+* For other environments, the default LOC=RES is fine.
 *
-* L     0,LENGTH (or load from register as in our case)
-* CNOP  0,4                                          
-* BAL   15,*+8                                       
-* DC    B'00000000000000000010000000000000'
-* L     15,0(,15)
-* SVC   61
-*
-* Note that this function will only work if the C library
-* is compiled with MEMMGR option.
-*
-*         GETVIS LENGTH=(R3),LOC=ANY
-         GETVIS LENGTH=(R3)
+         GETVIS LENGTH=(R3),LOC=ANY
          AGO   .N380GM2
 .N380GM1 ANOP
          GETVIS LENGTH=(R3)

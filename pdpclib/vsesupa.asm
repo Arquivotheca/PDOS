@@ -318,12 +318,21 @@ JPTR     DS    F
 *        L     R2,0(R1)         R2 CONTAINS HANDLE
          L     R3,4(R1)         R3 POINTS TO BUF POINTER
          L     R4,8(R1)         R4 point to a length
-         LA    R6,0
-         ST    R6,RDEOF
+*         LA    R6,0
+*         ST    R6,RDEOF
 *         GET   (R2)
-         ST    R1,0(R3)
+         L     R5,0(R3)         R5 now pointing to actual buffer
+         L     R6,0(R4)         R6 now contains actual length
+         ACCPT (R5),(R6),UPPER=NO,EOB=XX
+         LA    R15,0            SUCCESS
+         B     YY
+XX       LA    R15,1            FAILURE
+YY       DS    0H
+*        Don't bother setting the length read, it's fixed length
+*
+*         ST    R1,0(R3)
 *         LH    R5,DCBLRECL
-         L     R15,RDEOF
+*         L     R15,RDEOF
 *
 RETURNAR DS    0H
          LR    R1,R13
@@ -333,9 +342,10 @@ RETURNAR DS    0H
          AIF ('&SYS' EQ 'S370').NOMOD2
          CALL  @@SETM31
 .NOMOD2  ANOP
-         ST    R5,0(R4)         Tell caller the length read
+*         ST    R5,0(R4)         Tell caller the length read
          LR    R15,R7
          RETURN (14,12),RC=(15)
+         LTORG
 *
 *
 *
@@ -392,7 +402,7 @@ RETURNAR DS    0H
          RETURN (14,12),RC=(15)
 *
          LTORG
-         TYPER RELOC=NO
+         TYPER RELO=NO
 *
 **********************************************************************
 *                                                                    *

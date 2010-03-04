@@ -10,17 +10,29 @@
 // EXTENT SYSPCH,WORK01,1,0,3,6
 ASSGN SYSPCH,DISK,VOL=WORK01,SHR
 // EXEC ASSEMBLY
+*
+* Dummy AMODE macro
+*
          MACRO
 &N       AMODE
          MEND
+*
+* Dummy RMODE macro
+*
          MACRO
 &N       RMODE
          MEND
+*
+* BSM instruction as a macro
+*
          MACRO
 &LABEL   BSM   &R1,&R2
          DS    0H
 &LABEL.  DC    0XL2'00',X'0B',AL.4(&R1.,&R2.)
          MEND
+*
+* RETURN macro from MVS 3.8j
+*
          MACRO
 &NAME    RETURN &REG,&PARA,&RC=O
          LCLA  &A
@@ -66,6 +78,9 @@ ASSGN SYSPCH,DISK,VOL=WORK01,SHR
          MEXIT
 .ERROR2  IHBERMAC 37,,&PARA
 .END     MEND
+*
+* GETVIS macro from DOS/VS, modified to support LOC=ANY
+*
          MACRO
 &NAME GETVIS &ERROR,&ADDRESS=,&LENGTH=,&PAGE=NO,&POOL=NO,&SVA=NO,&LOC=
  LCLB &BLPAGE,&BLPOOL,&BLSVA,&BLLOC
@@ -142,6 +157,226 @@ ASSGN SYSPCH,DISK,VOL=WORK01,SHR
 .G56     ANOP
          LR    &ADDRESS(1),1      LOAD RETURNED ADDRESS FROM REGISTER 1
 .G6      ANOP
+         MEND
+*
+* Public domain ACCPT macro from Fran Hensler
+*
+         TITLE 'A C C P T   M A C R O'
+         MACRO
+&NAME    ACCPT &ANSWER,&LENGTH,&UPPER=YES,&EOB=,&SHORT=
+         GBLA  &LEN@CH LENGTH OF LONGEST INPUT TO CONVERT TO UPPER CASE
+         GBLA  &LEN@NO LENGTH OF LONGEST NUMERIC INPUT           FUTURE
+         GBLB  &TYPER@A    SWITCH FOR TYPER GENERATION
+         LCLA  &LEN      ACTUAL LENGTH OF INPUT AREA
+         LCLB  &R1,&R2   SWITCHES INDICATING REGISTER NOTATION
+         LCLC  &LABEL,&MASK
+&TYPER@A SETB  1                   TELL TYPER THAT ACCPT MACRO USED.
+&LABEL   SETC  '&NAME'
+         AIF   (T'&ANSWER NE 'O').OK1
+         MNOTE 1,'PARAMETER MISSING -- MACRO IGNORED.'
+         MEXIT
+.OK1     AIF   ('&ANSWER'(1,1) NE '(').OK2
+         AIF   ('&ANSWER(1)' LT '2' OR '&ANSWER(1)' GT '12').REGERR
+&R1      SETB  (1)            INDICATE REGISTER NOTATION FOR &ANSWER
+         AIF   (T'&LENGTH NE 'O').OK2
+         MNOTE 1,'LENGTH PARAMETER MISSING -- MACRO IGNORED.'
+         MEXIT
+.OK2     AIF   (T'&LENGTH EQ 'O').THREE
+         AIF   ('&LENGTH'(1,1) NE '(').TWO
+&R2      SETB  (1)            INDICATE REGISTER NOTATION FOR LENGTH
+&LABEL   STH   &LENGTH(1),*+8 ..... STORE INPUT LENGTH.
+&LABEL   SETC  ''
+&LEN     SETA  0
+         AGO   .FIVE
+.TWO     ANOP
+&LEN     SETA  &LENGTH
+         AGO   .FIVE
+.THREE   ANOP
+&LEN     SETA  L'&ANSWER
+.FIVE    ANOP
+&LABEL   BAL   14,TYPERGET ..... MACRO FOR CONSOLE INPUT.      SRSC 1-5
+         DC    AL2(&LEN) ..... LENGTH OF INPUT.
+         AIF   (NOT &R1).SIX
+         DC    S(000&ANSWER) ..... ADDRESS OF INPUT AREA.
+         AGO   .SEVEN
+.SIX     ANOP
+         DC    S(&ANSWER) ..... ADDRESS OF INPUT AREA.
+.SEVEN   AIF   ('&EOB' EQ '').NINE
+         LTR   1,1 ..... WAS INPUT EOB?
+         BZ    &EOB ..... BRANCH IF YES.
+.NINE    AIF   ('&UPPER' EQ 'NO').ELEVEN
+         AIF   ('&UPPER' NE 'YES').NINEA
+&MASK    SETC  'TYPERBLK'
+         AIF   (&LEN@CH GE &LEN).NINEB
+&LEN@CH  SETA  &LEN
+         AGO   .NINEB
+.NINEA   ANOP
+&MASK    SETC  '&UPPER'
+.NINEB   AIF   (&R2).TEN
+         AIF   (&R1).NINED
+         AIF   (&LEN NE 1).NINEC
+         OI    &ANSWER,B'01000000' ..... CONVERT TO UPPER CASE.
+         AGO   .ELEVEN
+.NINEC   OC    &ANSWER.(&LEN.),&MASK ..... CONVERT TO UPPER CASE.
+         AGO   .ELEVEN
+.NINED   AIF   (&LEN NE 1).NINEE
+         OI    0&ANSWER,B'01000000' ..... CONVERT TO UPPER CASE.
+         AGO   .ELEVEN
+.NINEE   ANOP
+         OC    0(&LEN.,&ANSWER(1).),&MASK ..... CONVERT TO UPPER CASE.
+         SPACE 1
+         MEXIT
+.TEN     ANOP
+         LR    0,1 ..... SAVE REGISTER 1.
+.*       LA    14,&ANSWER(1) ..... GET ADDRESS OF INPUT.
+.*  This LA changed to LR 01/09/97 -- I don't know how LA ever worked.
+         LR    14,&ANSWER(1) ..... GET ADDRESS OF INPUT.
+         OI    0(14),X'40' ..... CONVERT TO UPPER CASE.
+         LA    14,1(14) ..... INCREMENT TO NEXT POSITION.
+         BCT   1,*-8 ..... LOOP THRU INPUT.
+         LR    1,0 ..... RESTORE REGISTER 1.
+.ELEVEN  AIF   ('&SHORT' EQ '').END
+         CH    1,0(14) ..... WAS INPUT SHORT?
+         BL    &SHORT ..... BRANCH IF YES.
+.END     SPACE 1
+         MEXIT
+.REGERR  MNOTE 1,'ONLY REGISTERS 2-12 MAY BE USED FOR PARAMETERS.'
+         MEXIT
+         MEND
+*
+* Public domain DSPLY macro from Fran Hensler
+*
+         TITLE 'D S P L Y   M A C R O'
+         MACRO
+&NAME    DSPLY &MESSAGE,&LENGTH,&UPON=SYSLOG
+         GBLB  &TYPER@D,&TYPER@L   SWITCH FOR TYPER GENERATION
+         LCLA  &LEN
+         LCLB  &SW
+         LCLC  &LABEL,&AMESS
+&SW      SETB  (0)
+&LABEL   SETC  '&NAME'
+         AIF   (T'&MESSAGE EQ 'O').ERR1
+         AIF   ('&MESSAGE'(1,1) NE '''').ONE
+&LEN     SETA  K'&MESSAGE-2
+&LABEL   LA    1,=CL&LEN&MESSAGE ..... GET ADDRESS OF OUTPUT AREA.
+&LABEL   SETC  ''
+&AMESS   SETC  '000(1)'
+         AGO   .FOUR
+.ONE     AIF   ('&MESSAGE'(1,1) NE '(').TWO
+&AMESS   SETC  '000&MESSAGE'
+         AIF   ('&MESSAGE(1)' LT '2' OR '&MESSAGE(1)' GT '12').REGERR
+         AIF   (T'&LENGTH EQ 'O').MISS
+         AGO   .TWOB
+.TWO     ANOP
+&AMESS   SETC  '&MESSAGE'
+         AIF   (T'&LENGTH NE 'O').TWOA
+&LEN     SETA  L'&MESSAGE
+.TWOA    AIF   (T'&LENGTH EQ 'O').FOUR
+.TWOB    ANOP
+         AIF   ('&LENGTH'(1,1) NE '(').THREE
+&LABEL   STH   &LENGTH(1),*+8 ..... STORE THE LENGTH.
+&LABEL   SETC  ''
+&LEN     SETA  0
+         AGO   .FOUR
+.THREE   ANOP
+&SW      SETB  (1)
+.FOUR    ANOP
+         AIF   ('&UPON' EQ 'SYSLST').SYSLST
+&LABEL   BAL   14,TYPERPUT ..... MACRO FOR CONSOLE DISPLAY     SRSC 1-3
+&TYPER@D SETB  (1)                 TELL TYPER THAT SYSLOG BEING USED.
+         AGO   .FOUR1
+.SYSLST  ANOP
+&LABEL   BAL   14,TYPERLST ..... MACRO FOR PRINTER DISPLAY     SRSC 1-4
+&TYPER@L SETB  (1)                 TELL TYPER THAT SYSLST BEING USED.
+.FOUR1   AIF   (&SW).FOURA
+         DC    AL2(&LEN)  ..... LENGTH OF OUTPUT AREA.
+         AGO   .FIVE
+.FOURA   ANOP
+         DC    AL2(&LENGTH) ..... LENGTH OF OUTPUT AREA.
+.FIVE    ANOP
+         DC    S(&AMESS) ..... ADDRESS OF OUTPUT AREA.
+         SPACE 1
+         MEXIT
+.ERR1    MNOTE 1,'PARAMETER MISSING -- MACRO IGNORED.'
+         MEXIT
+.MISS    MNOTE 1,'LENGTH PARAMETER MISSING -- MACRO IGNORED.'
+         MEXIT
+.REGERR  MNOTE 1,'ONLY REGISTERS 2-12 MAY BE USED FOR PARAMETERS.'
+         MEXIT
+         MEND
+*
+* Public domain TYPER macro from Fran Hensler
+*
+         TITLE 'T Y P E R   M A C R O'
+         MACRO
+         TYPER &RELO=YES
+         GBLA  &LEN@CH LENGTH OF LONGEST INPUT TO CONVERT TO UPPER CASE
+         GBLA  &LEN@NO LENGTH OF LONGEST NUMERIC INPUT           FUTURE
+         GBLB  &TYPER@A,&TYPER@D,&TYPER@L    GENERATION SWITCHES
+         DC    0H'0' * T Y P E R * DSPLY & ACCPT I/O MODULE    SRSC 1-5
+         AIF   (NOT &TYPER@L).NOLIST    CHECK IF SYSLST
+TYPERLST EQU   *                   WRITE A MESSAGE ON SYSLST        1-4
+         AIF   (NOT &TYPER@D AND NOT &TYPER@A).LSTONLY
+         MVI   TYPERCCB+7,3        CHANGE CCB LOGICAL UNIT TO SYSLST
+.NOLIST  AIF   (NOT &TYPER@D AND NOT &TYPER@L).NODSPLY
+TYPERPUT EQU   *                   WRITE A MESSAGE ON THE CONSOLE   1-3
+.LSTONLY MVC   *+8(2),2(14)        PUT DATA ADDRESS IN NEXT INSTRUCTION
+         LA    1,*-*               GET DATA ADDRESS IN REGISTER 1.
+         STCM  1,7,TYPERCCW+1      PUT DATA ADDRESS IN CCW.
+         AIF   (NOT &TYPER@A).NOACCPT
+         MVI   TYPERCCW,9          SET COMMAND CODE TO WRITE & SPACE 1
+         B     TYPERXCP            BRANCH TO EXECUTE CHANNEL PROGRAM.
+.NODSPLY AIF   (&TYPER@A).ACCPT
+         MNOTE 1,'DSPLY AND/OR ACCPT MACROS MUST PRECEDE TYPER, NOGEN'
+         MEXIT
+.ACCPT   ANOP
+TYPERGET EQU   *                   ACCEPT INPUT FROM CONSOLE        1-3
+         MVC   *+8(2),2(14)        PUT DATA ADDRESS IN NEXT INSTRUCTION
+         LA    1,*-*               GET DATA ADDRESS IN REGISTER 1.
+         LR    0,14                SAVE REGISTER 14 IN 0.
+         MVI   0(1),64             PUT BLANK IN 1ST POSITION OF INPUT.
+         LH    14,0(14)            GET DATA LENGTH IN REG 14.
+         BCTR  14,0                REDUCE LENGTH BY 1.
+         LTR   14,14               IS REGISTER 14 ZERO.
+         BZ    *+10                BRANCH AROUND NEXT 2 INSTRUCTIONS.
+         BCTR  14,0
+         EX    14,TYPERMVC         SET INPUT AREA TO BLANKS.
+         LR    14,0                RESTORE REGISTER 14 FROM 0.
+         STCM  1,7,TYPERCCW+1      PUT DATA ADDRESS IN CCW.
+         MVI   TYPERCCW,10         SET COMMAND CODE TO READ
+TYPERXCP EQU   *
+.NOACCPT MVC   TYPERCCW+7(1),1(14) PUT I/O AREA LENGTH IN CCW.
+         AIF   ('&RELO' EQ 'NO').NORELO
+         LA    1,TYPERCCW          MAKE CHANNEL PROGRAM
+         STCM  1,7,TYPERCCB+9       RELOCATABLE.
+.NORELO  LA    1,TYPERCCB          GET ADDRESS OF CHANNEL PROGRAM.
+         SVC   0                   EXECUTE CHANNEL PROGRAM.
+         TM    2(1),X'80'          WAIT
+         BO    *+6                  UNTIL
+         SVC   7                     COMPLETED.
+         AIF   (NOT &TYPER@A).TWO
+         TM    4(1),1              WAS INPUT MESSAGE CANCELLED.
+         BNZ   TYPERGET            YES -- TRY AGAIN.
+         LH    1,TYPERCCW+6        GET ACTUAL RECORD LENGTH.
+         SH    1,TYPERCCB  CCW COUNT - RESIDUAL COUNT = RECORD LENGTH.
+.TWO  AIF  ((NOT &TYPER@L) OR (NOT &TYPER@D AND NOT &TYPER@A)).THREE
+         MVI   TYPERCCB+7,4        CHANGE LOGICAL UNIT TO SYSLOG.
+.THREE   B     4(14)               RETURN TO CALLER + 4.
+TYPERCCW CCW   9,*-*,0,*-*
+         AIF   (NOT &TYPER@D AND NOT &TYPER@A).LSTCCB
+TYPERCCB CCB   SYSLOG,TYPERCCW
+         AGO   .CCBDONE
+.LSTCCB  ANOP
+TYPERCCB CCB   SYSLST,TYPERCCW
+.CCBDONE AIF   (NOT &TYPER@A).FOUR
+         AIF   (&LEN@CH LE 1).NOBLK
+TYPERBLK DC    &LEN@CH.X'40'       BLANKS TO CONVERT TO UPPER CASE.
+.NOBLK   AIF   (&LEN@NO EQ 0).NONUM                              FUTURE
+TYPERNUM DC    &LEN@NO.Z'0'        ZEROES TO TEST NUMERIC INPUT. FUTURE
+.NONUM   ANOP
+TYPERMVC MVC   1(*-*,1),0(1)       SUBJECT OF EX INSTRUCTION.
+.FOUR    SPACE 1
+         MEXIT
          MEND
 undivert(pdpprlg.mac)undivert(pdpepil.mac)         END
 /*

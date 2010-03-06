@@ -47,7 +47,7 @@
          COPY  PDPTOP
 *
 @@VSESUP CSECT
-         PRINT NOGEN
+         PRINT GEN
          REGEQU
 SUBPOOL  EQU   0
 *
@@ -191,6 +191,12 @@ WNOMEM   DS    0H
 *         TM    DCBOFLGS,DCBOFOPN  Did OPEN work?
 *         BZ    BADOPEN            OPEN failed
 *
+         CLC   0(8,R3),=C'SYSPRINT'
+         BNE   NOTSYS
+         OPEN  SYSPRT
+*         CNTRL SYSPRT,SP,1
+NOTSYS   DS    0H
+*
 * Handle will be returned in R7
 *
          LR    R7,R2
@@ -209,7 +215,7 @@ WNOMEM   DS    0H
          ST    R1,ASMBUF
          L     R5,20(,R11)        R5 points to ASMBUF
          ST    R1,0(R5)           save the pointer
-* R5 now free again
+* R5 now free again         
 *
 .NMM4    ANOP
 DONEOPEN DS    0H
@@ -389,7 +395,10 @@ MYLINE   DS    CL80
          L     R3,ASMBUF
 *         PUT   (R2),(R3)
          L     R8,=A(BASETYPE)
-         DSPLY (R3),(R4),UPON=SYSLST
+*         DSPLY (R3),(R4),UPON=SYSLST
+*         DSPLY (R3),(R4)
+         MVC   IO1(80),0(R3)
+         PUT   SYSPRT
 .NMM2    ANOP
          AIF   ('&OUTM' NE 'L').NLM3
          ST    R1,0(R3)
@@ -407,10 +416,10 @@ MYLINE   DS    CL80
          RETURN (14,12),RC=(15)
 *
          LTORG
-         DROP  R12
+*         DROP  R12
 BASETYPE DS    0H
-         USING *,R8
-         TYPER RELO=NO
+*         USING *,R8
+*         TYPER RELO=NO
 *
 **********************************************************************
 *                                                                    *
@@ -454,6 +463,7 @@ NFRCL    DS    0H
 *         CLOSE ((R2)),MF=(E,CLOSEMB)
 *         FREEPOOL ((R2))
 *         FREEVIS LENGTH=ZDCBLEN,ADDRESS=(R2)
+         CLOSE SYSPRT
          LA    R15,0
 *
 RETURNAC DS    0H
@@ -472,6 +482,17 @@ RETURNAC DS    0H
 *
 *
 *
+SYSPRT   DTFMT DEVADDR=SYSLST,IOAREA1=IO1,BLKSIZE=80,                  X
+               EOFADDR=EEE,FILABL=NO,RECFORM=FIXUNB,TYPEFLE=OUTPUT
+SYSPRU   DTFDI DEVADDR=SYSLST,IOAREA1=IO1,RECSIZE=80
+SYSPC    DTFDI DEVADDR=SYSPCH,IOAREA1=IO2,RECSIZE=80
+SYSP     DTFPR DEVADDR=SYSLOG,IOAREA1=IO1,WORKA=YES
+SYSQ     DTFPR DEVADDR=SYSLST,IOAREA1=IO1,WORKA=YES
+SYSR     DTFPR DEVADDR=SYS001,IOAREA1=IO1,WORKA=YES
+EEE      DS    0H
+         BR    R14
+IO1      DS    CL200
+IO2      DS    CL200
 * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
 *
 *  GETM - GET MEMORY

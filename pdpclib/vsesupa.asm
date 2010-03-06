@@ -321,11 +321,13 @@ JPTR     DS    F
 *         LA    R6,0
 *         ST    R6,RDEOF
 *         GET   (R2)
-         L     R5,0(R3)         R5 now pointing to actual buffer
          L     R6,0(R4)         R6 now contains actual length
-         ACCPT (R5),(R6),UPPER=NO,EOB=XX
-         LA    R15,0            SUCCESS
-         B     YY
+         LA    R5,INTSTOR
+         L     R8,=A(BASETYPE)
+*         ACCPT MYLINE,80,UPPER=NO,EOB=XX
+         ST    R5,0(R3)
+*         LA    R15,0            SUCCESS
+*         B     YY
 XX       LA    R15,1            FAILURE
 YY       DS    0H
 *        Don't bother setting the length read, it's fixed length
@@ -346,6 +348,8 @@ RETURNAR DS    0H
          LR    R15,R7
          RETURN (14,12),RC=(15)
          LTORG
+*         TYPER RELO=NO
+MYLINE   DS    CL80
 *
 *
 *
@@ -384,6 +388,7 @@ RETURNAR DS    0H
 * In move mode, always use our internal buffer. Ignore passed parm.
          L     R3,ASMBUF
 *         PUT   (R2),(R3)
+         L     R8,=A(BASETYPE)
          DSPLY (R3),(R4),UPON=SYSLST
 .NMM2    ANOP
          AIF   ('&OUTM' NE 'L').NLM3
@@ -402,6 +407,9 @@ RETURNAR DS    0H
          RETURN (14,12),RC=(15)
 *
          LTORG
+         DROP  R12
+BASETYPE DS    0H
+         USING *,R8
          TYPER RELO=NO
 *
 **********************************************************************
@@ -757,6 +765,7 @@ SAVEADCB DS    18F                Register save area for PUT
 RDEOF    DS    1F
 ASMBUF   DS    A                  Pointer to an area for PUTing data
 MEMBER24 DS    CL8
+INTSTOR  DS    CL200              Internal storage for GET
 ZDCBLEN  EQU   *-ZDCBAREA
 *
          END

@@ -90,6 +90,25 @@ SUBPOOL  EQU   0
 *  Note - more documentation for this and other I/O functions can    *
 *  be found halfway through the stdio.c file in PDPCLIB.             *
 *                                                                    *
+*                                                                    *
+*                                                                    *
+*  VSE notes - in the general case of an open of a disk file, the    *
+*  OPEN should allocate its storage area (ZDCBAREA - what "handle"   *
+*  points to, and then it should copy the DTFSD into part of that    *
+*  "DCB area" (it is called that for historical reasons and will     *
+*  probably be renamed). The OPEN macro, using register notation,    *
+*  points to that area, which will have first been modified to put   *
+*  in the DDNAME (DLBL) being opened. This way we only need a        *
+*  single DTFSD in the main code, which is reused any number of      *
+*  times.                                                            *
+*                                                                    *
+*  The stdin/stdout/stderr are treated differently - each of those   *
+*  has its own DTF, because they are special files (not disks).      *
+*  The special files are SYSIPT, SYSLST and SYSLOG respectively.     *
+*                                                                    *
+*  Note that as of time of writing, only the special files have      *
+*  been implemented.                                                 *
+*                                                                    *
 **********************************************************************
          ENTRY @@AOPEN
 @@AOPEN  EQU   *
@@ -364,13 +383,6 @@ JPTR     DS    F
          ST    R5,0(R3)
          L     R7,PTRDTF
          GET   (R7),(R5)
-*         MVC   IO2(8),=C'LMNOPQRS'
-*         GET   SYSIN,IO2
-*         LA    R7,6
-*         DSPLY (R5),8,UPON=SYSLST
-*         GET   STDIN,IO1
-*         LA    R6,1
-*         L     R6,0(R4)         R6 now contains actual length
          LTR   R6,R6
          BNE   GOTEOF
          LA    R15,0             SUCCESS
@@ -379,17 +391,6 @@ GOTEOF   DS    0H
          LA    R15,1             FAIL
 *         ST    R6,0(R4)
 FINFIL   DS    0H
-*         LA    R7,80
-*         ST    R7,0(R4)
-*         LA    R15,0
-*         LA    R5,INTSTOR
-*         L     R8,=A(BASETYPE)
-*         ACCPT MYLINE,80,UPPER=NO,EOB=XX
-*         ST    R5,0(R3)
-*         LA    R15,0            SUCCESS
-*         B     YY
-*XX       LA    R15,1            FAILURE
-*YY       DS    0H
 *        Don't bother setting the length read, it's fixed length
 *
 *         ST    R1,0(R3)
@@ -408,7 +409,6 @@ RETURNAR DS    0H
          LR    R15,R7
          RETURN (14,12),RC=(15)
          LTORG
-*         TYPER RELO=NO
 MYLINE   DS    CL80
 *
 *
@@ -448,11 +448,6 @@ MYLINE   DS    CL80
 * In move mode, always use our internal buffer. Ignore passed parm.
          L     R3,ASMBUF
 *         PUT   (R2),(R3)
-         L     R8,=A(BASETYPE)
-*         DSPLY (R3),(R4),UPON=SYSLST
-*         DSPLY (R3),(R4)
-*         MVC   IO1(80),0(R3)
-*         LA    R5,SYSPRT
          L     R5,PTRDTF
          PUT   (R5),(R3)
 .NMM2    ANOP
@@ -472,10 +467,6 @@ MYLINE   DS    CL80
          RETURN (14,12),RC=(15)
 *
          LTORG
-*         DROP  R12
-BASETYPE DS    0H
-*         USING *,R8
-*          TYPER RELO=NO
 *
 **********************************************************************
 *                                                                    *

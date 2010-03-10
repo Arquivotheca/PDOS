@@ -165,7 +165,9 @@ NOMEM    DS    0H
 *         TM    DCBOFLGS,DCBOFOPN  Did OPEN work?
 * +++ don't do anything for reading files for now
 *         BZ    BADOPEN            OPEN failed
-         OPEN  SYSIN
+         LA    R5,SYSIN
+         ST    R5,PTRDTF
+         OPEN  (R5)
          B     DONEOPEN
 WRITING  DS    0H
          USING ZDCBAREA,R2
@@ -349,7 +351,7 @@ JPTR     DS    F
          L     R4,8(R1)         R4 point to a length
          LA    R6,0
 *         ST    R6,RDEOF
-         LA    R5,SYSIN
+         L     R5,PTRDTF
 *         GET   (R5),(R3)
 *         GET   STDIN,IO1
          LA    R6,1

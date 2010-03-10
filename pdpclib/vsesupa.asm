@@ -168,6 +168,7 @@ NOMEM    DS    0H
          LA    R5,SYSIN
          ST    R5,PTRDTF
          OPEN  (R5)
+* R5 is free again
          B     DONEOPEN
 WRITING  DS    0H
          USING ZDCBAREA,R2
@@ -351,26 +352,35 @@ JPTR     DS    F
          L     R4,8(R1)         R4 point to a length
          LA    R6,0
 *         ST    R6,RDEOF
-         L     R5,PTRDTF
-*         GET   (R5),(R3)
+         LA    R5,INTSTOR         
+         ST    R5,0(R3)
+         L     R7,PTRDTF
+         GET   (R7),(R5)
+*         MVC   IO2(8),=C'LMNOPQRS'
+*         GET   SYSIN,IO2
+*         LA    R7,6
+*         DSPLY (R5),8,UPON=SYSLST
 *         GET   STDIN,IO1
-         LA    R6,1
+*         LA    R6,1
 *         L     R6,0(R4)         R6 now contains actual length
          LTR   R6,R6
          BNE   GOTEOF
          B     FINFIL
 GOTEOF   DS    0H
          LA    R6,0
-         ST    R6,0(R4)
+*         ST    R6,0(R4)
 FINFIL   DS    0H
+         LA    R7,80
+*         ST    R7,0(R4)
+         LA    R15,0
 *         LA    R5,INTSTOR
 *         L     R8,=A(BASETYPE)
 *         ACCPT MYLINE,80,UPPER=NO,EOB=XX
 *         ST    R5,0(R3)
 *         LA    R15,0            SUCCESS
 *         B     YY
-XX       LA    R15,1            FAILURE
-YY       DS    0H
+*XX       LA    R15,1            FAILURE
+*YY       DS    0H
 *        Don't bother setting the length read, it's fixed length
 *
 *         ST    R1,0(R3)
@@ -456,7 +466,7 @@ MYLINE   DS    CL80
 *         DROP  R12
 BASETYPE DS    0H
 *         USING *,R8
-*         TYPER RELO=NO
+*          TYPER RELO=NO
 *
 **********************************************************************
 *                                                                    *
@@ -526,14 +536,15 @@ RETURNAC DS    0H
 *
 *
 * This macro is only for reading from stdin
-SYSIN    DTFCD DEVADDR=SYSINP,IOAREA1=IO1,BLKSIZE=80,RECFORM=FIXUNB,   X
-               WORKA=YES,EOFADDR=EEE
+SYSIN    DTFCD DEVADDR=SYSIPT,IOAREA1=IO1,BLKSIZE=80,RECFORM=FIXUNB,   X
+               WORKA=YES,EOFADDR=EEE,MODNAME=CARDMOD
+CARDMOD  CDMOD RECFORM=FIXUNB,WORKA=YES             
 * These macros are only used for writing to stdout and stderr
 SYSPRT   DTFPR CONTROL=YES,BLKSIZE=80,DEVADDR=SYSLST,MODNAME=PRINTMOD, X
                IOAREA1=IO1,RECFORM=FIXUNB,WORKA=YES
 SYSTRM   DTFPR CONTROL=YES,BLKSIZE=80,DEVADDR=SYSLOG,MODNAME=PRINTMOD, X
                IOAREA1=IO1,RECFORM=FIXUNB,WORKA=YES
-PRINTMOD PRMOD CONTROL=YES,IOAREA2=NO,RECFORM=FIXUNB,WORKA=YES
+PRINTMOD PRMOD CONTROL=YES,RECFORM=FIXUNB,WORKA=YES
 *
 EEE      DS    0H
          LA    R6,1

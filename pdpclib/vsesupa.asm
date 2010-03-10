@@ -365,14 +365,15 @@ JPTR     DS    F
 *         L     R6,0(R4)         R6 now contains actual length
          LTR   R6,R6
          BNE   GOTEOF
+         LA    R15,0             SUCCESS
          B     FINFIL
 GOTEOF   DS    0H
-         LA    R6,0
+         LA    R15,1             FAIL
 *         ST    R6,0(R4)
 FINFIL   DS    0H
-         LA    R7,80
+*         LA    R7,80
 *         ST    R7,0(R4)
-         LA    R15,0
+*         LA    R15,0
 *         LA    R5,INTSTOR
 *         L     R8,=A(BASETYPE)
 *         ACCPT MYLINE,80,UPPER=NO,EOB=XX
@@ -537,7 +538,7 @@ RETURNAC DS    0H
 *
 * This macro is only for reading from stdin
 SYSIN    DTFCD DEVADDR=SYSIPT,IOAREA1=IO1,BLKSIZE=80,RECFORM=FIXUNB,   X
-               WORKA=YES,EOFADDR=EEE,MODNAME=CARDMOD
+               WORKA=YES,EOFADDR=GOTEOF,MODNAME=CARDMOD
 CARDMOD  CDMOD RECFORM=FIXUNB,WORKA=YES             
 * These macros are only used for writing to stdout and stderr
 SYSPRT   DTFPR CONTROL=YES,BLKSIZE=80,DEVADDR=SYSLST,MODNAME=PRINTMOD, X

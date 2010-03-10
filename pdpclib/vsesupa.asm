@@ -165,6 +165,7 @@ NOMEM    DS    0H
 *         TM    DCBOFLGS,DCBOFOPN  Did OPEN work?
 * +++ don't do anything for reading files for now
 *         BZ    BADOPEN            OPEN failed
+         OPEN  SYSIN
          B     DONEOPEN
 WRITING  DS    0H
          USING ZDCBAREA,R2
@@ -193,7 +194,14 @@ WNOMEM   DS    0H
 *
          CLC   0(8,R3),=C'SYSPRINT'
          BNE   NOTSYS
-         OPEN  SYSPRT
+*
+* We use the register notation, because other than the standard
+* files, all files will have their data stored in ZDCBAREA, not
+* a local variable.
+         LA    R5,SYSPRT
+         OPEN  (R5)
+* R5 is free again
+*
 *         CNTRL SYSPRT,SP,1
 NOTSYS   DS    0H
 *
@@ -324,14 +332,24 @@ JPTR     DS    F
 *        L     R2,0(R1)         R2 CONTAINS HANDLE
          L     R3,4(R1)         R3 POINTS TO BUF POINTER
          L     R4,8(R1)         R4 point to a length
-*         LA    R6,0
+         LA    R6,0
 *         ST    R6,RDEOF
-*         GET   (R2)
-         L     R6,0(R4)         R6 now contains actual length
-         LA    R5,INTSTOR
-         L     R8,=A(BASETYPE)
+         LA    R5,SYSIN
+*         GET   (R5),(R3)
+*         GET   STDIN,IO1
+         LA    R6,1
+*         L     R6,0(R4)         R6 now contains actual length
+         LTR   R6,R6
+         BNE   GOTEOF
+         B     FINFIL
+GOTEOF   DS    0H
+         LA    R6,0
+         ST    R6,0(R4)
+FINFIL   DS    0H
+*         LA    R5,INTSTOR
+*         L     R8,=A(BASETYPE)
 *         ACCPT MYLINE,80,UPPER=NO,EOB=XX
-         ST    R5,0(R3)
+*         ST    R5,0(R3)
 *         LA    R15,0            SUCCESS
 *         B     YY
 XX       LA    R15,1            FAILURE
@@ -398,7 +416,8 @@ MYLINE   DS    CL80
 *         DSPLY (R3),(R4),UPON=SYSLST
 *         DSPLY (R3),(R4)
 *         MVC   IO1(80),0(R3)
-         PUT   SYSPRT,(R3)
+         LA    R5,SYSPRT
+         PUT   (R5),(R3)
 .NMM2    ANOP
          AIF   ('&OUTM' NE 'L').NLM3
          ST    R1,0(R3)
@@ -483,6 +502,9 @@ RETURNAC DS    0H
 *
 *
 *
+* This macro is only for reading from stdin
+SYSIN    DTFCD DEVADDR=SYSINP,IOAREA1=IO1,BLKSIZE=80,RECFORM=FIXUNB,   X
+               WORKA=YES,EOFADDR=EEE
 * These macros are only used for writing to stdout and stderr
 SYSPRT   DTFPR CONTROL=YES,BLKSIZE=80,DEVADDR=SYSLST,MODNAME=PRINTMOD, X
                IOAREA1=IO1,RECFORM=FIXUNB,WORKA=YES
@@ -491,6 +513,7 @@ SYSTRM   DTFPR CONTROL=YES,BLKSIZE=80,DEVADDR=SYSLOG,MODNAME=PRINTMOD, X
 PRINTMOD PRMOD CONTROL=YES,IOAREA2=NO,RECFORM=FIXUNB,WORKA=YES
 *
 EEE      DS    0H
+         LA    R6,1
          BR    R14
 IO1      DS    CL200
 IO2      DS    CL200

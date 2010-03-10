@@ -163,13 +163,21 @@ NOMEM    DS    0H
 * CAN'T USE MODE=31 ON MVS 3.8, OR WITH TYPE=J
 *         OPEN  ((R2),INPUT),MF=(E,OPENMB),TYPE=J
 *         TM    DCBOFLGS,DCBOFOPN  Did OPEN work?
-* +++ don't do anything for reading files for now
 *         BZ    BADOPEN            OPEN failed
+         CLC   0(8,R3),=C'SYSIN   '
+         BNE   NOTSYSI
+*
+* We use the register notation, because other than the standard
+* files, all files will have their data stored in ZDCBAREA, not
+* a local variable.
          LA    R5,SYSIN
          ST    R5,PTRDTF
          OPEN  (R5)
 * R5 is free again
          B     DONEOPEN
+*
+NOTSYSI  DS    0H
+         B     BADOPEN
 WRITING  DS    0H
          USING ZDCBAREA,R2
 *         MVC   ZDCBAREA(OUTDCBLN),OUTDCB
@@ -547,11 +555,7 @@ SYSTRM   DTFPR CONTROL=YES,BLKSIZE=80,DEVADDR=SYSLOG,MODNAME=PRINTMOD, X
                IOAREA1=IO1,RECFORM=FIXUNB,WORKA=YES
 PRINTMOD PRMOD CONTROL=YES,RECFORM=FIXUNB,WORKA=YES
 *
-EEE      DS    0H
-         LA    R6,1
-         BR    R14
 IO1      DS    CL200
-IO2      DS    CL200
 * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
 *
 *  GETM - GET MEMORY

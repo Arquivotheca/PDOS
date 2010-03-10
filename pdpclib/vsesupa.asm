@@ -200,10 +200,25 @@ WNOMEM   DS    0H
 * a local variable.
          LA    R5,SYSPRT
          OPEN  (R5)
-* R5 is free again
+         B     FINO1
 *
 *         CNTRL SYSPRT,SP,1
 NOTSYS   DS    0H
+         CLC   0(8,R3),=C'SYSTERM '
+         BNE   NOTSYST
+*
+* We use the register notation, because other than the standard
+* files, all files will have their data stored in ZDCBAREA, not
+* a local variable.
+         LA    R5,SYSTRM
+         OPEN  (R5)
+         B     FINO1
+*
+*         CNTRL SYSPRT,SP,1
+NOTSYST  DS    0H
+FINO1    DS    0H
+         ST    R5,PTRDTF
+* R5 is free again
 *
 * Handle will be returned in R7
 *
@@ -416,7 +431,8 @@ MYLINE   DS    CL80
 *         DSPLY (R3),(R4),UPON=SYSLST
 *         DSPLY (R3),(R4)
 *         MVC   IO1(80),0(R3)
-         LA    R5,SYSPRT
+*         LA    R5,SYSPRT
+         L     R5,PTRDTF
          PUT   (R5),(R3)
 .NMM2    ANOP
          AIF   ('&OUTM' NE 'L').NLM3
@@ -482,7 +498,12 @@ NFRCL    DS    0H
 *         CLOSE ((R2)),MF=(E,CLOSEMB)
 *         FREEPOOL ((R2))
 *         FREEVIS LENGTH=ZDCBLEN,ADDRESS=(R2)
-         CLOSE SYSPRT
+*         CLOSE SYSPRT
+         L     R5,PTRDTF
+         LTR   R5,R5
+         BZ    NOTOP1
+         CLOSE (R5)
+NOTOP1   DS    0H
          LA    R15,0
 *
 RETURNAC DS    0H
@@ -793,6 +814,7 @@ VBSEND   DS    F                  Addr. after end VBS record build area
 VBSCURR  DS    F                  Location to store next byte
 RDRECPTR DS    F                  Where to store record pointer
 RDLENPTR DS    F                  Where to store read length
+PTRDTF   DS    F                  Pointer to the DTF in use
 JFCBPTR  DS    F
 JFCB     DS    0F
 *         IEFJFCBN LIST=YES        SYS1.AMODGEN JOB File Control Block

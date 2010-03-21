@@ -475,7 +475,10 @@ undivert(vsesupa.asm)/*
 * Now run the app
 *
 // OPTION DUMP
-// EXEC PDPTEST,SIZE=999K
+// ASSGN SYS010,DISK,VOL=WORK01,SHR
+// DLBL SDIN,'TEST.F80'
+// EXTENT SYS010,WORK01
+// EXEC PDPTEST,SIZE=AUTO
 /*
 /&
 * $$ EOJ

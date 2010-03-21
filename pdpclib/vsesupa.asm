@@ -189,6 +189,10 @@ NOMEM    DS    0H
 * We use the register notation, because other than the standard
 * files, all files will have their data stored in ZDCBAREA, not
 * a local variable.
+         LA    R6,80   +++ hardcode to 80
+         ST    R6,DCBLRECL
+         LA    R6,0    +++ hardcode to fixed
+         ST    R6,DCBRECFM
          LA    R5,SYSIN
          ST    R5,PTRDTF
          OPEN  (R5)
@@ -196,6 +200,14 @@ NOMEM    DS    0H
          B     DONEOPEN
 *
 NOTSYSI  DS    0H
+         L     R6,=F'19069'   +++ hardcode to 19069
+         ST    R6,DCBLRECL
+         LA    R6,2    +++ hardcode to recfm=U
+         ST    R6,DCBRECFM
+         LA    R5,SDIN
+         ST    R5,PTRDTF
+         OPEN  (R5)
+         B     DONEOPEN
          B     BADOPEN
 WRITING  DS    0H
          USING ZDCBAREA,R2
@@ -228,6 +240,12 @@ WNOMEM   DS    0H
 * We use the register notation, because other than the standard
 * files, all files will have their data stored in ZDCBAREA, not
 * a local variable.
+         LA    R6,80   +++ hardcode to 80
+         ST    R6,DCBLRECL
+         LA    R6,0    +++ hardcode to fixed
+         ST    R6,DCBRECFM
+*
+         L     R6,DCBLRECL
          LA    R5,SYSPRT
          OPEN  (R5)
          B     FINO1
@@ -273,9 +291,9 @@ FINO1    DS    0H
 .NMM4    ANOP
 DONEOPEN DS    0H
          LR    R7,R2
-         SR    R6,R6
-*         LH    R6,DCBLRECL
-         L     R6,=F'80'  +++ hardcoded to lrecl=80
+*         SR    R6,R6
+         L     R6,DCBLRECL
+*         L     R6,=F'80'  hardcoded to lrecl=80
          ST    R6,0(R8)
 *         TM    DCBRECFM,DCBRECF
 *         BNO   VARIABLE
@@ -283,7 +301,9 @@ DONEOPEN DS    0H
 * We check for V, in order to split between F and U
 * Because U has both F and V
 *         TM    DCBRECFM,DCBRECV
-         B     FIXED  +++ hardcoded to recfm=f
+*         B     FIXED  +++ hardcoded to recfm=f
+         L     R6,DCBRECFM
+         B     DONESET
          BNO   FIXED
          L     R6,=F'2'
          B     DONESET
@@ -378,10 +398,11 @@ JPTR     DS    F
          L     R3,4(R1)         R3 POINTS TO BUF POINTER
          L     R4,8(R1)         R4 point to a length
          LA    R6,0
-*         ST    R6,RDEOF
+*         ST    R6,RDEOF         
          LA    R5,INTSTOR         
          ST    R5,0(R3)
-         L     R7,PTRDTF
+         L     R8,DCBLRECL
+         L     R7,PTRDTF         
          GET   (R7),(R5)
          LTR   R6,R6
          BNE   GOTEOF
@@ -391,10 +412,10 @@ GOTEOF   DS    0H
          LA    R15,1             FAIL
 *         ST    R6,0(R4)
 FINFIL   DS    0H
-*        Don't bother setting the length read, it's fixed length
 *
-*         ST    R1,0(R3)
-*         LH    R5,DCBLRECL
+*
+         ST    R8,0(R4)          store length read
+*         L     R5,DCBLRECL
 *         L     R15,RDEOF
 *
 RETURNAR DS    0H
@@ -546,7 +567,11 @@ SYSTRM   DTFPR CONTROL=YES,BLKSIZE=80,DEVADDR=SYSLOG,MODNAME=PRINTMOD, X
                IOAREA1=IO1,RECFORM=FIXUNB,WORKA=YES
 PRINTMOD PRMOD CONTROL=YES,RECFORM=FIXUNB,WORKA=YES
 *
+SDIN     DTFSD BLKSIZE=19069,DEVADDR=SYS010,DEVICE=3350,               X
+               IOAREA1=WORKI1,RECFORM=UNDEF,WORKA=YES,                 X
+               TYPEFLE=INPUT,RECSIZE=(8),EOFADDR=GOTEOF
 IO1      DS    CL200
+*
 * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
 *
 *  GETM - GET MEMORY
@@ -800,6 +825,13 @@ SYSTEMLN EQU   *-SYSTMWRK    LENGTH OF DYNAMIC STORAGE
 *ZDCBLEN  EQU   =A(TDCBLEN)
 *WORKLEN  EQU   =A(TWRKLEN)
 *
+* Not sure why this needs to be kept way down here.
+* But it should be temporary anyway, as the I/O buffers
+* should be dynamically allocated for each handle. It looks
+* to me like this is used to store an entire track rather
+* than a single block, so can't be shared.
+WORKI1    DS    CL19069
+*
 WORKAREA DSECT
 SAVEAREA DS    18F
 WORKLEN  EQU   *-WORKAREA
@@ -824,6 +856,8 @@ VBSCURR  DS    F                  Location to store next byte
 RDRECPTR DS    F                  Where to store record pointer
 RDLENPTR DS    F                  Where to store read length
 PTRDTF   DS    F                  Pointer to the DTF in use
+DCBLRECL DS    F                  Logical record length
+DCBRECFM DS    F                  Record format
 JFCBPTR  DS    F
 JFCB     DS    0F
 *         IEFJFCBN LIST=YES        SYS1.AMODGEN JOB File Control Block

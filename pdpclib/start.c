@@ -46,9 +46,10 @@ extern unsigned short __osver;
 
 #ifdef __VSE__
 #undef __CMS__
+#undef __MVS__
 #endif
 
-#if defined(__MVS__) || defined(__CMS__)
+#if defined(__MVS__) || defined(__CMS__) || defined(__VSE__)
 int __tso = 0; /* is this a TSO environment? */
 extern int __doperm; /* are we doing the permanent datasets? */
 #endif
@@ -90,7 +91,7 @@ char *__plist;
 #if defined(__CMS__)
 int __start(char *plist, char *pgmname, char **eplist)
 #elif defined(__VSE__)
-int __start(char *p, char *pgmname, char **ep)
+int __start(char *p, char *pgmname, char *ep)
 #elif defined(__MVS__)
 int __start(char *p, char *pgmname, int tso)
 #elif defined(__gnu_linux__)
@@ -318,7 +319,7 @@ __PDPCLIB_API__ int CTYP __start(char *p)
        command instead */
     __textlc();
 #endif
-#ifdef __MVS__
+#if defined(__MVS__)
     /* need to know if this is a TSO environment straight away
        because it determines how the permanent files will be
        opened */
@@ -719,7 +720,7 @@ void __exit(int status)
     }
     if (stdout != NULL) fflush(stdout);
     if (stderr != NULL) fflush(stderr);
-#if defined(__MVS__) || defined(__CMS__)
+#if defined(__MVS__) || defined(__CMS__) || defined(__VSE__)
     if (stdin != NULL) fclose(stdin);
     if (stdout != NULL) fclose(stdout);
     if (stderr != NULL) fclose(stderr);
@@ -731,7 +732,7 @@ void __exit(int status)
 
 /* release memory for most circumstances, although a
    better solution will be required eventually */
-#if defined(__MVS__) || defined(__CMS__)
+#if defined(__MVS__) || defined(__CMS__) || defined(__VSE__)
     if (__lastsup != NULL)
     {
         __freem(__lastsup);

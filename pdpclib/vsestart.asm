@@ -40,6 +40,7 @@ SUBPOOL  EQU   0
 *         ENTRY CEESTART
 *CEESTART EQU   *
 *         SAVE  (14,12),,@@CRT0
+         LR    R8,R15            save R15 so that we can get the PARM
          BALR  R15,0
          USING *,R10
          LR    R10,R15
@@ -47,8 +48,7 @@ SUBPOOL  EQU   0
 *         USING @@CRT0,R10
 *LOOP     LA    R5,1(R5)
 *         B     LOOP
-         LR    R11,R1            save R1 so we can get the PLIST
-         LR    R8,R0             save R0 so we can get the EPLIST
+         LR    R11,R1            save R1 so we can get the PARM
          LR    R9,R13            save R13 so we can get flag byte
 *         GETMAIN R,LV=STACKLEN,SP=SUBPOOL
          GETVIS LENGTH=STACKLEN
@@ -82,8 +82,12 @@ SUBPOOL  EQU   0
 * we'll do is just point it to a variable (ARGPTRE) that will be 
 * a string of zeros, which will be enough for the MVS code to 
 * recognize that as no parameter.
-*         LA    R2,0
-         LA    R2,ARGPTRE
+         LA    R2,0
+         COMRG
+         LR    R5,R1
+         USING COMREG,R5
+         L     R2,SYSPAR
+         LA    R2,0(R2)          clean the address, just in case
          ST    R2,ARGPTR         store first argument for C
 *
 * Set R4 to true if we were called in 31-bit mode
@@ -186,4 +190,5 @@ STKLTMP  EQU   *-STACK
          AIF   ('&SYS' NE 'S380').N380ST4
 *         USERSAVE
 .N380ST4 ANOP
+COMREG   MAPCOMR
          END   @@CRT0

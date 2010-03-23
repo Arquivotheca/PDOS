@@ -52,6 +52,7 @@ extern unsigned short __osver;
 #if defined(__MVS__) || defined(__CMS__) || defined(__VSE__)
 int __tso = 0; /* is this a TSO environment? */
 extern int __doperm; /* are we doing the permanent datasets? */
+int __upsi = 0; /* UPSI switches for VSE */
 #endif
 
 #ifdef __MAIN_FP__
@@ -532,6 +533,7 @@ __PDPCLIB_API__ int CTYP __start(char *p)
         memcpy(parmbuf + 2, eplist[1], parmLen);
     }
 #elif defined(__VSE__)
+    __upsi = pgmname[9]; /* we shouldn't really clump this */
     parmLen = p[0];
     memcpy(parmbuf + 2, p + 1, parmLen);
 #else /* MVS etc */

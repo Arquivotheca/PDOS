@@ -85,6 +85,7 @@ SUBPOOL  EQU   0
          L     R2,SYSPAR         get access to SYSPARM
          LA    R2,0(R2)          clean the address, just in case
          ST    R2,ARGPTR         store SYSPARM
+         MVC   XUPSI,UPSI        move the UPSI switches in
          LA    R2,0              default no VSE-style PARM
          CR    R11,R8            compare original R15 and original R1
          BE    CONTPARM          no difference = no VSE-style PARM
@@ -94,10 +95,10 @@ CONTPARM DS    0H
          L     R2,JAPART         address of job accounting table
          USING ACCTABLE,R2       address accounting table
          MVC   PGMNAME,ACCTEXEC  move program name into our own area
+         DROP  R5                no longer need common region
          LA    R2,PGMNAME        address our program name
          ST    R2,PGMNPTR        store program name
          DROP  R2                no longer need accounting table
-         DROP  R5                no longer need common region
 *
 * Set R4 to true if we were called in 31-bit mode
 *
@@ -185,6 +186,7 @@ ARGPTRE  DS    F
 TYPE     DS    F
 PGMNAME  DS    CL8
 PGMNAMEN DS    C                 NUL BYTE FOR C
+XUPSI    DS    C                 UPSI switches
 ANCHOR   DS    0F
 EXITADDR DS    F
          DS    49F

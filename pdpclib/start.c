@@ -532,7 +532,8 @@ __PDPCLIB_API__ int CTYP __start(char *p)
         memcpy(parmbuf + 2, eplist[1], parmLen);
     }
 #elif defined(__VSE__)
-    parmLen = 0;
+    parmLen = p[0];
+    memcpy(parmbuf + 2, p + 1, parmLen);
 #else /* MVS etc */
     parmLen = ((unsigned int)p[0] << 8) | (unsigned int)p[1];
     if (parmLen >= sizeof parmbuf - 2)

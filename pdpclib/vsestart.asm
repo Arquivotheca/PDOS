@@ -91,6 +91,13 @@ SUBPOOL  EQU   0
          LR    R2,R11            R11 has PARM, now R2 does too
 CONTPARM DS    0H
          ST    R2,ARGPTRE        store VSE-style PARM
+         L     R2,JAPART         address of job accounting table
+         USING ACCTABLE,R2       address accounting table
+         MVC   PGMNAME,ACCTEXEC  move program name into our own area
+         LA    R2,PGMNAME        address our program name
+         ST    R2,PGMNPTR        store program name
+         DROP  R2                no longer need accounting table
+         DROP  R5                no longer need common region
 *
 * Set R4 to true if we were called in 31-bit mode
 *
@@ -99,8 +106,6 @@ CONTPARM DS    0H
          BSM   R4,R0
 .NOBSM   ANOP
          ST    R4,SAVER4
-         LA    R2,PGMNAME
-         ST    R2,PGMNPTR        store program name
 *
 * FOR GCC WE NEED TO BE ABLE TO RESTORE R13
          LA    R5,SAVEAREA
@@ -191,4 +196,5 @@ STKLTMP  EQU   *-STACK
 *         USERSAVE
 .N380ST4 ANOP
 COMREG   MAPCOMR
+         MAPACCT
          END   @@CRT0

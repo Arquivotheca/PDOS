@@ -76,19 +76,21 @@ SUBPOOL  EQU   0
          ST    R2,12(R12)        TOP OF STACK POINTER
          LA    R2,0
          ST    R2,116(R12)       ADDR OF MEMORY ALLOCATION ROUTINE
-* Now let's get the program name and parameter list.
 *
-* I don't know how to get the parameter in DOS/VS, so what
-* we'll do is just point it to a variable (ARGPTRE) that will be 
-* a string of zeros, which will be enough for the MVS code to 
-* recognize that as no parameter.
-         LA    R2,0
-         COMRG
-         LR    R5,R1
-         USING COMREG,R5
-         L     R2,SYSPAR
+* Now let's get the parameter list
+*
+         COMRG                   get address of common region in R1
+         LR    R5,R1             use R5 to map common region
+         USING COMREG,R5         address common region
+         L     R2,SYSPAR         get access to SYSPARM
          LA    R2,0(R2)          clean the address, just in case
-         ST    R2,ARGPTR         store first argument for C
+         ST    R2,ARGPTR         store SYSPARM
+         LA    R2,0              default no VSE-style PARM
+         CR    R11,R8            compare original R15 and original R1
+         BE    CONTPARM          no difference = no VSE-style PARM
+         LR    R2,R11            R11 has PARM, now R2 does too
+CONTPARM DS    0H
+         ST    R2,ARGPTRE        store VSE-style PARM
 *
 * Set R4 to true if we were called in 31-bit mode
 *
@@ -97,8 +99,6 @@ SUBPOOL  EQU   0
          BSM   R4,R0
 .NOBSM   ANOP
          ST    R4,SAVER4
-         LA    R2,0
-         ST    R2,ARGPTRE        store eplist for C
          LA    R2,PGMNAME
          ST    R2,PGMNPTR        store program name
 *

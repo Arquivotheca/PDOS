@@ -534,21 +534,46 @@ __PDPCLIB_API__ int CTYP __start(char *p)
     }
 #elif defined(__VSE__)
     __upsi = pgmname[9]; /* we shouldn't really clump this */
-    /* if switch 1 is on, use SYSPARM */
-    if (__upsi & 0x80)
+    
+    /* The ep only has a genuine value if the top bit is set */
+    if (((unsigned int)ep & 0x8000000) != 0)
     {
-        parmLen = p[0];
-        memcpy(parmbuf + 2, p + 1, parmLen);
+        /* it is a 24-bit address */
+        ep = (char *)((unsigned int)ep & 0x00ffffff);
+        parmLen = *(short *)ep;
+        memcpy(parmbuf + 2, p + 2, parmLen);
     }
-    /* if switch 2 is on, read parameter from SYSINPT */
-    else if (__upsi & 0x40)
+    /* if no parm, use SYSPARM instead */
+    else if (p[0] != 0)
     {
-        fgets(parmbuf + 2, sizeof parmbuf - 2, stdin);
-        p = strchr(parmbuf + 2, '\n');
-        if (p != NULL)
+        /* in the special case of a "?", inspect the UPSI switches */
+        if ((p[0] == 1) && (p[1] == '?'))
         {
-            *p = '\0';
+            /* user is required to set all switches to 0. All
+               are reserved, except for the first one, which
+               says that the parameter will be read from SYSINPT */
+            if (__upsi & 0x80)
+            {
+                fgets(parmbuf + 2, sizeof parmbuf - 2, stdin);
+                p = strchr(parmbuf + 2, '\n');
+                if (p != NULL)
+                {
+                    *p = '\0';
+                }
+            }
         }
+        /* for all other parameter values, just use as-is */
+        else
+        {
+            parmLen = p[0];
+            memcpy(parmbuf + 2, p + 1, parmLen);
+        }
+                
+    }
+    /* otherwise there is no parm */
+    else
+    {
+        parmLen = 0;
     }
 #else /* MVS etc */
     parmLen = ((unsigned int)p[0] << 8) | (unsigned int)p[1];

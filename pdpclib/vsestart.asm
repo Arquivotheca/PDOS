@@ -90,6 +90,7 @@ SUBPOOL  EQU   0
          CR    R11,R8            compare original R15 and original R1
          BE    CONTPARM          no difference = no VSE-style PARM
          LR    R2,R11            R11 has PARM, now R2 does too
+* Note - do not clean the PARM, as we need access to the top bit
 CONTPARM DS    0H
          ST    R2,ARGPTRE        store VSE-style PARM
          L     R2,JAPART         address of job accounting table

@@ -520,8 +520,13 @@ undivert(vsesupa.asm)/*
 *
 * Now run the app
 *
+* Inserting these statements appropriately can provide parameters
+* from SYSINPT instead. Need to use '?' for SYSPARM in that case.
+*
+* Oh what fun it is to ride in a one-horse open sleigh, hey!
+* // UPSI 10000000
 // OPTION DUMP
-// OPTION SYSPARM='aBc D e'
+// OPTION SYSPARM='aBc DeF'
 // ASSGN SYS010,DISK,VOL=WORK01,SHR
 // DLBL SDIN,'TEST.F80'
 // EXTENT SYS010,WORK01

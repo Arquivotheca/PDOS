@@ -534,8 +534,22 @@ __PDPCLIB_API__ int CTYP __start(char *p)
     }
 #elif defined(__VSE__)
     __upsi = pgmname[9]; /* we shouldn't really clump this */
-    parmLen = p[0];
-    memcpy(parmbuf + 2, p + 1, parmLen);
+    /* if switch 1 is on, use SYSPARM */
+    if (__upsi & 0x80)
+    {
+        parmLen = p[0];
+        memcpy(parmbuf + 2, p + 1, parmLen);
+    }
+    /* if switch 2 is on, read parameter from SYSINPT */
+    else if (__upsi & 0x40)
+    {
+        fgets(parmbuf + 2, sizeof parmbuf - 2, stdin);
+        p = strchr(parmbuf + 2, '\n');
+        if (p != NULL)
+        {
+            *p = '\0';
+        }
+    }
 #else /* MVS etc */
     parmLen = ((unsigned int)p[0] << 8) | (unsigned int)p[1];
     if (parmLen >= sizeof parmbuf - 2)

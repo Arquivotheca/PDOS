@@ -9,6 +9,15 @@ Released to the public domain.
 You may use this entire package for any purpose whatsoever without
 restriction.
 
+Here is a more formal wording governing the software:
+
+I, the copyright holder of this work, hereby release it into the 
+public domain. This applies worldwide.
+
+In case this is not legally possible, I grant any entity the right 
+to use this work for any purpose, without any conditions, unless 
+such conditions are required by law.
+
 
 
 INTRODUCTION

@@ -4,7 +4,6 @@
 *
 * Create a dummy sequential file
 *
-// JOB OBJMAINT
 // DLBL UOUT,'TEST.F80'
 // EXTENT SYS005,WORK01,,,13,6
 // ASSGN SYS005,DISK,VOL=WORK01,SHR

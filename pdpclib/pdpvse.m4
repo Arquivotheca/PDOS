@@ -521,16 +521,9 @@ undivert(vsesupa.asm)/*
 *
 * Now run the app
 *
-* Inserting these statements appropriately can provide parameters
-* from SYSINPT instead. Need to use '?' for SYSPARM in that case.
-*
-* Oh what fun it is to ride in a one-horse open sleigh, hey!
-* // UPSI 10000000
 // OPTION DUMP
-// OPTION SYSPARM='dd:in'
-* Use an NL tape by not specifying any volser
-// ASSGN SYS011,TAPE
-// EXEC PDPTEST,SIZE=AUTO
+// OPTION SYSPARM='aBc DeF'
+// EXEC PDPTEST,SIZE=999K
 /*
 /&
 * $$ EOJ

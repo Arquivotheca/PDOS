@@ -513,6 +513,8 @@ undivert(vsesupa.asm)/*
 *
 * Now link the whole app
 *
+* Allow room for a standard-label tape, just in case one is used
+// LBLTYP TAPE
 // EXEC LNKEDT
  ACTION NOREL
 /*
@@ -526,9 +528,8 @@ undivert(vsesupa.asm)/*
 * // UPSI 10000000
 // OPTION DUMP
 // OPTION SYSPARM='aBc DeF'
-// ASSGN SYS010,DISK,VOL=WORK01,SHR
-// DLBL SDIN,'TEST.F80'
-// EXTENT SYS010,WORK01
+// ASSGN SYS011,TAPE,VOL=DZ1D02
+// TLBL MTIN,'SMPMCS'
 // EXEC PDPTEST,SIZE=AUTO
 /*
 /&

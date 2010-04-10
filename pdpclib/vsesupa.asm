@@ -204,7 +204,7 @@ NOTSYSI  DS    0H
          ST    R6,DCBLRECL
          LA    R6,2    +++ hardcode to recfm=U
          ST    R6,DCBRECFM
-         LA    R5,SDIN
+         LA    R5,MTIN
          ST    R5,PTRDTF
          OPEN  (R5)
          B     DONEOPEN
@@ -569,6 +569,9 @@ PRINTMOD PRMOD CONTROL=YES,RECFORM=FIXUNB,WORKA=YES
 *
 SDIN     DTFSD BLKSIZE=19069,DEVADDR=SYS010,DEVICE=3350,               X
                IOAREA1=WORKI1,RECFORM=UNDEF,WORKA=YES,                 X
+               TYPEFLE=INPUT,RECSIZE=(8),EOFADDR=GOTEOF
+MTIN     DTFMT BLKSIZE=19069,DEVADDR=SYS011,                           X
+               IOAREA1=WORKI1,RECFORM=UNDEF,WORKA=YES,FILABL=NO,       X
                TYPEFLE=INPUT,RECSIZE=(8),EOFADDR=GOTEOF
 IO1      DS    CL200
 *

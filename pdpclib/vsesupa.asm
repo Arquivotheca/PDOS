@@ -10,7 +10,7 @@
 *  VSESUPA - Support routines for PDPCLIB under DOS/VSE
 *
 *  It is currently coded for GCC, but C/370 functionality is
-*  still there, it's just being tested after any change.
+*  still there, it's just not being tested after any change.
 *
 ***********************************************************************
 *

@@ -527,9 +527,9 @@ undivert(vsesupa.asm)/*
 * Oh what fun it is to ride in a one-horse open sleigh, hey!
 * // UPSI 10000000
 // OPTION DUMP
-// OPTION SYSPARM='aBc DeF'
-// ASSGN SYS011,TAPE,VOL=DZ1D02
-// TLBL MTIN,'SMPMCS'
+// OPTION SYSPARM='dd:in'
+* Use an NL tape by not specifying any volser
+// ASSGN SYS011,TAPE
 // EXEC PDPTEST,SIZE=AUTO
 /*
 /&

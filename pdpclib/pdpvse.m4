@@ -3,6 +3,7 @@
 // JOB TRY31BIT
 *
 * Get the direct macros in
+* Note that most of these need to be moved to VSE/380
 *
 *
 // OPTION EDECK,NODECK  

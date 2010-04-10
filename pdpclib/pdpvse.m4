@@ -2,33 +2,6 @@
 * $$ LST LST=SYSLST,CLASS=A
 // JOB TRY31BIT
 *
-* Create a dummy sequential file
-*
-// DLBL UOUT,'TEST.F80'
-// EXTENT SYS005,WORK01,,,13,6
-// ASSGN SYS005,DISK,VOL=WORK01,SHR
-// ASSGN SYS004,SYSIPT
-// EXEC PGM=OBJMAINT,SIZE=AUTO
-./ CARD DLM=$$
-./ COPY
-LINE ABC1
-LINE DEF2
-$$
-/*
-*
-* Now print the sequential file
-*
-// ASSGN SYS005,SYSPCH
-// ASSGN SYS004,DISK,VOL=WORK01,SHR
-// DLBL UIN,'TEST.F80'
-// EXTENT SYS004,WORK01
-// EXEC PGM=OBJMAINT,SIZE=AUTO
-./ LIST
-./ COPY
-/*
-/&
-* $$ EOJ
-*
 * Get the direct macros in
 *
 *

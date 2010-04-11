@@ -490,8 +490,6 @@ undivert(vsesupa.asm)/*
 * Allow room for a standard-label tape, just in case one is used
 // LBLTYP TAPE
 // EXEC LNKEDT
- ACTION NOREL
-/*
 *
 * Now run the app
 *

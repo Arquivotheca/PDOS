@@ -1,5 +1,5 @@
 del pdpvse.zip
-gccmvs -DUSE_MEMMGR -Os -D__VSE__ -S -I . -o - start.c | namcsect START >start.s
+gccmvs -DUSE_MEMMGR -Os -D__VSE__ -S -I . -o - start.c | namcsect @@STRT >start.s
 gccmvs -DUSE_MEMMGR -Os -D__VSE__ -S -I . -o - stdio.c | namcsect @@STDIO >stdio.s
 gccmvs -DUSE_MEMMGR -Os -D__VSE__ -S -I . -o - stdlib.c | namcsect @@STDLIB >stdlib.s
 gccmvs -DUSE_MEMMGR -Os -D__VSE__ -S -I . -o - ctype.c | namcsect @@CTYPE >ctype.s

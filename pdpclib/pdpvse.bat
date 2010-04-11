@@ -12,7 +12,7 @@ gccmvs -DUSE_MEMMGR -Os -D__VSE__ -S -I . -o - math.c | namcsect @@MATH >math.s
 gccmvs -DUSE_MEMMGR -Os -D__VSE__ -S -I . -o - setjmp.c | namcsect @@PDPJMP >setjmp.s
 gccmvs -DUSE_MEMMGR -Os -D__VSE__ -S -I . -o - signal.c | namcsect @@PDPSIG >signal.s
 gccmvs -DUSE_MEMMGR -Os -D__VSE__ -S -I . -o - __memmgr.c | namcsect @@PDPMEM >__memmgr.s
-gccmvs -DUSE_MEMMGR -Os -D__VSE__ -S -I . -o - pdptest.c | namcsect PDPTEST >pdptest.s
+gccmvs -DUSE_MEMMGR -Os -D__VSE__ -S -I . -o - pdptest.c | namcsect @@PDPT >pdptest.s
 rem zip -0X pdpvse *.s *.exec *.asm *.mac
 
 m4 -I . pdpvse.m4 >pdpvse.jcl

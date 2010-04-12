@@ -1052,7 +1052,8 @@ TGETHAVE ST    R6,0(,R3)          RETURN ADDRESS
          ICM   R9,8,=C' '           BLANK FILL
          MVCL  R6,R8              PRESERVE IT FOR USER
          LH    R0,0(,R1)          GET LENGTH
-         FREEMAIN R,LV=(0),A=(1),SP=1  FREE SYSTEM BUFFER
+         ICM   R0,8,=AL1(1)       SUBPOOL 1
+         FREEMAIN R,LV=(0),A=(1)  FREE SYSTEM BUFFER
          SR    R6,R6              NO EOF
          B     READEXIT           TAKE NORMAL EXIT
          SPACE 1

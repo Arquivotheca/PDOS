@@ -40,11 +40,13 @@ SUBPOOL  EQU   0
 *         ENTRY CEESTART
 *CEESTART EQU   *
 *         SAVE  (14,12),,@@CRT0
-         LR    R8,R15            save R15 so that we can get the PARM
-         BALR  R15,0
+*
+         BALR  R10,R0
          USING *,R10
-         LR    R10,R15
-         LA    R10,0(R10)
+*
+         LA    R10,0(R10)        clean address
+         LR    R8,R15            save R15 so that we can get the PARM
+*
 *         USING @@CRT0,R10
 *LOOP     LA    R5,1(R5)
 *         B     LOOP

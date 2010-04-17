@@ -561,6 +561,10 @@ __PDPCLIB_API__ int CTYP __start(char *p)
                     *p = '\0';
                 }
             }
+            else
+            {
+                parmLen = 0;
+            }
         }
         /* for all other parameter values, just use as-is */
         else

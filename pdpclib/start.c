@@ -534,7 +534,7 @@ __PDPCLIB_API__ int CTYP __start(char *p)
     }
 #elif defined(__VSE__)
     __upsi = pgmname[9]; /* we shouldn't really clump this */
-    
+
     /* The ep only has a genuine value if the top bit is set */
     if (((unsigned int)ep & 0x8000000) != 0)
     {
@@ -560,6 +560,7 @@ __PDPCLIB_API__ int CTYP __start(char *p)
                 {
                     *p = '\0';
                 }
+                parmLen = strlen(parmbuf + 2);
             }
             else
             {

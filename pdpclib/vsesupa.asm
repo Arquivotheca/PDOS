@@ -771,6 +771,11 @@ SYSTEMLN EQU   *-SYSTMWRK    LENGTH OF DYNAMIC STORAGE
          RETURN (14,12),RC=(15)
          LTORG
 *
+*
+*
+* Keep this code last because it uses a different base register
+*
+         DROP  R12
 * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
 *
 *  SETJ - SAVE REGISTERS INTO ENV

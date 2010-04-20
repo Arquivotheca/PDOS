@@ -500,22 +500,13 @@ MYLINE   DS    CL80
          LR    R12,R15
          USING @@ACLOSE,R12
          LR    R11,R1
-         L     R0,=A(WORKLEN)
-         AIF   ('&SYS' EQ 'S390').BELOW3
-* CAN'T USE "BELOW" ON MVS 3.8
-         GETVIS
-         AGO   .NOBEL3
-.BELOW3  ANOP
-         GETVIS LOC=BELOW
-.NOBEL3  ANOP
+         L     R1,0(R1)         R1 CONTAINS HANDLE
          ST    R13,4(R1)
          ST    R1,8(R13)
          LR    R13,R1
          LR    R1,R11
          USING WORKAREA,R13
 *
-         L     R2,0(R1)         R2 CONTAINS HANDLE
-         USING ZDCBAREA,R2
 * If we are doing move mode, free internal assembler buffer
          AIF   ('&OUTM' NE 'M').NMM6
          L     R5,ASMBUF
@@ -543,7 +534,7 @@ RETURNAC DS    0H
          LR    R1,R13
          L     R13,SAVEAREA+4
          LR    R7,R15
-         L     R0,=A(WORKLEN)
+         L     R0,=A(ZDCBLEN)
          FREEVIS
          LR    R15,R7
          RETURN (14,12),RC=(15)

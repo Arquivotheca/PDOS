@@ -385,9 +385,7 @@ JPTR     DS    F
 *.BELOW1  ANOP
 *         GETMAIN R,LV=WORKLEN,SP=SUBPOOL,LOC=BELOW
 *.NOBEL1  ANOP
-         L     R2,0(R1)         R2 CONTAINS HANDLE
-         USING ZDCBAREA,R2
-         LA    R1,SAVEADCB
+         L     R1,0(R1)         R1 CONTAINS HANDLE
          ST    R13,4(R1)
          ST    R1,8(R13)
          LR    R13,R1

@@ -116,7 +116,14 @@ SUBPOOL  EQU   0
          LR    R12,R15
          USING @@AOPEN,R12
          LR    R11,R1
-         GETVIS LENGTH=WORKLEN
+         L     R0,=A(ZDCBLEN)
+         AIF   ('&SYS' EQ 'S390').BELOW
+* USE DEFAULT LOC=RES for S/370 and S/380
+         GETVIS
+         AGO   .CHKBLWE
+.BELOW   ANOP
+         GETVIS LOC=BELOW
+.CHKBLWE ANOP
          ST    R13,4(R1)
          ST    R1,8(R13)
          LR    R13,R1
@@ -135,17 +142,11 @@ SUBPOOL  EQU   0
          L     R9,24(,R1)         R9 POINTS TO MEMBER NAME (OF PDS)
          LA    R9,0(,R9)          Strip off high-order bit or byte
 *
-         L     R0,=A(ZDCBLEN)
-         AIF   ('&SYS' EQ 'S390').BELOW
-* USE DEFAULT LOC=RES for S/370 and S/380
-         GETVIS
-         AGO   .CHKBLWE
-.BELOW   ANOP
-         GETVIS LOC=BELOW
-.CHKBLWE ANOP
-         LR    R2,R1
+         LR    R2,R13             Access DCB
+         LA    R2,WORKLEN(R2)     Point past save area
          LR    R0,R2              Load output DCB area address
          LA    R1,ZDCBLEN         Load output length of DCB area
+         S     R1,=A(WORKLEN)     Adjust for save area
          LR    R5,R11             Preserve parameter list
          LA    R11,0              Pad of X'00' and no input length
          MVCL  R0,R10             Clear DCB area to binary zeroes
@@ -174,7 +175,7 @@ SUBPOOL  EQU   0
 *         RDJFCB ((R2),INPUT)
          LTR   R9,R9
          BZ    NOMEM
-         USING ZDCBAREA,R2
+*         USING ZDCBAREA,R2
 *         MVC   JFCBELNM,0(R9)
 *         OI    JFCBIND1,JFCPDS
 NOMEM    DS    0H
@@ -210,7 +211,7 @@ NOTSYSI  DS    0H
          B     DONEOPEN
          B     BADOPEN
 WRITING  DS    0H
-         USING ZDCBAREA,R2
+*         USING ZDCBAREA,R2
 *         MVC   ZDCBAREA(OUTDCBLN),OUTDCB
 *         LA    R10,JFCB
 * EXIT TYPE 07 + 80 (END OF LIST INDICATOR)
@@ -224,7 +225,7 @@ WRITING  DS    0H
 *         RDJFCB ((R2),OUTPUT)
 *        LTR   R9,R9
          BZ    WNOMEM
-         USING ZDCBAREA,R2
+*         USING ZDCBAREA,R2
 *         MVC   JFCBELNM,0(R9)
 *         OI    JFCBIND1,JFCPDS
 WNOMEM   DS    0H
@@ -270,7 +271,7 @@ FINO1    DS    0H
 *
 * Handle will be returned in R7
 *
-         LR    R7,R2
+         LR    R7,R13
          AIF   ('&OUTM' NE 'M').NMM4
          L     R6,=F'32768'
 * Give caller an internal buffer to write to. Below the line!
@@ -290,7 +291,7 @@ FINO1    DS    0H
 *
 .NMM4    ANOP
 DONEOPEN DS    0H
-         LR    R7,R2
+         LR    R7,R13
 *         SR    R6,R6
          L     R6,DCBLRECL
 *         L     R6,=F'80'  hardcoded to lrecl=80
@@ -319,10 +320,11 @@ DONESET  DS    0H
          LR    R15,R7
          B     RETURNOP
 BADOPEN  DS    0H
+         L     R13,SAVEAREA+4
          L     R0,=A(ZDCBLEN)
          FREEVIS
          L     R15,=F'-1'
-         B     RETURNOP           Go return to caller with negative RC
+         RETURN (14,12),RC=(15)
 *
 ENDFILE  LA    R6,1
          ST    R6,RDEOF
@@ -333,8 +335,9 @@ RETURNOP DS    0H
          LR    R1,R13
          L     R13,SAVEAREA+4
          LR    R7,R15
-         L     R0,=A(WORKLEN)
-         FREEVIS
+         L     R0,=A(ZDCBLEN)
+* If all goes according to plan, keep the allocated memory
+*         FREEVIS
          LR    R15,R7
          RETURN (14,12),RC=(15)
          LTORG

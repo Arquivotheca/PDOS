@@ -448,12 +448,14 @@ MYLINE   DS    CL80
          L     R3,4(,R1)          R3 points to the record address
          L     R4,8(,R1)          R4 points to the length
          L     R4,0(,R4)          R4 now has actual length
-         USING ZDCBAREA,R2
+*         USING ZDCBAREA,R2
 *        GETMAIN RU,LV=WORKLEN,SP=SUBPOOL
-         LA    R1,SAVEADCB
+         LR    R11,R1             SAVE
+         LR    R1,R2              R1 IS NOW HANDLE
          ST    R13,4(,R1)
          ST    R1,8(,R13)
          LR    R13,R1
+         LR    R1,R11             RESTORE
 *        USING WORKAREA,R13
 *
          AIF   ('&SYS' NE 'S380').N380WR1
@@ -482,7 +484,7 @@ MYLINE   DS    CL80
 *
 *        LR    R1,R13
 *        L     R13,SAVEAREA+4
-         L     R13,SAVEADCB+4
+         L     R13,4(R13)
 *        FREEVIS LENGTH=WORKLEN
          LA    R15,0
          RETURN (14,12),RC=(15)

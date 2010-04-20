@@ -866,7 +866,6 @@ DSCB     DS    0F
 *         IECSDSL1 (1)             Map the Format 1 DSCB
 DSCBCCHH DS    CL5                CCHHR of DSCB returned by OBTAIN
          DS    CL47               Rest of OBTAIN's 148 byte work area
-SAVEADCB DS    18F                Register save area for PUT
 *CLOSEMB  DS    CL(CLOSEMLN)
          DS    0F
 *OPENMB   DS    CL(OPENMLN)

@@ -259,6 +259,12 @@ NOTSYS   DS    0H
 * We use the register notation, because other than the standard
 * files, all files will have their data stored in ZDCBAREA, not
 * a local variable.
+         LA    R6,80   +++ hardcode to 80
+         ST    R6,DCBLRECL
+         LA    R6,0    +++ hardcode to fixed
+         ST    R6,DCBRECFM
+*
+         L     R6,DCBLRECL
          LA    R5,SYSTRM
          OPEN  (R5)
          B     FINO1

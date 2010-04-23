@@ -495,6 +495,7 @@ undivert(vsesupa.asm)/*
 *
 // OPTION DUMP
 // OPTION SYSPARM='aBc DeF'
+// ASSGN SYS005,SYSLST
 // EXEC PDPTEST,SIZE=999K
 /*
 /&

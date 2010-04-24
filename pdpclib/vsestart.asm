@@ -142,7 +142,7 @@ RETURNMS DS    0H
          LR    R14,R9
          FREEVIS LENGTH=STACKLEN
          LR    R15,R14
-         EOJ   RC=(R15)
+         EOJ
 SAVER4   DS    F
 SAVER13  DS    F
          LTORG
@@ -174,7 +174,7 @@ IN31C    DS    0H
          FREEVIS LENGTH=STACKLEN
          LR    R15,R14
 *         RETURN (14,12),RC=(15)
-         EOJ   RC=(R15)
+         EOJ
          LTORG
 STACKLEN DC    A(STKLTMP)
 *

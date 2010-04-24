@@ -599,10 +599,10 @@ IO1      DS    CL200
          LR    R4,R3
          LA    R3,8(,R3)
 *
-* To avoid fragmentation, round up size to 128 byte multiple
+* To avoid fragmentation, round up size to 64 byte multiple
 *
-         A     R3,=A(128-1)
-         N     R3,=X'FFFFFF80'
+         A     R3,=A(64-1)
+         N     R3,=X'FFFFFFC0'
 *
          AIF   ('&SYS' NE 'S380').N380GM1
 *         GETMAIN RU,LV=(R3),SP=SUBPOOL,LOC=ANY

@@ -84,10 +84,22 @@ MVSSUPA  TITLE 'M V S S U P A  ***  MVS VERSION OF PDP CLIB SUPPORT'
          COPY  PDPTOP
          SPACE 1
          GBLC  &LOCLOW,&LOCANY    MAKE GETMAINS EASIER
-         AIF   ('&SYS' EQ 'S370').NOLOCS
+*
+* Some storage needs to be below the line, no matter what
+* environment we are on. On an S/370 environment, that will
+* naturally be the case, so no need to be explicit.
+*
+         AIF   ('&SYS' EQ 'S370').NOLOCL
 &LOCLOW  SETC  'LOC=BELOW'
+.NOLOCL  SPACE 1
+*
+* For S/380 we need to deliberately request LOC=ANY storage
+* For all other environments, just let it naturally default
+* to LOC=RES
+*
+         AIF   ('&SYS' NE 'S380').NOLOCA
 &LOCANY  SETC  'LOC=ANY'
-.NOLOCS  SPACE 1
+.NOLOCA  SPACE 1
 *
 *
 *

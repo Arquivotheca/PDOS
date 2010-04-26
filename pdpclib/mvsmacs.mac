@@ -67,7 +67,7 @@
 .EXMODE  AIF   (&ZZSETAM).BSM
          BR    R14
          MEXIT ,
-.BSM     QBSM  R0,R14
+.BSM     BSM   R0,R14
          MEND  ,
 *
 *
@@ -106,7 +106,7 @@
          DC    AL1(&I),CL(&I)'&NM'    EXPAND LABEL
 &LBL     SETC  ''
 .SKIPID  AIF   (NOT &ZZSETAM).SKIPAM
-&LBL     QBSM  R14,R0                 PRESERVE AMODE
+&LBL     BSM   R14,R0                 PRESERVE AMODE
 &LBL     SETC  ''
 .SKIPAM  ANOP  ,
 &LBL     STM   R14,R12,12(R13)    SAVE CALLER'S REGISTERS

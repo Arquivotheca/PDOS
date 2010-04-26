@@ -9,17 +9,17 @@
 &NM      AMUSE &WRK1=R14,&WRK2=R15
          GBLC  &SYS
 .*
-.*   AMUSE sets addressing mode to back to the csller's
-.*         expands nothing or label for S370
-.*         Required after SAM24 call to return data to caller
+.*   AMUSE sets addressing mode to back to the caller's
+.*         expands nothing or label for S370 or S390
+.*         Required after GO24 call to return data to caller
 .*
-         AIF   ('&SYS' EQ 'S370').OLDSYS
+         AIF   ('&SYS' NE 'S380').OLDSYS
 &NM      L     &WRK1,4(,R13)      Old save area
          L     &WRK1,12(,R14)     Caller's mode in high bit
          N     &WRK1,=X'80000000'   Kill address
          LA    &WRK2,*+4+2+2      Get new mode and address
          OR    &WRK1,&WRK2
-         DC    0H'0',AL.4(0,X'0B',0,&WRK1)  CONTINUE IN USER MODE
+         BSM   R0,&WRK1           CONTINUE IN USER MODE
          MEXIT ,
 .OLDSYS  AIF   ('&NM' EQ '').MEND
 &NM      DS    0H            DEFINE LABEL ONLY
@@ -67,7 +67,7 @@
 .EXMODE  AIF   (&ZZSETAM).BSM
          BR    R14
          MEXIT ,
-.BSM     DC    0H'0',X'0B0E'      BSM 0,14
+.BSM     QBSM  R0,R14
          MEND  ,
 *
 *
@@ -95,7 +95,7 @@
 &I       SETA  ((&I)/2*2+1)       NEED ODD LENGTH FOR STM ALIGN
 &LBL     SETC  '&NM'
 &ZZSETAM SETB  ('&AM' NE 'NO')
-&ZZSETAM SETB  (&ZZSETAM AND '&SYS' NE 'S370')
+&ZZSETAM SETB  (&ZZSETAM AND '&SYS' EQ 'S380')
 &ZZSETSA SETC  ''
 &ZZSETSL SETC  ''
 &ZZSETSP SETC  ''
@@ -106,7 +106,7 @@
          DC    AL1(&I),CL(&I)'&NM'    EXPAND LABEL
 &LBL     SETC  ''
 .SKIPID  AIF   ('&AM' EQ 'NO').SKIPAM
-&LBL     DC    0H'0',X'0BE0'      BSM 14,0  PRESERVE AMODE
+&LBL     QBSM  R14,R0                 PRESERVE AMODE
 &LBL     SETC  ''
 .SKIPAM  ANOP  ,
 &LBL     STM   R14,R12,12(R13)    SAVE CALLER'S REGISTERS
@@ -211,14 +211,16 @@
 &NM      QBSM  &F1,&F2
          GBLC  &SYS
 .*
-.*   QBSM expands as as BSM on supporting systems (S380, S390)
-.*     otheriwse it expands as BASRENUMBR (for BSM 0,r)
+.*   QBSM expands as as BSM on environments that require such
+.*   mode switch (S380-only)
+.*   Otherwise it expands as BASR r1,r2 (instead of BSM r1,r2)
+.*   Unless r1 = 0, in which case, a simple BR r2 is done instead
 .*
-         AIF   ('&SYS' EQ 'S370').OLDSYS
-&NM      DC    0H'0',AL.4(0,X'B',&F1,&F2)   BSM
+         AIF   ('&SYS' NE 'S380').OLDSYS
+&NM      BSM   &F1,&F2
          MEXIT ,
 .OLDSYS  AIF   ('&F1' EQ '0' OR '&F1' EQ 'R0').BR
-&NM      DC    0H'0',AL.4(0,X'D',&F1,&F2)   BASR
+&NM      BASR  &F1,&F2
          MEXIT ,
 .BR      ANOP  ,
 &NM      BR    &F2
@@ -227,17 +229,16 @@
 *
 *
          MACRO ,
-&NM      SAM31 &WORK=R15
+&NM      GO31  &WORK=R15
          GBLC  &SYS
 .*
-.*   SAM31 sets addressing mode to 31 for S380, etc.
-.*         expands nothing or label for S370
-.*         is never invoked by HLASM (valid hardware instruction)
+.*   GO31 sets addressing mode to 31 for S380.
+.*         expands nothing or label for S370 or S390
 .*
-         AIF   ('&SYS' EQ 'S370').OLDSYS
+         AIF   ('&SYS' NE 'S380').OLDSYS
 &NM      LA    &WORK,*+10    GET PAST BSM WITH BIT 0 ON
          O     &WORK,=X'80000000'  SET MODE BIT
-         DC    0H'0',AL.4(0,X'0B',0,&WORK)  CONTINUE IN 31-BIT MODE
+         BSM   R0,&WORK            CONTINUE IN 31-BIT MODE
          MEXIT ,
 .OLDSYS  AIF   ('&NM' EQ '').MEND
 &NM      DS    0H            DEFINE LABEL ONLY
@@ -246,16 +247,15 @@
 *
 *
          MACRO ,
-&NM      SAM24 &WORK=R15
+&NM      GO24  &WORK=R15
          GBLC  &SYS
 .*
-.*   SAM24 sets addressing mode to 24 for S380, etc.
-.*         expands nothing or label for S370
-.*         is never invoked by HLASM (valid hardware instruction)
+.*   GO24 sets addressing mode to 24 for S380
+.*         expands nothing or label for S370 or S390
 .*
-         AIF   ('&SYS' EQ 'S370').OLDSYS
+         AIF   ('&SYS' NE 'S380').OLDSYS
 &NM      LA    &WORK,*+6     GET PAST BSM WITH BIT 0 OFF
-         DC    0H'0',AL.4(0,X'0B',0,&WORK)  CONTINUE IN 24-BIT MODE
+         BSM   R0,&WORK      CONTINUE IN 24-BIT MODE
          MEXIT ,
 .OLDSYS  AIF   ('&NM' EQ '').MEND
 &NM      DS    0H            DEFINE LABEL ONLY

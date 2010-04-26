@@ -833,7 +833,7 @@ REREAD   SLR   R6,R6              Clear default end-of-file indicator
          CLI   RECFMIX,4          RECFM=Vxx ?
          BE    READ               No, deblock
          LA    R8,4(,R8)          Room for fake RDW
-READ     SAM24 ,                  For old code
+READ     GO24  ,                  For old code
          TM    IOMFLAGS,IOFEXCP   EXCP mode?
          BZ    READBSAM           No, use BSAM
 *---------------------------------------------------------------------*
@@ -877,7 +877,7 @@ EXRDOK   SR    R0,R0
 *   BSAM read
 *---------------------------------------------------------------------*
 READBSAM SR    R6,R6              Reset EOF flag
-         SAM24 ,                  Get low
+         GO24 ,                   Get low
          READ  DECB,              Read record Data Event Control Block C
                SF,                Read record Sequential Forward       C
                (R10),             Read record DCB address              C
@@ -1030,10 +1030,10 @@ SETCURS  ST    R7,BUFFCURR        Store the next record address
 TGETREAD L     R6,ZIOECT          RESTORE ECT ADDRESS
          L     R7,ZIOUPT          RESTORE UPT ADDRESS
          MVI   ZGETLINE+2,X'80'   EXPECTED FLAG
-         SAM24
+         GO24
          GETLINE PARM=ZGETLINE,ECT=(R6),UPT=(R7),ECB=ZIOECB,           *
                MF=(E,ZIOPL)
-         SAM31
+         GO31
          LR    R6,R15             COPY RETURN CODE
          CH    R6,=H'16'          HIT BARRIER ?
          BE    READEOD2           YES; EOF, BUT ALLOW READS
@@ -1215,10 +1215,10 @@ TPUTWRIV STH   R5,0(,R4)          FILL RDW
          STCM  R5,12,2(R4)          ZERO REST
          L     R6,ZIOECT          RESTORE ECT ADDRESS
          L     R7,ZIOUPT          RESTORE UPT ADDRESS
-         SAM24
+         GO24
          PUTLINE PARM=ZPUTLINE,ECT=(R6),UPT=(R7),ECB=ZIOECB,           *
                OUTPUT=((R4),DATA),TERMPUT=EDIT,MF=(E,ZIOPL)
-         SAM31
+         GO31
          SPACE 1
 WRITEEX  TM    IOPFLAGS,IOFCURSE  RECURSION REQUESTED?
          BNZ   WRITMORE
@@ -1232,7 +1232,7 @@ WRITEEX  TM    IOPFLAGS,IOFCURSE  RECURSION REQUESTED?
 @@ANOTE  FUNHEAD IO=YES,AM=YES,SAVE=SAVEADCB   NOTE position
          L     R3,4(,R1)          R3 points to the return value
          FIXWRITE ,
-         SAM24 ,                  For old code
+         GO24  ,                  For old code
          TM    IOMFLAGS,IOFEXCP   EXCP mode?
          BZ    NOTEBSAM           No
          L     R4,DCBBLKCT        Return block count
@@ -1256,7 +1256,7 @@ NOTECOM  AMUSE ,
          L     R3,0(,R3)          Get the TTR
          ST    R3,ZWORK           Save below the line
          FIXWRITE ,
-         SAM24 ,                  For old code
+         GO24  ,                  For old code
          TM    IOMFLAGS,IOFEXCP   EXCP mode ?
          BZ    POINBSAM           No
          L     R4,DCBBLKCT        Get current position
@@ -1320,8 +1320,8 @@ NOPOOL   DS    0H
 *---------------------------------------------------------------------*
 TRUNCOUT B     *+14-TRUNCOUT(,R15)   SKIP LABEL
          DC    AL1(9),CL(9)'TRUNCOUT' EXPAND LABEL
-         AIF   ('&SYS' EQ 'S370').NOTRUBS
-         DC    0H'0',X'0BE0'      BSM 14,0  PRESERVE AMODE
+         AIF   ('&SYS' NE 'S380').NOTRUBS
+         BSM   R14,R0             PRESERVE AMODE
 .NOTRUBS STM   R14,R12,12(R13)    SAVE CALLER'S REGISTERS
          LR    R12,R15
          USING TRUNCOUT,R12
@@ -1333,7 +1333,7 @@ TRUNCOUT B     *+14-TRUNCOUT(,R15)   SKIP LABEL
          TM    IOPFLAGS,IOFLDATA   PENDING WRITE ?
          BZ    TRUNCOEX      NO; JUST RETURN
          NI    IOPFLAGS,255-IOFLDATA  Reset it
-         SAM24 ,             GET LOW
+         GO24  ,             GET LOW
          LM    R4,R5,BUFFADDR  START/NEXT ADDRESS
          CLI   RECFMIX,4          RECFM=V?
          BNE   TRUNLEN5

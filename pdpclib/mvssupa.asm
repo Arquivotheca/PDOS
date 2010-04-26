@@ -321,8 +321,8 @@ OPREPJFC LA    R14,JFCB
          ST    R14,DCBXLST+4
          LA    R14,OCDCBEX        POINT TO DCB EXIT
          AIF   ('&SYS' EQ 'S370').NODP24
-         OI    R14,X'80'          Set high bit = AMODE 31
          ST    R14,DOPE31         Address of 31-bit exit
+         OI    DOPE31,X'80'       Set high bit = AMODE 31
          MVC   DOPE24,DOPEX24     Move in stub code
          LA    R14,DOPE24         Switch to 24-bit stub
 .NODP24  ANOP  ,
@@ -2119,7 +2119,7 @@ EOFR24   DS    CL(EOFRLEN)
          AIF   ('&SYS' EQ 'S370').NOD24  If S/370, no 24-bit OPEN exit
          DS    0H
 DOPE24   DS    CL(DOPELEN)        DCB open 24-bit code
-DOPE31   DS    A                  Addres of DCB open exit
+DOPE31   DS    A                  Address of DCB open exit
 .NOD24   ANOP  ,
 ZBUFF1   DS    A,F                Address, length of buffer
 ZBUFF2   DS    A,F                Address, length of 2nd buffer

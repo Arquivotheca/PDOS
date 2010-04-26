@@ -320,6 +320,12 @@ OPREPJFC LA    R14,JFCB
          ICM   R14,B'1000',=X'87'
          ST    R14,DCBXLST+4
          LA    R14,OCDCBEX        POINT TO DCB EXIT
+         AIF   ('&SYS' EQ 'S370').NODP24
+         OI    R14,X'80'          Set high bit = AMODE 31
+         ST    R14,DOPE31         Address of 31-bit exit
+         MVC   DOPE24,DOPEX24     Move in stub code
+         LA    R14,DOPE24         Switch to 24-bit stub
+.NODP24  ANOP  ,
          ICM   R14,8,=X'05'         REQUEST IT
          ST    R14,DCBXLST        AND SET IT BACK
          LA    R14,DCBXLST
@@ -770,9 +776,41 @@ OCDCBXX  STH   R3,DCBBLKSI   UPDATE POSSIBLY CHANGED BLOCK SIZE
          ST    R3,BLKSIZE    UPDATE POSSIBLY CHANGED BLOCK SIZE
          ST    R4,LRECL        AND RECORD LENGTH
          MVC   ZRECFM,DCBRECFM    DITTO
+         AIF   ('&SYS' EQ 'S370').NOOPSW
+         BSM   R0,R14
+         AGO   .OPNRET
+.NOOPSW  ANOP  ,
          BR    R14           RETURN TO OPEN
+.OPNRET  ANOP  ,
          POP   USING
          SPACE 2
+*
+         AIF   ('&SYS' EQ 'S370').NODOP24
+***********************************************************************
+*                                                                     *
+*    OPEN DCB EXIT - 24 bit stub                                      *
+*    This code is not directly executed. It is copied below the line  *
+*    It is only needed for AMODE 31 programs.                         *
+*                                                                     *
+***********************************************************************
+         PUSH  USING
+         DROP  ,
+         USING DOPEX24,R15
+*
+* This next line works because when we are actually executing,
+* we are executing inside that DSECT, so the address we want
+* follows the code. Also, it has already had the high bit set,
+* so it will switch to 31-bit mode.
+*
+DOPEX24  L     R15,DOPE31-DOPE24(,R15)  Load 31-bit routine address
+*
+* The following works because while the AMODE is saved in R14, the
+* rest of R14 isn't disturbed, so it is all set for a BSM to R14
+*
+         BSM   R14,R15                  Switch to 31-bit mode
+DOPELEN  EQU   *-DOPEX24
+.NODOP24 ANOP  ,
+*       
 ***********************************************************************
 *                                                                     *
 *  ALINE - See whether any more input is available                    *
@@ -2078,6 +2116,11 @@ ZGETLINE GETLINE MF=L             TWO WORD GTPB
 OPENCLOS DS    A                  OPEN/CLOSE parameter list
 DCBXLST  DS    2A                 07 JFCB / 85 DCB EXIT
 EOFR24   DS    CL(EOFRLEN)
+         AIF   ('&SYS' EQ 'S370').NOD24  If S/370, no 24-bit OPEN exit
+         DS    0H
+DOPE24   DS    CL(DOPELEN)        DCB open 24-bit code
+DOPE31   DS    A                  Addres of DCB open exit
+.NOD24   ANOP  ,
 ZBUFF1   DS    A,F                Address, length of buffer
 ZBUFF2   DS    A,F                Address, length of 2nd buffer
 KEPTREC  DS    A,F                Address & length of saved rcd

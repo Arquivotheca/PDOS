@@ -1972,9 +1972,14 @@ DYNALDLN EQU   *-DYNALWRK     LENGTH OF DYNAMIC STORAGE
 ***********************************************************************
          ENTRY @@SETM31
          USING @@SETM31,R15
-@@SETM31 O     R14,=X'80000000'   Set to switch mode
-         ORG   *-4      *****TEMPORAY UNTIL BAL FIXED TO BAS
-         ICM   R14,8,=X'80'       Clobber R14
+@@SETM31 ICM   R14,8,=X'80'       Clobber entire high byte of R14
+*                                 This is necessary because if people
+*                                 use BALR in 24-bit mode, the address
+*                                 will have rubbish in the high byte.
+*                                 People switching between 24-bit and
+*                                 31-bit will be RMODE 24 anyway, so
+*                                 there is nothing to preserve in the
+*                                 high byte.
          BSM   0,R14              Return in amode 31
          LTORG ,
 *

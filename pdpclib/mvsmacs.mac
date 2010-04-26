@@ -105,7 +105,7 @@
 &LBL     B     *+4+1+&I-&NM.(,R15)    SKIP LABEL
          DC    AL1(&I),CL(&I)'&NM'    EXPAND LABEL
 &LBL     SETC  ''
-.SKIPID  AIF   ('&AM' EQ 'NO').SKIPAM
+.SKIPID  AIF   (NOT &ZZSETAM).SKIPAM
 &LBL     QBSM  R14,R0                 PRESERVE AMODE
 &LBL     SETC  ''
 .SKIPAM  ANOP  ,

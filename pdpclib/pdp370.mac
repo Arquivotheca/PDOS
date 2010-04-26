@@ -39,7 +39,9 @@
 * &OS      SETC 'MVS'             Indicate that this is for MVS
 * &OS      SETC 'MUSIC'           Indicate that this is for MUSIC/SP
 *
-* AMODE/RMODE not available on S370
+* AMODE/RMODE not available on S370. In the S/370 model,
+* everything is 24-bit so these considerations are not
+* important.
 *
 *        AMODE ANY
 *        RMODE ANY

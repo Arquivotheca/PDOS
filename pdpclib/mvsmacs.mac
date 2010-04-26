@@ -213,14 +213,14 @@
 .*
 .*   QBSM expands as as BSM on environments that require such
 .*   mode switch (S380-only)
-.*   Otherwise it expands as BASR r1,r2 (instead of BSM r1,r2)
+.*   Otherwise it expands as BALR r1,r2 (instead of BSM r1,r2)
 .*   Unless r1 = 0, in which case, a simple BR r2 is done instead
 .*
          AIF   ('&SYS' NE 'S380').OLDSYS
 &NM      BSM   &F1,&F2
          MEXIT ,
 .OLDSYS  AIF   ('&F1' EQ '0' OR '&F1' EQ 'R0').BR
-&NM      BASR  &F1,&F2
+&NM      BALR  &F1,&F2
          MEXIT ,
 .BR      ANOP  ,
 &NM      BR    &F2

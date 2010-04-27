@@ -122,7 +122,7 @@ __PDPCLIB_API__ int CTYP __start(char *p)
 #if defined(__MVS__) || defined(__CMS__) || defined(__VSE__)
     int parmLen;
     int progLen;
-    char parmbuf[300];
+    char parmbuf[310]; /* z/VSE can have a PARM up to 300 characters */
 #endif
 
 #ifdef __PDOS__
@@ -535,6 +535,10 @@ __PDPCLIB_API__ int CTYP __start(char *p)
 #elif defined(__VSE__)
     __upsi = pgmname[9]; /* we shouldn't really clump this */
 
+    if (ep != NULL)
+    {
+        ep = *(char **)ep;
+    }
     /* The ep only has a genuine value if the top bit is set */
     if (((unsigned int)ep & 0x8000000) != 0)
     {

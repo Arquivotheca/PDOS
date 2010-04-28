@@ -540,7 +540,7 @@ __PDPCLIB_API__ int CTYP __start(char *p)
         ep = *(char **)ep;
     }
     /* The ep only has a genuine value if the top bit is set */
-    if (((unsigned int)ep & 0x8000000) != 0)
+    if (((unsigned int)ep & 0x80000000) != 0)
     {
         /* it is a 24-bit address */
         ep = (char *)((unsigned int)ep & 0x00ffffff);

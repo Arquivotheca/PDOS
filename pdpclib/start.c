@@ -545,7 +545,7 @@ __PDPCLIB_API__ int CTYP __start(char *p)
         /* it is a 24-bit address */
         ep = (char *)((unsigned int)ep & 0x00ffffff);
         parmLen = *(short *)ep;
-        memcpy(parmbuf + 2, p + 2, parmLen);
+        memcpy(parmbuf + 2, ep + 2, parmLen);
     }
     /* if no parm, use SYSPARM instead */
     else if (p[0] != 0)

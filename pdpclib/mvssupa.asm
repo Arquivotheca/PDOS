@@ -190,7 +190,12 @@ SUBPOOL  EQU   0                                                      *
          BL    *+8                Yes; else pointer
          L     R4,0(,R4)          Load C/370 MODE.  0=input 1=output
          SPACE 1
-         GETMAIN RU,LV=ZDCBLEN,SP=SUBPOOL,&LOCLOW
+         AIF   ('&SYS' NE 'S390').NOLOW
+         GETMAIN RU,LV=ZDCBLEN,SP=SUBPOOL,LOC=BELOW
+         AGO   .FINLOW
+.NOLOW   ANOP  ,
+         GETMAIN RU,LV=ZDCBLEN,SP=SUBPOOL
+.FINLOW  ANOP  ,
          LR    R10,R1             Addr.of storage obtained to its base
          USING IHADCB,R10         Give assembler DCB area base register
          LR    R0,R10             Load output DCB area address
@@ -1451,7 +1456,12 @@ TRUNCOEX L     R13,4(,R13)
          A     R3,=A(8+(64-1))    OVERHEAD PLUS ROUNDING
          N     R3,=X'FFFFFFC0'    MULTIPLE OF 64
 *
-         GETMAIN RU,LV=(R3),SP=SUBPOOL,&LOCANY
+         AIF   ('&SYS' NE 'S380').NOANY
+         GETMAIN RU,LV=(R3),SP=SUBPOOL,LOC=ANY
+         AGO   .FINANY
+.NOANY   ANOP  ,
+         GETMAIN RU,LV=(R3),SP=SUBPOOL
+.FINANY  ANOP  ,
 *
 * WE STORE THE AMOUNT WE REQUESTED FROM MVS INTO THIS ADDRESS
          ST    R3,0(,R1)

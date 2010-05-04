@@ -325,7 +325,7 @@ OPREPJFC LA    R14,JFCB
          ICM   R14,B'1000',=X'87'
          ST    R14,DCBXLST+4
          LA    R14,OCDCBEX        POINT TO DCB EXIT
-         AIF   ('&SYS' EQ 'S370').NODP24
+         AIF   ('&SYS' NE 'S390').NODP24
          ST    R14,DOPE31         Address of 31-bit exit
          OI    DOPE31,X'80'       Set high bit = AMODE 31
          MVC   DOPE24,DOPEX24     Move in stub code

@@ -85,11 +85,11 @@ MVSSUPA  TITLE 'M V S S U P A  ***  MVS VERSION OF PDP CLIB SUPPORT'
          SPACE 1
          GBLC  &LOCLOW,&LOCANY    MAKE GETMAINS EASIER
 *
-* Some storage needs to be below the line, no matter what
-* environment we are on. On an S/370 environment, that will
-* naturally be the case, so no need to be explicit.
+* For S/390 we need to deliberately request LOC=BELOW storage
+* in some places. For all other environments, just let it
+* naturally default to LOC=RES.
 *
-         AIF   ('&SYS' EQ 'S370').NOLOCL
+         AIF   ('&SYS' NE 'S390').NOLOCL
 &LOCLOW  SETC  'LOC=BELOW'
 .NOLOCL  SPACE 1
 *

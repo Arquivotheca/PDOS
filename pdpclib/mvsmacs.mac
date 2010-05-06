@@ -73,7 +73,7 @@
 *
 *
          MACRO ,
-&NM      FUNHEAD &ID=YES,&IO=NO,&AM=NO,&SAVE=
+&NM      FUNHEAD &ID=YES,&IO=NO,&AM=NO,&SAVE=,&US=YES
 .*
 .*   MACRO TO BEGIN EACH FUNCTION
 .*     HANDLES STANDARD OS ENTRY CONVENTIONS
@@ -84,6 +84,7 @@
 .*                           SETS R13, AND DECLARES ON USING
 .*   SAVE=(name,len{,subpool})   CREATES SAVE AREA WITH GETMAIN,
 .*                           SETS R13, AND DECLARES ON USING
+.*   US=  YES | NO      YES - want a USING for R13
 .*   Options used here are remembered and handled properly by
 .*     subsequent FUNEXIT macros
 .*
@@ -140,6 +141,7 @@
          ST    R13,4(,R15)
          LR    R13,R15
 &ZZSETSA SETC  '&SAVE(1)'
+         AIF   ('&US' EQ 'NO').MEND
          USING &SAVE(1),R13       DECLARE IT
 .MEND    MEND  ,
 *

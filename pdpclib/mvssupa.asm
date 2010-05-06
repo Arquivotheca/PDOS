@@ -622,7 +622,7 @@ EOFRLEN  EQU   *-ENDFILE
          LTORG ,
          SPACE 1
 BSAMDCB  DCB   MACRF=(RP,WP),DSORG=PS,DDNAME=BSAMDCB, input and output *
-               EXLST=OCDCBEX      JCB and DCB exits added later
+               EXLST=1-1          JCB and DCB exits added later
 BSAMDCBN EQU   *-BSAMDCB
 READDUM  READ  NONE,              Read record Data Event Control Block *
                SF,                Read record Sequential Forward       *
@@ -634,7 +634,7 @@ READLEN  EQU   *-READDUM
 BSAMDCBL EQU   *-BSAMDCB
          SPACE 1
 EXCPDCB  DCB   DDNAME=EXCPDCB,MACRF=E,DSORG=PS,REPOS=Y,BLKSIZE=0,      *
-               DEVD=TA,EXLST=OCDCBEX,RECFM=U
+               DEVD=TA,EXLST=1-1,RECFM=U
          DC    8XL4'0'         CLEAR UNUSED SPACE
          ORG   EXCPDCB+84    LEAVE ROOM FOR DCBLRECL
          DC    F'0'          VOLUME COUNT
@@ -844,7 +844,7 @@ ALINEX   FUNEXIT RC=(R15)
 *  AREAD - Read from an open data set                                 *
 *                                                                     *
 ***********************************************************************
-@@AREAD  FUNHEAD IO=YES,AM=YES,SAVE=SAVEADCB   READ | GET
+@@AREAD  FUNHEAD IO=YES,AM=YES,SAVE=SAVEADCB,US=NO   READ | GET
          L     R3,4(,R1)  R3 points to where to store record pointer
          L     R4,8(,R1)  R4 points to where to store record length
          SR    R0,R0
@@ -1129,7 +1129,7 @@ BADBLOCK WTO   'MVSSUPA - @@AREAD - problem processing RECFM=V(bs) file*
 *  AWRITE - Write to an open data set                                 *
 *                                                                     *
 ***********************************************************************
-@@AWRITE FUNHEAD IO=YES,AM=YES,SAVE=SAVEADCB   WRITE | PUT
+@@AWRITE FUNHEAD IO=YES,AM=YES,SAVE=SAVEADCB,US=NO   WRITE | PUT
          LR    R11,R1             SAVE PARM LIST
 WRITMORE NI    IOPFLAGS,255-IOFCURSE   RESET RECURSION
          L     R4,4(,R11)         R4 points to the record address
@@ -1272,7 +1272,7 @@ WRITEEX  TM    IOPFLAGS,IOFCURSE  RECURSION REQUESTED?
 *  ANOTE  - Remember the position in the data set (BSAM/BPAM only)    *
 *                                                                     *
 ***********************************************************************
-@@ANOTE  FUNHEAD IO=YES,AM=YES,SAVE=SAVEADCB   NOTE position
+@@ANOTE  FUNHEAD IO=YES,AM=YES,SAVE=SAVEADCB,US=NO   NOTE position
          L     R3,4(,R1)          R3 points to the return value
          FIXWRITE ,
          GO24  ,                  For old code
@@ -1294,7 +1294,7 @@ NOTECOM  AMUSE ,
 *           next read or write if incorrect.                          *
 *                                                                     *
 ***********************************************************************
-@@APOINT FUNHEAD IO=YES,AM=YES,SAVE=SAVEADCB   NOTE position
+@@APOINT FUNHEAD IO=YES,AM=YES,SAVE=SAVEADCB,US=NO   NOTE position
          L     R3,4(,R1)          R3 points to the TTR value
          L     R3,0(,R3)          Get the TTR
          ST    R3,ZWORK           Save below the line
@@ -2003,6 +2003,8 @@ DYNALDLN EQU   *-DYNALWRK     LENGTH OF DYNAMIC STORAGE
 * and won't compile anyway because "BSM" is not known.
 *
          AIF   ('&SYS' EQ 'S370').NOMODE  If S/370 we can't switch mode
+         PUSH  USING
+         DROP  ,
 ***********************************************************************
 *                                                                     *
 *  SETM24 - Set AMODE to 24                                           *
@@ -2012,7 +2014,10 @@ DYNALDLN EQU   *-DYNALWRK     LENGTH OF DYNAMIC STORAGE
          USING @@SETM24,R15
 @@SETM24 LA    R14,0(,R14)        Sure hope caller is below the line
          BSM   0,R14              Return in amode 24
+         POP   USING
          SPACE 1
+         PUSH  USING
+         DROP  ,
 ***********************************************************************
 *                                                                     *
 *  SETM31 - Set AMODE to 31                                           *
@@ -2030,6 +2035,7 @@ DYNALDLN EQU   *-DYNALWRK     LENGTH OF DYNAMIC STORAGE
 *                                 high byte.
          BSM   0,R14              Return in amode 31
          LTORG ,
+         POP   USING
 *
 .NOMODE  ANOP  ,                  S/370 doesn't support MODE switching
 *

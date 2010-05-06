@@ -325,7 +325,8 @@ OPREPJFC LA    R14,JFCB
          ICM   R14,B'1000',=X'87'
          ST    R14,DCBXLST+4
          LA    R14,OCDCBEX        POINT TO DCB EXIT
-         AIF   ('&SYS' NE 'S390').NODP24
+* Both S380 and S390 operate in 31-bit mode so need a stub
+         AIF   ('&SYS' EQ 'S370').NODP24
          ST    R14,DOPE31         Address of 31-bit exit
          OI    DOPE31,X'80'       Set high bit = AMODE 31
          MVC   DOPE24,DOPEX24     Move in stub code
@@ -795,7 +796,8 @@ OCDCBXX  STH   R3,DCBBLKSI   UPDATE POSSIBLY CHANGED BLOCK SIZE
 *                                                                     *
 *    OPEN DCB EXIT - 24 bit stub                                      *
 *    This code is not directly executed. It is copied below the line  *
-*    It is only needed for AMODE 31 programs.                         *
+*    It is only needed for AMODE 31 programs (both S380 and S390      *
+*    execute in this mode).                                           *
 *                                                                     *
 ***********************************************************************
          PUSH  USING
@@ -814,6 +816,7 @@ DOPEX24  L     R15,DOPE31-DOPE24(,R15)  Load 31-bit routine address
 *
          BSM   R14,R15                  Switch to 31-bit mode
 DOPELEN  EQU   *-DOPEX24
+         POP   USING
 .NODOP24 ANOP  ,
 *       
 ***********************************************************************
@@ -1437,7 +1440,7 @@ TRUNCOEX L     R13,4(,R13)
          LM    R14,R12,12(R13)    Reload all
          QBSM  0,R14              Return in caller's mode
          LTORG ,
-         POP   USING ,
+         POP   USING
          SPACE 2
 ***********************************************************************
 *                                                                     *

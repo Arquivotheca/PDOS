@@ -818,7 +818,7 @@ DOPEX24  L     R15,DOPE31-DOPE24(,R15)  Load 31-bit routine address
 DOPELEN  EQU   *-DOPEX24
          POP   USING
 .NODOP24 ANOP  ,
-*       
+*
 ***********************************************************************
 *                                                                     *
 *  ALINE - See whether any more input is available                    *

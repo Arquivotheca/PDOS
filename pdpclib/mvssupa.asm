@@ -1728,13 +1728,25 @@ SYSATDLN EQU   *-SYSATWRK     LENGTH OF DYNAMIC STORAGE
 ***********************************************************************
          PUSH  USING
          DROP  ,
-@@IDCAMS FUNHEAD ,                EXECUTE IDCAMS REQUEST
+         ENTRY @@IDCAMS
+         USING @@IDCAMS,R15
+@@IDCAMS STM   R14,R12,12(R13)    SAVE CALLER'S REGISTERS
+         LR    R12,R15            SET LOCAL BASE
+         DROP  R15
+         USING @@IDCAMS,R12       DECLARE PROGRAM BASE
+         LR    R10,R13            SAVE CALLER'S SAVE AREA
+         LA    R13,IDCSAVE        LOAD OUR SAVE AREA
+         ST    R10,4(,R13)        BACK LINK
+         ST    R13,8(,R10)        DOWN LINK
          LA    R1,0(,R1)          ADDRESS OF IDCAMS REQUEST (V-CON)
          ST    R1,IDC@REQ         SAVE REQUEST ADDRESS
          MVI   EXFLAGS,0          INITIALIZE FLAGS
          LA    R1,AMSPARM         PASS PARAMETER LIST
          LINK  EP=IDCAMS          INVOKE UTILITY
-         FUNEXIT RC=(15)          RESTORE CALLER'S REGS
+         ST    R15,16(,R10)       SAVE RETURN CODE
+         LR    R13,R10
+         LM    R14,R12,12(R13)    RESTORE CALLER'S REGS
+         BR    R14                RETURN
          POP   USING
          SPACE 1
 ***********************************************************************

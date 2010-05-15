@@ -1728,25 +1728,13 @@ SYSATDLN EQU   *-SYSATWRK     LENGTH OF DYNAMIC STORAGE
 ***********************************************************************
          PUSH  USING
          DROP  ,
-         ENTRY @@IDCAMS
-         USING @@IDCAMS,R15
-@@IDCAMS STM   R14,R12,12(R13)    SAVE CALLER'S REGISTERS
-         LR    R12,R15            SET LOCAL BASE
-         DROP  R15
-         USING @@IDCAMS,R12       DECLARE PROGRAM BASE
-         LR    R10,R13            SAVE CALLER'S SAVE AREA
-         LA    R13,IDCSAVE        LOAD OUR SAVE AREA
-         ST    R10,4(,R13)        BACK LINK
-         ST    R13,8(,R10)        DOWN LINK
+@@IDCAMS FUNHEAD SAVE=IDCSAVE     EXECUTE IDCAMS REQUEST
          LA    R1,0(,R1)          ADDRESS OF IDCAMS REQUEST (V-CON)
          ST    R1,IDC@REQ         SAVE REQUEST ADDRESS
          MVI   EXFLAGS,0          INITIALIZE FLAGS
          LA    R1,AMSPARM         PASS PARAMETER LIST
          LINK  EP=IDCAMS          INVOKE UTILITY
-         ST    R15,16(,R10)       SAVE RETURN CODE
-         LR    R13,R10
-         LM    R14,R12,12(R13)    RESTORE CALLER'S REGS
-         BR    R14                RETURN
+         FUNEXIT RC=(15)          RESTORE CALLER'S REGS
          POP   USING
          SPACE 1
 ***********************************************************************
@@ -1772,14 +1760,14 @@ XIDCAMS  STM   R14,R12,12(R13)
          B     XIDCEXIT   CLOSE          CODE IN R14 = X'04'
          B     XIDCGET    GET SYSIN      CODE IN R14 = X'08'
          B     XIDCPUT    PUT SYSPRINT   CODE IN R14 = X'0C'
-XIDCGET  TM    EXFLAGS,EXFGET            X'FF' = PRIOR GET ISSUED ?
+XIDCGET  TM    EXFLAGS,EXFGET            X'01' = PRIOR GET ISSUED ?
          BNZ   XIDCGET4                  YES, SET RET CODE = 04
          L     R1,IDC@REQ         GET REQUEST ADDRESS
          LDINT R3,0(,R1)          LOAD LENGTH
          L     R2,4(,R1)          LOAD TEXT POINTER
          LA    R2,0(,R2)          CLEAR HIGH
          STM   R2,R3,0(R5)        PLACE INTO IDCAMS LIST
-         OI    EXFLAGS,EXFGET            X'FF' = A GET HAS BEEN ISSUED
+         OI    EXFLAGS,EXFGET            X'01' = A GET HAS BEEN ISSUED
          B     XIDCEXIT
 XIDCGET4 LA    R15,4                     SET REG 15 = X'00000004'
          B     XIDCEXIT

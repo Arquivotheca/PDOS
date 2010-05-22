@@ -357,7 +357,8 @@ available on 1994-07-30.
 2.01  Released 2009-09-26
       Bug fixes and minor enhancements, mainly for MVS.
 
-3.00  Major revamp of MVS assembler to support default DCB info.
+3.00  Released 2010-05-23
+      Major revamp of MVS assembler to support default DCB info.
       Also MUSIC/SP has a working target. VSE also has a working
       target, but it's still very much alpha.
 

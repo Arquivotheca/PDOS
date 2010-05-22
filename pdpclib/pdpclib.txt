@@ -396,11 +396,14 @@ Dave Edwards (RIP) for various bug fixes/enhancements and
   MUSIC/SP support.
 Fausto Saporito for his work on the native MUSIC/SP port.
 Phil Roberts for helping to debug the MVS port.
-Gerhard Postpischil for various assembler mods, and for
+Gerhard Postpischil for the MVS assembler revamp, and for
   his extremely important work on MVS/380 too.
 Robert O'Hara for getting EPLIST support working in CMS
   and for making the mods to CMS (in VM/380) to support
   a 31-bit environment for PDPCLIB to use.
+Fran Hensler, Bruce Smith, Bill Carlborg, Louis Millon,
+  Michel Beaulieu and others for assistance and code
+  for the z/VSE port.
 Ray Gardner for making his date routines public domain, plus
   the original qsort routine (since replaced with libnix).
 Jim Nutt and Rob Duff for releasing strftime to the public domain.

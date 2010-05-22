@@ -358,7 +358,8 @@ available on 1994-07-30.
       Bug fixes and minor enhancements, mainly for MVS.
 
 2.xx  Major revamp of MVS assembler to support default DCB info.
-      Also MUSIC/SP has its own target.
+      Also MUSIC/SP has its own target. VSE also has a working
+      target, but it's still very much alpha.
 
 
 FUTURE DIRECTION

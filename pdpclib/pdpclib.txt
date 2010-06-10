@@ -1,7 +1,7 @@
             Public Domain C runtime library
             -------------------------------
 
-Version : 3.00
+Version : 3.xx
 Released: 2010-05-23
 
 Written by Paul Edwards.
@@ -381,9 +381,12 @@ Under TSO as a CP, PUTLINE etc shold be used.
 Read/write blocks instead of records on mainframe.
 Allow open for update and append on various environments.
 long arithmetic to be implemented on MSDOS.
-A port to DOS/VS(E).
+A proper port to DOS/VS(E).
 Ports to some of the more obscure mainframe environments such as TSS.
 A port to z/TPF.
+Update MSDOS/Windows/OS2 code to cope with a x'1a' (ctrl-z) as
+  an end-of-file marker (files like this are produced by some
+  MSDOS commands like "type *.txt >temp.dat".
 
 
 

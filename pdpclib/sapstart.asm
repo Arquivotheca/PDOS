@@ -1,4 +1,4 @@
-MVSSTART TITLE 'M V S S T A R T  ***  STARTUP ROUTINE FOR C'
+SAPSTART TITLE 'S A P S T A R T  ***  STARTUP ROUTINE FOR C'
 ***********************************************************************
 *                                                                     *
 *  THIS PROGRAM WRITTEN BY PAUL EDWARDS.                              *
@@ -7,7 +7,7 @@ MVSSTART TITLE 'M V S S T A R T  ***  STARTUP ROUTINE FOR C'
 ***********************************************************************
 ***********************************************************************
 *                                                                     *
-*  MVSSTART - startup routines for MVS.                               *
+*  SAPSTART - startup routines for standalone programs                *
 *  It is currently coded to work with GCC. To activate the C/370      *
 *  version change the "&COMP" switch.                                 *
 *                                                                     *
@@ -43,7 +43,7 @@ POSTIPL  DS    0H
          BCTR  R12,0
          USING POSTIPL,R12
          USING PSA,R0
-*         B     STAGE2
+*
 * At this point, since it is post-IPL, all further interrupts
 * will occur to one of 4 locations (instead of location 0, the
 * IPL newpsw). Although we are only expecting, and only need,
@@ -55,10 +55,13 @@ POSTIPL  DS    0H
          MVC   FLCMNPSW(8),WAITER1
          MVC   FLCSNPSW(8),WAITER2
          MVC   FLCPNPSW(8),WAITER3
+*         LA    R10,X'1B9'   IPL address 1b9
+* Save IPL address in R10
+         SLR   R10,R10
+         ICM   R10,B'0111',FLCIOAA
+* R3 points to CCW chain
          LA    R3,SEEK
          ST    R3,FLCCAW    Store in CAW
-         LA    R10,X'1B9'   IPL address 1b9
-*         SSH
 *         CLRIO 0(R10)
          SIO   0(R10)
          LPSW  WAITNOER     Wait for an interrupt

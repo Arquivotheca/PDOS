@@ -314,6 +314,7 @@ RETURNAR DS    0H
 **********************************************************************
          ENTRY @@ACLOSE
 @@ACLOSE EQU   *
+         BR    R14
          SAVE  (14,12),,@@ACLOSE
          LR    R12,R15
          USING @@ACLOSE,R12
@@ -336,7 +337,7 @@ RETURNAR DS    0H
 *         FREEMAIN RU,LV=(R6),A=(R5),SP=SUBPOOL
 NFRCL    DS    0H
 .NMM6    ANOP
-         MVC   CLOSEMB,CLOSEMAC
+*         MVC   CLOSEMB,CLOSEMAC
 *         CLOSE ((R2)),MF=(E,CLOSEMB),MODE=31
 * CAN'T USE MODE=31 WITH MVS 3.8
 *         CLOSE ((R2)),MF=(E,CLOSEMB)

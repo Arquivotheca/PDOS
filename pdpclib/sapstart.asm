@@ -169,7 +169,7 @@ CEESTART EQU   *
          LR    R1,R11
          USING STACK,R13
 *
-         LA    R1,0(R1)          Clean up address (is this required?)
+*         LA    R1,0(R1)          Clean up address (is this required?)
 *
          LA    R2,0
          ST    R2,DUMMYPTR       WHO KNOWS WHAT THIS IS USED FOR
@@ -186,7 +186,9 @@ CEESTART EQU   *
 *
          MVC   PGMNAME,=C'SAPLOAD '
 *
-         LA    R2,SAPBLK
+         LA    R2,0
+         ST    R2,SAPLEN         Setting this to 0 will create an
+         LA    R2,SAPBLK         MVS-style parm block for now
          ST    R2,ARGPTR
          LA    R2,PGMNAME
          ST    R2,PGMNPTR
@@ -232,6 +234,7 @@ SAVER4   DC    F'0'
 SAVER13  DC    F'0'
          LTORG
          DROP  R10
+         DROP  R13
          DS    0H
 *         ENTRY CEESG003
 *CEESG003 EQU   *

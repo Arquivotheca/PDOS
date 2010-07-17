@@ -469,17 +469,11 @@ CLOSEMLN EQU   *-CLOSEMAC
          A     R3,=A(64-1)
          N     R3,=X'FFFFFFC0'
 *
-         AIF   ('&SYS' NE 'S380').N380GM1
-*         GETMAIN RU,LV=(R3),SP=SUBPOOL,LOC=ANY
-* Hardcode the ATL memory area provided by latest MUSIC.
+* Assume stack will be between 1 MB and 1.5 MB, so we will
+* have a heap for 1.5 MB to 2 MB
 * Note that this function will only work if the C library
 * is compiled with MEMMGR option.
-         L     R1,=X'02000000'
-         AGO   .N380GM2
-.N380GM1 ANOP
-         GETMAIN RU,LV=(R3),SP=SUBPOOL
-.N380GM2 ANOP
-*
+         L     R1,=X'00180000'
 * WE STORE THE AMOUNT WE REQUESTED FROM MVS INTO THIS ADDRESS
          ST    R3,0(R1)
 * AND JUST BELOW THE VALUE WE RETURN TO THE CALLER, WE SAVE
@@ -507,13 +501,7 @@ RETURNGM DS    0H
          S     R2,=F'8'
          L     R3,0(,R2)
 *
-         AIF   ('&SYS' NE 'S380').N380FM1
-* On S/380, nothing to free - using preallocated memory block
-*         FREEMAIN RU,LV=(R3),A=(R2),SP=SUBPOOL
-         AGO   .N380FM2
-.N380FM1 ANOP
-         FREEMAIN RU,LV=(R3),A=(R2),SP=SUBPOOL
-.N380FM2 ANOP
+* Do nothing
 *
 RETURNFM DS    0H
          RETURN (14,12),RC=(15)
@@ -727,7 +715,7 @@ RETURN99 DS    0H
          IEZIOB                   Input/Output Block
 *
 *
-WORKAREA DSECT
+WORKAREA DS    0F
 SAVEAREA DS    18F
 WORKLEN  EQU   *-WORKAREA
 *

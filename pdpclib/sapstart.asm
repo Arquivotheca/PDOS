@@ -144,6 +144,7 @@ STAGE4   DS    0H
          LPSW  WAITSERR
          LTORG
 MINISAVE DS    30F
+         DROP  R12
          DC    C'PDPCLIB!'
          DS    0H
          ENTRY @@CRT0
@@ -227,9 +228,10 @@ RETURNMS DS    0H
 *         FREEMAIN RU,LV=STACKLEN,A=(R1),SP=SUBPOOL
          LR    R15,R14
          RETURN (14,12),RC=(15)
-SAVER4   DS    F
-SAVER13  DS    F
+SAVER4   DC    F'0'
+SAVER13  DC    F'0'
          LTORG
+         DROP  R10
          DS    0H
 *         ENTRY CEESG003
 *CEESG003 EQU   *

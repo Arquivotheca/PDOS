@@ -66,7 +66,6 @@ POSTIPL  DS    0H
 * R3 points to CCW chain
          LA    R3,SEEK
          ST    R3,FLCCAW    Store in CAW
-*         CLRIO 0(R10)
          LA    R4,1         R4 = Number of blocks read so far
          L     R5,=F'18452' Current address
          LA    R6,0         R6 = head
@@ -122,22 +121,31 @@ INRANGE  DS    0H
          SIO   0(R10)       Read next block
          LPSW  WAITNOER
 STAGE3   DS    0H
-*         CLRIO 0(R10)
-         LA    R4,0
-*         L     R6,=X'E000000B'
-         L     R6,=X'0000000B'
-         LA    R4,=C'MSG * HELLO'
-*         DIAG  4,6,0(8)
-         DC    X'83460008'
-         LA    R4,=C'MSG * 2 You'
-         L     R6,=X'0000000B'
-         DC    X'83460008'
-LOOP     DS    0H
-         LA    R5,7
-         LA    R9,LOOP
-         BR    R9
+* Go back to the original state, with I/O disabled, so that we
+* don't get any more noise unless explicitly requested
+         LPSW  ST4PSW
+         DS    0D
+ST4PSW   DC    X'000C0000'  EC mode + Machine Check enabled
+         DC    A(STAGE4)
+WAITSERR DC    X'000C0000'  EC mode + Machine Check enabled
+         DC    X'CCCCCCCC'  Severe error
+* At this point, we are in a "normal" post-IPL status,
+* with our bootloader loaded, and interrupts disabled,
+* and low memory should be considered to be in an
+* "unknown" state. We will however pass a parameter
+* block to the startup routine, with various bits of information
+* for it to interpret.
+STAGE4   DS    0H
+* Be kind and give an OS-style save area
+         LA    R13,MINISAVE
+         L     R15,=V(@@CRT0)
+         BALR  R14,R15
+* If they're dumb enough to return, load an error wait state
+         LPSW  WAITSERR
+         LTORG
          DC    C'PDPCLIB!'
          LTORG
+MINISAVE DS    30F
          DS    0H
          ENTRY @@CRT0
 @@CRT0   EQU   *
@@ -149,7 +157,12 @@ CEESTART EQU   *
          LR    R10,R15
          USING @@CRT0,R10
          LR    R11,R1
-         GETMAIN RU,LV=STACKLEN,SP=SUBPOOL
+* Since our program is less than 1 MB, set the stack at
+* location 1 MB. Note that the other thing to worry about
+* is the heap, which is set in the sapsupa GETM routine
+*         USING STACK,R13
+*         GETMAIN RU,LV=STACKLEN,SP=SUBPOOL
+         L     R13,=F'1048576'
          ST    R13,4(R1)
          ST    R1,8(R13)
          LR    R13,R1
@@ -171,22 +184,9 @@ CEESTART EQU   *
          ST    R2,116(R12)       ADDR OF MEMORY ALLOCATION ROUTINE
          ST    R2,ARGPTR
 *
-         USING PSA,R0
-         L     R2,PSATOLD
-         USING TCB,R2
-         L     R7,TCBRBP
-         USING RBBASIC,R7
-         LA    R8,0
-         ICM   R8,B'0111',RBCDE1
-         USING CDENTRY,R8
-         MVC   PGMNAME,CDNAME
+         MVC   PGMNAME,=C'SAPLOAD '
 *
-         L     R2,TCBJSCB
-         USING IEZJSCB,R2
-         LH    R2,JSCBTJID
-         ST    R2,TYPE
-         L     R2,0(R1)
-         LA    R2,0(R2)
+         LA    R2,SAPBLK
          ST    R2,ARGPTR
          LA    R2,PGMNAME
          ST    R2,PGMNPTR
@@ -225,7 +225,7 @@ RETURNMS DS    0H
          LR    R1,R13
          L     R13,SAVEAREA+4
          LR    R14,R15
-         FREEMAIN RU,LV=STACKLEN,A=(R1),SP=SUBPOOL
+*         FREEMAIN RU,LV=STACKLEN,A=(R1),SP=SUBPOOL
          LR    R15,R14
          RETURN (14,12),RC=(15)
 SAVER4   DS    F
@@ -256,7 +256,7 @@ IN31C    DS    0H
          LR    R1,R13
          L     R13,4(R13)
          LR    R14,R9
-         FREEMAIN RU,LV=STACKLEN,A=(R1),SP=SUBPOOL
+*         FREEMAIN RU,LV=STACKLEN,A=(R1),SP=SUBPOOL
          LR    R15,R14
          RETURN (14,12),RC=(15)
          LTORG
@@ -278,8 +278,10 @@ TYPE     DS    F
 PGMNAME  DS    CL8
 PGMNAMEN DS    C                 NUL BYTE FOR C
 ANCHOR   DS    0F
+SAPBLK   DS    0F
+SAPLEN   DS    F
 EXITADDR DS    F
-         DS    49F
+         DS    49F         
 MAINSTK  DS    65536F
 MAINLEN  EQU   *-MAINSTK
 STACKLEN EQU   *-STACK

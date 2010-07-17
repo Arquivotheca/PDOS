@@ -114,7 +114,10 @@ INRANGE  DS    0H
          STCM  R6,B'0011',HH1
          STCM  R6,B'0011',HH2
          LA    R4,1(R4)
-         C     R4,=F'2'     Maximum blocks to read
+* Ideally we want to read up until we have a short block, or
+* an I/O error, but it's simpler to just force-read up to a
+* set maximum.
+         C     R4,=F'40'    Maximum blocks to read
          BH    STAGE3
          SIO   0(R10)       Read next block
          LPSW  WAITNOER

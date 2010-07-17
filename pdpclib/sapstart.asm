@@ -127,8 +127,8 @@ STAGE3   DS    0H
          DS    0D
 ST4PSW   DC    X'000C0000'  EC mode + Machine Check enabled
          DC    A(STAGE4)
-WAITSERR DC    X'000C0000'  EC mode + Machine Check enabled
-         DC    X'CCCCCCCC'  Severe error
+WAITSERR DC    X'000E0000'  EC mode + Machine Check enabled + wait
+         DC    X'00000444'  Severe error
 * At this point, we are in a "normal" post-IPL status,
 * with our bootloader loaded, and interrupts disabled,
 * and low memory should be considered to be in an
@@ -143,9 +143,8 @@ STAGE4   DS    0H
 * If they're dumb enough to return, load an error wait state
          LPSW  WAITSERR
          LTORG
-         DC    C'PDPCLIB!'
-         LTORG
 MINISAVE DS    30F
+         DC    C'PDPCLIB!'
          DS    0H
          ENTRY @@CRT0
 @@CRT0   EQU   *
@@ -162,7 +161,7 @@ CEESTART EQU   *
 * is the heap, which is set in the sapsupa GETM routine
 *         USING STACK,R13
 *         GETMAIN RU,LV=STACKLEN,SP=SUBPOOL
-         L     R13,=F'1048576'
+         L     R1,=F'1048576'
          ST    R13,4(R1)
          ST    R1,8(R13)
          LR    R13,R1

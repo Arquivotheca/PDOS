@@ -97,7 +97,8 @@ SUBPOOL  EQU   0
          LR    R12,R15
          USING @@AOPEN,R12
          LR    R11,R1
-         GETMAIN R,LV=WORKLEN,SP=SUBPOOL
+*         GETMAIN R,LV=WORKLEN,SP=SUBPOOL
+         LA    R1,WORKAREA
          ST    R13,4(R1)
          ST    R1,8(R13)
          LR    R13,R1
@@ -116,13 +117,8 @@ SUBPOOL  EQU   0
          L     R9,24(,R1)         R9 POINTS TO MEMBER NAME (OF PDS)
          LA    R9,0(,R9)          Strip off high-order bit or byte
 *
-         AIF   ('&SYS' EQ 'S390').BELOW
-* CAN'T USE "BELOW" ON MVS 3.8
-         GETMAIN R,LV=ZDCBLEN,SP=SUBPOOL
-         AGO   .CHKBLWE
-.BELOW   ANOP
-         GETMAIN R,LV=ZDCBLEN,SP=SUBPOOL,LOC=BELOW
-.CHKBLWE ANOP
+* Point directly to ZDCBAREA
+         LA    R1,ZDCBAREA
          LR    R2,R1
          LR    R0,R2              Load output DCB area address
          LA    R1,ZDCBLEN         Load output length of DCB area
@@ -136,94 +132,17 @@ SUBPOOL  EQU   0
 * THIS LINE IS FOR C/370
 *         L     R6,0(R4)
          LTR   R6,R6
-         BNZ   WRITING
-* READING
-         USING IHADCB,R2
-         MVC   ZDCBAREA(INDCBLN),INDCB
-         LA    R10,JFCB
-* EXIT TYPE 07 + 80 (END OF LIST INDICATOR)
-         ICM   R10,B'1000',=X'87'
-         ST    R10,JFCBPTR
-         LA    R10,JFCBPTR
-         LA    R4,ENDFILE
-         ST    R4,DCBEODAD
-         ST    R10,DCBEXLST
-         MVC   DCBDDNAM,0(R3)
-         MVC   OPENMB,OPENMAC
-*
-         RDJFCB ((R2),INPUT)
-         LTR   R9,R9
-         BZ    NOMEM
-         USING ZDCBAREA,R2
-         MVC   JFCBELNM,0(R9)
-         OI    JFCBIND1,JFCPDS
-NOMEM    DS    0H
-*         OPEN  ((R2),INPUT),MF=(E,OPENMB),MODE=31,TYPE=J
-* CAN'T USE MODE=31 ON MVS 3.8, OR WITH TYPE=J
-         OPEN  ((R2),INPUT),MF=(E,OPENMB),TYPE=J
-         TM    DCBOFLGS,DCBOFOPN  Did OPEN work?
-         BZ    BADOPEN            OPEN failed
-         B     DONEOPEN
-WRITING  DS    0H
-         USING ZDCBAREA,R2
-         MVC   ZDCBAREA(OUTDCBLN),OUTDCB
-         LA    R10,JFCB
-* EXIT TYPE 07 + 80 (END OF LIST INDICATOR)
-         ICM   R10,B'1000',=X'87'
-         ST    R10,JFCBPTR
-         LA    R10,JFCBPTR
-         ST    R10,DCBEXLST
-         MVC   DCBDDNAM,0(R3)
-         MVC   WOPENMB,WOPENMAC
-*
-         RDJFCB ((R2),OUTPUT)
-*        LTR   R9,R9
-         BZ    WNOMEM
-         USING ZDCBAREA,R2
-         MVC   JFCBELNM,0(R9)
-         OI    JFCBIND1,JFCPDS
-WNOMEM   DS    0H
-*         OPEN  ((R2),OUTPUT),MF=(E,WOPENMB),MODE=31,TYPE=J
-* CAN'T USE MODE=31 ON MVS 3.8, OR WITH TYPE=J
-         OPEN  ((R2),OUTPUT),MF=(E,WOPENMB),TYPE=J
-         TM    DCBOFLGS,DCBOFOPN  Did OPEN work?
-         BZ    BADOPEN            OPEN failed
-*
-* Handle will be returned in R7
-*
-         LR    R7,R2
-         AIF   ('&OUTM' NE 'M').NMM4
-         L     R6,=F'32768'
-* Give caller an internal buffer to write to. Below the line!
-*
-* S/370 can't handle LOC=BELOW
-*
-         AIF   ('&SYS' NE 'S370').MVT8090  If not S/370 then 380 or 390
-         GETMAIN R,LV=(R6),SP=SUBPOOL  No LOC= for S/370
-         AGO   .GETOENE
-.MVT8090 ANOP  ,                  S/380 or S/390
-         GETMAIN R,LV=(R6),SP=SUBPOOL,LOC=BELOW
-.GETOENE ANOP
+         LA    R1,ABUFFER
          ST    R1,ASMBUF
          L     R5,20(,R11)        R5 points to ASMBUF
          ST    R1,0(R5)           save the pointer
 * R5 now free again
 *
-.NMM4    ANOP
 DONEOPEN DS    0H
          LR    R7,R2
          SR    R6,R6
-         LH    R6,DCBLRECL
+         LH    R6,=H'80'          Hardcode to 80
          ST    R6,0(R8)
-         TM    DCBRECFM,DCBRECF
-         BNO   VARIABLE
-* This looks really whacky, but is correct
-* We check for V, in order to split between F and U
-* Because U has both F and V
-         TM    DCBRECFM,DCBRECV
-         BNO   FIXED
-         L     R6,=F'2'
-         B     DONESET
 FIXED    DS    0H
          L     R6,=F'0'
          B     DONESET
@@ -236,7 +155,7 @@ DONESET  DS    0H
          LR    R15,R7
          B     RETURNOP
 BADOPEN  DS    0H
-         FREEMAIN RU,LV=ZDCBLEN,A=(R2),SP=SUBPOOL  Free DCB area
+*         FREEMAIN RU,LV=ZDCBLEN,A=(R2),SP=SUBPOOL  Free DCB area
          L     R15,=F'-1'
          B     RETURNOP           Go return to caller with negative RC
 *
@@ -249,7 +168,7 @@ RETURNOP DS    0H
          LR    R1,R13
          L     R13,SAVEAREA+4
          LR    R7,R15
-         FREEMAIN RU,LV=WORKLEN,A=(R1),SP=SUBPOOL
+*         FREEMAIN RU,LV=WORKLEN,A=(R1),SP=SUBPOOL
          LR    R15,R7
          RETURN (14,12),RC=(15)
          LTORG
@@ -316,7 +235,7 @@ OUTDCBLN EQU   *-OUTDCB
          ST    R6,RDEOF
          GET   (R2)
          ST    R1,0(R3)
-         LH    R5,DCBLRECL
+*         LH    R5,DCBLRECL
          L     R15,RDEOF
 *
 RETURNAR DS    0H
@@ -359,18 +278,23 @@ RETURNAR DS    0H
          CALL  @@SETM24
 .N380WR1 ANOP
 *
-         STCM  R4,B'0011',DCBLRECL
+*         STCM  R4,B'0011',DCBLRECL
 *
          AIF   ('&OUTM' NE 'L').NLM2
-         PUT   (R2)
+*         PUT   (R2)
 .NLM2    ANOP
          AIF   ('&OUTM' NE 'M').NMM2
-* In move mode, always use our internal buffer. Ignore passed parm.
-         L     R3,ASMBUF
-         PUT   (R2),(R3)
+* Length goes into R6 for the DIAG
+         LR    R6,R4
+* Use our prefix
+         LA    R4,MSGSTAR
+*         DIAG  4,6,0(8)
+         DC    X'83460008'
+         LA    R15,0
+*         PUT   (R2),(R6)
 .NMM2    ANOP
          AIF   ('&OUTM' NE 'L').NLM3
-         ST    R1,0(R3)
+         ST    R1,0(R6)
 .NLM3    ANOP
 *
          AIF   ('&SYS' NE 'S380').N380WR2
@@ -394,13 +318,7 @@ RETURNAR DS    0H
          LR    R12,R15
          USING @@ACLOSE,R12
          LR    R11,R1
-         AIF   ('&SYS' EQ 'S390').BELOW3
-* CAN'T USE "BELOW" ON MVS 3.8
-         GETMAIN R,LV=WORKLEN,SP=SUBPOOL
-         AGO   .NOBEL3
-.BELOW3  ANOP
-         GETMAIN R,LV=WORKLEN,SP=SUBPOOL,LOC=BELOW
-.NOBEL3  ANOP
+         LA    R1,WORKAREA
          ST    R13,4(R1)
          ST    R1,8(R13)
          LR    R13,R1
@@ -415,22 +333,22 @@ RETURNAR DS    0H
          LTR   R5,R5
          BZ    NFRCL
          L     R6,=F'32768'
-         FREEMAIN RU,LV=(R6),A=(R5),SP=SUBPOOL
+*         FREEMAIN RU,LV=(R6),A=(R5),SP=SUBPOOL
 NFRCL    DS    0H
 .NMM6    ANOP
          MVC   CLOSEMB,CLOSEMAC
 *         CLOSE ((R2)),MF=(E,CLOSEMB),MODE=31
 * CAN'T USE MODE=31 WITH MVS 3.8
-         CLOSE ((R2)),MF=(E,CLOSEMB)
-         FREEPOOL ((R2))
-         FREEMAIN RU,LV=ZDCBLEN,A=(R2),SP=SUBPOOL
+*         CLOSE ((R2)),MF=(E,CLOSEMB)
+*         FREEPOOL ((R2))
+*         FREEMAIN RU,LV=ZDCBLEN,A=(R2),SP=SUBPOOL
          LA    R15,0
 *
 RETURNAC DS    0H
          LR    R1,R13
          L     R13,SAVEAREA+4
          LR    R7,R15
-         FREEMAIN RU,LV=WORKLEN,A=(R1),SP=SUBPOOL
+*         FREEMAIN RU,LV=WORKLEN,A=(R1),SP=SUBPOOL
          LR    R15,R7
          RETURN (14,12),RC=(15)
          LTORG
@@ -712,22 +630,27 @@ RETURN99 DS    0H
 *
 .NOMODE  ANOP  ,                  S/370 doesn't support MODE switching
 *
-         IEZIOB                   Input/Output Block
 *
 *
+MSGSTAR  DC    C'MSG * '
+ABUFFER  DS    CL80
 WORKAREA DS    0F
 SAVEAREA DS    18F
 WORKLEN  EQU   *-WORKAREA
 *
-         DCBD  DSORG=PS,DEVD=DA   Map Data Control Block
-         ORG   IHADCB             Overlay the DCB DSECT
 ZDCBAREA DS    0H
          DS    CL(INDCBLN)
          DS    CL(OUTDCBLN)
+SAVEADCB DS    18F                Register save area for PUT
+RDEOF    DS    1F
+ASMBUF   DS    A                  Pointer to an area for PUTing data
+         ORG   ZDCBAREA           Overlay the DCB DSECT
+*         DCBD  DSORG=PS,DEVD=DA  Map Data Control Block
+         ORG
 OPENCLOS DS    F                  OPEN/CLOSE parameter list
          DS    0H
 EOFR24   DS    CL(EOFRLEN)
-         IHADECB DSECT=NO         Data Event Control Block
+*         IHADECB DSECT=NO         Data Event Control Block
 BLKSIZE  DS    F                  Save area for input DCB BLKSIZE
 LRECL    DS    F                  Save area for input DCB LRECL
 BUFFADDR DS    F                  Location of the BLOCK Buffer
@@ -743,18 +666,16 @@ JFCB     DS    0F
          IEFJFCBN LIST=YES        SYS1.AMODGEN JOB File Control Block
 * Format 1 Data Set Control Block
 DSCB     DS    0F
-         IECSDSL1 (1)             Map the Format 1 DSCB
+*         IECSDSL1 (1)             Map the Format 1 DSCB
 DSCBCCHH DS    CL5                CCHHR of DSCB returned by OBTAIN
          DS    CL47               Rest of OBTAIN's 148 byte work area
-SAVEADCB DS    18F                Register save area for PUT
 CLOSEMB  DS    CL(CLOSEMLN)
          DS    0F
 OPENMB   DS    CL(OPENMLN)
          DS    0F
 WOPENMB  DS    CL(WOPENMLN)
-RDEOF    DS    1F
-ASMBUF   DS    A                  Pointer to an area for PUTing data
 MEMBER24 DS    CL8
 ZDCBLEN  EQU   *-ZDCBAREA
+         IEZIOB                   Input/Output Block
 *
          END

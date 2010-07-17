@@ -70,6 +70,7 @@ POSTIPL  DS    0H
          LA    R4,1         R4 = Number of blocks read so far
          L     R5,=F'18452' Current address
          LA    R6,0         R6 = head
+         LA    R7,5         R7 = record
          SIO   0(R10)
          LPSW  WAITNOER     Wait for an interrupt
          LTORG
@@ -101,6 +102,23 @@ R        DS    C
 TEXTADDR EQU   18452    This needs to be replaced
 *
 STAGE2   DS    0H
+         A     R5,=F'18452'
+         STCM  R5,B'0111',LOADCCW+1
+         LA    R7,1(R7)
+         C     R7,=F'4'
+         BL    INRANGE
+         LA    R7,1
+         LA    R6,1(R6)
+INRANGE  DS    0H
+         STC   R7,R         
+         STCM  R6,B'0011',HH1
+         STCM  R6,B'0011',HH2
+         LA    R4,1(R4)
+         C     R4,=F'1'     Maximum blocks to read
+         BL    STAGE3
+         SIO   0(R10)       Read next block
+         LPSW  WAITNOER
+STAGE3   DS    0H
 *         CLRIO 0(R10)
          LA    R4,0
 *         L     R6,=X'E000000B'

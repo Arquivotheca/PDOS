@@ -11,6 +11,11 @@ SAPSTART TITLE 'S A P S T A R T  ***  STARTUP ROUTINE FOR C'
 *  It is currently coded to work with GCC. To activate the C/370      *
 *  version change the "&COMP" switch.                                 *
 *                                                                     *
+*  These routines are designed to work in conjunction with the        *
+*  Hercules/380 dasdload, which will split a program into multiple    *
+*  18452 blocks. It will attempt to read approximately 1 MB of these  *
+*  blocks.                                                            *
+*                                                                     *
 ***********************************************************************
 *
          COPY  PDPTOP
@@ -55,7 +60,6 @@ POSTIPL  DS    0H
          MVC   FLCMNPSW(8),WAITER1
          MVC   FLCSNPSW(8),WAITER2
          MVC   FLCPNPSW(8),WAITER3
-*         LA    R10,X'1B9'   IPL address 1b9
 * Save IPL address in R10
          SLR   R10,R10
          ICM   R10,B'0111',FLCIOAA
@@ -63,37 +67,38 @@ POSTIPL  DS    0H
          LA    R3,SEEK
          ST    R3,FLCCAW    Store in CAW
 *         CLRIO 0(R10)
+         LA    R4,1         R4 = Number of blocks read so far
+         L     R5,=F'18452' Current address
+         LA    R6,0         R6 = head
          SIO   0(R10)
          LPSW  WAITNOER     Wait for an interrupt
-FREDZ    B     FREDZ
          LTORG
          DS    0D
-WAITNOER DC    X'020E0000'  I/O and machine check enabled
-         DC    X'00000000'  Assume this is needed
-NEWIO    DC    X'020C0000'  I/O and machine check enabled
+WAITNOER DC    X'020E0000'  I/O, machine check, EC, wait
+         DC    X'00000000'  no error
+NEWIO    DC    X'020C0000'  I/O and machine check enabled + EC
          DC    A(STAGE2)
-WAITER1  DC    X'020E0000'  I/O and machine check enabled
-         DC    X'00000111'  Assume this is needed
-WAITER2  DC    X'020E0000'  I/O and machine check enabled
-         DC    X'00000222'  Assume this is needed
-WAITER3  DC    X'020E0000'  I/O and machine check enabled
-         DC    X'00000333'  Assume this is needed
+WAITER1  DC    X'020E0000'  I/O, machine check, EC, wait
+         DC    X'00000111'  error 111
+WAITER2  DC    X'020E0000'  I/O, machine check, EC, wait
+         DC    X'00000222'  error 222
+WAITER3  DC    X'020E0000'  I/O, machine check, EC, wait
+         DC    X'00000333'  error 3
          DS    0D
-*CCWCHAIN DC    X'07',AL3(MEMADDR),X'00000006' Change to 40 for chain
-*SEEK     CCW   7,CCHHR,X'40',4
 SEEK     CCW   7,BBCCHH,X'40',6
-*         CCW   8,SEEK,0,0
 SEARCH   CCW   X'31',CCHHR,X'40',5
          CCW   8,SEARCH,0,0
 LOADCCW  CCW   6,TEXTADDR,X'20',32767
          DS    0H
 BBCCHH   DC    X'000000000000'
+         ORG   *-2
+HH1      DS    CL2
 CCHHR    DC    X'0000000005'
+         ORG   *-3
+HH2      DS    CL2
+R        DS    C
 *
 TEXTADDR EQU   18452    This needs to be replaced
-*
-         DS    0D
-MEMADDR  DS    X'000001' BBCCHH = bin (0), cylinder (0-based), head 1
 *
 STAGE2   DS    0H
 *         CLRIO 0(R10)

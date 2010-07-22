@@ -91,6 +91,8 @@ SUBPOOL  EQU   0
 *  be found halfway through the stdio.c file in PDPCLIB.             *
 *                                                                    *
 **********************************************************************
+         PUSH  USING
+         DROP  ,
          ENTRY @@AOPEN
 @@AOPEN  EQU   *
          SAVE  (14,12),,@@AOPEN
@@ -172,6 +174,7 @@ RETURNOP DS    0H
          LR    R15,R7
          RETURN (14,12),RC=(15)
          LTORG
+         POP   USING
 * OPENMAC  OPEN  (,INPUT),MF=L,MODE=31
 * CAN'T USE MODE=31 ON MVS 3.8
 OPENMAC  OPEN  (,INPUT),MF=L,TYPE=J
@@ -203,6 +206,8 @@ OUTDCBLN EQU   *-OUTDCB
 *  AREAD - Read from file                                            *
 *                                                                    *
 **********************************************************************
+         PUSH  USING
+         DROP  ,
          ENTRY @@AREAD
 @@AREAD  EQU   *
          SAVE  (14,12),,@@AREAD
@@ -249,6 +254,7 @@ RETURNAR DS    0H
          ST    R5,0(R4)         Tell caller the length read
          LR    R15,R7
          RETURN (14,12),RC=(15)
+         POP   USING
 *
 *
 *
@@ -257,6 +263,8 @@ RETURNAR DS    0H
 *  AWRITE - Write to an open dataset
 *
 * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+         PUSH  USING
+         DROP  ,
          ENTRY @@AWRITE
 @@AWRITE EQU   *
          SAVE  (14,12),,@@AWRITE
@@ -306,15 +314,17 @@ RETURNAR DS    0H
          L     R13,SAVEADCB+4
 *        FREEMAIN RU,LV=WORKLEN,A=(1),SP=SUBPOOL
          RETURN (14,12),RC=0
+         POP   USING
 *
 **********************************************************************
 *                                                                    *
 *  ACLOSE - Close file                                               *
 *                                                                    *
 **********************************************************************
+         PUSH  USING
+         DROP  ,
          ENTRY @@ACLOSE
 @@ACLOSE EQU   *
-         BR    R14
          SAVE  (14,12),,@@ACLOSE
          LR    R12,R15
          USING @@ACLOSE,R12
@@ -353,6 +363,7 @@ RETURNAC DS    0H
          LR    R15,R7
          RETURN (14,12),RC=(15)
          LTORG
+         POP   USING
 * CLOSEMAC CLOSE (),MF=L,MODE=31
 * CAN'T USE MODE=31 WITH MVS 3.8
 CLOSEMAC CLOSE (),MF=L

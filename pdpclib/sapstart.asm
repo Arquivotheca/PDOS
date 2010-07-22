@@ -146,6 +146,23 @@ STAGE4   DS    0H
 MINISAVE DS    30F
          DROP  R12
          DC    C'PDPCLIB!'
+*
+* (future)
+* This is the "main" entry point for standalone programs.
+* Control can reach here via a number of methods. It may have
+* been the result of booting from the card reader, with the
+* destination being location 0. Or it may have been loaded
+* by a stand-alone loader, and the destination is not location 0.
+* However, in either case (or other cases, e.g. the startup
+* code having to complete a load itself), the invoker of this
+* code will have given a somewhat MVS-style parameter list.
+* You can rely on R13 being a pointer to a save area, in
+* fact, an actual stack. R1 will point to a fullword of 0,
+* so that it looks like an empty parameter list, but following
+* that, there will also be extra data, starting with a fullword
+* which contains the length of that extra data block. R15 will
+* be the entry point.
+*
          DS    0H
          ENTRY @@CRT0
 @@CRT0   EQU   *

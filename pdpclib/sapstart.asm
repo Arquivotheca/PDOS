@@ -136,18 +136,28 @@ WAITSERR DC    X'000E0000'  EC mode + Machine Check enabled + wait
 * block to the startup routine, with various bits of information
 * for it to interpret.
 STAGE4   DS    0H
-* Be kind and give an OS-style save area
-         LA    R13,MINISAVE
+* Since our program is less than 1 MB, set the stack at
+* location 1 MB. Note that the other thing to worry about
+* is the heap, which is set in the sapsupa GETM routine
+         L     R13,=F'1048576'
+         LA    R2,0
+         ST    R2,4(R13)         backchain to nowhere
+         LR    R2,R13
+         A     R2,=F'120'
+         ST    R2,76(R13)        Let them know top of memory
+         LA    R1,SAPBLK         MVS-style parm block
+*
          L     R15,=V(@@CRT0)
          BALR  R14,R15
 * If they're dumb enough to return, load an error wait state
          LPSW  WAITSERR
          LTORG
-MINISAVE DS    30F
-         DROP  R12
+SAPBLK   DS    0F
+SAPDUM   DC    F'0'
+SAPLEN   DC    F'0'              Length of 0 for now
+         DROP  ,
          DC    C'PDPCLIB!'
 *
-* (future)
 * This is the "main" entry point for standalone programs.
 * Control can reach here via a number of methods. It may have
 * been the result of booting from the card reader, with the
@@ -163,27 +173,25 @@ MINISAVE DS    30F
 * which contains the length of that extra data block. R15 will
 * be the entry point.
 *
+* The intention of all this is to allow any arbitrary
+* stand alone program to be either loaded by a loader, anywhere
+* in memory, or to be directly loadable into location 0. Multiple
+* entry points, basically, but a common executable.
+*
          DS    0H
-         ENTRY @@CRT0
-@@CRT0   EQU   *
          AIF ('&COMP' NE 'C370').NOCEES
          ENTRY CEESTART
 CEESTART EQU   *
 .NOCEES  ANOP
-         SAVE  (14,12),,@@CRT0
-         LR    R10,R15
-         USING @@CRT0,R10
-         LR    R11,R1
-* Since our program is less than 1 MB, set the stack at
-* location 1 MB. Note that the other thing to worry about
-* is the heap, which is set in the sapsupa GETM routine
-*         USING STACK,R13
-*         GETMAIN RU,LV=STACKLEN,SP=SUBPOOL
-         L     R1,=F'1048576'
-         ST    R13,4(R1)
-         ST    R1,8(R13)
-         LR    R13,R1
-         LR    R1,R11
+@@CRT0   PDPPRLG CINDEX=1,FRAME=120,BASER=12,ENTRY=YES
+         B     FEN1
+         LTORG
+FEN1     EQU   *
+         DROP  12
+         BALR  12,0
+         USING *,12
+         LR    11,1
+*
          USING STACK,R13
 *
 *         LA    R1,0(R1)          Clean up address (is this required?)
@@ -192,29 +200,24 @@ CEESTART EQU   *
          ST    R2,DUMMYPTR       WHO KNOWS WHAT THIS IS USED FOR
          LA    R2,MAINSTK
          ST    R2,THEIRSTK       NEXT AVAILABLE SPOT IN STACK
-         LA    R12,ANCHOR
+         LA    R7,ANCHOR
          ST    R14,EXITADDR
          L     R3,=A(MAINLEN)
          AR    R2,R3
-         ST    R2,12(R12)        TOP OF STACK POINTER
+         ST    R2,12(R7)         TOP OF STACK POINTER
          LA    R2,0
-         ST    R2,116(R12)       ADDR OF MEMORY ALLOCATION ROUTINE
-         ST    R2,ARGPTR
+         ST    R2,116(R7)        ADDR OF MEMORY ALLOCATION ROUTINE
+*         ST    R2,ARGPTR
 *
          MVC   PGMNAME,=C'SAPLOAD '
 *
-         LA    R2,0
-         ST    R2,SAPLEN         Setting this to 0 will create an
-         LA    R2,SAPBLK         MVS-style parm block for now
-         ST    R2,ARGPTR
+         ST    R1,ARGPTR         pass the R1 directly on
          LA    R2,PGMNAME
          ST    R2,PGMNPTR
 *
 * FOR GCC WE NEED TO BE ABLE TO RESTORE R13
          LA    R5,SAVEAREA
          ST    R5,SAVER13
-*
-         LA    R1,PARMLIST
 *
          AIF   ('&SYS' NE 'S380').N380ST1
 *
@@ -241,17 +244,11 @@ IN31B    DS    0H
 .N380ST2 ANOP
 *
 RETURNMS DS    0H
-         LR    R1,R13
-         L     R13,SAVEAREA+4
-         LR    R14,R15
-*         FREEMAIN RU,LV=STACKLEN,A=(R1),SP=SUBPOOL
-         LR    R15,R14
-         RETURN (14,12),RC=(15)
+         PDPEPIL
 SAVER4   DC    F'0'
 SAVER13  DC    F'0'
          LTORG
-         DROP  R10
-         DROP  R13
+         DROP  ,
          DS    0H
 *         ENTRY CEESG003
 *CEESG003 EQU   *
@@ -274,12 +271,7 @@ SAVER13  DC    F'0'
 IN31C    DS    0H
 .N380ST3 ANOP
 *
-         LR    R1,R13
-         L     R13,4(R13)
-         LR    R14,R9
-*         FREEMAIN RU,LV=STACKLEN,A=(R1),SP=SUBPOOL
-         LR    R15,R14
-         RETURN (14,12),RC=(15)
+         PDPEPIL
          LTORG
 *
          CVT   DSECT=YES
@@ -299,8 +291,6 @@ TYPE     DS    F
 PGMNAME  DS    CL8
 PGMNAMEN DS    C                 NUL BYTE FOR C
 ANCHOR   DS    0F
-SAPBLK   DS    0F
-SAPLEN   DS    F
 EXITADDR DS    F
          DS    49F         
 MAINSTK  DS    65536F

@@ -139,14 +139,14 @@ STAGE4   DS    0H
 * Since our program is less than 1 MB, set the stack at
 * location 1 MB. Note that the other thing to worry about
 * is the heap, which is set in the sapsupa GETM routine
-         L     R13,=F'1048576'
+         L     R13,STLOC
          LA    R2,0
          ST    R2,4(R13)         backchain to nowhere
          LR    R2,R13
          A     R2,=F'120'
          ST    R2,76(R13)        Let them know top of memory
-         LA    R1,SAPBLK         MVS-style parm block
 *
+         LA    R1,SAPBLK         MVS-style parm block
          L     R15,=V(@@CRT0)
          BALR  R14,R15
 * If they're dumb enough to return, load an error wait state
@@ -154,7 +154,9 @@ STAGE4   DS    0H
          LTORG
 SAPBLK   DS    0F
 SAPDUM   DC    F'0'
-SAPLEN   DC    F'0'              Length of 0 for now
+SAPLEN   DC    F'8'              Length of following parameters
+STLOC    DC    F'1048576'        Stack location = 1 MB
+HPLOC    DC    F'1572864'        Heap location = 1.5 MB
          DROP  ,
          DC    C'PDPCLIB!'
 *

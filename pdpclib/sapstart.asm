@@ -139,7 +139,7 @@ STAGE4   DS    0H
 * Since our program is less than 1 MB, set the stack at
 * location 1 MB. Note that the other thing to worry about
 * is the heap, which is set in the sapsupa GETM routine
-         L     R13,STLOC
+         L     R13,=F'1048576'   Stack location = 1 MB
          LA    R2,0
          ST    R2,4(R13)         backchain to nowhere
          LR    R2,R13
@@ -154,8 +154,7 @@ STAGE4   DS    0H
          LTORG
 SAPBLK   DS    0F
 SAPDUM   DC    F'0'
-SAPLEN   DC    F'8'              Length of following parameters
-STLOC    DC    F'1048576'        Stack location = 1 MB
+SAPLEN   DC    F'4'              Length of following parameters
 HPLOC    DC    F'1572864'        Heap location = 1.5 MB
          DROP  ,
          DC    C'PDPCLIB!'
@@ -214,6 +213,8 @@ FEN1     EQU   *
          MVC   PGMNAME,=C'SAPLOAD '
 *
          ST    R1,ARGPTR         pass the R1 directly on
+         L     R2,8(R1)          heap is available here
+         ST    R2,@@HPLOC        heap location used by GETM
          LA    R2,PGMNAME
          ST    R2,PGMNPTR
 *
@@ -250,6 +251,9 @@ RETURNMS DS    0H
 SAVER4   DC    F'0'
 SAVER13  DC    F'0'
          LTORG
+*
+         ENTRY @@HPLOC
+@@HPLOC  DS    A
          DROP  ,
          DS    0H
 *         ENTRY CEESG003

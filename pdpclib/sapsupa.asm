@@ -399,11 +399,11 @@ CLOSEMLN EQU   *-CLOSEMAC
          A     R3,=A(64-1)
          N     R3,=X'FFFFFFC0'
 *
-* Assume stack will be between 1 MB and 1.5 MB, so we will
-* have a heap for 1.5 MB to 2 MB
+* Assume stack has been provided in global variable
 * Note that this function will only work if the C library
 * is compiled with MEMMGR option.
-         L     R1,=X'00180000'
+         L     R1,=V(@@HPLOC)
+         L     R1,0(R1)
 * WE STORE THE AMOUNT WE REQUESTED FROM MVS INTO THIS ADDRESS
          ST    R3,0(R1)
 * AND JUST BELOW THE VALUE WE RETURN TO THE CALLER, WE SAVE

@@ -16,7 +16,7 @@ gccmvs -DUSE_MEMMGR -S -I . -I ../pdpclib pdosload.c
 m4 -I . -I ../pdpclib pdosload.m4 >pdosload.jcl
 call runmvs pdosload.jcl output.txt none pdosload.txt binary ascii
 hdtofil pdosload.bin <pdosload.txt
-echo PDOS00 3390-2 * pdosload.bin >ctl.txt
+echo PDOS00 3390-1 * pdosload.bin >ctl.txt
 del pdos00.199
 dasdload -bz2 ctl.txt pdos00.199
 copy pdos00.199 \mvs380\dasd

@@ -193,6 +193,9 @@ FEN1     EQU   *
          USING *,12
          LR    11,1
 *
+* Clean base register
+         LA    R12,0(R12)
+*
          USING STACK,R13
 *
 *         LA    R1,0(R1)          Clean up address (is this required?)

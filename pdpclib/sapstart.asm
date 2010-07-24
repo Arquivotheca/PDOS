@@ -32,7 +32,7 @@ STACKLOC EQU   X'100000'    The stack starts here (1 MiB)
 HEAPLOC  EQU   X'180000'    Where malloc etc come from (1.5 MiB)
 CHUNKSZ  EQU   18452        The executable is split into blocks
 MAXBLKS  EQU   40           Maximum number of blocks to read
-CODESTRT EQU   512          Start of our real code
+CODESTRT EQU   1024         Start of our real code
 *
 *
 *
@@ -50,7 +50,7 @@ ORIGIN   DS    0D
 *
 * Memory to be cleared.
 *
-         DC    504X'00'
+         DC    1016X'00'
 *
 * Start of our own, somewhat normal, code. Registers are not
 * defined at this point, so we need to create our own base

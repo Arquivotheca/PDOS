@@ -12,9 +12,10 @@ SAPSTART TITLE 'S A P S T A R T  ***  STARTUP ROUTINE FOR C'
 *  version change the "&COMP" switch.                                 *
 *                                                                     *
 *  These routines are designed to work in conjunction with the        *
-*  Hercules/380 dasdload, which will split a program into multiple    *
-*  18452 blocks. It will attempt to read approximately 1 MB of these  *
-*  blocks.                                                            *
+*  Hercules/380 dasdload, which will create a disk with this program  *
+*  on cylinder 0, head 1, but only read the first record into low     *
+*  memory.  This startup code is required to read the remaining       *
+*  blocks, and looks for approximately 1 MB of them.                  *
 *                                                                     *
 ***********************************************************************
 *
@@ -67,7 +68,7 @@ POSTIPL  DS    0H
          LA    R3,SEEK
          ST    R3,FLCCAW    Store in CAW
          LA    R4,1         R4 = Number of blocks read so far
-         L     R5,=F'18452' Current address
+         L     R5,=A(CHUNKSZ) Current address
          LA    R6,1         R6 = head
          LA    R7,2         R7 = record
          SIO   0(R10)
@@ -88,7 +89,7 @@ WAITER3  DC    X'000E0000'  machine check, EC, wait
 SEEK     CCW   7,BBCCHH,X'40',6
 SEARCH   CCW   X'31',CCHHR,X'40',5
          CCW   8,SEARCH,0,0
-LOADCCW  CCW   6,TEXTADDR,X'20',32767
+LOADCCW  CCW   6,CHUNKSZ,X'20',32767
          DS    0H
 BBCCHH   DC    X'000000000001'
          ORG   *-2
@@ -98,13 +99,23 @@ CCHHR    DC    X'0000000102'
 HH2      DS    CL2
 R        DS    C
 *
-TEXTADDR EQU   18452    This needs to be replaced
+***********************************************************************
+*                                                                     *
+*  Equates                                                            *
+*                                                                     *
+***********************************************************************
+STACKLOC EQU   X'100000'    The stack starts here (1 MiB)
+HEAPLOC  EQU   X'180000'    Where malloc etc come from (1.5 MiB)
+CHUNKSZ  EQU   18452        The executable is split into blocks
+MAXBLKS  EQU   40           Maximum number of blocks to read
+*
+*
 *
 STAGE2   DS    0H
-         A     R5,=F'18452'
+         A     R5,=A(CHUNKSZ)
          STCM  R5,B'0111',LOADCCW+1
          LA    R7,1(R7)
-         C     R7,=F'4'
+         C     R7,=F'4'     Don't read more than 3 blocks per track
          BL    INRANGE
          LA    R7,1
          LA    R6,1(R6)
@@ -116,7 +127,7 @@ INRANGE  DS    0H
 * Ideally we want to read up until we have a short block, or
 * an I/O error, but it's simpler to just force-read up to a
 * set maximum.
-         C     R4,=F'40'    Maximum blocks to read
+         C     R4,=A(MAXBLKS)  R4=Maximum blocks to read
          BH    STAGE3
          SIO   0(R10)       Read next block
          LPSW  WAITNOER
@@ -139,12 +150,12 @@ STAGE4   DS    0H
 * Since our program is less than 1 MB, set the stack at
 * location 1 MB. Note that the other thing to worry about
 * is the heap, which is set in the sapsupa GETM routine
-         L     R13,=F'1048576'   Stack location = 1 MB
+         L     R13,=A(STACKLOC)  Stack location
          LA    R2,0
          ST    R2,4(R13)         backchain to nowhere
          LR    R2,R13
-         A     R2,=F'120'
-         ST    R2,76(R13)        Let them know top of memory
+         A     R2,=F'120'        Get past save area etc
+         ST    R2,76(R13)        C needs to know where we're up to
 *
          LA    R1,SAPBLK         MVS-style parm block
          L     R15,=V(@@CRT0)
@@ -155,7 +166,7 @@ STAGE4   DS    0H
 SAPBLK   DS    0F
 SAPDUM   DC    F'0'
 SAPLEN   DC    F'4'              Length of following parameters
-HPLOC    DC    F'1572864'        Heap location = 1.5 MB
+HPLOC    DC    A(HEAPLOC)        Heap location
          DROP  ,
          DC    C'PDPCLIB!'
 *
@@ -197,8 +208,6 @@ FEN1     EQU   *
          LA    R12,0(R12)
 *
          USING STACK,R13
-*
-*         LA    R1,0(R1)          Clean up address (is this required?)
 *
          LA    R2,0
          ST    R2,DUMMYPTR       WHO KNOWS WHAT THIS IS USED FOR

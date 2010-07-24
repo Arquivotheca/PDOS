@@ -35,8 +35,7 @@ int main(int argc, char **argv)
 {
     int dev;
 
-    printf("PDOS should reside on cylinder 1, head 0\n");
-    printf("and one day we'll even load it. :-)\n");
+    printf("PDOS should reside on cylinder 1, head 0 of IPL device\n");
     dev = initsys();
     printf("IPL device is %x\n", dev);
     printf("about to read first block of PDOS\n");

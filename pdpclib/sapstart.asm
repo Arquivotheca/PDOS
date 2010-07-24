@@ -68,8 +68,8 @@ POSTIPL  DS    0H
          ST    R3,FLCCAW    Store in CAW
          LA    R4,1         R4 = Number of blocks read so far
          L     R5,=F'18452' Current address
-         LA    R6,0         R6 = head
-         LA    R7,5         R7 = record
+         LA    R6,1         R6 = head
+         LA    R7,2         R7 = record
          SIO   0(R10)
          LPSW  WAITNOER     Wait for an interrupt
          LTORG
@@ -90,10 +90,10 @@ SEARCH   CCW   X'31',CCHHR,X'40',5
          CCW   8,SEARCH,0,0
 LOADCCW  CCW   6,TEXTADDR,X'20',32767
          DS    0H
-BBCCHH   DC    X'000000000000'
+BBCCHH   DC    X'000000000001'
          ORG   *-2
 HH1      DS    CL2
-CCHHR    DC    X'0000000005'
+CCHHR    DC    X'0000000102'
          ORG   *-3
 HH2      DS    CL2
 R        DS    C

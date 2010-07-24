@@ -106,6 +106,7 @@ RDBLOCK  DS    0H
          ST    R3,FLCCAW    Store in CAW
          SIO   0(R10)
          LPSW  WAITNOER     Wait for an interrupt
+         DC    H'0'
 CONT     DS    0H           Interrupt will automatically come here
          LA    R15,0
          RETURN (14,12),RC=(15)
@@ -114,7 +115,7 @@ CONT     DS    0H           Interrupt will automatically come here
 SEEK     CCW   7,BBCCHH,X'40',6
 SEARCH   CCW   X'31',CCHHR,X'40',5
          CCW   8,SEARCH,0,0
-LOADCCW  CCW   6,TEXTADDR,X'20',32767
+LOADCCW  CCW   6,0,X'20',32767
          DS    0H
 BBCCHH   DC    X'000000000000'
          ORG   *-4
@@ -129,9 +130,12 @@ R        DS    C
 WAITNOER DC    X'020E0000'  I/O, machine check, EC, wait
          DC    X'00000000'  no error
 NEWIO    DC    X'000C0000'  machine check, EC
+         AIF   ('&SYS' EQ 'S370').MOD24
+         DC    A(X'80000000'+CONT)  continuation after I/O request
+         AGO   .MOD31
+.MOD24   ANOP
          DC    A(CONT)      continuation after I/O request
-*
-TEXTADDR EQU   18452    This needs to be replaced
+.MOD31   ANOP
 *
          DROP  ,
          CVT   DSECT=YES
@@ -140,20 +144,4 @@ TEXTADDR EQU   18452    This needs to be replaced
          IHAPSA
          IHARB
          IHACDE
-STACK    DSECT
-SAVEAREA DS    18F
-DUMMYPTR DS    F
-THEIRSTK DS    F
-PARMLIST DS    0F
-ARGPTR   DS    F
-PGMNPTR  DS    F
-TYPE     DS    F
-PGMNAME  DS    CL8
-PGMNAMEN DS    C                 NUL BYTE FOR C
-ANCHOR   DS    0F
-EXITADDR DS    F
-         DS    49F         
-MAINSTK  DS    65536F
-MAINLEN  EQU   *-MAINSTK
-STACKLEN EQU   *-STACK
          END

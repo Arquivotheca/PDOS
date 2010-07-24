@@ -110,7 +110,7 @@ undivert(__memmgr.s)/*
 //PLOAD    EXEC PDPASM,MEMBER=PLOAD
 //SYSIN  DD  *
 undivert(pload.s)/*
-//PLOAD    EXEC PDPASM,MEMBER=PLOADSUP
+//PLOADSUP EXEC PDPASM,MEMBER=PLOADSUP
 //SYSIN  DD  *
 undivert(ploadsup.asm)/*
 //LKED     EXEC PGM=IEWL,PARM='MAP,LIST'

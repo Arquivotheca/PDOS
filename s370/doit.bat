@@ -11,15 +11,15 @@ gccmvs -DUSE_MEMMGR -S -I . -I ../pdpclib ../pdpclib/math.c
 gccmvs -DUSE_MEMMGR -S -I . -I ../pdpclib ../pdpclib/setjmp.c
 gccmvs -DUSE_MEMMGR -S -I . -I ../pdpclib ../pdpclib/signal.c
 gccmvs -DUSE_MEMMGR -S -I . -I ../pdpclib ../pdpclib/__memmgr.c
-gccmvs -DUSE_MEMMGR -S -I . -I ../pdpclib pdosload.c
+gccmvs -DUSE_MEMMGR -S -I . -I ../pdpclib pload.c
 
-m4 -I . -I ../pdpclib pdosload.m4 >pdosload.jcl
-call runmvs pdosload.jcl output.txt none pdosload.txt binary ascii
-hdtofil pdosload.bin <pdosload.txt
+m4 -I . -I ../pdpclib pload.m4 >pload.jcl
+call runmvs pload.jcl output.txt none pload.txt binary ascii
+hdtofil pload.bin <pload.txt
 echo 000000  C1C2C2C1 >dummy.txt
 hdtofil pdos.bin <dummy.txt
 echo PDOS00 3390-1 * separate >ctl.txt
-echo SYS1.PLOAD SEQ pdosload.bin TRK 10 1 0 PS U 0 18452 >>ctl.txt
+echo SYS1.PLOAD SEQ pload.bin TRK 10 1 0 PS U 0 18452 >>ctl.txt
 echo SYS1.PDOS SEQ pdos.bin CYL 1 1 0 PS U 0 18452 >>ctl.txt
 del pdos00.199
 dasdload -bz2 ctl.txt pdos00.199

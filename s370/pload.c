@@ -6,7 +6,7 @@
 /*********************************************************************/
 /*********************************************************************/
 /*                                                                   */
-/*  pdosload.c - Load PDOS/370                                       */
+/*  pload.c - Load PDOS/370                                          */
 /*                                                                   */
 /*********************************************************************/
 
@@ -21,11 +21,7 @@ int main(int argc, char **argv)
 {
     int i;
 
-    printf("hello there\n");
-    printf("argc = %d\n" , argc);
-    for (i = 0; i < argc; i++)
-    {
-        printf("arg %d is <%s>\n", i, argv[i]);
-    }
+    printf("PDOS should reside on cylinder 1, head 0\n");
+    printf("and one day we'll even load it. :-)\n");
     return (0);
 }

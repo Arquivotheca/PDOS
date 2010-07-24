@@ -71,19 +71,19 @@ POSTIPL  DS    0H
          LA    R6,1         R6 = head
          LA    R7,2         R7 = record
          SIO   0(R10)
-         LPSW  WAITNOER     Wait for an interrupt
+         LPSW  WAITNOER     Wait for an I/O interrupt
          LTORG
          DS    0D
 WAITNOER DC    X'020E0000'  I/O, machine check, EC, wait
          DC    X'00000000'  no error
-NEWIO    DC    X'020C0000'  I/O and machine check enabled + EC
+NEWIO    DC    X'000C0000'  machine check enabled + EC
          DC    A(STAGE2)
-WAITER1  DC    X'020E0000'  I/O, machine check, EC, wait
+WAITER1  DC    X'000E0000'  machine check, EC, wait
          DC    X'00000111'  error 111
-WAITER2  DC    X'020E0000'  I/O, machine check, EC, wait
+WAITER2  DC    X'000E0000'  machine check, EC, wait
          DC    X'00000222'  error 222
-WAITER3  DC    X'020E0000'  I/O, machine check, EC, wait
-         DC    X'00000333'  error 3
+WAITER3  DC    X'000E0000'  machine check, EC, wait
+         DC    X'00000333'  error 333
          DS    0D
 SEEK     CCW   7,BBCCHH,X'40',6
 SEARCH   CCW   X'31',CCHHR,X'40',5

@@ -29,6 +29,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+static char buf[40000];
+
 int main(int argc, char **argv)
 {
     int dev;
@@ -37,5 +39,8 @@ int main(int argc, char **argv)
     printf("and one day we'll even load it. :-)\n");
     dev = initsys();
     printf("IPL device is %x\n", dev);
+    printf("about to read first block of PDOS\n");
+    rdblock(dev, 1, 0, 1, buf, sizeof buf);
+    printf("got %x %x %x %x\n", buf[0], buf[1], buf[2], buf[3]);
     return (0);
 }

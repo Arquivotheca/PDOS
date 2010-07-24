@@ -36,9 +36,6 @@ INITSYS  DS    0H
          USING INITSYS,R12
          USING PSA,R0
 *
-*         L     R6,0(R1)
-*         L     R4,4(R1)
-*
 * At this stage we only want I/O interrupts, so that is all
 * that will be enabled, but we set "dummy" values for the
 * others in case something unexpected happens, to give us
@@ -88,16 +85,29 @@ RDBLOCK  DS    0H
          USING RDBLOCK,R12
          USING PSA,R0
 *
+         L     R10,0(R1)    Device number
+         L     R2,4(R1)     Cylinder
+         STCM  R2,B'0011',CC1
+         STCM  R2,B'0011',CC2
+         L     R2,8(R1)     Head
+         STCM  R2,B'0011',HH1
+         STCM  R2,B'0011',HH2
+         L     R2,12(R1)    Record
+         STC   R2,R         
+         L     R2,16(R1)    Buffer
+         STCM  R2,B'0111',LOADCCW+1   This requires BTL buffer
+*
+* Interrupt needs to point to CONT now. Again, I would hope for
+* something more sophisticated in PDOS than this continual
+* initialization.
+         MVC   FLCINPSW(8),NEWIO
 * R3 points to CCW chain
          LA    R3,SEEK
          ST    R3,FLCCAW    Store in CAW
-         LA    R4,1         R4 = Number of blocks read so far
-         L     R5,=F'18452' Current address
-         LA    R6,0         R6 = head
-         LA    R7,5         R7 = record
          SIO   0(R10)
          LPSW  WAITNOER     Wait for an interrupt
 CONT     DS    0H           Interrupt will automatically come here
+         LA    R15,0
          RETURN (14,12),RC=(15)
          LTORG
          DS    0D
@@ -107,12 +117,15 @@ SEARCH   CCW   X'31',CCHHR,X'40',5
 LOADCCW  CCW   6,TEXTADDR,X'20',32767
          DS    0H
 BBCCHH   DC    X'000000000000'
-         ORG   *-2
+         ORG   *-4
+CC1      DS    CL2
 HH1      DS    CL2
 CCHHR    DC    X'0000000005'
-         ORG   *-3
+         ORG   *-5
+CC2      DS    CL2
 HH2      DS    CL2
 R        DS    C
+         DS    0D
 WAITNOER DC    X'020E0000'  I/O, machine check, EC, wait
          DC    X'00000000'  no error
 NEWIO    DC    X'000C0000'  machine check, EC
@@ -120,62 +133,6 @@ NEWIO    DC    X'000C0000'  machine check, EC
 *
 TEXTADDR EQU   18452    This needs to be replaced
 *
-STAGE2   DS    0H
-         A     R5,=F'18452'
-         STCM  R5,B'0111',LOADCCW+1
-         LA    R7,1(R7)
-         C     R7,=F'4'
-         BL    INRANGE
-         LA    R7,1
-         LA    R6,1(R6)
-INRANGE  DS    0H
-         STC   R7,R         
-         STCM  R6,B'0011',HH1
-         STCM  R6,B'0011',HH2
-         LA    R4,1(R4)
-* Ideally we want to read up until we have a short block, or
-* an I/O error, but it's simpler to just force-read up to a
-* set maximum.
-         C     R4,=F'40'    Maximum blocks to read
-         BH    STAGE3
-         SIO   0(R10)       Read next block
-         LPSW  WAITNOER
-STAGE3   DS    0H
-* Go back to the original state, with I/O disabled, so that we
-* don't get any more noise unless explicitly requested
-         LPSW  ST4PSW
-         DS    0D
-ST4PSW   DC    X'000C0000'  EC mode + Machine Check enabled
-         DC    A(STAGE4)
-WAITSERR DC    X'000E0000'  EC mode + Machine Check enabled + wait
-         DC    X'00000444'  Severe error
-* At this point, we are in a "normal" post-IPL status,
-* with our bootloader loaded, and interrupts disabled,
-* and low memory should be considered to be in an
-* "unknown" state. We will however pass a parameter
-* block to the startup routine, with various bits of information
-* for it to interpret.
-STAGE4   DS    0H
-* Since our program is less than 1 MB, set the stack at
-* location 1 MB. Note that the other thing to worry about
-* is the heap, which is set in the sapsupa GETM routine
-         L     R13,=F'1048576'   Stack location = 1 MB
-         LA    R2,0
-         ST    R2,4(R13)         backchain to nowhere
-         LR    R2,R13
-         A     R2,=F'120'
-         ST    R2,76(R13)        Let them know top of memory
-*
-         LA    R1,SAPBLK         MVS-style parm block
-         L     R15,=V(@@CRT0)
-         BALR  R14,R15
-* If they're dumb enough to return, load an error wait state
-         LPSW  WAITSERR
-         LTORG
-SAPBLK   DS    0F
-SAPDUM   DC    F'0'
-SAPLEN   DC    F'4'              Length of following parameters
-HPLOC    DC    F'1572864'        Heap location = 1.5 MB
          DROP  ,
          CVT   DSECT=YES
          IKJTCB

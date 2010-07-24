@@ -23,6 +23,19 @@ SAPSTART TITLE 'S A P S T A R T  ***  STARTUP ROUTINE FOR C'
 *
          PRINT GEN
          YREGS
+***********************************************************************
+*                                                                     *
+*  Equates                                                            *
+*                                                                     *
+***********************************************************************
+STACKLOC EQU   X'100000'    The stack starts here (1 MiB)
+HEAPLOC  EQU   X'180000'    Where malloc etc come from (1.5 MiB)
+CHUNKSZ  EQU   18452        The executable is split into blocks
+MAXBLKS  EQU   40           Maximum number of blocks to read
+CODESTRT EQU   512          Start of our real code
+*
+*
+*
 SUBPOOL  EQU   0
          CSECT
 *
@@ -31,7 +44,7 @@ SUBPOOL  EQU   0
 * memory which the hardware will use. Except for the first 8
 * bytes, where we need to specify the new PSW.
 *
-         DS    0D
+ORIGIN   DS    0D
          DC    X'000C0000'  EC mode + Machine Check enabled
          DC    A(POSTIPL)   First bit of "normal" memory
 *
@@ -98,18 +111,6 @@ CCHHR    DC    X'0000000102'
          ORG   *-3
 HH2      DS    CL2
 R        DS    C
-*
-***********************************************************************
-*                                                                     *
-*  Equates                                                            *
-*                                                                     *
-***********************************************************************
-STACKLOC EQU   X'100000'    The stack starts here (1 MiB)
-HEAPLOC  EQU   X'180000'    Where malloc etc come from (1.5 MiB)
-CHUNKSZ  EQU   18452        The executable is split into blocks
-MAXBLKS  EQU   40           Maximum number of blocks to read
-*
-*
 *
 STAGE2   DS    0H
          A     R5,=A(CHUNKSZ)

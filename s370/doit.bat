@@ -16,10 +16,9 @@ gccmvs -DUSE_MEMMGR -S -I . -I ../pdpclib pdos.c
 
 m4 -I . -I ../pdpclib pload.m4 >pload.jcl
 call runmvs pload.jcl output.txt none pload.zip
-unzip pload
+unzip -o pload
 hdtofil pload.bin <pload.txt
-echo 000000  C1C2C2C1 >dummy.txt
-hdtofil pdos.bin <dummy.txt
+hdtofil pdos.bin <pdos.txt
 echo PDOS00 3390-1 * separate >ctl.txt
 echo SYS1.PLOAD SEQ pload.bin TRK 10 1 0 PS U 0 18452 >>ctl.txt
 echo SYS1.PDOS SEQ pdos.bin CYL 1 1 0 PS U 0 18452 >>ctl.txt

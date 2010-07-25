@@ -12,9 +12,11 @@ gccmvs -DUSE_MEMMGR -S -I . -I ../pdpclib ../pdpclib/setjmp.c
 gccmvs -DUSE_MEMMGR -S -I . -I ../pdpclib ../pdpclib/signal.c
 gccmvs -DUSE_MEMMGR -S -I . -I ../pdpclib ../pdpclib/__memmgr.c
 gccmvs -DUSE_MEMMGR -S -I . -I ../pdpclib pload.c
+gccmvs -DUSE_MEMMGR -S -I . -I ../pdpclib pdos.c
 
 m4 -I . -I ../pdpclib pload.m4 >pload.jcl
-call runmvs pload.jcl output.txt none pload.txt binary ascii
+call runmvs pload.jcl output.txt none pload.zip
+unzip pload
 hdtofil pload.bin <pload.txt
 echo 000000  C1C2C2C1 >dummy.txt
 hdtofil pdos.bin <dummy.txt

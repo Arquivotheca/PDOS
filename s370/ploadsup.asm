@@ -36,16 +36,19 @@ INITSYS  DS    0H
          USING INITSYS,R12
          USING PSA,R0
 *
-* At this stage we only want I/O interrupts, so that is all
-* that will be enabled, but we set "dummy" values for the
-* others in case something unexpected happens, to give us
-* some visibility into the problem.
+* At this stage we don't want any interrupts, but we need
+* to set "dummy" values for all of them, to give us
+* visibility into any problem.
 *
          MVC   FLCINPSW(8),WAITER7
          MVC   FLCMNPSW(8),WAITER1
          MVC   FLCSNPSW(8),WAITER2
          MVC   FLCPNPSW(8),WAITER3
+*
 * Save IPL address in R10
+* We should really obtain this from a parameter passed by
+* sapstart.
+*
          SLR   R10,R10
          ICM   R10,B'0111',FLCIOAA
          LR    R15,R10
@@ -100,6 +103,7 @@ RDBLOCK  DS    0H
 * Interrupt needs to point to CONT now. Again, I would hope for
 * something more sophisticated in PDOS than this continual
 * initialization.
+*
          MVC   FLCINPSW(8),NEWIO
 * R3 points to CCW chain
          LA    R3,SEEK

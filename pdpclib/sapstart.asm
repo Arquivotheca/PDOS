@@ -36,7 +36,6 @@ CODESTRT EQU   1024         Start of our real code
 *
 *
 *
-SUBPOOL  EQU   0
          CSECT
 *
 * This program will be loaded by the IPL sequence to location 0
@@ -46,7 +45,12 @@ SUBPOOL  EQU   0
 *
 ORIGIN   DS    0D
          DC    X'000C0000'  EC mode + Machine Check enabled
+         AIF   ('&SYS' EQ 'S370').MOD24A
+         DC    A(X'80000000'+POSTIPL)
+         AGO   .MOD31A
+.MOD24A  ANOP
          DC    A(POSTIPL)   First bit of "normal" memory
+.MOD31A  ANOP
 *
 * Memory to be cleared.
 *
@@ -91,7 +95,12 @@ POSTIPL  DS    0H
 WAITNOER DC    X'020E0000'  I/O, machine check, EC, wait
          DC    X'00000000'  no error
 NEWIO    DC    X'000C0000'  machine check enabled + EC
+         AIF   ('&SYS' EQ 'S370').MOD24B
+         DC    A(X'80000000'+STAGE2)
+         AGO   .MOD31B
+.MOD24B  ANOP
          DC    A(STAGE2)
+.MOD31B  ANOP
 WAITER1  DC    X'000E0000'  machine check, EC, wait
          DC    X'00000111'  error 111
 WAITER2  DC    X'000E0000'  machine check, EC, wait
@@ -138,7 +147,12 @@ STAGE3   DS    0H
          LPSW  ST4PSW
          DS    0D
 ST4PSW   DC    X'000C0000'  EC mode + Machine Check enabled
+         AIF   ('&SYS' EQ 'S370').MOD24C
+         DC    A(X'80000000'+STAGE4)
+         AGO   .MOD31C
+.MOD24C  ANOP
          DC    A(STAGE4)
+.MOD31C  ANOP
 WAITSERR DC    X'000E0000'  EC mode + Machine Check enabled + wait
          DC    X'00000444'  Severe error
 * At this point, we are in a "normal" post-IPL status,

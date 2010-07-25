@@ -7,6 +7,7 @@
 /*********************************************************************/
 /*                                                                   */
 /*  pdos.c - Public Domain Operating System                          */
+/*  (version for S/370, S/380 and S/390 IBM mainframes)              */
 /*                                                                   */
 /*  When this (main) program is entered, interrupts are disabled,    */
 /*  and the program should not assume anything about the status of   */
@@ -69,8 +70,86 @@
 #include <stdlib.h>
 #include <string.h>
 
+typedef {
+    int abend;
+} TASK;
+
+static int intrupt;
+
 int main(int argc, char **argv)
 {
+    TASK *task;
+
     printf("Welcome to PDOS!!!\n");
+    init();
+    
+    /* The OS is not designed to exit */
+    while (1)
+    {
+        /* all this will be done with interrupts disabled,
+           and in supervisor status */
+        task  = getNextAvailTask();
+        if (task == NULL)
+        {
+            /* suspend the computer until an interrupt occurs */
+            goWaitState();
+        }
+        
+        sliceOver = 0;
+        while (!sliceOver)
+        {
+            sliceOver = 1; /* assume any interrupt will be the end
+                              of this timeslice. */
+        
+            /* If the task has abended, the equivalent of a
+               branch to user-space code is done, to perform
+               the cleanup, as this is an expensive operation,
+               so should be timesliced. */
+            intrupt = dispatch_until_interrupt();
+            if (intrupt == INTERRUPT_TIMER)
+            {
+                /* this will check how long the program has been
+                   running for, and if the limit has been reached,
+                   the context will be switched to an abend routine,
+                   which will be dispatched at the next timeslice. */
+                checkElapsedTime();
+            }
+        
+            else if (intrupt == INTERRUPT_ILLEGAL)
+            {
+                /* this function will switch the context to an abend
+                   handler to do the dump, timesliced. */
+                processIllegal();
+            }
+        
+            else if (intrupt == INTERRUPT_SVC)
+            {
+                /* This function switches context to an SVC handler,
+                   but it won't actually execute it until the next
+                   timeslice, to avoid someone doing excessive
+                   SVCs that hog the CPU. It will execute in
+                   supervisor status when eventually dispatched though. */
+                startSVC();
+            }
+        
+            else if (intrupt == INTERRUPT_IO)
+            {
+                /* This running app shouldn't have to pay the price
+                   for someone else's I/O completing. */
+                
+                saveTimer();
+                
+                processIO();
+                
+                /* If the timeslice has less than 10% remaining, it
+                   isn't worth dispatching again. Otherwise, set
+                   this slice to be run again. */
+                if (resetTimer())
+                {
+                    sliceOver = 0;
+                }
+            }
+        }
+    }
     return (0);
 }

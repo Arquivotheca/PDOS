@@ -41,5 +41,6 @@ int main(int argc, char **argv)
     printf("about to read first block of PDOS\n");
     rdblock(dev, 1, 0, 1, buf, sizeof buf);
     printf("got %x %x %x %x\n", buf[0], buf[1], buf[2], buf[3]);
+    printf("and %x %x %x %x\n", buf[4], buf[5], buf[6], buf[7]);
     return (0);
 }

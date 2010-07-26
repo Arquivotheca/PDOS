@@ -70,65 +70,116 @@
 #include <stdlib.h>
 #include <string.h>
 
-typedef {
+typedef struct {
     int abend;
 } TASK;
 
-static int intrupt;
+int intrupt;
+TASK *task;
 
 int main(int argc, char **argv)
 {
-    TASK *task;
+    /* Note that the loader may pass on a parameter of some sort */
+    /* Also under other (test) environments, may have options. */
 
+    /* thankfully we are running under an emulator, so have access
+       to printf debugging (to the Hercules console via DIAG8),
+       and Hercules logging */
     printf("Welcome to PDOS!!!\n");
+
+#if 0
+    /* Note that the bulk of the operating system is set up in
+       this initialization, but this main routing focuses on
+       the heart of the OS - the actual millisecond by millisecond
+       execution, where people (ie programs) are expecting to get
+       some CPU time. */
     init();
+    
+    task = NULL;
     
     /* The OS is not designed to exit */
     while (1)
     {
         /* all this will be done with interrupts disabled,
-           and in supervisor status */
+           and in supervisor status. This function will take
+           into account the last executing task, to decide
+           which task to schedule next. As part of that, it
+           will also mark the last task as "no longer executing" */
         task  = getNextAvailTask();
         if (task == NULL)
         {
             /* suspend the computer until an interrupt occurs */
-            goWaitState();
+            intrupt = goWaitState();
+            if (intrupt == INTERRUPT_TIMER)
+            {
+                /* may eventually do some housekeeping in this
+                   idle time */
+            }
+            else if (intrupt == INTERRUPT_IO)
+            {
+                processIO();
+            }
+            /* we're not expecting any other interrupts. If we get
+               any, put it in the too-hard basket! */
+            
+            continue; /* go back and check for a task */
         }
         
+        /* we have a task, and now it is time to run it, in user
+           mode (usually) until an interrupt of some sort occurs */
         sliceOver = 0;
         while (!sliceOver)
         {
-            sliceOver = 1; /* assume any interrupt will be the end
-                              of this timeslice. */
+            sliceOver = 1; /* most interrupts will cause this timeslice
+                              to end, so set that expectation by
+                              default. */
         
-            /* If the task has abended, the equivalent of a
-               branch to user-space code is done, to perform
-               the cleanup, as this is an expensive operation,
-               so should be timesliced. */
+            /* run the user's code (stock-standard general instructions,
+               e.g. LA, LR, AR) until some interrupt occurs where the 
+               OS gets involved. On return from this function, interrupts
+               will be redisabled. In addition, the task will be in a
+               saved state, ie all registers saved. The handling of
+               the interrupt may alter the state of the task, to make
+               it e.g. shift to an SVC routine. */
+               
             intrupt = dispatch_until_interrupt();
             if (intrupt == INTERRUPT_TIMER)
             {
                 /* this will check how long the program has been
                    running for, and if the limit has been reached,
                    the context will be switched to an abend routine,
-                   which will be dispatched at the next timeslice. */
+                   which will be dispatched at this task's next
+                   timeslice. */
                 checkElapsedTime();
             }
         
             else if (intrupt == INTERRUPT_ILLEGAL)
             {
+                /* This is called if the user program has executed
+                   an invalid instruction, or accessed memory that
+                   doesn't belong to it, etc */
                 /* this function will switch the context to an abend
                    handler to do the dump, timesliced. */
+                /* If the task has abended, the equivalent of a
+                   branch to user-space code is done, to perform
+                   the cleanup, as this is an expensive operation,
+                   so should be timesliced. */
                 processIllegal();
             }
         
             else if (intrupt == INTERRUPT_SVC)
             {
                 /* This function switches context to an SVC handler,
-                   but it won't actually execute it until the next
-                   timeslice, to avoid someone doing excessive
+                   but it won't actually execute it until this task's
+                   next timeslice, to avoid someone doing excessive
                    SVCs that hog the CPU. It will execute in
                    supervisor status when eventually dispatched though. */
+                /* We can add in some smarts later to allow someone
+                   to do lots of quick SVCs, so long as it fits into
+                   their normal timeslice, instead of being constrained
+                   to one per timeslice. But for now, avoid the
+                   complication of having an interruptable SVC that
+                   could be long-running. */
                 startSVC();
             }
         
@@ -151,5 +202,6 @@ int main(int argc, char **argv)
             }
         }
     }
+#endif
     return (0);
 }

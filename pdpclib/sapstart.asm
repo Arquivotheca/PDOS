@@ -54,7 +54,7 @@ ORIGIN   DS    0D
 *
 * Memory to be cleared.
 *
-         DC    1016X'00'
+         DC    (CODESTRT-*+ORIGIN)X'00'
 *
 * Start of our own, somewhat normal, code. Registers are not
 * defined at this point, so we need to create our own base

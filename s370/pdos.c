@@ -203,5 +203,5 @@ int main(int argc, char **argv)
         }
     }
 #endif
-    return (0);
+    return (0); /* In future, there may be an option to exit the OS */
 }

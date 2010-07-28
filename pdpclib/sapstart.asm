@@ -172,12 +172,13 @@ STAGE4   DS    0H
          A     R2,=F'120'        Get past save area etc
          ST    R2,76(R13)        C needs to know where we're up to
 *
-         LA    R1,SAPBLK         MVS-style parm block
+         LA    R1,PRMPTR         MVS-style parm block (but to struct)
          L     R15,=V(@@CRT0)
          BALR  R14,R15
 * If they're dumb enough to return, load an error wait state
          LPSW  WAITSERR
          LTORG
+PRMPTR   DC    A(SAPBLK)
 SAPBLK   DS    0F
 SAPDUM   DC    F'0'
 SAPLEN   DC    F'4'              Length of following parameters
@@ -240,6 +241,7 @@ FEN1     EQU   *
          MVC   PGMNAME,=C'SAPLOAD '
 *
          ST    R1,ARGPTR         pass the R1 directly on
+         L     R1,0(R1)          It's a pointer to a structure
          L     R2,8(R1)          heap is available here
          ST    R2,@@HPLOC        heap location used by GETM
          LA    R2,PGMNAME

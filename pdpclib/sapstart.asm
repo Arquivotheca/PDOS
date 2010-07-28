@@ -33,6 +33,7 @@ HEAPLOC  EQU   X'180000'    Where malloc etc come from (1.5 MiB)
 CHUNKSZ  EQU   18452        The executable is split into blocks
 MAXBLKS  EQU   40           Maximum number of blocks to read
 CODESTRT EQU   1024         Start of our real code
+ENTSTRT  EQU   2048         Create a predictable usable entry point
 *
 *
 *
@@ -206,6 +207,7 @@ HPLOC    DC    A(HEAPLOC)        Heap location
 * in memory, or to be directly loadable into location 0. Multiple
 * entry points, basically, but a common executable.
 *
+         DC    (ENTSTRT-*+ORIGIN)X'00'
          DS    0H
          AIF ('&COMP' NE 'C370').NOCEES
          ENTRY CEESTART

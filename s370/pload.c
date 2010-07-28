@@ -38,7 +38,7 @@ int main(int argc, char **argv)
     int dev;
     char *load;
     char *start = (char *)0x200000;
-    void (*entry)(void *) = (void (*)(void *))0x20001C;
+    void (*entry)(void *) = (void (*)(void *))0x200800;
     int i;
     int j;
     struct { int dum;

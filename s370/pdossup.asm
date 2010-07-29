@@ -45,6 +45,8 @@ INITSYS  DS    0H
          MVC   FLCSNPSW(8),WAITER2
          MVC   FLCPNPSW(8),WAITER3
 *
+         MVC   SVCNPSW(8),NEWSVC
+*
 * Save IPL address in R10
 * We should really obtain this from a parameter passed by
 * sapstart.
@@ -64,6 +66,8 @@ WAITER2  DC    X'000E0000'  machine check, EC, wait
          DC    X'00000222'  error 222
 WAITER3  DC    X'000E0000'  machine check, EC, wait
          DC    X'00000333'  error 333
+NEWSVC   DC    X'000C0000'  machine check, EC
+         DC    A(GOTSVC)    SVC handler
 *
 *
 *
@@ -142,10 +146,64 @@ NEWIO    DC    X'000C0000'  machine check, EC
 .MOD31   ANOP
 *
          DROP  ,
+*
+*
+*
+*
+*
+**********************************************************************
+*                                                                    *
+*  ADISP - dispatch a bit of code                                    *
+*                                                                    *
+**********************************************************************
+         ENTRY ADISP
+ADISP    DS    0H
+         SAVE  (14,12),,ADISP
+         LR    R12,R15
+         USING ADISP,R12
+         USING PSA,R0
+*
+         L     R2,0(R1)               Context (registers and PSW)
+         MVC   FLCGRSAV(64),0(R2)     Registers are first
+         MVC   SVCOPSW(8),64(R2)      Then 8-byte PSW
+         STM   R0,R15,FLCCRSAV        Save our OS registers
+         LM    R0,R15,FLCGRSAV        Load application registers
+         LPSW  SVCOPSW                App returns to old PSW
+         DC    H'0'
+ADISPRET DS    0H
+         MVC   0(64,R2),FLCGRSAV
+         MVC   64(8,R2),SVCOPSW
+*LOOP     B     LOOP
+* Gets here
+         LA    R15,0
+         RETURN (14,12),RC=(15)
+         LTORG
+*
+* Got SVC interrupt
+*
+GOTSVC   DS    0H
+         STM   R0,R15,FLCGRSAV        Save application registers
+         LM    R0,R15,FLCCRSAV        Load OS registers
+         B     ADISPRET
+*
+* Got ordinary return
+*
+         ENTRY GOTRET
+GOTRET   DS    0H
+         STM   R0,R15,FLCGRSAV        Save application registers
+         LM    R0,R15,FLCCRSAV        Load OS registers
+         B     ADISPRET
+         DROP  ,
+*
+*
+*
+*
+*
          CVT   DSECT=YES
          IKJTCB
          IEZJSCB
          IHAPSA
          IHARB
          IHACDE
+         IHASVC
          END

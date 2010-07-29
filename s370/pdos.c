@@ -74,10 +74,20 @@ typedef struct {
     int abend;
 } TASK;
 
+typedef struct {
+    int regs[16];
+    unsigned int psw1;
+    unsigned int psw2;
+} CONTEXT;
+
 int intrupt;
 TASK *task;
 
 #define CHUNKSZ 18452
+
+
+void gotret(void);
+int adisp(CONTEXT *context);
 
 int main(int argc, char **argv)
 {
@@ -213,6 +223,8 @@ int main(int argc, char **argv)
              int len;
              char *heap; } pblock = { 0, 4, (char *)0x500000 };
     void (*fun)(void *);
+    CONTEXT context;
+    int savearea[20]; /* needs to be in user space */
 
     /* thankfully we are running under an emulator, so have access
        to printf debugging (to the Hercules console via DIAG8),
@@ -236,7 +248,17 @@ int main(int argc, char **argv)
             load += CHUNKSZ;
         }
     }
-    ret = entry(&pblock);
+    memset(&context, 0x00, sizeof context);
+    context.regs[1] = (int)&pblock;
+    context.regs[13] = (int)savearea;
+    context.regs[14] = (int)gotret;
+    context.regs[15] = (int)entry;
+    context.psw1 = 0x000c0000; /* need to enable interrupts */
+    context.psw2 = (int)entry; /* 24-bit mode for now */
+    printf("about to dispatch\n");
+    ret = adisp(&context);  /* dispatch */
+    printf("returned from dispatch with %d\n", ret);
+    /*ret = entry(&pblock);*/
     printf("return from PCOMM is %d\n", ret);
 #if 0
     printf("about to read first block of PCOMM\n");

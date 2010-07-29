@@ -77,15 +77,12 @@ typedef struct {
 int intrupt;
 TASK *task;
 
+#define CHUNKSZ 18452
+
 int main(int argc, char **argv)
 {
     /* Note that the loader may pass on a parameter of some sort */
     /* Also under other (test) environments, may have options. */
-
-    /* thankfully we are running under an emulator, so have access
-       to printf debugging (to the Hercules console via DIAG8),
-       and Hercules logging */
-    printf("Welcome to PDOS!!!\n");
 
 #if 0
     /* Note that the bulk of the operating system is set up in
@@ -203,5 +200,50 @@ int main(int argc, char **argv)
         }
     }
 #endif
+
+    int ret;
+    int dev;
+    char *load;
+    char *start = (char *)0x400000;
+    /* Standard C programs can start at a predictable offset */
+    int (*entry)(void *) = (int (*)(void *))0x400008;
+    int i;
+    int j;
+    struct { int dum;
+             int len;
+             char *heap; } pblock = { 0, 4, (char *)0x500000 };
+    void (*fun)(void *);
+
+    /* thankfully we are running under an emulator, so have access
+       to printf debugging (to the Hercules console via DIAG8),
+       and Hercules logging */
+    printf("Welcome to PDOS!!!\n");
+
+    printf("PCOMM should reside on cylinder 2, head 0 of IPL device\n");
+    dev = initsys();
+    printf("IPL device is %x\n", dev);
+    load = start;
+    for (i = 0; i < 10; i++)
+    {
+        for (j = 1; j < 4; j++)
+        {
+            printf("loading to %p from 2, %d, %d\n", load, i, j);
+            rdblock(dev, 2, i, j, load, CHUNKSZ);
+#if 0
+            printf("got %x %x %x %x\n", load[0], load[1], load[2], load[3]);
+            printf("and %x %x %x %x\n", load[4], load[5], load[6], load[7]);
+#endif            
+            load += CHUNKSZ;
+        }
+    }
+    ret = entry(&pblock);
+    printf("return from PCOMM is %d\n", ret);
+#if 0
+    printf("about to read first block of PCOMM\n");
+    rdblock(dev, 1, 0, 1, buf, sizeof buf);
+    printf("got %x %x %x %x\n", buf[0], buf[1], buf[2], buf[3]);
+    printf("and %x %x %x %x\n", buf[4], buf[5], buf[6], buf[7]);
+#endif
+
     return (0); /* In future, there may be an option to exit the OS */
 }

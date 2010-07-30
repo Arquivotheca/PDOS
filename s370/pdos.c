@@ -93,7 +93,8 @@ typedef struct {
         char dcboflgs;
         int dcbput;
     } u1;
-    char unused3[10];
+    int dcbcheck;
+    char unused3[6];
     short dcbblksi;
     char unused4[18];
     short dcblrecl;
@@ -111,6 +112,7 @@ TASK *task;
 void gotret(void);
 int adisp(CONTEXT *context);
 void dput(void);
+void dcheck(void);
 
 int main(int argc, char **argv)
 {
@@ -287,7 +289,7 @@ int main(int argc, char **argv)
     
     context.regs[1] = (int)pptrs;
     
-    for (i = 0; i < 40; i++)
+    for (;;) /* i = 0; i < 80; i++) */
     {
         int svc;
         static int getmain = 0x600000;
@@ -296,14 +298,22 @@ int main(int argc, char **argv)
         ret = adisp(&context);  /* dispatch */
         printf("returned from dispatch with %d\n", ret);
         /*ret = entry(&pblock);*/
-        printf("return from PCOMM is %d\n", ret);
         svc = psa->svc_code & 0xffff;
-        printf("SVC code is %d\n", svc);
-        printf("R15 is %x\n", context.regs[15]);
-        if (ret == 2)
+        printf("SVC code (if any) is %d\n", svc);
+        /* printf("R15 is %x\n", context.regs[15]); */
+        if (ret == 1)
+        {
+            /* normally the OS would not exit on program end */
+            printf("return from PCOMM is %d\n", context.regs[15]);
+            break;
+        }
+        else if (ret == 2)
         {
             printf("got write request - see R4\n");
+            /* need to fix bug in PDPCLIB - long lines should be truncated */
             printf("%.80s\n", context.regs[4]); /* wrong!!! */
+            context.psw2 &= 0xffffff; /* move this to assembler with STCM/STI */
+            printf("return context is %p\n", context.psw2);
         }
         else if ((svc == 120) || (svc == 10))
         {
@@ -330,6 +340,7 @@ int main(int argc, char **argv)
                                            /* and it's totally wrong anyway */
             printf("dcb is at %p\n", dcb);
             dcb->u1.dcbput = (int)dput;
+            dcb->dcbcheck = (int)dcheck;
             printf("flags are at %p\n", &dcb->u1.dcboflgs);
             dcb->u1.dcboflgs |= DCBOFOPN;
             dcb->dcbrecfm |= DCBRECF;

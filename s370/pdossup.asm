@@ -218,6 +218,11 @@ DPUT     DS    0H
 *
 *
 *
+         ENTRY DCHECK
+DCHECK   DS    0H
+         BR    R14
+*
+*
          CVT   DSECT=YES
          IKJTCB
          IEZJSCB

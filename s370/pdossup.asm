@@ -176,11 +176,10 @@ ADISP    DS    0H
          LPSW  SVCOPSW                App returns to old PSW
          DC    H'0'
 ADISPRET DS    0H
+         LA    R15,0
+ADISPRT2 DS    0H
          MVC   0(64,R2),FLCGRSAV
          MVC   64(8,R2),SVCOPSW
-*LOOP     B     LOOP
-* Gets here
-         LA    R15,0
          RETURN (14,12),RC=(15)
          LTORG
 *
@@ -197,7 +196,11 @@ GOTSVC   DS    0H
 GOTRET   DS    0H
          STM   R0,R15,FLCGRSAV        Save application registers
          LM    R0,R15,FLCCRSAV        Load OS registers
-         B     ADISPRET
+         AIF   ('&SYS' EQ 'S370').MOD24C
+         CALL  @@SETM31
+.MOD24C  ANOP
+         LA    R15,1
+         B     ADISPRT2
          DROP  ,
 *
 *

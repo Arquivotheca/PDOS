@@ -85,6 +85,13 @@ typedef struct {
     unsigned int svc_code;
 } PSA;
 
+typedef struct {
+    char unused1[48];
+    char dcboflgs;
+} DCB;
+
+#define DCBOFOPN 0x10
+
 int intrupt;
 TASK *task;
 
@@ -230,7 +237,10 @@ int main(int argc, char **argv)
     void (*fun)(void *);
     CONTEXT context;
     int savearea[20]; /* needs to be in user space */
+    char mvsparm[] = { 0, 4, 'H', 'i', ' ', 'U' };
+    char *pptrs[1];
     PSA *psa = 0;
+    DCB *dcb;
 
     /* thankfully we are running under an emulator, so have access
        to printf debugging (to the Hercules console via DIAG8),
@@ -262,15 +272,50 @@ int main(int argc, char **argv)
     context.psw1 = 0x000c0000; /* need to enable interrupts */
     context.psw2 = (int)entry; /* 24-bit mode for now */
 
-    for (i = 0; i < 10; i++)
-    {    
+    pptrs[0] = mvsparm;
+    
+    context.regs[1] = (int)pptrs;
+    
+    for (i = 0; i < 40; i++)
+    {
+        int svc;
+        static int getmain = 0x600000;
+        
         printf("about to dispatch\n");
         ret = adisp(&context);  /* dispatch */
         printf("returned from dispatch with %d\n", ret);
         /*ret = entry(&pblock);*/
         printf("return from PCOMM is %d\n", ret);
-        printf("SVC code is %d\n", psa->svc_code & 0xffff);
+        svc = psa->svc_code & 0xffff;
+        printf("SVC code is %d\n", svc);
         printf("R15 is %x\n", context.regs[15]);
+        if ((svc == 120) || (svc == 10))
+        {
+            if ((svc == 10) || (context.regs[1] == 0)) /* if really getmain */
+            {
+                context.regs[1] = getmain;
+                context.regs[15] = 0;
+                getmain += 0x100000;
+            }
+            /* context.regs[1] = 0x4100000; */
+        }
+        else if (svc == 24) /* devtype */
+        {
+            context.regs[15] = 0;
+        }
+        else if (svc == 64) /* rdjfcb */
+        {
+            /* context.regs[15] = 0; */
+        }
+        else if (svc == 22) /* open */
+        {
+            context.regs[15] = 0;
+            dcb = (DCB *)context.regs[10]; /* need to protect against this */
+                                           /* and it's totally wrong anyway */
+            printf("dcb is at %p\n", dcb);
+            printf("flags are at %p\n", &dcb->dcboflgs);
+            dcb->dcboflgs |= DCBOFOPN;
+        }
     }
 
 #if 0

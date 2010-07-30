@@ -205,6 +205,12 @@ GOTRET   DS    0H
 *
 *
 *
+* Put routine
+*
+         ENTRY DPUT
+DPUT     DS    0H
+         BR    R14
+*
 *
 *
          CVT   DSECT=YES

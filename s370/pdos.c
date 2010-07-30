@@ -87,7 +87,10 @@ typedef struct {
 
 typedef struct {
     char unused1[48];
-    char dcboflgs;
+    union {
+        char dcboflgs;
+        int dcbput;
+    } u1;
 } DCB;
 
 #define DCBOFOPN 0x10
@@ -100,6 +103,7 @@ TASK *task;
 
 void gotret(void);
 int adisp(CONTEXT *context);
+void dput(void);
 
 int main(int argc, char **argv)
 {
@@ -295,7 +299,7 @@ int main(int argc, char **argv)
             {
                 context.regs[1] = getmain;
                 context.regs[15] = 0;
-                getmain += 0x100000;
+                getmain += 0x080000;
             }
             /* context.regs[1] = 0x4100000; */
         }
@@ -313,8 +317,9 @@ int main(int argc, char **argv)
             dcb = (DCB *)context.regs[10]; /* need to protect against this */
                                            /* and it's totally wrong anyway */
             printf("dcb is at %p\n", dcb);
-            printf("flags are at %p\n", &dcb->dcboflgs);
-            dcb->dcboflgs |= DCBOFOPN;
+            dcb->u1.dcbput = (int)dput;
+            printf("flags are at %p\n", &dcb->u1.dcboflgs);
+            dcb->u1.dcboflgs |= DCBOFOPN;
         }
     }
 

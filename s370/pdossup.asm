@@ -201,15 +201,20 @@ GOTRET   DS    0H
 .MOD24C  ANOP
          LA    R15,1
          B     ADISPRT2
-         DROP  ,
 *
-*
-*
-* Put routine
+* Got WRITE
 *
          ENTRY DPUT
 DPUT     DS    0H
-         BR    R14
+         STM   R0,R15,FLCGRSAV        Save application registers
+         ST    R14,SVCOPSW+4
+         LM    R0,R15,FLCCRSAV        Load OS registers
+         AIF   ('&SYS' EQ 'S370').MOD24D
+         CALL  @@SETM31
+.MOD24D  ANOP
+         LA    R15,2
+         B     ADISPRT2
+         DROP  ,
 *
 *
 *

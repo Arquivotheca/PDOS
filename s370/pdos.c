@@ -86,14 +86,21 @@ typedef struct {
 } PSA;
 
 typedef struct {
-    char unused1[48];
+    char unused1[32];
+    char dcbrecfm;
+    char unused2[15];
     union {
         char dcboflgs;
         int dcbput;
     } u1;
+    char unused3[10];
+    short dcbblksi;
+    char unused4[18];
+    short dcblrecl;
 } DCB;
 
 #define DCBOFOPN 0x10
+#define DCBRECF  0x80
 
 int intrupt;
 TASK *task;
@@ -293,7 +300,12 @@ int main(int argc, char **argv)
         svc = psa->svc_code & 0xffff;
         printf("SVC code is %d\n", svc);
         printf("R15 is %x\n", context.regs[15]);
-        if ((svc == 120) || (svc == 10))
+        if (ret == 2)
+        {
+            printf("got write request - see R4\n");
+            printf("%.80s\n", context.regs[4]); /* wrong!!! */
+        }
+        else if ((svc == 120) || (svc == 10))
         {
             if ((svc == 10) || (context.regs[1] == 0)) /* if really getmain */
             {
@@ -320,6 +332,9 @@ int main(int argc, char **argv)
             dcb->u1.dcbput = (int)dput;
             printf("flags are at %p\n", &dcb->u1.dcboflgs);
             dcb->u1.dcboflgs |= DCBOFOPN;
+            dcb->dcbrecfm |= DCBRECF;
+            dcb->dcblrecl = 80;
+            dcb->dcbblksi = 80;
         }
     }
 

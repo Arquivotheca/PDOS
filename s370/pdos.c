@@ -80,6 +80,11 @@ typedef struct {
     unsigned int psw2;
 } CONTEXT;
 
+typedef struct {
+    char unused1[136];
+    unsigned int svc_code;
+} PSA;
+
 int intrupt;
 TASK *task;
 
@@ -225,6 +230,7 @@ int main(int argc, char **argv)
     void (*fun)(void *);
     CONTEXT context;
     int savearea[20]; /* needs to be in user space */
+    PSA *psa = 0;
 
     /* thankfully we are running under an emulator, so have access
        to printf debugging (to the Hercules console via DIAG8),
@@ -255,11 +261,28 @@ int main(int argc, char **argv)
     context.regs[15] = (int)entry;
     context.psw1 = 0x000c0000; /* need to enable interrupts */
     context.psw2 = (int)entry; /* 24-bit mode for now */
+
+    for (i = 0; i < 10; i++)
+    {    
+        printf("about to dispatch\n");
+        ret = adisp(&context);  /* dispatch */
+        printf("returned from dispatch with %d\n", ret);
+        /*ret = entry(&pblock);*/
+        printf("return from PCOMM is %d\n", ret);
+        printf("SVC code is %d\n", psa->svc_code & 0xffff);
+        printf("R15 is %x\n", context.regs[15]);
+    }
+
+#if 0
     printf("about to dispatch\n");
     ret = adisp(&context);  /* dispatch */
     printf("returned from dispatch with %d\n", ret);
     /*ret = entry(&pblock);*/
     printf("return from PCOMM is %d\n", ret);
+    printf("SVC code is %d\n", psa->svc_code & 0xffff);
+    printf("R15 is %x\n", context.regs[15]);
+#endif
+
 #if 0
     printf("about to read first block of PCOMM\n");
     rdblock(dev, 1, 0, 1, buf, sizeof buf);

@@ -101,7 +101,9 @@ typedef struct {
 } DCB;
 
 #define DCBOFOPN 0x10
+#define DCBRECU  0xC0
 #define DCBRECF  0x80
+#define DCBRECV  0x40
 
 int intrupt;
 TASK *task;

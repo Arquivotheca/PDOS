@@ -18,5 +18,6 @@
 int main(int argc, char **argv)
 {
     printf("welcome to pcomm\n");
-    return (0);
+    printf("what a relief!\n");
+    return (5);
 }

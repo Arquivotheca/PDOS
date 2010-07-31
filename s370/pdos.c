@@ -333,11 +333,6 @@ int main(int argc, char **argv)
         }
         else if (svc == 64) /* rdjfcb */
         {
-            /* context.regs[15] = 0; */
-        }
-        else if (svc == 22) /* open */
-        {
-            context.regs[15] = 0;
             dcb = (DCB *)context.regs[10]; /* need to protect against this */
                                            /* and it's totally wrong anyway */
             printf("dcb is at %p\n", dcb);
@@ -348,6 +343,10 @@ int main(int argc, char **argv)
             dcb->dcbrecfm |= DCBRECF;
             dcb->dcblrecl = 80;
             dcb->dcbblksi = 80;
+        }
+        else if (svc == 22) /* open */
+        {
+            context.regs[15] = 0;
         }
     }
 

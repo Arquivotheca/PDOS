@@ -86,9 +86,13 @@ typedef struct {
 } PSA;
 
 typedef struct {
-    char unused1[32];
-    char dcbrecfm;
-    char unused2[15];
+    char unused1[36];
+    union
+    {
+        char dcbrecfm;
+        int dcbexlsa;
+    } u2;
+    char unused2[8];
     union {
         char dcboflgs;
         int dcbput;
@@ -104,6 +108,7 @@ typedef struct {
 #define DCBRECU  0xC0
 #define DCBRECF  0x80
 #define DCBRECV  0x40
+#define DCBRECBR 0x10
 
 int intrupt;
 TASK *task;
@@ -115,6 +120,7 @@ void gotret(void);
 int adisp(CONTEXT *context);
 void dput(void);
 void dcheck(void);
+void dexit(int oneexit, DCB *dcb);
 
 int main(int argc, char **argv)
 {
@@ -311,11 +317,11 @@ int main(int argc, char **argv)
         }
         else if (ret == 2)
         {
-            printf("got write request - see R4\n");
+            /* printf("got write request - see R4\n"); */
             /* need to fix bug in PDPCLIB - long lines should be truncated */
             printf("%.80s\n", context.regs[4]); /* wrong!!! */
-            context.psw2 &= 0xffffff; /* move this to assembler with STCM/STI */
-            printf("return context is %p\n", context.psw2);
+            context.psw2 &= 0xffffff; /* move this to assembler with STCM/MVI */
+            /* printf("return context is %p\n", context.psw2); */
         }
         else if ((svc == 120) || (svc == 10))
         {
@@ -330,23 +336,46 @@ int main(int argc, char **argv)
         else if (svc == 24) /* devtype */
         {
             context.regs[15] = 0;
+            /* hardcoded constants obtained from running MVS 3.8j system */
+            memcpy((void *)context.regs[0], 
+                   "\x30\x50\x20\x0B\x00\x00\xF6\xC0",
+                   8);
         }
         else if (svc == 64) /* rdjfcb */
         {
-            dcb = (DCB *)context.regs[10]; /* need to protect against this */
-                                           /* and it's totally wrong anyway */
+            int oneexit;
+
+            dcb = (DCB *)context.regs[10]; 
+                /* need to protect against this */
+                /* and it's totally wrong anyway */
             printf("dcb is at %p\n", dcb);
             dcb->u1.dcbput = (int)dput;
             dcb->dcbcheck = (int)dcheck;
-            printf("flags are at %p\n", &dcb->u1.dcboflgs);
-            dcb->u1.dcboflgs |= DCBOFOPN;
-            dcb->dcbrecfm |= DCBRECF;
+            dcb->u2.dcbrecfm |= DCBRECF; /* | DCBRECBR); */
             dcb->dcblrecl = 80;
             dcb->dcbblksi = 80;
+            printf("exlsa is %x\n", dcb->u2.dcbexlsa);
+            oneexit = (dcb->u2.dcbexlsa /* + sizeof(int) */ ) & 0xffffff;
+            if (oneexit != 0)
+            {
+                printf("now is %x\n", oneexit);
+                /* oneexit = oneexit + sizeof(int) */;
+                oneexit = *(int *)(oneexit /* + sizeof(int) */) & 0xffffff;
+                printf("and now %x\n", oneexit);
+                if (oneexit != 0)
+                {
+                    printf("calling dexit with dcb %p, recfm p %p, recfm %x\n",
+                           dcb, &dcb->u2.dcbrecfm, dcb->u2.dcbrecfm);
+                    dexit(oneexit, dcb);
+                }
+            }
+            context.regs[15] = 0;
         }
         else if (svc == 22) /* open */
         {
-            context.regs[15] = 0;
+            printf("flags are at %p\n", &dcb->u1.dcboflgs);
+            dcb->u1.dcboflgs |= DCBOFOPN;
+            context.regs[15] = 0; /* is this required? */
         }
     }
 

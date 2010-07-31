@@ -223,6 +223,45 @@ DCHECK   DS    0H
          BR    R14
 *
 *
+*
+*
+**********************************************************************
+*                                                                    *
+*  DEXIT - DCB exit                                                  *
+*                                                                    *
+**********************************************************************
+         ENTRY DEXIT
+DEXIT    DS    0H
+         SAVE  (14,12),,DEXIT
+         LR    R12,R15
+         USING DEXIT,R12
+         USING PSA,R0
+*
+* Might need to switch save areas here
+*
+         L     R2,0(R1)               their exit
+         L     R3,4(R1)               actual DCB for them
+         AIF   ('&SYS' EQ 'S370').MOD24E
+         CALL  @@SETM24
+.MOD24E  ANOP
+*
+         LR    R15,R2
+         LR    R1,R3
+*AAA      B     AAA
+         BALR  R14,R15
+*
+         AIF   ('&SYS' EQ 'S370').MOD24F
+         CALL  @@SETM31
+.MOD24F  ANOP
+*
+DEXITRET DS    0H
+         LA    R15,0
+         RETURN (14,12),RC=(15)
+         LTORG
+*DEXITSAV DS    19F
+*
+*
+*
          CVT   DSECT=YES
          IKJTCB
          IEZJSCB

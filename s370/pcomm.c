@@ -18,7 +18,7 @@
 int main(int argc, char **argv)
 {
     printf("welcome to pcomm\n");
-#if 0
+#if 1
     /* need to get the DCB open exit working first */
     printf("lrecl %d, recfm %x, blksize %d\n", stdout->lrecl,
            stdout->recfm, stdout->blksize);

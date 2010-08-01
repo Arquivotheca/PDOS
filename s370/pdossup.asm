@@ -198,12 +198,13 @@ GOTRET   DS    0H
          SVC   3
          DC    H'0'                   PDOS should not return here
 *
-* Got WRITE
+* They have executed the WRITE macro
 *
          ENTRY DPUT
 DPUT     DS    0H
          STM   R0,R15,FLCGRSAV        Save application registers
          ST    R14,SVCOPSW+4
+         MVI   SVCOPSW+4,X'00'
          LM    R0,R15,FLCCRSAV        Load OS registers
          AIF   ('&SYS' EQ 'S370').MOD24D
          CALL  @@SETM31
@@ -213,6 +214,7 @@ DPUT     DS    0H
          DROP  ,
 *
 *
+* They have executed the CHECK macro
 *
          ENTRY DCHECK
 DCHECK   DS    0H

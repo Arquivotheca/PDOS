@@ -146,6 +146,12 @@ static int pdosLoadPcomm(PDOS *pdos);
 
 
 #if 0
+
+/* This is a high-level conceptual version of what PDOS
+   needs to do, but this code is just a big comment. The
+   heart of PDOS is in pdosRun which is called from the
+   real main. */
+
 int main(int argc, char **argv)
 {
     /* Note that the loader may pass on a parameter of some sort */
@@ -273,12 +279,14 @@ int main(int argc, char **argv)
 int main(int argc, char **argv)
 {
     static PDOS pdos;
-    int ret;
+    int ret = EXIT_FAILURE;
     
     pdosDefaults(&pdos);
-    pdosInit(&pdos);
-    ret = pdosRun(&pdos);
-    pdosTerm(&pdos);
+    if (pdosInit(&pdos))
+    {
+        ret = pdosRun(&pdos);
+        pdosTerm(&pdos);
+    }
     return (ret);
 }
 
@@ -352,15 +360,14 @@ static int pdosDispatchUntilInterrupt(PDOS *pdos)
         /* these "DLLs" don't belong in the operating system proper,
            but for now, we'll action them here. Ideally we want to
            get rid of that while loop, and run the DLL as normal
-           user code. But first I need to know what SVC we should
-           use when OS services are really required. It's OK to
-           keep the code here, but it needs to execute in user space */
+           user code. Only when it becomes time for WRITE to run
+           SVC 0 (EXCP) or CHECK to run SVC 1 (WAIT) should it be
+           reaching this bit of code. It's OK to keep the code
+           here, but it needs to execut in user space. */
         if (ret == 2)
         {
             /* need to fix bug in PDPCLIB - long lines should be truncated */
             printf("%.80s\n", pdos->context.regs[4]); /* wrong!!! */
-            pdos->context.psw2 &= 0xffffff; 
-                /* move this to assembler with STCM/MVI */
         }
     }
     return (INTERRUPT_SVC); /* only doing SVCs at the moment */

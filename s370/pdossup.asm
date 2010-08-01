@@ -194,13 +194,9 @@ GOTSVC   DS    0H
 *
          ENTRY GOTRET
 GOTRET   DS    0H
-         STM   R0,R15,FLCGRSAV        Save application registers
-         LM    R0,R15,FLCCRSAV        Load OS registers
-         AIF   ('&SYS' EQ 'S370').MOD24C
-         CALL  @@SETM31
-.MOD24C  ANOP
-         LA    R15,1
-         B     ADISPRT2
+* force an SVC - it will take care of the rest
+         SVC   3
+         DC    H'0'                   PDOS should not return here
 *
 * Got WRITE
 *

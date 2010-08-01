@@ -276,12 +276,10 @@ int main(int argc, char **argv)
     {
         for (j = 1; j < 4; j++)
         {
-            printf("loading to %p from 2, %d, %d\n", load, i, j);
-            rdblock(dev, 2, i, j, load, CHUNKSZ);
 #if 0
-            printf("got %x %x %x %x\n", load[0], load[1], load[2], load[3]);
-            printf("and %x %x %x %x\n", load[4], load[5], load[6], load[7]);
-#endif            
+            printf("loading to %p from 2, %d, %d\n", load, i, j);
+#endif
+            rdblock(dev, 2, i, j, load, CHUNKSZ);
             load += CHUNKSZ;
         }
     }
@@ -304,18 +302,18 @@ int main(int argc, char **argv)
         
         ret = adisp(&context);  /* dispatch */
         svc = psa->svc_code & 0xffff;
-        printf("SVC code (if any) is %d\n", svc);
-        if (svc == 3)
-        {
-            /* normally the OS would not exit on program end */
-            printf("return from PCOMM is %d\n", context.regs[15]);
-            break;
-        }
-        else if (ret == 2)
+        if (ret == 0) printf("SVC code is %d\n", svc);
+        if (ret == 2)
         {
             /* need to fix bug in PDPCLIB - long lines should be truncated */
             printf("%.80s\n", context.regs[4]); /* wrong!!! */
             context.psw2 &= 0xffffff; /* move this to assembler with STCM/MVI */
+        }
+        else if (svc == 3)
+        {
+            /* normally the OS would not exit on program end */
+            printf("return from PCOMM is %d\n", context.regs[15]);
+            break;
         }
         else if ((svc == 120) || (svc == 10))
         {

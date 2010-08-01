@@ -110,10 +110,23 @@ typedef struct {
 #define DCBRECV  0x40
 #define DCBRECBR 0x10
 
-int intrupt;
+#define INTERRUPT_SVC 1
+
+#if 0
 TASK *task;
+#endif
 
 #define CHUNKSZ 18452
+
+typedef struct {
+    CONTEXT context; /* current thread's context */
+    PSA *psa;
+    int exitcode;
+    int shutdown;
+    int ipldev;
+} PDOS;
+
+static PDOS pdos;
 
 
 void gotret(void);
@@ -122,12 +135,22 @@ void dput(void);
 void dcheck(void);
 void dexit(int oneexit, DCB *dcb);
 
+
+int pdosRun(PDOS *pdos);
+void pdosDefaults(PDOS *pdos);
+int pdosInit(PDOS *pdos);
+void pdosTerm(PDOS *pdos);
+static int pdosDispatchUntilInterrupt(PDOS *pdos);
+static void pdosProcessSVC(PDOS *pdos);
+static int pdosLoadPcomm(PDOS *pdos);
+
+
+#if 0
 int main(int argc, char **argv)
 {
     /* Note that the loader may pass on a parameter of some sort */
     /* Also under other (test) environments, may have options. */
 
-#if 0
     /* Note that the bulk of the operating system is set up in
        this initialization, but this main routing focuses on
        the heart of the OS - the actual millisecond by millisecond
@@ -242,36 +265,208 @@ int main(int argc, char **argv)
             }
         }
     }
+    return (0); /* the OS may exit at some point */
+}
 #endif
 
-    int ret;
-    int dev;
-    char *load;
-    char *start = (char *)0x400000;
-    /* Standard C programs can start at a predictable offset */
-    int (*entry)(void *) = (int (*)(void *))0x400008;
-    int i;
-    int j;
-    struct { int dum;
-             int len;
-             char *heap; } pblock = { 0, 4, (char *)0x500000 };
-    void (*fun)(void *);
-    CONTEXT context;
-    int savearea[20]; /* needs to be in user space */
-    char mvsparm[] = { 0, 8, 'H', 'i', ' ', 'T', 'h', 'e', 'r', 'e' };
-    char *pptrs[1];
-    PSA *psa = 0;
-    DCB *dcb;
 
+int main(int argc, char **argv)
+{
+    static PDOS pdos;
+    int ret;
+    
+    pdosDefaults(&pdos);
+    pdosInit(&pdos);
+    ret = pdosRun(&pdos);
+    pdosTerm(&pdos);
+    return (ret);
+}
+
+
+/* pdosRun - the heart of PDOS */
+
+int pdosRun(PDOS *pdos)
+{   
+    int intrupt;
+
+    while (!pdos->shutdown)
+    {
+        intrupt = pdosDispatchUntilInterrupt(pdos);
+        if (intrupt == INTERRUPT_SVC)
+        {
+            pdosProcessSVC(pdos);
+        }
+    }
+
+    return (pdos->exitcode);
+}
+
+
+/* initialize any once-off variables */
+/* cannot fail */
+
+void pdosDefaults(PDOS *pdos)
+{
+    pdos->psa = 0;
+    return;
+}
+
+
+/* initialize PDOS */
+/* zero return = error */
+
+int pdosInit(PDOS *pdos)
+{
     /* thankfully we are running under an emulator, so have access
        to printf debugging (to the Hercules console via DIAG8),
        and Hercules logging */
     printf("Welcome to PDOS!!!\n");
 
+    pdos->ipldev = initsys();
+    printf("IPL device is %x\n", pdos->ipldev);
+    pdos->shutdown = 0;
+    pdosLoadPcomm(pdos);
+    return (1);
+}
+
+
+/* pdosTerm - any cleanup routines required */
+
+void pdosTerm(PDOS *pdos)
+{
+    return;
+}
+
+
+static int pdosDispatchUntilInterrupt(PDOS *pdos)
+{
+    int ret;
+
+    while (1)
+    {
+        ret = adisp(&pdos->context);  /* dispatch */
+        
+        if (ret == 0) break;
+
+        /* non-zero returns are requests for services */
+        /* these "DLLs" don't belong in the operating system proper,
+           but for now, we'll action them here. Ideally we want to
+           get rid of that while loop, and run the DLL as normal
+           user code. But first I need to know what SVC we should
+           use when OS services are really required. It's OK to
+           keep the code here, but it needs to execute in user space */
+        if (ret == 2)
+        {
+            /* need to fix bug in PDPCLIB - long lines should be truncated */
+            printf("%.80s\n", pdos->context.regs[4]); /* wrong!!! */
+            pdos->context.psw2 &= 0xffffff; 
+                /* move this to assembler with STCM/MVI */
+        }
+    }
+    return (INTERRUPT_SVC); /* only doing SVCs at the moment */
+}
+
+
+#define PDOS_STORSTART 0x600000 /* where free storage starts */
+#define PDOS_STORINC   0x080000 /* storage increment */
+
+static void pdosProcessSVC(PDOS *pdos)
+{
+    int svc;
+    static DCB *dcb = NULL; /* need to eliminate this state info */
+    static int getmain = PDOS_STORSTART;
+       /* should move to PDOS and use memmgr - but virtual memory
+          will obsolete anyway */
+
+    svc = pdos->psa->svc_code & 0xffff;
+#if 1
+    printf("SVC code is %d\n", svc);
+#endif
+    if (svc == 3)
+    {
+        /* normally the OS would not exit on program end */
+        printf("return from PCOMM is %d\n", pdos->context.regs[15]);
+        pdos->shutdown = 1;
+        pdos->exitcode = pdos->context.regs[15];
+    }
+    else if ((svc == 120) || (svc == 10))
+    {
+        /* if really getmain */
+        if ((svc == 10) || (pdos->context.regs[1] == 0))
+        {
+            pdos->context.regs[1] = getmain;
+            pdos->context.regs[15] = 0;
+            getmain += PDOS_STORINC;
+        }
+        /* pdos->context.regs[1] = 0x4100000; */
+    }
+    else if (svc == 24) /* devtype */
+    {
+        /* hardcoded constants obtained from running MVS 3.8j system */
+        memcpy((void *)pdos->context.regs[0], 
+               "\x30\x50\x20\x0B\x00\x00\xF6\xC0",
+               8);
+        pdos->context.regs[15] = 0;
+    }
+    else if (svc == 64) /* rdjfcb */
+    {
+        int oneexit;
+
+        dcb = (DCB *)pdos->context.regs[10]; 
+            /* need to protect against this */
+            /* and it's totally wrong anyway */
+        dcb->u1.dcbput = (int)dput;
+        dcb->dcbcheck = (int)dcheck;
+        dcb->u2.dcbrecfm |= DCBRECF;
+        dcb->dcblrecl = 80;
+        dcb->dcbblksi = 80;
+        oneexit = dcb->u2.dcbexlsa & 0xffffff;
+        if (oneexit != 0)
+        {
+            oneexit = *(int *)oneexit & 0xffffff;
+            if (oneexit != 0)
+            {
+                dexit(oneexit, dcb);
+            }
+        }
+        pdos->context.regs[15] = 0;
+    }
+    else if (svc == 22) /* open */
+    {
+        dcb->u1.dcboflgs |= DCBOFOPN;
+        pdos->context.regs[15] = 0; /* is this required? */
+    }
+    return;
+}
+
+
+#define PCOMM_LOAD 0x400000
+#define PCOMM_ENTRY 0x400008
+#define PCOMM_HEAP 0x500000
+#define PSW_ENABLE_INT 0x000c0000 /* actually disable interrupts for now */
+
+/* load the PCOMM executable. Note that this should
+   eventually be changed to call a more generic
+   loadExe() routine */
+
+static int pdosLoadPcomm(PDOS *pdos)
+{
+    char *load = (char *)PCOMM_LOAD;
+    /* Standard C programs can start at a predictable offset */
+    int (*entry)(void *) = (int (*)(void *))PCOMM_ENTRY;
+    int i;
+    int j;
+    static struct { int dum;
+                    int len;
+                    char *heap; } pblock = 
+        { 0,
+          sizeof(char *),
+          (char *)PCOMM_HEAP };
+    static int savearea[20]; /* needs to be in user space */
+    static char mvsparm[] = { 0, 8, 'H', 'i', ' ', 'T', 'h', 'e', 'r', 'e' };
+    static char *pptrs[1];
+
     printf("PCOMM should reside on cylinder 2, head 0 of IPL device\n");
-    dev = initsys();
-    printf("IPL device is %x\n", dev);
-    load = start;
     for (i = 0; i < 10; i++)
     {
         for (j = 1; j < 4; j++)
@@ -279,106 +474,21 @@ int main(int argc, char **argv)
 #if 0
             printf("loading to %p from 2, %d, %d\n", load, i, j);
 #endif
-            rdblock(dev, 2, i, j, load, CHUNKSZ);
+            rdblock(pdos->ipldev, 2, i, j, load, CHUNKSZ);
             load += CHUNKSZ;
         }
     }
-    memset(&context, 0x00, sizeof context);
-    context.regs[1] = (int)&pblock;
-    context.regs[13] = (int)savearea;
-    context.regs[14] = (int)gotret;
-    context.regs[15] = (int)entry;
-    context.psw1 = 0x000c0000; /* need to enable interrupts */
-    context.psw2 = (int)entry; /* 24-bit mode for now */
+    memset(&pdos->context, 0x00, sizeof pdos->context);
+    pdos->context.regs[1] = (int)&pblock;
+    pdos->context.regs[13] = (int)savearea;
+    pdos->context.regs[14] = (int)gotret;
+    pdos->context.regs[15] = (int)entry;
+    pdos->context.psw1 = PSW_ENABLE_INT; /* need to enable interrupts */
+    pdos->context.psw2 = (int)entry; /* 24-bit mode for now */
 
     pptrs[0] = mvsparm;
     
-    context.regs[1] = (int)pptrs;
+    pdos->context.regs[1] = (int)pptrs;
     
-    for (;;) /* i = 0; i < 80; i++) */
-    {
-        int svc;
-        static int getmain = 0x600000;
-        
-        ret = adisp(&context);  /* dispatch */
-        svc = psa->svc_code & 0xffff;
-        if (ret == 0) printf("SVC code is %d\n", svc);
-        if (ret == 2)
-        {
-            /* need to fix bug in PDPCLIB - long lines should be truncated */
-            printf("%.80s\n", context.regs[4]); /* wrong!!! */
-            context.psw2 &= 0xffffff; /* move this to assembler with STCM/MVI */
-        }
-        else if (svc == 3)
-        {
-            /* normally the OS would not exit on program end */
-            printf("return from PCOMM is %d\n", context.regs[15]);
-            break;
-        }
-        else if ((svc == 120) || (svc == 10))
-        {
-            if ((svc == 10) || (context.regs[1] == 0)) /* if really getmain */
-            {
-                context.regs[1] = getmain;
-                context.regs[15] = 0;
-                getmain += 0x080000;
-            }
-            /* context.regs[1] = 0x4100000; */
-        }
-        else if (svc == 24) /* devtype */
-        {
-            /* hardcoded constants obtained from running MVS 3.8j system */
-            memcpy((void *)context.regs[0], 
-                   "\x30\x50\x20\x0B\x00\x00\xF6\xC0",
-                   8);
-            context.regs[15] = 0;
-        }
-        else if (svc == 64) /* rdjfcb */
-        {
-            int oneexit;
-
-            dcb = (DCB *)context.regs[10]; 
-                /* need to protect against this */
-                /* and it's totally wrong anyway */
-            dcb->u1.dcbput = (int)dput;
-            dcb->dcbcheck = (int)dcheck;
-            dcb->u2.dcbrecfm |= DCBRECF;
-            dcb->dcblrecl = 80;
-            dcb->dcbblksi = 80;
-            oneexit = dcb->u2.dcbexlsa & 0xffffff;
-            if (oneexit != 0)
-            {
-                oneexit = *(int *)oneexit & 0xffffff;
-                if (oneexit != 0)
-                {
-                    dexit(oneexit, dcb);
-                }
-            }
-            context.regs[15] = 0;
-        }
-        else if (svc == 22) /* open */
-        {
-            dcb->u1.dcboflgs |= DCBOFOPN;
-            context.regs[15] = 0; /* is this required? */
-        }
-    }
-
-#if 0
-    printf("about to dispatch\n");
-    ret = adisp(&context);  /* dispatch */
-    printf("returned from dispatch with %d\n", ret);
-    /*ret = entry(&pblock);*/
-    printf("return from PCOMM is %d\n", ret);
-    printf("SVC code is %d\n", psa->svc_code & 0xffff);
-    printf("R15 is %x\n", context.regs[15]);
-#endif
-
-#if 0
-    printf("about to read first block of PCOMM\n");
-    rdblock(dev, 1, 0, 1, buf, sizeof buf);
-    printf("got %x %x %x %x\n", buf[0], buf[1], buf[2], buf[3]);
-    printf("and %x %x %x %x\n", buf[4], buf[5], buf[6], buf[7]);
-#endif
-
-    return (0); /* In future, there may be an option to exit the OS */
+    return (1);
 }

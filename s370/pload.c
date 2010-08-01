@@ -54,12 +54,10 @@ int main(int argc, char **argv)
     {
         for (j = 1; j < 4; j++)
         {
-            printf("loading to %p from 1, %d, %d\n", load, i, j);
-            rdblock(dev, 1, i, j, load, CHUNKSZ);
 #if 0
-            printf("got %x %x %x %x\n", load[0], load[1], load[2], load[3]);
-            printf("and %x %x %x %x\n", load[4], load[5], load[6], load[7]);
-#endif            
+            printf("loading to %p from 1, %d, %d\n", load, i, j);
+#endif
+            rdblock(dev, 1, i, j, load, CHUNKSZ);
             load += CHUNKSZ;
         }
     }

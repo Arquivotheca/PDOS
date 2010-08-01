@@ -169,8 +169,6 @@ ADISP    DS    0H
          USING PSA,R0
 *
          L     R2,0(R1)               Context (registers and PSW)
-*         MVC   FLCGRSAV(64),0(R2)     Registers are first
-         MVC   SVCOPSW(8),64(R2)      Then 8-byte PSW
          STM   R0,R15,FLCCRSAV        Save our OS registers
          LM    R0,R15,FLCGRSAV        Load application registers
          LPSW  SVCOPSW                App returns to old PSW
@@ -178,8 +176,6 @@ ADISP    DS    0H
 ADISPRET DS    0H
          LA    R15,0
 ADISPRT2 DS    0H
-*         MVC   0(64,R2),FLCGRSAV
-         MVC   64(8,R2),SVCOPSW
          RETURN (14,12),RC=(15)
          LTORG
 *

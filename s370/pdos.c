@@ -81,7 +81,9 @@ typedef struct {
 } CONTEXT;
 
 typedef struct {
-    char unused1[136];
+    char unused1[32];
+    unsigned int svcopsw[2];
+    char unused2[96];
     unsigned int svc_code;
     char unused[244];
     int flcgrsav[16];
@@ -354,17 +356,22 @@ static int pdosDispatchUntilInterrupt(PDOS *pdos)
 
     while (1)
     {
-        /* store registers in low memory to be loaded */
+        /* store registers and PSW in low memory to be loaded */
         memcpy(pdos->psa->flcgrsav,
                pdos->context.regs,
                sizeof pdos->context.regs);
-               
+
+        pdos->psa->svcopsw[0] = pdos->context.psw1;
+        pdos->psa->svcopsw[1] = pdos->context.psw2;
+                       
         ret = adisp(&pdos->context);  /* dispatch */
         
-        /* restore registers from low memory */
+        /* restore registers and PSW from low memory */
         memcpy(pdos->context.regs,
                pdos->psa->flcgrsav,               
                sizeof pdos->context.regs);
+        pdos->context.psw1 = pdos->psa->svcopsw[0];
+        pdos->context.psw2 = pdos->psa->svcopsw[1];
         
         if (ret == 0) break;
 

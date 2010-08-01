@@ -17,12 +17,13 @@
 
 int main(int argc, char **argv)
 {
+    int i;
+
     printf("welcome to pcomm\n");
-#if 1
-    /* need to get the DCB open exit working first */
-    printf("lrecl %d, recfm %x, blksize %d\n", stdout->lrecl,
-           stdout->recfm, stdout->blksize);
-#endif
-    printf("what a relief!\n");
+    printf("argc = %d\n" , argc);
+    for (i = 0; i < argc; i++)
+    {
+        printf("arg %d is <%s>\n", i, argv[i]);
+    }
     return (5);
 }

@@ -309,7 +309,7 @@ int main(int argc, char **argv)
         svc = psa->svc_code & 0xffff;
         printf("SVC code (if any) is %d\n", svc);
         /* printf("R15 is %x\n", context.regs[15]); */
-        if (ret == 1)
+        if (svc == 3)
         {
             /* normally the OS would not exit on program end */
             printf("return from PCOMM is %d\n", context.regs[15]);

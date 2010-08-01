@@ -258,7 +258,7 @@ int main(int argc, char **argv)
     void (*fun)(void *);
     CONTEXT context;
     int savearea[20]; /* needs to be in user space */
-    char mvsparm[] = { 0, 4, 'H', 'i', ' ', 'U' };
+    char mvsparm[] = { 0, 8, 'H', 'i', ' ', 'T', 'h', 'e', 'r', 'e' };
     char *pptrs[1];
     PSA *psa = 0;
     DCB *dcb;

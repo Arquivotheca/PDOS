@@ -302,13 +302,9 @@ int main(int argc, char **argv)
         int svc;
         static int getmain = 0x600000;
         
-        printf("about to dispatch\n");
         ret = adisp(&context);  /* dispatch */
-        printf("returned from dispatch with %d\n", ret);
-        /*ret = entry(&pblock);*/
         svc = psa->svc_code & 0xffff;
         printf("SVC code (if any) is %d\n", svc);
-        /* printf("R15 is %x\n", context.regs[15]); */
         if (svc == 3)
         {
             /* normally the OS would not exit on program end */
@@ -317,11 +313,9 @@ int main(int argc, char **argv)
         }
         else if (ret == 2)
         {
-            /* printf("got write request - see R4\n"); */
             /* need to fix bug in PDPCLIB - long lines should be truncated */
             printf("%.80s\n", context.regs[4]); /* wrong!!! */
             context.psw2 &= 0xffffff; /* move this to assembler with STCM/MVI */
-            /* printf("return context is %p\n", context.psw2); */
         }
         else if ((svc == 120) || (svc == 10))
         {
@@ -335,11 +329,11 @@ int main(int argc, char **argv)
         }
         else if (svc == 24) /* devtype */
         {
-            context.regs[15] = 0;
             /* hardcoded constants obtained from running MVS 3.8j system */
             memcpy((void *)context.regs[0], 
                    "\x30\x50\x20\x0B\x00\x00\xF6\xC0",
                    8);
+            context.regs[15] = 0;
         }
         else if (svc == 64) /* rdjfcb */
         {
@@ -348,24 +342,17 @@ int main(int argc, char **argv)
             dcb = (DCB *)context.regs[10]; 
                 /* need to protect against this */
                 /* and it's totally wrong anyway */
-            printf("dcb is at %p\n", dcb);
             dcb->u1.dcbput = (int)dput;
             dcb->dcbcheck = (int)dcheck;
-            dcb->u2.dcbrecfm |= DCBRECF; /* | DCBRECBR); */
+            dcb->u2.dcbrecfm |= DCBRECF;
             dcb->dcblrecl = 80;
             dcb->dcbblksi = 80;
-            printf("exlsa is %x\n", dcb->u2.dcbexlsa);
-            oneexit = (dcb->u2.dcbexlsa /* + sizeof(int) */ ) & 0xffffff;
+            oneexit = dcb->u2.dcbexlsa & 0xffffff;
             if (oneexit != 0)
             {
-                printf("now is %x\n", oneexit);
-                /* oneexit = oneexit + sizeof(int) */;
-                oneexit = *(int *)(oneexit /* + sizeof(int) */) & 0xffffff;
-                printf("and now %x\n", oneexit);
+                oneexit = *(int *)oneexit & 0xffffff;
                 if (oneexit != 0)
                 {
-                    printf("calling dexit with dcb %p, recfm p %p, recfm %x\n",
-                           dcb, &dcb->u2.dcbrecfm, dcb->u2.dcbrecfm);
                     dexit(oneexit, dcb);
                 }
             }
@@ -373,7 +360,6 @@ int main(int argc, char **argv)
         }
         else if (svc == 22) /* open */
         {
-            printf("flags are at %p\n", &dcb->u1.dcboflgs);
             dcb->u1.dcboflgs |= DCBOFOPN;
             context.regs[15] = 0; /* is this required? */
         }

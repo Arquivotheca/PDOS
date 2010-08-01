@@ -83,6 +83,8 @@ typedef struct {
 typedef struct {
     char unused1[136];
     unsigned int svc_code;
+    char unused[244];
+    int flcgrsav[16];
 } PSA;
 
 typedef struct {
@@ -352,7 +354,17 @@ static int pdosDispatchUntilInterrupt(PDOS *pdos)
 
     while (1)
     {
+        /* store registers in low memory to be loaded */
+        memcpy(pdos->psa->flcgrsav,
+               pdos->context.regs,
+               sizeof pdos->context.regs);
+               
         ret = adisp(&pdos->context);  /* dispatch */
+        
+        /* restore registers from low memory */
+        memcpy(pdos->context.regs,
+               pdos->psa->flcgrsav,               
+               sizeof pdos->context.regs);
         
         if (ret == 0) break;
 

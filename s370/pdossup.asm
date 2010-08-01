@@ -1,4 +1,4 @@
-PLOADSUP TITLE 'P D O S S U P  ***  SUPPORT ROUTINE FOR PDOS'
+PDOSSUP TITLE 'P D O S S U P  ***  SUPPORT ROUTINE FOR PDOS'
 ***********************************************************************
 *                                                                     *
 *  THIS PROGRAM WRITTEN BY PAUL EDWARDS.                              *

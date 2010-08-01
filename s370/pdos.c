@@ -134,8 +134,8 @@ static PDOS pdos;
 
 
 void gotret(void);
-int adisp(CONTEXT *context);
-void dput(void);
+int adisp(void);
+void dwrite(void);
 void dcheck(void);
 void dexit(int oneexit, DCB *dcb);
 
@@ -364,7 +364,7 @@ static int pdosDispatchUntilInterrupt(PDOS *pdos)
         pdos->psa->svcopsw[0] = pdos->context.psw1;
         pdos->psa->svcopsw[1] = pdos->context.psw2;
                        
-        ret = adisp(&pdos->context);  /* dispatch */
+        ret = adisp();  /* dispatch */
         
         /* restore registers and PSW from low memory */
         memcpy(pdos->context.regs,
@@ -441,7 +441,7 @@ static void pdosProcessSVC(PDOS *pdos)
         dcb = (DCB *)pdos->context.regs[10]; 
             /* need to protect against this */
             /* and it's totally wrong anyway */
-        dcb->u1.dcbput = (int)dput;
+        dcb->u1.dcbput = (int)dwrite;
         dcb->dcbcheck = (int)dcheck;
         dcb->u2.dcbrecfm |= DCBRECF;
         dcb->dcblrecl = 80;

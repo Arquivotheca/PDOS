@@ -168,7 +168,6 @@ ADISP    DS    0H
          USING ADISP,R12
          USING PSA,R0
 *
-         L     R2,0(R1)               Context (registers and PSW)
          STM   R0,R15,FLCCRSAV        Save our OS registers
          LM    R0,R15,FLCGRSAV        Load application registers
          LPSW  SVCOPSW                App returns to old PSW
@@ -179,14 +178,32 @@ ADISPRT2 DS    0H
          RETURN (14,12),RC=(15)
          LTORG
 *
-* Got SVC interrupt
+*
+*
+**********************************************************************
+*                                                                    *
+*  GOTSVC - got an SVC interrupt                                     *
+*                                                                    *
+*  Need to go back through the dispatcher, which is waiting for this *
+*                                                                    *
+**********************************************************************
 *
 GOTSVC   DS    0H
          STM   R0,R15,FLCGRSAV        Save application registers
          LM    R0,R15,FLCCRSAV        Load OS registers
          B     ADISPRET
 *
-* Got ordinary return
+*
+*
+**********************************************************************
+*                                                                    *
+*  GOTRET - the application has simply returned with BR R14          *
+*                                                                    *
+*  Need to go back through the dispatcher. The easiest way to do     *
+*  this is simply execute SVC 3, which the dispatcher has special    *
+*  processing for.                                                   *
+*                                                                    *
+**********************************************************************
 *
          ENTRY GOTRET
 GOTRET   DS    0H
@@ -194,14 +211,24 @@ GOTRET   DS    0H
          SVC   3
          DC    H'0'                   PDOS should not return here
 *
-* They have executed the WRITE macro
 *
-         ENTRY DPUT
-DPUT     DS    0H
+*
+**********************************************************************
+*                                                                    *
+*  DWRITE - DCB write routine (for when people do WRITE)             *
+*                                                                    *
+*  for now - go back via the same path as an SVC                     *
+*                                                                    *
+**********************************************************************
+*
+         ENTRY DWRITE
+DWRITE   DS    0H
          STM   R0,R15,FLCGRSAV        Save application registers
          ST    R14,SVCOPSW+4
          MVI   SVCOPSW+4,X'00'
          LM    R0,R15,FLCCRSAV        Load OS registers
+*
+* We need to return to 31-bit mode, which PDOS may be operating in.
          AIF   ('&SYS' EQ 'S370').MOD24D
          CALL  @@SETM31
 .MOD24D  ANOP
@@ -210,7 +237,14 @@ DPUT     DS    0H
          DROP  ,
 *
 *
-* They have executed the CHECK macro
+*
+**********************************************************************
+*                                                                    *
+*  DCHECK - DCB check routine (for when people do CHECK)             *
+*                                                                    *
+*  for now, do nothing, since writes are executed synchronously      *
+*                                                                    *
+**********************************************************************
 *
          ENTRY DCHECK
 DCHECK   DS    0H
@@ -222,6 +256,15 @@ DCHECK   DS    0H
 **********************************************************************
 *                                                                    *
 *  DEXIT - DCB exit                                                  *
+*                                                                    *
+*  This is for when very annoying people have used a DCB exit which  *
+*  needs to be called in the middle of doing an open or RDJFCB       *
+*  (I wonder which one?)                                             *
+*                                                                    *
+*  They are expecting a DCB in R1                                    *
+*                                                                    *
+*  This routine is expecting the address of their exit as the first  *
+*  parameter, and the address of the DCB as the second.              *
 *                                                                    *
 **********************************************************************
          ENTRY DEXIT
@@ -241,7 +284,6 @@ DEXIT    DS    0H
 *
          LR    R15,R2
          LR    R1,R3
-*AAA      B     AAA
          BALR  R14,R15
 *
          AIF   ('&SYS' EQ 'S370').MOD24F
@@ -256,6 +298,11 @@ DEXITRET DS    0H
 *
 *
 *
+**********************************************************************
+*                                                                    *
+*  DSECTS                                                            *
+*                                                                    *
+**********************************************************************
          CVT   DSECT=YES
          IKJTCB
          IEZJSCB

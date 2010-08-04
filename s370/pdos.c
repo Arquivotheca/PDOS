@@ -149,137 +149,6 @@ static void pdosProcessSVC(PDOS *pdos);
 static int pdosLoadPcomm(PDOS *pdos);
 
 
-#if 0
-
-/* This is a high-level conceptual version of what PDOS
-   needs to do, but this code is just a big comment. The
-   heart of PDOS is in pdosRun which is called from the
-   real main. */
-
-int main(int argc, char **argv)
-{
-    /* Note that the loader may pass on a parameter of some sort */
-    /* Also under other (test) environments, may have options. */
-
-    /* Note that the bulk of the operating system is set up in
-       this initialization, but this main routing focuses on
-       the heart of the OS - the actual millisecond by millisecond
-       execution, where people (ie programs) are expecting to get
-       some CPU time. */
-    init();
-    
-    task = NULL;
-    
-    /* The OS is not designed to exit */
-    while (1)
-    {
-        /* all this will be done with interrupts disabled,
-           and in supervisor status. This function will take
-           into account the last executing task, to decide
-           which task to schedule next. As part of that, it
-           will also mark the last task as "no longer executing" */
-        task  = getNextAvailTask();
-        if (task == NULL)
-        {
-            /* suspend the computer until an interrupt occurs */
-            intrupt = goWaitState();
-            if (intrupt == INTERRUPT_TIMER)
-            {
-                /* may eventually do some housekeeping in this
-                   idle time */
-            }
-            else if (intrupt == INTERRUPT_IO)
-            {
-                processIO();
-            }
-            /* we're not expecting any other interrupts. If we get
-               any, put it in the too-hard basket! */
-            
-            continue; /* go back and check for a task */
-        }
-        
-        /* we have a task, and now it is time to run it, in user
-           mode (usually) until an interrupt of some sort occurs */
-        sliceOver = 0;
-        while (!sliceOver)
-        {
-            sliceOver = 1; /* most interrupts will cause this timeslice
-                              to end, so set that expectation by
-                              default. */
-        
-            /* run the user's code (stock-standard general instructions,
-               e.g. LA, LR, AR) until some interrupt occurs where the 
-               OS gets involved. On return from this function, interrupts
-               will be redisabled. In addition, the task will be in a
-               saved state, ie all registers saved. The handling of
-               the interrupt may alter the state of the task, to make
-               it e.g. shift to an SVC routine. */
-               
-            intrupt = dispatch_until_interrupt();
-            if (intrupt == INTERRUPT_TIMER)
-            {
-                /* this will check how long the program has been
-                   running for, and if the limit has been reached,
-                   the context will be switched to an abend routine,
-                   which will be dispatched at this task's next
-                   timeslice. */
-                checkElapsedTime();
-            }
-        
-            else if (intrupt == INTERRUPT_ILLEGAL)
-            {
-                /* This is called if the user program has executed
-                   an invalid instruction, or accessed memory that
-                   doesn't belong to it, etc */
-                /* this function will switch the context to an abend
-                   handler to do the dump, timesliced. */
-                /* If the task has abended, the equivalent of a
-                   branch to user-space code is done, to perform
-                   the cleanup, as this is an expensive operation,
-                   so should be timesliced. */
-                processIllegal();
-            }
-        
-            else if (intrupt == INTERRUPT_SVC)
-            {
-                /* This function switches context to an SVC handler,
-                   but it won't actually execute it until this task's
-                   next timeslice, to avoid someone doing excessive
-                   SVCs that hog the CPU. It will execute in
-                   supervisor status when eventually dispatched though. */
-                /* We can add in some smarts later to allow someone
-                   to do lots of quick SVCs, so long as it fits into
-                   their normal timeslice, instead of being constrained
-                   to one per timeslice. But for now, avoid the
-                   complication of having an interruptable SVC that
-                   could be long-running. */
-                startSVC();
-            }
-        
-            else if (intrupt == INTERRUPT_IO)
-            {
-                /* This running app shouldn't have to pay the price
-                   for someone else's I/O completing. */
-                
-                saveTimer();
-                
-                processIO();
-                
-                /* If the timeslice has less than 10% remaining, it
-                   isn't worth dispatching again. Otherwise, set
-                   this slice to be run again. */
-                if (resetTimer())
-                {
-                    sliceOver = 0;
-                }
-            }
-        }
-    }
-    return (0); /* the OS may exit at some point */
-}
-#endif
-
-
 int main(int argc, char **argv)
 {
     static PDOS pdos;
@@ -422,7 +291,16 @@ static void pdosProcessSVC(PDOS *pdos)
         {
             pdos->context.regs[1] = getmain;
             pdos->context.regs[15] = 0;
-            getmain += PDOS_STORINC;
+            if (pdos->context.regs[0] < 16000000L)
+            {
+                /* just allocate storage consecutively for now */
+                getmain += pdos->context.regs[0];
+            }
+            else
+            {
+                /* trim down excessive getmains for now */
+                getmain += PDOS_STORINC;
+            }
         }
         /* pdos->context.regs[1] = 0x4100000; */
     }
@@ -518,3 +396,307 @@ static int pdosLoadPcomm(PDOS *pdos)
     
     return (1);
 }
+
+
+
+#if 0
+
+/* This is a high-level conceptual version of what PDOS
+   needs to do, but this code is just a big comment. The
+   heart of PDOS is in pdosRun which is called from the
+   real main. */
+
+int main(int argc, char **argv)
+{
+    /* Note that the loader may pass on a parameter of some sort */
+    /* Also under other (test) environments, may have options. */
+
+    /* Note that the bulk of the operating system is set up in
+       this initialization, but this main routing focuses on
+       the heart of the OS - the actual millisecond by millisecond
+       execution, where people (ie programs) are expecting to get
+       some CPU time. */
+    init();
+    
+    task = NULL;
+    
+    /* The OS is not designed to exit */
+    while (1)
+    {
+        /* all this will be done with interrupts disabled,
+           and in supervisor status. This function will take
+           into account the last executing task, to decide
+           which task to schedule next. As part of that, it
+           will also mark the last task as "no longer executing" */
+        task  = getNextAvailTask();
+        if (task == NULL)
+        {
+            /* suspend the computer until an interrupt occurs */
+            intrupt = goWaitState();
+            if (intrupt == INTERRUPT_TIMER)
+            {
+                /* may eventually do some housekeeping in this
+                   idle time */
+            }
+            else if (intrupt == INTERRUPT_IO)
+            {
+                processIO();
+            }
+            /* we're not expecting any other interrupts. If we get
+               any, put it in the too-hard basket! */
+            
+            continue; /* go back and check for a task */
+        }
+        
+        /* we have a task, and now it is time to run it, in user
+           mode (usually) until an interrupt of some sort occurs */
+        sliceOver = 0;
+        while (!sliceOver)
+        {
+            sliceOver = 1; /* most interrupts will cause this timeslice
+                              to end, so set that expectation by
+                              default. */
+        
+            /* run the user's code (stock-standard general instructions,
+               e.g. LA, LR, AR) until some interrupt occurs where the 
+               OS gets involved. On return from this function, interrupts
+               will be redisabled. In addition, the task will be in a
+               saved state, ie all registers saved. The handling of
+               the interrupt may alter the state of the task, to make
+               it e.g. shift to an SVC routine. */
+               
+            intrupt = dispatch_until_interrupt();
+            if (intrupt == INTERRUPT_TIMER)
+            {
+                /* this will check how long the program has been
+                   running for, and if the limit has been reached,
+                   the context will be switched to an abend routine,
+                   which will be dispatched at this task's next
+                   timeslice. */
+                checkElapsedTime();
+            }
+        
+            else if (intrupt == INTERRUPT_ILLEGAL)
+            {
+                /* This is called if the user program has executed
+                   an invalid instruction, or accessed memory that
+                   doesn't belong to it, etc */
+                /* this function will switch the context to an abend
+                   handler to do the dump, timesliced. */
+                /* If the task has abended, the equivalent of a
+                   branch to user-space code is done, to perform
+                   the cleanup, as this is an expensive operation,
+                   so should be timesliced. */
+                processIllegal();
+            }
+        
+            else if (intrupt == INTERRUPT_SVC)
+            {
+                /* This function switches context to an SVC handler,
+                   but it won't actually execute it until this task's
+                   next timeslice, to avoid someone doing excessive
+                   SVCs that hog the CPU. It will execute in
+                   supervisor status when eventually dispatched though. */
+                /* We can add in some smarts later to allow someone
+                   to do lots of quick SVCs, so long as it fits into
+                   their normal timeslice, instead of being constrained
+                   to one per timeslice. But for now, avoid the
+                   complication of having an interruptable SVC that
+                   could be long-running. */
+                startSVC();
+            }
+        
+            else if (intrupt == INTERRUPT_IO)
+            {
+                /* This running app shouldn't have to pay the price
+                   for someone else's I/O completing. */
+                
+                saveTimer();
+                
+                processIO();
+                
+                /* If the timeslice has less than 10% remaining, it
+                   isn't worth dispatching again. Otherwise, set
+                   this slice to be run again. */
+                if (resetTimer())
+                {
+                    sliceOver = 0;
+                }
+            }
+        }
+    }
+    return (0); /* the OS may exit at some point */
+}
+#endif
+
+
+#if 0
+
+/*
+Suggestions for a general-purpose OS:
+
+
+1. Real-time - within a general-purpose system, I
+should be able to define a task that will be
+certain to be dispatched as soon as the I/O it is
+waiting on has been completed. But I don't expect
+such tasks to require 100% of the CPU. 10% of the
+CPU seems more reasonable. If anyone has complaints
+about that, they should buy a bigger CPU. But within
+that 10% powerful CPU, I do expect immediate dispatch
+of real-time tasks, as soon as the device they are
+waiting on is complete. So a link from the I/O
+interrupt handler to real time tasks associated with
+that I/O device.
+
+
+2. If I am an end user, doing light activity, I
+expect near-immediate responses, like 0.1 seconds.
+ie my light activity is high priority by default.
+So the time to dispatch for a new task should be
+low. I guess that means the terminal controller.
+But since there will be users abusing that, by
+running ind$file, when those repeat (ab)users are
+detected, they are put on a "slow dispatch queue",
+and treated like batch jobs (infrequently
+dispatched - but they can be dispatched for longer
+periods of time when they do get dispatched).
+
+But the principle is to find out where the humans
+are, and ensure that so long as they are just
+editting a file in fullscreen mode, that the
+light CPU activity of reading a block from disk
+and forming it into a 3270 screen, is done within
+0.1 seconds, from the time they hit enter after
+spending 5 seconds to find the "e" on their
+keyboard.
+
+I'll assume the general case where there's no
+deliberate Denial of Service attack, or users on
+a production system risking their jobs by
+deliberately running software masquerading as
+light users.
+
+So it's not real-time (as in a device needs a
+response within 0.01 seconds, otherwise the
+nuclear plant goes into Two Mile Island mode).
+But it is human-time, as in failure to respond
+as quickly as a monkey can put his finger on
+and off the PF8 button, means you're making a
+C programmer cranky, especially when you know
+that after doing this 10 times, he's going to
+spend the next 10 minutes doing nothing that
+the computer sees, so he's hardly the anti-social 
+prick he's made out to be.
+
+The same goes for CICS users. I don't see why
+CICS is required. Why can't the OS do what CICS
+does? Once again, after displaying the results
+of a balance inquiry, a monkey needs to move
+their jawbone to say "have a nice day", so in
+the brief period of time that they are actually
+requesting services, response should be fast.
+
+
+3. People running a long-running batch job don't
+need frequent dispatching if the overhead of
+dispatching is going to be great. So infrequent
+dispatching, but within that, prioritize I/O-bound
+tasks up to the point that they're getting the
+same amount of CPU as their CPU-bound cousins.
+
+
+So, a strategy for real-time, a strategy for humans
+and a strategy for batch.
+
+As each I/O interrupt comes in, it should (a
+priori) be associated with one of those things,
+which will determine what to do next.
+
+
+In the general case of a mixed workload, and
+trying to minimize the overhead of gratuitous
+task switching, we need the following:
+
+A linked list of currently dispatchable tasks.
+Taking the general case of them all being
+CPU-bound, and with the say 2 real-time tasks 
+only taking 10% of the CPU, and the other (say
+40) dispatchable human tasks taking 80%, and 
+the (say 20) batch jobs taking 10%, then in
+0.1 seconds we would want to see the 0.1 seconds
+divided up amongst the 2 real-time, 40 human, 
+and say 1 batch job (meaning the batch jobs are
+only dispatched once every 2 seconds).
+
+So let's say we're on a 100 MIPS CPU.
+
+That means we have 10 million instructions for 
+the next 0.1 seconds.
+
+each real time task will get 50% * 10% * 10 = 0.5 million
+
+each human task will get 1/40 * 80% * 10 = 0.2 million
+
+the one batch job will get 10% * 10 = 1 million instructions.
+
+And it means 43 task switches.
+
+Because these numbers will vary, we want to 
+make the task switching as efficient as possible.
+
+So a single function which scans through the 52
+tasks. Since 9 of the batch jobs aren't meant to
+be dispatched, they instead have countdown timers.
+They've all been seeded with numbers from 1-10,
+and when it gets down to 0, they get dispatched,
+and the countdown is reset to 10.
+
+Any new tasks joining the queue will fit in with
+this schema in an appropriate position, starting
+off as human, downgrading to batch.
+
+That process of downgrading and initial setup will
+be a logically separate task that is nominally
+timesliced itself.
+
+As well as a countdown, they also have a timer
+associated with them. So each realtime task would
+get 0.5 million in its timer. This number would
+vary as appropriate as new tasks are added and
+removed.
+
+So, it's a case of
+
+for each dispatchable task (in an infinite loop) repeat
+  if (counter == 0) or (--counter == 0)
+     set timer to value specified
+     copy registers and PSW into low memory
+     LM
+     LPSW
+     (wait for timer)
+     LM
+     copy registers and PSW back
+  end
+end
+
+Keep it simple and fast. Perhaps eventually written
+in assembler. It may be possible to complicate it a
+bit in order to avoid the movement into low memory.
+ie do the LM directly from the task's context, and
+then load one register from low memory, instead of 16.
+If the total number of dispatchable tasks is under
+say 200, one register, plus the two PSW words, could
+be kept below the 4096 mark.
+
+When an I/O interrupt comes in, and it's a realtime
+task, that is added into the linked list, and
+immediately dispatched for its 0.5 million alloted
+instructions.
+
+Human I/O is added at the end of the queue, to avoid
+possible thrashing.
+
+*/
+#endif
+

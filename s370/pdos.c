@@ -108,6 +108,66 @@ typedef struct {
     short dcblrecl;
 } DCB;
 
+
+/* A S/370 logical address consists of a segment index, which is
+   bits 8-11 (for 1MB index), for the 16 possible values, then
+   a page index, bits 12-19, ie 8 bits, ie 256 entries
+   and then a byte index, bits 20-31, ie 12 bits, ie up to 4095 */
+
+/* S/370XA it is bits 1-11, ie 11 bits, ie 2048 segments,
+   with other values same as S/370. */
+
+
+/* bits 8-9 = 10 (4K pages), bits 11-12 = 10 (1 MB segments) */
+static int cr0 = 0x01200000;
+
+/* bits 0-7 = number of blocks (of 16) segment table entries */
+/* plus there needs to be 1 more block */
+/* bits 8-25, plus 6 binary zeros = 24-bit address of segment table */
+/* for 16 MB, using 1 MB segments, we only need 1 block */
+static int cr1 = 0x01000000; /* need to fill in at runtime */
+
+/* the hardware requires a 4-byte integer */
+typedef int INT4;
+typedef INT4 SEG_ENTRY;
+
+/* bits 0-3 have length, with an amount 1 meaning 1/16 of the maximum
+   size of a page table */
+/* bits 8-28, plus 3 binary zeros = address of page table */
+/* bit 31 needs to be 0 for valid segments (ie last block should be 1) */
+/* so this whole table is only 128 bytes (per address space) */
+/* for S/370XA this changes to bits 1-25 having the page table
+   origin, with 6 binary zeros on the end, giving a 31-bit address.
+   Also bits 28-31 have the length, according to the same length
+   rules as CR1 - ie blocks of 16, giving a maximum of 16*16 = 256
+   page entries, sufficient (256 * 4096) to map the 1 MB segment */
+static SEG_ENTRY segtable[32];
+
+/* the S/370 hardware requires a 2-byte integer */
+/* S/370XA requires 4-byte */
+typedef short INT2;
+typedef INT2 PAGE_ENTRY;
+
+/* bits 0-11, plus 12 binary zeros = real memory address */
+/* bit 12 = 0 for valid pages. All other bits to be 0 */
+/* so array dimensions are 16 = 16 segments */
+/* and with each page entry addressing 4096 bytes, we need
+   1024*1024/4096 = 256 to address the full 1 MB */
+/* this whole table is only 8K (per address space) */
+/* with S/370XA this becomes a 4-byte integer, with bits
+   1-19 containing an address (when you add 12 binary zeros on
+   the end to give a total of 19+12=31 bits) */
+static PAGE_ENTRY pagetable[16][256];
+
+/* address space */
+
+typedef struct {
+    int cr0;
+    int cr1;
+    SEG_ENTRY segtable[32];
+    PAGE_ENTRY pagetable[16][256];
+} ASPACE;
+
 #define DCBOFOPN 0x10
 #define DCBRECU  0xC0
 #define DCBRECF  0x80
@@ -127,7 +187,7 @@ typedef struct {
     PSA *psa;
     int exitcode;
     int shutdown;
-    int ipldev;
+    int ipldev;    
 } PDOS;
 
 static PDOS pdos;
@@ -397,6 +457,13 @@ static int pdosLoadPcomm(PDOS *pdos)
     return (1);
 }
 
+
+/* start an independent process (with its own virtual address space) */
+
+static int pdosStart(PDOS *pdos, char *pgm, char *parm)
+{
+    
+}
 
 
 #if 0

@@ -109,6 +109,9 @@ typedef struct {
 } DCB;
 
 
+#define MAXASIZE 128 /* maximum of 128 MB for address space */
+#define MAXANUM  4   /* maximum of 4 address spaces */
+
 /* A S/370 logical address consists of a segment index, which is
    bits 8-11 (for 1MB index), for the 16 possible values, then
    a page index, bits 12-19, ie 8 bits, ie 256 entries
@@ -119,12 +122,17 @@ typedef struct {
 
 
 /* bits 8-9 = 10 (4K pages), bits 11-12 = 10 (1 MB segments) */
+/* for S/370XA, bit 10 also needs to be 1 */
 static int cr0 = 0x01200000;
 
 /* bits 0-7 = number of blocks (of 16) segment table entries */
 /* plus there needs to be 1 more block */
 /* bits 8-25, plus 6 binary zeros = 24-bit address of segment table */
 /* for 16 MB, using 1 MB segments, we only need 1 block */
+/* note that MVS 3.8j uses 64k segments rather than 1 MB segments,
+   but we don't care about that here */
+/* for S/370XA, it is bits 1-19, plus 12 binary zeros, to give
+   a 31-bit address. Also bits 25-31 have the length as before */
 static int cr1 = 0x01000000; /* need to fill in at runtime */
 
 /* the hardware requires a 4-byte integer */
@@ -132,7 +140,7 @@ typedef int INT4;
 typedef INT4 SEG_ENTRY;
 
 /* bits 0-3 have length, with an amount 1 meaning 1/16 of the maximum
-   size of a page table */
+   size of a page table, so just need to specify 1111 here */
 /* bits 8-28, plus 3 binary zeros = address of page table */
 /* bit 31 needs to be 0 for valid segments (ie last block should be 1) */
 /* so this whole table is only 128 bytes (per address space) */
@@ -140,8 +148,10 @@ typedef INT4 SEG_ENTRY;
    origin, with 6 binary zeros on the end, giving a 31-bit address.
    Also bits 28-31 have the length, according to the same length
    rules as CR1 - ie blocks of 16, giving a maximum of 16*16 = 256
-   page entries, sufficient (256 * 4096) to map the 1 MB segment */
-static SEG_ENTRY segtable[32];
+   page entries, sufficient (256 * 4096) to map the 1 MB segment,
+   so just set to 1111 */
+/* the segment table will thus need 2048 + 16 = approx 8K in size */
+static SEG_ENTRY segtable[MAXASIZE+16];
 
 /* the S/370 hardware requires a 2-byte integer */
 /* S/370XA requires 4-byte */
@@ -157,15 +167,28 @@ typedef INT2 PAGE_ENTRY;
 /* with S/370XA this becomes a 4-byte integer, with bits
    1-19 containing an address (when you add 12 binary zeros on
    the end to give a total of 19+12=31 bits) */
-static PAGE_ENTRY pagetable[16][256];
+/* the page table will thus become 2048 instead of 16, and
+   thus be 2 MB in size. Since this is so large, a #define
+   is required to give a more reasonable maximum address
+   space at compile time (or else run time). */
+/* for example, 4 address spaces, each 128 MB in size, is
+   equal to 256K */
+static PAGE_ENTRY pagetable[MAXASIZE][256];
+
+/* for S/380, we have a mixed/split DAT. CR1 continues normal
+   S/370 behaviour, but if CR13 is non-zero, it uses an XA dat
+   for any storage references above 16 MB. Note that the first
+   16 MB should still be included in the XA storage table, but
+   they will be ignored (unless CR1 is set to 0 - with DAT
+   still on, which switches off 370 completely) */
+static int cr13;
 
 /* address space */
 
 typedef struct {
-    int cr0;
-    int cr1;
-    SEG_ENTRY segtable[32];
-    PAGE_ENTRY pagetable[16][256];
+    int cregs[16];
+    SEG_ENTRY segtable[MAXASIZE+16];
+    PAGE_ENTRY pagetable[MAXASIZE][256];
 } ASPACE;
 
 #define DCBOFOPN 0x10
@@ -187,7 +210,8 @@ typedef struct {
     PSA *psa;
     int exitcode;
     int shutdown;
-    int ipldev;    
+    int ipldev;
+    ASPACE aspaces[MAXANUM];
 } PDOS;
 
 static PDOS pdos;
@@ -458,12 +482,14 @@ static int pdosLoadPcomm(PDOS *pdos)
 }
 
 
+#if 0
 /* start an independent process (with its own virtual address space) */
 
 static int pdosStart(PDOS *pdos, char *pgm, char *parm)
 {
     
 }
+#endif
 
 
 #if 0

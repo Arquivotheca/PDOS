@@ -111,6 +111,7 @@ typedef struct {
 
 #define MAXASIZE 128 /* maximum of 128 MB for address space */
 #define MAXANUM  4   /* maximum of 4 address spaces */
+#define MAXPAGE 256 /* maximum number of pages in a segment */
 
 /* A S/370 logical address consists of a segment index, which is
    bits 8-11 (for 1MB index), for the 16 possible values, then
@@ -173,7 +174,7 @@ typedef INT2 PAGE_ENTRY;
    space at compile time (or else run time). */
 /* for example, 4 address spaces, each 128 MB in size, is
    equal to 256K */
-static PAGE_ENTRY pagetable[MAXASIZE][256];
+static PAGE_ENTRY pagetable[MAXASIZE][MAXPAGE];
 
 /* for S/380, we have a mixed/split DAT. CR1 continues normal
    S/370 behaviour, but if CR13 is non-zero, it uses an XA dat
@@ -188,7 +189,7 @@ static int cr13;
 typedef struct {
     int cregs[16];
     SEG_ENTRY segtable[MAXASIZE+16];
-    PAGE_ENTRY pagetable[MAXASIZE][256];
+    PAGE_ENTRY pagetable[MAXASIZE][MAXPAGE];
 } ASPACE;
 
 #define DCBOFOPN 0x10

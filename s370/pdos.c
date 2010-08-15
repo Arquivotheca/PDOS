@@ -70,12 +70,19 @@
 #include <stdlib.h>
 #include <string.h>
 
+
+#define S370_MAXMB 16 /* maximum MB in a virtual address space for S/370 */
+#define NUM_GPR 16 /* number of general purpose registers */
+#define NUM_CR 16 /* number of control registers */
+#define SEG_PADDING 16 /* number of extraneous segments that the
+                          architecture requires */
+
 typedef struct {
     int abend;
 } TASK;
 
 typedef struct {
-    int regs[16];
+    int regs[NUM_GPR];
     unsigned int psw1;
     unsigned int psw2;
 } CONTEXT;
@@ -86,7 +93,7 @@ typedef struct {
     char unused2[96];
     unsigned int svc_code;
     char unused[244];
-    int flcgrsav[16];
+    int flcgrsav[NUM_GPR];
 } PSA;
 
 typedef struct {
@@ -136,8 +143,10 @@ static int cr0 = 0x01200000;
    a 31-bit address. Also bits 25-31 have the length as before */
 static int cr1 = 0x01000000; /* need to fill in at runtime */
 
-/* the hardware requires a 4-byte integer */
+typedef unsigned short UINT2;
 typedef unsigned int UINT4;
+
+/* the hardware requires a 4-byte integer */
 typedef UINT4 SEG_ENT370;
 typedef UINT4 SEG_ENTRY;
 
@@ -148,19 +157,17 @@ typedef UINT4 SEG_ENTRY;
 /* so this whole table is only 128 bytes (per address space) */
 /* for S/370XA this changes to bits 1-25 having the page table
    origin, with 6 binary zeros on the end, giving a 31-bit address.
+   Bit 26 is in the invalid segment bit.
    Also bits 28-31 have the length, according to the same length
    rules as CR1 - ie blocks of 16, giving a maximum of 16*16 = 256
    page entries, sufficient (256 * 4096) to map the 1 MB segment,
    so just set to 1111 */
 /* the segment table will thus need 2048 + 16 = approx 8K in size */
-static SEG_ENTRY segtable[MAXASIZE+16];
+/* static SEG_ENTRY segtable[MAXASIZE+16]; */
 
 /* the S/370 hardware requires a 2-byte integer */
 /* S/370XA requires 4-byte */
-typedef unsigned short UINT2;
 typedef UINT2 PAGE_ENT370;
-
-typedef unsigned int UINT4
 typedef UINT4 PAGE_ENTRY;
 
 /* bits 0-11, plus 12 binary zeros = real memory address */
@@ -178,7 +185,7 @@ typedef UINT4 PAGE_ENTRY;
    space at compile time (or else run time). */
 /* for example, 4 address spaces, each 128 MB in size, is
    equal to 256K */
-static PAGE_ENTRY pagetable[MAXASIZE][MAXPAGE];
+/* static PAGE_ENTRY pagetable[MAXASIZE][MAXPAGE]; */
 
 /* for S/380, we have a mixed/split DAT. CR1 continues normal
    S/370 behaviour, but if CR13 is non-zero, it uses an XA dat
@@ -186,14 +193,20 @@ static PAGE_ENTRY pagetable[MAXASIZE][MAXPAGE];
    16 MB should still be included in the XA storage table, but
    they will be ignored (unless CR1 is set to 0 - with DAT
    still on, which switches off 370 completely) */
-static int cr13;
+/* static int cr13; */
 
 /* address space */
 
 typedef struct {
-    int cregs[16];
-    SEG_ENTRY segtable[MAXASIZE+16];
+#if defined(S380) || defined(S390)
     PAGE_ENTRY pagetable[MAXASIZE][MAXPAGE];
+    SEG_ENTRY segtable[MAXASIZE+SEG_PADDING];
+#endif
+    int cregs[NUM_CR];
+#if defined(S370) || defined(S380)
+    SEG_ENT370 seg370[S370_MAXMB+1];
+    PAGE_ENT370 page370[S370_MAXMB][MAXPAGE];
+#endif
 } ASPACE;
 
 #define DCBOFOPN 0x10
@@ -211,12 +224,15 @@ TASK *task;
 #define CHUNKSZ 18452
 
 typedef struct {
+    ASPACE aspaces[MAXANUM]; /* needs to be 8-byte aligned because
+         the segment points to a page table, using an address
+         with 3 binary 0s appended. Due to the implied 6 binary 0s
+         in XA segment tables, 64-byte alignment is required */
     CONTEXT context; /* current thread's context */
     PSA *psa;
     int exitcode;
     int shutdown;
     int ipldev;
-    ASPACE aspaces[MAXANUM];
 } PDOS;
 
 static PDOS pdos;
@@ -234,6 +250,7 @@ void pdosDefaults(PDOS *pdos);
 int pdosInit(PDOS *pdos);
 void pdosTerm(PDOS *pdos);
 static int pdosDispatchUntilInterrupt(PDOS *pdos);
+static void pdosInitAspaces(PDOS *pdos);
 static void pdosProcessSVC(PDOS *pdos);
 static int pdosLoadPcomm(PDOS *pdos);
 
@@ -295,6 +312,7 @@ int pdosInit(PDOS *pdos)
     pdos->ipldev = initsys();
     printf("IPL device is %x\n", pdos->ipldev);
     pdos->shutdown = 0;
+    pdosInitAspaces(pdos);
     pdosLoadPcomm(pdos);
     return (1);
 }
@@ -348,6 +366,86 @@ static int pdosDispatchUntilInterrupt(PDOS *pdos)
         }
     }
     return (INTERRUPT_SVC); /* only doing SVCs at the moment */
+}
+
+
+/* we initialize all address spaces upfront, with fixed locations
+   for all segments. The whole approach should be changed though,
+   with address spaces created dynamically and the virtual space
+   not being allocated to real memory until it is actually
+   attempted to be used. */
+
+/* we will eventually map the 4 MB - 9 MB location to various spots
+   under 64 MB real (370 allowed this), giving up to 15 address
+   spaces of 4 MB each. But for now, just map it directy on to
+   the same location (ie all address spaces will clobber each
+   other) */ 
+
+static void pdosInitAspaces(PDOS *pdos)
+{
+    int s;
+    int a;
+    int p;
+
+#if defined(S370) || defined(S380)
+    for (a = 0; a < MAXANUM; a++)
+    {
+        for (s = 0; s < S370_MAXMB; s++)
+        {
+            /* we only store the upper 21 bits of the page
+               table address. therefore, the lower 3 bits
+               will need to be truncated (or in this case,
+               assumed to be 0), and no shifting or masking
+               is required in this case. The assumption of
+               0 means that the page table must be 8-byte aligned */
+            pdos->aspaces[a].seg370[s] = (0xfU << 24)
+                                 | (unsigned int)pdos->aspaces[a].page370[s];
+            for (p = 0; p < MAXPAGE; p++)
+            {
+                /* because the address starts in bit 0, it is
+                   8 bits too far to be a normal 24-bit address,
+                   otherwise we could shift 20 bits to get 1 MB.
+                /* and 12 bits to move the 4K page into position */
+                /* However, since we only have a 16-bit target,
+                   need to subtract 16 bits in the shifting.
+                   But after allowing for the 8 bits, it's only
+                   8 that needs to be subtracted */
+                pdos->aspaces[a].page370[s][p] = 
+                                  (s << (20-8))
+                                  | (p << (12-8));
+            }
+        }
+        pdos->aspaces[a].seg370[s] = 1; /* last block invalid */
+    }
+#endif
+
+#if defined(S380) || defined(S390)
+    for (a = 0; a < MAXANUM; a++)
+    {
+        for (s = 0; s < MAXASIZE; s++)
+        {
+            /* no shifting of page table address is required,
+               but the low order 12 bits must be 0, ie address must
+               be aligned on 64-byte boundary */
+            pdos->aspaces[a].segtable[s] = 0xfU
+                  | (unsigned int)pdos->aspaces[a].pagetable[s];
+            for (p = 0; p < MAXPAGE; p++)
+            {
+                /* because the address begins in bit 1, just like
+                   a 31-bit bit address, we just need to shift
+                   20 bits (1 MB) to get the right address. Plus
+                   add in the page number, by shifting 12 bits
+                   for the 4K multiple */
+                pdos->aspaces[a].pagetable[s][p] = 
+                                  (s << 20)
+                                  | (p << 12);
+            }
+        }
+        pdos->aspaces[a].segtable[s] = (1 << 5); /* last block invalid */
+    }
+#endif
+
+    return;
 }
 
 

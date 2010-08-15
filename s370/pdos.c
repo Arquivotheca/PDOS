@@ -109,7 +109,7 @@ typedef struct {
 } DCB;
 
 
-#define MAXASIZE 128 /* maximum of 128 MB for address space */
+#define MAXASIZE 32 /* maximum of 32 MB for address space */
 #define MAXANUM  4   /* maximum of 4 address spaces */
 #define MAXPAGE 256 /* maximum number of pages in a segment */
 
@@ -137,8 +137,9 @@ static int cr0 = 0x01200000;
 static int cr1 = 0x01000000; /* need to fill in at runtime */
 
 /* the hardware requires a 4-byte integer */
-typedef int INT4;
-typedef INT4 SEG_ENTRY;
+typedef unsigned int UINT4;
+typedef UINT4 SEG_ENT370;
+typedef UINT4 SEG_ENTRY;
 
 /* bits 0-3 have length, with an amount 1 meaning 1/16 of the maximum
    size of a page table, so just need to specify 1111 here */
@@ -156,8 +157,11 @@ static SEG_ENTRY segtable[MAXASIZE+16];
 
 /* the S/370 hardware requires a 2-byte integer */
 /* S/370XA requires 4-byte */
-typedef short INT2;
-typedef INT2 PAGE_ENTRY;
+typedef unsigned short UINT2;
+typedef UINT2 PAGE_ENT370;
+
+typedef unsigned int UINT4
+typedef UINT4 PAGE_ENTRY;
 
 /* bits 0-11, plus 12 binary zeros = real memory address */
 /* bit 12 = 0 for valid pages. All other bits to be 0 */

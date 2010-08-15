@@ -172,6 +172,8 @@ typedef UINT4 PAGE_ENTRY;
 
 /* bits 0-11, plus 12 binary zeros = real memory address */
 /* bit 12 = 0 for valid pages. All other bits to be 0 */
+/* unless extended addressing for 370 is in place. Then bits 13
+   and 14 become bits 6 and 7 of a 26-bit address */
 /* so array dimensions are 16 = 16 segments */
 /* and with each page entry addressing 4096 bytes, we need
    1024*1024/4096 = 256 to address the full 1 MB */

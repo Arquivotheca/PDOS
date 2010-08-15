@@ -1,19 +1,19 @@
-gccmvs -DUSE_MEMMGR -S -I . -I ../pdpclib ../pdpclib/start.c
-gccmvs -DUSE_MEMMGR -S -I . -I ../pdpclib ../pdpclib/stdio.c
-gccmvs -DUSE_MEMMGR -S -I . -I ../pdpclib ../pdpclib/stdlib.c
-gccmvs -DUSE_MEMMGR -S -I . -I ../pdpclib ../pdpclib/ctype.c
-gccmvs -DUSE_MEMMGR -S -I . -I ../pdpclib ../pdpclib/string.c
-gccmvs -DUSE_MEMMGR -S -I . -I ../pdpclib ../pdpclib/time.c
-gccmvs -DUSE_MEMMGR -S -I . -I ../pdpclib ../pdpclib/errno.c
-gccmvs -DUSE_MEMMGR -S -I . -I ../pdpclib ../pdpclib/assert.c
-gccmvs -DUSE_MEMMGR -S -I . -I ../pdpclib ../pdpclib/locale.c
-gccmvs -DUSE_MEMMGR -S -I . -I ../pdpclib ../pdpclib/math.c
-gccmvs -DUSE_MEMMGR -S -I . -I ../pdpclib ../pdpclib/setjmp.c
-gccmvs -DUSE_MEMMGR -S -I . -I ../pdpclib ../pdpclib/signal.c
-gccmvs -DUSE_MEMMGR -S -I . -I ../pdpclib ../pdpclib/__memmgr.c
-gccmvs -DUSE_MEMMGR -S -I . -I ../pdpclib pload.c
-gccmvs -DUSE_MEMMGR -S -I . -I ../pdpclib pdos.c
-gccmvs -DUSE_MEMMGR -S -I . -I ../pdpclib pcomm.c
+gccmvs -DUSE_MEMMGR -DS380 -S -I . -I ../pdpclib ../pdpclib/start.c
+gccmvs -DUSE_MEMMGR -DS380 -S -I . -I ../pdpclib ../pdpclib/stdio.c
+gccmvs -DUSE_MEMMGR -DS380 -S -I . -I ../pdpclib ../pdpclib/stdlib.c
+gccmvs -DUSE_MEMMGR -DS380 -S -I . -I ../pdpclib ../pdpclib/ctype.c
+gccmvs -DUSE_MEMMGR -DS380 -S -I . -I ../pdpclib ../pdpclib/string.c
+gccmvs -DUSE_MEMMGR -DS380 -S -I . -I ../pdpclib ../pdpclib/time.c
+gccmvs -DUSE_MEMMGR -DS380 -S -I . -I ../pdpclib ../pdpclib/errno.c
+gccmvs -DUSE_MEMMGR -DS380 -S -I . -I ../pdpclib ../pdpclib/assert.c
+gccmvs -DUSE_MEMMGR -DS380 -S -I . -I ../pdpclib ../pdpclib/locale.c
+gccmvs -DUSE_MEMMGR -DS380 -S -I . -I ../pdpclib ../pdpclib/math.c
+gccmvs -DUSE_MEMMGR -DS380 -S -I . -I ../pdpclib ../pdpclib/setjmp.c
+gccmvs -DUSE_MEMMGR -DS380 -S -I . -I ../pdpclib ../pdpclib/signal.c
+gccmvs -DUSE_MEMMGR -DS380 -S -I . -I ../pdpclib ../pdpclib/__memmgr.c
+gccmvs -DUSE_MEMMGR -DS380 -S -I . -I ../pdpclib pload.c
+gccmvs -DUSE_MEMMGR -DS380 -S -I . -I ../pdpclib pdos.c
+gccmvs -DUSE_MEMMGR -DS380 -S -I . -I ../pdpclib pcomm.c
 
 m4 -I . -I ../pdpclib pload.m4 >pload.jcl
 call runmvs pload.jcl output.txt none pload.zip

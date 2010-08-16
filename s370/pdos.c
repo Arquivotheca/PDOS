@@ -339,6 +339,10 @@ int pdosInit(PDOS *pdos)
     lcreg0(cr0);
     pdos->shutdown = 0;
     pdosInitAspaces(pdos);
+    lcreg1(pdos->aspaces[0].cr1);
+#if defined(S380)
+    lcreg13(pdos->aspaces[0].cr13);
+#endif
     pdosLoadPcomm(pdos);
     return (1);
 }

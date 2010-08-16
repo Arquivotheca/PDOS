@@ -33,17 +33,20 @@ static char buf[40000];
 
 #define CHUNKSZ 18452
 
+#define PDOS_CODE 0x200000
+#define PDOS_HEAP 0x300000
+
 int main(int argc, char **argv)
 {
     int dev;
     char *load;
-    char *start = (char *)0x200000;
+    char *start = (char *)PDOS_CODE;
     void (*entry)(void *) = (void (*)(void *))0x200800;
     int i;
     int j;
     struct { int dum;
              int len;
-             char *heap; } pblock = { 0, 4, (char *)0x300000 };
+             char *heap; } pblock = { 0, 4, (char *)PDOS_HEAP };
     void (*fun)(void *);
 
     printf("PDOS should reside on cylinder 1, head 0 of IPL device\n");

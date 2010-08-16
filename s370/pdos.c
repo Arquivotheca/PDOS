@@ -428,7 +428,7 @@ static void pdosInitAspaces(PDOS *pdos)
                assumed to be 0), and no shifting or masking
                is required in this case. The assumption of
                0 means that the page table must be 8-byte aligned */
-            pdos->aspaces[a].seg370[s] = (0xfU << 24)
+            pdos->aspaces[a].seg370[s] = (0xfU << 28)
                                  | (unsigned int)pdos->aspaces[a].page370[s];
             for (p = 0; p < MAXPAGE; p++)
             {

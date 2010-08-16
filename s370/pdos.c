@@ -145,7 +145,12 @@ typedef struct {
 
 /* bits 8-9 = 10 (4K pages), bits 11-12 = 10 (1 MB segments) */
 /* for S/370XA, bit 10 also needs to be 1 */
-static int cr0 = 0x01200000;
+#if defined(S390)
+static int cr0 = 0x00B00000;
+#else
+static int cr0 = 0x00900000;
+#endif
+
 
 /* bits 0-7 = number of blocks (of 16) segment table entries */
 /* plus there needs to be 1 more block */
@@ -331,6 +336,7 @@ int pdosInit(PDOS *pdos)
 
     pdos->ipldev = initsys();
     printf("IPL device is %x\n", pdos->ipldev);
+    lcreg0(cr0);
     pdos->shutdown = 0;
     pdosInitAspaces(pdos);
     pdosLoadPcomm(pdos);

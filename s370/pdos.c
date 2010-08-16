@@ -80,12 +80,20 @@
 
 #define PDOS_STORSTART (PCOMM_HEAP + 0x100000) 
                        /* where free storage for apps starts - 7 MB*/
-#define PDOS_STORINC   0x080000 /* storage increment */
-#define PDOS_DATA (0x400000 - 0x100000) /* where the PDOS structure starts */
+#define PDOS_STORINC 0x080000 /* storage increment */
+#define PDOS_DATA 0x400000  /* where the PDOS structure starts */
 
 #define PCOMM_LOAD (PDOS_DATA + 0x100000) /* 5 MB */
 #define PCOMM_ENTRY (PCOMM_LOAD + 8)
 #define PCOMM_HEAP (PCOMM_LOAD + 0x100000) /* 6 MB */
+
+#define MAXASIZE 80 /* maximum of 80 MB for address space */
+                    /* note that this needs to be a multiple of 16
+                       in order for the current logic (MAXASIZE/SEG_BLK)
+                       to work */
+#define MAXANUM  4   /* maximum of 4 address spaces */
+#define MAXPAGE 256 /* maximum number of pages in a segment */
+
 
 typedef struct {
     int abend;
@@ -125,13 +133,6 @@ typedef struct {
     short dcblrecl;
 } DCB;
 
-
-#define MAXASIZE 32 /* maximum of 32 MB for address space */
-                    /* note that this needs to be a multiple of 16
-                       in order for the current logic (MAXASIZE/SEG_BLK)
-                       to work */
-#define MAXANUM  4   /* maximum of 4 address spaces */
-#define MAXPAGE 256 /* maximum number of pages in a segment */
 
 /* A S/370 logical address consists of a segment index, which is
    bits 8-11 (for 1MB index), for the 16 possible values, then
@@ -253,7 +254,7 @@ typedef struct {
     int ipldev;
 } PDOS;
 
-static PDOS pdos;
+/*static PDOS pdos;*/
 
 
 void gotret(void);
@@ -275,14 +276,15 @@ static int pdosLoadPcomm(PDOS *pdos);
 
 int main(int argc, char **argv)
 {
-    static PDOS pdos;
+    PDOS *pdos = (PDOS *)PDOS_DATA;
     int ret = EXIT_FAILURE;
-    
-    pdosDefaults(&pdos);
-    if (pdosInit(&pdos))
+
+    printf("PDOS structure is %d bytes\n", sizeof(PDOS));    
+    pdosDefaults(pdos);
+    if (pdosInit(pdos))
     {
-        ret = pdosRun(&pdos);
-        pdosTerm(&pdos);
+        ret = pdosRun(pdos);
+        pdosTerm(pdos);
     }
     return (ret);
 }

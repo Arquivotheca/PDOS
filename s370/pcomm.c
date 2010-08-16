@@ -25,5 +25,11 @@ int main(int argc, char **argv)
     {
         printf("arg %d is <%s>\n", i, argv[i]);
     }
+    printf("looping for a while\n"); /* about 10 seconds */
+    for (i = 0; i < 20000000; i++)
+    {
+        ;
+    }
+    printf("finished looping\n");
     return (5);
 }

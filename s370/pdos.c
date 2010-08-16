@@ -575,7 +575,7 @@ static void pdosProcessSVC(PDOS *pdos)
 }
 
 
-#define PSW_ENABLE_INT 0x000c0000 /* actually disable interrupts for now */
+#define PSW_ENABLE_INT 0x040C0000 /* actually disable interrupts for now */
 
 /* load the PCOMM executable. Note that this should
    eventually be changed to call a more generic

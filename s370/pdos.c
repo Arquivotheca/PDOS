@@ -94,11 +94,13 @@
 #define MAXANUM  4   /* maximum of 4 address spaces */
 #define MAXPAGE 256 /* maximum number of pages in a segment */
 
-#define SEG_64K 0 /* use 64K segments like MVS 3.8j does */
+#define SEG_64K 1 /* use 64K segments like MVS 3.8j does */
 
 #if SEG_64K
 #undef MAXPAGE
 #define MAXPAGE 16
+#undef MAXASIZE
+#define MAXASIZE 16
 #endif
 
 
@@ -189,7 +191,8 @@ typedef UINT4 SEG_ENTRY;
    origin, with 6 binary zeros on the end, giving a 31-bit address.
    Bit 26 is in the invalid segment bit.
    Also bits 28-31 have the length, according to the same length
-   rules as CR1 - ie blocks of 16, giving a maximum of 16*16 = 256
+   rules as CR1 - ie blocks of 16, with an implied + 1,
+   giving a maximum of 16*16 = 256
    page entries, sufficient (256 * 4096) to map the 1 MB segment,
    so just set to 1111 */
 /* the segment table will thus need 2048 + 16 = approx 8K in size */
@@ -230,10 +233,15 @@ typedef UINT4 PAGE_ENTRY;
 /* address space */
 
 typedef struct {
-#if defined(S380) || defined(S390)
+#if defined(S380) || defined(S390) || SEG_64K
+#if SEG_64K
+    SEG_ENTRY segtable[MAXASIZE*16+SEG_PADDING]; /* needs 4096-byte alignment */
+    PAGE_ENTRY pagetable[MAXASIZE*16][MAXPAGE]; /* needs 64-byte alignment */
+#else
     SEG_ENTRY segtable[MAXASIZE+SEG_PADDING]; /* needs 4096-byte alignment */
       /* segments are in blocks of 64, so will remain 64-byte aligned */
     PAGE_ENTRY pagetable[MAXASIZE][MAXPAGE]; /* needs 64-byte alignment */
+#endif
 #endif
 #if defined(S370) || defined(S380)
     SEG_ENT370 seg370[S370_MAXMB+SEG_PADDING]; /* needs 64-byte alignment */
@@ -428,6 +436,7 @@ static void pdosInitAspaces(PDOS *pdos)
     int a;
     int p;
 
+    /* initialize 370-DAT tables */
 #if (defined(S370) || defined(S380)) && !SEG_64K
     for (a = 0; a < MAXANUM; a++)
     {
@@ -465,6 +474,7 @@ static void pdosInitAspaces(PDOS *pdos)
     }
 #endif
 
+    /* initialize XA-DAT tables */
 #if defined(S380) || defined(S390) || SEG_64K
     for (a = 0; a < MAXANUM; a++)
     {
@@ -477,7 +487,12 @@ static void pdosInitAspaces(PDOS *pdos)
             /* no shifting of page table address is required,
                but the low order 12 bits must be 0, ie address must
                be aligned on 64-byte boundary */
-            pdos->aspaces[a].segtable[s] = 0xfU
+            pdos->aspaces[a].segtable[s] = 
+#if SEG_64K
+                  0x0U
+#else
+                  0xfU
+#endif
                   | (unsigned int)pdos->aspaces[a].pagetable[s];
             for (p = 0; p < MAXPAGE; p++)
             {
@@ -503,7 +518,11 @@ static void pdosInitAspaces(PDOS *pdos)
         pdos->aspaces[a].cr1 = 
 #endif
             /* + 1 because architecture requires 1 extra block of 16 */
+#if SEG_64K
+            (MAXASIZE/SEG_BLK * 16 + 1)
+#else
             (MAXASIZE/SEG_BLK + 1)
+#endif
             | (unsigned int)pdos->aspaces[a].segtable;
             /* note that the CR1 needs to be 4096-byte aligned, to give
                12 low zeros */

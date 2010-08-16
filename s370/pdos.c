@@ -94,6 +94,13 @@
 #define MAXANUM  4   /* maximum of 4 address spaces */
 #define MAXPAGE 256 /* maximum number of pages in a segment */
 
+#define SEG_64K 0 /* use 64K segments like MVS 3.8j does */
+
+#if SEG_64K
+#undef MAXPAGE
+#define MAXPAGE 16
+#endif
+
 
 typedef struct {
     int abend;
@@ -148,7 +155,11 @@ typedef struct {
 #if defined(S390)
 static int cr0 = 0x00B00000;
 #else
-static int cr0 = 0x00900000;
+#if SEG_64K
+static int cr0 = 0x00A00000; /* 64K, S/390 */
+#else
+static int cr0 = 0x00900000; /* 1MB, S/370 */
+#endif
 #endif
 
 
@@ -417,7 +428,7 @@ static void pdosInitAspaces(PDOS *pdos)
     int a;
     int p;
 
-#if defined(S370) || defined(S380)
+#if (defined(S370) || defined(S380)) && !SEG_64K
     for (a = 0; a < MAXANUM; a++)
     {
         for (s = 0; s < S370_MAXMB; s++)
@@ -454,10 +465,14 @@ static void pdosInitAspaces(PDOS *pdos)
     }
 #endif
 
-#if defined(S380) || defined(S390)
+#if defined(S380) || defined(S390) || SEG_64K
     for (a = 0; a < MAXANUM; a++)
     {
+#if SEG_64K
+        for (s = 0; s < (MAXASIZE * 16); s++)
+#else
         for (s = 0; s < MAXASIZE; s++)
+#endif
         {
             /* no shifting of page table address is required,
                but the low order 12 bits must be 0, ie address must
@@ -472,12 +487,16 @@ static void pdosInitAspaces(PDOS *pdos)
                    add in the page number, by shifting 12 bits
                    for the 4K multiple */
                 pdos->aspaces[a].pagetable[s][p] = 
+#if SEG_64K
+                                  (s << 16)
+#else
                                   (s << 20)
+#endif
                                   | (p << 12);
             }
         }
         pdos->aspaces[a].segtable[s] = (1 << 5); /* last block invalid */
-#if defined(S380)
+#if defined(S380) && !SEG_64K
         /* S/380 references XA-DAT memory via CR13, not CR1 */
         pdos->aspaces[a].cr13 =
 #else

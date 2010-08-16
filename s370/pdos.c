@@ -74,8 +74,18 @@
 #define S370_MAXMB 16 /* maximum MB in a virtual address space for S/370 */
 #define NUM_GPR 16 /* number of general purpose registers */
 #define NUM_CR 16 /* number of control registers */
-#define SEG_PADDING 16 /* number of extraneous segments that the
-                          architecture requires */
+#define SEG_BLK 16 /* number of segments in a block */
+#define SEG_PADDING SEG_BLK /* number of extraneous segments that the
+                               architecture requires */
+
+#define PDOS_STORSTART (PCOMM_HEAP + 0x100000) 
+                       /* where free storage for apps starts - 7 MB*/
+#define PDOS_STORINC   0x080000 /* storage increment */
+#define PDOS_DATA (0x400000 - 0x100000) /* where the PDOS structure starts */
+
+#define PCOMM_LOAD (PDOS_DATA + 0x100000) /* 5 MB */
+#define PCOMM_ENTRY (PCOMM_LOAD + 8)
+#define PCOMM_HEAP (PCOMM_LOAD + 0x100000) /* 6 MB */
 
 typedef struct {
     int abend;
@@ -117,6 +127,9 @@ typedef struct {
 
 
 #define MAXASIZE 32 /* maximum of 32 MB for address space */
+                    /* note that this needs to be a multiple of 16
+                       in order for the current logic (MAXASIZE/SEG_BLK)
+                       to work */
 #define MAXANUM  4   /* maximum of 4 address spaces */
 #define MAXPAGE 256 /* maximum number of pages in a segment */
 
@@ -201,14 +214,17 @@ typedef UINT4 PAGE_ENTRY;
 
 typedef struct {
 #if defined(S380) || defined(S390)
-    PAGE_ENTRY pagetable[MAXASIZE][MAXPAGE];
-    SEG_ENTRY segtable[MAXASIZE+SEG_PADDING];
+    SEG_ENTRY segtable[MAXASIZE+SEG_PADDING]; /* needs 4096-byte alignment */
+      /* segments are in blocks of 64, so will remain 64-byte aligned */
+    PAGE_ENTRY pagetable[MAXASIZE][MAXPAGE]; /* needs 64-byte alignment */
 #endif
-    int cregs[NUM_CR];
 #if defined(S370) || defined(S380)
-    SEG_ENT370 seg370[S370_MAXMB+1];
-    PAGE_ENT370 page370[S370_MAXMB][MAXPAGE];
+    SEG_ENT370 seg370[S370_MAXMB+SEG_PADDING]; /* needs 64-byte alignment */
+    PAGE_ENT370 page370[S370_MAXMB][MAXPAGE]; /* needs 8-byte alignment */
 #endif
+    int cregs[NUM_CR]; /* not used for now */
+    int cr1;
+    int cr13;
 } ASPACE;
 
 #define DCBOFOPN 0x10
@@ -418,6 +434,11 @@ static void pdosInitAspaces(PDOS *pdos)
             }
         }
         pdos->aspaces[a].seg370[s] = 1; /* last block invalid */
+        /* 1 + 1 is for 1 block of 16, plus 1 extra */
+        pdos->aspaces[a].cr1 = ((1 + 1) << 24)
+                               | (unsigned int)pdos->aspaces[a].seg370;
+        /* note that the CR1 needs to be 64-byte aligned, to give
+           6 low zeros */
     }
 #endif
 
@@ -444,6 +465,17 @@ static void pdosInitAspaces(PDOS *pdos)
             }
         }
         pdos->aspaces[a].segtable[s] = (1 << 5); /* last block invalid */
+#if defined(S380)
+        /* S/380 references XA-DAT memory via CR13, not CR1 */
+        pdos->aspaces[a].cr13 =
+#else
+        pdos->aspaces[a].cr1 = 
+#endif
+            /* + 1 because architecture requires 1 extra block of 16 */
+            (MAXASIZE/SEG_BLK + 1)
+            | (unsigned int)pdos->aspaces[a].segtable;
+            /* note that the CR1 needs to be 4096-byte aligned, to give
+               12 low zeros */
     }
 #endif
 
@@ -451,8 +483,6 @@ static void pdosInitAspaces(PDOS *pdos)
 }
 
 
-#define PDOS_STORSTART 0x600000 /* where free storage starts */
-#define PDOS_STORINC   0x080000 /* storage increment */
 
 static void pdosProcessSVC(PDOS *pdos)
 {
@@ -533,9 +563,6 @@ static void pdosProcessSVC(PDOS *pdos)
 }
 
 
-#define PCOMM_LOAD 0x400000
-#define PCOMM_ENTRY 0x400008
-#define PCOMM_HEAP 0x500000
 #define PSW_ENABLE_INT 0x000c0000 /* actually disable interrupts for now */
 
 /* load the PCOMM executable. Note that this should

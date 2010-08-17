@@ -94,7 +94,8 @@
 #define MAXANUM  4   /* maximum of 4 address spaces */
 #define MAXPAGE 256 /* maximum number of pages in a segment */
 
-#define SEG_64K 1 /* use 64K segments like MVS 3.8j does */
+#define SEG_64K 0 /* use 64K segments like MVS 3.8j does */
+#define BTL_XA 1  /* force an XA DAT to be used, even below the line */
 
 #if SEG_64K
 #undef MAXPAGE
@@ -160,7 +161,11 @@ static int cr0 = 0x00B00000;
 #if SEG_64K
 static int cr0 = 0x00A00000; /* 64K, S/390 */
 #else
+#if BTL_XA
+static int cr0 = 0x00B00000; /* 1MB, S/390 */
+#else
 static int cr0 = 0x00900000; /* 1MB, S/370 */
+#endif
 #endif
 #endif
 
@@ -511,7 +516,7 @@ static void pdosInitAspaces(PDOS *pdos)
             }
         }
         pdos->aspaces[a].segtable[s] = (1 << 5); /* last block invalid */
-#if defined(S380) && !SEG_64K
+#if defined(S380) && !SEG_64K && !BTL_XA
         /* S/380 references XA-DAT memory via CR13, not CR1 */
         pdos->aspaces[a].cr13 =
 #else

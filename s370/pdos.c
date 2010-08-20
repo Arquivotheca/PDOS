@@ -94,8 +94,61 @@
 #define MAXANUM  4   /* maximum of 4 address spaces */
 #define MAXPAGE 256 /* maximum number of pages in a segment */
 
-#define SEG_64K 0 /* use 64K segments like MVS 3.8j does */
-#define BTL_XA 1  /* force an XA DAT to be used, even below the line */
+
+/* The S/380 architecture provides a lot of options, and they
+   can be selectively enabled here.
+   
+   First, here is a description of S/380.
+   
+   If CR13 = 0, then ATL memory accesses are done to real storage,
+   ignoring storage keys (for ATL accesses only), even though DAT
+   is switched on. This provides instant access to ATL memory for
+   applications, before having to make any OS changes at all. This
+   is not designed for serious use though, due to the lack of
+   integrity in ATL memory for multiple running programs. It does
+   provide very quick proof-of-concept though.
+   
+   If CR13 is non-zero, e.g. even setting a dummy value of
+   0x00001000, then ATL memory accesses are done via a DAT
+   mechanism instead of using real memory.
+   
+   With the above dummy value, the size of the table is only
+   sufficient to address BTL memory, so that value of CR13
+   (note that CR13 is of the same format as CR1) effectively 
+   prevents access to ATL memory completely.
+   
+   When CR13 contains a length signifying more than 16 MB of
+   memory, then that is used to access ATL memory, and CR1 is
+   ignored. Also CR0 is ignored as far as 64K vs 1 MB segments
+   is concerned. 1 MB is used unconditionally.
+
+   However, even if CR13 is non-zero, it is ignored if CR0.10
+   is set to 1. Anyone who sets CR0.10 to signify XA DAT is
+   expected to provide the sole DAT used, and not be required
+   to mess around with CR13.
+   
+   
+   PDOS/380 has options to exercise a lot of the above.
+   
+   BTL_XA will set CR13 to the dummy value and set up a pure
+   XA DAT. Otherwise 370 mode will be used below, and CR13
+   will point to a proper sized XA DAT.
+   
+   SEG_64K will force either the BTL XA DAT, or the 370 DAT,
+   to be 64K instead of the normal 1 MB.
+   
+*/
+
+
+#if !defined(SEG_64K)
+/* this can be used to set 64K segments as MVS 3.8j does */
+#define SEG_64K 1
+#endif
+
+#if !defined(BTL_XA)
+/* this can be used to make an XA DAT be used, even below the line */
+#define BTL_XA 1
+#endif
 
 #if SEG_64K
 #undef MAXPAGE
@@ -442,7 +495,7 @@ static void pdosInitAspaces(PDOS *pdos)
     int p;
 
     /* initialize 370-DAT tables */
-#if (defined(S370) || defined(S380)) && !SEG_64K
+#if (defined(S370) || defined(S380))
     for (a = 0; a < MAXANUM; a++)
     {
         for (s = 0; s < S370_MAXMB; s++)
@@ -480,7 +533,7 @@ static void pdosInitAspaces(PDOS *pdos)
 #endif
 
     /* initialize XA-DAT tables */
-#if defined(S380) || defined(S390) || SEG_64K
+#if defined(S380) || defined(S390)
     for (a = 0; a < MAXANUM; a++)
     {
 #if SEG_64K
@@ -516,7 +569,7 @@ static void pdosInitAspaces(PDOS *pdos)
             }
         }
         pdos->aspaces[a].segtable[s] = (1 << 5); /* last block invalid */
-#if defined(S380) && !SEG_64K && !BTL_XA
+#if defined(S380) && !BTL_XA
         /* S/380 references XA-DAT memory via CR13, not CR1 */
         pdos->aspaces[a].cr13 =
 #else

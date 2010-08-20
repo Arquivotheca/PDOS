@@ -224,7 +224,8 @@ static int cr0 = 0x00900000; /* 1MB, S/370 */
 
 
 /* bits 0-7 = number of blocks (of 16) segment table entries */
-/* plus there needs to be 1 more block */
+/* specify 1 less than what you want, because there's an
+   automatic + 1 */
 /* bits 8-25, plus 6 binary zeros = 24-bit address of segment table */
 /* for 16 MB, using 1 MB segments, we only need 1 block */
 /* note that MVS 3.8j uses 64k segments rather than 1 MB segments,
@@ -243,7 +244,7 @@ typedef UINT4 SEG_ENTRY;
 /* bits 0-3 have length, with an amount 1 meaning 1/16 of the maximum
    size of a page table, so just need to specify 1111 here */
 /* bits 8-28, plus 3 binary zeros = address of page table */
-/* bit 31 needs to be 0 for valid segments (ie last block should be 1) */
+/* bit 31 needs to be 0 for valid segments */
 /* so this whole table is only 128 bytes (per address space) */
 /* for S/370XA this changes to bits 1-25 having the page table
    origin, with 6 binary zeros on the end, giving a 31-bit address.
@@ -523,9 +524,8 @@ static void pdosInitAspaces(PDOS *pdos)
                                   | (p << (12-8));
             }
         }
-        pdos->aspaces[a].seg370[s] = 1; /* last block invalid */
-        /* 1 + 1 is for 1 block of 16, plus 1 extra */
-        pdos->aspaces[a].cr1 = ((1 + 1) << 24)
+        /* 1 - 1 is for 1 block of 16, minus 1 implied */
+        pdos->aspaces[a].cr1 = ((1 - 1) << 24)
                                | (unsigned int)pdos->aspaces[a].seg370;
         /* note that the CR1 needs to be 64-byte aligned, to give
            6 low zeros */
@@ -568,18 +568,17 @@ static void pdosInitAspaces(PDOS *pdos)
                                   | (p << 12);
             }
         }
-        pdos->aspaces[a].segtable[s] = (1 << 5); /* last block invalid */
 #if defined(S380) && !BTL_XA
         /* S/380 references XA-DAT memory via CR13, not CR1 */
         pdos->aspaces[a].cr13 =
 #else
         pdos->aspaces[a].cr1 = 
 #endif
-            /* + 1 because architecture requires 1 extra block of 16 */
+            /* - 1 because architecture implies 1 extra block of 16 */
 #if SEG_64K
-            (MAXASIZE/SEG_BLK * 16 + 1)
+            (MAXASIZE/SEG_BLK * 16 - 1)
 #else
-            (MAXASIZE/SEG_BLK + 1)
+            (MAXASIZE/SEG_BLK - 1)
 #endif
             | (unsigned int)pdos->aspaces[a].segtable;
             /* note that the CR1 needs to be 4096-byte aligned, to give

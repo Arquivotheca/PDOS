@@ -151,7 +151,7 @@
 
 #if !defined(BTL_XA)
 /* this can be used to make an XA DAT be used, even below the line */
-#define BTL_XA 0
+#define BTL_XA 1
 #endif
 
 #if SEG_64K
@@ -604,6 +604,11 @@ static void pdosInitAspaces(PDOS *pdos)
             | (unsigned int)pdos->aspaces[a].segtable;
             /* note that the CR1 needs to be 4096-byte aligned, to give
                12 low zeros */
+#if defined(S380) && BTL_XA
+        /* set a dummy CR13 since we're using XA below the line,
+           and don't want the simple version of S/380 to take effect */
+        pdos->aspaces[a].cr13 = 0x00001000;
+#endif
     }
 #endif
 

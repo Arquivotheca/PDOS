@@ -232,7 +232,7 @@ static int cr0 = 0x00900000; /* 1MB, S/370 */
    but we don't care about that here */
 /* for S/370XA, it is bits 1-19, plus 12 binary zeros, to give
    a 31-bit address. Also bits 25-31 have the length as before */
-static int cr1 = 0x01000000; /* need to fill in at runtime */
+/*static int cr1 = 0x01000000;*/ /* need to fill in at runtime */
 
 typedef unsigned short UINT2;
 typedef unsigned int UINT4;
@@ -314,9 +314,7 @@ typedef struct {
 #endif
 #endif
 
-    int cregs[NUM_CR]; /* not used for now */
-    int cr1;
-    int cr13;
+    int cregs[NUM_CR];
 } ASPACE;
 
 #define DCBOFOPN 0x10
@@ -387,9 +385,9 @@ int pdosRun(PDOS *pdos)
 {   
     int intrupt;
 
-    lcreg1(pdos->aspaces[pdos->curr_aspace].cr1);
+    lcreg1(pdos->aspaces[pdos->curr_aspace].cregs[1]);
 #if defined(S380)
-    lcreg13(pdos->aspaces[pdos->curr_aspace].cr13);
+    lcreg13(pdos->aspaces[pdos->curr_aspace].cregs[13]);
 #endif
     while (!pdos->shutdown)
     {
@@ -431,7 +429,7 @@ int pdosInit(PDOS *pdos)
     lcreg0(cr0);
     pdos->shutdown = 0;
     pdosInitAspaces(pdos);
-    pdos->curr_aspace = 0;
+    pdos->curr_aspace = 1;
     pdosLoadPcomm(pdos);
     return (1);
 }
@@ -544,7 +542,7 @@ static void pdosInitAspaces(PDOS *pdos)
             }
         }
         /* 1 - 1 is for 1 block of 16, minus 1 implied */
-        pdos->aspaces[a].cr1 = 
+        pdos->aspaces[a].cregs[1] = 
 #if SEG_64K
                                ((S370_MAXMB - 1) << 24)
 #else
@@ -553,6 +551,8 @@ static void pdosInitAspaces(PDOS *pdos)
                                | (unsigned int)pdos->aspaces[a].seg370;
         /* note that the CR1 needs to be 64-byte aligned, to give
            6 low zeros */
+        printf("aspace %d, seg370 %p, cr1 %08X\n",
+               a, pdos->aspaces[a].seg370, pdos->aspaces[a].cregs[1]);
     }
 #endif
 
@@ -594,9 +594,9 @@ static void pdosInitAspaces(PDOS *pdos)
         }
 #if defined(S380) && !BTL_XA
         /* S/380 references XA-DAT memory via CR13, not CR1 */
-        pdos->aspaces[a].cr13 =
+        pdos->aspaces[a].cregs[13] =
 #else
-        pdos->aspaces[a].cr1 = 
+        pdos->aspaces[a].cregs[1] = 
 #endif
             /* - 1 because architecture implies 1 extra block of 16 */
 #if SEG_64K && BTL_XA
@@ -610,7 +610,7 @@ static void pdosInitAspaces(PDOS *pdos)
 #if defined(S380) && BTL_XA
         /* set a dummy CR13 since we're using XA below the line,
            and don't want the simple version of S/380 to take effect */
-        pdos->aspaces[a].cr13 = 0x00001000;
+        pdos->aspaces[a].cregs[13] = 0x00001000;
 #endif
     }
 #endif

@@ -85,6 +85,21 @@
 #define PCOMM_ENTRY (PCOMM_LOAD + 8)
 #define PCOMM_HEAP (PCOMM_LOAD + 0x100000) /* 6 MB */
 
+#ifndef EA_ON
+#ifdef S380
+#define EA_ON 1 /* use extended addressing in 380 mode */
+#else
+#define EA_ON 0 /* only supported in 380 mode */
+#endif
+#endif
+
+#define EA_CR 10 /* hopefully we don't need this control register */
+#define EA_OFFSET 0x01000000 /* where extended addressing starts */
+#define EA_END 0x04000000 /* where extended addressing ends */
+
+#define BTL_PRIVSTART PCOMM_LOAD /* private region starts at 5 MB */
+#define BTL_PRIVLEN 10 /* how many MB to give to private region */
+
 #ifndef MAXASIZE
 #define MAXASIZE 80 /* maximum of 80 MB for address space */
                     /* note that this needs to be a multiple of 16
@@ -157,6 +172,13 @@
 #if SEG_64K
 #undef MAXPAGE
 #define MAXPAGE 16
+#endif
+
+
+#if EA_ON
+#if (MAXANUM * BTL_PRIVLEN) > (EA_END - S370_MAXMB)
+#error too many address spaces defined of given length
+#endif
 #endif
 
 

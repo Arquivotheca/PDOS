@@ -370,7 +370,6 @@ int main(int argc, char **argv)
     PDOS *pdos = (PDOS *)PDOS_DATA;
     int ret = EXIT_FAILURE;
 
-    printf("PDOS structure is %d bytes\n", sizeof(PDOS));    
     pdosDefaults(pdos);
     if (pdosInit(pdos))
     {
@@ -419,6 +418,8 @@ int pdosInit(PDOS *pdos)
        to printf debugging (to the Hercules console via DIAG8),
        and Hercules logging */
     printf("Welcome to PDOS!!!\n");
+    printf("CR0 is %08X\n", cr0);
+    printf("PDOS structure is %d bytes\n", sizeof(PDOS));    
 
     pdos->ipldev = initsys();
     printf("IPL device is %x\n", pdos->ipldev);

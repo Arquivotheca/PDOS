@@ -343,6 +343,7 @@ typedef struct {
     int exitcode;
     int shutdown;
     int ipldev;
+    int curr_aspace; /* current address space */
 } PDOS;
 
 /*static PDOS pdos;*/
@@ -386,6 +387,10 @@ int pdosRun(PDOS *pdos)
 {   
     int intrupt;
 
+    lcreg1(pdos->aspaces[pdos->curr_aspace].cr1);
+#if defined(S380)
+    lcreg13(pdos->aspaces[pdos->curr_aspace].cr13);
+#endif
     while (!pdos->shutdown)
     {
         intrupt = pdosDispatchUntilInterrupt(pdos);
@@ -426,10 +431,7 @@ int pdosInit(PDOS *pdos)
     lcreg0(cr0);
     pdos->shutdown = 0;
     pdosInitAspaces(pdos);
-    lcreg1(pdos->aspaces[0].cr1);
-#if defined(S380)
-    lcreg13(pdos->aspaces[0].cr13);
-#endif
+    pdos->curr_aspace = 0;
     pdosLoadPcomm(pdos);
     return (1);
 }

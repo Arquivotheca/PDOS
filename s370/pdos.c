@@ -181,6 +181,10 @@
 #endif
 #endif
 
+#if MAXASIZE % 16 != 0
+#error maximum address size must be multiple of 16
+#endif
+
 
 typedef struct {
     int abend;

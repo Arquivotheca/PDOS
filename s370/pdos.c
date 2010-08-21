@@ -461,6 +461,8 @@ int pdosInit(PDOS *pdos)
 
 void pdosTerm(PDOS *pdos)
 {
+    /* should disable DAT here, to return in same status
+       that we entered in */
     return;
 }
 

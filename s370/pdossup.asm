@@ -66,7 +66,7 @@ WAITER2  DC    X'000E0000'  machine check, EC, wait
          DC    X'00000222'  error 222
 WAITER3  DC    X'000E0000'  machine check, EC, wait
          DC    X'00000333'  error 333
-NEWSVC   DC    X'000C0000'  machine check, EC
+NEWSVC   DC    X'040C0000'  machine check, EC, DAT on
          AIF   ('&SYS' EQ 'S370').MOD24B
          DC    A(X'80000000'+GOTSVC)  SVC handler
          AGO   .MOD31B

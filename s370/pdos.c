@@ -451,7 +451,7 @@ int pdosInit(PDOS *pdos)
     lcreg0(cr0);
     pdos->shutdown = 0;
     pdosInitAspaces(pdos);
-    pdos->curr_aspace = 1;
+    pdos->curr_aspace = 3;
     pdosLoadPcomm(pdos);
     return (1);
 }
@@ -461,7 +461,7 @@ int pdosInit(PDOS *pdos)
 
 void pdosTerm(PDOS *pdos)
 {
-    /* should disable DAT here, to return in same status
+    /* +++ should disable DAT here, to return in same status
        that we entered in */
     return;
 }
@@ -548,6 +548,9 @@ static void pdosInitAspaces(PDOS *pdos)
                                  | (unsigned int)pdos->aspaces[a].page370[s];
             for (p = 0; p < MAXPAGE; p++)
             {
+                int real = 0; /* real memory location */
+                int extrabits = 0;
+
                 /* because the address starts in bit 0, it is
                    8 bits too far to be a normal 24-bit address,
                    otherwise we could shift 20 bits to get 1 MB.
@@ -556,15 +559,43 @@ static void pdosInitAspaces(PDOS *pdos)
                    need to subtract 16 bits in the shifting.
                    But after allowing for the 8 bits, it's only
                    8 that needs to be subtracted */
-                pdos->aspaces[a].page370[s][p] =
+                /* Also if we're using extended addressing, place
+                   private region up there */
+                real =
 #if SEG_64K
-                                  (s << (20-8-4))
+                       (s << (20-4))
 #else
-                                  (s << (20-8))
+                       (s << 20)
 #endif
-                                  | (p << (12-8));
+                       | (p << 12);
+#if EA_ON
+#if SEG_64K
+                if ((s * 1024 * 1024/16 >= BTL_PRIVSTART) 
+                    && (s * 1024 * 1024/16 < 
+                        (BTL_PRIVSTART + BTL_PRIVLEN * 1024 * 1024)))
+#else
+                if ((s * 1024 * 1024 >= BTL_PRIVSTART) 
+                    && (s * 1024 * 1024 < 
+                        (BTL_PRIVSTART + BTL_PRIVLEN * 1024 * 1024)))
+#endif
+                {
+                    real += EA_OFFSET + a * BTL_PRIVLEN * 1024 * 1024;
+                }
+
+                if (real >= (S370_MAXMB * 1024 * 1024))
+                {
+                    /* get bits 6 and 7 of 26-bit address */
+                    /* the - 1 is to position rightmost bit on bit 14 */
+                    extrabits = (real & 0x03000000) >> (24 - 1);
+                    /* trim to 24-bit address */
+                    real = real & 0x00FFFFFF;
+                }
+#endif
+                pdos->aspaces[a].page370[s][p] = 
+                    ((real >> 8) | extrabits) & 0xFFFF;
             }
         }
+
         /* 1 - 1 is for 1 block of 16, minus 1 implied */
         pdos->aspaces[a].cregs[1] = 
 #if SEG_64K
@@ -745,7 +776,16 @@ static int pdosLoadPcomm(PDOS *pdos)
     static int savearea[20]; /* needs to be in user space */
     static char mvsparm[] = { 0, 8, 'H', 'i', ' ', 'T', 'h', 'e', 'r', 'e' };
     static char *pptrs[1];
+#if EA_ON
+    char tbuf[CHUNKSZ];
+#endif
 
+#if EA_ON
+    /* +++ we should really enable DAT first, so that this is
+       naturally mapped - but we can't do I/O directly in
+       regardless, so the memcpy will still be required */
+    load += EA_OFFSET + pdos->curr_aspace * (BTL_PRIVLEN * 1024 * 1024);
+#endif
     printf("PCOMM should reside on cylinder 2, head 0 of IPL device\n");
     for (i = 0; i < 10; i++)
     {
@@ -754,7 +794,12 @@ static int pdosLoadPcomm(PDOS *pdos)
 #if 0
             printf("loading to %p from 2, %d, %d\n", load, i, j);
 #endif
+#if EA_ON
+            rdblock(pdos->ipldev, 2, i, j, tbuf, CHUNKSZ);
+            memcpy(load, tbuf, CHUNKSZ);
+#else
             rdblock(pdos->ipldev, 2, i, j, load, CHUNKSZ);
+#endif
             load += CHUNKSZ;
         }
     }

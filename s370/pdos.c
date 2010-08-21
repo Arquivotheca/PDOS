@@ -87,11 +87,17 @@
 #define PCOMM_ENTRY (PCOMM_LOAD + 8)
 #define PCOMM_HEAP (PCOMM_LOAD + 0x100000) /* 6 MB */
 
+#ifndef MAXASIZE
 #define MAXASIZE 80 /* maximum of 80 MB for address space */
                     /* note that this needs to be a multiple of 16
                        in order for the current logic (MAXASIZE/SEG_BLK)
                        to work */
+#endif
+
+#ifndef MAXANUM
 #define MAXANUM  4   /* maximum of 4 address spaces */
+#endif
+
 #define MAXPAGE 256 /* maximum number of pages in a segment */
 
 
@@ -153,8 +159,6 @@
 #if SEG_64K
 #undef MAXPAGE
 #define MAXPAGE 16
-#undef MAXASIZE
-#define MAXASIZE 16
 #endif
 
 
@@ -210,16 +214,14 @@ typedef struct {
 /* for S/370XA, bit 10 also needs to be 1 */
 #if defined(S390)
 static int cr0 = 0x00B00000;
-#else
-#if SEG_64K
+#elif BTL_XA && SEG_64K
 static int cr0 = 0x00A00000; /* 64K, S/390 */
-#else
-#if BTL_XA
+#elif BTL_XA && !SEG_64K
 static int cr0 = 0x00B00000; /* 1MB, S/390 */
-#else
+#elif !BTL_XA && SEG_64K
+static int cr0 = 0x00800000; /* 64K, S/370 */
+#elif !BTL_XA && !SEG_64K
 static int cr0 = 0x00900000; /* 1MB, S/370 */
-#endif
-#endif
 #endif
 
 
@@ -496,10 +498,14 @@ static void pdosInitAspaces(PDOS *pdos)
     int p;
 
     /* initialize 370-DAT tables */
-#if (defined(S370) || defined(S380))
+#if (defined(S370) || defined(S380)) && !BTL_XA
     for (a = 0; a < MAXANUM; a++)
     {
+#if SEG_64K
+        for (s = 0; s < (S370_MAXMB * 16); s++)
+#else
         for (s = 0; s < S370_MAXMB; s++)
+#endif
         {
             /* we only store the upper 21 bits of the page
                table address. therefore, the lower 3 bits
@@ -519,13 +525,22 @@ static void pdosInitAspaces(PDOS *pdos)
                    need to subtract 16 bits in the shifting.
                    But after allowing for the 8 bits, it's only
                    8 that needs to be subtracted */
-                pdos->aspaces[a].page370[s][p] = 
+                pdos->aspaces[a].page370[s][p] =
+#if SEG_64K && BTL_XA
+                                  (s << (20-8-4))
+#else
                                   (s << (20-8))
+#endif
                                   | (p << (12-8));
             }
         }
         /* 1 - 1 is for 1 block of 16, minus 1 implied */
-        pdos->aspaces[a].cr1 = ((1 - 1) << 24)
+        pdos->aspaces[a].cr1 = 
+#if SEG_64K && BTL_XA
+                               ((S370_MAXMB - 1) << 24)
+#else
+                               ((1 - 1) << 24)
+#endif
                                | (unsigned int)pdos->aspaces[a].seg370;
         /* note that the CR1 needs to be 64-byte aligned, to give
            6 low zeros */
@@ -536,7 +551,7 @@ static void pdosInitAspaces(PDOS *pdos)
 #if defined(S380) || defined(S390)
     for (a = 0; a < MAXANUM; a++)
     {
-#if SEG_64K
+#if SEG_64K && BTL_XA
         for (s = 0; s < (MAXASIZE * 16); s++)
 #else
         for (s = 0; s < MAXASIZE; s++)
@@ -546,7 +561,7 @@ static void pdosInitAspaces(PDOS *pdos)
                but the low order 12 bits must be 0, ie address must
                be aligned on 64-byte boundary */
             pdos->aspaces[a].segtable[s] = 
-#if SEG_64K
+#if SEG_64K && BTL_XA
                   0x0U
 #else
                   0xfU
@@ -560,7 +575,7 @@ static void pdosInitAspaces(PDOS *pdos)
                    add in the page number, by shifting 12 bits
                    for the 4K multiple */
                 pdos->aspaces[a].pagetable[s][p] = 
-#if SEG_64K
+#if SEG_64K && BTL_XA
                                   (s << 16)
 #else
                                   (s << 20)
@@ -575,7 +590,7 @@ static void pdosInitAspaces(PDOS *pdos)
         pdos->aspaces[a].cr1 = 
 #endif
             /* - 1 because architecture implies 1 extra block of 16 */
-#if SEG_64K
+#if SEG_64K && BTL_XA
             (MAXASIZE/SEG_BLK * 16 - 1)
 #else
             (MAXASIZE/SEG_BLK - 1)

@@ -341,6 +341,16 @@ typedef struct {
 #endif
 
     int cregs[NUM_CR];
+
+#if defined(S380) && !BTL_XA
+    char filler[4096 * 2 -
+        (( MAXASIZE*sizeof(SEG_ENTRY)
+        + MAXASIZE * MAXPAGE * sizeof(PAGE_ENTRY)
+        + S370_MAXMB * sizeof(SEG_ENT370)
+        + S370_MAXMB * MAXPAGE * sizeof(PAGE_ENT370)
+        + NUM_CR * sizeof(int)
+        ) % 4096)];
+#endif
 } ASPACE;
 
 #define DCBOFOPN 0x10
@@ -448,7 +458,8 @@ int pdosInit(PDOS *pdos)
        and Hercules logging */
     printf("Welcome to PDOS!!!\n");
     printf("CR0 is %08X\n", cr0);
-    printf("PDOS structure is %d bytes\n", sizeof(PDOS));    
+    printf("PDOS structure is %d bytes\n", sizeof(PDOS));
+    printf("aspace padding is %d bytes\n", sizeof pdos->aspaces[0].filler);
 
     pdos->ipldev = initsys();
     printf("IPL device is %x\n", pdos->ipldev);
@@ -625,6 +636,20 @@ static void pdosInitAspaces(PDOS *pdos)
         for (s = 0; s < MAXASIZE; s++)
 #endif
         {
+            int adjust = 0;
+
+/* If EA is on, it is mixed DAT, and thus 1M segment size */
+#if EA_ON
+            if (s >= S370_MAXMB)
+            {
+                /* steer clear of the bottom 64 MB */
+                adjust = EA_END / (1024 * 1024);
+                /* for the ATL portion of the virtual address, adjust
+                   appropriately */
+                adjust += a * (MAXASIZE - S370_MAXMB) - S370_MAXMB;
+            }
+#endif
+
             /* no shifting of page table address is required,
                but the low order 12 bits must be 0, ie address must
                be aligned on 64-byte boundary */
@@ -646,7 +671,7 @@ static void pdosInitAspaces(PDOS *pdos)
 #if SEG_64K && BTL_XA
                                   (s << 16)
 #else
-                                  (s << 20)
+                                  ((s + adjust) << 20)
 #endif
                                   | (p << 12);
             }
@@ -671,6 +696,8 @@ static void pdosInitAspaces(PDOS *pdos)
            and don't want the simple version of S/380 to take effect */
         pdos->aspaces[a].cregs[13] = 0x00001000;
 #endif
+        printf("aspace %d, seg %p, cr13 %08X\n",
+               a, pdos->aspaces[a].segtable, pdos->aspaces[a].cregs[13]);
     }
 #endif
 

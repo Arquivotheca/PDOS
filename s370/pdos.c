@@ -75,8 +75,6 @@
 #define NUM_GPR 16 /* number of general purpose registers */
 #define NUM_CR 16 /* number of control registers */
 #define SEG_BLK 16 /* number of segments in a block */
-#define SEG_PADDING SEG_BLK /* number of extraneous segments that the
-                               architecture requires */
 
 #define PDOS_STORSTART (PCOMM_HEAP + 0x100000) 
                        /* where free storage for apps starts - 7 MB*/
@@ -153,7 +151,7 @@
 
 #if !defined(BTL_XA)
 /* this can be used to make an XA DAT be used, even below the line */
-#define BTL_XA 1
+#define BTL_XA 0
 #endif
 
 #if SEG_64K
@@ -294,20 +292,28 @@ typedef UINT4 PAGE_ENTRY;
 /* address space */
 
 typedef struct {
+
 #if defined(S380) || defined(S390) || SEG_64K
 #if SEG_64K
-    SEG_ENTRY segtable[MAXASIZE*16+SEG_PADDING]; /* needs 4096-byte alignment */
+    SEG_ENTRY segtable[MAXASIZE*16]; /* needs 4096-byte alignment */
     PAGE_ENTRY pagetable[MAXASIZE*16][MAXPAGE]; /* needs 64-byte alignment */
 #else
-    SEG_ENTRY segtable[MAXASIZE+SEG_PADDING]; /* needs 4096-byte alignment */
+    SEG_ENTRY segtable[MAXASIZE]; /* needs 4096-byte alignment */
       /* segments are in blocks of 64, so will remain 64-byte aligned */
     PAGE_ENTRY pagetable[MAXASIZE][MAXPAGE]; /* needs 64-byte alignment */
 #endif
 #endif
+
 #if defined(S370) || defined(S380)
-    SEG_ENT370 seg370[S370_MAXMB+SEG_PADDING]; /* needs 64-byte alignment */
+#if SEG_64K
+    SEG_ENT370 seg370[S370_MAXMB*16]; /* needs 64-byte alignment */
+    PAGE_ENT370 page370[S370_MAXMB*16][MAXPAGE]; /* needs 8-byte alignment */
+#else
+    SEG_ENT370 seg370[S370_MAXMB]; /* needs 64-byte alignment */
     PAGE_ENT370 page370[S370_MAXMB][MAXPAGE]; /* needs 8-byte alignment */
 #endif
+#endif
+
     int cregs[NUM_CR]; /* not used for now */
     int cr1;
     int cr13;
@@ -526,7 +532,7 @@ static void pdosInitAspaces(PDOS *pdos)
                    But after allowing for the 8 bits, it's only
                    8 that needs to be subtracted */
                 pdos->aspaces[a].page370[s][p] =
-#if SEG_64K && BTL_XA
+#if SEG_64K
                                   (s << (20-8-4))
 #else
                                   (s << (20-8))
@@ -536,7 +542,7 @@ static void pdosInitAspaces(PDOS *pdos)
         }
         /* 1 - 1 is for 1 block of 16, minus 1 implied */
         pdos->aspaces[a].cr1 = 
-#if SEG_64K && BTL_XA
+#if SEG_64K
                                ((S370_MAXMB - 1) << 24)
 #else
                                ((1 - 1) << 24)

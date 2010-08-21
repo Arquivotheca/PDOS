@@ -146,12 +146,12 @@
 
 #if !defined(SEG_64K)
 /* this can be used to set 64K segments as MVS 3.8j does */
-#define SEG_64K 1
+#define SEG_64K 0
 #endif
 
 #if !defined(BTL_XA)
 /* this can be used to make an XA DAT be used, even below the line */
-#define BTL_XA 1
+#define BTL_XA 0
 #endif
 
 #if SEG_64K

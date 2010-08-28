@@ -342,7 +342,7 @@ typedef struct {
 
     int cregs[NUM_CR];
 
-#if defined(S380) && !BTL_XA
+/* add a filler to pad out to a 4096-byte boundary */
     char filler[4096 * 2 -
         (( MAXASIZE*sizeof(SEG_ENTRY)
         + MAXASIZE * MAXPAGE * sizeof(PAGE_ENTRY)
@@ -350,7 +350,6 @@ typedef struct {
         + S370_MAXMB * MAXPAGE * sizeof(PAGE_ENT370)
         + NUM_CR * sizeof(int)
         ) % 4096)];
-#endif
 } ASPACE;
 
 #define DCBOFOPN 0x10

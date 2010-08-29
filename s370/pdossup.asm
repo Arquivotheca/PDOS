@@ -47,6 +47,12 @@ INITSYS  DS    0H
 *
          MVC   SVCNPSW(8),NEWSVC
 *
+* Prepare CR6 for interrupts
+         AIF   ('&SYS' NE 'S390').SIO24A
+         LCTL  6,6,ALLIOINT CR6 needs to enable all interrupts
+.SIO24A  ANOP
+*
+*
 * Save IPL address in R10
 * We should really obtain this from a parameter passed by
 * sapstart.
@@ -57,6 +63,14 @@ INITSYS  DS    0H
 *
          RETURN (14,12),RC=(15)
          LTORG
+*
+*
+         AIF   ('&SYS' NE 'S390').NOT390A
+         DS    0F
+ALLIOINT DC    X'FF000000'
+.NOT390A ANOP
+*
+*
          DS    0D
 WAITER7  DC    X'000E0000'  machine check, EC, wait
          DC    X'00000777'  error 777
@@ -117,13 +131,39 @@ RDBLOCK  DS    0H
 * R3 points to CCW chain
          LA    R3,SEEK
          ST    R3,FLCCAW    Store in CAW
+*
+*
+         AIF   ('&SYS' EQ 'S390').SIO31B
          SIO   0(R10)
+         AGO   .SIO24B
+.SIO31B  ANOP
+         LR    R1,R10       R1 needs to contain subchannel
+         LA    R9,IRB
+         TSCH  0(R9)        Clear pending interrupts
+         LA    R10,ORB
+         SSCH  0(R10)
+.SIO24B  ANOP
+*
+*
          LPSW  WAITNOER     Wait for an interrupt
          DC    H'0'
 CONT     DS    0H           Interrupt will automatically come here
          LA    R15,0
          RETURN (14,12),RC=(15)
          LTORG
+*
+*
+         AIF   ('&SYS' NE 'S390').NOT390B
+         DS    0F
+IRB      DS    24F
+ORB      DS    0F
+         DC    F'0'
+         DC    X'0000FF00'  Logical-Path Mask (enable all?)
+         DC    A(SEEK)
+         DC    5F'0'
+.NOT390B ANOP
+*
+*
          DS    0D
 SEEK     CCW   7,BBCCHH,X'40',6
 SEARCH   CCW   X'31',CCHHR,X'40',5

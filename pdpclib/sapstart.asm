@@ -81,7 +81,7 @@ POSTIPL  DS    0H
          MVC   FLCPNPSW(8),WAITER3
 * Save IPL address in R10
          SLR   R10,R10
-         ICM   R10,B'0111',FLCIOAA
+         ICM   R10,B'1111',FLCIOA
 * R3 points to CCW chain
          LA    R3,SEEK
          ST    R3,FLCCAW    Store in CAW
@@ -89,9 +89,35 @@ POSTIPL  DS    0H
          L     R5,=A(CHUNKSZ) Current address
          LA    R6,1         R6 = head
          LA    R7,2         R7 = record
+         AIF   ('&SYS' EQ 'S390').SIO31A
          SIO   0(R10)
+         AGO   .SIO24A
+.SIO31A  ANOP
+         LR    R1,R10       IPL subchannel needs to be in R1
+         LCTL  6,6,ALLIOINT CR6 needs to enable all interrupts
+         LA    R9,IRB
+         TSCH  0(R9)
+         LA    R10,ORB      R10 needs to point to ORB
+         SSCH  0(R10)
+.SIO24A  ANOP
          LPSW  WAITNOER     Wait for an I/O interrupt
          LTORG
+*
+*
+*
+         AIF   ('&SYS' NE 'S390').NOT390A
+         DS    0F
+ALLIOINT DC    X'FF000000'
+IRB      DS    24F
+ORB      DS    0F
+         DC    F'0'
+         DC    X'0000FF00'  Logical-Path Mask (enable all?)
+         DC    A(SEEK)
+         DC    5F'0'
+.NOT390A ANOP
+*
+*
+*
          DS    0D
 WAITNOER DC    X'020E0000'  I/O, machine check, EC, wait
          DC    X'00000000'  no error
@@ -140,7 +166,13 @@ INRANGE  DS    0H
 * set maximum.
          C     R4,=A(MAXBLKS)  R4=Maximum blocks to read
          BH    STAGE3
+         AIF   ('&SYS' EQ 'S390').SIO31B
          SIO   0(R10)       Read next block
+         AGO   .SIO24B
+.SIO31B  ANOP
+         TSCH  0(R9)
+         SSCH  0(R10)
+.SIO24B  ANOP
          LPSW  WAITNOER
 STAGE3   DS    0H
 * Go back to the original state, with I/O disabled, so that we

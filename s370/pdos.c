@@ -319,7 +319,7 @@ typedef UINT4 PAGE_ENTRY;
 
 typedef struct {
 
-#if defined(S380) || defined(S390) || SEG_64K
+#if !defined(S370)
 #if SEG_64K
     SEG_ENTRY segtable[MAXASIZE*16]; /* needs 4096-byte alignment */
     PAGE_ENTRY pagetable[MAXASIZE*16][MAXPAGE]; /* needs 64-byte alignment */
@@ -330,7 +330,7 @@ typedef struct {
 #endif
 #endif
 
-#if defined(S370) || defined(S380)
+#if !defined(S390)
 #if SEG_64K
     SEG_ENT370 seg370[S370_MAXMB*16]; /* needs 64-byte alignment */
     PAGE_ENT370 page370[S370_MAXMB*16][MAXPAGE]; /* needs 8-byte alignment */
@@ -342,23 +342,20 @@ typedef struct {
 
     int cregs[NUM_CR];
 
-#if defined(S390)
 /* add a filler to pad out to a 4096-byte boundary */
     char filler[4096 * 2 -
-        (( MAXASIZE*sizeof(SEG_ENTRY)
+        (( 0
+#if !defined(S370)
+        + MAXASIZE*sizeof(SEG_ENTRY)
         + MAXASIZE * MAXPAGE * sizeof(PAGE_ENTRY)
-        + NUM_CR * sizeof(int)
-        ) % 4096)];
-#else
-/* add a filler to pad out to a 4096-byte boundary */
-    char filler[4096 * 2 -
-        (( MAXASIZE*sizeof(SEG_ENTRY)
-        + MAXASIZE * MAXPAGE * sizeof(PAGE_ENTRY)
+#endif
+#if !defined(S390)
         + S370_MAXMB * sizeof(SEG_ENT370)
         + S370_MAXMB * MAXPAGE * sizeof(PAGE_ENT370)
+#endif
         + NUM_CR * sizeof(int)
         ) % 4096)];
-#endif
+
 } ASPACE;
 
 #define DCBOFOPN 0x10

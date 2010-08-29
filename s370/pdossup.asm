@@ -58,7 +58,7 @@ INITSYS  DS    0H
 * sapstart.
 *
          SLR   R10,R10
-         ICM   R10,B'0111',FLCIOAA
+         ICM   R10,B'1111',FLCIOA
          LR    R15,R10
 *
          RETURN (14,12),RC=(15)

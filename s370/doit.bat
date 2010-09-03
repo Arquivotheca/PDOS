@@ -28,4 +28,7 @@ echo SYS1.PCOMM SEQ pcomm.bin CYL 2 1 0 PS U 0 18452 >>ctl.txt
 del pdos00.199
 dasdload -bz2 ctl.txt pdos00.199
 copy pdos00.199 \mvs380\dasd
+rem copy \mvs380\conf\mvs380_390.conf \mvs380\conf\mvs380.conf
 call startmvs ipl1b9
+rem copy \mvs380\conf\mvs380_380.conf \mvs380\conf\mvs380.conf
+

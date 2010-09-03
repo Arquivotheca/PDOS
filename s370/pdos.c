@@ -76,16 +76,16 @@
 #define NUM_CR 16 /* number of control registers */
 #define SEG_BLK 16 /* number of segments in a block */
 
-#define PDOS_STORSTART (PCOMM_HEAP + 0x100000) 
-                       /* where free storage for apps starts - 7 MB*/
-#define PDOS_STORINC 0x080000 /* storage increment */
 #define PDOS_DATA 0x400000  /* where the PDOS structure starts */
 
 /* where pcomm executable is loaded to */
 #define PCOMM_LOAD (PDOS_DATA + 0x100000) /* 5 MB */
-
 #define PCOMM_ENTRY (PCOMM_LOAD + 8)
+
+/* where to get getmains from */
 #define PCOMM_HEAP (PCOMM_LOAD + 0x100000) /* 6 MB */
+
+#define PDOS_STORINC 0x080000 /* storage increment */
 
 #ifndef EA_ON
 #ifdef S380
@@ -717,7 +717,7 @@ static void pdosProcessSVC(PDOS *pdos)
 {
     int svc;
     static DCB *dcb = NULL; /* need to eliminate this state info */
-    static int getmain = PDOS_STORSTART;
+    static int getmain = PCOMM_HEAP;
        /* should move to PDOS and use memmgr - but virtual memory
           will obsolete anyway */
 
@@ -805,12 +805,6 @@ static int pdosLoadPcomm(PDOS *pdos)
     int (*entry)(void *) = (int (*)(void *))PCOMM_ENTRY;
     int i;
     int j;
-    static struct { int dum;
-                    int len;
-                    char *heap; } pblock = 
-        { 0,
-          sizeof(char *),
-          (char *)PCOMM_HEAP };
     static int savearea[20]; /* needs to be in user space */
     static char mvsparm[] = { 0, 8, 'H', 'i', ' ', 'T', 'h', 'e', 'r', 'e' };
     static char *pptrs[1];
@@ -841,7 +835,6 @@ static int pdosLoadPcomm(PDOS *pdos)
         }
     }
     memset(&pdos->context, 0x00, sizeof pdos->context);
-    pdos->context.regs[1] = (int)&pblock;
     pdos->context.regs[13] = (int)savearea;
     pdos->context.regs[14] = (int)gotret;
     pdos->context.regs[15] = (int)entry;

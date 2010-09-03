@@ -81,7 +81,9 @@
 #define PDOS_STORINC 0x080000 /* storage increment */
 #define PDOS_DATA 0x400000  /* where the PDOS structure starts */
 
+/* where pcomm executable is loaded to */
 #define PCOMM_LOAD (PDOS_DATA + 0x100000) /* 5 MB */
+
 #define PCOMM_ENTRY (PCOMM_LOAD + 8)
 #define PCOMM_HEAP (PCOMM_LOAD + 0x100000) /* 6 MB */
 
@@ -812,30 +814,29 @@ static int pdosLoadPcomm(PDOS *pdos)
     static int savearea[20]; /* needs to be in user space */
     static char mvsparm[] = { 0, 8, 'H', 'i', ' ', 'T', 'h', 'e', 'r', 'e' };
     static char *pptrs[1];
-#if EA_ON
     char tbuf[CHUNKSZ];
-#endif
+    int cnt = CHUNKSZ;
 
 #if EA_ON
     /* +++ we should really enable DAT first, so that this is
        naturally mapped - but we can't do I/O directly in
-       regardless, so the memcpy will still be required */
+       regardless, so the memcpy will still be required.
+       It's not really guaranteed that pages will be
+       continuous in real memory, even if we know where it is,
+       so it is appropriate to go via a buffer regardless. */
     load += EA_OFFSET + pdos->curr_aspace * (BTL_PRIVLEN * 1024 * 1024);
 #endif
     printf("PCOMM should reside on cylinder 2, head 0 of IPL device\n");
-    for (i = 0; i < 10; i++)
+    for (i = 0; (i < 10) && (cnt == CHUNKSZ); i++)
     {
-        for (j = 1; j < 4; j++)
+        for (j = 1; (j < 4) && (cnt == CHUNKSZ); j++)
         {
 #if 0
             printf("loading to %p from 2, %d, %d\n", load, i, j);
 #endif
-#if EA_ON
-            rdblock(pdos->ipldev, 2, i, j, tbuf, CHUNKSZ);
+            cnt = rdblock(pdos->ipldev, 2, i, j, tbuf, CHUNKSZ);
             memcpy(load, tbuf, CHUNKSZ);
-#else
-            rdblock(pdos->ipldev, 2, i, j, load, CHUNKSZ);
-#endif
+            printf("i, j, cnt %d %d %d\n", i, j, cnt);
             load += CHUNKSZ;
         }
     }

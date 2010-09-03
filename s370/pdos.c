@@ -817,11 +817,14 @@ static void pdosProcessSVC(PDOS *pdos)
             }
             else
             {
+#if defined(SX380)
+                pdos->context.regs[1] = PCOMM_ATL_START;
+#else
                 /* trim down excessive getmains for now */
                 getmain += PDOS_STORINC;
+#endif
             }
         }
-        /* pdos->context.regs[1] = 0x4100000; */
     }
     else if (svc == 24) /* devtype */
     {

@@ -821,6 +821,10 @@ static int pdosLoadPcomm(PDOS *pdos)
     load += EA_OFFSET + pdos->curr_aspace * (BTL_PRIVLEN * 1024 * 1024);
 #endif
     printf("PCOMM should reside on cylinder 2, head 0 of IPL device\n");
+    /* Note that we read until we get a short block. This is going to
+       fail 1 in 18452 times, and hopefully before we get our first
+       occurrence, the VTOC will instad be being used to get the length 
+       of the dataset properly */
     for (i = 0; (i < 10) && (cnt == CHUNKSZ); i++)
     {
         for (j = 1; (j < 4) && (cnt == CHUNKSZ); j++)

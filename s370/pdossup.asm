@@ -122,6 +122,8 @@ RDBLOCK  DS    0H
          STC   R2,R         
          L     R2,16(R1)    Buffer
          STCM  R2,B'0111',LOADCCW+1   This requires BTL buffer
+         L     R7,20(R1)    Bytes to read
+         STH   R7,LOADCCW+6  Store in READ CCW
 *
 * Interrupt needs to point to CONT now. Again, I would hope for
 * something more sophisticated in PDOS than this continual
@@ -135,6 +137,7 @@ RDBLOCK  DS    0H
 *
          AIF   ('&SYS' EQ 'S390').SIO31B
          SIO   0(R10)
+*         TIO   0(R10)
          AGO   .SIO24B
 .SIO31B  ANOP
          LR    R1,R10       R1 needs to contain subchannel
@@ -149,6 +152,8 @@ RDBLOCK  DS    0H
          DC    H'0'
 CONT     DS    0H           Interrupt will automatically come here
          LA    R15,0
+         SH    R7,FLCCSW+6  Subtract residual count to get bytes read
+         LR    R15,R7
          RETURN (14,12),RC=(15)
          LTORG
 *
@@ -165,10 +170,10 @@ ORB      DS    0F
 *
 *
          DS    0D
-SEEK     CCW   7,BBCCHH,X'40',6
-SEARCH   CCW   X'31',CCHHR,X'40',5
+SEEK     CCW   7,BBCCHH,X'40',6       40 = chain command
+SEARCH   CCW   X'31',CCHHR,X'40',5    40 = chain command
          CCW   8,SEARCH,0,0
-LOADCCW  CCW   6,0,X'20',32767
+LOADCCW  CCW   6,0,X'20',32767        20 = ignore length issues
          DS    0H
 BBCCHH   DC    X'000000000000'
          ORG   *-4

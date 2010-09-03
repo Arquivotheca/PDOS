@@ -76,16 +76,87 @@
 #define NUM_CR 16 /* number of control registers */
 #define SEG_BLK 16 /* number of segments in a block */
 
-#define PDOS_DATA 0x400000  /* where the PDOS structure starts */
+
+
+/*
+
+real memory map:
+
+0 = PLOAD executable
+0.5 = PLOAD stack (also used by PDOS, and can extend into heap area)
+1 = PLOAD heap
+2 = PDOS code
+3 = PDOS heap
+4 = PDOS main structure (for convenience)
+5 = PCOMM/application code
+9 = PCOMM/application dynamic storage (stack and heap)
+15 = system use
+16 = used to support extended addressing in S/380, else unused
+64 = used to support multiple ATL address spaces in S/380, else system use
+65 = PCOMM/application ATL memory use (currently) except S/380
+320 = top of memory in S/380, system use otherwise
+
+
+virtual memory map:
+
+0 = system use
+5 = application start
+9 = dynamic storage
+15 = system use
+65 = application ATL memory use
+
+*/
+
+
+/* pload is a standalone loader, and thus is normally loaded
+   starting at location 0. */
+#define PLOAD_START 0x0
+
+/* when pload is directly IPLed, and thus starts from the
+   address in location 0, it knows to create its own stack,
+   which it does at 0.5 MB in (thus creating a restriction
+   of only being 0.5 MB in size unless this is changed) */
+#define PLOAD_STACK (PLOAD_START + 0x080000)
+
+/* the heap - for the equivalent of getmains - is located
+   another 0.5 MB in, ie at the 1 MB location */
+#define PLOAD_HEAP (PLOAD_STACK + 0x080000)
+
+/* PDOS is loaded another 1 MB above the PLOAD heap - ie the 2 MB location */
+#define PDOS_CODE (PLOAD_HEAP + 0x100000)
+
+/* The heap starts 1 MB after the code (ie the 3 MB location).
+   So PDOS can't be more than 1 MB in size unless this is changed.
+   Note that PDOS doesn't bother to create its own stack, and instead
+   relies on the one that pload is mandated to provide being 
+   big enough, which is a fairly safe bet given that it is
+   effectively 1.5 MB in size, since it can eat into the old heap
+   if required. */
+#define PDOS_HEAP (PDOS_CODE + 0x100000)
+
+/* PDOS uses a large structure that needs to be 4K-aligned. This
+   should probably be obtained from the heap like everything
+   else that may be required, and then manually aligned, but for 
+   now, we just put it at a fixed spot - allowing 1 MB for the
+   proper heap, thus this goes at the 4 MB location */
+#define PDOS_DATA (PDOS_HEAP + 0x100000)
 
 /* where pcomm executable is loaded to */
 #define PCOMM_LOAD (PDOS_DATA + 0x100000) /* 5 MB */
+
+/* entry point for MVS executables can be at known location 8
+   into mvsstart, so long as that is linked first. In the future,
+   this information will be obtained from the entry point as
+   recorded in the IEBCOPY unload RDW executable */
 #define PCOMM_ENTRY (PCOMM_LOAD + 8)
 
 /* where to get getmains from - allow for 4 MB executables */
 #define PCOMM_HEAP (PCOMM_LOAD + 0x400000) /* 9 MB */
 
 #define PDOS_STORINC 0x080000 /* storage increment */
+
+#define PCOMM_ATL_START 0x4100000
+
 
 #ifndef EA_ON
 #ifdef S380

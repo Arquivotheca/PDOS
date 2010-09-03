@@ -82,8 +82,8 @@
 #define PCOMM_LOAD (PDOS_DATA + 0x100000) /* 5 MB */
 #define PCOMM_ENTRY (PCOMM_LOAD + 8)
 
-/* where to get getmains from */
-#define PCOMM_HEAP (PCOMM_LOAD + 0x100000) /* 6 MB */
+/* where to get getmains from - allow for 4 MB executables */
+#define PCOMM_HEAP (PCOMM_LOAD + 0x400000) /* 9 MB */
 
 #define PDOS_STORINC 0x080000 /* storage increment */
 

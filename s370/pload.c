@@ -44,6 +44,11 @@ int main(int argc, char **argv)
     void (*entry)(void *) = (void (*)(void *))0x200800;
     int i;
     int j;
+    /* programs using the standalone version of PDPCLIB need
+       to be informed where they can allocate a heap and
+       potentially other parameters (that's why there is a
+       length indicator as well. dum should be 0 to indicate
+       no normal MVS-style parameters */
     struct { int dum;
              int len;
              char *heap; } pblock = { 0, 4, (char *)PDOS_HEAP };

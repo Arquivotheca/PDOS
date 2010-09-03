@@ -40,7 +40,7 @@ static char buf[40000];
 /* when pload is directly IPLed, and thus starts from the
    address in location 0, it knows to create its own stack,
    which it does at 0.5 MB in (thus creating a restriction
-   of only being 0.5 MB in size unless this is changed */
+   of only being 0.5 MB in size unless this is changed) */
 #define PLOAD_STACK (PLOAD_START + 0x080000)
 
 /* the heap - for the equivalent of getmains - is located

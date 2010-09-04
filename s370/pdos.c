@@ -158,6 +158,9 @@ virtual memory map:
 
 #define PCOMM_ATL_START 0x1100000
 
+#define PCOMM_STARTCYL 2 /* cylinder where PCOMM can be found -
+  this assumes that PLOAD and PDOS are less than 1 cylinder in
+  size and that they have been allocated on cylinder boundaries */
 
 #ifndef EA_ON
 #ifdef S380
@@ -459,6 +462,7 @@ typedef struct {
     int shutdown;
     int ipldev;
     int curr_aspace; /* current address space */
+    int cyl_upto; /* next cylinder to be read */
 } PDOS;
 
 /*static PDOS pdos;*/
@@ -543,6 +547,7 @@ int pdosInit(PDOS *pdos)
     printf("aspace padding is %d bytes\n", sizeof pdos->aspaces[0].filler);
 
     pdos->ipldev = initsys();
+    pdos->cyl_upto = PCOMM_STARTCYL;
     printf("IPL device is %x\n", pdos->ipldev);
     lcreg0(cr0);
     pdos->shutdown = 0;
@@ -883,6 +888,7 @@ static int pdosLoadPcomm(PDOS *pdos)
     static char *pptrs[1];
     char tbuf[MAXBLKSZ];
     int cnt = -1;
+    int lastcnt = 0;
 
 #if EA_ON
     /* +++ we should really enable DAT first, so that this is
@@ -893,21 +899,44 @@ static int pdosLoadPcomm(PDOS *pdos)
        so it is appropriate to go via a buffer regardless. */
     load += EA_OFFSET + pdos->curr_aspace * (BTL_PRIVLEN * 1024 * 1024);
 #endif
-    printf("PCOMM should reside on cylinder 2, head 0 of IPL device\n");
+    printf("PCOMM should reside on cylinder %d, head 0 of IPL device\n",
+           pdos->cyl_upto);
     /* Note that we read until we get EOF (a zero-length block). */
-    for (i = 0; (i < 10) && (cnt != 0); i++)
+    i = 0;
+    j = 1;
+    while (cnt != 0)
     {
-        for (j = 1; (j < 4) && (cnt != 0); j++)
-        {
 #if 0
-            printf("loading to %p from 2, %d, %d\n", load, i, j);
+        printf("loading to %p from %d, %d, %d\n", load, i, j,
+               pdos->cyl_upto);
 #endif
-            cnt = rdblock(pdos->ipldev, 2, i, j, tbuf, MAXBLKSZ);
-            if (cnt == -1) continue;
-            memcpy(load, tbuf, cnt);
-            printf("i, j, cnt %d %d %d\n", i, j, cnt);
-            load += cnt;
+        cnt = rdblock(pdos->ipldev, pdos->cyl_upto, i, j, tbuf, MAXBLKSZ);
+        if (cnt == -1)
+        {
+            if (lastcnt == -2)
+            {
+                printf("three I/O errors in a row - terminating load\n");
+                break;
+            }
+            else if (lastcnt == -1)
+            {
+                printf("probably last track on cylinder\n");            
+                /* probably reached last track on cylinder */
+                lastcnt = -2;
+                pdos->cyl_upto++;
+                i = 0;
+                continue;
+            }
+            /* probably reached last record on track */
+            lastcnt = -1;
+            j = 1;
+            i++;
+            continue;
         }
+        lastcnt = cnt;
+        memcpy(load, tbuf, cnt);
+        load += cnt;
+        j++;
     }
     memset(&pdos->context, 0x00, sizeof pdos->context);
     pdos->context.regs[13] = (int)savearea;

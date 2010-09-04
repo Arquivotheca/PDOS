@@ -154,6 +154,11 @@ CONT     DS    0H           Interrupt will automatically come here
          LA    R15,0
          SH    R7,FLCCSW+6  Subtract residual count to get bytes read
          LR    R15,R7
+* After a successful CCW chain, CSW should be pointing to end
+         CLC   FLCCSW(4),=A(FINCHAIN)
+         BE    ALLFINE
+         L     R15,=F'-1'   error return
+ALLFINE  DS    0H
          RETURN (14,12),RC=(15)
          LTORG
 *
@@ -174,6 +179,7 @@ SEEK     CCW   7,BBCCHH,X'40',6       40 = chain command
 SEARCH   CCW   X'31',CCHHR,X'40',5    40 = chain command
          CCW   8,SEARCH,0,0
 LOADCCW  CCW   6,0,X'20',32767        20 = ignore length issues
+FINCHAIN EQU   *
          DS    0H
 BBCCHH   DC    X'000000000000'
          ORG   *-4

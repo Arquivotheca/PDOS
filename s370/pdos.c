@@ -88,13 +88,14 @@ real memory map:
 2 = PDOS code
 3 = PDOS heap
 4 = PDOS main structure (for convenience)
-5 = PCOMM/application code
-9 = PCOMM/application dynamic storage (stack and heap)
-15 = system use
-16 = used to support extended addressing in S/380, else unused
-64 = used to support multiple ATL address spaces in S/380, else system use
-65 = PCOMM/application ATL memory use (currently) except S/380
-320 = top of memory in S/380, system use otherwise
+5 = PCOMM/application code (except S/380 - where it is reserved)
+9 = PCOMM/application dynamic storage (stack and heap) - except S/380
+15 = system use (reserved)
+16 = used to support extended addressing in S/380, else ATL memory
+64 = used to support multiple ATL address spaces in S/380
+80 = top of memory for non-380
+320 = top of memory in S/380
+
 
 
 virtual memory map:
@@ -103,7 +104,7 @@ virtual memory map:
 5 = application start
 9 = dynamic storage
 15 = system use
-65 = application ATL memory use
+17 = application ATL memory use (start point may change)
 
 */
 
@@ -155,7 +156,7 @@ virtual memory map:
 
 #define PDOS_STORINC 0x080000 /* storage increment */
 
-#define PCOMM_ATL_START 0x4100000
+#define PCOMM_ATL_START 0x1100000
 
 
 #ifndef EA_ON
@@ -817,12 +818,8 @@ static void pdosProcessSVC(PDOS *pdos)
             }
             else
             {
-#if defined(SX380)
+                /* one shot at ATL memory */
                 pdos->context.regs[1] = PCOMM_ATL_START;
-#else
-                /* trim down excessive getmains for now */
-                getmain += PDOS_STORINC;
-#endif
             }
         }
     }

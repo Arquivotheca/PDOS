@@ -444,7 +444,9 @@ typedef struct {
 TASK *task;
 #endif
 
-#define CHUNKSZ 18452
+#define CHUNKSZ 18452 /* typical block size for files */
+
+#define MAXBLKSZ 32767 /* maximum size a disk block can be */
 
 typedef struct {
     ASPACE aspaces[MAXANUM]; /* needs to be 8-byte aligned because
@@ -879,8 +881,8 @@ static int pdosLoadPcomm(PDOS *pdos)
     static int savearea[20]; /* needs to be in user space */
     static char mvsparm[] = { 0, 8, 'H', 'i', ' ', 'T', 'h', 'e', 'r', 'e' };
     static char *pptrs[1];
-    char tbuf[CHUNKSZ];
-    int cnt = CHUNKSZ;
+    char tbuf[MAXBLKSZ];
+    int cnt = -1;
 
 #if EA_ON
     /* +++ we should really enable DAT first, so that this is
@@ -892,21 +894,18 @@ static int pdosLoadPcomm(PDOS *pdos)
     load += EA_OFFSET + pdos->curr_aspace * (BTL_PRIVLEN * 1024 * 1024);
 #endif
     printf("PCOMM should reside on cylinder 2, head 0 of IPL device\n");
-    /* Note that we read until we get a short block. This is going to
-       fail 1 in 18452 times, and hopefully before we get our first
-       occurrence, the VTOC will instad be being used to get the length 
-       of the dataset properly */
-    for (i = 0; (i < 10) && (cnt == CHUNKSZ); i++)
+    /* Note that we read until we get EOF (a zero-length block). */
+    for (i = 0; (i < 10) && (cnt != 0); i++)
     {
-        for (j = 1; (j < 4) && (cnt == CHUNKSZ); j++)
+        for (j = 1; (j < 4) && (cnt != 0); j++)
         {
 #if 0
             printf("loading to %p from 2, %d, %d\n", load, i, j);
 #endif
-            cnt = rdblock(pdos->ipldev, 2, i, j, tbuf, CHUNKSZ);
-            memcpy(load, tbuf, CHUNKSZ);
+            cnt = rdblock(pdos->ipldev, 2, i, j, tbuf, MAXBLKSZ);
+            memcpy(load, tbuf, cnt);
             printf("i, j, cnt %d %d %d\n", i, j, cnt);
-            load += CHUNKSZ;
+            load += cnt;
         }
     }
     memset(&pdos->context, 0x00, sizeof pdos->context);

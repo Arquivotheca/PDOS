@@ -69,6 +69,7 @@
 #include <ctype.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stddef.h>
 
 
 #define S370_MAXMB 16 /* maximum MB in a virtual address space for S/370 */
@@ -76,6 +77,7 @@
 #define NUM_CR 16 /* number of control registers */
 #define SEG_BLK 16 /* number of segments in a block */
 
+#define ASPACE_ALIGN 4096 /* DAT tables need to be aligned on 4k boundary */
 
 
 /*
@@ -419,21 +421,18 @@ typedef struct {
 
     int cregs[NUM_CR];
 
-/* add a filler to pad out to a 4096-byte boundary */
-    char filler[4096 * 2 -
-        (( 0
-#if !defined(S370)
-        + MAXASIZE*sizeof(SEG_ENTRY)
-        + MAXASIZE * MAXPAGE * sizeof(PAGE_ENTRY)
-#endif
-#if !defined(S390)
-        + S370_MAXMB * sizeof(SEG_ENT370)
-        + S370_MAXMB * MAXPAGE * sizeof(PAGE_ENT370)
-#endif
-        + NUM_CR * sizeof(int)
-        ) % 4096)];
+} ONESPACE;
 
+
+typedef struct {
+    ONESPACE o;
+    
+    /* because the DAT tables need to be 4k-byte aligned, we
+       need to split the structure in two and add a filler here */
+    char filler[ASPACE_ALIGN + ASPACE_ALIGN 
+                - (sizeof(ONESPACE) % ASPACE_ALIGN)];
 } ASPACE;
+
 
 #define DCBOFOPN 0x10
 #define DCBRECU  0xC0
@@ -506,9 +505,9 @@ int pdosRun(PDOS *pdos)
 {   
     int intrupt;
 
-    lcreg1(pdos->aspaces[pdos->curr_aspace].cregs[1]);
+    lcreg1(pdos->aspaces[pdos->curr_aspace].o.cregs[1]);
 #if defined(S380)
-    lcreg13(pdos->aspaces[pdos->curr_aspace].cregs[13]);
+    lcreg13(pdos->aspaces[pdos->curr_aspace].o.cregs[13]);
 #endif
     while (!pdos->shutdown)
     {
@@ -645,8 +644,8 @@ static void pdosInitAspaces(PDOS *pdos)
                assumed to be 0), and no shifting or masking
                is required in this case. The assumption of
                0 means that the page table must be 8-byte aligned */
-            pdos->aspaces[a].seg370[s] = (0xfU << 28)
-                                 | (unsigned int)pdos->aspaces[a].page370[s];
+            pdos->aspaces[a].o.seg370[s] = (0xfU << 28)
+                                 | (unsigned int)pdos->aspaces[a].o.page370[s];
             for (p = 0; p < MAXPAGE; p++)
             {
                 int real = 0; /* real memory location */
@@ -692,23 +691,23 @@ static void pdosInitAspaces(PDOS *pdos)
                     real = real & 0x00FFFFFF;
                 }
 #endif
-                pdos->aspaces[a].page370[s][p] = 
+                pdos->aspaces[a].o.page370[s][p] = 
                     ((real >> 8) | extrabits) & 0xFFFF;
             }
         }
 
         /* 1 - 1 is for 1 block of 16, minus 1 implied */
-        pdos->aspaces[a].cregs[1] = 
+        pdos->aspaces[a].o.cregs[1] = 
 #if SEG_64K
                                ((S370_MAXMB - 1) << 24)
 #else
                                ((1 - 1) << 24)
 #endif
-                               | (unsigned int)pdos->aspaces[a].seg370;
+                               | (unsigned int)pdos->aspaces[a].o.seg370;
         /* note that the CR1 needs to be 64-byte aligned, to give
            6 low zeros */
         printf("aspace %d, seg370 %p, cr1 %08X\n",
-               a, pdos->aspaces[a].seg370, pdos->aspaces[a].cregs[1]);
+               a, pdos->aspaces[a].o.seg370, pdos->aspaces[a].o.cregs[1]);
     }
 #endif
 
@@ -739,13 +738,13 @@ static void pdosInitAspaces(PDOS *pdos)
             /* no shifting of page table address is required,
                but the low order 12 bits must be 0, ie address must
                be aligned on 64-byte boundary */
-            pdos->aspaces[a].segtable[s] = 
+            pdos->aspaces[a].o.segtable[s] = 
 #if SEG_64K && BTL_XA
                   0x0U
 #else
                   0xfU
 #endif
-                  | (unsigned int)pdos->aspaces[a].pagetable[s];
+                  | (unsigned int)pdos->aspaces[a].o.pagetable[s];
             for (p = 0; p < MAXPAGE; p++)
             {
                 /* because the address begins in bit 1, just like
@@ -753,7 +752,7 @@ static void pdosInitAspaces(PDOS *pdos)
                    20 bits (1 MB) to get the right address. Plus
                    add in the page number, by shifting 12 bits
                    for the 4K multiple */
-                pdos->aspaces[a].pagetable[s][p] = 
+                pdos->aspaces[a].o.pagetable[s][p] = 
 #if SEG_64K && BTL_XA
                                   (s << 16)
 #else
@@ -764,9 +763,9 @@ static void pdosInitAspaces(PDOS *pdos)
         }
 #if defined(S380) && !BTL_XA
         /* S/380 references XA-DAT memory via CR13, not CR1 */
-        pdos->aspaces[a].cregs[13] =
+        pdos->aspaces[a].o.cregs[13] =
 #else
-        pdos->aspaces[a].cregs[1] = 
+        pdos->aspaces[a].o.cregs[1] = 
 #endif
             /* - 1 because architecture implies 1 extra block of 16 */
 #if SEG_64K && BTL_XA
@@ -774,16 +773,16 @@ static void pdosInitAspaces(PDOS *pdos)
 #else
             (MAXASIZE/SEG_BLK - 1)
 #endif
-            | (unsigned int)pdos->aspaces[a].segtable;
+            | (unsigned int)pdos->aspaces[a].o.segtable;
             /* note that the CR1 needs to be 4096-byte aligned, to give
                12 low zeros */
 #if defined(S380) && BTL_XA
         /* set a dummy CR13 since we're using XA below the line,
            and don't want the simple version of S/380 to take effect */
-        pdos->aspaces[a].cregs[13] = 0x00001000;
+        pdos->aspaces[a].o.cregs[13] = 0x00001000;
 #endif
         printf("aspace %d, seg %p, cr13 %08X\n",
-               a, pdos->aspaces[a].segtable, pdos->aspaces[a].cregs[13]);
+               a, pdos->aspaces[a].o.segtable, pdos->aspaces[a].o.cregs[13]);
     }
 #endif
 

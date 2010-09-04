@@ -903,6 +903,7 @@ static int pdosLoadPcomm(PDOS *pdos)
             printf("loading to %p from 2, %d, %d\n", load, i, j);
 #endif
             cnt = rdblock(pdos->ipldev, 2, i, j, tbuf, MAXBLKSZ);
+            if (cnt == -1) continue;
             memcpy(load, tbuf, cnt);
             printf("i, j, cnt %d %d %d\n", i, j, cnt);
             load += cnt;

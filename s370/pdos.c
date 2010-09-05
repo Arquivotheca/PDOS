@@ -90,7 +90,6 @@ real memory map:
 1 = PLOAD heap
 2 = PDOS code
 3 = PDOS heap
-4 = PDOS main structure (for convenience)
 5 = PCOMM/application code (except S/380 - where it is reserved)
 9 = PCOMM/application dynamic storage (stack and heap) - except S/380
 15 = system use (reserved)
@@ -114,20 +113,20 @@ virtual memory map:
 
 /* pload is a standalone loader, and thus is normally loaded
    starting at location 0. */
-#define PLOAD_START 0x0
+#define PLOAD_START 0x0 /* 0 MB */
 
 /* when pload is directly IPLed, and thus starts from the
    address in location 0, it knows to create its own stack,
    which it does at 0.5 MB in (thus creating a restriction
    of only being 0.5 MB in size unless this is changed) */
-#define PLOAD_STACK (PLOAD_START + 0x080000)
+#define PLOAD_STACK (PLOAD_START + 0x080000) /* 0.5 MB */
 
 /* the heap - for the equivalent of getmains - is located
    another 0.5 MB in, ie at the 1 MB location */
-#define PLOAD_HEAP (PLOAD_STACK + 0x080000)
+#define PLOAD_HEAP (PLOAD_STACK + 0x080000) /* 1 MB */
 
 /* PDOS is loaded another 1 MB above the PLOAD heap - ie the 2 MB location */
-#define PDOS_CODE (PLOAD_HEAP + 0x100000)
+#define PDOS_CODE (PLOAD_HEAP + 0x100000) /* 2 MB */
 
 /* The heap starts 1 MB after the code (ie the 3 MB location).
    So PDOS can't be more than 1 MB in size unless this is changed.
@@ -136,17 +135,10 @@ virtual memory map:
    big enough, which is a fairly safe bet given that it is
    effectively 1.5 MB in size, since it can eat into the old heap
    if required. */
-#define PDOS_HEAP (PDOS_CODE + 0x100000)
-
-/* PDOS uses a large structure that needs to be 4K-aligned. This
-   should probably be obtained from the heap like everything
-   else that may be required, and then manually aligned, but for 
-   now, we just put it at a fixed spot - allowing 1 MB for the
-   proper heap, thus this goes at the 4 MB location */
-#define PDOS_DATA (PDOS_HEAP + 0x100000)
+#define PDOS_HEAP (PDOS_CODE + 0x100000)  /* 3 MB */
 
 /* where pcomm executable is loaded to */
-#define PCOMM_LOAD (PDOS_DATA + 0x100000) /* 5 MB */
+#define PCOMM_LOAD (PDOS_HEAP + 0x200000) /* 5 MB */
 
 /* entry point for MVS executables can be at known location 8
    into mvsstart, so long as that is linked first. In the future,

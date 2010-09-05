@@ -55,11 +55,11 @@
 /*  dispatch_until_interrupt function translates into is:            */
 /*                                                                   */
 /*  LPSW of user's application code, with interrupts enabled.        */
-/*  All interrupts point to the address after that LPSW.             */
+/*  All interrupts point to an address after that LPSW.              */
 /*                                                                   */
 /*  Registers are provided and loaded prior to execution of the      */
 /*  LPSW. The LPSW will refer to an address in low memory so that    */
-/*  the (now invalid) register 0 can be used.                        */
+/*  no base register (ir R0) can be used.                            */
 /*                                                                   */
 /*********************************************************************/
 
@@ -80,6 +80,8 @@
 #define ASPACE_ALIGN 4096 /* DAT tables need to be aligned on 4k boundary */
 
 #define PSA_ORIGIN 0 /* the PSA starts at literally address 0 */
+
+#define CR13_DUMMY 0x00001000 /* disable ATL memory access */
 
 /*
 
@@ -192,8 +194,8 @@ virtual memory map:
    First, here is a description of S/380.
    
    If CR13 = 0, then ATL memory accesses are done to real storage,
-   ignoring storage keys (for ATL accesses only), even though DAT
-   is switched on. This provides instant access to ATL memory for
+   ignoring storage keys (for ATL accesses only), even though (S/370)
+   DAT is switched on. This provides instant access to ATL memory for
    applications, before having to make any OS changes at all. This
    is not designed for serious use though, due to the lack of
    integrity in ATL memory for multiple running programs. It does
@@ -204,19 +206,21 @@ virtual memory map:
    mechanism instead of using real memory.
    
    With the above dummy value, the size of the table is only
-   sufficient to address BTL memory, so that value of CR13
-   (note that CR13 is of the same format as CR1) effectively 
+   sufficient to address BTL memory (ie 16 MB), so that value of 
+   CR13 (note that CR13 is of the same format as CR1) effectively 
    prevents access to ATL memory completely.
    
    When CR13 contains a length signifying more than 16 MB of
    memory, then that is used to access ATL memory, and CR1 is
    ignored. Also CR0 is ignored as far as 64K vs 1 MB segments
-   is concerned. 1 MB is used unconditionally.
+   is concerned. 1 MB is used unconditionally (for ATL memory).
 
    However, even if CR13 is non-zero, it is ignored if CR0.10
    is set to 1. Anyone who sets CR0.10 to signify XA DAT is
    expected to provide the sole DAT used, and not be required
-   to mess around with CR13.
+   to mess around with CR13. This provides the flexibility of
+   some ("legacy") tasks being able to use split DAT, while
+   others can be made to use a proper XA DAT.
    
    
    PDOS/380 has options to exercise a lot of the above.
@@ -226,7 +230,7 @@ virtual memory map:
    will point to a proper sized XA DAT.
    
    SEG_64K will force either the BTL XA DAT, or the 370 DAT,
-   to be 64K instead of the normal 1 MB.
+   to use 64K segments instead of the normal 1 MB.
    
 */
 
@@ -302,12 +306,28 @@ typedef struct {
    a page index, bits 12-19, ie 8 bits, ie 256 entries
    and then a byte index, bits 20-31, ie 12 bits, ie up to 4095 */
 
-/* S/370XA it is bits 1-11, ie 11 bits, ie 2048 segments,
+/* For S/370XA it is bits 1-11, ie 11 bits, ie 2048 segments,
    with other values same as S/370. */
 
+/* There are 2 main control registers of interest.
 
+   CR0 determines things like the segment size and whether XA 
+   mode is on or not.
+   
+   CR1 points to a set of DAT translation tables.
+   
+   In S/380, there is also a CR13 which is similar to CR1,
+   but is only used for ATL memory access.
+*/
+
+typedef unsigned short UINT2;
+typedef unsigned int UINT4;
+
+
+/* for CR0: */
 /* bits 8-9 = 10 (4K pages), bits 11-12 = 10 (1 MB segments) */
 /* for S/370XA, bit 10 also needs to be 1 */
+
 #if defined(S390)
 static int cr0 = 0x00B00000;
 #elif BTL_XA && SEG_64K
@@ -321,6 +341,7 @@ static int cr0 = 0x00900000; /* 1MB, S/370 */
 #endif
 
 
+/* for CR1: */
 /* bits 0-7 = number of blocks (of 16) segment table entries */
 /* specify 1 less than what you want, because there's an
    automatic + 1 */
@@ -332,18 +353,17 @@ static int cr0 = 0x00900000; /* 1MB, S/370 */
    a 31-bit address. Also bits 25-31 have the length as before */
 /*static int cr1 = 0x01000000;*/ /* need to fill in at runtime */
 
-typedef unsigned short UINT2;
-typedef unsigned int UINT4;
 
-/* the hardware requires a 4-byte integer */
-typedef UINT4 SEG_ENT370;
-typedef UINT4 SEG_ENTRY;
 
-/* bits 0-3 have length, with an amount 1 meaning 1/16 of the maximum
-   size of a page table, so just need to specify 1111 here */
+/* the S/370 and S/390 hardware requires a 4-byte integer for
+   segment table entries. */
+
+/* for S/370, bits 0-3 have length, with an amount 1 meaning 1/16 of the 
+   maximum size of a page table, so just need to specify 1111 here */
 /* bits 8-28, plus 3 binary zeros = address of page table */
 /* bit 31 needs to be 0 for valid segments */
 /* so this whole table is only 128 bytes (per address space) */
+
 /* for S/370XA this changes to bits 1-25 having the page table
    origin, with 6 binary zeros on the end, giving a 31-bit address.
    Bit 26 is in the invalid segment bit.
@@ -353,14 +373,15 @@ typedef UINT4 SEG_ENTRY;
    page entries, sufficient (256 * 4096) to map the 1 MB segment,
    so just set to 1111 */
 /* the segment table will thus need 2048 + 16 = approx 8K in size */
-/* static SEG_ENTRY segtable[MAXASIZE+16]; */
 
-/* the S/370 hardware requires a 2-byte integer */
-/* S/370XA requires 4-byte */
-typedef UINT2 PAGE_ENT370;
-typedef UINT4 PAGE_ENTRY;
+typedef UINT4 SEG_ENT370;
+typedef UINT4 SEG_ENTRY;
 
-/* bits 0-11, plus 12 binary zeros = real memory address */
+
+/* the S/370 hardware requires a 2-byte integer for page
+   table entries. S/370XA requires 4-byte */
+
+/* for S/370, bits 0-11, plus 12 binary zeros = real memory address */
 /* bit 12 = 0 for valid pages. All other bits to be 0 */
 /* unless extended addressing for 370 is in place. Then bits 13
    and 14 become bits 6 and 7 of a 26-bit address */
@@ -368,6 +389,7 @@ typedef UINT4 PAGE_ENTRY;
 /* and with each page entry addressing 4096 bytes, we need
    1024*1024/4096 = 256 to address the full 1 MB */
 /* this whole table is only 8K (per address space) */
+
 /* with S/370XA this becomes a 4-byte integer, with bits
    1-19 containing an address (when you add 12 binary zeros on
    the end to give a total of 19+12=31 bits) */
@@ -377,17 +399,19 @@ typedef UINT4 PAGE_ENTRY;
    space at compile time (or else run time). */
 /* for example, 4 address spaces, each 128 MB in size, is
    equal to 256K */
-/* static PAGE_ENTRY pagetable[MAXASIZE][MAXPAGE]; */
+
+typedef UINT2 PAGE_ENT370;
+typedef UINT4 PAGE_ENTRY;
+
 
 /* for S/380, we have a mixed/split DAT. CR1 continues normal
    S/370 behaviour, but if CR13 is non-zero, it uses an XA dat
    for any storage references above 16 MB. Note that the first
    16 MB should still be included in the XA storage table, but
-   they will be ignored (unless CR1 is set to 0 - with DAT
+   they will be ignored (unless CR0.10 is set to 1 - with DAT
    still on, which switches off 370 completely) */
-/* static int cr13; */
 
-/* address space */
+/* one address space */
 
 typedef struct {
 
@@ -416,6 +440,10 @@ typedef struct {
 
 } ONESPACE;
 
+
+/* each address space structure starts with the required
+   DAT, which needs to be 4k-aligned, so we make sure there
+   is a filler */
 
 typedef struct {
     ONESPACE o;
@@ -784,7 +812,7 @@ static void pdosInitAspaces(PDOS *pdos)
 #if defined(S380) && BTL_XA
         /* set a dummy CR13 since we're using XA below the line,
            and don't want the simple version of S/380 to take effect */
-        pdos->aspaces[a].o.cregs[13] = 0x00001000;
+        pdos->aspaces[a].o.cregs[13] = CR13_DUMMY;
 #endif
         printf("aspace %d, seg %p, cr13 %08X\n",
                a, pdos->aspaces[a].o.segtable, pdos->aspaces[a].o.cregs[13]);
@@ -967,6 +995,16 @@ static int pdosStart(PDOS *pdos, char *pgm, char *parm)
 #endif
 
 
+
+
+
+
+
+
+
+
+
+
 #if 0
 
 /* This is a high-level conceptual version of what PDOS
@@ -1098,6 +1136,9 @@ int main(int argc, char **argv)
 #endif
 
 
+
+
+
 #if 0
 
 /*
@@ -1160,7 +1201,7 @@ prick he's made out to be.
 The same goes for CICS users. I don't see why
 CICS is required. Why can't the OS do what CICS
 does? Once again, after displaying the results
-of a balance inquiry, a monkey needs to move
+of a balance inquiry, a human needs to move
 their jawbone to say "have a nice day", so in
 the brief period of time that they are actually
 requesting services, response should be fast.
@@ -1268,3 +1309,45 @@ possible thrashing.
 */
 #endif
 
+
+
+
+#if 0
+
+Suggestions for MVS 3.8j:
+
+A normal MVS 3.8j address space has a private
+region of say 2MB-10MB, and uses 64k segments.
+
+So.
+
+For a particular job class, say CLASS=X (X=extended),
+and this will only work for about 6 or thereabout
+address spaces before you run out of EA memory,
+what you do at address space creation time is:
+
+1. Make MVS 3.8j allocate the 2 MB-10MB region
+to 16MB-24MB in extended real memory, and be
+page fixed.
+
+2. The 370 DAT points to BTL real memory for the
+0-2MB and 10-16MB areas, and that gets paged.
+
+3. The 370 DAT points to EA for the 2-10MB region.
+
+4. An XA DAT also points to the same areas of
+memory as 370 for the 0-16 MB region, but then
+starts pointing to say 256-368 MB for the
+next 112 MB (giving a total address space of
+128 MB) - all via 64k segments.
+
+5. Not sure what happens in an interrupt, ie
+each interrupt may need to have CR0.10 saved,
+set to 0 for MVS 3.8j use, then restored.
+
+MVS 3.8j page tables can remain as 2-byte,
+370 mode, yet 6 or whatever address spaces
+can get up to 128 MB (it may be possible to steal
+more bits to get up to 2 GB if required).
+
+#endif

@@ -79,6 +79,7 @@
 
 #define ASPACE_ALIGN 4096 /* DAT tables need to be aligned on 4k boundary */
 
+#define PSA_ORIGIN 0 /* the PSA starts at literally address 0 */
 
 /*
 
@@ -486,14 +487,30 @@ static int pdosLoadPcomm(PDOS *pdos);
 
 int main(int argc, char **argv)
 {
-    PDOS *pdos = (PDOS *)PDOS_DATA;
+    PDOS *pdos;
+    char *p;
+    int remain;
     int ret = EXIT_FAILURE;
 
-    pdosDefaults(pdos);
-    if (pdosInit(pdos))
+    /* thankfully we are running under an emulator, so have access
+       to printf debugging (to the Hercules console via DIAG8),
+       and Hercules logging */
+    printf("Welcome to PDOS!!!\n");
+
+    /* we need to align the PDOS structure on a 4k boundary */
+    p = malloc(sizeof(PDOS) + ASPACE_ALIGN);
+    if (p != NULL)
     {
-        ret = pdosRun(pdos);
-        pdosTerm(pdos);
+        remain = (unsigned int)p % ASPACE_ALIGN;
+        p += (ASPACE_ALIGN - remain);
+        pdos = (PDOS *)p;
+
+        pdosDefaults(pdos);
+        if (pdosInit(pdos)) /* initialize address spaces etc */
+        {
+            ret = pdosRun(pdos); /* dispatch tasks */
+            pdosTerm(pdos);
+        }
     }
     return (ret);
 }
@@ -527,7 +544,7 @@ int pdosRun(PDOS *pdos)
 
 void pdosDefaults(PDOS *pdos)
 {
-    pdos->psa = 0;
+    pdos->psa = PSA_ORIGIN;
     return;
 }
 
@@ -537,10 +554,6 @@ void pdosDefaults(PDOS *pdos)
 
 int pdosInit(PDOS *pdos)
 {
-    /* thankfully we are running under an emulator, so have access
-       to printf debugging (to the Hercules console via DIAG8),
-       and Hercules logging */
-    printf("Welcome to PDOS!!!\n");
     printf("CR0 is %08X\n", cr0);
     printf("PDOS structure is %d bytes\n", sizeof(PDOS));
     printf("aspace padding is %d bytes\n", sizeof pdos->aspaces[0].filler);

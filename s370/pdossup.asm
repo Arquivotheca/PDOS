@@ -266,6 +266,33 @@ GOTRET   DS    0H
 *
 **********************************************************************
 *                                                                    *
+*  DREAD - DCB read routine (for when people do READ)                *
+*                                                                    *
+*  for now - go back via the same path as an SVC                     *
+*                                                                    *
+*  Relies on R12 being restored to its former glory, since we saved  *
+*  it before running the application                                 *
+*                                                                    *
+**********************************************************************
+*
+         ENTRY DREAD
+DREAD    DS    0H
+         STM   R0,R15,FLCGRSAV        Save application registers
+         ST    R14,SVCOPSW+4
+         MVI   SVCOPSW+4,X'00'
+         LM    R0,R15,FLCCRSAV        Load OS registers
+*
+* We need to return to 31-bit mode, which PDOS may be operating in.
+         AIF   ('&SYS' EQ 'S370').MOD24G
+         CALL  @@SETM31
+.MOD24G  ANOP
+         LA    R15,3
+         B     ADISPRT2
+*
+*
+*
+**********************************************************************
+*                                                                    *
 *  DWRITE - DCB write routine (for when people do WRITE)             *
 *                                                                    *
 *  for now - go back via the same path as an SVC                     *

@@ -490,6 +490,8 @@ typedef struct {
 
 static DCB *gendcb = NULL; /* need to eliminate this state info */
 
+extern int newio; /* +++ get rid of this horror!!! */
+
 void gotret(void);
 int adisp(void);
 void dread(void);
@@ -656,11 +658,22 @@ static int pdosDispatchUntilInterrupt(PDOS *pdos)
             else
             {
                 char *p;
+                char tbuf[MAXBLKSZ];
+                int cnt;
+                static int i = 0;
+                static int j = 1;
                 
                 /* we know that they are using R8 for the buffer, via
                    the READ macro */
+                if (rcnt == 0)
+                {                    
+                    pdos->cyl_upto++;
+                    newio = 0x040C0000;
+                }
+                cnt = rdblock(pdos->ipldev, pdos->cyl_upto, i, j, 
+                              tbuf, MAXBLKSZ);
                 p = (char *)pdos->context.regs[8];
-                *p = 'A';
+                memcpy(p, tbuf, cnt);
             }
             rcnt++;
         }

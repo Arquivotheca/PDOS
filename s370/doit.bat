@@ -24,7 +24,7 @@ hdtofil pcomm.bin <pcomm.txt
 echo PDOS00 3390-1 * separate >ctl.txt
 echo SYS1.PLOAD SEQ pload.bin TRK 10 1 0 PS U 0 18452 >>ctl.txt
 echo SYS1.PDOS SEQ pdos.bin CYL 1 1 0 PS U 0 18452 >>ctl.txt
-echo SYS1.PCOMM SEQ pcomm.bin CYL 2 1 0 PS U 0 18452 >>ctl.txt
+echo SYS1.PCOMM SEQ pcomm.bin CYL 4 1 0 PS U 0 18452 >>ctl.txt
 del pdos00.199
 dasdload -bz2 ctl.txt pdos00.199
 copy pdos00.199 \mvs380\dasd

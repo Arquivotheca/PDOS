@@ -939,8 +939,8 @@ static int pdosLoadPcomm(PDOS *pdos)
     while (cnt != 0)
     {
 #if 0
-        printf("loading to %p from %d, %d, %d\n", load, i, j,
-               pdos->cyl_upto);
+        printf("loading to %p from %d, %d, %d\n", load,
+               pdos->cyl_upto, i, j);
 #endif
         cnt = rdblock(pdos->ipldev, pdos->cyl_upto, i, j, tbuf, MAXBLKSZ);
         if (cnt == -1)
@@ -957,6 +957,7 @@ static int pdosLoadPcomm(PDOS *pdos)
                 lastcnt = -2;
                 pdos->cyl_upto++;
                 i = 0;
+                j = 1;
                 continue;
             }
             /* probably reached last record on track */

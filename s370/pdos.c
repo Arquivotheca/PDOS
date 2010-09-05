@@ -301,6 +301,11 @@ typedef struct {
     short dcblrecl;
 } DCB;
 
+typedef struct {
+    char filler1[30-16]; /* this 16 comes from IOBSTDRD +++ - fix */
+    short residual;
+} IOB;
+
 
 /* A S/370 logical address consists of a segment index, which is
    bits 8-11 (for 1MB index), for the 16 possible values, then
@@ -488,7 +493,8 @@ typedef struct {
 
 /*static PDOS pdos;*/
 
-static DCB *gendcb = NULL; /* need to eliminate this state info */
+static DCB *gendcb = NULL; /* +++ need to eliminate this state info */
+static IOB geniob; /* +++ move this somewhere */
 
 extern int newio; /* +++ get rid of this horror!!! */
 
@@ -662,6 +668,7 @@ static int pdosDispatchUntilInterrupt(PDOS *pdos)
                 int cnt;
                 static int i = 0;
                 static int j = 1;
+                char *decb;
                 
                 /* we know that they are using R8 for the buffer, via
                    the READ macro */
@@ -671,9 +678,12 @@ static int pdosDispatchUntilInterrupt(PDOS *pdos)
                     newio = 0x040C0000;
                 }
                 cnt = rdblock(pdos->ipldev, pdos->cyl_upto, i, j, 
-                              tbuf, MAXBLKSZ);
+                              tbuf, pdos->context.regs[9]);
                 p = (char *)pdos->context.regs[8];
                 memcpy(p, tbuf, cnt);
+                geniob.residual = (short)(pdos->context.regs[9] - cnt);
+                decb = (char *)pdos->context.regs[1];
+                *(IOB **)(decb + 16) = &geniob;
             }
             rcnt++;
         }
@@ -920,15 +930,18 @@ static void pdosProcessSVC(PDOS *pdos)
         if (fcnt > 2)
         {
             gendcb->u1.dcbput = (int)dread;
+            gendcb->u2.dcbrecfm |= DCBRECU;
+            gendcb->dcblrecl = 0;
+            gendcb->dcbblksi = 18452;
         }
         else
         {
             gendcb->u1.dcbput = (int)dwrite;
+            gendcb->u2.dcbrecfm |= DCBRECF;
+            gendcb->dcblrecl = 80;
+            gendcb->dcbblksi = 80;
         }
         gendcb->dcbcheck = (int)dcheck;
-        gendcb->u2.dcbrecfm |= DCBRECF;
-        gendcb->dcblrecl = 80;
-        gendcb->dcbblksi = 80;
         oneexit = gendcb->u2.dcbexlsa & 0xffffff;
         if (oneexit != 0)
         {

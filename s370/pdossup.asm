@@ -193,7 +193,8 @@ R        DS    C
          DS    0D
 WAITNOER DC    X'020E0000'  I/O, machine check, EC, wait
          DC    X'00000000'  no error
-NEWIO    DC    X'000C0000'  machine check, EC
+         ENTRY NEWIO
+NEWIO    DC    X'000C0000'  machine check, EC +++ need DAT on later
          AIF   ('&SYS' EQ 'S370').MOD24
          DC    A(X'80000000'+CONT)  continuation after I/O request
          AGO   .MOD31

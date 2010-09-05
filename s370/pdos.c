@@ -643,11 +643,26 @@ static int pdosDispatchUntilInterrupt(PDOS *pdos)
         }
         else if (ret == 3) /* got a READ request */
         {
+            static int rcnt = 0;
+            
             /* need to call EOF routine */
             /* printf("eodad routine has %p %x in it\n", gendcb->eodad,
                    *gendcb->eodad); */
             /* EOF routine usually sets R6 to 1, so just do it */
-            pdos->context.regs[6] = 1;
+            if (rcnt != 0)
+            {
+                pdos->context.regs[6] = 1;
+            }
+            else
+            {
+                char *p;
+                
+                /* we know that they are using R8 for the buffer, via
+                   the READ macro */
+                p = (char *)pdos->context.regs[8];
+                *p = 'A';
+            }
+            rcnt++;
         }
     }
     return (INTERRUPT_SVC); /* only doing SVCs at the moment */

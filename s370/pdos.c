@@ -282,7 +282,8 @@ typedef struct {
 } PSA;
 
 typedef struct {
-    char unused1[36];
+    char unused1[32];
+    int *eodad;
     union
     {
         char dcbrecfm;
@@ -487,9 +488,11 @@ typedef struct {
 
 /*static PDOS pdos;*/
 
+static DCB *gendcb = NULL; /* need to eliminate this state info */
 
 void gotret(void);
 int adisp(void);
+void dread(void);
 void dwrite(void);
 void dcheck(void);
 void dexit(int oneexit, DCB *dcb);
@@ -637,6 +640,14 @@ static int pdosDispatchUntilInterrupt(PDOS *pdos)
         {
             /* need to fix bug in PDPCLIB - long lines should be truncated */
             printf("%.80s\n", pdos->context.regs[4]); /* wrong!!! */
+        }
+        else if (ret == 3) /* got a READ request */
+        {
+            /* need to call EOF routine */
+            /* printf("eodad routine has %p %x in it\n", gendcb->eodad,
+                   *gendcb->eodad); */
+            /* EOF routine usually sets R6 to 1, so just do it */
+            pdos->context.regs[6] = 1;
         }
     }
     return (INTERRUPT_SVC); /* only doing SVCs at the moment */
@@ -827,7 +838,6 @@ static void pdosInitAspaces(PDOS *pdos)
 static void pdosProcessSVC(PDOS *pdos)
 {
     int svc;
-    static DCB *dcb = NULL; /* need to eliminate this state info */
     static int getmain = PCOMM_HEAP;
        /* should move to PDOS and use memmgr - but virtual memory
           will obsolete anyway */
@@ -873,29 +883,38 @@ static void pdosProcessSVC(PDOS *pdos)
     else if (svc == 64) /* rdjfcb */
     {
         int oneexit;
+        static int fcnt = 0;
 
-        dcb = (DCB *)pdos->context.regs[10]; 
+        gendcb = (DCB *)pdos->context.regs[10]; 
             /* need to protect against this */
             /* and it's totally wrong anyway */
-        dcb->u1.dcbput = (int)dwrite;
-        dcb->dcbcheck = (int)dcheck;
-        dcb->u2.dcbrecfm |= DCBRECF;
-        dcb->dcblrecl = 80;
-        dcb->dcbblksi = 80;
-        oneexit = dcb->u2.dcbexlsa & 0xffffff;
+        fcnt++;
+        if (fcnt > 2)
+        {
+            gendcb->u1.dcbput = (int)dread;
+        }
+        else
+        {
+            gendcb->u1.dcbput = (int)dwrite;
+        }
+        gendcb->dcbcheck = (int)dcheck;
+        gendcb->u2.dcbrecfm |= DCBRECF;
+        gendcb->dcblrecl = 80;
+        gendcb->dcbblksi = 80;
+        oneexit = gendcb->u2.dcbexlsa & 0xffffff;
         if (oneexit != 0)
         {
             oneexit = *(int *)oneexit & 0xffffff;
             if (oneexit != 0)
             {
-                dexit(oneexit, dcb);
+                dexit(oneexit, gendcb);
             }
         }
         pdos->context.regs[15] = 0;
     }
     else if (svc == 22) /* open */
     {
-        dcb->u1.dcboflgs |= DCBOFOPN;
+        gendcb->u1.dcboflgs |= DCBOFOPN;
         pdos->context.regs[15] = 0; /* is this required? */
     }
     return;
@@ -916,7 +935,7 @@ static int pdosLoadPcomm(PDOS *pdos)
     int i;
     int j;
     static int savearea[20]; /* needs to be in user space */
-    static char mvsparm[] = { "\x00" "\x06" "--help" };
+    static char mvsparm[] = { "\x00" "\x06" "dd:inp" };
     static char *pptrs[1];
     char tbuf[MAXBLKSZ];
     int cnt = -1;

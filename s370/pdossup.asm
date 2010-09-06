@@ -151,12 +151,20 @@ RDBLOCK  DS    0H
          LPSW  WAITNOER     Wait for an interrupt
          DC    H'0'
 CONT     DS    0H           Interrupt will automatically come here
-         LA    R15,0
+         AIF   ('&SYS' EQ 'S390').SIO31H
          SH    R7,FLCCSW+6  Subtract residual count to get bytes read
          LR    R15,R7
 * After a successful CCW chain, CSW should be pointing to end
          CLC   FLCCSW(4),=A(FINCHAIN)
          BE    ALLFINE
+         AGO   .SIO24H
+.SIO31H  ANOP
+         TSCH  0(R9)
+         SH    R7,10(R9)
+         LR    R15,R7
+         CLC   4(4,R9),=A(FINCHAIN)
+         BE    ALLFINE
+.SIO24H  ANOP
          L     R15,=F'-1'   error return
 ALLFINE  DS    0H
          RETURN (14,12),RC=(15)

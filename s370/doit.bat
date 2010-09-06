@@ -18,10 +18,10 @@ gccmvs -DUSE_MEMMGR -DS380 -S -I . -I ../pdpclib pcomm.c
 m4 -I . -I ../pdpclib pload.m4 >pload.jcl
 call runmvs pload.jcl output.txt none pload.zip
 unzip -o pload
-hdtofil pload.bin <pload.txt
-hdtofil pdos.bin <pdos.txt
-hdtofil pcomm.bin <pcomm.txt
-echo 1234 >pcomm.in
+copy pload.txt pload.bin
+copy pdos.txt pdos.bin
+copy pcomm.txt pcomm.bin
+copy pcommin.txt pcomm.in
 echo PDOS00 3390-1 * separate >ctl.txt
 echo SYS1.PLOAD SEQ pload.bin TRK 10 1 0 PS U 0 18452 >>ctl.txt
 echo SYS1.PDOS SEQ pdos.bin CYL 1 1 0 PS U 0 18452 >>ctl.txt

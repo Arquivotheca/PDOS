@@ -976,7 +976,7 @@ static int pdosLoadPcomm(PDOS *pdos)
     int i;
     int j;
     static int savearea[20]; /* needs to be in user space */
-    static char mvsparm[] = { "\x00" "\x06" "dd:inp" };
+    static char mvsparm[] = { "\x00" "\x09" "-S -o - -" };
     static char *pptrs[1];
     char tbuf[MAXBLKSZ];
     int cnt = -1;

@@ -657,7 +657,7 @@ static int pdosDispatchUntilInterrupt(PDOS *pdos)
             /* printf("eodad routine has %p %x in it\n", gendcb->eodad,
                    *gendcb->eodad); */
             /* EOF routine usually sets R6 to 1, so just do it */
-            if (rcnt != 0)
+            if (rcnt > 99999)
             {
                 pdos->context.regs[6] = 1;
             }
@@ -679,11 +679,29 @@ static int pdosDispatchUntilInterrupt(PDOS *pdos)
                 }
                 cnt = rdblock(pdos->ipldev, pdos->cyl_upto, i, j, 
                               tbuf, pdos->context.regs[9]);
-                p = (char *)pdos->context.regs[8];
-                memcpy(p, tbuf, cnt);
-                geniob.residual = (short)(pdos->context.regs[9] - cnt);
-                decb = (char *)pdos->context.regs[1];
-                *(IOB **)(decb + 16) = &geniob;
+                if (cnt <= 0)
+                {
+                    pdos->context.regs[6] = 1;
+                }
+                else
+                {
+                    p = (char *)pdos->context.regs[8];
+                    memcpy(p, tbuf, cnt);
+                    geniob.residual = (short)(pdos->context.regs[9] - cnt);
+                    decb = (char *)pdos->context.regs[1];
+                    *(IOB **)(decb + 16) = &geniob;
+                    j++;
+                    if (j == 4)
+                    {
+                        j = 1;
+                        i++;
+                    }
+                    if (i == 15)
+                    {
+                        i++;
+                        pdos->cyl_upto++;
+                    }
+                }
             }
             rcnt++;
         }
@@ -976,7 +994,7 @@ static int pdosLoadPcomm(PDOS *pdos)
     int i;
     int j;
     static int savearea[20]; /* needs to be in user space */
-    static char mvsparm[] = { "\x00" "\x09" "-S -o - -" };
+    static char mvsparm[] = { "\x00" "\x0d" "-Os -S -o - -" };
     static char *pptrs[1];
     char tbuf[MAXBLKSZ];
     int cnt = -1;

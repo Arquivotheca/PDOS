@@ -927,8 +927,7 @@ static void pdosProcessSVC(PDOS *pdos)
             else
             {
                 /* one shot at ATL memory */
-                /* pdos->context.regs[1] = PCOMM_ATL_START; +++ */
-                getmain += 0x80000;
+                pdos->context.regs[1] = PCOMM_ATL_START;
             }
         }
     }

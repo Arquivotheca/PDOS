@@ -199,10 +199,9 @@ CC2      DS    CL2
 HH2      DS    CL2
 R        DS    C
          DS    0D
-WAITNOER DC    X'020E0000'  I/O, machine check, EC, wait
+WAITNOER DC    X'060E0000'  I/O, machine check, EC, wait, DAT on
          DC    X'00000000'  no error
-         ENTRY NEWIO
-NEWIO    DC    X'000C0000'  machine check, EC +++ need DAT on later
+NEWIO    DC    X'040C0000'  machine check, EC, DAT on
          AIF   ('&SYS' EQ 'S370').MOD24
          DC    A(X'80000000'+CONT)  continuation after I/O request
          AGO   .MOD31

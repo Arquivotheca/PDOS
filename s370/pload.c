@@ -41,6 +41,8 @@ static char buf[40000];
    address in location 0, it knows to create its own stack,
    which it does at 0.5 MB in (thus creating a restriction
    of only being 0.5 MB in size unless this is changed) */
+/* This is governed by the code in sapstart, so these constants
+   need to match that */
 #define PLOAD_STACK (PLOAD_START + 0x080000)
 
 /* the heap - for the equivalent of getmains - is located

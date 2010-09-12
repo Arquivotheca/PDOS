@@ -28,8 +28,8 @@ SAPSTART TITLE 'S A P S T A R T  ***  STARTUP ROUTINE FOR C'
 *  Equates                                                            *
 *                                                                     *
 ***********************************************************************
-STACKLOC EQU   X'100000'    The stack starts here (1 MiB)
-HEAPLOC  EQU   X'180000'    Where malloc etc come from (1.5 MiB)
+STACKLOC EQU   X'080000'    The stack starts here (0.5 MiB)
+HEAPLOC  EQU   X'100000'    Where malloc etc come from (1 MiB)
 CHUNKSZ  EQU   18452        The executable is split into blocks
 MAXBLKS  EQU   40           Maximum number of blocks to read
 CODESTRT EQU   1024         Start of our real code
@@ -195,9 +195,10 @@ WAITSERR DC    X'000E0000'  EC mode + Machine Check enabled + wait
 * block to the startup routine, with various bits of information
 * for it to interpret.
 STAGE4   DS    0H
-* Since our program is less than 1 MB, set the stack at
-* location 1 MB. Note that the other thing to worry about
-* is the heap, which is set in the sapsupa GETM routine
+* Since our program is less than 0.5 MB, set the stack at
+* location 0.5 MB. Note that the other thing to worry about
+* is the heap, which is set here, and returned in the sapsupa 
+* GETM routine.
          L     R13,=A(STACKLOC)  Stack location
          LA    R2,0
          ST    R2,4(R13)         backchain to nowhere

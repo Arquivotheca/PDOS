@@ -121,6 +121,10 @@ virtual memory map:
    address in location 0, it knows to create its own stack,
    which it does at 0.5 MB in (thus creating a restriction
    of only being 0.5 MB in size unless this is changed) */
+/* Note that these definitions need to match corresponding
+   defines in sapstart - or else make them variables and
+   get the infrastructure to inform PDOS of whatever it
+   needs to know. */
 #define PLOAD_STACK (PLOAD_START + 0x080000) /* 0.5 MB */
 
 /* the heap - for the equivalent of getmains - is located

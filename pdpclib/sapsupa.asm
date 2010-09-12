@@ -399,7 +399,7 @@ CLOSEMLN EQU   *-CLOSEMAC
          A     R3,=A(64-1)
          N     R3,=X'FFFFFFC0'
 *
-* Assume stack has been provided in global variable
+* Assume heap location has been provided in global variable
 * Note that this function will only work if the C library
 * is compiled with MEMMGR option.
          L     R1,=V(@@HPLOC)

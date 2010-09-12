@@ -504,7 +504,8 @@ void dread(void);
 void dwrite(void);
 void dcheck(void);
 void dexit(int oneexit, DCB *dcb);
-
+void datoff(void);
+void daton(void);
 
 int pdosRun(PDOS *pdos);
 void pdosDefaults(PDOS *pdos);
@@ -514,7 +515,6 @@ static int pdosDispatchUntilInterrupt(PDOS *pdos);
 static void pdosInitAspaces(PDOS *pdos);
 static void pdosProcessSVC(PDOS *pdos);
 static int pdosLoadPcomm(PDOS *pdos);
-
 
 int main(int argc, char **argv)
 {
@@ -553,10 +553,6 @@ int pdosRun(PDOS *pdos)
 {   
     int intrupt;
 
-    lcreg1(pdos->aspaces[pdos->curr_aspace].o.cregs[1]);
-#if defined(S380)
-    lcreg13(pdos->aspaces[pdos->curr_aspace].o.cregs[13]);
-#endif
     while (!pdos->shutdown)
     {
         intrupt = pdosDispatchUntilInterrupt(pdos);
@@ -596,6 +592,15 @@ int pdosInit(PDOS *pdos)
     pdos->shutdown = 0;
     pdosInitAspaces(pdos);
     pdos->curr_aspace = 3;
+    
+    /* Now we set the DAT pointers for our first address space,
+       in preparation for switching DAT on. */
+    lcreg1(pdos->aspaces[pdos->curr_aspace].o.cregs[1]);
+#if defined(S380)
+    lcreg13(pdos->aspaces[pdos->curr_aspace].o.cregs[13]);
+#endif
+    daton();
+
     pdosLoadPcomm(pdos);
     return (1);
 }
@@ -605,8 +610,9 @@ int pdosInit(PDOS *pdos)
 
 void pdosTerm(PDOS *pdos)
 {
-    /* +++ should disable DAT here, to return in same status
-       that we entered in */
+    /* switch DAT off so that we return to the caller (probably
+       pload) in the same state we were called. */
+    datoff();
     return;
 }
 

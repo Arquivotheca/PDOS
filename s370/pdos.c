@@ -496,8 +496,6 @@ typedef struct {
 static DCB *gendcb = NULL; /* +++ need to eliminate this state info */
 static IOB geniob; /* +++ move this somewhere */
 
-extern int newio; /* +++ get rid of this horror!!! */
-
 void gotret(void);
 int adisp(void);
 void dread(void);
@@ -681,7 +679,6 @@ static int pdosDispatchUntilInterrupt(PDOS *pdos)
                 if (rcnt == 0)
                 {                    
                     pdos->cyl_upto++;
-                    newio = 0x040C0000;
                 }
                 cnt = rdblock(pdos->ipldev, pdos->cyl_upto, i, j, 
                               tbuf, pdos->context.regs[9]);
@@ -930,7 +927,8 @@ static void pdosProcessSVC(PDOS *pdos)
             else
             {
                 /* one shot at ATL memory */
-                pdos->context.regs[1] = PCOMM_ATL_START;
+                /* pdos->context.regs[1] = PCOMM_ATL_START; +++ */
+                getmain += 0x80000;
             }
         }
     }
@@ -1061,6 +1059,9 @@ static int pdosLoadPcomm(PDOS *pdos)
     pdos->context.regs[15] = (int)entry;
     pdos->context.psw1 = PSW_ENABLE_INT; /* need to enable interrupts */
     pdos->context.psw2 = (int)entry; /* 24-bit mode for now */
+#if defined(S390)
+    pdos->context.psw2 |= 0x80000000; /* dispatch in 31-bit mode */
+#endif
 
     pptrs[0] = mvsparm;
     

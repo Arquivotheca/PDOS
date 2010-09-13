@@ -822,6 +822,9 @@ static void pdosInitAspaces(PDOS *pdos)
 #if defined(S380) || defined(S390)
     for (a = 0; a < MAXANUM; a++)
     {
+/* normally even if it is SEG_64K, we ignore that for the ATL DAT
+   tables, because ATL is still 1 MB segments. However, if we're
+   using XA BTL, then we accept it ATL too. */
 #if SEG_64K && BTL_XA
         for (s = 0; s < (MAXASIZE * 16); s++)
 #else
@@ -830,7 +833,10 @@ static void pdosInitAspaces(PDOS *pdos)
         {
             int adjust = 0;
 
-/* If EA is on, it is mixed DAT, and thus 1M segment size */
+/* If EA is on, it is mixed DAT, and thus implied 1M segment size */
+/* If we're not using EA, then just map all address spaces onto
+   the same one, implying that a single address space should be
+   used. */
 #if EA_ON
             if (s >= S370_MAXMB)
             {

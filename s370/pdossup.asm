@@ -121,6 +121,7 @@ RDBLOCK  DS    0H
          L     R2,12(R1)    Record
          STC   R2,R         
          L     R2,16(R1)    Buffer
+         LRA   R2,0(R2)     Get real address
          STCM  R2,B'0111',LOADCCW+1   This requires BTL buffer
          L     R7,20(R1)    Bytes to read
          STH   R7,LOADCCW+6  Store in READ CCW

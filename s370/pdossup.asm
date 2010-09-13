@@ -122,9 +122,15 @@ RDBLOCK  DS    0H
          STC   R2,R         
          L     R2,16(R1)    Buffer
          LRA   R2,0(R2)     Get real address
-         STCM  R2,B'0111',LOADCCW+1   This requires BTL buffer
          L     R7,20(R1)    Bytes to read
+         AIF   ('&SYS' EQ 'S390').CHN390B
+         STCM  R2,B'0111',LOADCCW+1   This requires BTL buffer
          STH   R7,LOADCCW+6  Store in READ CCW
+         AGO   .CHN390C
+.CHN390B ANOP
+         ST    R2,LOADCCW+4
+         STH   R7,LOADCCW+2
+.CHN390C ANOP
 *
 * Interrupt needs to point to CONT now. Again, I would hope for
 * something more sophisticated in PDOS than this continual
@@ -177,17 +183,25 @@ ALLFINE  DS    0H
 IRB      DS    24F
 ORB      DS    0F
          DC    F'0'
-         DC    X'0000FF00'  Logical-Path Mask (enable all?)
+         DC    X'0080FF00'  Logical-Path Mask (enable all?) + format-1
          DC    A(SEEK)
          DC    5F'0'
 .NOT390B ANOP
 *
 *
          DS    0D
+         AIF   ('&SYS' EQ 'S390').CHN390
 SEEK     CCW   7,BBCCHH,X'40',6       40 = chain command
 SEARCH   CCW   X'31',CCHHR,X'40',5    40 = chain command
          CCW   8,SEARCH,0,0
 LOADCCW  CCW   6,0,X'20',32767        20 = ignore length issues
+         AGO   .CHN390F
+.CHN390  ANOP
+SEEK     CCW1  7,BBCCHH,X'40',6       40 = chain command
+SEARCH   CCW1  X'31',CCHHR,X'40',5    40 = chain command
+         CCW1  8,SEARCH,0,0
+LOADCCW  CCW1  6,0,X'20',32767        20 = ignore length issues
+.CHN390F ANOP
 FINCHAIN EQU   *
          DS    0H
 BBCCHH   DC    X'000000000000'

@@ -179,10 +179,14 @@ virtual memory map:
 #define BTL_PRIVLEN 10 /* how many MB to give to private region */
 
 #ifndef MAXASIZE
+#ifdef S390
+#define MAXASIZE 96
+#else
 #define MAXASIZE 80 /* maximum of 80 MB for address space */
                     /* note that this needs to be a multiple of 16
                        in order for the current logic (MAXASIZE/SEG_BLK)
                        to work */
+#endif
 #endif
 
 #ifndef MAXANUM
@@ -818,8 +822,9 @@ static void pdosInitAspaces(PDOS *pdos)
     }
 #endif
 
+
     /* initialize XA-DAT tables */
-#if defined(S380) || defined(S390)
+#if defined(S380)
     for (a = 0; a < MAXANUM; a++)
     {
 /* normally even if it is SEG_64K, we ignore that for the ATL DAT
@@ -899,7 +904,103 @@ static void pdosInitAspaces(PDOS *pdos)
     }
 #endif
 
-    return;
+
+/* For S/390 DAT there are no EA considerations. So we set
+   aside the first 5 MB virtual for the OS, then 10 MB for 
+   BTL address space, then 11 MB for the OS, then the rest
+   for the ATL address space. This requires 16 MB real for
+   PDOS, plus (10 + ATL) * # address spaces. */
+
+#if defined(S390)
+    for (a = 0; a < MAXANUM; a++)
+    {
+#if SEG_64K
+        for (s = 0; s < (MAXASIZE * 16); s++)
+#else
+        for (s = 0; s < MAXASIZE; s++)
+#endif
+        {
+            int r = 0;
+            static int atl = MAXASIZE - S370_MAXMB - BTL_PRIVLEN;
+            static int btl = BTL_PRIVLEN;
+            static int pbtl = BTL_PRIVSTART / (1024 * 1024);
+            static int patl = S370_MAXMB - BTL_PRIVSTART / (1024 * 1024);
+
+            r = s;
+            /* if less than 5 MB, it is PDOS, so no adjustment required */
+            if (s < pbtl)
+            {
+                /* no adjustment required, V=R */
+            }
+            
+            /* if we're in the BTL private region, that requires us to
+               skip previous address spaces plus all PDOS memory
+               (PDOS gets the entire 16 MB BTL real), then zero base it */
+            else if (s < (pbtl + btl))
+            {
+                r += a * (btl + atl);
+                r += pbtl + patl;
+                r -= pbtl;
+            }
+            
+            /* if we're in the PDOS atl area, map to BTL real (PDOS
+               gets the lot) */
+            else if (s < (pbtl + btl + patl))
+            {
+                r -= (pbtl + btl);
+            }
+            
+            /* if we're in the ATL private area, need to skip previous
+               address spaces, plus pdos, then zero-base */
+            else if (s < (pbtl + btl + patl))
+            {
+                r += a * (btl + atl);
+                r += (pbtl + patl);
+                r -= (pbtl + btl + patl);
+            }
+
+            /* no shifting of page table address is required,
+               but the low order 12 bits must be 0, ie address must
+               be aligned on 64-byte boundary */
+            pdos->aspaces[a].o.segtable[s] = 
+#if SEG_64K
+                  0x0U
+#else
+                  0xfU
+#endif
+                  | (unsigned int)pdos->aspaces[a].o.pagetable[s];
+            for (p = 0; p < MAXPAGE; p++)
+            {
+                /* because the address begins in bit 1, just like
+                   a 31-bit bit address, we just need to shift
+                   20 bits (1 MB) to get the right address. Plus
+                   add in the page number, by shifting 12 bits
+                   for the 4K multiple */
+                pdos->aspaces[a].o.pagetable[s][p] = 
+#if SEG_64K
+                                  (s << 16)
+#else
+                                  (r << 20)
+#endif
+                                  | (p << 12);
+            }
+        }
+        pdos->aspaces[a].o.cregs[1] = 
+            /* - 1 because architecture implies 1 extra block of 16 */
+#if SEG_64K
+            (MAXASIZE/SEG_BLK * 16 - 1)
+#else
+            (MAXASIZE/SEG_BLK - 1)
+#endif
+            | (unsigned int)pdos->aspaces[a].o.segtable;
+            /* note that the CR1 needs to be 4096-byte aligned, to give
+               12 low zeros */
+        printf("aspace %d, seg %p, cr13 %08X\n",
+               a, pdos->aspaces[a].o.segtable, pdos->aspaces[a].o.cregs[13]);
+    }
+#endif
+
+     return;
 }
 
 

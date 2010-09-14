@@ -948,6 +948,7 @@ static void pdosInitAspaces(PDOS *pdos)
             else if (s < (pbtl + btl + patl))
             {
                 r -= (pbtl + btl);
+                r += pbtl;
             }
             
             /* if we're in the ATL private area, need to skip previous

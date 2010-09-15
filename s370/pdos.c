@@ -164,8 +164,8 @@ virtual memory map:
   size and that they have been allocated on cylinder boundaries */
 
 #ifndef EA_ON
-#ifdef S380
-#define EA_ON 1 /* use extended addressing in 380 mode */
+#ifndef S390
+#define EA_ON 1 /* use extended addressing in 370 and 380 mode */
 #else
 #define EA_ON 0 /* only supported in 380 mode */
 #endif

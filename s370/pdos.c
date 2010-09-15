@@ -1135,15 +1135,6 @@ static int pdosLoadPcomm(PDOS *pdos)
     int cnt = -1;
     int lastcnt = 0;
 
-#if EA_ON
-    /* +++ we should really enable DAT first, so that this is
-       naturally mapped - but we can't do I/O directly in
-       regardless, so the memcpy will still be required.
-       It's not really guaranteed that pages will be
-       continuous in real memory, even if we know where it is,
-       so it is appropriate to go via a buffer regardless. */
-    load += EA_OFFSET + pdos->curr_aspace * (BTL_PRIVLEN * 1024 * 1024);
-#endif
     printf("PCOMM should reside on cylinder %d, head 0 of IPL device\n",
            pdos->cyl_upto);
     /* Note that we read until we get EOF (a zero-length block). */

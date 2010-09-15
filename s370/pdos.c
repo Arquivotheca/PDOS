@@ -179,8 +179,10 @@ virtual memory map:
 #define BTL_PRIVLEN 10 /* how many MB to give to private region */
 
 #ifndef MAXASIZE
-#ifdef S390
+#if defined(S390)
 #define MAXASIZE 96
+#elif defined(S370)
+#define MAXASIZE 16
 #else
 #define MAXASIZE 80 /* maximum of 80 MB for address space */
                     /* note that this needs to be a multiple of 16
@@ -241,6 +243,18 @@ virtual memory map:
    to use 64K segments instead of the normal 1 MB.
    
 */
+
+/* The S/370 architecture offers 1 MB and 64K segments, and
+   either may be selected here. It is also possible to
+   enable extended addressing, which will allow multiple BTL
+   address spaces.
+*/
+
+/* The S/390 normally only provides 1 MB segments, but with
+   Hercules/380 you can also have 64K segments should that
+   serve some purpose.
+*/
+
 
 
 #if !defined(SEG_64K)
@@ -1038,8 +1052,14 @@ static void pdosProcessSVC(PDOS *pdos)
             }
             else
             {
+#ifdef S370
+                /* trim down excessive getmains in S/370 to cope
+                   with the user of memmgr */
+                getmain += PDOS_STORINC;
+#else
                 /* one shot at ATL memory */
                 pdos->context.regs[1] = PCOMM_ATL_START;
+#endif
             }
         }
     }

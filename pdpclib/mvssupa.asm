@@ -694,6 +694,12 @@ PARM8    DS    A              NEXT PARM
 *    For FB, if LRECL > BLKSIZE, make LRECL=BLKSIZE                   *
 *    For VB, if LRECL+3 > BLKSIZE, set spanned                        *
 *                                                                     *
+*                                                                     *
+*    So, what this means is that if the DCBLRECL etc fields are set   *
+*    already by MVS (due to existing file, JCL statement etc),        *
+*    then these aren't changed. However, if they're not present,      *
+*    then start using the "LRECL" etc previously set up by C caller.  *
+*                                                                     *
 ***********************************************************************
          PUSH  USING
          DROP  ,

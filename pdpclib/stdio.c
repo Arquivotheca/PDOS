@@ -923,6 +923,15 @@ static void osfopen(void)
             }
         }
     }
+    /* if we have RECFM=V, the usable lrecl is 4 bytes shorter
+       than we are told, so just adjust that here */
+    else if (myfile->recfm == 1)
+    {
+       if (myfile->lrecl > 4)
+       {
+           myfile->lrecl -= 4;
+       }
+    }
 
     if ((modeType == 4) || (modeType == 5))
     {

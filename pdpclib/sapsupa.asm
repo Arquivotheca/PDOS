@@ -293,15 +293,13 @@ RETURNAR DS    0H
 *         PUT   (R2)
 .NLM2    ANOP
          AIF   ('&OUTM' NE 'M').NMM2
-* Length goes into R6 for the DIAG
-         LR    R6,R4
 * Extra 6 bytes for the MSG *, minus 4 for RDW
-         LA    R6,2(R6)
+         LA    R4,2(R4)
 * Move in MSG * prefix
          MVC   ABMSG(6),MSGSTAR
-         LA    R4,ABMSG
-*         DIAG  4,6,0(8)
-         DC    X'83460008'
+         LA    R6,ABMSG
+*         DIAG  6,4,0(8)
+         DC    X'83640008'
          LA    R15,0
 *         PUT   (R2),(R6)
 .NMM2    ANOP
@@ -648,6 +646,7 @@ RETURN99 DS    0H
 *
 *
 *
+         DS    0H
 MSGSTAR  DC    C'MSG * '
 ABMSG    DS    2C                 Extra characters for MSG * move
 ABRDW    DS    4C                 Storage for a RDW

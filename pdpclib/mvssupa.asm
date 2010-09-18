@@ -1526,6 +1526,20 @@ RETURNGC FUNEXIT RC=(R5)
          SPACE 2
 ***********************************************************************
 *                                                                     *
+*  GETTZ - Get the offset from UTC offset in 1.048576 seconds         *
+*                                                                     *
+***********************************************************************
+@@GETTZ FUNHEAD ,                 get timezone offset
+*
+         L     R3,CVTPTR
+         USING CVT,R3
+         L     R4,CVTTZ
+*
+RETURNGS FUNEXIT RC=(R4)
+         LTORG ,
+         SPACE 2
+***********************************************************************
+*                                                                     *
 *    CALL @@SYSTEM,(req-type,pgm-len,pgm-name,parm-len,parm),VL       *
 *                                                                     *
 *    "-len" fields are self-defining values in the calling list,      *
@@ -2193,6 +2207,7 @@ ZDCBLEN  EQU   *-ZDCBAREA
          SPACE 2
          PRINT NOGEN
          IHAPSA ,            MAP LOW STORAGE
+         CVT DSECT=YES
          IKJTCB ,            MAP TASK CONTROL BLOCK
          IKJECT ,            MAP ENV. CONTROL BLOCK
          IKJPTPB ,           PUTLINE PARAMETER BLOCK

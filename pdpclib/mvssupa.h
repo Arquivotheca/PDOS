@@ -11,6 +11,8 @@ int __awrite(void *handle, unsigned char **buf, size_t *sz);
 void __aclose(void *handle);
 #pragma linkage(__getclk, OS)
 unsigned int __getclk(void *buf);
+#pragma linkage(__gettz, OS)
+int __gettz(void);
 #pragma linkage(__getm, OS)
 void *__getm(size_t sz);
 #pragma linkage(__freem, OS)

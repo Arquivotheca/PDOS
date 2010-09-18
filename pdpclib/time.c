@@ -223,9 +223,25 @@ __PDPCLIB_API__ char *ctime(const time_t *timer)
     return (asctime(localtime(timer)));
 }
 
-__PDPCLIB_API__ struct tm *gmtime(const time_t *timer)
+__PDPCLIB_API__ struct tm *localtime(const time_t *timer)
 {
-    return (localtime(timer));
+#ifdef __MVS__
+    time_t t;
+    int o;
+    
+    t = *timer;
+    o = __gettz(); /* this function returns the local timezone
+                      offset in 1.048576 second increments. The
+                      maximum offset people could define is 13
+                      hours (ie daylight savings in Fiji) and
+                      when mulplied by 16384, this won't exceed
+                      a 32-bit signed integer, so we're safe */
+    o = o * 16384 / 15625;
+    t += o;
+    return (gmtime(&t));
+#else
+    return (gmtime(timer));
+#endif
 }
 
 /* dow - written by Paul Edwards, 1993-01-31 */
@@ -250,7 +266,7 @@ __PDPCLIB_API__ struct tm *gmtime(const time_t *timer)
 
 static struct tm tms;
 
-__PDPCLIB_API__ struct tm *localtime(const time_t *timer)
+__PDPCLIB_API__ struct tm *gmtime(const time_t *timer)
 {
     unsigned yr, mo, da;
     unsigned long secs;

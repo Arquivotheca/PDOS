@@ -163,7 +163,6 @@ IN31C    DS    0H
          RETURN (14,12),RC=(15)
          LTORG
 *
-         CVT   DSECT=YES
          IKJTCB
          IEZJSCB
          IHAPSA

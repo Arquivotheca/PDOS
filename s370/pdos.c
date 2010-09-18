@@ -672,8 +672,17 @@ static int pdosDispatchUntilInterrupt(PDOS *pdos)
            here, but it needs to execut in user space. */
         if (ret == 2)
         {
-            /* need to fix bug in PDPCLIB - long lines should be truncated */
-            printf("%.80s\n", pdos->context.regs[4]); /* wrong!!! */
+            int len;
+
+            /* fix all these RECFM assumption!!! */
+            /* 4 = skip BDW and get length in RDW */  
+            len = *(short *)(pdos->context.regs[4] + 4);
+            if (len >= 4)
+            {
+                len -= 4;
+            }
+            /* 8 = skip BDW + RDW */
+            printf("%.*s\n", len, pdos->context.regs[4] + 8);
         }
         else if (ret == 3) /* got a READ request */
         {
@@ -1090,9 +1099,9 @@ static void pdosProcessSVC(PDOS *pdos)
         else
         {
             gendcb->u1.dcbput = (int)dwrite;
-            gendcb->u2.dcbrecfm |= DCBRECF;
-            gendcb->dcblrecl = 80;
-            gendcb->dcbblksi = 80;
+            gendcb->u2.dcbrecfm |= DCBRECV;
+            gendcb->dcblrecl = 84;
+            gendcb->dcbblksi = 88;
         }
         gendcb->dcbcheck = (int)dcheck;
         oneexit = gendcb->u2.dcbexlsa & 0xffffff;

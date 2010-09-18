@@ -134,7 +134,8 @@ SUBPOOL  EQU   0
 * THIS LINE IS FOR C/370
 *         L     R6,0(R4)
          LTR   R6,R6
-         LA    R1,ABUFFER
+         LA    R1,ABRDW           point to RDW before ABUFFER
+*         LA    R1,ABUFFER
          ST    R1,ASMBUF
          L     R5,20(,R11)        R5 points to ASMBUF
          ST    R1,0(R5)           save the pointer
@@ -143,11 +144,11 @@ SUBPOOL  EQU   0
 DONEOPEN DS    0H
          LR    R7,R2
          SR    R6,R6
-         LH    R6,=H'80'          Hardcode to 80
+         LH    R6,=H'254'         Hardcode to 250 bytes of data
          ST    R6,0(R8)
 FIXED    DS    0H
-         L     R6,=F'0'
-         B     DONESET
+*         L     R6,=F'0'
+*         B     DONESET
 VARIABLE DS    0H
          L     R6,=F'1'
 DONESET  DS    0H
@@ -294,8 +295,11 @@ RETURNAR DS    0H
          AIF   ('&OUTM' NE 'M').NMM2
 * Length goes into R6 for the DIAG
          LR    R6,R4
-* Use our prefix
-         LA    R4,MSGSTAR
+* Extra 6 bytes for the MSG *, minus 4 for RDW
+         LA    R6,2(R6)
+* Move in MSG * prefix
+         MVC   ABMSG(6),MSGSTAR
+         LA    R4,ABMSG
 *         DIAG  4,6,0(8)
          DC    X'83460008'
          LA    R15,0
@@ -645,7 +649,9 @@ RETURN99 DS    0H
 *
 *
 MSGSTAR  DC    C'MSG * '
-ABUFFER  DS    CL80
+ABMSG    DS    2C                 Extra characters for MSG * move
+ABRDW    DS    4C                 Storage for a RDW
+ABUFFER  DS    CL250
 WORKAREA DS    0F
 SAVEAREA DS    18F
 WORKLEN  EQU   *-WORKAREA

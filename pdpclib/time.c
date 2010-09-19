@@ -233,10 +233,11 @@ __PDPCLIB_API__ struct tm *localtime(const time_t *timer)
     t = *timer;
     o = __gettz(); /* this function returns the local timezone
                       offset in 1.048576 second increments. The
-                      maximum offset people could define is 13
-                      hours (ie daylight savings in Fiji) and
-                      when mulplied by 16384, this won't exceed
-                      a 32-bit signed integer, so we're safe.
+                      maximum offset people have managed to define
+                      is 14 hours (Kirribati) and when mulplied 
+                      by 16384, this doesn't exceed a 32-bit 
+                      signed integer, so we're safe.
+
                       Note that we have to take care of rounding
                       on top of that too though. */
     o = o * 16384;

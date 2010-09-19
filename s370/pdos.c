@@ -674,7 +674,7 @@ static int pdosDispatchUntilInterrupt(PDOS *pdos)
         {
             int len;
 
-            /* fix all these RECFM assumption!!! */
+            /* fix all these RECFM assumptions!!! */
             /* 4 = skip BDW and get length in RDW */  
             len = *(short *)(pdos->context.regs[4] + 4);
             if (len >= 4)
@@ -1074,9 +1074,10 @@ static void pdosProcessSVC(PDOS *pdos)
     }
     else if (svc == 24) /* devtype */
     {
-        /* hardcoded constants obtained from running MVS 3.8j system */
+        /* hardcoded constants that fell off the back of a truck */
         memcpy((void *)pdos->context.regs[0], 
-               "\x30\x50\x20\x0B\x00\x00\xF6\xC0",
+               "\x30\x50\x08\x0B" /* 08 = unit record */
+               "\x00\x00\x01\x02", /* device size = 258 byte blocks */
                8);
         pdos->context.regs[15] = 0;
     }
@@ -1100,8 +1101,8 @@ static void pdosProcessSVC(PDOS *pdos)
         {
             gendcb->u1.dcbput = (int)dwrite;
             gendcb->u2.dcbrecfm |= DCBRECV;
-            gendcb->dcblrecl = 84;
-            gendcb->dcbblksi = 88;
+            gendcb->dcblrecl = 254;
+            gendcb->dcbblksi = 258;
         }
         gendcb->dcbcheck = (int)dcheck;
         oneexit = gendcb->u2.dcbexlsa & 0xffffff;

@@ -228,6 +228,7 @@ __PDPCLIB_API__ struct tm *localtime(const time_t *timer)
 #ifdef __MVS__
     time_t t;
     int o;
+    int r;
     
     t = *timer;
     o = __gettz(); /* this function returns the local timezone
@@ -235,8 +236,20 @@ __PDPCLIB_API__ struct tm *localtime(const time_t *timer)
                       maximum offset people could define is 13
                       hours (ie daylight savings in Fiji) and
                       when mulplied by 16384, this won't exceed
-                      a 32-bit signed integer, so we're safe */
-    o = o * 16384 / 15625;
+                      a 32-bit signed integer, so we're safe.
+                      Note that we have to take care of rounding
+                      on top of that too though. */
+    o = o * 16384;
+    r = o % 15625;
+    o /= 15625;
+    if ((o > 0) && (r > 7812))
+    {
+        o++;
+    }
+    else if ((o < 0) && (r < -7812))
+    {
+        o--;
+    }
     t += o;
     return (gmtime(&t));
 #else

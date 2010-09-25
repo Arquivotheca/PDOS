@@ -469,6 +469,23 @@ RETURNFM DS    0H
 RETURNGC DS    0H
          RETURN (14,12),RC=(15)
          LTORG
+***********************************************************************
+*                                                                     *
+*  GETTZ - Get the offset from UTC offset in 1.048576 seconds         *
+*                                                                     *
+***********************************************************************
+         ENTRY @@GETTZ
+@@GETTZ  EQU   *
+         SAVE  (14,12),,@@GETTZ
+         LR    R12,R15
+         USING @@GETTZ,R12
+*
+         LA    R15,0
+*
+RETURNGS DS    0H
+         RETURN (14,12),RC=(15)
+         LTORG ,
+         SPACE 2
 * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
 *
 *  SYSTEM - execute another command

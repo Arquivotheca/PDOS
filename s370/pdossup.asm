@@ -512,8 +512,8 @@ WRITCONS DS    0H
          L     R7,0(R1)        Bytes to write
          L     R2,4(R1)        Buffer to write
          AIF   ('&SYS' EQ 'S390').CHN390G
-*         STCM  R2,B'0111',LOADCCW+1   This requires BTL buffer
-*         STH   R7,LOADCCW+6  Store in READ CCW
+         STCM  R2,B'0111',CCHAIN+1   This requires BTL buffer
+         STH   R7,CCHAIN+6     Store length in WRITE CCW
          AGO   .CHN390H
 .CHN390G ANOP
 *         ST    R2,LOADCCW+4

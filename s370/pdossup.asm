@@ -518,8 +518,8 @@ WRITCONS DS    0H
          STH   R7,CCHAIN+6     Store length in WRITE CCW
          AGO   .CHN390H
 .CHN390G ANOP
-*         ST    R2,LOADCCW+4
-*         STH   R7,LOADCCW+2
+         ST    R2,CCHAIN+4
+         STH   R7,CCHAIN+2
 .CHN390H ANOP
 *
 * Interrupt needs to point to CONT now. Again, I would hope for
@@ -582,17 +582,12 @@ CORB     DS    0F
          DS    0D
          AIF   ('&SYS' EQ 'S390').CHN390I
 * X'09' = write with automatic carriage return
-CCHAIN   CCW   X'09',CDATA,X'20',3    20 = ignore length issues
+CCHAIN   CCW   X'09',0,X'20',3    20 = ignore length issues
          AGO   .CHN390J
 .CHN390I ANOP
-*CCHAIN   CCW1  7,BBCCHH,X'40',6       40 = chain command
-*SEARCH   CCW1  X'31',CCHHR,X'40',5    40 = chain command
-*         CCW1  8,SEARCH,0,0
-*LOADCCW  CCW1  6,0,X'20',32767        20 = ignore length issues
+CCHAIN   CCW1  X'09',0,X'20',3    20 = ignore length issues
 .CHN390J ANOP
 CFINCHN  EQU   *
-CDATA    DC    C'AABBCCDD'
-         DS    0H
          DS    0D
 CWAITNER DC    X'060E0000'  I/O, machine check, EC, wait, DAT on
          DC    X'00000000'  no error

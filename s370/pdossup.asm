@@ -137,6 +137,7 @@ RDBLOCK  DS    0H
 * initialization.
 *
          MVC   FLCINPSW(8),NEWIO
+         STOSM FLCINPSW,X'00'  Work with DAT on or OFF
 * R3 points to CCW chain
          LA    R3,SEEK
          ST    R3,FLCCAW    Store in CAW
@@ -216,7 +217,7 @@ R        DS    C
          DS    0D
 WAITNOER DC    X'060E0000'  I/O, machine check, EC, wait, DAT on
          DC    X'00000000'  no error
-NEWIO    DC    X'040C0000'  machine check, EC, DAT on
+NEWIO    DC    X'000C0000'  machine check, EC, DAT off
          AIF   ('&SYS' EQ 'S370').MOD24
          DC    A(X'80000000'+CONT)  continuation after I/O request
          AGO   .MOD31
@@ -469,7 +470,6 @@ DATON    DS    0H
          USING DATON,R12
 *
          STOSM CURRMASK,X'04'
-         STOSM CNEWIO,X'00'
 *
          LA    R15,0
          RETURN (14,12),RC=(15)
@@ -486,7 +486,6 @@ DATOFF   DS    0H
          USING DATOFF,R12
 *
          STNSM CURRMASK,X'FB'
-         STOSM CNEWIO,X'00'
 *
          LA    R15,0
          RETURN (14,12),RC=(15)
@@ -522,11 +521,12 @@ WRITCONS DS    0H
          STH   R7,CCHAIN+2
 .CHN390H ANOP
 *
-* Interrupt needs to point to CONT now. Again, I would hope for
+* Interrupt needs to point to CCONT now. Again, I would hope for
 * something more sophisticated in PDOS than this continual
 * initialization.
 *
          MVC   FLCINPSW(8),CNEWIO
+         STOSM FLCINPSW,X'00'  Work with DAT on or OFF
 * R3 points to CCW chain
          LA    R3,CCHAIN
          ST    R3,FLCCAW    Store in CAW

@@ -469,6 +469,7 @@ DATON    DS    0H
          USING DATON,R12
 *
          STOSM CURRMASK,X'04'
+         STOSM CNEWIO,X'00'
 *
          LA    R15,0
          RETURN (14,12),RC=(15)
@@ -485,6 +486,7 @@ DATOFF   DS    0H
          USING DATOFF,R12
 *
          STNSM CURRMASK,X'FB'
+         STOSM CNEWIO,X'00'
 *
          LA    R15,0
          RETURN (14,12),RC=(15)
@@ -594,7 +596,7 @@ CDATA    DC    C'AABBCCDD'
          DS    0D
 CWAITNER DC    X'060E0000'  I/O, machine check, EC, wait, DAT on
          DC    X'00000000'  no error
-CNEWIO   DC    X'040C0000'  machine check, EC, DAT on
+CNEWIO   DC    X'000C0000'  machine check, EC, DAT off
          AIF   ('&SYS' EQ 'S370').MOD24Q
          DC    A(X'80000000'+CCONT)  continuation after I/O request
          AGO   .MOD31Q

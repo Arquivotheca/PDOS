@@ -490,6 +490,126 @@ DATOFF   DS    0H
          RETURN (14,12),RC=(15)
          LTORG
 CURRMASK DS    C
+*
+*
+*
+**********************************************************************
+*                                                                    *
+*  WRITCONS - write to console                                       *
+*                                                                    *
+*  parameter 1 = buffer length                                       *
+*  parameter 2 = buffer                                              *
+*                                                                    *
+**********************************************************************
+         ENTRY WRITCONS
+WRITCONS DS    0H
+         SAVE  (14,12),,WRITCONS
+         LR    R12,R15
+         USING WRITCONS,R12
+         USING PSA,R0
+*
+         L     R10,CONSDEV     Device number
+         L     R7,0(R1)        Bytes to write
+         L     R2,4(R1)        Buffer to write
+         AIF   ('&SYS' EQ 'S390').CHN390G
+*         STCM  R2,B'0111',LOADCCW+1   This requires BTL buffer
+*         STH   R7,LOADCCW+6  Store in READ CCW
+         AGO   .CHN390H
+.CHN390G ANOP
+*         ST    R2,LOADCCW+4
+*         STH   R7,LOADCCW+2
+.CHN390H ANOP
+*
+* Interrupt needs to point to CONT now. Again, I would hope for
+* something more sophisticated in PDOS than this continual
+* initialization.
+*
+         MVC   FLCINPSW(8),CNEWIO
+* R3 points to CCW chain
+         LA    R3,CCHAIN
+         ST    R3,FLCCAW    Store in CAW
+*
+*
+         AIF   ('&SYS' EQ 'S390').SIO31M
+         SIO   0(R10)
+*         TIO   0(R10)
+         AGO   .SIO24M
+.SIO31M  ANOP
+         LR    R1,R10       R1 needs to contain subchannel
+         LA    R9,CIRB
+         TSCH  0(R9)        Clear pending interrupts
+         LA    R10,CORB
+         SSCH  0(R10)
+.SIO24M  ANOP
+*
+*
+         LPSW  CWAITNER     Wait for an interrupt
+         DC    H'0'
+CCONT    DS    0H           Interrupt will automatically come here
+         AIF   ('&SYS' EQ 'S390').SIO31N
+         SH    R7,FLCCSW+6  Subtract residual count to get bytes read
+         LR    R15,R7
+* After a successful CCW chain, CSW should be pointing to end
+         CLC   FLCCSW(4),=A(CFINCHN)
+         BE    CALLFIN
+         AGO   .SIO24N
+.SIO31N  ANOP
+         TSCH  0(R9)
+         SH    R7,10(R9)
+         LR    R15,R7
+         CLC   4(4,R9),=A(CFINCHN)
+         BE    CALLFIN
+.SIO24N  ANOP
+         L     R15,=F'-1'   error return
+CALLFIN  DS    0H
+         RETURN (14,12),RC=(15)
+         LTORG
+*
+*
+         AIF   ('&SYS' NE 'S390').NOT390P
+         DS    0F
+CIRB     DS    24F
+CORB     DS    0F
+         DC    F'0'
+         DC    X'0080FF00'  Logical-Path Mask (enable all?) + format-1
+         DC    A(CCHAIN)
+         DC    5F'0'
+.NOT390P ANOP
+*
+*
+         DS    0D
+         AIF   ('&SYS' EQ 'S390').CHN390I
+* X'09' = write with automatic carriage return
+CCHAIN   CCW   X'09',CDATA,X'20',3    20 = ignore length issues
+         AGO   .CHN390J
+.CHN390I ANOP
+*CCHAIN   CCW1  7,BBCCHH,X'40',6       40 = chain command
+*SEARCH   CCW1  X'31',CCHHR,X'40',5    40 = chain command
+*         CCW1  8,SEARCH,0,0
+*LOADCCW  CCW1  6,0,X'20',32767        20 = ignore length issues
+.CHN390J ANOP
+CFINCHN  EQU   *
+CDATA    DC    C'AABBCCDD'
+         DS    0H
+         DS    0D
+CWAITNER DC    X'060E0000'  I/O, machine check, EC, wait, DAT on
+         DC    X'00000000'  no error
+CNEWIO   DC    X'040C0000'  machine check, EC, DAT on
+         AIF   ('&SYS' EQ 'S370').MOD24Q
+         DC    A(X'80000000'+CCONT)  continuation after I/O request
+         AGO   .MOD31Q
+.MOD24Q  ANOP
+         DC    A(CCONT)     continuation after I/O request
+.MOD31Q  ANOP
+*
+*
+CONSDEV  DC    F'9'         assume console is device 9
+         DROP  ,
+*
+*
+*
+*
+*
 **********************************************************************
 *                                                                    *
 *  DSECTS                                                            *

@@ -668,12 +668,7 @@ CNEWIO   DC    X'000C0000'  machine check, EC, DAT off
 *
 * Console device number
          ENTRY @@CONSDN
-         AIF   ('&SYS' EQ 'S390').CHN390K
-@@CONSDN DC    F'9'         assume console is device 9
-         AGO   .CHN390L         
-.CHN390K ANOP
-@@CONSDN DC    A(X'00010038')
-.CHN390L ANOP
+@@CONSDN DC    F'0'         this will be filled in later
          DROP  ,
 *
 *

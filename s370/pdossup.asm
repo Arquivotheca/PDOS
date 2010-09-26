@@ -541,6 +541,8 @@ WRITCONS DS    0H
          LA    R9,CIRB
          TSCH  0(R9)        Clear pending interrupts
          LA    R10,CORB
+         MSCH  0(R10)
+         TSCH  0(R9)        Clear pending interrupts
          SSCH  0(R10)
 .SIO24M  ANOP
 *
@@ -582,10 +584,10 @@ CORB     DS    0F
          DS    0D
          AIF   ('&SYS' EQ 'S390').CHN390I
 * X'09' = write with automatic carriage return
-CCHAIN   CCW   X'09',0,X'20',3    20 = ignore length issues
+CCHAIN   CCW   X'09',0,X'20',0    20 = ignore length issues
          AGO   .CHN390J
 .CHN390I ANOP
-CCHAIN   CCW1  X'09',0,X'20',3    20 = ignore length issues
+CCHAIN   CCW1  X'09',0,X'20',0    20 = ignore length issues
 .CHN390J ANOP
 CFINCHN  EQU   *
          DS    0D
@@ -600,7 +602,12 @@ CNEWIO   DC    X'000C0000'  machine check, EC, DAT off
 .MOD31Q  ANOP
 *
 *
+         AIF   ('&SYS' EQ 'S390').CHN390K
 CONSDEV  DC    F'9'         assume console is device 9
+         AGO   .CHN390L         
+.CHN390K ANOP
+CONSDEV  DC    A(X'00010038')
+.CHN390L ANOP
          DROP  ,
 *
 *

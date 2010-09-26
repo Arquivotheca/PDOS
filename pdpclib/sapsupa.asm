@@ -573,7 +573,7 @@ SYSTEMLN EQU   *-SYSTMWRK    LENGTH OF DYNAMIC STORAGE
          USING @@CONSWR,R12
          USING PSA,R0
 *
-         L     R10,CONSDEV     Device number
+         L     R10,@@CONSDN    Device number
          L     R7,0(R1)        Bytes to write
          L     R2,4(R1)        Buffer to write
          AIF   ('&SYS' EQ 'S390').CHN390G
@@ -666,11 +666,13 @@ CNEWIO   DC    X'000C0000'  machine check, EC, DAT off
 .MOD31Q  ANOP
 *
 *
+* Console device number
+         ENTRY @@CONSDN
          AIF   ('&SYS' EQ 'S390').CHN390K
-CONSDEV  DC    F'9'         assume console is device 9
+@@CONSDN DC    F'9'         assume console is device 9
          AGO   .CHN390L         
 .CHN390K ANOP
-CONSDEV  DC    A(X'00010038')
+@@CONSDN DC    A(X'00010038')
 .CHN390L ANOP
          DROP  ,
 *

@@ -293,6 +293,18 @@ RETURNAR DS    0H
 *         PUT   (R2)
 .NLM2    ANOP
          AIF   ('&OUTM' NE 'M').NMM2
+         L     R7,@@CONSDN
+         LTR   R7,R7
+         BZ    DODIAG
+         S     R4,=F'4'   assume RECFM=V
+         ST    R4,PARM1
+         L     R3,0(R3)
+         LA    R3,4(R3)   assume RECFM=V
+         ST    R3,PARM2
+         LA    R1,PARM1
+         CALL  @@CONSWR
+         B     DONEDIAG
+DODIAG   DS    0H
 * Extra 6 bytes for the MSG *, minus 4 for RDW
          LA    R4,2(R4)
 * Move in MSG * prefix
@@ -300,6 +312,7 @@ RETURNAR DS    0H
          LA    R6,ABMSG
 *         DIAG  6,4,0(8)
          DC    X'83640008'
+DONEDIAG DS    0H
          LA    R15,0
 *         PUT   (R2),(R6)
 .NMM2    ANOP
@@ -787,6 +800,8 @@ ABRDW    DS    4C                 Storage for a RDW
 ABUFFER  DS    CL250
 WORKAREA DS    0F
 SAVEAREA DS    18F
+PARM1    DS    F
+PARM2    DS    F
 WORKLEN  EQU   *-WORKAREA
 *
 ZDCBAREA DS    0H

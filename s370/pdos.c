@@ -526,6 +526,7 @@ void dcheck(void);
 void dexit(int oneexit, DCB *dcb);
 void datoff(void);
 void daton(void);
+int writcons(int len, char *buf);
 
 int pdosRun(PDOS *pdos);
 void pdosDefaults(PDOS *pdos);
@@ -673,6 +674,7 @@ static int pdosDispatchUntilInterrupt(PDOS *pdos)
         if (ret == 2)
         {
             int len;
+            char conbuf[300];
 
             /* fix all these RECFM assumptions!!! */
             /* 4 = skip BDW and get length in RDW */  
@@ -682,7 +684,12 @@ static int pdosDispatchUntilInterrupt(PDOS *pdos)
                 len -= 4;
             }
             /* 8 = skip BDW + RDW */
-            printf("%.*s\n", len, pdos->context.regs[4] + 8);
+            /* printf("%.*s\n", len, pdos->context.regs[4] + 8); */
+            if ((len > 0) && (len <= sizeof conbuf))
+            {
+                memcpy(conbuf, (char *)(pdos->context.regs[4] + 8), len);
+                writcons(len, conbuf);
+            }
         }
         else if (ret == 3) /* got a READ request */
         {

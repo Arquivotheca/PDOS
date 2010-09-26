@@ -241,7 +241,8 @@ HPLOC    DC    A(HEAPLOC)        Heap location
 * entry points, basically, but a common executable.
 *
          DC    (ENTSTRT-*+ORIGIN)X'00'
-         ORG   *-4
+         ORG   *-12
+         DC    C'ZAPCONSL'
 * Just before ordinary entry point, create a zappable variable
 * to store a device number for a console.
          ENTRY @@CONSDN

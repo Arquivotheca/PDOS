@@ -526,7 +526,8 @@ void dcheck(void);
 void dexit(int oneexit, DCB *dcb);
 void datoff(void);
 void daton(void);
-int writcons(int len, char *buf);
+int __conswr(int len, char *buf);
+extern int __consdn;
 
 int pdosRun(PDOS *pdos);
 void pdosDefaults(PDOS *pdos);
@@ -607,12 +608,17 @@ int pdosInit(PDOS *pdos)
     printf("aspace padding is %d bytes\n", sizeof pdos->aspaces[0].filler);
 
     pdos->ipldev = initsys();
+#if defined(S390)
+    __consdn = 0x10038;
+#else
+    __consdn = 0x009;
+#endif
     pdos->cyl_upto = PCOMM_STARTCYL;
     printf("IPL device is %x\n", pdos->ipldev);
     lcreg0(cr0);
     pdos->shutdown = 0;
     pdosInitAspaces(pdos);
-    pdos->curr_aspace = 3;
+    pdos->curr_aspace = 0;
     
     /* Now we set the DAT pointers for our first address space,
        in preparation for switching DAT on. */
@@ -688,7 +694,7 @@ static int pdosDispatchUntilInterrupt(PDOS *pdos)
             if ((len > 0) && (len <= sizeof conbuf))
             {
                 memcpy(conbuf, (char *)(pdos->context.regs[4] + 8), len);
-                writcons(len, conbuf);
+                __conswr(len, conbuf);
             }
         }
         else if (ret == 3) /* got a READ request */

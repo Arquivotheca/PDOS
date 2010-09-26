@@ -558,6 +558,126 @@ SYSTEMLN EQU   *-SYSTMWRK    LENGTH OF DYNAMIC STORAGE
          RETURN (14,12),RC=(15)
          LTORG
 *
+**********************************************************************
+*                                                                    *
+*  @@CONSWR - write to console                                       *
+*                                                                    *
+*  parameter 1 = buffer length                                       *
+*  parameter 2 = buffer                                              *
+*                                                                    *
+**********************************************************************
+         ENTRY @@CONSWR
+@@CONSWR DS    0H
+         SAVE  (14,12),,@@CONSWR
+         LR    R12,R15
+         USING @@CONSWR,R12
+         USING PSA,R0
+*
+         L     R10,CONSDEV     Device number
+         L     R7,0(R1)        Bytes to write
+         L     R2,4(R1)        Buffer to write
+         AIF   ('&SYS' EQ 'S390').CHN390G
+         STCM  R2,B'0111',CCHAIN+1   This requires BTL buffer
+         STH   R7,CCHAIN+6     Store length in WRITE CCW
+         AGO   .CHN390H
+.CHN390G ANOP
+         ST    R2,CCHAIN+4
+         STH   R7,CCHAIN+2
+.CHN390H ANOP
+*
+* Interrupt needs to point to CCONT now. Again, I would hope for
+* something more sophisticated in PDOS than this continual
+* initialization.
+*
+         MVC   FLCINPSW(8),CNEWIO
+         STOSM FLCINPSW,X'00'  Work with DAT on or OFF
+* R3 points to CCW chain
+         LA    R3,CCHAIN
+         ST    R3,FLCCAW    Store in CAW
+*
+*
+         AIF   ('&SYS' EQ 'S390').SIO31M
+         SIO   0(R10)
+*         TIO   0(R10)
+         AGO   .SIO24M
+.SIO31M  ANOP
+         LR    R1,R10       R1 needs to contain subchannel
+         LA    R9,CIRB
+         TSCH  0(R9)        Clear pending interrupts
+         LA    R10,CORB
+         MSCH  0(R10)
+         TSCH  0(R9)        Clear pending interrupts
+         SSCH  0(R10)
+.SIO24M  ANOP
+*
+*
+         LPSW  CWAITNER     Wait for an interrupt
+         DC    H'0'
+CCONT    DS    0H           Interrupt will automatically come here
+         AIF   ('&SYS' EQ 'S390').SIO31N
+         SH    R7,FLCCSW+6  Subtract residual count to get bytes read
+         LR    R15,R7
+* After a successful CCW chain, CSW should be pointing to end
+         CLC   FLCCSW(4),=A(CFINCHN)
+         BE    CALLFIN
+         AGO   .SIO24N
+.SIO31N  ANOP
+         TSCH  0(R9)
+         SH    R7,10(R9)
+         LR    R15,R7
+         CLC   4(4,R9),=A(CFINCHN)
+         BE    CALLFIN
+.SIO24N  ANOP
+         L     R15,=F'-1'   error return
+CALLFIN  DS    0H
+         RETURN (14,12),RC=(15)
+         LTORG
+*
+*
+         AIF   ('&SYS' NE 'S390').NOT390P
+         DS    0F
+CIRB     DS    24F
+CORB     DS    0F
+         DC    F'0'
+         DC    X'0080FF00'  Logical-Path Mask (enable all?) + format-1
+         DC    A(CCHAIN)
+         DC    5F'0'
+.NOT390P ANOP
+*
+*
+         DS    0D
+         AIF   ('&SYS' EQ 'S390').CHN390I
+* X'09' = write with automatic carriage return
+CCHAIN   CCW   X'09',0,X'20',0    20 = ignore length issues
+         AGO   .CHN390J
+.CHN390I ANOP
+CCHAIN   CCW1  X'09',0,X'20',0    20 = ignore length issues
+.CHN390J ANOP
+CFINCHN  EQU   *
+         DS    0D
+CWAITNER DC    X'060E0000'  I/O, machine check, EC, wait, DAT on
+         DC    X'00000000'  no error
+CNEWIO   DC    X'000C0000'  machine check, EC, DAT off
+         AIF   ('&SYS' EQ 'S370').MOD24Q
+         DC    A(X'80000000'+CCONT)  continuation after I/O request
+         AGO   .MOD31Q
+.MOD24Q  ANOP
+         DC    A(CCONT)     continuation after I/O request
+.MOD31Q  ANOP
+*
+*
+         AIF   ('&SYS' EQ 'S390').CHN390K
+CONSDEV  DC    F'9'         assume console is device 9
+         AGO   .CHN390L         
+.CHN390K ANOP
+CONSDEV  DC    A(X'00010038')
+.CHN390L ANOP
+         DROP  ,
+*
+*
+*
+*
+*
 ***********************************************************************
 *                                                                     *
 *  CALL @@DYNAL,(rb)                                                  *
@@ -712,4 +832,11 @@ MEMBER24 DS    CL8
 ZDCBLEN  EQU   *-ZDCBAREA
          IEZIOB                   Input/Output Block
 *
+         CVT   DSECT=YES
+         IKJTCB
+         IEZJSCB
+         IHAPSA
+         IHARB
+         IHACDE
+         IHASVC
          END

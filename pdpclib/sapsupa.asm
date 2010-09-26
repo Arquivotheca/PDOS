@@ -50,6 +50,7 @@
          PRINT NOGEN
          YREGS
 SUBPOOL  EQU   0
+         EXTRN @@CONSDN
 *
 * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
 *
@@ -293,7 +294,8 @@ RETURNAR DS    0H
 *         PUT   (R2)
 .NLM2    ANOP
          AIF   ('&OUTM' NE 'M').NMM2
-         L     R7,@@CONSDN
+         L     R7,=V(@@CONSDN)
+         L     R7,0(R7)
          LTR   R7,R7
          BZ    DODIAG
          S     R4,=F'4'   assume RECFM=V
@@ -586,7 +588,8 @@ SYSTEMLN EQU   *-SYSTMWRK    LENGTH OF DYNAMIC STORAGE
          USING @@CONSWR,R12
          USING PSA,R0
 *
-         L     R10,@@CONSDN    Device number
+         L     R10,=V(@@CONSDN) Device number
+         L     R10,0(R10)
          L     R7,0(R1)        Bytes to write
          L     R2,4(R1)        Buffer to write
          AIF   ('&SYS' EQ 'S390').CHN390G
@@ -678,10 +681,6 @@ CNEWIO   DC    X'000C0000'  machine check, EC, DAT off
          DC    A(CCONT)     continuation after I/O request
 .MOD31Q  ANOP
 *
-*
-* Console device number
-         ENTRY @@CONSDN
-@@CONSDN DC    F'0'         this will be filled in later
          DROP  ,
 *
 *

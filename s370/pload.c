@@ -78,9 +78,13 @@ int main(int argc, char **argv)
              char *heap; } pblock = { 0, 4, (char *)PDOS_HEAP };
     void (*fun)(void *);
 
+#if 0
     printf("PDOS should reside on cylinder 1, head 0 of IPL device\n");
+#endif
     dev = initsys();
+#if 0
     printf("IPL device is %x\n", dev);
+#endif
     load = start;
     for (i = 0; i < 10; i++)
     {

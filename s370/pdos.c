@@ -544,11 +544,6 @@ int main(int argc, char **argv)
     int remain;
     int ret = EXIT_FAILURE;
 
-    /* thankfully we are running under an emulator, so have access
-       to printf debugging (to the Hercules console via DIAG8),
-       and Hercules logging */
-    printf("Welcome to PDOS!!!\n");
-
     /* we need to align the PDOS structure on a 4k boundary */
     p = malloc(sizeof(PDOS) + ASPACE_ALIGN);
     if (p != NULL)
@@ -602,16 +597,17 @@ void pdosDefaults(PDOS *pdos)
 
 int pdosInit(PDOS *pdos)
 {
-    printf("CR0 is %08X\n", cr0);
-    printf("PDOS structure is %d bytes\n", sizeof(PDOS));
-    printf("aspace padding is %d bytes\n", sizeof pdos->aspaces[0].filler);
-
     pdos->ipldev = initsys();
 #if defined(S390)
     __consdn = 0x10038;
 #else
     __consdn = 0x009;
 #endif
+    printf("Welcome to PDOS!!!\n");
+    printf("CR0 is %08X\n", cr0);
+    printf("PDOS structure is %d bytes\n", sizeof(PDOS));
+    printf("aspace padding is %d bytes\n", sizeof pdos->aspaces[0].filler);
+
     pdos->cyl_upto = PCOMM_STARTCYL;
     printf("IPL device is %x\n", pdos->ipldev);
     lcreg0(cr0);

@@ -598,11 +598,14 @@ void pdosDefaults(PDOS *pdos)
 int pdosInit(PDOS *pdos)
 {
     pdos->ipldev = initsys();
+    if (__consdn == 0)
+    {
 #if defined(S390)
-    __consdn = 0x10038;
+        __consdn = 0x10038;
 #else
-    __consdn = 0x009;
+        __consdn = 0x009;
 #endif
+    }
     printf("Welcome to PDOS!!!\n");
     printf("CR0 is %08X\n", cr0);
     printf("PDOS structure is %d bytes\n", sizeof(PDOS));

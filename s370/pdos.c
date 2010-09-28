@@ -71,6 +71,7 @@
 #include <string.h>
 #include <stddef.h>
 
+#include "__memmgr.h"
 
 #define S370_MAXMB 16 /* maximum MB in a virtual address space for S/370 */
 #define NUM_GPR 16 /* number of general purpose registers */
@@ -143,14 +144,15 @@ virtual memory map:
    if required. */
 #define PDOS_HEAP (PDOS_CODE + 0x100000)  /* 3 MB */
 
-/* where pcomm executable is loaded to */
+/* approximately where pcomm executable is loaded to */
 #define PCOMM_LOAD (PDOS_HEAP + 0x200000) /* 5 MB */
 
 /* entry point for MVS executables can be at known location 8
    into mvsstart, so long as that is linked first. In the future,
    this information will be obtained from the entry point as
    recorded in the IEBCOPY unload RDW executable */
-#define PCOMM_ENTRY (PCOMM_LOAD + 8)
+/* we will round pcomm to be on a 64k boundary */
+#define PCOMM_ENTRY (PCOMM_LOAD + 0x10000 + 8)
 
 /* where to get getmains from - allow for 4 MB executables */
 #define PCOMM_HEAP (PCOMM_LOAD + 0x400000) /* 9 MB */
@@ -263,7 +265,13 @@ virtual memory map:
 #endif
 
 #if !defined(BTL_XA)
-/* this can be used to make an XA DAT be used, even below the line */
+/* S/380 allows a split DAT. The most usual reason for using
+   this is to allow S/370 addressing below the line, and
+   XA addressing above the line. However, there is nothing in
+   the architecture that prevents XA DAT from being used below
+   the line, and this could theoretically be of some use in
+   some circumstances. So setting BTL_XA will set up the page
+   tables for XA use */
 #define BTL_XA 0
 #endif
 
@@ -466,6 +474,9 @@ typedef struct {
 
     int cregs[NUM_CR];
 
+    MEMMGR btlmem; /* manage memory below the line */
+    MEMMGR atlmem; /* manage memory above the line */
+
 } ONESPACE;
 
 
@@ -587,7 +598,7 @@ int pdosRun(PDOS *pdos)
 
 void pdosDefaults(PDOS *pdos)
 {
-    pdos->psa = PSA_ORIGIN;
+    pdos->psa = PSA_ORIGIN;    
     return;
 }
 
@@ -1026,10 +1037,28 @@ static void pdosInitAspaces(PDOS *pdos)
                12 low zeros */
         printf("aspace %d, seg %p, cr13 %08X\n",
                a, pdos->aspaces[a].o.segtable, pdos->aspaces[a].o.cregs[13]);
+
+        /* now set up the memory manager for BTL and ATL storage */
+        lcreg1(pdos->aspaces[a].o.cregs[1]);
+        daton();
+        memmgrDefaults(&pdos->aspaces[a].o.btlmem);
+        memmgrInit(&pdos->aspaces[a].o.btlmem);
+        memmgrSupply(&pdos->aspaces[a].o.btlmem,
+                     (char *)BTL_PRIVSTART,
+                     BTL_PRIVLEN * 1024 * 1024);
+
+        memmgrDefaults(&pdos->aspaces[a].o.atlmem);
+        memmgrInit(&pdos->aspaces[a].o.atlmem);
+        memmgrSupply(&pdos->aspaces[a].o.atlmem,
+                     (char *)((S370_MAXMB + BTL_PRIVLEN) * 1024 * 1024),
+                     (MAXASIZE - S370_MAXMB - BTL_PRIVLEN) * 1024 * 1024);
+        datoff();
+
     }
+    
 #endif
 
-     return;
+    return;
 }
 
 
@@ -1152,6 +1181,11 @@ static int pdosLoadPcomm(PDOS *pdos)
 
     printf("PCOMM should reside on cylinder %d, head 0 of IPL device\n",
            pdos->cyl_upto);
+    /* assume 1 MB max */
+    load = memmgrAllocate(&pdos->aspaces[pdos->curr_aspace].o.btlmem,
+                          1024 * 1024, 0);
+    /* round to 64k */
+    load = (char *)(((int)load & ~0xffff) + 0x10000);
     /* Note that we read until we get EOF (a zero-length block). */
     i = 0;
     j = 1;

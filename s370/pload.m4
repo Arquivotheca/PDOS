@@ -252,11 +252,11 @@ undivert(pcomm.s)/*
 //SYSTERM  DD  SYSOUT=*
 //OUT      DD  DSN=&&HEX(PCOMMIN),DISP=(OLD,PASS)
 //IN       DD  *
-int main(void)
-{
-    printf("hello, world\n");
-    return (0);
-}
+rem this is an example autoexec.bat
+
+echo about to run world
+world aBc DeF
+echo finished running world
 /*
 //*
 //ZIP      EXEC PGM=MINIZIP,PARM='-0 -x .txt -l -o dd:out dd:in'

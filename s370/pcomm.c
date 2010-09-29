@@ -158,6 +158,10 @@ static void processInput(void)
     {
         printf("%s\n", p);
     }
+    else if (ins_strcmp(buf, "rem") == 0)
+    {
+        /* ignore comments */
+    }
     else if (ins_strcmp(buf, "cd") == 0)
     {
         changedir(p);

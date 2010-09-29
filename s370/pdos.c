@@ -197,6 +197,17 @@ virtual memory map:
 #define MAXANUM  4   /* maximum of 4 address spaces */
 #endif
 
+/* do you want to debug all SVC calls? */
+#ifndef SVCDEBUG
+#define SVCDEBUG 1
+#endif
+
+/* do you want to debug all memory requests */
+#ifndef MEMDEBUG
+#define MEMDEBUG 0
+#endif
+
+
 #define MAXPAGE 256 /* maximum number of pages in a segment */
 
 
@@ -1071,7 +1082,7 @@ static void pdosProcessSVC(PDOS *pdos)
           will obsolete anyway */
 
     svc = pdos->psa->svc_code & 0xffff;
-#if 1
+#if SVCDEBUG
     printf("SVC code is %d\n", svc);
 #endif
     if (svc == 3)
@@ -1084,14 +1095,22 @@ static void pdosProcessSVC(PDOS *pdos)
     else if ((svc == 120) || (svc == 10))
     {
         /* if really getmain */
-        if ((svc == 10) || (pdos->context.regs[1] == 0))
+        if (((svc == 10) && (pdos->context.regs[1] < 0))
+            || ((svc == 120) && (pdos->context.regs[1] == 0)))
         {
-            pdos->context.regs[1] = getmain;
             pdos->context.regs[15] = 0;
             if (pdos->context.regs[0] < 16000000L)
             {
-                /* just allocate storage consecutively for now */
-                getmain += pdos->context.regs[0];
+                getmain = (int)memmgrAllocate(
+                    &pdos->aspaces[pdos->curr_aspace].o.btlmem,
+                    pdos->context.regs[0],
+                    0);
+#if MEMDEBUG
+                printf("allocated %x for r0 %x, r1 %x, r15 %x\n", getmain,
+                    pdos->context.regs[0], pdos->context.regs[1],
+                    pdos->context.regs[15]);
+#endif
+                pdos->context.regs[1] = getmain;
             }
             else
             {
@@ -1104,6 +1123,16 @@ static void pdosProcessSVC(PDOS *pdos)
                 pdos->context.regs[1] = PCOMM_ATL_START;
 #endif
             }
+        }
+        /* freemain */
+        else
+        {
+#if MEMDEBUG
+            printf("freeing r0 %x, r1 %x\n",
+                    pdos->context.regs[0], pdos->context.regs[1]);
+#endif
+            memmgrFree(&pdos->aspaces[pdos->curr_aspace].o.btlmem,
+                       (char *)pdos->context.regs[1]);
         }
     }
     else if (svc == 24) /* devtype */

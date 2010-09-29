@@ -1077,7 +1077,7 @@ static void pdosInitAspaces(PDOS *pdos)
 static void pdosProcessSVC(PDOS *pdos)
 {
     int svc;
-    static int getmain = PCOMM_HEAP;
+    int getmain;
        /* should move to PDOS and use memmgr - but virtual memory
           will obsolete anyway */
 
@@ -1110,19 +1110,29 @@ static void pdosProcessSVC(PDOS *pdos)
                     pdos->context.regs[0], pdos->context.regs[1],
                     pdos->context.regs[15]);
 #endif
-                pdos->context.regs[1] = getmain;
             }
             else
             {
 #ifdef S370
                 /* trim down excessive getmains in S/370 to cope
                    with the user of memmgr */
-                getmain += PDOS_STORINC;
+                getmain = (int)memmgrAllocate(
+                    &pdos->aspaces[pdos->curr_aspace].o.btlmem,
+                    PDOS_STORINC,
+                    0);
 #else
-                /* one shot at ATL memory */
-                pdos->context.regs[1] = PCOMM_ATL_START;
+                getmain = (int)memmgrAllocate(
+                    &pdos->aspaces[pdos->curr_aspace].o.atlmem,
+                    pdos->context.regs[0],
+                    0);
+#endif
+#if MEMDEBUG
+                printf("allocated %x for r0 %x, r1 %x, r15 %x\n", getmain,
+                    pdos->context.regs[0], pdos->context.regs[1],
+                    pdos->context.regs[15]);
 #endif
             }
+            pdos->context.regs[1] = getmain;
         }
         /* freemain */
         else
@@ -1131,8 +1141,16 @@ static void pdosProcessSVC(PDOS *pdos)
             printf("freeing r0 %x, r1 %x\n",
                     pdos->context.regs[0], pdos->context.regs[1]);
 #endif
-            memmgrFree(&pdos->aspaces[pdos->curr_aspace].o.btlmem,
-                       (char *)pdos->context.regs[1]);
+            if (pdos->context.regs[1] < 16000000L)
+            {
+                memmgrFree(&pdos->aspaces[pdos->curr_aspace].o.btlmem,
+                           (char *)pdos->context.regs[1]);
+            }
+            else
+            {
+                memmgrFree(&pdos->aspaces[pdos->curr_aspace].o.atlmem,
+                           (char *)pdos->context.regs[1]);
+            }
         }
     }
     else if (svc == 24) /* devtype */

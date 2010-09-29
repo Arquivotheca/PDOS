@@ -235,7 +235,7 @@ undivert(pcomm.s)/*
 //SYSUDUMP DD  SYSOUT=*
 //*
 //PCOMM    EXEC PGM=LOADZERO,
-//         PARM='dd:pds(pcomm) PCOMM dd:out 0x500000'
+//         PARM='dd:pds(pcomm) PCOMM dd:out 0x510000'
 //STEPLIB  DD  DSN=MVSSRC.OZPD.LINKLIB,DISP=SHR
 //* &&LOADLIB,DISP=(OLD,PASS)
 //PDS      DD  DSN=&&LOADLIB,DISP=(OLD,PASS)

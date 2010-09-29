@@ -23,10 +23,10 @@ copy pdos.txt pdos.bin
 copy pcomm.txt pcomm.bin
 copy pcommin.txt pcomm.in
 echo PDOS00 3390-1 * separate >ctl.txt
-echo SYS1.PLOAD SEQ pload.bin TRK 10 1 0 PS U 0 18452 >>ctl.txt
-echo SYS1.PDOS SEQ pdos.bin CYL 1 1 0 PS U 0 18452 >>ctl.txt
-echo SYS1.PCOMM SEQ pcomm.bin CYL 1 1 0 PS U 0 18452 >>ctl.txt
-echo SYS1.PCOMM.IN SEQ pcomm.in CYL 1 1 0 PS U 0 18452 >>ctl.txt
+echo PLOAD.SYS SEQ pload.bin TRK 10 1 0 PS U 0 18452 >>ctl.txt
+echo PDOS.SYS SEQ pdos.bin CYL 1 1 0 PS U 0 18452 >>ctl.txt
+echo COMMAND.EXE SEQ pcomm.bin CYL 1 1 0 PS U 0 18452 >>ctl.txt
+echo AUTOEXEC.BAT SEQ pcomm.in CYL 1 1 0 PS U 0 18452 >>ctl.txt
 del pdos00.199
 dasdload -bz2 ctl.txt pdos00.199
 copy pdos00.199 \mvs380\dasd

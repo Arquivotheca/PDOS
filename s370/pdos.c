@@ -207,6 +207,11 @@ virtual memory map:
 #define MEMDEBUG 0
 #endif
 
+/* do you want to debug all disk requests */
+#ifndef DSKDEBUG
+#define DSKDEBUG 0
+#endif
+
 
 #define MAXPAGE 256 /* maximum number of pages in a segment */
 
@@ -713,55 +718,55 @@ static int pdosDispatchUntilInterrupt(PDOS *pdos)
         }
         else if (ret == 3) /* got a READ request */
         {
-            static int rcnt = 0;
-            
-            /* need to call EOF routine */
-            /* printf("eodad routine has %p %x in it\n", gendcb->eodad,
-                   *gendcb->eodad); */
-            /* EOF routine usually sets R6 to 1, so just do it */
-            if (rcnt > 99999)
+            static int rcnt = 0;            
+            char *p;
+            char tbuf[MAXBLKSZ];
+            int cnt;
+            static int i = 0;
+            static int j = 1;
+            char *decb;
+
+#if DSKDEBUG
+            printf("reading into %x from %d, %d, %d\n",
+                   pdos->context.regs[8],
+                   pdos->cyl_upto, i, j);
+#endif
+            cnt = rdblock(pdos->ipldev, pdos->cyl_upto, i, j, 
+                          tbuf, pdos->context.regs[9]);
+#if DSKDEBUG
+            printf("cnt is %d\n", cnt);
+#endif
+            if (cnt <= 0)
             {
+                /* need to call EOF routine */
+                /* printf("eodad routine has %p %x in it\n", gendcb->eodad,
+                          *gendcb->eodad); */
+                /* EOF routine usually sets R6 to 1, so just do it */
                 pdos->context.regs[6] = 1;
+                pdos->cyl_upto++; /* position on next cylinder */
+                rcnt = 0;
+                i = 0;
+                j = 1;
             }
             else
             {
-                char *p;
-                char tbuf[MAXBLKSZ];
-                int cnt;
-                static int i = 0;
-                static int j = 1;
-                char *decb;
-                
                 /* we know that they are using R8 for the buffer, via
                    the READ macro */
-                if (rcnt == 0)
-                {                    
+                p = (char *)pdos->context.regs[8];
+                memcpy(p, tbuf, cnt);
+                geniob.residual = (short)(pdos->context.regs[9] - cnt);
+                decb = (char *)pdos->context.regs[1];
+                *(IOB **)(decb + 16) = &geniob;
+                j++;
+                if (j == 4)
+                {
+                    j = 1;
+                    i++;
+                }
+                if (i == 15)
+                {
+                    i++;
                     pdos->cyl_upto++;
-                }
-                cnt = rdblock(pdos->ipldev, pdos->cyl_upto, i, j, 
-                              tbuf, pdos->context.regs[9]);
-                if (cnt <= 0)
-                {
-                    pdos->context.regs[6] = 1;
-                }
-                else
-                {
-                    p = (char *)pdos->context.regs[8];
-                    memcpy(p, tbuf, cnt);
-                    geniob.residual = (short)(pdos->context.regs[9] - cnt);
-                    decb = (char *)pdos->context.regs[1];
-                    *(IOB **)(decb + 16) = &geniob;
-                    j++;
-                    if (j == 4)
-                    {
-                        j = 1;
-                        i++;
-                    }
-                    if (i == 15)
-                    {
-                        i++;
-                        pdos->cyl_upto++;
-                    }
                 }
             }
             rcnt++;
@@ -1220,7 +1225,7 @@ static int pdosLoadPcomm(PDOS *pdos)
     int i;
     int j;
     static int savearea[20]; /* needs to be in user space */
-    static char mvsparm[] = { "\x00" "\x0d" "-Os -S -o - -" };
+    static char mvsparm[] = { "\x00" "\x02" "/P" };
     static char *pptrs[1];
     char tbuf[MAXBLKSZ];
     int cnt = -1;
@@ -1233,16 +1238,19 @@ static int pdosLoadPcomm(PDOS *pdos)
                           1024 * 1024, 0);
     /* round to 64k */
     load = (char *)(((int)load & ~0xffff) + 0x10000);
-    /* Note that we read until we get EOF (a zero-length block). */
     i = 0;
     j = 1;
+    /* Note that we read until we get EOF (a zero-length block). */
     while (cnt != 0)
     {
-#if 0
+#if DSKDEBUG
         printf("loading to %p from %d, %d, %d\n", load,
                pdos->cyl_upto, i, j);
 #endif
         cnt = rdblock(pdos->ipldev, pdos->cyl_upto, i, j, tbuf, MAXBLKSZ);
+#if DSKDEBUG
+        printf("cnt is %d\n", cnt);
+#endif
         if (cnt == -1)
         {
             if (lastcnt == -2)
@@ -1252,7 +1260,9 @@ static int pdosLoadPcomm(PDOS *pdos)
             }
             else if (lastcnt == -1)
             {
-                printf("probably last track on cylinder\n");            
+#if DSKDEBUG
+                printf("probably last track on cylinder\n");
+#endif
                 /* probably reached last track on cylinder */
                 lastcnt = -2;
                 pdos->cyl_upto++;
@@ -1271,6 +1281,9 @@ static int pdosLoadPcomm(PDOS *pdos)
         load += cnt;
         j++;
     }
+    /* after EOF, position on the next cylinder */
+    pdos->cyl_upto++;
+
     memset(&pdos->context, 0x00, sizeof pdos->context);
     pdos->context.regs[13] = (int)savearea;
     pdos->context.regs[14] = (int)gotret;

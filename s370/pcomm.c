@@ -158,6 +158,10 @@ static void processInput(void)
     {
         printf("%s\n", p);
     }
+    else if (p == buf)
+    {
+        /* do nothing if blank line */
+    }
     else if (ins_strcmp(buf, "rem") == 0)
     {
         /* ignore comments */

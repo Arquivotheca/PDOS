@@ -182,7 +182,7 @@ virtual memory map:
 
 #ifndef MAXASIZE
 #if defined(S390)
-#define MAXASIZE 96
+#define MAXASIZE 160
 #elif defined(S370)
 #define MAXASIZE 16
 #else

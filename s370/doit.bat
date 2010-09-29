@@ -15,8 +15,8 @@ gccmvs -DUSE_MEMMGR -DS390 -S -I . -I ../pdpclib pload.c
 gccmvs -DUSE_MEMMGR -DS390 -S -I . -I ../pdpclib pdos.c
 gccmvs -DUSE_MEMMGR -DS390 -S -I . -I ../pdpclib pcomm.c
 
-m4 -I . -I ../pdpclib pload.m4 >pload.jcl
-call runmvs pload.jcl output.txt none pload.zip
+m4 -I . -I ../pdpclib pdos.m4 >pdos.jcl
+call runmvs pdos.jcl output.txt none pload.zip
 unzip -o pload
 copy pload.txt pload.bin
 copy pdos.txt pdos.bin

@@ -276,7 +276,7 @@ undivert(world.s)/*
 //SYSUDUMP DD  SYSOUT=*
 //*
 //WORLD    EXEC PGM=LOADZERO,
-//         PARM='dd:pds(world) WORLD dd:out 0x600000'
+//         PARM='dd:pds(world) WORLD dd:out 0x700000'
 //STEPLIB  DD  DSN=MVSSRC.OZPD.LINKLIB,DISP=SHR
 //* &&LOADLIB,DISP=(OLD,PASS)
 //PDS      DD  DSN=&&LOADLIB,DISP=(OLD,PASS)

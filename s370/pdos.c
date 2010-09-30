@@ -161,7 +161,7 @@ virtual memory map:
 
 #define PCOMM_ATL_START 0x1100000
 
-#define PCOMM_STARTCYL 2 /* cylinder where PCOMM can be found -
+#define CONFIG_STARTCYL 2 /* cylinder where config.sys can be found -
   this assumes that PLOAD and PDOS are less than 1 cylinder in
   size and that they have been allocated on cylinder boundaries */
 
@@ -626,7 +626,7 @@ int pdosInit(PDOS *pdos)
 {
     pdos->ipldev = initsys();
     lcreg0(cr0);
-    pdos->cyl_upto = PCOMM_STARTCYL;
+    pdos->cyl_upto = CONFIG_STARTCYL;
     if (__consdn == 0)
     {
         char tbuf[MAXBLKSZ + 1];

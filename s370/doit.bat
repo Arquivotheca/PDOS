@@ -16,17 +16,20 @@ gccmvs -DUSE_MEMMGR -DS390 -S -I . -I ../pdpclib pdos.c
 gccmvs -DUSE_MEMMGR -DS390 -S -I . -I ../pdpclib pcomm.c
 gccmvs -DUSE_MEMMGR -DS390 -S -I . -I ../pdpclib world.c
 
+copy \mvs380\conf\mvs380.conf herc.cnf
 m4 -I . -I ../pdpclib pdos.m4 >pdos.jcl
 call runmvs pdos.jcl output.txt none pload.zip
 unzip -o pload
 copy pload.txt pload.bin
 copy pdos.txt pdos.bin
+copy pdosin.txt pdos.in
 copy pcomm.txt pcomm.bin
 copy pcommin.txt pcomm.in
 copy world.txt world.bin
 echo PDOS00 3390-1 * separate >ctl.txt
 echo PLOAD.SYS SEQ pload.bin TRK 10 1 0 PS U 0 18452 >>ctl.txt
 echo PDOS.SYS SEQ pdos.bin CYL 1 1 0 PS U 0 18452 >>ctl.txt
+echo CONFIG.SYS SEQ pdos.in CYL 1 1 0 PS U 0 18452 >>ctl.txt
 echo COMMAND.EXE SEQ pcomm.bin CYL 1 1 0 PS U 0 18452 >>ctl.txt
 echo AUTOEXEC.BAT SEQ pcomm.in CYL 1 1 0 PS U 0 18452 >>ctl.txt
 echo WORLD.EXE SEQ world.bin CYL 1 1 0 PS U 0 18452 >>ctl.txt

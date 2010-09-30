@@ -121,6 +121,9 @@ RDBLOCK  DS    0H
          L     R2,12(R1)    Record
          STC   R2,R         
          L     R2,16(R1)    Buffer
+* It is a requirement of using this routine that V=R. If it is
+* ever required to support both V and R, then LRA could be used,
+* and check for a 0 return, and if so, do a BNZ.
 *         LRA   R2,0(R2)     Get real address
          L     R7,20(R1)    Bytes to read
          AIF   ('&SYS' EQ 'S390').CHN390B

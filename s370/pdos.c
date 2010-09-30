@@ -1121,6 +1121,7 @@ static void pdosInitAspaces(PDOS *pdos)
 
 static void pdosProcessSVC(PDOS *pdos)
 {
+    static int fcnt = 0;
     int svc;
     int getmain;
        /* should move to PDOS and use memmgr - but virtual memory
@@ -1210,7 +1211,6 @@ static void pdosProcessSVC(PDOS *pdos)
     else if (svc == 64) /* rdjfcb */
     {
         int oneexit;
-        static int fcnt = 0;
 
         gendcb = (DCB *)pdos->context.regs[10]; 
             /* need to protect against this */
@@ -1259,6 +1259,7 @@ static void pdosProcessSVC(PDOS *pdos)
         /* r3 has ECB which is where return code is meant to go */
         pdosLoadExe(pdos, prog, parm);
         /* and need to set R15 to success too */
+        fcnt = 0;
     }
     else if (svc == 1) /* wait */
     {

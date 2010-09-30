@@ -300,6 +300,15 @@ world aBc DeF
 echo finished running world
 /*
 //*
+//COPYFILE EXEC PGM=COPYFILE,PARM='-tt dd:in dd:out'
+//STEPLIB  DD  DSN=PDPCLIB.LINKLIB,DISP=SHR
+//SYSIN    DD  DUMMY
+//SYSPRINT DD  SYSOUT=*
+//SYSTERM  DD  SYSOUT=*
+//OUT      DD  DSN=&&HEX(PDOSIN),DISP=(OLD,PASS)
+//IN       DD  *
+undivert(herc.cnf)/*
+//*
 //ZIP      EXEC PGM=MINIZIP,PARM='-0 -x .txt -l -o dd:out dd:in'
 //STEPLIB  DD  DSN=MINIZIP.LINKLIB,DISP=SHR
 //SYSIN    DD  DUMMY

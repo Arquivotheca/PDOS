@@ -1256,19 +1256,126 @@ static void pdosProcessSVC(PDOS *pdos)
         printf("got request to run %.8s\n", prog);
         parm = *(char **)pdos->context.regs[1];
         printf("parameter string is %d bytes\n", *(short *)parm);
-        pdos->context.regs[15] = pdosLoadExe(pdos, prog, parm);
+        /* r3 has ECB which is where return code is meant to go */
+        pdosLoadExe(pdos, prog, parm);
+        /* and need to set R15 to success too */
+    }
+    else if (svc == 1) /* wait */
+    {
+        /* do nothing */
+    }
+    else if (svc == 62) /* detach */
+    {
+        /* do nothing - but should free memory and switch back context */
     }
     return;
 }
 
 
+#define PSW_ENABLE_INT 0x040C0000 /* actually disable interrupts for now */
+
+/* load executable into memory, on a predictable 1 MB boundary,
+   by requesting 5 MB */
+
 static int pdosLoadExe(PDOS *pdos, char *prog, char *parm)
 {
+    char *raw;
+    char *initial;
+    char *load;
+    /* Standard C programs can start at a predictable offset */
+    int (*entry)(void *);
+    int i;
+    int j;
+    static int savearea[20]; /* needs to be in user space */
+    static char *pptrs[1];
+    char tbuf[MAXBLKSZ];
+    int cnt = -1;
+    int lastcnt = 0;
+
+    /* because autoexec is still being run, cylinder is
+       incorrect, so add 1 - get rid of this +++ */
+    pdos->cyl_upto++;
+
+    printf("executable should reside on cylinder %d, head 0 of IPL device\n",
+           pdos->cyl_upto);
+    /* assume 4 MB max */
+    raw = memmgrAllocate(&pdos->aspaces[pdos->curr_aspace].o.btlmem,
+                         5 * 1024 * 1024, 0);
+    /* round to 1MB */
+    load = (char *)(((int)raw & ~0xfffff) + 0x100000);
+    initial = load;
+    printf("load point designated as %p\n", load);
+    /* should store old context first */
+    entry = (int (*)(void *))(initial + 8);
+    i = 0;
+    j = 1;
+    /* Note that we read until we get EOF (a zero-length block). */
+    while (cnt != 0)
+    {
+#if DSKDEBUG
+        printf("loading to %p from %d, %d, %d\n", load,
+               pdos->cyl_upto, i, j);
+#endif
+        cnt = rdblock(pdos->ipldev, pdos->cyl_upto, i, j, tbuf, MAXBLKSZ);
+#if DSKDEBUG
+        printf("cnt is %d\n", cnt);
+#endif
+        if (cnt == -1)
+        {
+            if (lastcnt == -2)
+            {
+                printf("three I/O errors in a row - terminating load\n");
+                break;
+            }
+            else if (lastcnt == -1)
+            {
+#if DSKDEBUG
+                printf("probably last track on cylinder\n");
+#endif
+                /* probably reached last track on cylinder */
+                lastcnt = -2;
+                pdos->cyl_upto++;
+                i = 0;
+                j = 1;
+                continue;
+            }
+            /* probably reached last record on track */
+            lastcnt = -1;
+            j = 1;
+            i++;
+            continue;
+        }
+        lastcnt = cnt;
+        memcpy(load, tbuf, cnt);
+        load += cnt;
+        j++;
+    }
+    printf("top is now %p\n", load);
+    /* after EOF, position on the next cylinder */
+    pdos->cyl_upto++;
+
+    /* because autoexec is still being run, cylinder is
+       incorrect, so subtract 2 - get rid of this +++ */
+    pdos->cyl_upto -= 2;
+
+    memset(&pdos->context, 0x00, sizeof pdos->context);
+    pdos->context.regs[13] = (int)savearea;
+    pdos->context.regs[14] = (int)gotret;
+    pdos->context.regs[15] = (int)entry;
+    pdos->context.psw1 = PSW_ENABLE_INT; /* need to enable interrupts */
+    pdos->context.psw2 = (int)entry; /* 24-bit mode for now */
+#if defined(S390)
+    pdos->context.psw2 |= 0x80000000; /* dispatch in 31-bit mode */
+#endif
+
+    pptrs[0] = parm;
+    
+    pdos->context.regs[1] = (int)pptrs;
+    
+    printf("finished loading executable\n");
     return (0);
 }
 
-
-#define PSW_ENABLE_INT 0x040C0000 /* actually disable interrupts for now */
 
 /* load the PCOMM executable. Note that this should
    eventually be changed to call a more generic

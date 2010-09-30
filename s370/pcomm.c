@@ -196,7 +196,7 @@ static void processInput(void)
             *p = ' ';
         }
         printf("got %s\n", buf);
-        /* system(buf); */
+        system(buf);
     }
     return;
 }

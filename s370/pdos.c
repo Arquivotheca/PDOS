@@ -625,22 +625,61 @@ void pdosDefaults(PDOS *pdos)
 int pdosInit(PDOS *pdos)
 {
     pdos->ipldev = initsys();
+    lcreg0(cr0);
+    pdos->cyl_upto = PCOMM_STARTCYL;
     if (__consdn == 0)
     {
-#if defined(S390)
-        __consdn = 0x10038;
-#else
-        __consdn = 0x009;
+        char tbuf[MAXBLKSZ + 1];
+        char *p;
+        char *q;
+        char *r;
+        int cnt;
+
+#if DSKDEBUG
+        printf("loading to %p from %d, %d, %d\n", tbuf,
+               pdos->cyl_upto, 0, 1);
 #endif
+        /* the chances of anyone having a herc config file more
+           than a block in size are like a million gazillion to one */
+        cnt = rdblock(pdos->ipldev, pdos->cyl_upto, 0, 1, tbuf, MAXBLKSZ);
+#if DSKDEBUG
+        printf("cnt is %d\n", cnt);
+#endif
+        /* find out which device console really is */
+        if (cnt > 0)
+        {
+            tbuf[cnt] = '\0';
+            p = strstr(tbuf, "3215-C");
+            /* make sure sentinel exists */
+            if ((p != NULL) && (strchr(p, '\n') != NULL))
+            {
+                cnt = 0;
+                r = tbuf; /* yeah, we'll miss the first line if any, 
+                             so sue me */
+                while ((q = strchr(r + 1, '\n')) < p)
+                {
+                    if (isdigit((unsigned char)*(q + 1)))
+                    {
+                        cnt++;
+                    }
+                    r = q;
+                }
+                cnt--;
+#if defined(S390)
+                __consdn = 0x10000 + cnt;
+#else
+                sscanf(r + 1, "%x", &__consdn);
+#endif
+            }
+        }
+        pdos->cyl_upto++;
     }
     printf("Welcome to PDOS!!!\n");
     printf("CR0 is %08X\n", cr0);
     printf("PDOS structure is %d bytes\n", sizeof(PDOS));
     printf("aspace padding is %d bytes\n", sizeof pdos->aspaces[0].filler);
 
-    pdos->cyl_upto = PCOMM_STARTCYL;
     printf("IPL device is %x\n", pdos->ipldev);
-    lcreg0(cr0);
     pdos->shutdown = 0;
     pdosInitAspaces(pdos);
     pdos->curr_aspace = 0;

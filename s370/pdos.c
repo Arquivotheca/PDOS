@@ -562,6 +562,7 @@ void pdosTerm(PDOS *pdos);
 static int pdosDispatchUntilInterrupt(PDOS *pdos);
 static void pdosInitAspaces(PDOS *pdos);
 static void pdosProcessSVC(PDOS *pdos);
+static int pdosLoadExe(PDOS *pdos, char *prog, char *parm);
 static int pdosLoadPcomm(PDOS *pdos);
 
 int main(int argc, char **argv)
@@ -1246,7 +1247,24 @@ static void pdosProcessSVC(PDOS *pdos)
         gendcb->u1.dcboflgs |= DCBOFOPN;
         pdos->context.regs[15] = 0; /* is this required? */
     }
+    else if (svc == 42) /* attach */
+    {
+        char *prog;
+        char *parm;
+        
+        prog = (char *)pdos->context.regs[2];
+        printf("got request to run %.8s\n", prog);
+        parm = *(char **)pdos->context.regs[1];
+        printf("parameter string is %d bytes\n", *(short *)parm);
+        pdos->context.regs[15] = pdosLoadExe(pdos, prog, parm);
+    }
     return;
+}
+
+
+static int pdosLoadExe(PDOS *pdos, char *prog, char *parm)
+{
+    return (0);
 }
 
 

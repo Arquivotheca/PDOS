@@ -121,7 +121,7 @@ RDBLOCK  DS    0H
          L     R2,12(R1)    Record
          STC   R2,R         
          L     R2,16(R1)    Buffer
-         LRA   R2,0(R2)     Get real address
+*         LRA   R2,0(R2)     Get real address
          L     R7,20(R1)    Bytes to read
          AIF   ('&SYS' EQ 'S390').CHN390B
          STCM  R2,B'0111',LOADCCW+1   This requires BTL buffer

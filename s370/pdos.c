@@ -914,6 +914,22 @@ static void pdosInitAspaces(PDOS *pdos)
            6 low zeros */
         printf("aspace %d, seg370 %p, cr1 %08X\n",
                a, pdos->aspaces[a].o.seg370, pdos->aspaces[a].o.cregs[1]);
+
+        /* now set up the memory manager for BTL storage */
+        lcreg1(pdos->aspaces[a].o.cregs[1]);
+        daton();
+        memmgrDefaults(&pdos->aspaces[a].o.btlmem);
+        memmgrInit(&pdos->aspaces[a].o.btlmem);
+        memmgrSupply(&pdos->aspaces[a].o.btlmem,
+                     (char *)BTL_PRIVSTART,
+                     BTL_PRIVLEN * 1024 * 1024);
+
+        memmgrDefaults(&pdos->aspaces[a].o.atlmem);
+        memmgrInit(&pdos->aspaces[a].o.atlmem);
+        memmgrSupply(&pdos->aspaces[a].o.atlmem,
+                     (char *)((S370_MAXMB + BTL_PRIVLEN) * 1024 * 1024),
+                     (MAXASIZE - S370_MAXMB - BTL_PRIVLEN) * 1024 * 1024);
+        datoff();
     }
 #endif
 
@@ -996,6 +1012,27 @@ static void pdosInitAspaces(PDOS *pdos)
 #endif
         printf("aspace %d, seg %p, cr13 %08X\n",
                a, pdos->aspaces[a].o.segtable, pdos->aspaces[a].o.cregs[13]);
+
+        /* now set up the memory manager for BTL and ATL storage */
+#if defined(S380) && !BTL_XA
+        lcreg13(pdos->aspaces[a].o.cregs[13]);
+#else
+        daton();
+        lcreg1(pdos->aspaces[a].o.cregs[1]);
+        memmgrDefaults(&pdos->aspaces[a].o.btlmem);
+        memmgrInit(&pdos->aspaces[a].o.btlmem);
+        memmgrSupply(&pdos->aspaces[a].o.btlmem,
+                     (char *)BTL_PRIVSTART,
+                     BTL_PRIVLEN * 1024 * 1024);
+        datoff();
+#endif
+        daton();
+        memmgrDefaults(&pdos->aspaces[a].o.atlmem);
+        memmgrInit(&pdos->aspaces[a].o.atlmem);
+        memmgrSupply(&pdos->aspaces[a].o.atlmem,
+                     (char *)EA_END,
+                     MAXASIZE * 1024 * 1024 - EA_END);
+        datoff();
     }
 #endif
 
@@ -1109,7 +1146,6 @@ static void pdosInitAspaces(PDOS *pdos)
                      (char *)((S370_MAXMB + BTL_PRIVLEN) * 1024 * 1024),
                      (MAXASIZE - S370_MAXMB - BTL_PRIVLEN) * 1024 * 1024);
         datoff();
-
     }
     
 #endif

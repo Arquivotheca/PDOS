@@ -1017,8 +1017,8 @@ static void pdosInitAspaces(PDOS *pdos)
 #if defined(S380) && !BTL_XA
         lcreg13(pdos->aspaces[a].o.cregs[13]);
 #else
-        daton();
         lcreg1(pdos->aspaces[a].o.cregs[1]);
+        daton();
         memmgrDefaults(&pdos->aspaces[a].o.btlmem);
         memmgrInit(&pdos->aspaces[a].o.btlmem);
         memmgrSupply(&pdos->aspaces[a].o.btlmem,

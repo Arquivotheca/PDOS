@@ -8,7 +8,8 @@
 *                                                                    *
 *  PDPTOP - standard code for the start of every assembler file.     *
 *                                                                    *
-*  (version customized for S/370 - see PDPTOP/PDPORIG for original)  *
+*  Allow user to specify system-specific things                      *
+*                                                                    *
 *                                                                    *
 **********************************************************************
 *
@@ -32,17 +33,21 @@
 *
 &COMP    SETC 'GCC'               Indicate that this is for GCC
 * &COMP    SETC 'C370'            Indicate that this is for C/370
-&SYS     SETC 'S370'              Define either S370, S380 or S390
+&SYS     SETC 'S380'              Define either S370, S380 or S390
 &OUTM    SETC 'M'                 Indicate move mode
 * &OUTM    SETC 'L'               Indicate locate mode
 &OS      SETC 'UNKNOWN'           Indicate that the OS is not known
 * &OS      SETC 'MVS'             Indicate that this is for MVS
 * &OS      SETC 'MUSIC'           Indicate that this is for MUSIC/SP
 *
-* AMODE/RMODE not available on S370. In the S/370 model,
-* everything is 24-bit so these considerations are not
-* important.
+* AMODE/RMODE not available on S370
+* On S/380 they are a hybrid (currently)
+* On S/390 there is no restriction
 *
-*        AMODE ANY
-*        RMODE ANY
+* MVS/XA and earlier versions of MVS/ESA should use the S/380
+* hybrid
+*
+* Comment these out to avoid errors on z/VSE
+*        AMODE 31
+*        RMODE 24
 *

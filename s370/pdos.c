@@ -86,7 +86,21 @@
 
 /*
 
-real memory map:
+MEMORY MAPS
+
+real (S/390)
+0-16: PDOS BTL + ATL
+16-96: address space 0
+96-336: address spaces 1-3
+
+virt (S/390)
+0-5: PDOS BTL
+5-15: priv BTL
+15-26: PDOS ATL mostly
+26-96: priv ATL
+
+
+old real memory map:
 
 0 = PLOAD executable
 0.5 = PLOAD stack (also used by PDOS, and can extend into heap area)
@@ -103,7 +117,7 @@ real memory map:
 
 
 
-virtual memory map:
+old virtual memory map:
 
 0 = system use
 5 = application start
@@ -1030,8 +1044,8 @@ static void pdosInitAspaces(PDOS *pdos)
         memmgrDefaults(&pdos->aspaces[a].o.atlmem);
         memmgrInit(&pdos->aspaces[a].o.atlmem);
         memmgrSupply(&pdos->aspaces[a].o.atlmem,
-                     (char *)EA_END,
-                     MAXASIZE * 1024 * 1024 - EA_END);
+                     (char *)S370_MAXMB,
+                     (MAXASIZE-S370_MAXMB) * 1024 * 1024);
         datoff();
     }
 #endif
@@ -1143,8 +1157,8 @@ static void pdosInitAspaces(PDOS *pdos)
         memmgrDefaults(&pdos->aspaces[a].o.atlmem);
         memmgrInit(&pdos->aspaces[a].o.atlmem);
         memmgrSupply(&pdos->aspaces[a].o.atlmem,
-                     (char *)((S370_MAXMB + BTL_PRIVLEN) * 1024 * 1024),
-                     (MAXASIZE - S370_MAXMB - BTL_PRIVLEN) * 1024 * 1024);
+                     (char *)(S370_MAXMB * 1024 * 1024),
+                     (MAXASIZE - S370_MAXMB) * 1024 * 1024);
         datoff();
     }
     
@@ -1180,6 +1194,7 @@ static void pdosProcessSVC(PDOS *pdos)
         if (((svc == 10) && (pdos->context.regs[1] < 0))
             || ((svc == 120) && (pdos->context.regs[1] == 0)))
         {
+            printf("requesting %d bytes\n", pdos->context.regs[0]);
             pdos->context.regs[15] = 0;
             if (pdos->context.regs[0] < 16000000L)
             {
@@ -1203,10 +1218,14 @@ static void pdosProcessSVC(PDOS *pdos)
                     PDOS_STORINC,
                     0);
 #else
+#if 1
                 getmain = (int)memmgrAllocate(
                     &pdos->aspaces[pdos->curr_aspace].o.atlmem,
                     pdos->context.regs[0],
                     0);
+#endif
+                printf("ok, finally got through\n");
+                getmain = 0x04100000;
 #endif
 #if MEMDEBUG
                 printf("allocated %x for r0 %x, r1 %x, r15 %x\n", getmain,

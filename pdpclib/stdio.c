@@ -2552,13 +2552,9 @@ static int examine(const char **formt, FILE *fq, char *s, va_list *arg,
     }
     else if (specifier == 's')
     {
-        if (precision < 0)
-        {
-            precision = 1;
-        }
         svalue = va_arg(*arg, char *);
         fillCh = ' ';
-        if (precision > 1)
+        if (precision > 0)
         {
             char *p;
 
@@ -2572,9 +2568,13 @@ static int examine(const char **formt, FILE *fq, char *s, va_list *arg,
                 length = precision;
             }
         }
-        else
+        else if (precision < 0)
         {
             length = strlen(svalue);
+        }
+        else
+        {
+            length = 0;
         }
         if (!flagMinus)
         {

@@ -119,6 +119,7 @@ static void readAutoExec(void)
 static void processInput(void)
 {
     char *p;
+    int rc;
 
     len = strlen(buf);
     if ((len > 0) && (buf[len - 1] == '\n'))
@@ -195,8 +196,9 @@ static void processInput(void)
             p--;
             *p = ' ';
         }
-        printf("got %s\n", buf);
-        system(buf);
+        printf("pcomm is calling %s\n", buf);
+        rc = system(buf);
+        printf("rc from program is %d\n", rc);
     }
     return;
 }

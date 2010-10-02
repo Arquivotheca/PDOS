@@ -359,7 +359,7 @@ typedef struct {
     int regs[NUM_GPR];
     unsigned int psw1;
     unsigned int psw2;
-} CONTEXT;
+} RB;
 
 typedef struct {
     char unused1[32];
@@ -543,6 +543,8 @@ typedef struct {
     MEMMGR btlmem; /* manage memory below the line */
     MEMMGR atlmem; /* manage memory above the line */
 
+    RB first_rb; /* first request block */
+    RB *curr_rb; /* current request block */
 } ONESPACE;
 
 
@@ -581,7 +583,7 @@ typedef struct {
          the segment points to a page table, using an address
          with 3 binary 0s appended. Due to the implied 6 binary 0s
          in XA segment tables, 64-byte alignment is required */
-    CONTEXT context; /* current thread's context */
+    RB *context; /* current thread's context */
     PSA *psa;
     int exitcode;
     int shutdown;
@@ -734,6 +736,9 @@ int pdosInit(PDOS *pdos)
     pdos->shutdown = 0;
     pdosInitAspaces(pdos);
     pdos->curr_aspace = 0;
+    pdos->context =
+        pdos->aspaces[pdos->curr_aspace].o.curr_rb =
+        &pdos->aspaces[pdos->curr_aspace].o.first_rb;
     
     /* Now we set the DAT pointers for our first address space,
        in preparation for switching DAT on. */
@@ -767,20 +772,20 @@ static int pdosDispatchUntilInterrupt(PDOS *pdos)
     {
         /* store registers and PSW in low memory to be loaded */
         memcpy(pdos->psa->flcgrsav,
-               pdos->context.regs,
-               sizeof pdos->context.regs);
+               pdos->context->regs,
+               sizeof pdos->context->regs);
 
-        pdos->psa->svcopsw[0] = pdos->context.psw1;
-        pdos->psa->svcopsw[1] = pdos->context.psw2;
+        pdos->psa->svcopsw[0] = pdos->context->psw1;
+        pdos->psa->svcopsw[1] = pdos->context->psw2;
                        
         ret = adisp();  /* dispatch */
         
         /* restore registers and PSW from low memory */
-        memcpy(pdos->context.regs,
+        memcpy(pdos->context->regs,
                pdos->psa->flcgrsav,               
-               sizeof pdos->context.regs);
-        pdos->context.psw1 = pdos->psa->svcopsw[0];
-        pdos->context.psw2 = pdos->psa->svcopsw[1];
+               sizeof pdos->context->regs);
+        pdos->context->psw1 = pdos->psa->svcopsw[0];
+        pdos->context->psw2 = pdos->psa->svcopsw[1];
         
         if (ret == 0) break;
 
@@ -798,13 +803,13 @@ static int pdosDispatchUntilInterrupt(PDOS *pdos)
 
             /* fix all these RECFM assumptions!!! */
             /* 4 = skip BDW and get length in RDW */  
-            len = *(short *)(pdos->context.regs[4] + 4);
+            len = *(short *)(pdos->context->regs[4] + 4);
             if (len >= 4)
             {
                 len -= 4;
             }
             /* 8 = skip BDW + RDW */
-            printf("%.*s\n", len, pdos->context.regs[4] + 8);
+            printf("%.*s\n", len, pdos->context->regs[4] + 8);
         }
         else if (ret == 3) /* got a READ request */
         {
@@ -818,11 +823,11 @@ static int pdosDispatchUntilInterrupt(PDOS *pdos)
 
 #if DSKDEBUG
             printf("reading into %x from %d, %d, %d\n",
-                   pdos->context.regs[8],
+                   pdos->context->regs[8],
                    pdos->cyl_upto, i, j);
 #endif
             cnt = rdblock(pdos->ipldev, pdos->cyl_upto, i, j, 
-                          tbuf, pdos->context.regs[9]);
+                          tbuf, pdos->context->regs[9]);
 #if DSKDEBUG
             printf("cnt is %d\n", cnt);
 #endif
@@ -832,7 +837,7 @@ static int pdosDispatchUntilInterrupt(PDOS *pdos)
                 /* printf("eodad routine has %p %x in it\n", gendcb->eodad,
                           *gendcb->eodad); */
                 /* EOF routine usually sets R6 to 1, so just do it */
-                pdos->context.regs[6] = 1;
+                pdos->context->regs[6] = 1;
                 pdos->cyl_upto++; /* position on next cylinder */
                 rcnt = 0;
                 i = 0;
@@ -842,10 +847,10 @@ static int pdosDispatchUntilInterrupt(PDOS *pdos)
             {
                 /* we know that they are using R8 for the buffer, via
                    the READ macro */
-                p = (char *)pdos->context.regs[8];
+                p = (char *)pdos->context->regs[8];
                 memcpy(p, tbuf, cnt);
-                geniob.residual = (short)(pdos->context.regs[9] - cnt);
-                decb = (char *)pdos->context.regs[1];
+                geniob.residual = (short)(pdos->context->regs[9] - cnt);
+                decb = (char *)pdos->context->regs[1];
                 *(IOB **)(decb + 16) = &geniob;
                 j++;
                 if (j == 4)
@@ -1209,27 +1214,27 @@ static void pdosProcessSVC(PDOS *pdos)
     if (svc == 3)
     {
         /* normally the OS would not exit on program end */
-        printf("return from PCOMM is %d\n", pdos->context.regs[15]);
+        printf("return from PCOMM is %d\n", pdos->context->regs[15]);
         pdos->shutdown = 1;
-        pdos->exitcode = pdos->context.regs[15];
+        pdos->exitcode = pdos->context->regs[15];
     }
     else if ((svc == 120) || (svc == 10))
     {
         /* if really getmain */
-        if (((svc == 10) && (pdos->context.regs[1] < 0))
-            || ((svc == 120) && (pdos->context.regs[1] == 0)))
+        if (((svc == 10) && (pdos->context->regs[1] < 0))
+            || ((svc == 120) && (pdos->context->regs[1] == 0)))
         {
-            pdos->context.regs[15] = 0;
-            if (pdos->context.regs[0] < 16000000L)
+            pdos->context->regs[15] = 0;
+            if (pdos->context->regs[0] < 16000000L)
             {
                 getmain = (int)memmgrAllocate(
                     &pdos->aspaces[pdos->curr_aspace].o.btlmem,
-                    pdos->context.regs[0],
+                    pdos->context->regs[0],
                     0);
 #if MEMDEBUG
                 printf("allocated %x for r0 %x, r1 %x, r15 %x\n", getmain,
-                    pdos->context.regs[0], pdos->context.regs[1],
-                    pdos->context.regs[15]);
+                    pdos->context->regs[0], pdos->context->regs[1],
+                    pdos->context->regs[15]);
 #endif
             }
             else
@@ -1244,50 +1249,50 @@ static void pdosProcessSVC(PDOS *pdos)
 #else
                 getmain = (int)memmgrAllocate(
                     &pdos->aspaces[pdos->curr_aspace].o.atlmem,
-                    pdos->context.regs[0],
+                    pdos->context->regs[0],
                     0);
 #endif
 #if MEMDEBUG
                 printf("allocated %x for r0 %x, r1 %x, r15 %x\n", getmain,
-                    pdos->context.regs[0], pdos->context.regs[1],
-                    pdos->context.regs[15]);
+                    pdos->context->regs[0], pdos->context->regs[1],
+                    pdos->context->regs[15]);
 #endif
             }
-            pdos->context.regs[1] = getmain;
+            pdos->context->regs[1] = getmain;
         }
         /* freemain */
         else
         {
 #if MEMDEBUG
             printf("freeing r0 %x, r1 %x\n",
-                    pdos->context.regs[0], pdos->context.regs[1]);
+                    pdos->context->regs[0], pdos->context->regs[1]);
 #endif
-            if (pdos->context.regs[1] < 16000000L)
+            if (pdos->context->regs[1] < 16000000L)
             {
                 memmgrFree(&pdos->aspaces[pdos->curr_aspace].o.btlmem,
-                           (char *)pdos->context.regs[1]);
+                           (char *)pdos->context->regs[1]);
             }
             else
             {
                 memmgrFree(&pdos->aspaces[pdos->curr_aspace].o.atlmem,
-                           (char *)pdos->context.regs[1]);
+                           (char *)pdos->context->regs[1]);
             }
         }
     }
     else if (svc == 24) /* devtype */
     {
         /* hardcoded constants that fell off the back of a truck */
-        memcpy((void *)pdos->context.regs[0], 
+        memcpy((void *)pdos->context->regs[0], 
                "\x30\x50\x08\x0B" /* 08 = unit record */
                "\x00\x00\x01\x02", /* device size = 258 byte blocks */
                8);
-        pdos->context.regs[15] = 0;
+        pdos->context->regs[15] = 0;
     }
     else if (svc == 64) /* rdjfcb */
     {
         int oneexit;
 
-        gendcb = (DCB *)pdos->context.regs[10]; 
+        gendcb = (DCB *)pdos->context->regs[10]; 
             /* need to protect against this */
             /* and it's totally wrong anyway */
         fcnt++;
@@ -1315,21 +1320,21 @@ static void pdosProcessSVC(PDOS *pdos)
                 dexit(oneexit, gendcb);
             }
         }
-        pdos->context.regs[15] = 0;
+        pdos->context->regs[15] = 0;
     }
     else if (svc == 22) /* open */
     {
         gendcb->u1.dcboflgs |= DCBOFOPN;
-        pdos->context.regs[15] = 0; /* is this required? */
+        pdos->context->regs[15] = 0; /* is this required? */
     }
     else if (svc == 42) /* attach */
     {
         char *prog;
         char *parm;
         
-        prog = (char *)pdos->context.regs[2];
+        prog = (char *)pdos->context->regs[2];
         printf("got request to run %.8s\n", prog);
-        parm = *(char **)pdos->context.regs[1];
+        parm = *(char **)pdos->context->regs[1];
         printf("parameter string is %d bytes\n", *(short *)parm);
         /* r3 has ECB which is where return code is meant to go */
         pdosLoadExe(pdos, prog, parm);
@@ -1434,19 +1439,20 @@ static int pdosLoadExe(PDOS *pdos, char *prog, char *parm)
        incorrect, so subtract 2 - get rid of this +++ */
     pdos->cyl_upto -= 2;
 
-    memset(&pdos->context, 0x00, sizeof pdos->context);
-    pdos->context.regs[13] = (int)savearea;
-    pdos->context.regs[14] = (int)gotret;
-    pdos->context.regs[15] = (int)entry;
-    pdos->context.psw1 = PSW_ENABLE_INT; /* need to enable interrupts */
-    pdos->context.psw2 = (int)entry; /* 24-bit mode for now */
+    /* +++ move this */
+    memset(pdos->context, 0x00, sizeof *pdos->context);
+    pdos->context->regs[13] = (int)savearea;
+    pdos->context->regs[14] = (int)gotret;
+    pdos->context->regs[15] = (int)entry;
+    pdos->context->psw1 = PSW_ENABLE_INT; /* need to enable interrupts */
+    pdos->context->psw2 = (int)entry; /* 24-bit mode for now */
 #if defined(S390)
-    pdos->context.psw2 |= 0x80000000; /* dispatch in 31-bit mode */
+    pdos->context->psw2 |= 0x80000000; /* dispatch in 31-bit mode */
 #endif
 
     pptrs[0] = parm;
     
-    pdos->context.regs[1] = (int)pptrs;
+    pdos->context->regs[1] = (int)pptrs;
     
     printf("finished loading executable\n");
     return (0);
@@ -1524,19 +1530,22 @@ static int pdosLoadPcomm(PDOS *pdos)
     /* after EOF, position on the next cylinder */
     pdos->cyl_upto++;
 
-    memset(&pdos->context, 0x00, sizeof pdos->context);
-    pdos->context.regs[13] = (int)savearea;
-    pdos->context.regs[14] = (int)gotret;
-    pdos->context.regs[15] = (int)entry;
-    pdos->context.psw1 = PSW_ENABLE_INT; /* need to enable interrupts */
-    pdos->context.psw2 = (int)entry; /* 24-bit mode for now */
+    pdos->context =
+        pdos->aspaces[pdos->curr_aspace].o.curr_rb =
+        &pdos->aspaces[pdos->curr_aspace].o.first_rb;
+    memset(pdos->context, 0x00, sizeof *pdos->context);
+    pdos->context->regs[13] = (int)savearea;
+    pdos->context->regs[14] = (int)gotret;
+    pdos->context->regs[15] = (int)entry;
+    pdos->context->psw1 = PSW_ENABLE_INT; /* need to enable interrupts */
+    pdos->context->psw2 = (int)entry; /* 24-bit mode for now */
 #if defined(S390)
-    pdos->context.psw2 |= 0x80000000; /* dispatch in 31-bit mode */
+    pdos->context->psw2 |= 0x80000000; /* dispatch in 31-bit mode */
 #endif
 
     pptrs[0] = mvsparm;
     
-    pdos->context.regs[1] = (int)pptrs;
+    pdos->context->regs[1] = (int)pptrs;
     
     return (1);
 }

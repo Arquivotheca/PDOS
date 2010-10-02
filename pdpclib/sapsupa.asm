@@ -285,7 +285,7 @@ RETURNAR DS    0H
 *        USING WORKAREA,R13
 *
          AIF   ('&SYS' NE 'S380').N380WR1
-         CALL  @@SETM24
+*         CALL  @@SETM24
 .N380WR1 ANOP
 *
 *         STCM  R4,B'0011',DCBLRECL
@@ -323,7 +323,7 @@ DONEDIAG DS    0H
 .NLM3    ANOP
 *
          AIF   ('&SYS' NE 'S380').N380WR2
-         CALL  @@SETM31
+*         CALL  @@SETM31
 .N380WR2 ANOP
 *
 *        LR    R1,R13

@@ -90,14 +90,43 @@ MEMORY MAPS
 
 real (S/390)
 0-16: PDOS BTL + ATL
-16-96: address space 0
-96-336: address spaces 1-3
+16-160: address space 0 private area
+160-592: address spaces 1-3 private area (144 MB each)
 
 virt (S/390)
 0-5: PDOS BTL
 5-15: priv BTL
 15-26: PDOS ATL mostly
-26-96: priv ATL
+26-160: priv ATL
+
+
+real (S/370)
+0-5: PDOS BTL
+5-16: unused
+16-26: address space 0 private area
+26-56: address spaces 1-3 private area (10 MB each)
+
+virt (S/370)
+0-5: PDOS BTL
+5-15: priv BTL
+15-16: PDOS reserved
+
+
+(assuming 144 adjustment)
+real (S/380)
+0-5: PDOS BTL
+5-16: unused
+16-26: address space 0 BTL private area
+26-56: address spaces 1-3 private area (10 MB each)
+64-192: address space 0 ATL private area (128 MB each)
+192-576: address spaces 1-3 private area (128 MB each)
+
+virt (S/380)
+0-5: PDOS BTL
+5-15: priv BTL
+15-16: PDOS reserved
+16-144: priv ATL (128 MB)
+
 
 
 old real memory map:
@@ -200,10 +229,10 @@ old virtual memory map:
 #elif defined(S370)
 #define MAXASIZE 16
 #else
-#define MAXASIZE 80 /* maximum of 80 MB for address space */
-                    /* note that this needs to be a multiple of 16
-                       in order for the current logic (MAXASIZE/SEG_BLK)
-                       to work */
+#define MAXASIZE 144 /* maximum of 80 MB for address space */
+                     /* note that this needs to be a multiple of 16
+                        in order for the current logic (MAXASIZE/SEG_BLK)
+                        to work */
 #endif
 #endif
 
@@ -844,12 +873,6 @@ static int pdosDispatchUntilInterrupt(PDOS *pdos)
    not being allocated to real memory until it is actually
    attempted to be used. */
 
-/* we will eventually map the 4 MB - 9 MB location to various spots
-   under 64 MB real (370 allowed this), giving up to 15 address
-   spaces of 4 MB each. But for now, just map it directy on to
-   the same location (ie all address spaces will clobber each
-   other) */ 
-
 static void pdosInitAspaces(PDOS *pdos)
 {
     int s;
@@ -896,6 +919,9 @@ static void pdosInitAspaces(PDOS *pdos)
                        (s << 20)
 #endif
                        | (p << 12);
+
+                /* the private areas are all put into the EA
+                   region which starts at 16 MB */
 #if EA_ON
 #if SEG_64K
                 if ((s * 1024 * 1024/16 >= BTL_PRIVSTART) 
@@ -1044,7 +1070,7 @@ static void pdosInitAspaces(PDOS *pdos)
         memmgrDefaults(&pdos->aspaces[a].o.atlmem);
         memmgrInit(&pdos->aspaces[a].o.atlmem);
         memmgrSupply(&pdos->aspaces[a].o.atlmem,
-                     (char *)S370_MAXMB,
+                     (char *)(S370_MAXMB * 1024 * 1024),
                      (MAXASIZE-S370_MAXMB) * 1024 * 1024);
         datoff();
     }
@@ -1194,7 +1220,6 @@ static void pdosProcessSVC(PDOS *pdos)
         if (((svc == 10) && (pdos->context.regs[1] < 0))
             || ((svc == 120) && (pdos->context.regs[1] == 0)))
         {
-            printf("requesting %d bytes\n", pdos->context.regs[0]);
             pdos->context.regs[15] = 0;
             if (pdos->context.regs[0] < 16000000L)
             {
@@ -1218,14 +1243,10 @@ static void pdosProcessSVC(PDOS *pdos)
                     PDOS_STORINC,
                     0);
 #else
-#if 1
                 getmain = (int)memmgrAllocate(
                     &pdos->aspaces[pdos->curr_aspace].o.atlmem,
                     pdos->context.regs[0],
                     0);
-#endif
-                printf("ok, finally got through\n");
-                getmain = 0x04100000;
 #endif
 #if MEMDEBUG
                 printf("allocated %x for r0 %x, r1 %x, r15 %x\n", getmain,

@@ -354,11 +354,12 @@ typedef struct {
     int abend;
 } TASK;
 
-typedef struct {
+typedef struct rb {
     /* char filler1[96]; */
     int regs[NUM_GPR];
     unsigned int psw1;
     unsigned int psw2;
+    struct rb *rblinkb;
 } RB;
 
 typedef struct {
@@ -1213,10 +1214,23 @@ static void pdosProcessSVC(PDOS *pdos)
 #endif
     if (svc == 3)
     {
-        /* normally the OS would not exit on program end */
-        printf("return from PCOMM is %d\n", pdos->context->regs[15]);
-        pdos->shutdown = 1;
-        pdos->exitcode = pdos->context->regs[15];
+        /* if this is a LINKed program, then restore old context
+           rather than shutting down */
+        if (pdos->context->rblinkb != NULL)
+        {
+            /* need mechanism to set ECB here */
+            pdos->aspaces[pdos->curr_aspace].o.curr_rb = 
+                pdos->context =
+                pdos->context->rblinkb;
+            pdos->context->regs[15] = 0; /* signal success to caller */
+        }
+        else
+        {
+            /* normally the OS would not exit on program end */
+            printf("return from PCOMM is %d\n", pdos->context->regs[15]);
+            pdos->shutdown = 1;
+            pdos->exitcode = pdos->context->regs[15];
+        }
     }
     else if ((svc == 120) || (svc == 10))
     {
@@ -1337,7 +1351,12 @@ static void pdosProcessSVC(PDOS *pdos)
         parm = *(char **)pdos->context->regs[1];
         printf("parameter string is %d bytes\n", *(short *)parm);
         /* r3 has ECB which is where return code is meant to go */
-        pdosLoadExe(pdos, prog, parm);
+        /* +++ should save ECB in context */
+        if (pdosLoadExe(pdos, prog, parm) != 0)
+        {
+            /* +++ not sure what proper return code is */
+            pdos->context->regs[15] = 4;
+        }
         /* and need to set R15 to success too */
         fcnt = 0;
     }
@@ -1372,6 +1391,7 @@ static int pdosLoadExe(PDOS *pdos, char *prog, char *parm)
     char tbuf[MAXBLKSZ];
     int cnt = -1;
     int lastcnt = 0;
+    int ret = 0;
 
     /* because autoexec is still being run, cylinder is
        incorrect, so add 1 - get rid of this +++ */
@@ -1439,23 +1459,39 @@ static int pdosLoadExe(PDOS *pdos, char *prog, char *parm)
        incorrect, so subtract 2 - get rid of this +++ */
     pdos->cyl_upto -= 2;
 
-    /* +++ move this */
-    memset(pdos->context, 0x00, sizeof *pdos->context);
-    pdos->context->regs[13] = (int)savearea;
-    pdos->context->regs[14] = (int)gotret;
-    pdos->context->regs[15] = (int)entry;
-    pdos->context->psw1 = PSW_ENABLE_INT; /* need to enable interrupts */
-    pdos->context->psw2 = (int)entry; /* 24-bit mode for now */
+    /* get a new RB */
+    pdos->context = memmgrAllocate(
+        &pdos->aspaces[pdos->curr_aspace].o.btlmem,
+        sizeof *pdos->context, 0);
+    if (pdos->context == NULL)
+    {
+        ret = -1;
+    }
+    else
+    {
+        /* switch to new context */
+        memset(pdos->context, 0x00, sizeof *pdos->context);
+        pdos->context->rblinkb =
+            pdos->aspaces[pdos->curr_aspace].o.curr_rb;
+        pdos->aspaces[pdos->curr_aspace].o.curr_rb = pdos->context;
+
+        /* fill in details of new context */
+        pdos->context->regs[13] = (int)savearea;
+        pdos->context->regs[14] = (int)gotret;
+        pdos->context->regs[15] = (int)entry;
+        pdos->context->psw1 = PSW_ENABLE_INT; /* need to enable interrupts */
+        pdos->context->psw2 = (int)entry; /* 24-bit mode for now */
 #if defined(S390)
-    pdos->context->psw2 |= 0x80000000; /* dispatch in 31-bit mode */
+        pdos->context->psw2 |= 0x80000000; /* dispatch in 31-bit mode */
 #endif
 
-    pptrs[0] = parm;
+        pptrs[0] = parm;
     
-    pdos->context->regs[1] = (int)pptrs;
+        pdos->context->regs[1] = (int)pptrs;
     
-    printf("finished loading executable\n");
-    return (0);
+        printf("finished loading executable\n");
+    }
+    return (ret);
 }
 
 

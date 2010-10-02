@@ -112,7 +112,6 @@ virt (S/370)
 15-16: PDOS reserved
 
 
-(assuming 144 adjustment)
 real (S/380)
 0-5: PDOS BTL
 5-16: unused
@@ -229,7 +228,7 @@ old virtual memory map:
 #elif defined(S370)
 #define MAXASIZE 16
 #else
-#define MAXASIZE 144 /* maximum of 80 MB for address space */
+#define MAXASIZE 144 /* maximum of 144 MB for address space */
                      /* note that this needs to be a multiple of 16
                         in order for the current logic (MAXASIZE/SEG_BLK)
                         to work */

@@ -313,6 +313,7 @@ typedef struct {
 } TASK;
 
 typedef struct {
+    /* char filler1[96]; */
     int regs[NUM_GPR];
     unsigned int psw1;
     unsigned int psw2;
@@ -351,6 +352,10 @@ typedef struct {
     char filler1[30-16]; /* this 16 comes from IOBSTDRD +++ - fix */
     short residual;
 } IOB;
+
+
+/* event control block */
+typedef int ECB;
 
 
 /* A S/370 logical address consists of a segment index, which is
@@ -454,6 +459,9 @@ typedef UINT4 SEG_ENTRY;
 
 typedef UINT2 PAGE_ENT370;
 typedef UINT4 PAGE_ENTRY;
+
+
+
 
 
 /* for S/380, we have a mixed/split DAT. CR1 continues normal

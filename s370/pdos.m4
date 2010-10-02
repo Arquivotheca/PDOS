@@ -298,6 +298,13 @@ rem this is an example autoexec.bat
 echo about to run world
 world aBc DeF
 echo finished running world
+dumpblk 0 0 1
+echo
+dumpblk 0 0 2
+echo
+dumpblk 0 0 3
+echo
+dumpblk 0 0 4
 /*
 //*
 //COPYFILE EXEC PGM=COPYFILE,PARM='-tt dd:in dd:out'

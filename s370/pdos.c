@@ -617,6 +617,7 @@ void pdosTerm(PDOS *pdos);
 static int pdosDispatchUntilInterrupt(PDOS *pdos);
 static void pdosInitAspaces(PDOS *pdos);
 static void pdosProcessSVC(PDOS *pdos);
+static int pdosDumpBlk(PDOS *pdos, char *parm);
 static int pdosLoadExe(PDOS *pdos, char *prog, char *parm);
 static int pdosLoadPcomm(PDOS *pdos);
 
@@ -1369,7 +1370,14 @@ static void pdosProcessSVC(PDOS *pdos)
            in the next one? Or somewhere else? */
         pdos->context->postecb = (ECB *)pdos->context->regs[3];
 
-        if (pdosLoadExe(pdos, prog, parm) != 0)
+        /* special exception for special program to look at
+           disk blocks */
+        if (memcmp(prog, "DUMPBLK", 7) == 0)
+        {
+            pdosDumpBlk(pdos, parm);
+            pdos->context->regs[15] = 0;
+        }
+        else if (pdosLoadExe(pdos, prog, parm) != 0)
         {
             /* +++ not sure what proper return code is */
             pdos->context->regs[15] = 4;
@@ -1391,6 +1399,79 @@ static void pdosProcessSVC(PDOS *pdos)
 
 
 #define PSW_ENABLE_INT 0x040C0000 /* actually disable interrupts for now */
+
+
+/* dump block */
+
+static int pdosDumpBlk(PDOS *pdos, char *parm)
+{
+    int cyl;
+    int head;
+    int rec;
+    char tbuf[MAXBLKSZ];
+    long cnt = -1;
+    int lastcnt = 0;
+    int ret = 0;
+    int c, pos1, pos2;
+    long x = 0L;
+    char prtln[100];
+    long i;
+    long start = 0;
+
+    tbuf[0] = '\0';
+    i = *(short *)parm;
+    parm += sizeof(short);
+    if (i < (sizeof tbuf - 1))
+    {
+        memcpy(tbuf, parm, i);
+        tbuf[i] = '\0';
+    }
+    sscanf(tbuf, "%d %d %d", &cyl, &head, &rec);
+    printf("dumping cylinder %d, head %d, record %d\n", cyl, head, rec);
+    cnt = rdblock(pdos->ipldev, cyl, head, rec, tbuf, MAXBLKSZ);
+    if (cnt > 0)
+    {
+        for (i = 0; i < cnt; i++)
+        {
+            c = tbuf[i];
+            if (x % 16 == 0)
+            {
+                memset(prtln, ' ', sizeof prtln);
+                sprintf(prtln, "%0.6lX   ", start + x);
+                pos1 = 8;
+                pos2 = 45;
+            }
+            sprintf(prtln + pos1, "%0.2X", c);
+            if (isprint((unsigned char)c))
+            {
+                sprintf(prtln + pos2, "%c", c);
+            }
+            else
+            {
+                sprintf(prtln + pos2, ".");
+            }
+            pos1 += 2;
+            *(prtln + pos1) = ' ';
+            pos2++;
+            if (x % 4 == 3)
+            {
+                *(prtln + pos1++) = ' ';
+            }
+            if (x % 16 == 15)
+            {
+                printf("%s\n", prtln);
+            }
+            x++;
+        }
+        if (x % 16 != 0)
+        {
+            printf("%s\n", prtln);
+        }
+    }
+    
+    return (0);
+}
+
 
 /* load executable into memory, on a predictable 1 MB boundary,
    by requesting 5 MB */

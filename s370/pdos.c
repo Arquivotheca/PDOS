@@ -365,6 +365,7 @@ typedef struct rb {
     unsigned int psw2;
     struct rb *rblinkb;
     ECB *postecb;
+    int cyl_fudge; /* keep track of previous cylinder in use */
 } RB;
 
 typedef struct {
@@ -1222,10 +1223,19 @@ static void pdosProcessSVC(PDOS *pdos)
             /* set ECB of person waiting */
             /* +++ needs to run at user priviledge */
             *pdos->context->rblinkb->postecb = pdos->context->regs[15];
-            pdos->context =
-                pdos->aspaces[pdos->curr_aspace].o.curr_rb = 
+            pdos->aspaces[pdos->curr_aspace].o.curr_rb = 
                 pdos->context->rblinkb;
+
+            /* free old context */
+            memmgrFree(&pdos->aspaces[pdos->curr_aspace].o.btlmem,
+                       pdos->context);
+
+            pdos->context = pdos->aspaces[pdos->curr_aspace].o.curr_rb;
             pdos->context->regs[15] = 0; /* signal success to caller */
+
+            /* because autoexec is still being run, need to
+               restore the old cylinder - but get rid of this +++ */
+            pdos->cyl_upto = pdos->context->cyl_fudge;
         }
         else
         {
@@ -1401,6 +1411,11 @@ static int pdosLoadExe(PDOS *pdos, char *prog, char *parm)
     int lastcnt = 0;
     int ret = 0;
 
+    /* +++ get rid of this - we shouldn't be mucking around
+       with cylinders like this, but at the moment, it is
+       being used to be able to return to autoexec.bat */
+    pdos->context->cyl_fudge = pdos->cyl_upto;
+    
     /* because autoexec is still being run, cylinder is
        incorrect, so add 1 - get rid of this +++ */
     pdos->cyl_upto++;
@@ -1462,10 +1477,6 @@ static int pdosLoadExe(PDOS *pdos, char *prog, char *parm)
     printf("top is now %p\n", load);
     /* after EOF, position on the next cylinder */
     pdos->cyl_upto++;
-
-    /* because autoexec is still being run, cylinder is
-       incorrect, so subtract 2 - get rid of this +++ */
-    pdos->cyl_upto -= 2;
 
     /* get a new RB */
     pdos->context = memmgrAllocate(

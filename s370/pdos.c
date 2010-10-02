@@ -350,6 +350,10 @@ old virtual memory map:
 #endif
 
 
+/* event control block */
+typedef int ECB;
+
+
 typedef struct {
     int abend;
 } TASK;
@@ -360,6 +364,7 @@ typedef struct rb {
     unsigned int psw1;
     unsigned int psw2;
     struct rb *rblinkb;
+    ECB *postecb;
 } RB;
 
 typedef struct {
@@ -395,10 +400,6 @@ typedef struct {
     char filler1[30-16]; /* this 16 comes from IOBSTDRD +++ - fix */
     short residual;
 } IOB;
-
-
-/* event control block */
-typedef int ECB;
 
 
 /* A S/370 logical address consists of a segment index, which is
@@ -1218,9 +1219,11 @@ static void pdosProcessSVC(PDOS *pdos)
            rather than shutting down */
         if (pdos->context->rblinkb != NULL)
         {
-            /* need mechanism to set ECB here */
-            pdos->aspaces[pdos->curr_aspace].o.curr_rb = 
-                pdos->context =
+            /* set ECB of person waiting */
+            /* +++ needs to run at user priviledge */
+            *pdos->context->rblinkb->postecb = pdos->context->regs[15];
+            pdos->context =
+                pdos->aspaces[pdos->curr_aspace].o.curr_rb = 
                 pdos->context->rblinkb;
             pdos->context->regs[15] = 0; /* signal success to caller */
         }
@@ -1350,14 +1353,19 @@ static void pdosProcessSVC(PDOS *pdos)
         printf("got request to run %.8s\n", prog);
         parm = *(char **)pdos->context->regs[1];
         printf("parameter string is %d bytes\n", *(short *)parm);
+        
         /* r3 has ECB which is where return code is meant to go */
-        /* +++ should save ECB in context */
+        /* we save that in our current RB. But does it belong
+           in the next one? Or somewhere else? */
+        pdos->context->postecb = (ECB *)pdos->context->regs[3];
+
         if (pdosLoadExe(pdos, prog, parm) != 0)
         {
             /* +++ not sure what proper return code is */
             pdos->context->regs[15] = 4;
         }
-        /* and need to set R15 to success too */
+        /* otherwise, we have a new context loaded, so don't
+           mess with it */        
         fcnt = 0;
     }
     else if (svc == 1) /* wait */

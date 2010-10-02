@@ -931,12 +931,6 @@ static void pdosInitAspaces(PDOS *pdos)
         memmgrSupply(&pdos->aspaces[a].o.btlmem,
                      (char *)BTL_PRIVSTART,
                      BTL_PRIVLEN * 1024 * 1024);
-
-        memmgrDefaults(&pdos->aspaces[a].o.atlmem);
-        memmgrInit(&pdos->aspaces[a].o.atlmem);
-        memmgrSupply(&pdos->aspaces[a].o.atlmem,
-                     (char *)((S370_MAXMB + BTL_PRIVLEN) * 1024 * 1024),
-                     (MAXASIZE - S370_MAXMB - BTL_PRIVLEN) * 1024 * 1024);
         datoff();
     }
 #endif
@@ -1022,19 +1016,17 @@ static void pdosInitAspaces(PDOS *pdos)
                a, pdos->aspaces[a].o.segtable, pdos->aspaces[a].o.cregs[13]);
 
         /* now set up the memory manager for BTL and ATL storage */
-#if defined(S380) && !BTL_XA
         lcreg13(pdos->aspaces[a].o.cregs[13]);
-#else
         lcreg1(pdos->aspaces[a].o.cregs[1]);
         daton();
+/* if BTL is XA, we won't have defined memmgr yet */
+#if BTL_XA
         memmgrDefaults(&pdos->aspaces[a].o.btlmem);
         memmgrInit(&pdos->aspaces[a].o.btlmem);
         memmgrSupply(&pdos->aspaces[a].o.btlmem,
                      (char *)BTL_PRIVSTART,
                      BTL_PRIVLEN * 1024 * 1024);
-        datoff();
 #endif
-        daton();
         memmgrDefaults(&pdos->aspaces[a].o.atlmem);
         memmgrInit(&pdos->aspaces[a].o.atlmem);
         memmgrSupply(&pdos->aspaces[a].o.atlmem,

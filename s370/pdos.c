@@ -1312,7 +1312,7 @@ static void pdosProcessSVC(PDOS *pdos)
         /* hardcoded constants that fell off the back of a truck */
         memcpy((void *)pdos->context->regs[0], 
                "\x30\x50\x08\x0B" /* 08 = unit record */
-               "\x00\x00\x01\x02", /* device size = 258 byte blocks */
+               "\x00\x00\x7f\xff", /* device size = 32767 byte blocks */
                8);
         pdos->context->regs[15] = 0;
     }

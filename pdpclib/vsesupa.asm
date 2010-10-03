@@ -68,7 +68,7 @@ R14      EQU   14
 R15      EQU   15
 SUBPOOL  EQU   0
 *
-* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+***********************************************************************
 *
 *  AOPEN - Open a dataset
 *
@@ -82,7 +82,7 @@ SUBPOOL  EQU   0
 *  Note - more documentation for this and other I/O functions can
 *  be found halfway through the stdio.c file in PDPCLIB.
 *
-* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+***********************************************************************
 **********************************************************************
 *                                                                    *
 *  AOPEN - Open a file                                               *
@@ -458,11 +458,11 @@ MYLINE   DS    CL80
 *
 *
 *
-* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+***********************************************************************
 *
 *  AWRITE - Write to an open dataset
 *
-* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+***********************************************************************
          ENTRY @@AWRITE
 @@AWRITE EQU   *
          SAVE  (14,12),,@@AWRITE
@@ -593,11 +593,11 @@ MTIN     DTFMT BLKSIZE=19069,DEVADDR=SYS011,MODNAME=MTINMOD,           X
 MTINMOD  MTMOD WORKA=YES,RECFORM=UNDEF
 IO1      DS    CL200
 *
-* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+***********************************************************************
 *
 *  GETM - GET MEMORY
 *
-* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+***********************************************************************
          ENTRY @@GETM
 @@GETM   EQU   *
          SAVE  (14,12),,@@GETM
@@ -652,11 +652,11 @@ RETURNGM DS    0H
          RETURN (14,12),RC=(15)
          LTORG
 *
-* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+***********************************************************************
 *
 *  FREEM - FREE MEMORY
 *
-* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+***********************************************************************
          ENTRY @@FREEM
 @@FREEM  EQU   *
          SAVE  (14,12),,@@FREEM
@@ -678,7 +678,7 @@ RETURNGM DS    0H
 RETURNFM DS    0H
          RETURN (14,12),RC=(15)
          LTORG
-* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+***********************************************************************
 *
 *  GETCLCK - GET THE VALUE OF THE MVS CLOCK TIMER AND MOVE IT TO AN
 *  8-BYTE FIELD.  THIS 8-BYTE FIELD DOES NOT NEED TO BE ALIGNED IN
@@ -689,7 +689,7 @@ RETURNFM DS    0H
 *  THIS FUNCTION ALSO RETURNS THE NUMBER OF SECONDS SINCE 1970-01-01
 *  BY USING SOME EMPERICALLY-DERIVED MAGIC NUMBERS
 *
-* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+***********************************************************************
          ENTRY @@GETCLK
 @@GETCLK EQU   *
          SAVE  (14,12),,@@GETCLK
@@ -709,11 +709,11 @@ RETURNFM DS    0H
 RETURNGC DS    0H
          RETURN (14,12),RC=(15)
          LTORG
-* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+***********************************************************************
 *
 *  SYSTEM - execute another command
 *
-* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+***********************************************************************
          ENTRY @@SYSTEM
 @@SYSTEM EQU   *
          SAVE  (14,12),,@@SYSTEM
@@ -761,11 +761,11 @@ CMDLEN   DS    H             LENGTH OF COMMAND
 CMDTEXT  DS    CL200         COMMAND ITSELF
 SYSTEMLN EQU   *-SYSTMWRK    LENGTH OF DYNAMIC STORAGE
 @@VSESUP CSECT ,
-* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+***********************************************************************
 *
 *  IDCAMS - dummy function to keep MVS happy
 *
-* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+***********************************************************************
          ENTRY @@IDCAMS
 @@IDCAMS EQU   *
          SAVE  (14,12),,@@IDCAMS
@@ -777,11 +777,11 @@ SYSTEMLN EQU   *-SYSTMWRK    LENGTH OF DYNAMIC STORAGE
          RETURN (14,12),RC=(15)
          LTORG
 *
-* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+***********************************************************************
 *
 *  DYNAL - dummy function to keep MVS happy
 *
-* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+***********************************************************************
          ENTRY @@DYNAL
 @@DYNAL EQU   *
          SAVE  (14,12),,@@DYNAL
@@ -798,11 +798,11 @@ SYSTEMLN EQU   *-SYSTMWRK    LENGTH OF DYNAMIC STORAGE
 * Keep this code last because it uses a different base register
 *
          DROP  R12
-* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+***********************************************************************
 *
 *  SETJ - SAVE REGISTERS INTO ENV
 *
-* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+***********************************************************************
          ENTRY @@SETJ
          USING @@SETJ,R15
 @@SETJ   L     R15,0(R1)          get the env variable
@@ -811,11 +811,11 @@ SYSTEMLN EQU   *-SYSTMWRK    LENGTH OF DYNAMIC STORAGE
          BR    R14                return to caller
          LTORG ,
 *
-* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+***********************************************************************
 *
 *  LONGJ - RESTORE REGISTERS FROM ENV
 *
-* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+***********************************************************************
          ENTRY @@LONGJ
          USING @@LONGJ,R15
 @@LONGJ  L     R2,0(R1)           get the env variable
@@ -828,21 +828,21 @@ SYSTEMLN EQU   *-SYSTMWRK    LENGTH OF DYNAMIC STORAGE
 * and won't compile anyway because "BSM" is not known.
 *
          AIF   ('&SYS' EQ 'S370').NOMODE  If S/370 we can't switch mode
-* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+***********************************************************************
 *
 *  SETM24 - Set AMODE to 24
 *
-* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+***********************************************************************
          ENTRY @@SETM24
          USING @@SETM24,R15
 @@SETM24 ICM   R14,8,=X'00'       Sure hope caller is below the line
          BSM   0,R14              Return in amode 24
 *
-* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+***********************************************************************
 *
 *  SETM31 - Set AMODE to 31
 *
-* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+***********************************************************************
          ENTRY @@SETM31
          USING @@SETM31,R15
 @@SETM31 ICM   R14,8,=X'80'       Set to switch mode

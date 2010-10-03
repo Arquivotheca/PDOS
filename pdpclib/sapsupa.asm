@@ -52,7 +52,7 @@
 SUBPOOL  EQU   0
          EXTRN @@CONSDN
 *
-* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+***********************************************************************
 *
 *  AOPEN - Open a dataset
 *
@@ -66,7 +66,7 @@ SUBPOOL  EQU   0
 *  Note - more documentation for this and other I/O functions can
 *  be found halfway through the stdio.c file in PDPCLIB.
 *
-* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+***********************************************************************
 **********************************************************************
 *                                                                    *
 *  AOPEN - Open a file                                               *

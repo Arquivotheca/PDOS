@@ -850,4 +850,119 @@ ZDCBLEN  EQU   *-ZDCBAREA
          IHARB
          IHACDE
          IHASVC
+         CSECT
+**********************************************************************
+*                                                                    *
+*  @@CONSRD - read from console                                      *
+*                                                                    *
+*  parameter 1 = buffer length                                       *
+*  parameter 2 = buffer                                              *
+*                                                                    *
+**********************************************************************
+         ENTRY @@CONSRD
+@@CONSRD DS    0H
+         SAVE  (14,12),,@@CONSRD
+         LR    R12,R15
+         USING @@CONSRD,R12
+         USING PSA,R0
+*
+         L     R10,=V(@@CONSDN) Device number
+         L     R10,0(R10)
+         L     R7,0(R1)        Bytes to read
+         L     R2,4(R1)        Buffer to read into
+         AIF   ('&SYS' EQ 'S390').CHN390G
+         STCM  R2,B'0111',CRDCHN+1   This requires BTL buffer
+         STH   R7,CRDCHN+6     Store length in READ CCW
+         AGO   .CRD390H
+.CRD390G ANOP
+         ST    R2,CRDCHN+4
+         STH   R7,CRDCHN+2
+.CRD390H ANOP
+*
+* Interrupt needs to point to CRCONT now. Again, I would hope for
+* something more sophisticated in PDOS than this continual
+* initialization.
+*
+         MVC   FLCINPSW(8),CRNEWIO
+         STOSM FLCINPSW,X'00'  Work with DAT on or OFF
+* R3 points to CCW chain
+         LA    R3,CRDCHN
+         ST    R3,FLCCAW    Store in CAW
+*
+*
+         AIF   ('&SYS' EQ 'S390').CRD31M
+         SIO   0(R10)
+*         TIO   0(R10)
+         AGO   .CRD24M
+.CRD31M  ANOP
+         LR    R1,R10       R1 needs to contain subchannel
+         LA    R9,CRIRB
+         TSCH  0(R9)        Clear pending interrupts
+         LA    R10,CRORB
+         MSCH  0(R10)
+         TSCH  0(R9)        Clear pending interrupts
+         SSCH  0(R10)
+.CRD24M  ANOP
+*
+*
+         LPSW  CRWTNER      Wait for an interrupt
+         DC    H'0'
+CRCONT   DS    0H           Interrupt will automatically come here
+         AIF   ('&SYS' EQ 'S390').CRD31N
+         SH    R7,FLCCSW+6  Subtract residual count to get bytes read
+         LR    R15,R7
+* After a successful CCW chain, CSW should be pointing to end
+         CLC   FLCCSW(4),=A(CRDFCHN)
+         BE    CRALLFIN
+         AGO   .CRD24N
+.CRD31N  ANOP
+         TSCH  0(R9)
+         SH    R7,10(R9)
+         LR    R15,R7
+         CLC   4(4,R9),=A(CRDFCHN)
+         BE    CRALLFIN
+.CRD24N  ANOP
+         L     R15,=F'-1'   error return
+CRALLFIN DS    0H
+         RETURN (14,12),RC=(15)
+         LTORG
+*
+*
+         AIF   ('&SYS' NE 'S390').CRD390P
+         DS    0F
+CRIRB    DS    24F
+CRORB    DS    0F
+         DC    F'0'
+         DC    X'0080FF00'  Logical-Path Mask (enable all?) + format-1
+         DC    A(CRDCHN)
+         DC    5F'0'
+.CRD390P ANOP
+*
+*
+         DS    0D
+         AIF   ('&SYS' EQ 'S390').CRD390I
+* X'0A' = read inquiry
+CRDCHN   CCW   X'0A',0,X'20',0    20 = ignore length issues
+         AGO   .CRD390J
+.CRD390I ANOP
+CRDCHN   CCW1  X'0A',0,X'20',0    20 = ignore length issues
+.CRD390J ANOP
+CRDFCHN  EQU   *
+         DS    0D
+CRWTNER  DC    X'060E0000'  I/O, machine check, EC, wait, DAT on
+         DC    X'00000000'  no error
+CRNEWIO  DC    X'000C0000'  machine check, EC, DAT off
+         AIF   ('&SYS' EQ 'S370').CRD24Q
+         DC    A(X'80000000'+CRCONT)  continuation after I/O request
+         AGO   .CRD31Q
+.CRD24Q  ANOP
+         DC    A(CRCONT)     continuation after I/O request
+.CRD31Q  ANOP
+*
+         DROP  ,
+*
+*
+*
+*
+*
          END

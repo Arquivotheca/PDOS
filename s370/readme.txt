@@ -30,6 +30,17 @@ The following JCL will do that:
 
 (the example sets the subchannel to x'10038')
 
+If you do not zap it, it will attempt to figure out the
+3215 console address by searching for "3215-C". It relies
+on 3215-C being (only) on the line which has your device,
+and then it will use the relative device number to determine
+the device address. E.g. if this is the 5th device you have
+defined, it will set an address of x'10004' (ie it uses
+0-based counting). This matches what Hercules does. In
+S/370 and S/380 modes, it instead uses the specified device
+address.
+
+
 Options for dumping the data would be to run ADRDSSU on a Hercules
 system running z/OS, or there is also a CCKDDUMP/CCKDLOAD. I've
 never actually used either, as I don't have access to a real system.

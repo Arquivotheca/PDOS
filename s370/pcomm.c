@@ -151,10 +151,11 @@ static void processInput(void)
     {
         dotype(p);
     }
-    else if (ins_strcmp(buf, "dir") == 0)
+/* for now, let PDOS handle this */
+/*    else if (ins_strcmp(buf, "dir") == 0)
     {
         dodir(p);
-    }
+    } */
     else if (ins_strcmp(buf, "echo") == 0)
     {
         printf("%s\n", p);

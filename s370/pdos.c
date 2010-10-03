@@ -622,6 +622,8 @@ static int pdosDumpBlk(PDOS *pdos, char *parm);
 static int pdosLoadExe(PDOS *pdos, char *prog, char *parm);
 static int pdosLoadPcomm(PDOS *pdos);
 
+int __consrd(int len, char *buf);
+
 int main(int argc, char **argv)
 {
     PDOS *pdos;
@@ -831,11 +833,33 @@ static int pdosDispatchUntilInterrupt(PDOS *pdos)
                    pdos->context->regs[8],
                    pdos->cyl_upto, i, j);
 #endif
-            cnt = rdblock(pdos->ipldev, pdos->cyl_upto, i, j, 
-                          tbuf, pdos->context->regs[9]);
+            if (pdos->cyl_upto == -1)
+            {
+                cnt = 0;
+            }
+            else
+            {
+                cnt = rdblock(pdos->ipldev, pdos->cyl_upto, i, j, 
+                              tbuf, pdos->context->regs[9]);
+            }
 #if DSKDEBUG
             printf("cnt is %d\n", cnt);
 #endif
+            /* +++ remove this horrible switching from autoexec.bat
+               to console */
+            if ((cnt == 0) && (pdos->cyl_upto == 4))
+            {
+                pdos->cyl_upto = -1;
+            }
+            if (pdos->cyl_upto == -1)
+            {
+                cnt = __consrd(300, tbuf);
+                if (cnt >= 0)
+                {
+                    tbuf[cnt++] = '\n';
+                }
+            }
+            
             if (cnt <= 0)
             {
                 /* need to call EOF routine */

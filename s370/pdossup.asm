@@ -198,13 +198,15 @@ ORB      DS    0F
 SEEK     CCW   7,BBCCHH,X'40',6       40 = chain command
 SEARCH   CCW   X'31',CCHHR,X'40',5    40 = chain command
          CCW   8,SEARCH,0,0
-LOADCCW  CCW   6,0,X'20',32767        20 = ignore length issues
+* X'E' = read key and data
+LOADCCW  CCW   X'E',0,X'20',32767     20 = ignore length issues
          AGO   .CHN390F
 .CHN390  ANOP
 SEEK     CCW1  7,BBCCHH,X'40',6       40 = chain command
 SEARCH   CCW1  X'31',CCHHR,X'40',5    40 = chain command
          CCW1  8,SEARCH,0,0
-LOADCCW  CCW1  6,0,X'20',32767        20 = ignore length issues
+* X'E' = read key and data
+LOADCCW  CCW1  X'E',0,X'20',32767     20 = ignore length issues
 .CHN390F ANOP
 FINCHAIN EQU   *
          DS    0H

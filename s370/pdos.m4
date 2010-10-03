@@ -295,26 +295,16 @@ undivert(world.s)/*
 //IN       DD  *
 rem this is an example autoexec.bat
 
+echo let's do a directory listing
 dir
 
-echo about to run world
-world aBc DeF
-echo finished running world
+echo let's dump the IPL1 record
 dumpblk 0 0 1
-echo
-dumpblk 0 0 2
-echo
-dumpblk 0 0 3
-echo
-dumpblk 0 0 4
-echo
-dumpblk 0 1 1
-echo
-dumpblk 6 0 1
-echo
-dumpblk 6 0 2
-echo
-dumpblk 6 0 3
+
+echo let's run a program
+world aBc DeF
+
+echo that's enough for now - enter further commands yourself!
 /*
 //*
 //COPYFILE EXEC PGM=COPYFILE,PARM='-tt dd:in dd:out'

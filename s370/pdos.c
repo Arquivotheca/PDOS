@@ -617,6 +617,7 @@ void pdosTerm(PDOS *pdos);
 static int pdosDispatchUntilInterrupt(PDOS *pdos);
 static void pdosInitAspaces(PDOS *pdos);
 static void pdosProcessSVC(PDOS *pdos);
+static int pdosDoDIR(PDOS *pdos, char *parm);
 static int pdosDumpBlk(PDOS *pdos, char *parm);
 static int pdosLoadExe(PDOS *pdos, char *prog, char *parm);
 static int pdosLoadPcomm(PDOS *pdos);
@@ -1377,6 +1378,11 @@ static void pdosProcessSVC(PDOS *pdos)
             pdosDumpBlk(pdos, parm);
             pdos->context->regs[15] = 0;
         }
+        else if (memcmp(prog, "DIR", 3) == 0)
+        {
+            pdosDoDIR(pdos, parm);
+            pdos->context->regs[15] = 0;
+        }
         else if (pdosLoadExe(pdos, prog, parm) != 0)
         {
             /* +++ not sure what proper return code is */
@@ -1399,6 +1405,38 @@ static void pdosProcessSVC(PDOS *pdos)
 
 
 #define PSW_ENABLE_INT 0x040C0000 /* actually disable interrupts for now */
+
+
+/* do DIR command */
+
+static int pdosDoDIR(PDOS *pdos, char *parm)
+{
+    int cyl;
+    int head;
+    int rec;
+    char tbuf[MAXBLKSZ];
+    int cnt;
+    char *p;
+    
+    cyl = 6;
+    head = 0;
+    rec = 3;
+    while ((cnt = rdblock(pdos->ipldev, cyl, head, rec, tbuf, MAXBLKSZ)),
+           cnt > 0)
+    {
+        if (tbuf[0] == '\0') break;
+        tbuf[44] = '\0';
+        p = strchr(tbuf, ' ');
+        if (p != NULL)
+        {
+            *p = '\0';
+        }
+        printf("%s\n", tbuf);
+        rec++;
+    }
+    
+    return (0);
+}
 
 
 /* dump block */

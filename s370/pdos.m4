@@ -295,6 +295,8 @@ undivert(world.s)/*
 //IN       DD  *
 rem this is an example autoexec.bat
 
+dir
+
 echo about to run world
 world aBc DeF
 echo finished running world
@@ -305,6 +307,14 @@ echo
 dumpblk 0 0 3
 echo
 dumpblk 0 0 4
+echo
+dumpblk 0 1 1
+echo
+dumpblk 6 0 1
+echo
+dumpblk 6 0 2
+echo
+dumpblk 6 0 3
 /*
 //*
 //COPYFILE EXEC PGM=COPYFILE,PARM='-tt dd:in dd:out'

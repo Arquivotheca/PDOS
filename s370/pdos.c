@@ -833,7 +833,7 @@ static int pdosDispatchUntilInterrupt(PDOS *pdos)
                    pdos->context->regs[8],
                    pdos->cyl_upto, i, j);
 #endif
-            if (pdos->cyl_upto == -1)
+            if (pdos->cyl_upto < 0)
             {
                 cnt = 0;
             }
@@ -849,9 +849,9 @@ static int pdosDispatchUntilInterrupt(PDOS *pdos)
                to console */
             if ((cnt == 0) && (pdos->cyl_upto == 4))
             {
-                pdos->cyl_upto = -1;
+                pdos->cyl_upto = -pdos->cyl_upto;
             }
-            if (pdos->cyl_upto == -1)
+            if (pdos->cyl_upto < 0)
             {
                 cnt = __consrd(300, tbuf);
                 if (cnt >= 0)
@@ -1561,6 +1561,10 @@ static int pdosLoadExe(PDOS *pdos, char *prog, char *parm)
     
     /* because autoexec is still being run, cylinder is
        incorrect, so add 1 - get rid of this +++ */
+    if (pdos->cyl_upto < 0)
+    {
+        pdos->cyl_upto = -pdos->cyl_upto;
+    }
     pdos->cyl_upto++;
 
     printf("executable should reside on cylinder %d, head 0 of IPL device\n",

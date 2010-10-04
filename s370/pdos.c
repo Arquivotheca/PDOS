@@ -366,6 +366,7 @@ typedef struct rb {
     struct rb *rblinkb;
     ECB *postecb;
     int cyl_fudge; /* keep track of previous cylinder in use */
+    char *next_exe; /* next executable's location */
 } RB;
 
 typedef struct {
@@ -1262,6 +1263,10 @@ static void pdosProcessSVC(PDOS *pdos)
             /* because autoexec is still being run, need to
                restore the old cylinder - but get rid of this +++ */
             pdos->cyl_upto = pdos->context->cyl_fudge;
+
+            /* free the memory that was allocated to the executable */
+            memmgrFree(&pdos->aspaces[pdos->curr_aspace].o.btlmem,
+                       pdos->context->next_exe);
         }
         else
         {
@@ -1554,6 +1559,15 @@ static int pdosLoadExe(PDOS *pdos, char *prog, char *parm)
     int lastcnt = 0;
     int ret = 0;
 
+    /* assume 4 MB max */
+    raw = memmgrAllocate(&pdos->aspaces[pdos->curr_aspace].o.btlmem,
+                         5 * 1024 * 1024, 0);
+    if (raw == NULL)
+    {
+        printf("insufficient memory to load program\n");
+        return (-1);
+    }
+    
     /* +++ get rid of this - we shouldn't be mucking around
        with cylinders like this, but at the moment, it is
        being used to be able to return to autoexec.bat */
@@ -1569,9 +1583,7 @@ static int pdosLoadExe(PDOS *pdos, char *prog, char *parm)
 
     printf("executable should reside on cylinder %d, head 0 of IPL device\n",
            pdos->cyl_upto);
-    /* assume 4 MB max */
-    raw = memmgrAllocate(&pdos->aspaces[pdos->curr_aspace].o.btlmem,
-                         5 * 1024 * 1024, 0);
+    pdos->context->next_exe = raw;
     /* round to 1MB */
     load = (char *)(((int)raw & ~0xfffff) + 0x100000);
     initial = load;

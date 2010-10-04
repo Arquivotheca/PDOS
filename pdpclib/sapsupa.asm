@@ -870,7 +870,7 @@ ZDCBLEN  EQU   *-ZDCBAREA
          L     R10,0(R10)
          L     R7,0(R1)        Bytes to read
          L     R2,4(R1)        Buffer to read into
-         AIF   ('&SYS' EQ 'S390').CHN390G
+         AIF   ('&SYS' EQ 'S390').CRD390G
          STCM  R2,B'0111',CRDCHN+1   This requires BTL buffer
          STH   R7,CRDCHN+6     Store length in READ CCW
          AGO   .CRD390H

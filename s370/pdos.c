@@ -379,7 +379,9 @@ typedef struct {
 } PSA;
 
 typedef struct {
-    char unused1[32];
+    char unused1a[5];
+    char dcbfdad[8];
+    char unused1b[19];
     int *eodad;
     union
     {

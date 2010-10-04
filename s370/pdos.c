@@ -365,7 +365,6 @@ typedef struct rb {
     unsigned int psw2;
     struct rb *rblinkb;
     ECB *postecb;
-    int cyl_fudge; /* keep track of previous cylinder in use */
     char *next_exe; /* next executable's location */
 } RB;
 
@@ -1262,10 +1261,6 @@ static void pdosProcessSVC(PDOS *pdos)
             pdos->context = pdos->aspaces[pdos->curr_aspace].o.curr_rb;
             pdos->context->regs[15] = 0; /* signal success to caller */
 
-            /* because autoexec is still being run, need to
-               restore the old cylinder - but get rid of this +++ */
-            pdos->cyl_upto = pdos->context->cyl_fudge;
-
             /* free the memory that was allocated to the executable */
             memmgrFree(&pdos->aspaces[pdos->curr_aspace].o.btlmem,
                        pdos->context->next_exe);
@@ -1552,6 +1547,7 @@ static int pdosLoadExe(PDOS *pdos, char *prog, char *parm)
     char *load;
     /* Standard C programs can start at a predictable offset */
     int (*entry)(void *);
+    int cyl;
     int i;
     int j;
     static int savearea[20]; /* needs to be in user space */
@@ -1573,18 +1569,18 @@ static int pdosLoadExe(PDOS *pdos, char *prog, char *parm)
     /* +++ get rid of this - we shouldn't be mucking around
        with cylinders like this, but at the moment, it is
        being used to be able to return to autoexec.bat */
-    pdos->context->cyl_fudge = pdos->cyl_upto;
+    cyl = pdos->cyl_upto;
     
     /* because autoexec is still being run, cylinder is
        incorrect, so add 1 - get rid of this +++ */
-    if (pdos->cyl_upto < 0)
+    if (cyl < 0)
     {
-        pdos->cyl_upto = -pdos->cyl_upto;
+        cyl = -cyl;
     }
-    pdos->cyl_upto++;
+    cyl++;
 
     printf("executable should reside on cylinder %d, head 0 of IPL device\n",
-           pdos->cyl_upto);
+           cyl);
     pdos->context->next_exe = raw;
     /* round to 1MB */
     load = (char *)(((int)raw & ~0xfffff) + 0x100000);
@@ -1599,9 +1595,9 @@ static int pdosLoadExe(PDOS *pdos, char *prog, char *parm)
     {
 #if DSKDEBUG
         printf("loading to %p from %d, %d, %d\n", load,
-               pdos->cyl_upto, i, j);
+               cyl, i, j);
 #endif
-        cnt = rdblock(pdos->ipldev, pdos->cyl_upto, i, j, tbuf, MAXBLKSZ);
+        cnt = rdblock(pdos->ipldev, cyl, i, j, tbuf, MAXBLKSZ);
 #if DSKDEBUG
         printf("cnt is %d\n", cnt);
 #endif
@@ -1619,7 +1615,7 @@ static int pdosLoadExe(PDOS *pdos, char *prog, char *parm)
 #endif
                 /* probably reached last track on cylinder */
                 lastcnt = -2;
-                pdos->cyl_upto++;
+                cyl++;
                 i = 0;
                 j = 1;
                 continue;
@@ -1637,7 +1633,7 @@ static int pdosLoadExe(PDOS *pdos, char *prog, char *parm)
     }
     printf("top is now %p\n", load);
     /* after EOF, position on the next cylinder */
-    pdos->cyl_upto++;
+    cyl++;
 
     /* get a new RB */
     pdos->context = memmgrAllocate(

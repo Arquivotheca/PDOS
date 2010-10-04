@@ -1643,6 +1643,9 @@ static int pdosLoadExe(PDOS *pdos, char *prog, char *parm)
         sizeof *pdos->context, 0);
     if (pdos->context == NULL)
     {
+        /* free the memory that was allocated to the executable */
+        memmgrFree(&pdos->aspaces[pdos->curr_aspace].o.btlmem,
+                   pdos->context->next_exe);
         ret = -1;
     }
     else

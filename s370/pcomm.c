@@ -110,6 +110,7 @@ static void readAutoExec(void)
         while (fgets(buf, sizeof buf, fp) != NULL)
         {
             processInput();
+            if (term) break;
         }
         /* fclose(fp); */
     }
@@ -142,7 +143,7 @@ static void processInput(void)
 #ifdef CONTINUOUS_LOOP
         primary = 0;
 #endif
-        if (!primary)
+        if (1) /* (!primary) */
         {
             term = 1;
         }

@@ -1548,15 +1548,80 @@ static int pdosLoadExe(PDOS *pdos, char *prog, char *parm)
     /* Standard C programs can start at a predictable offset */
     int (*entry)(void *);
     int cyl;
+    int head;
+    int rec;
     int i;
     int j;
     static int savearea[20]; /* needs to be in user space */
     static char *pptrs[1];
     char tbuf[MAXBLKSZ];
+    char srchprog[FILENAME_MAX+10]; /* give an extra space */
     int cnt = -1;
     int lastcnt = 0;
     int ret = 0;
+    struct {
+        char ds1dsnam[44];
+        char ds1fmtid;
+        char unused1[60];
+        char unused2;
+        char unused3;
+        char startcchh[4];
+        char endcchh[4];
+    } dscb1;
 
+    /* try to find the load module's location */
+    
+    /* +++ replace this 8 with some constant */
+    memcpy(srchprog, prog, 8);
+    srchprog[8] = ' ';
+    *strchr(srchprog, ' ') = '\0';
+    strcat(srchprog, ".EXE "); /* extra space deliberate */
+    
+    /* read VOL1 record */
+    cnt = rdblock(pdos->ipldev, 0, 0, 3, tbuf, MAXBLKSZ);
+    if (cnt >= 20)
+    {
+        cyl = head = rec = 0;
+        /* +++ probably time to create some macros for this */
+        memcpy((char *)&cyl + sizeof(int) - 2, tbuf + 15, 2);
+        memcpy((char *)&head + sizeof(int) - 2, tbuf + 17, 2);
+        memcpy((char *)&rec + sizeof(int) - 1, tbuf + 18, 1);
+        
+        while ((cnt =
+               rdblock(pdos->ipldev, cyl, head, rec, &dscb1, sizeof dscb1))
+               > 0)
+        {
+            if (cnt >= sizeof dscb1)
+            {
+                if (dscb1.ds1fmtid == '1')
+                {
+                    dscb1.ds1fmtid = ' '; /* for easy comparison */
+                    if (memcmp(dscb1.ds1dsnam,
+                               srchprog,
+                               strlen(srchprog)) == 0)
+                    {
+                        cyl = head = 0;
+                        rec = 1;
+                        /* +++ more macros needed here */
+                        memcpy((char *)&cyl + sizeof(int) - 2, 
+                               dscb1.startcchh, 2);
+                        memcpy((char *)&head + sizeof(int) - 2,
+                               dscb1.startcchh + 2, 2);
+                        break;
+                    }
+                }
+            }
+            rec++;
+        }        
+    }
+    
+    if (cnt <= 0)
+    {
+        *strchr(srchprog, ' ') = '\0';
+        printf("executable %s not found!\n", srchprog);
+        return (-1);
+    }
+    
     /* assume 4 MB max */
     raw = memmgrAllocate(&pdos->aspaces[pdos->curr_aspace].o.btlmem,
                          5 * 1024 * 1024, 0);
@@ -1566,21 +1631,6 @@ static int pdosLoadExe(PDOS *pdos, char *prog, char *parm)
         return (-1);
     }
     
-    /* +++ get rid of this - we shouldn't be mucking around
-       with cylinders like this, but at the moment, it is
-       being used to be able to return to autoexec.bat */
-    cyl = pdos->cyl_upto;
-    
-    /* because autoexec is still being run, cylinder is
-       incorrect, so add 1 - get rid of this +++ */
-    if (cyl < 0)
-    {
-        cyl = -cyl;
-    }
-    cyl++;
-
-    printf("executable should reside on cylinder %d, head 0 of IPL device\n",
-           cyl);
     pdos->context->next_exe = raw;
     /* round to 1MB */
     load = (char *)(((int)raw & ~0xfffff) + 0x100000);
@@ -1588,9 +1638,12 @@ static int pdosLoadExe(PDOS *pdos, char *prog, char *parm)
     printf("load point designated as %p\n", load);
     /* should store old context first */
     entry = (int (*)(void *))(initial + 8);
-    i = 0;
-    j = 1;
+    i = head;
+    j = rec;
     /* Note that we read until we get EOF (a zero-length block). */
+    /* +++ note that we need a security check in here to ensure
+       that people don't leave out an EOF to read the next guy's
+       data - use the endcchh */
     while (cnt != 0)
     {
 #if DSKDEBUG
@@ -1630,10 +1683,8 @@ static int pdosLoadExe(PDOS *pdos, char *prog, char *parm)
         memcpy(load, tbuf, cnt);
         load += cnt;
         j++;
-    }
+    }    
     printf("top is now %p\n", load);
-    /* after EOF, position on the next cylinder */
-    cyl++;
 
     /* get a new RB */
     pdos->context = memmgrAllocate(

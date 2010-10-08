@@ -610,6 +610,11 @@ SETINDEX STC   R0,RECFMIX         Save for the duration
          ST    R0,0(,R5)          Pass new BLKSIZE
          L     R5,PARM2           POINT TO MODE
          MVC   3(1,R5),IOMFLAGS   Pass (updated) file mode back
+         CLI   DEVINFO+2,UCB3UREC
+         BNE   NOTUNREC           Not unit-record
+         OI    3(R5),X'40'        flag unit-record
+NOTUNREC DS    0H
+*
 * Finished with R5 now
 *
 RETURNOP FUNEXIT RC=(R7)          Return to caller

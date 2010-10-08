@@ -885,6 +885,9 @@ static void osfopen(void)
 #if defined(__MVS__)
     mode &= ~0x80; /* don't expose other logic to GETLINE/PUTLINE */
 #endif
+    /* if this is a unit record device, note that */
+    myfile->line_buf = ((mode & 0x40) != 0);    
+    mode &= ~0x40;
 
     /* errors from MVS __aopen are negative numbers */
     if ((int)myfile->hfile <= 0)

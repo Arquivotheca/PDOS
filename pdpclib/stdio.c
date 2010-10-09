@@ -4597,6 +4597,38 @@ __PDPCLIB_API__ size_t fwrite(const void *ptr,
                 bytes -= stream->szfbuf;
                 stream->bufStartR += stream->szfbuf;
             }
+
+            /* RECFM=U to a text file should write up to the most
+               recent newline */
+            if (myfile->line_buf && myfile->reallyu && myfile->reallyt)
+            {
+                p = (char *)ptr + bytes - 1;
+                /* look for a newline somewhere in this new data */
+                /* since we write on both buffer full and newline
+                   found conditions */
+                while (p >= (char *)ptr)
+                {
+                    if (*p == '\n') break;
+                    p--;
+                }
+                /* found a newline, write up to this point, including
+                   any data that may be in our internal buffer */
+                if (p >= (char *)ptr)
+                {
+                    p++; /* get past the newline */
+                    sz = stream->upto - stream->fbuf;
+                    stream->upto = stream->fbuf;
+                    begwrite(stream, sz + (p - (char *)ptr));
+                    memcpy(dptr, stream->fbuf, sz);
+                    memcpy(dptr + sz, ptr, (p - (char *)ptr));
+                    finwrite(stream);
+                    bytes -= (p - (char *)ptr);
+                    stream->bufStartR += (p - (char *)ptr);
+                    ptr = p;
+                    stream->upto = stream->fbuf;
+                }
+            }
+
             /* any remainder needs to go into the internal buffer */
             memcpy(stream->upto, ptr, bytes);
             stream->upto += bytes;

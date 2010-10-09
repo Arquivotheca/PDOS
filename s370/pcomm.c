@@ -52,7 +52,6 @@ int main(int argc, char **argv)
     {
         printf("welcome to pcomm - exit to return\n");
     }
-    term = 1;
     while (!term)
     {
         putPrompt();
@@ -103,8 +102,8 @@ static void readAutoExec(void)
 {
     FILE *fp;
 
-    /* fp = fopen("AUTOEXEC.BAT", "r"); */
-    fp = stdin;
+    fp = fopen("AUTOEXEC.BAT", "r");
+    printf("fp is %p\n", fp);
     if (fp != NULL)
     {
         while (fgets(buf, sizeof buf, fp) != NULL)
@@ -112,7 +111,7 @@ static void readAutoExec(void)
             processInput();
             if (term) break;
         }
-        /* fclose(fp); */
+        fclose(fp);
     }
     return;
 }

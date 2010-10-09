@@ -810,15 +810,12 @@ static int pdosDispatchUntilInterrupt(PDOS *pdos)
         {
             int len;
 
-            /* fix all these RECFM assumptions!!! */
-            /* 4 = skip BDW and get length in RDW */  
-            len = *(short *)(pdos->context->regs[4] + 4);
-            if (len >= 4)
-            {
-                len -= 4;
-            }
-            /* 8 = skip BDW + RDW */
-            printf("%.*s\n", len, pdos->context->regs[4] + 8);
+            len = pdos->context->regs[5];
+#if 0
+            printf("got a request to write block len %d\n", len);
+#endif
+            /* assume RECFM=U, with caller providing NL */
+            printf("%.*s", len, pdos->context->regs[4]);
         }
         else if (ret == 3) /* got a READ request */
         {
@@ -1334,6 +1331,15 @@ static void pdosProcessSVC(PDOS *pdos)
             }
         }
     }
+    else if (svc == 99)
+    {
+        /* dataset name is usually in R7 */
+        printf("dynalloc for %.44s\n", pdos->context->regs[7]);
+        /* ddname is usually 6 bytes from R2 */
+        printf("ddname is %p %.8s\n", pdos->context->regs[2] + 6,
+            pdos->context->regs[2] + 6);
+        pdos->context->regs[15] = 0;
+    }
     else if (svc == 24) /* devtype */
     {
         /* hardcoded constants that fell off the back of a truck */
@@ -1361,9 +1367,9 @@ static void pdosProcessSVC(PDOS *pdos)
         else
         {
             gendcb->u1.dcbput = (int)dwrite;
-            gendcb->u2.dcbrecfm |= DCBRECV;
-            gendcb->dcblrecl = 254;
-            gendcb->dcbblksi = 258;
+            gendcb->u2.dcbrecfm |= DCBRECU;
+            gendcb->dcblrecl = 0;
+            gendcb->dcbblksi = 18452;
         }
         gendcb->dcbcheck = (int)dcheck;
         oneexit = gendcb->u2.dcbexlsa & 0xffffff;

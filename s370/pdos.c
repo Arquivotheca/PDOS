@@ -1427,6 +1427,7 @@ static void pdosProcessSVC(PDOS *pdos)
     {
         char *prog;
         char *parm;
+        int newcont = -1;
         
         prog = (char *)pdos->context->regs[2];
         printf("got request to run %.8s\n", prog);
@@ -1443,21 +1444,32 @@ static void pdosProcessSVC(PDOS *pdos)
         if (memcmp(prog, "DUMPBLK", 7) == 0)
         {
             pdosDumpBlk(pdos, parm);
+            *pdos->context->postecb = 0;
             pdos->context->regs[15] = 0;
         }
         else if (memcmp(prog, "DIR", 3) == 0)
         {
             pdosDoDIR(pdos, parm);
+            *pdos->context->postecb = 0;
             pdos->context->regs[15] = 0;
         }
-        else if (pdosLoadExe(pdos, prog, parm) != 0)
+        else if ((newcont = pdosLoadExe(pdos, prog, parm)) != 0)
         {
             /* +++ not sure what proper return code is */
             pdos->context->regs[15] = 4;
         }
-        /* otherwise, we have a new context loaded, so don't
-           mess with it */        
-        fcnt = 0;
+        /* we usually have a new context loaded, so don't
+           mess with R15 */
+        if (newcont == 0)
+        {
+            /* got a new context so need a fresh set of fudges */
+            fcnt = 0;
+        }
+        else
+        {
+            /* ECB is no longer applicable */
+            pdos->context->postecb = NULL;
+        }
     }
     else if (svc == 1) /* wait */
     {
@@ -1485,7 +1497,7 @@ static int pdosDoDIR(PDOS *pdos, char *parm)
     int cnt;
     char *p;
     
-    cyl = 6;
+    cyl = 7;   /* +++ get this from a better place */
     head = 0;
     rec = 3;
     while ((cnt = rdblock(pdos->ipldev, cyl, head, rec, tbuf, MAXBLKSZ)),

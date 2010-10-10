@@ -1339,6 +1339,7 @@ static void pdosProcessSVC(PDOS *pdos)
         printf("ddname is %p %.8s\n", pdos->context->regs[2] + 6,
             pdos->context->regs[2] + 6);
         pdos->context->regs[15] = 0;
+        pdos->context->regs[0] = 0;
     }
     else if (svc == 24) /* devtype */
     {

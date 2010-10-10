@@ -103,7 +103,6 @@ static void readAutoExec(void)
     FILE *fp;
 
     fp = fopen("AUTOEXEC.BAT", "r");
-    printf("fp is %p\n", fp);
     if (fp != NULL)
     {
         while (fgets(buf, sizeof buf, fp) != NULL)

@@ -387,7 +387,7 @@ typedef struct {
         char dcbrecfm;
         int dcbexlsa;
     } u2;
-    char unused2[8];
+    char dcbddnam[8];
     union {
         char dcboflgs;
         int dcbput;
@@ -621,8 +621,13 @@ static void pdosInitAspaces(PDOS *pdos);
 static void pdosProcessSVC(PDOS *pdos);
 static int pdosDoDIR(PDOS *pdos, char *parm);
 static int pdosDumpBlk(PDOS *pdos, char *parm);
+static int pdosFindFile(PDOS *pdos, char *dsn, int *c, int *h, int *r);
 static int pdosLoadExe(PDOS *pdos, char *prog, char *parm);
 static int pdosLoadPcomm(PDOS *pdos);
+
+static void split_mbbcchhr(char *mbbcchhr, int *cyl, int *head, int *rec);
+static void join_mbbcchhr(char *mbbcchhr, int cyl, int head, int rec);
+
 
 int __consrd(int len, char *buf);
 
@@ -819,46 +824,59 @@ static int pdosDispatchUntilInterrupt(PDOS *pdos)
         }
         else if (ret == 3) /* got a READ request */
         {
-            static int rcnt = 0;            
             char *p;
             char tbuf[MAXBLKSZ];
             int cnt;
-            static int i = 0;
-            static int j = 1;
             char *decb;
+            DCB *dcb;
 
-#if DSKDEBUG
-            printf("reading into %x from %d, %d, %d\n",
-                   pdos->context->regs[8],
-                   pdos->cyl_upto, i, j);
-#endif
-            if (pdos->cyl_upto < 0)
+            /* we know that they are using R10 for DCB */
+            dcb = (DCB *)pdos->context->regs[10];
+            printf("dcb read is for lrecl %d\n", dcb->dcblrecl);
+            if (memcmp(dcb->dcbfdad,
+                       "\x00\x00\x00\x00\x00\x00\x00\x00", 8) == 0)
             {
-                cnt = 0;
-            }
-            else
-            {
-                cnt = rdblock(pdos->ipldev, pdos->cyl_upto, i, j, 
-                              tbuf, pdos->context->regs[9]);
-            }
-#if DSKDEBUG
-            printf("cnt is %d\n", cnt);
-#endif
-            /* +++ remove this horrible switching from autoexec.bat
-               to console */
-            if ((cnt == 0) && (pdos->cyl_upto == 4))
-            {
-                pdos->cyl_upto = -pdos->cyl_upto;
-            }
-            if (pdos->cyl_upto < 0)
-            {
+                printf("looks like SYSIN read\n");
                 cnt = __consrd(300, tbuf);
                 if (cnt >= 0)
                 {
                     tbuf[cnt++] = '\n';
                 }
             }
-            
+            else
+            {
+                int cyl;
+                int head;
+                int rec;
+                
+                split_mbbcchhr(dcb->dcbfdad, &cyl, &head, &rec);
+                rec++;
+#if DSKDEBUG
+                printf("reading into %x from %d, %d, %d\n",
+                       pdos->context->regs[8],
+                       cyl, head, rec);
+#endif
+                cnt = rdblock(pdos->ipldev, cyl, head, rec, 
+                              tbuf, pdos->context->regs[9]);
+                if (cnt < 0)
+                {
+                    rec = 0;
+                    head++;
+                    cnt = rdblock(pdos->ipldev, cyl, head, rec, 
+                                  tbuf, pdos->context->regs[9]);
+                    if (cnt < 0)
+                    {
+                        head = 0;
+                        cyl++;
+                        cnt = rdblock(pdos->ipldev, cyl, head, rec, 
+                                      tbuf, pdos->context->regs[9]);
+                    }
+                }
+#if DSKDEBUG
+                printf("cnt is %d\n", cnt);
+#endif
+                join_mbbcchhr(dcb->dcbfdad, cyl, head, rec);
+            }
             if (cnt <= 0)
             {
                 /* need to call EOF routine */
@@ -866,10 +884,6 @@ static int pdosDispatchUntilInterrupt(PDOS *pdos)
                           *gendcb->eodad); */
                 /* EOF routine usually sets R6 to 1, so just do it */
                 pdos->context->regs[6] = 1;
-                pdos->cyl_upto++; /* position on next cylinder */
-                rcnt = 0;
-                i = 0;
-                j = 1;
             }
             else
             {
@@ -880,19 +894,7 @@ static int pdosDispatchUntilInterrupt(PDOS *pdos)
                 geniob.residual = (short)(pdos->context->regs[9] - cnt);
                 decb = (char *)pdos->context->regs[1];
                 *(IOB **)(decb + 16) = &geniob;
-                j++;
-                if (j == 4)
-                {
-                    j = 1;
-                    i++;
-                }
-                if (i == 15)
-                {
-                    i++;
-                    pdos->cyl_upto++;
-                }
             }
-            rcnt++;
         }
     }
     return (INTERRUPT_SVC); /* only doing SVCs at the moment */
@@ -1230,6 +1232,7 @@ static void pdosInitAspaces(PDOS *pdos)
 static void pdosProcessSVC(PDOS *pdos)
 {
     static int fcnt = 0;
+    static char lastds[FILENAME_MAX];
     int svc;
     int getmain;
        /* should move to PDOS and use memmgr - but virtual memory
@@ -1338,6 +1341,8 @@ static void pdosProcessSVC(PDOS *pdos)
         /* ddname is usually 6 bytes from R2 */
         printf("ddname is %p %.8s\n", pdos->context->regs[2] + 6,
             pdos->context->regs[2] + 6);
+        /* save dataset away */
+        sprintf(lastds, "%.44s", pdos->context->regs[7]);
         pdos->context->regs[15] = 0;
         pdos->context->regs[0] = 0;
     }
@@ -1354,9 +1359,39 @@ static void pdosProcessSVC(PDOS *pdos)
     {
         int oneexit;
 
+        pdos->context->regs[15] = 0;
         gendcb = (DCB *)pdos->context->regs[10]; 
             /* need to protect against this */
             /* and it's totally wrong anyway */
+        printf("got rdjfcb for %.8s\n", gendcb->dcbddnam);
+        if (memcmp(gendcb->dcbddnam, "SYS", 3) != 0)
+        {
+            int cyl;            
+            int head;
+            int rec;
+            
+            printf("must be dataset name %s\n", lastds);
+            if (pdosFindFile(pdos, lastds, &cyl, &head, &rec) == 0)
+            {
+                rec = 0; /* so that we can do increments */
+                /* +++ use some macros for this */
+                memcpy(gendcb->dcbfdad + 3,
+                       (char *)&cyl + sizeof cyl - 2,
+                       2);
+                memcpy(gendcb->dcbfdad + 5,
+                       (char *)&head + sizeof head - 2,
+                       2);
+                memcpy(gendcb->dcbfdad + 7,
+                       (char *)&rec + sizeof rec - 2,
+                       2);
+                printf("located at %d %d %d\n", cyl, head, rec);
+            }
+            else
+            {
+                pdos->context->regs[15] = 12; /* +++ find out
+                    something sensible, and then go no further */
+            }
+        }
         fcnt++;
         if (fcnt > 2)
         {
@@ -1382,7 +1417,6 @@ static void pdosProcessSVC(PDOS *pdos)
                 dexit(oneexit, gendcb);
             }
         }
-        pdos->context->regs[15] = 0;
     }
     else if (svc == 22) /* open */
     {
@@ -1542,6 +1576,101 @@ static int pdosDumpBlk(PDOS *pdos, char *parm)
     
     return (0);
 }
+
+
+/* find a file on disk */
+
+static int pdosFindFile(PDOS *pdos, char *dsn, int *c, int *h, int *r)
+{
+    char *raw;
+    char *initial;
+    char *load;
+    /* Standard C programs can start at a predictable offset */
+    int (*entry)(void *);
+    int cyl;
+    int head;
+    int rec;
+    int i;
+    int j;
+    static int savearea[20]; /* needs to be in user space */
+    static char *pptrs[1];
+    char tbuf[MAXBLKSZ];
+    char srchdsn[FILENAME_MAX+10]; /* give an extra space */
+    int cnt = -1;
+    int lastcnt = 0;
+    int ret = 0;
+    struct {
+        char ds1dsnam[44];
+        char ds1fmtid;
+        char unused1[60];
+        char unused2;
+        char unused3;
+        char startcchh[4];
+        char endcchh[4];
+    } dscb1;
+    int len;
+
+    if (memchr(dsn, '\0', FILENAME_MAX) == NULL)
+    {
+        len = FILENAME_MAX;
+    }
+    else
+    {
+        len = strlen(dsn);
+    }
+    memcpy(srchdsn, dsn, len);
+    strcpy(srchdsn + len, " ");
+    len++; /* force a search for the blank */
+    
+    /* read VOL1 record which starts on cylinder 0, head 0, record 3 */
+    cnt = rdblock(pdos->ipldev, 0, 0, 3, tbuf, MAXBLKSZ);
+    if (cnt >= 20)
+    {
+        cyl = head = rec = 0;
+        /* +++ probably time to create some macros for this */
+        memcpy((char *)&cyl + sizeof(int) - 2, tbuf + 15, 2);
+        memcpy((char *)&head + sizeof(int) - 2, tbuf + 17, 2);
+        memcpy((char *)&rec + sizeof(int) - 1, tbuf + 18, 1);
+        
+        while ((cnt =
+               rdblock(pdos->ipldev, cyl, head, rec, &dscb1, sizeof dscb1))
+               > 0)
+        {
+            if (cnt >= sizeof dscb1)
+            {
+                if (dscb1.ds1fmtid == '1')
+                {
+                    dscb1.ds1fmtid = ' '; /* for easy comparison */
+                    if (memcmp(dscb1.ds1dsnam,
+                               srchdsn,
+                               len) == 0)
+                    {
+                        cyl = head = 0;
+                        rec = 1;
+                        /* +++ more macros needed here */
+                        memcpy((char *)&cyl + sizeof(int) - 2, 
+                               dscb1.startcchh, 2);
+                        memcpy((char *)&head + sizeof(int) - 2,
+                               dscb1.startcchh + 2, 2);
+                        break;
+                    }
+                }
+            }
+            rec++;
+        }        
+    }
+    
+    if (cnt <= 0)
+    {
+        /* not found */
+        return (-1);
+    }
+    *c = cyl;
+    *h = head;
+    *r = rec;
+    return (0);
+}
+
 
 
 /* load executable into memory, on a predictable 1 MB boundary,
@@ -1822,6 +1951,27 @@ static int pdosLoadPcomm(PDOS *pdos)
     
     return (1);
 }
+
+
+static void split_mbbcchhr(char *mbbcchhr, int *cyl, int *head, int *rec)
+{
+    *cyl = *head = *rec = 0;
+    memcpy((char *)cyl + sizeof *cyl - 2, mbbcchhr + 3, 2);
+    memcpy((char *)head + sizeof *head - 2, mbbcchhr + 5, 2);
+    *rec = mbbcchhr[7];
+    return;
+}
+
+
+static void join_mbbcchhr(char *mbbcchhr, int cyl, int head, int rec)
+{
+    memcpy(mbbcchhr + 3, (char *)&cyl + sizeof cyl - 2, 2);
+    memcpy(mbbcchhr + 5, (char *)&head + sizeof head - 2, 2);
+    mbbcchhr[7] = rec;
+    return;
+}
+
+
 
 
 #if 0

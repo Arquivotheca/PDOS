@@ -1585,7 +1585,6 @@ RETURNGS FUNEXIT RC=(R4)
 *                                                                     *
 ***********************************************************************
 @@SYSTEM FUNHEAD ,                ISSUE OS OR TSO COMMAND
-*         L     R15,4(,R13)        OLD SA
          LA    R11,16(,R13)       REMEMBER THE RETURN CODE ADDRESS
          MVC   0(4,R11),=X'04804000'  PRESET FOR GETMAIN FAILURE
          LR    R9,R1              SAVE PARAMETER LIST ADDRESS
@@ -1729,8 +1728,7 @@ SYSATEXT LR    R1,R13        COPY STORAGE ADDRESS
          L     R9,4(,R13)    GET CALLER'S SAVE AREA
          LA    R0,SYSATDLN   GET ORIGINAL LENGTH
          FREEMAIN R,A=(1),LV=(0)  AND RELEASE THE STORAGE
-*         L     R13,4(,R13)   RESTORE CALLER'S SAVE AREA
-         LR    R13,R9
+         LR    R13,R9        RESTORE CALLER'S SAVE AREA
 SYSATRET FUNEXIT ,           RESTORE REGS; SET RETURN CODES
          SPACE 1             RETURN TO CALLER
 *    DYNAMICALLY ACQUIRED STORAGE
@@ -1982,8 +1980,7 @@ DYNALEXT LR    R1,R13        COPY STORAGE ADDRESS
          L     R9,4(,R13)    GET CALLER'S SAVE AREA
          LA    R0,DYNALDLN   GET ORIGINAL LENGTH
          FREEMAIN R,A=(1),LV=(0)  AND RELEASE THE STORAGE
-*         L     R13,4(,R13)   RESTORE CALLER'S SAVE AREA
-         LR    R13,R9
+         LR    R13,R9        RESTORE CALLER'S SAVE AREA
 DYNALRET FUNEXIT ,           RESTORE REGS; SET RETURN CODES
          LTORG ,
          PUSH  PRINT

@@ -29,6 +29,7 @@ copy pdosin.txt pdos.in
 copy pcomm.txt pcomm.bin
 copy pcommin.txt pcomm.in
 copy world.txt world.bin
+copy sample.txt sample.c
 echo PDOS00 3390-1 * separate >ctl.txt
 echo PLOAD.SYS SEQ pload.bin TRK 10 1 0 PS U 0 18452 >>ctl.txt
 echo PDOS.SYS SEQ pdos.bin CYL 1 1 0 PS U 0 18452 >>ctl.txt
@@ -36,6 +37,7 @@ echo CONFIG.SYS SEQ pdos.in CYL 1 1 0 PS U 0 18452 >>ctl.txt
 echo COMMAND.EXE SEQ pcomm.bin CYL 1 1 0 PS U 0 18452 >>ctl.txt
 echo AUTOEXEC.BAT SEQ pcomm.in CYL 1 1 0 PS U 0 18452 >>ctl.txt
 echo WORLD.EXE SEQ world.bin CYL 1 1 0 PS U 0 18452 >>ctl.txt
+echo SAMPLE.C SEQ sample.c CYL 1 1 0 PS U 0 18452 >>ctl.txt
 del pdos00.199
 dasdload -bz2 ctl.txt pdos00.199
 copy pdos00.199 \mvs380\dasd

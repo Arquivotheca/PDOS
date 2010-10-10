@@ -312,6 +312,20 @@ echo that's enough for now - enter further commands yourself!
 //SYSIN    DD  DUMMY
 //SYSPRINT DD  SYSOUT=*
 //SYSTERM  DD  SYSOUT=*
+//OUT      DD  DSN=&&HEX(SAMPLE),DISP=(OLD,PASS)
+//IN       DD  *
+int main(void)
+{
+    printf("hello, world\n");
+    return (0);
+}
+/*
+//*
+//COPYFILE EXEC PGM=COPYFILE,PARM='-tt dd:in dd:out'
+//STEPLIB  DD  DSN=PDPCLIB.LINKLIB,DISP=SHR
+//SYSIN    DD  DUMMY
+//SYSPRINT DD  SYSOUT=*
+//SYSTERM  DD  SYSOUT=*
 //OUT      DD  DSN=&&HEX(PDOSIN),DISP=(OLD,PASS)
 //IN       DD  *
 undivert(herc.cnf)/*

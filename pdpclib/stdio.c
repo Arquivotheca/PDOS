@@ -4600,7 +4600,7 @@ __PDPCLIB_API__ size_t fwrite(const void *ptr,
 
             /* RECFM=U to a text file should write up to the most
                recent newline */
-            if (myfile->line_buf && myfile->reallyu && myfile->reallyt)
+            if (stream->line_buf && stream->reallyu && stream->reallyt)
             {
                 p = (char *)ptr + bytes - 1;
                 /* look for a newline somewhere in this new data */

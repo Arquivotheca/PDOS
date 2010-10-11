@@ -1097,9 +1097,10 @@ static void pdosInitAspaces(PDOS *pdos)
            and don't want the simple version of S/380 to take effect */
         pdos->aspaces[a].o.cregs[13] = CR13_DUMMY;
 #endif
+#if 0
         printf("aspace %d, seg %p, cr13 %08X\n",
                a, pdos->aspaces[a].o.segtable, pdos->aspaces[a].o.cregs[13]);
-
+#endif
         /* now set up the memory manager for BTL and ATL storage */
         lcreg13(pdos->aspaces[a].o.cregs[13]);
         lcreg1(pdos->aspaces[a].o.cregs[1]);
@@ -1453,9 +1454,13 @@ static void pdosProcessSVC(PDOS *pdos)
         int newcont = -1;
         
         prog = (char *)pdos->context->regs[2];
+#if 0
         printf("got request to run %.8s\n", prog);
+#endif
         parm = *(char **)pdos->context->regs[1];
+#if 0
         printf("parameter string is %d bytes\n", *(short *)parm);
+#endif
         
         /* r3 has ECB which is where return code is meant to go */
         /* we save that in our current RB. But does it belong
@@ -1846,7 +1851,9 @@ static int pdosLoadExe(PDOS *pdos, char *prog, char *parm)
     /* round to 1MB */
     load = (char *)(((int)raw & ~0xfffff) + 0x100000);
     initial = load;
+#if 0
     printf("load point designated as %p\n", load);
+#endif
     /* should store old context first */
     entry = (int (*)(void *))(initial + 8);
     i = head;
@@ -1894,8 +1901,7 @@ static int pdosLoadExe(PDOS *pdos, char *prog, char *parm)
         memcpy(load, tbuf, cnt);
         load += cnt;
         j++;
-    }    
-    printf("top is now %p\n", load);
+    }
 
     /* get a new RB */
     pdos->context = memmgrAllocate(
@@ -1929,8 +1935,10 @@ static int pdosLoadExe(PDOS *pdos, char *prog, char *parm)
         pptrs[0] = parm;
     
         pdos->context->regs[1] = (int)pptrs;
-    
+
+#if 0
         printf("finished loading executable\n");
+#endif
     }
     return (ret);
 }
@@ -1960,8 +1968,8 @@ static int pdosLoadPcomm(PDOS *pdos)
         printf("can't find COMMAND.EXE\n");
         return (-1);
     }
-    printf("PCOMM resides on cylinder %d, head %d, rec %d of IPL device\n",
-           cyl, head, rec);
+    printf("PCOMM resides on cylinder %d, head %d, rec %d of IPL device %x\n",
+           cyl, head, rec, pdos->ipldev);
     /* assume 1 MB max */
     load = memmgrAllocate(&pdos->aspaces[pdos->curr_aspace].o.btlmem,
                           1024 * 1024, 0);

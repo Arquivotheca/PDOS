@@ -93,7 +93,7 @@ int main(int argc, char **argv)
         printf("PDOS.SYS not found\n");
         return (12);
     }
-#if 1
+#if 0
     printf("PDOS resides on cylinder %d, head %d, rec %d of IPL device\n",
         cyl, head, rec);
 #endif

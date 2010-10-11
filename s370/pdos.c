@@ -691,9 +691,18 @@ void pdosDefaults(PDOS *pdos)
 
 int pdosInit(PDOS *pdos)
 {
+    int cyl;
+    int head;
+    int rec;
+
     pdos->ipldev = initsys();
     lcreg0(cr0);
-    pdos->cyl_upto = CONFIG_STARTCYL;
+    if (pdosFindFile(pdos, "CONFIG.SYS", &cyl, &head, &rec) != 0)
+    {
+        printf("config.sys missing\n");
+        return (0);
+    }
+    pdos->cyl_upto = cyl;
     if (__consdn == 0)
     {
         char tbuf[MAXBLKSZ + 1];
@@ -704,11 +713,11 @@ int pdosInit(PDOS *pdos)
 
 #if DSKDEBUG
         printf("loading to %p from %d, %d, %d\n", tbuf,
-               pdos->cyl_upto, 0, 1);
+               cyl, head, rec);
 #endif
         /* the chances of anyone having a herc config file more
            than a block in size are like a million gazillion to one */
-        cnt = rdblock(pdos->ipldev, pdos->cyl_upto, 0, 1, tbuf, MAXBLKSZ);
+        cnt = rdblock(pdos->ipldev, cyl, head, rec, tbuf, MAXBLKSZ);
 #if DSKDEBUG
         printf("cnt is %d\n", cnt);
 #endif

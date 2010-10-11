@@ -81,10 +81,9 @@ int main(int argc, char **argv)
              int len;
              char *heap; } pblock = { 0, 4, (char *)PDOS_HEAP };
     void (*fun)(void *);
+    int x;
+    int cnt;
 
-#if 0
-    printf("PDOS should reside on cylinder 1, head 0 of IPL device\n");
-#endif
     ipldev = initsys();
 #if 0
     printf("IPL device is %x\n", ipldev);
@@ -94,17 +93,30 @@ int main(int argc, char **argv)
         printf("PDOS.SYS not found\n");
         return (12);
     }
-    load = start;
-    for (head = 0; head < 10; head++)
-    {
-        for (rec = 1; rec < 4; rec++)
-        {
-#if 0
-            printf("loading to %p from %d, %d, %d\n", load, cyl, head, rec);
+#if 1
+    printf("PDOS resides on cylinder %d, head %d, rec %d of IPL device\n",
+        cyl, head, rec);
 #endif
-            rdblock(ipldev, cyl, head, rec, load, CHUNKSZ);
-            load += CHUNKSZ;
+    load = start;
+    for (x = 0; x < 30; x++)
+    {
+#if 0
+        printf("loading to %p from %d, %d, %d\n", load, cyl, head, rec);
+#endif
+        cnt = rdblock(ipldev, cyl, head, rec, load, CHUNKSZ);
+        load += CHUNKSZ;
+        rec++;
+        if (rec >= 4)
+        {
+            rec = 1;
+            head++;
         }
+        if (head >= 15)
+        {
+            head = 0;
+            cyl++;
+        }
+        if (cnt == 0) break; /* reached EOF */
     }
     entry(&pblock);
 #if 0
@@ -131,8 +143,6 @@ static int findFile(char *dsn, int *c, int *h, int *r)
     int cyl;
     int head;
     int rec;
-    int i;
-    int j;
     static int savearea[20]; /* needs to be in user space */
     static char *pptrs[1];
     char tbuf[MAXBLKSZ];

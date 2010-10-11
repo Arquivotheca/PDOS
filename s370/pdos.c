@@ -625,8 +625,8 @@ static int pdosFindFile(PDOS *pdos, char *dsn, int *c, int *h, int *r);
 static int pdosLoadExe(PDOS *pdos, char *prog, char *parm);
 static int pdosLoadPcomm(PDOS *pdos);
 
-static void split_mbbcchhr(char *mbbcchhr, int *cyl, int *head, int *rec);
-static void join_mbbcchhr(char *mbbcchhr, int cyl, int head, int rec);
+static void split_cchhr(char *cchhr, int *cyl, int *head, int *rec);
+static void join_cchhr(char *cchhr, int cyl, int head, int rec);
 
 
 int __consrd(int len, char *buf);
@@ -849,7 +849,7 @@ static int pdosDispatchUntilInterrupt(PDOS *pdos)
                 int head;
                 int rec;
                 
-                split_mbbcchhr(dcb->dcbfdad, &cyl, &head, &rec);
+                split_cchhr(dcb->dcbfdad + 3, &cyl, &head, &rec);
                 rec++;
 #if DSKDEBUG
                 printf("reading into %x from %d, %d, %d\n",
@@ -875,7 +875,7 @@ static int pdosDispatchUntilInterrupt(PDOS *pdos)
 #if DSKDEBUG
                 printf("cnt is %d\n", cnt);
 #endif
-                join_mbbcchhr(dcb->dcbfdad, cyl, head, rec);
+                join_cchhr(dcb->dcbfdad + 3, cyl, head, rec);
             }
             if (cnt <= 0)
             {
@@ -1501,8 +1501,7 @@ static int pdosDoDIR(PDOS *pdos, char *parm)
     cnt = rdblock(pdos->ipldev, 0, 0, 3, tbuf, MAXBLKSZ);
     if (cnt >= 20)
     {
-        /* +++ this 12 is not real */
-        split_mbbcchhr(tbuf + 12, &cyl, &head, &rec);
+        split_cchhr(tbuf + 15, &cyl, &head, &rec);
         rec += 2; /* first 2 blocks are of no interest */
         
         while ((cnt = rdblock(pdos->ipldev, cyl, head, rec, tbuf, MAXBLKSZ)),
@@ -1971,21 +1970,21 @@ static int pdosLoadPcomm(PDOS *pdos)
 }
 
 
-static void split_mbbcchhr(char *mbbcchhr, int *cyl, int *head, int *rec)
+static void split_cchhr(char *cchhr, int *cyl, int *head, int *rec)
 {
     *cyl = *head = *rec = 0;
-    memcpy((char *)cyl + sizeof *cyl - 2, mbbcchhr + 3, 2);
-    memcpy((char *)head + sizeof *head - 2, mbbcchhr + 5, 2);
-    *rec = mbbcchhr[7];
+    memcpy((char *)cyl + sizeof *cyl - 2, cchhr, 2);
+    memcpy((char *)head + sizeof *head - 2, cchhr + 2, 2);
+    *rec = cchhr[4];
     return;
 }
 
 
-static void join_mbbcchhr(char *mbbcchhr, int cyl, int head, int rec)
+static void join_cchhr(char *cchhr, int cyl, int head, int rec)
 {
-    memcpy(mbbcchhr + 3, (char *)&cyl + sizeof cyl - 2, 2);
-    memcpy(mbbcchhr + 5, (char *)&head + sizeof head - 2, 2);
-    mbbcchhr[7] = rec;
+    memcpy(cchhr, (char *)&cyl + sizeof cyl - 2, 2);
+    memcpy(cchhr + 2, (char *)&head + sizeof head - 2, 2);
+    cchhr[4] = rec;
     return;
 }
 

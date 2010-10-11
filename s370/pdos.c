@@ -1890,32 +1890,35 @@ static int pdosLoadPcomm(PDOS *pdos)
     char *load = (char *)PCOMM_LOAD;
     /* Standard C programs can start at a predictable offset */
     int (*entry)(void *) = (int (*)(void *))PCOMM_ENTRY;
-    int i;
-    int j;
     static int savearea[20]; /* needs to be in user space */
     static char mvsparm[] = { "\x00" "\x02" "/P" };
     static char *pptrs[1];
     char tbuf[MAXBLKSZ];
     int cnt = -1;
     int lastcnt = 0;
+    int cyl;
+    int head;
+    int rec;
 
+    if (pdosFindFile(pdos, "COMMAND.EXE", &cyl, &head, &rec) != 0)
+    {
+        return (-1);
+    }
     printf("PCOMM should reside on cylinder %d, head 0 of IPL device\n",
-           pdos->cyl_upto);
+           cyl);
     /* assume 1 MB max */
     load = memmgrAllocate(&pdos->aspaces[pdos->curr_aspace].o.btlmem,
                           1024 * 1024, 0);
     /* round to 64k */
     load = (char *)(((int)load & ~0xffff) + 0x10000);
-    i = 0;
-    j = 1;
     /* Note that we read until we get EOF (a zero-length block). */
     while (cnt != 0)
     {
 #if DSKDEBUG
         printf("loading to %p from %d, %d, %d\n", load,
-               pdos->cyl_upto, i, j);
+               cyl, head, rec);
 #endif
-        cnt = rdblock(pdos->ipldev, pdos->cyl_upto, i, j, tbuf, MAXBLKSZ);
+        cnt = rdblock(pdos->ipldev, cyl, head, rec, tbuf, MAXBLKSZ);
 #if DSKDEBUG
         printf("cnt is %d\n", cnt);
 #endif
@@ -1933,24 +1936,24 @@ static int pdosLoadPcomm(PDOS *pdos)
 #endif
                 /* probably reached last track on cylinder */
                 lastcnt = -2;
-                pdos->cyl_upto++;
-                i = 0;
-                j = 1;
+                cyl++;
+                head = 0;
+                rec = 1;
                 continue;
             }
             /* probably reached last record on track */
             lastcnt = -1;
-            j = 1;
-            i++;
+            rec = 1;
+            head++;
             continue;
         }
         lastcnt = cnt;
         memcpy(load, tbuf, cnt);
         load += cnt;
-        j++;
+        rec++;
     }
     /* after EOF, position on the next cylinder */
-    pdos->cyl_upto++;
+    pdos->cyl_upto = ++cyl;
 
     pdos->context =
         pdos->aspaces[pdos->curr_aspace].o.curr_rb =

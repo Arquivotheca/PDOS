@@ -196,16 +196,16 @@ static void processInput(void)
             p--;
             *p = ' ';
         }
-        printf("pcomm is calling %s\n", buf);
+        /* printf("pcomm is calling %s\n", buf); */
         rc = system(buf);
-        printf("rc from program is %d\n", rc);
+        /* printf("rc from program is %d\n", rc); */
     }
     return;
 }
 
 static void putPrompt(void)
 {
-    printf("\n%s:\\%s%s", drive, cwd, prompt);
+    printf("\n%s:\\%s%s\n", drive, cwd, prompt);
     fflush(stdout);
     return;
 }

@@ -195,6 +195,7 @@ __PDPCLIB_API__ time_t mktime(struct tm *timeptr)
         tt = tt * 60 + timeptr->tm_min;
         tt = tt * 60 + timeptr->tm_sec;
     }
+    *timeptr = *gmtime(&tt);
     return (tt);
 }
 

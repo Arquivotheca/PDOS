@@ -390,7 +390,7 @@ typedef struct {
     char dcbddnam[8];
     union {
         char dcboflgs;
-        int dcbput;
+        int dcbgetput;
     } u1;
     int dcbcheck;
     char unused3[6];
@@ -1231,7 +1231,6 @@ static void pdosInitAspaces(PDOS *pdos)
 
 static void pdosProcessSVC(PDOS *pdos)
 {
-    static int fcnt = 0;
     static char lastds[FILENAME_MAX];
     int svc;
     int getmain;
@@ -1373,7 +1372,7 @@ static void pdosProcessSVC(PDOS *pdos)
             printf("must be dataset name %s\n", lastds);
             if (pdosFindFile(pdos, lastds, &cyl, &head, &rec) == 0)
             {
-                rec = 0; /* so that we can do increments */
+                rec = 0; /* so that we can do increments */                
                 /* +++ use some macros for this */
                 memcpy(gendcb->dcbfdad + 3,
                        (char *)&cyl + sizeof cyl - 2,
@@ -1392,21 +1391,9 @@ static void pdosProcessSVC(PDOS *pdos)
                     something sensible, and then go no further */
             }
         }
-        fcnt++;
-        if (fcnt > 2)
-        {
-            gendcb->u1.dcbput = (int)dread;
-            gendcb->u2.dcbrecfm |= DCBRECU;
-            gendcb->dcblrecl = 0;
-            gendcb->dcbblksi = 18452;
-        }
-        else
-        {
-            gendcb->u1.dcbput = (int)dwrite;
-            gendcb->u2.dcbrecfm |= DCBRECU;
-            gendcb->dcblrecl = 0;
-            gendcb->dcbblksi = 18452;
-        }
+        gendcb->u2.dcbrecfm |= DCBRECU;
+        gendcb->dcblrecl = 0;
+        gendcb->dcbblksi = 18452;
         gendcb->dcbcheck = (int)dcheck;
         oneexit = gendcb->u2.dcbexlsa & 0xffffff;
         if (oneexit != 0)
@@ -1420,8 +1407,29 @@ static void pdosProcessSVC(PDOS *pdos)
     }
     else if (svc == 22) /* open */
     {
-        gendcb->u1.dcboflgs |= DCBOFOPN;
-        pdos->context->regs[15] = 0; /* is this required? */
+        unsigned int ocode;
+
+        ocode = *(int *)pdos->context->regs[1];
+        ocode >>= 24;
+        pdos->context->regs[15] = 0;
+        if (ocode == 0x80) /* in */
+        {
+            printf("opening for input\n");
+            gendcb->u1.dcbgetput = (int)dread;
+        }
+        else if (ocode == 0x8f) /* out */
+        {
+            printf("opening for output\n");
+            gendcb->u1.dcbgetput = (int)dwrite;
+        }
+        else /* don't understand - refuse to open */
+        {
+            pdos->context->regs[15] = 12; /* is this correct? */
+        }
+        if (pdos->context->regs[15] == 0)
+        {
+            gendcb->u1.dcboflgs |= DCBOFOPN;
+        }
     }
     else if (svc == 42) /* attach */
     {
@@ -1460,12 +1468,7 @@ static void pdosProcessSVC(PDOS *pdos)
         }
         /* we usually have a new context loaded, so don't
            mess with R15 */
-        if (newcont == 0)
-        {
-            /* got a new context so need a fresh set of fudges */
-            fcnt = 0;
-        }
-        else
+        if (newcont != 0)
         {
             /* ECB is no longer applicable */
             pdos->context->postecb = NULL;

@@ -1494,6 +1494,15 @@ static int pdosDoDIR(PDOS *pdos, char *parm)
     int head;
     int rec;
     char tbuf[MAXBLKSZ];
+    struct {
+        char ds1dsnam[44];
+        char ds1fmtid;
+        char unused1[60];
+        char unused2;
+        char unused3;
+        char startcchh[4];
+        char endcchh[4];
+    } dscb1;
     int cnt;
     char *p;
     
@@ -1504,17 +1513,22 @@ static int pdosDoDIR(PDOS *pdos, char *parm)
         split_cchhr(tbuf + 15, &cyl, &head, &rec);
         rec += 2; /* first 2 blocks are of no interest */
         
-        while ((cnt = rdblock(pdos->ipldev, cyl, head, rec, tbuf, MAXBLKSZ)),
+        while ((cnt = rdblock(pdos->ipldev, cyl, head, rec, &dscb1,
+                              sizeof dscb1)),
                cnt > 0)
         {
-            if (tbuf[0] == '\0') break;
-            tbuf[44] = '\0';
-            p = strchr(tbuf, ' ');
+            int c, h, r;
+            
+            if (dscb1.ds1dsnam[0] == '\0') break;
+            dscb1.ds1dsnam[44] = '\0';
+            p = strchr(dscb1.ds1dsnam, ' ');
             if (p != NULL)
             {
                 *p = '\0';
             }
-            printf("%s\n", tbuf);
+            split_cchhr(dscb1.startcchh, &c, &h, &r);
+            r = 1;
+            printf("%s %d %d %d\n", dscb1.ds1dsnam, c, h, r);
             rec++;
         }
     }

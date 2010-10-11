@@ -619,6 +619,7 @@ static int pdosDispatchUntilInterrupt(PDOS *pdos);
 static void pdosInitAspaces(PDOS *pdos);
 static void pdosProcessSVC(PDOS *pdos);
 static int pdosDoDIR(PDOS *pdos, char *parm);
+static void brkyd(int *year, int *month, int *day);
 static int pdosDumpBlk(PDOS *pdos, char *parm);
 static int pdosFindFile(PDOS *pdos, char *dsn, int *c, int *h, int *r);
 static int pdosLoadExe(PDOS *pdos, char *prog, char *parm);
@@ -1497,7 +1498,9 @@ static int pdosDoDIR(PDOS *pdos, char *parm)
     struct {
         char ds1dsnam[44];
         char ds1fmtid;
-        char unused1[60];
+        char unused1a[8];
+        char ds1credt[3];
+        char unused1b[49];
         char unused2;
         char unused3;
         char startcchh[4];
@@ -1505,6 +1508,9 @@ static int pdosDoDIR(PDOS *pdos, char *parm)
     } dscb1;
     int cnt;
     char *p;
+    int year;
+    int month;
+    int day;
     
     /* read VOL1 record which starts on cylinder 0, head 0, record 3 */
     cnt = rdblock(pdos->ipldev, 0, 0, 3, tbuf, MAXBLKSZ);
@@ -1528,13 +1534,34 @@ static int pdosDoDIR(PDOS *pdos, char *parm)
             }
             split_cchhr(dscb1.startcchh, &c, &h, &r);
             r = 1;
-            printf("%s %d %d %d\n", dscb1.ds1dsnam, c, h, r);
+            year = dscb1.ds1credt[0];
+            day = dscb1.ds1credt[1] << 8 | dscb1.ds1credt[2];
+            brkyd(&year, &month, &day);
+            printf("%-44s %04d-%02d-%02d (%5d %3d %3d)\n",
+                   dscb1.ds1dsnam, year, month, day, c, h, r);
             rec++;
         }
     }
     
     return (0);
 }
+
+
+static void brkyd(int *year, int *month, int *day)
+{
+    time_t tt;
+    struct tm tms = { 0 };
+    
+    
+    tms.tm_year = *year;
+    tms.tm_mon = 0;
+    tms.tm_mday = *day;
+    tt = mktime(&tms);
+    *year = 1900 + tms.tm_year;
+    *month = tms.tm_mon + 1;
+    *day = tms.tm_mday;
+}
+
 
 
 /* dump block */

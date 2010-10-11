@@ -1372,17 +1372,8 @@ static void pdosProcessSVC(PDOS *pdos)
             printf("must be dataset name %s\n", lastds);
             if (pdosFindFile(pdos, lastds, &cyl, &head, &rec) == 0)
             {
-                rec = 0; /* so that we can do increments */                
-                /* +++ use some macros for this */
-                memcpy(gendcb->dcbfdad + 3,
-                       (char *)&cyl + sizeof cyl - 2,
-                       2);
-                memcpy(gendcb->dcbfdad + 5,
-                       (char *)&head + sizeof head - 2,
-                       2);
-                memcpy(gendcb->dcbfdad + 7,
-                       (char *)&rec + sizeof rec - 2,
-                       2);
+                rec = 0; /* so that we can do increments */
+                join_cchhr(gendcb->dcbfdad + 3, cyl, head, rec);
                 printf("located at %d %d %d\n", cyl, head, rec);
             }
             else

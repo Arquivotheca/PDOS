@@ -241,7 +241,7 @@ old virtual memory map:
 
 /* do you want to debug all SVC calls? */
 #ifndef SVCDEBUG
-#define SVCDEBUG 1
+#define SVCDEBUG 0
 #endif
 
 /* do you want to debug all memory requests */
@@ -749,11 +749,13 @@ int pdosInit(PDOS *pdos)
         }
     }
     printf("Welcome to PDOS!!!\n");
+#if 0
     printf("CR0 is %08X\n", cr0);
     printf("PDOS structure is %d bytes\n", sizeof(PDOS));
     printf("aspace padding is %d bytes\n", sizeof pdos->aspaces[0].filler);
 
     printf("IPL device is %x\n", pdos->ipldev);
+#endif
     pdos->shutdown = 0;
     pdosInitAspaces(pdos);
     pdos->curr_aspace = 0;
@@ -839,11 +841,12 @@ static int pdosDispatchUntilInterrupt(PDOS *pdos)
 
             /* we know that they are using R10 for DCB */
             dcb = (DCB *)pdos->context->regs[10];
+#if 0
             printf("dcb read is for lrecl %d\n", dcb->dcblrecl);
+#endif
             if (memcmp(dcb->dcbfdad,
                        "\x00\x00\x00\x00\x00\x00\x00\x00", 8) == 0)
             {
-                printf("looks like SYSIN read\n");
                 cnt = __consrd(300, tbuf);
                 if (cnt >= 0)
                 {
@@ -1001,9 +1004,10 @@ static void pdosInitAspaces(PDOS *pdos)
                                | (unsigned int)pdos->aspaces[a].o.seg370;
         /* note that the CR1 needs to be 64-byte aligned, to give
            6 low zeros */
+#if 0
         printf("aspace %d, seg370 %p, cr1 %08X\n",
                a, pdos->aspaces[a].o.seg370, pdos->aspaces[a].o.cregs[1]);
-
+#endif
         /* now set up the memory manager for BTL storage */
         lcreg1(pdos->aspaces[a].o.cregs[1]);
         daton();
@@ -1209,8 +1213,10 @@ static void pdosInitAspaces(PDOS *pdos)
             | (unsigned int)pdos->aspaces[a].o.segtable;
             /* note that the CR1 needs to be 4096-byte aligned, to give
                12 low zeros */
+#if 0
         printf("aspace %d, seg %p, cr13 %08X\n",
                a, pdos->aspaces[a].o.segtable, pdos->aspaces[a].o.cregs[13]);
+#endif
 
         /* now set up the memory manager for BTL and ATL storage */
         lcreg1(pdos->aspaces[a].o.cregs[1]);
@@ -1343,10 +1349,12 @@ static void pdosProcessSVC(PDOS *pdos)
     else if (svc == 99)
     {
         /* dataset name is usually in R7 */
+#if 0
         printf("dynalloc for %.44s\n", pdos->context->regs[7]);
         /* ddname is usually 6 bytes from R2 */
         printf("ddname is %p %.8s\n", pdos->context->regs[2] + 6,
             pdos->context->regs[2] + 6);
+#endif
         /* save dataset away */
         sprintf(lastds, "%.44s", pdos->context->regs[7]);
         pdos->context->regs[15] = 0;
@@ -1369,19 +1377,24 @@ static void pdosProcessSVC(PDOS *pdos)
         gendcb = (DCB *)pdos->context->regs[10]; 
             /* need to protect against this */
             /* and it's totally wrong anyway */
+#if 0
         printf("got rdjfcb for %.8s\n", gendcb->dcbddnam);
+#endif
         if (memcmp(gendcb->dcbddnam, "SYS", 3) != 0)
         {
             int cyl;            
             int head;
             int rec;
-            
+#if 0
             printf("must be dataset name %s\n", lastds);
+#endif
             if (pdosFindFile(pdos, lastds, &cyl, &head, &rec) == 0)
             {
                 rec = 0; /* so that we can do increments */
                 join_cchhr(gendcb->dcbfdad + 3, cyl, head, rec);
+#if 0
                 printf("located at %d %d %d\n", cyl, head, rec);
+#endif
             }
             else
             {
@@ -1412,12 +1425,16 @@ static void pdosProcessSVC(PDOS *pdos)
         pdos->context->regs[15] = 0;
         if (ocode == 0x80) /* in */
         {
+#if 0
             printf("opening for input\n");
+#endif
             gendcb->u1.dcbgetput = (int)dread;
         }
         else if (ocode == 0x8f) /* out */
         {
+#if 0
             printf("opening for output\n");
+#endif
             gendcb->u1.dcbgetput = (int)dwrite;
         }
         else /* don't understand - refuse to open */

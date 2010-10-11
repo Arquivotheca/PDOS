@@ -594,7 +594,6 @@ typedef struct {
     int shutdown;
     int ipldev;
     int curr_aspace; /* current address space */
-    int cyl_upto; /* next cylinder to be read */
 } PDOS;
 
 /*static PDOS pdos;*/
@@ -702,7 +701,6 @@ int pdosInit(PDOS *pdos)
         printf("config.sys missing\n");
         return (0);
     }
-    pdos->cyl_upto = cyl;
     if (__consdn == 0)
     {
         char tbuf[MAXBLKSZ + 1];
@@ -748,7 +746,6 @@ int pdosInit(PDOS *pdos)
 #endif
             }
         }
-        pdos->cyl_upto++;
     }
     printf("Welcome to PDOS!!!\n");
     printf("CR0 is %08X\n", cr0);
@@ -1953,7 +1950,6 @@ static int pdosLoadPcomm(PDOS *pdos)
         rec++;
     }
     /* after EOF, position on the next cylinder */
-    pdos->cyl_upto = ++cyl;
 
     pdos->context =
         pdos->aspaces[pdos->curr_aspace].o.curr_rb =

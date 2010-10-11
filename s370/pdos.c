@@ -1899,10 +1899,11 @@ static int pdosLoadPcomm(PDOS *pdos)
 
     if (pdosFindFile(pdos, "COMMAND.EXE", &cyl, &head, &rec) != 0)
     {
+        printf("can't find COMMAND.EXE\n");
         return (-1);
     }
-    printf("PCOMM should reside on cylinder %d, head 0 of IPL device\n",
-           cyl);
+    printf("PCOMM resides on cylinder %d, head %d, rec %d of IPL device\n",
+           cyl, head, rec);
     /* assume 1 MB max */
     load = memmgrAllocate(&pdos->aspaces[pdos->curr_aspace].o.btlmem,
                           1024 * 1024, 0);

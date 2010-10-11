@@ -1497,21 +1497,27 @@ static int pdosDoDIR(PDOS *pdos, char *parm)
     int cnt;
     char *p;
     
-    cyl = 7;   /* +++ get this from a better place */
-    head = 0;
-    rec = 3;
-    while ((cnt = rdblock(pdos->ipldev, cyl, head, rec, tbuf, MAXBLKSZ)),
-           cnt > 0)
+    /* read VOL1 record which starts on cylinder 0, head 0, record 3 */
+    cnt = rdblock(pdos->ipldev, 0, 0, 3, tbuf, MAXBLKSZ);
+    if (cnt >= 20)
     {
-        if (tbuf[0] == '\0') break;
-        tbuf[44] = '\0';
-        p = strchr(tbuf, ' ');
-        if (p != NULL)
+        /* +++ this 12 is not real */
+        split_mbbcchhr(tbuf + 12, &cyl, &head, &rec);
+        rec += 2; /* first 2 blocks are of no interest */
+        
+        while ((cnt = rdblock(pdos->ipldev, cyl, head, rec, tbuf, MAXBLKSZ)),
+               cnt > 0)
         {
-            *p = '\0';
+            if (tbuf[0] == '\0') break;
+            tbuf[44] = '\0';
+            p = strchr(tbuf, ' ');
+            if (p != NULL)
+            {
+                *p = '\0';
+            }
+            printf("%s\n", tbuf);
+            rec++;
         }
-        printf("%s\n", tbuf);
-        rec++;
     }
     
     return (0);

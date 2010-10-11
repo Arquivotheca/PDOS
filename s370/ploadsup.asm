@@ -113,18 +113,34 @@ RDBLOCK  DS    0H
          L     R2,12(R1)    Record
          STC   R2,R         
          L     R2,16(R1)    Buffer
+* It is a requirement of using this routine that V=R. If it is
+* ever required to support both V and R, then LRA could be used,
+* and check for a 0 return, and if so, do a BNZ.
+*         LRA   R2,0(R2)     Get real address
+         L     R7,20(R1)    Bytes to read
+         AIF   ('&SYS' EQ 'S390').CHN390B
          STCM  R2,B'0111',LOADCCW+1   This requires BTL buffer
+         STH   R7,LOADCCW+6  Store in READ CCW
+         AGO   .CHN390C
+.CHN390B ANOP
+         ST    R2,LOADCCW+4
+         STH   R7,LOADCCW+2
+.CHN390C ANOP
 *
 * Interrupt needs to point to CONT now. Again, I would hope for
 * something more sophisticated in PDOS than this continual
 * initialization.
 *
          MVC   FLCINPSW(8),NEWIO
+         STOSM FLCINPSW,X'00'  Work with DAT on or OFF
 * R3 points to CCW chain
          LA    R3,SEEK
          ST    R3,FLCCAW    Store in CAW
+*
+*
          AIF   ('&SYS' EQ 'S390').SIO31B
          SIO   0(R10)
+*         TIO   0(R10)
          AGO   .SIO24B
 .SIO31B  ANOP
          LR    R1,R10       R1 needs to contain subchannel
@@ -133,13 +149,29 @@ RDBLOCK  DS    0H
          LA    R10,ORB
          SSCH  0(R10)
 .SIO24B  ANOP
+*
+*
          LPSW  WAITNOER     Wait for an interrupt
          DC    H'0'
 CONT     DS    0H           Interrupt will automatically come here
-         LA    R15,0
+         AIF   ('&SYS' EQ 'S390').SIO31H
+         SH    R7,FLCCSW+6  Subtract residual count to get bytes read
+         LR    R15,R7
+* After a successful CCW chain, CSW should be pointing to end
+         CLC   FLCCSW(4),=A(FINCHAIN)
+         BE    ALLFINE
+         AGO   .SIO24H
+.SIO31H  ANOP
+         TSCH  0(R9)
+         SH    R7,10(R9)
+         LR    R15,R7
+         CLC   4(4,R9),=A(FINCHAIN)
+         BE    ALLFINE
+.SIO24H  ANOP
+         L     R15,=F'-1'   error return
+ALLFINE  DS    0H
          RETURN (14,12),RC=(15)
          LTORG
-*
 *
 *
          AIF   ('&SYS' NE 'S390').NOT390B
@@ -147,18 +179,28 @@ CONT     DS    0H           Interrupt will automatically come here
 IRB      DS    24F
 ORB      DS    0F
          DC    F'0'
-         DC    X'0000FF00'  Logical-Path Mask (enable all?)
+         DC    X'0080FF00'  Logical-Path Mask (enable all?) + format-1
          DC    A(SEEK)
          DC    5F'0'
 .NOT390B ANOP
 *
 *
-*
          DS    0D
-SEEK     CCW   7,BBCCHH,X'40',6
-SEARCH   CCW   X'31',CCHHR,X'40',5
+         AIF   ('&SYS' EQ 'S390').CHN390
+SEEK     CCW   7,BBCCHH,X'40',6       40 = chain command
+SEARCH   CCW   X'31',CCHHR,X'40',5    40 = chain command
          CCW   8,SEARCH,0,0
-LOADCCW  CCW   6,0,X'20',32767
+* X'E' = read key and data
+LOADCCW  CCW   X'E',0,X'20',32767     20 = ignore length issues
+         AGO   .CHN390F
+.CHN390  ANOP
+SEEK     CCW1  7,BBCCHH,X'40',6       40 = chain command
+SEARCH   CCW1  X'31',CCHHR,X'40',5    40 = chain command
+         CCW1  8,SEARCH,0,0
+* X'E' = read key and data
+LOADCCW  CCW1  X'E',0,X'20',32767     20 = ignore length issues
+.CHN390F ANOP
+FINCHAIN EQU   *
          DS    0H
 BBCCHH   DC    X'000000000000'
          ORG   *-4
@@ -170,9 +212,9 @@ CC2      DS    CL2
 HH2      DS    CL2
 R        DS    C
          DS    0D
-WAITNOER DC    X'020E0000'  I/O, machine check, EC, wait
+WAITNOER DC    X'060E0000'  I/O, machine check, EC, wait, DAT on
          DC    X'00000000'  no error
-NEWIO    DC    X'000C0000'  machine check, EC
+NEWIO    DC    X'000C0000'  machine check, EC, DAT off
          AIF   ('&SYS' EQ 'S370').MOD24
          DC    A(X'80000000'+CONT)  continuation after I/O request
          AGO   .MOD31
@@ -181,6 +223,12 @@ NEWIO    DC    X'000C0000'  machine check, EC
 .MOD31   ANOP
 *
          DROP  ,
+*
+*
+*
+*
+*
+*
          CVT   DSECT=YES
          IKJTCB
          IEZJSCB

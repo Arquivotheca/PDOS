@@ -1522,6 +1522,11 @@ static void pdosProcessSVC(PDOS *pdos)
 #define PSW_ENABLE_INT 0x040C0000 /* actually disable interrupts for now */
 
 
+#define DS1RECFF 0x80
+#define DS1RECFV 0x40
+#define DS1RECFU 0xc0
+#define DS1RECFB 0x10
+
 /* do DIR command */
 
 static int pdosDoDIR(PDOS *pdos, char *parm)
@@ -1533,11 +1538,16 @@ static int pdosDoDIR(PDOS *pdos, char *parm)
     struct {
         char ds1dsnam[44];
         char ds1fmtid;
-        char unused1a[8];
+        char unused1[8];
         char ds1credt[3];
-        char unused1b[49];
-        char unused2;
+        char unused2[28];
+        char ds1recfm;
         char unused3;
+        short ds1blkl;
+        short ds1lrecl;
+        char unused4[15];
+        char unused5;
+        char unused6;
         char startcchh[4];
         char endcchh[4];
     } dscb1;
@@ -1546,6 +1556,8 @@ static int pdosDoDIR(PDOS *pdos, char *parm)
     int year;
     int month;
     int day;
+    int recfm;
+    char *blk;
     
     /* read VOL1 record which starts on cylinder 0, head 0, record 3 */
     cnt = rdblock(pdos->ipldev, 0, 0, 3, tbuf, MAXBLKSZ);
@@ -1572,8 +1584,30 @@ static int pdosDoDIR(PDOS *pdos, char *parm)
             year = dscb1.ds1credt[0];
             day = dscb1.ds1credt[1] << 8 | dscb1.ds1credt[2];
             brkyd(&year, &month, &day);
-            printf("%-44s %04d-%02d-%02d (%5d %3d %3d)\n",
-                   dscb1.ds1dsnam, year, month, day, c, h, r);
+            recfm = dscb1.ds1recfm;
+            recfm &= 0xc0;
+            if (recfm == DS1RECFU)
+            {
+                recfm = 'U';
+            }
+            else if (recfm == DS1RECFV)
+            {
+                recfm = 'V';
+            }
+            else if (recfm == DS1RECFF)
+            {
+                recfm = 'F';
+            }
+            else
+            {
+                recfm = 'X';
+            }
+            blk = ((dscb1.ds1recfm & DS1RECFB) != 0) ? "B" : "";
+            
+            printf("%-44s %04d-%02d-%02d %c%s %d %d (%d %d %d)\n",
+                   dscb1.ds1dsnam, year, month, day,
+                   recfm, blk, dscb1.ds1lrecl, dscb1.ds1blkl,
+                   c, h, r);
             rec++;
         }
     }

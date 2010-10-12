@@ -1349,6 +1349,10 @@ static void pdosProcessSVC(PDOS *pdos)
     }
     else if (svc == 99)
     {
+        int cyl;
+        int head;
+        int rec;
+        
         /* dataset name is usually in R7 */
 #if 0
         printf("dynalloc for %.44s\n", pdos->context->regs[7]);
@@ -1356,10 +1360,19 @@ static void pdosProcessSVC(PDOS *pdos)
         printf("ddname is %p %.8s\n", pdos->context->regs[2] + 6,
             pdos->context->regs[2] + 6);
 #endif
-        /* save dataset away */
+        /* save dataset away */        
         sprintf(lastds, "%.44s", pdos->context->regs[7]);
-        pdos->context->regs[15] = 0;
-        pdos->context->regs[0] = 0;
+        if (pdosFindFile(pdos, lastds, &cyl, &head, &rec) != 0)
+        {
+            strcpy(lastds, "");
+            pdos->context->regs[15] = 12;
+            pdos->context->regs[0] = 12;
+        }
+        else
+        {
+            pdos->context->regs[15] = 0;
+            pdos->context->regs[0] = 0;
+        }
     }
     else if (svc == 24) /* devtype */
     {
@@ -1659,6 +1672,7 @@ static int pdosDumpBlk(PDOS *pdos, char *parm)
 
 
 /* find a file on disk */
+/* 0 = success, else negative return code */
 
 static int pdosFindFile(PDOS *pdos, char *dsn, int *c, int *h, int *r)
 {

@@ -1515,6 +1515,10 @@ static void pdosProcessSVC(PDOS *pdos)
     {
         /* do nothing - but should free memory and switch back context */
     }
+    else if (svc == 20) /* close */
+    {
+        /* do nothing */
+    }
     return;
 }
 

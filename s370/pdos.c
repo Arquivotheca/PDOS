@@ -404,6 +404,12 @@ typedef struct {
     short residual;
 } IOB;
 
+typedef struct {
+    char unused1[20];
+    short ds4dstrk;
+    char unused2[74];
+} DSCB4;
+
 
 /* A S/370 logical address consists of a segment index, which is
    bits 8-11 (for 1MB index), for the 16 possible values, then

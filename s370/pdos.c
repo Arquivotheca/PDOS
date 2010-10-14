@@ -1768,7 +1768,7 @@ static int pdosFindFile(PDOS *pdos, char *dsn, int *c, int *h, int *r)
         /* +++ probably time to create some macros for this */
         memcpy((char *)&cyl + sizeof(int) - 2, tbuf + 15, 2);
         memcpy((char *)&head + sizeof(int) - 2, tbuf + 17, 2);
-        memcpy((char *)&rec + sizeof(int) - 1, tbuf + 18, 1);
+        memcpy((char *)&rec + sizeof(int) - 1, tbuf + 19, 1);
         
         while ((cnt =
                rdblock(pdos->ipldev, cyl, head, rec, &dscb1, sizeof dscb1))
@@ -1859,7 +1859,7 @@ static int pdosLoadExe(PDOS *pdos, char *prog, char *parm)
         /* +++ probably time to create some macros for this */
         memcpy((char *)&cyl + sizeof(int) - 2, tbuf + 15, 2);
         memcpy((char *)&head + sizeof(int) - 2, tbuf + 17, 2);
-        memcpy((char *)&rec + sizeof(int) - 1, tbuf + 18, 1);
+        memcpy((char *)&rec + sizeof(int) - 1, tbuf + 19, 1);
         
         while ((cnt =
                rdblock(pdos->ipldev, cyl, head, rec, &dscb1, sizeof dscb1))

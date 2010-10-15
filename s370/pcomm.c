@@ -205,7 +205,7 @@ static void processInput(void)
 
 static void putPrompt(void)
 {
-    printf("\n%s:\\%s%s\n", drive, cwd, prompt);
+    printf("\n%s:\\%s%s", drive, cwd, prompt);
     fflush(stdout);
     return;
 }

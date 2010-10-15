@@ -1907,6 +1907,13 @@ static int pdosLoadExe(PDOS *pdos, char *prog, char *parm)
         return (-1);
     }
     
+    cnt = rdblock(pdos->ipldev, cyl, head, rec, tbuf, MAXBLKSZ);
+    if ((cnt > 8) && (*((int *)tbuf + 1) == 0xca6d0f))
+    {
+        printf("MVS PE executable is not currently supported\n");
+        return (-1);
+    }
+
     /* assume 4 MB max */
     raw = memmgrAllocate(&pdos->aspaces[pdos->curr_aspace].o.btlmem,
                          5 * 1024 * 1024, 0);

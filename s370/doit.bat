@@ -46,4 +46,4 @@ dasdload -bz2 ctl.txt pdos00.199
 copy pdos00.199 \mvs380\dasd
 copy \mvs380\conf\mvs380_380.conf \mvs380\conf\mvs380.conf
 call startmvs ipl1b9
-copy \mvs380\conf\mvs380_380.conf \mvs380\conf\mvs380.conf
+copy \mvs380\conf\mvs380_std.conf \mvs380\conf\mvs380.conf

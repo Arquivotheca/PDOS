@@ -303,6 +303,8 @@ RETURNAR DS    0H
          L     R3,0(R3)
          LA    R3,4(R3)   assume RECFM=V
          ST    R3,PARM2
+         LA    R1,1
+         ST    R1,PARM3   set PARM3 = 1 = carriage return wanted
          LA    R1,PARM1
          CALL  @@CONSWR
          B     DONEDIAG
@@ -592,6 +594,20 @@ SYSTEMLN EQU   *-SYSTMWRK    LENGTH OF DYNAMIC STORAGE
          L     R10,0(R10)
          L     R7,0(R1)        Bytes to write
          L     R2,4(R1)        Buffer to write
+         L     R8,8(R1)        Is CR required?
+         MVI   CCHAIN,X'01'    Assume no CR required
+         LTR   R8,R8
+         BZ    NOCRREQ
+         MVI   CCHAIN,X'09'    Need a CR
+* For some reason the CCW doesn't like an empty line of 0 bytes.
+* Need to find out why. Until then, assume that's the way that
+* it's meant to be, and force a space
+         LTR   R7,R7
+         BNZ   NOSPACE
+         LA    R2,=C' '
+         LA    R7,1
+NOSPACE  DS    0H
+NOCRREQ  DS    0H
          AIF   ('&SYS' EQ 'S390').CHN390G
          STCM  R2,B'0111',CCHAIN+1   This requires BTL buffer
          STH   R7,CCHAIN+6     Store length in WRITE CCW
@@ -915,6 +931,7 @@ WORKAREA DS    0F
 SAVEAREA DS    18F
 PARM1    DS    F
 PARM2    DS    F
+PARM3    DS    F
 WORKLEN  EQU   *-WORKAREA
 *
 ZDCBAREA DS    0H

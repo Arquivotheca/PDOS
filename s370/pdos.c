@@ -636,6 +636,7 @@ static void join_cchhr(char *cchhr, int cyl, int head, int rec);
 
 
 int __consrd(int len, char *buf);
+int __conswr(int len, char *buf, int cr);
 
 int main(int argc, char **argv)
 {
@@ -826,16 +827,26 @@ static int pdosDispatchUntilInterrupt(PDOS *pdos)
            SVC 0 (EXCP) or CHECK to run SVC 1 (WAIT) should it be
            reaching this bit of code. It's OK to keep the code
            here, but it needs to execut in user space. */
-        if (ret == 2)
+        if (ret == 2) /* got a WRITE request */
         {
             int len;
+            char *buf;
+            int cr = 0;
+            char tbuf[MAXBLKSZ];
 
             len = pdos->context->regs[5];
 #if 0
             printf("got a request to write block len %d\n", len);
 #endif
             /* assume RECFM=U, with caller providing NL */
-            printf("%.*s", len, pdos->context->regs[4]);
+            buf = (char *)pdos->context->regs[4];
+            if ((len > 0) && (buf[len - 1] == '\n'))
+            {
+                len--;
+                cr = 1; /* assembler needs to do with CR */
+            }
+            memcpy(tbuf, buf, len);
+            __conswr(len, tbuf, cr);
         }
         else if (ret == 3) /* got a READ request */
         {

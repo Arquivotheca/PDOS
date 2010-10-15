@@ -3443,7 +3443,21 @@ __PDPCLIB_API__ FILE *freopen(const char *filename,
 
 __PDPCLIB_API__ int fflush(FILE *stream)
 {
-#if !defined(__MVS__) && !defined(__CMS__)
+#if defined(__MVS__) || defined(__CMS__)
+    if ((stream->mode == __WRITE_MODE) && (stream->upto != stream->fbuf))
+    {
+        if (stream->reallyu)
+        {
+            size_t last;
+
+            last = stream->upto - stream->fbuf;
+            begwrite(stream, last);
+            memcpy(dptr, stream->fbuf, last);
+            finwrite(stream);
+            stream->upto = stream->fbuf;
+        }
+    }
+#else
 #ifdef __OS2__
     APIRET rc;
     ULONG actualWritten;

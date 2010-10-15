@@ -1002,12 +1002,8 @@ __PDPCLIB_API__ int fclose(FILE *stream)
     {
         if (stream->reallyu)
         {
-            size_t last;
-
-            last = stream->upto - stream->fbuf;
-            begwrite(stream, last);
-            memcpy(dptr, stream->fbuf, last);
-            finwrite(stream);
+            /* no action required, the flush would have done
+               everything already */
         }
         else if (stream->textMode)
         {

@@ -1754,7 +1754,6 @@ static int pdosFindFile(PDOS *pdos, char *dsn, int *c, int *h, int *r)
     int rec;
     int i;
     int j;
-    static int savearea[20]; /* needs to be in user space */
     char tbuf[MAXBLKSZ];
     char srchdsn[FILENAME_MAX+10]; /* give an extra space */
     int cnt = -1;
@@ -1999,19 +1998,15 @@ static int pdosLoadExe(PDOS *pdos, char *prog, char *parm)
     exeLen = load - initial;    
     if (pe)
     {
-        int oldLen = exeLen;
-        
         if (pdosFixPE(pdos, initial, &exeLen, &entry) != 0)
         {
             memmgrFree(&pdos->aspaces[pdos->curr_aspace].o.btlmem, raw);
             return (-1);
         }
         exeLen += 0x1000; /* give some buffer */
-        if (exeLen < oldLen)
-        {
-            memmgrRealloc(&pdos->aspaces[pdos->curr_aspace].o.btlmem,
-                          raw, exeLen);
-        }
+        /* unconditionally reduce the 5 MB to something reasonable */
+        memmgrRealloc(&pdos->aspaces[pdos->curr_aspace].o.btlmem,
+                      raw, exeLen);
         /* if we can't adjust down, don't care */
     }
 

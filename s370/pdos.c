@@ -629,7 +629,7 @@ static void brkyd(int *year, int *month, int *day);
 static int pdosDumpBlk(PDOS *pdos, char *parm);
 static int pdosFindFile(PDOS *pdos, char *dsn, int *c, int *h, int *r);
 static int pdosLoadExe(PDOS *pdos, char *prog, char *parm);
-static int pdosFixPE(PDOS *pdos, char *initial, int len);
+static int pdosFixPE(PDOS *pdos, char *initial, int len, int *entry);
 static int pdosProcessRLD(PDOS *pdos, char *initial, char *rld, int len);
 static int pdosDumpMem(PDOS *pdos, char *tbuf, int cnt);
 #if 0
@@ -1836,7 +1836,7 @@ static int pdosLoadExe(PDOS *pdos, char *prog, char *parm)
     char *initial;
     char *load;
     /* Standard C programs can start at a predictable offset */
-    int (*entry)(void *);
+    int entry;
     int cyl;
     int head;
     int rec;
@@ -1941,7 +1941,6 @@ static int pdosLoadExe(PDOS *pdos, char *prog, char *parm)
     printf("load point designated as %p\n", load);
 #endif
     /* should store old context first */
-    entry = (int (*)(void *))(initial + 8);
     i = head;
     j = rec;
     /* Note that we read until we get EOF (a zero-length block). */
@@ -1991,7 +1990,7 @@ static int pdosLoadExe(PDOS *pdos, char *prog, char *parm)
     
     if (pe)
     {
-        if (pdosFixPE(pdos, initial, load - initial) != 0)
+        if (pdosFixPE(pdos, initial, load - initial, &entry) != 0)
         {
             memmgrFree(&pdos->aspaces[pdos->curr_aspace].o.btlmem,
                        pdos->context->next_exe);
@@ -2021,9 +2020,9 @@ static int pdosLoadExe(PDOS *pdos, char *prog, char *parm)
         /* fill in details of new context */
         pdos->context->regs[13] = (int)savearea;
         pdos->context->regs[14] = (int)gotret;
-        pdos->context->regs[15] = (int)entry;
+        pdos->context->regs[15] = entry;
         pdos->context->psw1 = PSW_ENABLE_INT; /* need to enable interrupts */
-        pdos->context->psw2 = (int)entry; /* 24-bit mode for now */
+        pdos->context->psw2 = entry; /* 24-bit mode for now */
 #if defined(S390)
         pdos->context->psw2 |= 0x80000000; /* dispatch in 31-bit mode */
 #endif
@@ -2044,7 +2043,7 @@ static int pdosLoadExe(PDOS *pdos, char *prog, char *parm)
    and Appendix B of OS/390 DFSMSdfp Utilities SC26-7343-00
 */
 
-static int pdosFixPE(PDOS *pdos, char *initial, int len)
+static int pdosFixPE(PDOS *pdos, char *initial, int len, int *entry)
 {
     char *p;
     char *q;
@@ -2117,6 +2116,7 @@ static int pdosFixPE(PDOS *pdos, char *initial, int len)
             amode = (ihapds->pds2ftb2 & 0x0c) >> 2;
             ent = 0;
             memcpy((char *)&ent + sizeof(ent) - 3, ihapds->pds2epa, 3);
+            *entry = (int)(initial + ent);
 #if 0
             printf("module name is %.8s\n", ihapds->pds2name);
             printf("rmode is %s\n", rmode ? "ANY" : "24");

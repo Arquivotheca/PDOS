@@ -366,6 +366,8 @@ typedef struct rb {
     struct rb *rblinkb;
     ECB *postecb;
     char *next_exe; /* next executable's location */
+    int savearea[20]; /* needs to be in user space */
+    char *pptrs[1];
 } RB;
 
 typedef struct {
@@ -1753,7 +1755,6 @@ static int pdosFindFile(PDOS *pdos, char *dsn, int *c, int *h, int *r)
     int i;
     int j;
     static int savearea[20]; /* needs to be in user space */
-    static char *pptrs[1];
     char tbuf[MAXBLKSZ];
     char srchdsn[FILENAME_MAX+10]; /* give an extra space */
     int cnt = -1;
@@ -1847,8 +1848,6 @@ static int pdosLoadExe(PDOS *pdos, char *prog, char *parm)
     int rec;
     int i;
     int j;
-    static int savearea[20]; /* needs to be in user space */
-    static char *pptrs[1];
     char tbuf[MAXBLKSZ];
     char srchprog[FILENAME_MAX+10]; /* give an extra space */
     int cnt = -1;
@@ -2037,7 +2036,7 @@ static int pdosLoadExe(PDOS *pdos, char *prog, char *parm)
         pdos->aspaces[pdos->curr_aspace].o.curr_rb = pdos->context;
 
         /* fill in details of new context */
-        pdos->context->regs[13] = (int)savearea;
+        pdos->context->regs[13] = (int)pdos->context->savearea;
         pdos->context->regs[14] = (int)gotret;
         pdos->context->regs[15] = entry;
         pdos->context->psw1 = PSW_ENABLE_INT; /* need to enable interrupts */
@@ -2046,9 +2045,9 @@ static int pdosLoadExe(PDOS *pdos, char *prog, char *parm)
         pdos->context->psw2 |= 0x80000000; /* dispatch in 31-bit mode */
 #endif
 
-        pptrs[0] = parm;
+        pdos->context->pptrs[0] = parm;
     
-        pdos->context->regs[1] = (int)pptrs;
+        pdos->context->regs[1] = (int)pdos->context->pptrs;
 
 #if 0
         printf("finished loading executable\n");

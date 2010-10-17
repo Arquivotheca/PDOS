@@ -1918,6 +1918,11 @@ static int pdosLoadExe(PDOS *pdos, char *prog, char *parm)
     {
         pe = 1;
     }
+    else
+    {
+        printf("only MVS PE executables are supported\n");
+        return (-1);
+    }
 
     /* assume 4 MB max */
     raw = memmgrAllocate(&pdos->aspaces[pdos->curr_aspace].o.btlmem,

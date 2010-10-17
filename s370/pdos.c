@@ -1934,8 +1934,8 @@ static int pdosLoadExe(PDOS *pdos, char *prog, char *parm)
         return (-1);
     }
     
-    /* round to 64k boundary */
-    load = (char *)(((int)raw & ~0xffff) + 0x10000);
+    /* round to 16 byte boundary */
+    load = (char *)(((int)raw & ~0xf) + 0x10);
     initial = load;
 #if 0
     printf("load point designated as %p\n", load);

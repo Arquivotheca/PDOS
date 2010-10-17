@@ -1933,9 +1933,13 @@ static int pdosLoadExe(PDOS *pdos, char *prog, char *parm)
         printf("insufficient memory to load program\n");
         return (-1);
     }
-    
+
+#if 0
+    /* should be no need for specific alignment */
     /* round to 16 byte boundary */
     load = (char *)(((int)raw & ~0xf) + 0x10);
+#endif
+    load = raw;
     initial = load;
 #if 0
     printf("load point designated as %p\n", load);

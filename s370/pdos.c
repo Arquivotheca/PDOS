@@ -1934,8 +1934,8 @@ static int pdosLoadExe(PDOS *pdos, char *prog, char *parm)
     }
     
     pdos->context->next_exe = raw;
-    /* round to 1MB */
-    load = (char *)(((int)raw & ~0xfffff) + 0x100000);
+    /* round to 64k boundary */
+    load = (char *)(((int)load & ~0xffff) + 0x10000);
     initial = load;
 #if 0
     printf("load point designated as %p\n", load);

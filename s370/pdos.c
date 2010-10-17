@@ -2316,6 +2316,11 @@ static int pdosProcessRLD(PDOS *pdos, char *initial, char *rld, int len)
             }
         }
         negative = *r & 0x02;
+        if (negative)
+        {
+            printf("got a negative adjustment - unsupported\n");
+            return (-1);
+        }
         ll = (*r & 0x0c) >> 2;
         ll++;
         if (ll != 4)

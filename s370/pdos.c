@@ -1282,7 +1282,8 @@ static void pdosProcessSVC(PDOS *pdos)
     {
         /* if this is a LINKed program, then restore old context
            rather than shutting down */
-        if (pdos->context->rblinkb != NULL)
+        if (pdos->context->rblinkb != 
+            &pdos->aspaces[pdos->curr_aspace].o.first_rb)
         {
             /* set ECB of person waiting */
             /* +++ needs to run at user priviledge */
@@ -2425,92 +2426,15 @@ static int pdosDumpMem(PDOS *pdos, char *tbuf, int cnt)
 
 static int pdosLoadPcomm(PDOS *pdos)
 {
-    char *load = (char *)PCOMM_LOAD;
-    /* Standard C programs can start at a predictable offset */
-    int (*entry)(void *) = (int (*)(void *))PCOMM_ENTRY;
-    static int savearea[20]; /* needs to be in user space */
     static char mvsparm[] = { "\x00" "\x02" "/P" };
-    static char *pptrs[1];
-    char tbuf[MAXBLKSZ];
-    int cnt = -1;
-    int lastcnt = 0;
-    int cyl;
-    int head;
-    int rec;
 
-    if (pdosFindFile(pdos, "COMMAND.EXE", &cyl, &head, &rec) != 0)
+    if (pdosLoadExe(pdos, "COMMAND", mvsparm) != 0)
     {
-        printf("can't find COMMAND.EXE\n");
+        printf("can't load COMMAND.EXE\n");
+        printf("PDOS terminating\n");
         return (-1);
     }
-    printf("PCOMM resides on cylinder %d, head %d, rec %d of IPL device %x\n",
-           cyl, head, rec, pdos->ipldev);
-    /* assume 1 MB max */
-    load = memmgrAllocate(&pdos->aspaces[pdos->curr_aspace].o.btlmem,
-                          1024 * 1024, 0);
-    /* round to 64k */
-    load = (char *)(((int)load & ~0xffff) + 0x10000);
-    /* Note that we read until we get EOF (a zero-length block). */
-    while (cnt != 0)
-    {
-#if DSKDEBUG
-        printf("loading to %p from %d, %d, %d\n", load,
-               cyl, head, rec);
-#endif
-        cnt = rdblock(pdos->ipldev, cyl, head, rec, tbuf, MAXBLKSZ);
-#if DSKDEBUG
-        printf("cnt is %d\n", cnt);
-#endif
-        if (cnt == -1)
-        {
-            if (lastcnt == -2)
-            {
-                printf("three I/O errors in a row - terminating load\n");
-                break;
-            }
-            else if (lastcnt == -1)
-            {
-#if DSKDEBUG
-                printf("probably last track on cylinder\n");
-#endif
-                /* probably reached last track on cylinder */
-                lastcnt = -2;
-                cyl++;
-                head = 0;
-                rec = 1;
-                continue;
-            }
-            /* probably reached last record on track */
-            lastcnt = -1;
-            rec = 1;
-            head++;
-            continue;
-        }
-        lastcnt = cnt;
-        memcpy(load, tbuf, cnt);
-        load += cnt;
-        rec++;
-    }
-    /* after EOF, position on the next cylinder */
-
-    pdos->context =
-        pdos->aspaces[pdos->curr_aspace].o.curr_rb =
-        &pdos->aspaces[pdos->curr_aspace].o.first_rb;
-    memset(pdos->context, 0x00, sizeof *pdos->context);
-    pdos->context->regs[13] = (int)savearea;
-    pdos->context->regs[14] = (int)gotret;
-    pdos->context->regs[15] = (int)entry;
-    pdos->context->psw1 = PSW_ENABLE_INT; /* need to enable interrupts */
-    pdos->context->psw2 = (int)entry; /* 24-bit mode for now */
-#if defined(S390)
-    pdos->context->psw2 |= 0x80000000; /* dispatch in 31-bit mode */
-#endif
-
-    pptrs[0] = mvsparm;
-    
-    pdos->context->regs[1] = (int)pptrs;
-    
-    return (1);
+    return (0);
 }
 
 

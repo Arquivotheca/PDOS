@@ -1282,8 +1282,15 @@ static void pdosProcessSVC(PDOS *pdos)
     {
         /* if this is a LINKed program, then restore old context
            rather than shutting down */
-        if (pdos->context->rblinkb != 
+        if (pdos->context->rblinkb == 
             &pdos->aspaces[pdos->curr_aspace].o.first_rb)
+        {
+            /* normally the OS would not exit on program end */
+            printf("return from PCOMM is %d\n", pdos->context->regs[15]);
+            pdos->shutdown = 1;
+            pdos->exitcode = pdos->context->regs[15];
+        }
+        else
         {
             /* set ECB of person waiting */
             /* +++ needs to run at user priviledge */
@@ -1301,13 +1308,6 @@ static void pdosProcessSVC(PDOS *pdos)
             /* free the memory that was allocated to the executable */
             memmgrFree(&pdos->aspaces[pdos->curr_aspace].o.btlmem,
                        pdos->context->next_exe);
-        }
-        else
-        {
-            /* normally the OS would not exit on program end */
-            printf("return from PCOMM is %d\n", pdos->context->regs[15]);
-            pdos->shutdown = 1;
-            pdos->exitcode = pdos->context->regs[15];
         }
     }
     else if ((svc == 120) || (svc == 10))

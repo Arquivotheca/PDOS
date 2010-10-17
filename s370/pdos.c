@@ -629,7 +629,7 @@ static void brkyd(int *year, int *month, int *day);
 static int pdosDumpBlk(PDOS *pdos, char *parm);
 static int pdosFindFile(PDOS *pdos, char *dsn, int *c, int *h, int *r);
 static int pdosLoadExe(PDOS *pdos, char *prog, char *parm);
-static int pdosFixPE(PDOS *pdos, char *initial, int len, int *entry);
+static int pdosFixPE(PDOS *pdos, char *initial, int *len, int *entry);
 static int pdosProcessRLD(PDOS *pdos, char *initial, char *rld, int len);
 static int pdosDumpMem(PDOS *pdos, char *tbuf, int cnt);
 #if 0
@@ -1859,6 +1859,7 @@ static int pdosLoadExe(PDOS *pdos, char *prog, char *parm)
         char endcchh[4];
     } dscb1;
     int pe = 0;
+    int exeLen;
 
     /* try to find the load module's location */
     
@@ -1933,7 +1934,6 @@ static int pdosLoadExe(PDOS *pdos, char *prog, char *parm)
         return (-1);
     }
     
-    pdos->context->next_exe = raw;
     /* round to 64k boundary */
     load = (char *)(((int)load & ~0xffff) + 0x10000);
     initial = load;
@@ -1987,16 +1987,27 @@ static int pdosLoadExe(PDOS *pdos, char *prog, char *parm)
         load += cnt;
         j++;
     }
-    
+
+    exeLen = load - initial;    
     if (pe)
     {
-        if (pdosFixPE(pdos, initial, load - initial, &entry) != 0)
+        int oldLen = exeLen;
+        
+        if (pdosFixPE(pdos, initial, &exeLen, &entry) != 0)
         {
-            memmgrFree(&pdos->aspaces[pdos->curr_aspace].o.btlmem,
-                       pdos->context->next_exe);
+            memmgrFree(&pdos->aspaces[pdos->curr_aspace].o.btlmem, raw);
             return (-1);
         }
+        exeLen += 0x1000; /* give some buffer */
+        if (exeLen < oldLen)
+        {
+            memmgrRealloc(&pdos->aspaces[pdos->curr_aspace].o.btlmem,
+                          raw, exeLen);
+        }
+        /* if we can't adjust down, don't care */
     }
+
+    pdos->context->next_exe = raw;
 
     /* get a new RB */
     pdos->context = memmgrAllocate(
@@ -2005,8 +2016,7 @@ static int pdosLoadExe(PDOS *pdos, char *prog, char *parm)
     if (pdos->context == NULL)
     {
         /* free the memory that was allocated to the executable */
-        memmgrFree(&pdos->aspaces[pdos->curr_aspace].o.btlmem,
-                   pdos->context->next_exe);
+        memmgrFree(&pdos->aspaces[pdos->curr_aspace].o.btlmem, raw);
         ret = -1;
     }
     else
@@ -2043,7 +2053,7 @@ static int pdosLoadExe(PDOS *pdos, char *prog, char *parm)
    and Appendix B of OS/390 DFSMSdfp Utilities SC26-7343-00
 */
 
-static int pdosFixPE(PDOS *pdos, char *initial, int len, int *entry)
+static int pdosFixPE(PDOS *pdos, char *initial, int *len, int *entry)
 {
     char *p;
     char *q;
@@ -2062,20 +2072,20 @@ static int pdosFixPE(PDOS *pdos, char *initial, int len, int *entry)
     int ent;
     int rec = 0;
     int corrupt = 1;
-    int rem = len;
+    int rem = *len;
     int l;
     int l2;
     int lastt = -1;
     char *lasttxt = NULL;
     char *upto = initial;
     
-    if ((len <= 8) || (*((int *)initial + 1) != 0xca6d0f))
+    if ((*len <= 8) || (*((int *)initial + 1) != 0xca6d0f))
     {
         printf("Not an MVS PE executable\n");
         return (-1);
     }
 #if 0
-    printf("MVS PE total length is %d\n", len);
+    printf("MVS PE total length is %d\n", *len);
 #endif
     p = initial;
     while (1)
@@ -2104,7 +2114,7 @@ static int pdosFixPE(PDOS *pdos, char *initial, int len, int *entry)
         {
             /* there should only be one directory entry, 
                which is 4 + 276 + 12 */
-            if (len < 292)
+            if (l < 292)
             {
                 break;
             }
@@ -2286,6 +2296,7 @@ static int pdosFixPE(PDOS *pdos, char *initial, int len, int *entry)
     printf("dumping new module\n");
     pdosDumpMem(pdos, initial, upto - initial);
 #endif
+    *len = upto - initial; /* return new module length */
     return (0);
 }
 

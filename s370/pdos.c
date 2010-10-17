@@ -784,7 +784,11 @@ int pdosInit(PDOS *pdos)
 #endif
     daton();
 
-    pdosLoadPcomm(pdos);
+    if (pdosLoadPcomm(pdos) != 0)
+    {
+        datoff();
+        return (0);
+    }
     return (1);
 }
 

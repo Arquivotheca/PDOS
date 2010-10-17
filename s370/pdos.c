@@ -629,6 +629,12 @@ static void brkyd(int *year, int *month, int *day);
 static int pdosDumpBlk(PDOS *pdos, char *parm);
 static int pdosFindFile(PDOS *pdos, char *dsn, int *c, int *h, int *r);
 static int pdosLoadExe(PDOS *pdos, char *prog, char *parm);
+static int pdosFixPE(PDOS *pdos, char *initial, int len);
+static int pdosProcessRLD(PDOS *pdos, char *initial, char *rld, int len);
+static int pdosDumpMem(PDOS *pdos, char *tbuf, int cnt);
+#if 0
+static int pdosLoadPE(PDOS *pdos, char *prog, char *parm);
+#endif
 static int pdosLoadPcomm(PDOS *pdos);
 
 static void split_cchhr(char *cchhr, int *cyl, int *head, int *rec);
@@ -1821,7 +1827,6 @@ static int pdosFindFile(PDOS *pdos, char *dsn, int *c, int *h, int *r)
 }
 
 
-
 /* load executable into memory, on a predictable 1 MB boundary,
    by requesting 5 MB */
 
@@ -1853,6 +1858,7 @@ static int pdosLoadExe(PDOS *pdos, char *prog, char *parm)
         char startcchh[4];
         char endcchh[4];
     } dscb1;
+    int pe = 0;
 
     /* try to find the load module's location */
     
@@ -1910,8 +1916,7 @@ static int pdosLoadExe(PDOS *pdos, char *prog, char *parm)
     cnt = rdblock(pdos->ipldev, cyl, head, rec, tbuf, MAXBLKSZ);
     if ((cnt > 8) && (*((int *)tbuf + 1) == 0xca6d0f))
     {
-        printf("MVS PE executable is not currently supported\n");
-        return (-1);
+        pe = 1;
     }
 
     /* assume 4 MB max */
@@ -1978,6 +1983,16 @@ static int pdosLoadExe(PDOS *pdos, char *prog, char *parm)
         load += cnt;
         j++;
     }
+    
+    if (pe)
+    {
+        if (pdosFixPE(pdos, initial, load - initial) != 0)
+        {
+            memmgrFree(&pdos->aspaces[pdos->curr_aspace].o.btlmem,
+                       pdos->context->next_exe);
+            return (-1);
+        }
+    }
 
     /* get a new RB */
     pdos->context = memmgrAllocate(
@@ -2017,6 +2032,365 @@ static int pdosLoadExe(PDOS *pdos, char *prog, char *parm)
 #endif
     }
     return (ret);
+}
+
+/* Structures here are documented in Appendix B and E of
+   MVS Program Management: Advanced Facilities SA22-7644-01
+   and Appendix B of OS/390 DFSMSdfp Utilities SC26-7343-00
+*/
+
+static int pdosFixPE(PDOS *pdos, char *initial, int len)
+{
+    char *p;
+    char *q;
+    int z;
+    typedef struct {
+        char pds2name[8];
+        char unused1[19];
+        char pds2epa[3];
+        char pds2ftb1;
+        char pds2ftb2;
+        char pds2ftb3;
+    } IHAPDS;
+    IHAPDS *ihapds;
+    int rmode;
+    int amode;
+    int ent;
+    int rec = 0;
+    int corrupt = 1;
+    int rem = len;
+    int l;
+    int l2;
+    int lastt = -1;
+    char *lasttxt = NULL;
+    char *upto = initial;
+    
+    if ((len <= 8) || (*((int *)initial + 1) != 0xca6d0f))
+    {
+        printf("Not an MVS PE executable\n");
+        return (-1);
+    }
+#if 0
+    printf("MVS PE total length is %d\n", len);
+#endif
+    p = initial;
+    while (1)
+    {
+        rec++;
+        l = *(short *)p;
+        /* keep track of remaining bytes, and ensure they really exist */
+        if (l > rem)
+        {
+            break;
+        }
+        rem -= l;
+#if 0
+        printf("rec %d, offset %d is len %d\n", rec, p - initial, l);
+#endif
+#if 0
+        if (1)
+        {
+            for (z = 0; z < l; z++)
+            {
+                printf("z %d %x %c\n", z, p[z], isprint(p[z]) ? p[z] : ' ');
+            }
+        }
+#endif
+        if (rec == 3) /* directory record */
+        {
+            /* there should only be one directory entry, 
+               which is 4 + 276 + 12 */
+            if (len < 292)
+            {
+                break;
+            }
+            q = p + 24;
+            l2 = *(short *)q;
+            if (l2 < 32) break;
+            ihapds = (IHAPDS *)(q + 2);
+            rmode = ihapds->pds2ftb2 & 0x10;
+            amode = (ihapds->pds2ftb2 & 0x0c) >> 2;
+            ent = 0;
+            memcpy((char *)&ent + sizeof(ent) - 3, ihapds->pds2epa, 3);
+#if 0
+            printf("module name is %.8s\n", ihapds->pds2name);
+            printf("rmode is %s\n", rmode ? "ANY" : "24");
+            printf("amode is ");
+            if (amode == 0)
+            {
+                printf("24");
+            }
+            else if (amode == 2)
+            {
+                printf("31");
+            }
+            else if (amode == 1)
+            {
+                printf("64");
+            }
+            else if (amode == 3)
+            {
+                printf("ANY");
+            }
+            printf("\n");
+            printf("entry point is %x\n", ent);
+#endif            
+        }
+        else if (rec > 3)
+        {
+            int t;
+            int r2;
+            int l2;
+            int term = 0;
+            
+            if (l < (4 + 12))
+            {
+                break;
+            }
+            q = p + 4 + 10;
+            r2 = l - 4 - 10;
+            while (1)
+            {
+                l2 = *(short *)q;
+                r2 -= sizeof(short);
+                if (l2 > r2)
+                {
+                    term = 1;
+                    break;
+                }
+                r2 -= l2;
+
+                if (l2 == 0) break;
+                q += sizeof(short);
+#if 0
+                printf("load module record is of type %2x (len %5d)"
+                       " offset %d\n", 
+                       *q, l2, q - p);
+#endif
+
+                t = *q;
+                if ((lastt == 1) || (lastt == 3))
+                {
+#if 0
+                    printf("rectype: program text\n");
+                    pdosDumpMem(pdos, q, l2);
+#endif
+                    lasttxt = q;
+                    memmove(upto, q, l2);
+                    upto += l2;
+                    t = -1;
+                }
+                else if (t == 0x20)
+                {
+                    /* printf("rectype: CESD\n"); */
+                }
+                else if (t == 1)
+                {
+                    /* printf("rectype: Control\n"); */
+                }
+                else if (t == 2)
+                {
+                    /* printf("rectype: RLD\n"); */
+                    if (pdosProcessRLD(pdos, initial, q, l2) != 0)
+                    {
+                        term = 1;
+                        break;
+                    }
+                }
+                else if (t == 3)
+                {
+                    int l3;
+                    
+                    /* printf("rectype: Dicionary = Control + RLD\n"); */
+                    l3 = *(short *)(q + 6) + 16;
+#if 0
+                    printf("l3 is %d\n", l3);
+                    pdosDumpMem(pdos, q, l2);
+#endif
+                    if (pdosProcessRLD(pdos, initial, q, l3) != 0)
+                    {
+                        term = 1;
+                        break;
+                    }
+                }
+                else if (t == 0xe)
+                {
+                    /* printf("rectype: Last record of module\n"); */
+                    if (pdosProcessRLD(pdos, initial, q, l2) != 0)
+                    {
+                        term = 1;
+                        break;
+                    }
+                    term = 1;
+                    corrupt = 0;
+                    break;
+                }
+                else if (t == 0x80)
+                {
+                    /* printf("rectype: CSECT\n"); */
+                }
+                else
+                {
+                    /* printf("rectype: unknown %x\n", t); */
+                }
+#if 0
+                if ((t == 0x20) || (t == 2))
+                {
+                    for (z = 0; z < l; z++)
+                    {
+                        printf("z %d %x %c\n", z, q[z], 
+                               isprint(q[z]) ? q[z] : ' ');
+                    }
+                }
+#endif
+                lastt = t;
+
+                q += l2;
+                if (r2 == 0)
+                {
+                    /* printf("another clean exit\n"); */
+                    break;
+                }
+                else if (r2 < (10 + sizeof(short)))
+                {
+                    /* printf("another unclean exit\n"); */
+                    term = 1;
+                    break;
+                }
+                r2 -= 10;
+                q += 10;
+            }
+            if (term) break;            
+        }
+        p = p + l;
+        if (rem == 0)
+        {
+            /* printf("breaking cleanly\n"); */
+        }
+        else if (rem < 2)
+        {
+            break;
+        }
+    }
+    if (corrupt)
+    {
+        printf("corrupt module\n");
+        return (-1);
+    }
+#if 0
+    printf("dumping new module\n");
+    pdosDumpMem(pdos, initial, upto - initial);
+#endif
+    return (0);
+}
+
+
+static int pdosProcessRLD(PDOS *pdos, char *initial, char *rld, int len)
+{
+    int l;
+    char *r;
+    int cont = 0;
+    char *fin;
+    int negative;
+    int ll;
+    int a;
+    int newval;
+    int *zaploc;
+    
+    r = rld + 16;
+    fin = rld + len;
+    while (r != fin)
+    {
+        if (!cont)
+        {
+            r += 4; /* skip R & P */
+            if (r >= fin)
+            {
+                printf("corrupt1 at position %x\n", r - rld - 4);
+                return (-1);
+            }
+        }
+        negative = *r & 0x02;
+        ll = (*r & 0x0c) >> 2;
+        ll++;
+        if (ll != 4)
+        {
+            printf("untested and unsupported relocation\n");
+            return (-1);
+        }
+        cont = *r & 0x01; /* do we have A & F continous? */
+        r++;
+        if ((r + 3) > fin)
+        {
+            printf("corrupt2 at position %x\n", r - rld);
+            return (-1);
+        }
+        a = 0;
+        memcpy((char *)&a + sizeof(a) - 3, r, 3);
+        /* +++ need bounds checking on this OS code */
+        /* printf("need to zap %d bytes at offset %6x\n", ll, a); */
+        zaploc = (int *)(initial + a);
+        newval = *zaploc;
+        /* printf("which means that %8x ", newval); */
+        newval += (int)initial;
+        /* printf("becomes %8x\n", newval); */
+        *zaploc = newval;
+        r += 3;
+    }
+    return (0);
+}
+
+
+static int pdosDumpMem(PDOS *pdos, char *tbuf, int cnt)
+{
+    int ret = 0;
+    int c, pos1, pos2;
+    long x = 0L;
+    char prtln[100];
+    long i;
+    long start = 0;
+
+    if (cnt > 0)
+    {
+        for (i = 0; i < cnt; i++)
+        {
+            c = tbuf[i];
+            if (x % 16 == 0)
+            {
+                memset(prtln, ' ', sizeof prtln);
+                sprintf(prtln, "%0.6lX   ", start + x);
+                pos1 = 8;
+                pos2 = 45;
+            }
+            sprintf(prtln + pos1, "%0.2X", c);
+            if (isprint((unsigned char)c))
+            {
+                sprintf(prtln + pos2, "%c", c);
+            }
+            else
+            {
+                sprintf(prtln + pos2, ".");
+            }
+            pos1 += 2;
+            *(prtln + pos1) = ' ';
+            pos2++;
+            if (x % 4 == 3)
+            {
+                *(prtln + pos1++) = ' ';
+            }
+            if (x % 16 == 15)
+            {
+                printf("%s\n", prtln);
+            }
+            x++;
+        }
+        if (x % 16 != 0)
+        {
+            printf("%s\n", prtln);
+        }
+    }
+    
+    return (0);
 }
 
 

@@ -845,20 +845,42 @@ static int pdosDispatchUntilInterrupt(PDOS *pdos)
             char *buf;
             int cr = 0;
             char tbuf[MAXBLKSZ];
+            char *fin;
+            int l;
+            char *p;
+            char *q;
 
             len = pdos->context->regs[5];
 #if 0
             printf("got a request to write block len %d\n", len);
 #endif
-            /* assume RECFM=U, with caller providing NL */
             buf = (char *)pdos->context->regs[4];
-            if ((len > 0) && (buf[len - 1] == '\n'))
+            /* assume RECFM=U, with caller providing NL */            
+            /* although this was specified to be a unit record
+               device, some applications ignore that, so be prepared
+               for more than one NL */
+            fin = buf + len;
+            p = buf;
+            while (p < fin)
             {
-                len--;
-                cr = 1; /* assembler needs to do with CR */
+                q = memchr(p, '\n', fin - p);
+                if (q == NULL)
+                {
+                    cr = 0;
+                    q = fin;
+                }
+                else
+                {
+                    cr = 1; /* assembler needs to do with CR */
+                }
+                memcpy(tbuf, p, q - p);
+                __conswr(q - p, tbuf, cr);
+                p = q;
+                if (cr)
+                {
+                    p++;
+                }
             }
-            memcpy(tbuf, buf, len);
-            __conswr(len, tbuf, cr);
         }
         else if (ret == 3) /* got a READ request */
         {

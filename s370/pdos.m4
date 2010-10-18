@@ -263,6 +263,24 @@ undivert(world.s)/*
 //SYSIN    DD  DUMMY
 //*
 //IEBCOPY  EXEC PGM=IEBCOPY
+//SYSUT1   DD DSN=GCC.LINKLIB,DISP=SHR
+//SYSUT2   DD DSN=&&COPY,SPACE=(CYL,(1,1)),UNIT=SYSALLDA,
+//         DISP=(NEW,PASS)
+//SYSPRINT DD SYSOUT=*
+//SYSIN DD *
+ COPY INDD=((SYSUT1,R)),OUTDD=SYSUT2
+ SELECT MEMBER=GCC
+/*
+//*
+//COPYFILE EXEC PGM=COPYFILE,PARM='-bb dd:in dd:out'
+//STEPLIB  DD  DSN=PDPCLIB.LINKLIB,DISP=SHR
+//IN       DD  DSN=&&COPY,DISP=(OLD,DELETE)
+//OUT      DD  DSN=&&HEX(GCC),DISP=(OLD,PASS)
+//SYSPRINT DD  SYSOUT=*
+//SYSTERM  DD  SYSOUT=*
+//SYSIN    DD  DUMMY
+//*
+//IEBCOPY  EXEC PGM=IEBCOPY
 //SYSUT1   DD DSN=&&LOADLIB,DISP=(OLD,PASS)
 //SYSUT2   DD DSN=&&COPY,SPACE=(CYL,(1,1)),UNIT=SYSALLDA,
 //         DISP=(NEW,PASS)
@@ -317,6 +335,15 @@ dumpblk 0 0 1
 
 echo let's run a program
 world aBc DeF
+
+echo what version of GCC do we have here?
+gcc --version
+
+echo what options does GCC have?
+gcc --help
+
+echo let's do a compile already!
+gcc -S -o - sample.c
 
 echo that's enough for now - enter further commands yourself!
 /*

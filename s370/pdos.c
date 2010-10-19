@@ -624,6 +624,7 @@ void pdosDefaults(PDOS *pdos);
 int pdosInit(PDOS *pdos);
 void pdosTerm(PDOS *pdos);
 static int pdosDispatchUntilInterrupt(PDOS *pdos);
+static void pdosDumpregs(PDOS *pdos);
 static void pdosInitAspaces(PDOS *pdos);
 static void pdosProcessSVC(PDOS *pdos);
 static int pdosDoDIR(PDOS *pdos, char *parm);
@@ -849,12 +850,25 @@ static int pdosDispatchUntilInterrupt(PDOS *pdos)
             int l;
             char *p;
             char *q;
+            char *decb;
+            int *pptr;
 
-            len = pdos->context->regs[5];
+            /* A write request has R1 pointing to a parameter list
+               (of fullwords).
+               first parameter is unknown/unspecified.
+               second parameter is 16 bits of unknown data followed
+               by a halfword length of buffer to write.
+               third parameter is the DECB, whatever that is.
+               fourth parameter is the buffer to be written. */
+
+            pptr = (int *)pdos->context->regs[1];
+            len = pptr[1] & 0xffff;
+            buf = (char *)pptr[3];
+            decb = (char *)pptr[2];
+
 #if 0
-            printf("got a request to write block len %d\n", len);
+            printf("got a request to write block %p, len %d\n", buf, len);
 #endif
-            buf = (char *)pdos->context->regs[4];
             /* assume RECFM=U, with caller providing NL */            
             /* although this was specified to be a unit record
                device, some applications ignore that, so be prepared
@@ -959,6 +973,52 @@ static int pdosDispatchUntilInterrupt(PDOS *pdos)
         }
     }
     return (INTERRUPT_SVC); /* only doing SVCs at the moment */
+}
+
+
+static void pdosDumpregs(PDOS *pdos)
+{
+    int x;
+    int alt1;
+    int p;
+    int alt2;
+    
+    p = pdos->context->regs[1];
+    p &= 0x7fffffff;
+    if ((p >= 0) && (p < MAXASIZE * 1024 * 1024))
+    {
+        /* nothing */
+    }
+    else
+    {
+        p = 0;
+    }
+    for (x = 0; x < 16; x++)
+    {
+        alt1 = pdos->context->regs[x];
+        alt1 &= 0x7fffffff;
+        if ((alt1 >= 0) && (alt1 < MAXASIZE * 1024 * 1024))
+        {
+            alt1 = *(int *)alt1;
+        }
+        else
+        {
+            alt1 = -1;
+        }        
+        alt2 = ((int *)p)[x];
+        alt2 &= 0x7fffffff;
+        if ((alt2 >= 0) && (alt2 < MAXASIZE * 1024 * 1024))
+        {
+            alt2 = *(int *)alt2;
+        }
+        else
+        {
+            alt2 = -1;
+        }        
+        printf("register %2d is %08X, alt %08X, parm %08X %08X\n",
+               x, pdos->context->regs[x], alt1, ((int *)p)[x], alt2);
+    }
+    return;
 }
 
 

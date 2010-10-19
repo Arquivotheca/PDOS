@@ -851,20 +851,22 @@ static int pdosDispatchUntilInterrupt(PDOS *pdos)
             char *p;
             char *q;
             char *decb;
+            DCB *dcb;
             int *pptr;
 
             /* A write request has R1 pointing to a parameter list
-               (of fullwords).
+               (of fullwords and more), known as the DECB.
                first parameter is unknown/unspecified.
                second parameter is 16 bits of unknown data followed
                by a halfword length of buffer to write.
-               third parameter is the DECB, whatever that is.
+               third parameter is the DCB.
                fourth parameter is the buffer to be written. */
 
+            decb = (char *)pptr;
             pptr = (int *)pdos->context->regs[1];
             len = pptr[1] & 0xffff;
             buf = (char *)pptr[3];
-            decb = (char *)pptr[2];
+            dcb = (DCB *)pptr[2];
 
 #if 0
             printf("got a request to write block %p, len %d\n", buf, len);
@@ -898,14 +900,26 @@ static int pdosDispatchUntilInterrupt(PDOS *pdos)
         }
         else if (ret == 3) /* got a READ request */
         {
-            char *p;
+            int len;
+            char *buf;
             char tbuf[MAXBLKSZ];
             int cnt;
             char *decb;
             DCB *dcb;
+            int *pptr;
 
+            /* A read request has R1 pointing to a parameter list
+               (of fullwords and more), known as the DECB.
+               first parameter is unknown/unspecified.
+               second parameter is 16 bits of unknown data followed
+               by a halfword length of buffer to read.
+               third parameter is the DCB.
+               fourth parameter is the buffer to contain data read. */
             /* we know that they are using R10 for DCB */
-            dcb = (DCB *)pdos->context->regs[10];
+            pptr = (int *)pdos->context->regs[1];
+            len = pptr[1] & 0xffff;
+            buf = (char *)pptr[3];
+            dcb = (DCB *)pptr[2];
 #if 0
             printf("dcb read is for lrecl %d\n", dcb->dcblrecl);
 #endif
@@ -927,24 +941,24 @@ static int pdosDispatchUntilInterrupt(PDOS *pdos)
                 split_cchhr(dcb->dcbfdad + 3, &cyl, &head, &rec);
                 rec++;
 #if DSKDEBUG
-                printf("reading into %x from %d, %d, %d\n",
-                       pdos->context->regs[8],
+                printf("reading into %p from %d, %d, %d\n",
+                       buf,
                        cyl, head, rec);
 #endif
                 cnt = rdblock(pdos->ipldev, cyl, head, rec, 
-                              tbuf, pdos->context->regs[9]);
+                              tbuf, len);
                 if (cnt < 0)
                 {
                     rec = 0;
                     head++;
                     cnt = rdblock(pdos->ipldev, cyl, head, rec, 
-                                  tbuf, pdos->context->regs[9]);
+                                  tbuf, len);
                     if (cnt < 0)
                     {
                         head = 0;
                         cyl++;
                         cnt = rdblock(pdos->ipldev, cyl, head, rec, 
-                                      tbuf, pdos->context->regs[9]);
+                                      tbuf, len);
                     }
                 }
 #if DSKDEBUG
@@ -962,12 +976,8 @@ static int pdosDispatchUntilInterrupt(PDOS *pdos)
             }
             else
             {
-                /* we know that they are using R8 for the buffer, via
-                   the READ macro */
-                p = (char *)pdos->context->regs[8];
-                memcpy(p, tbuf, cnt);
-                geniob.residual = (short)(pdos->context->regs[9] - cnt);
-                decb = (char *)pdos->context->regs[1];
+                memcpy(buf, tbuf, cnt);
+                geniob.residual = (short)(len - cnt);
                 *(IOB **)(decb + 16) = &geniob;
             }
         }

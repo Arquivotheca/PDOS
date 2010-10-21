@@ -369,8 +369,7 @@ DCHECK   DS    0H
 *  DEXIT - DCB exit                                                  *
 *                                                                    *
 *  This is for when very annoying people have used a DCB exit which  *
-*  needs to be called in the middle of doing an open or RDJFCB       *
-*  (I wonder which one?)                                             *
+*  needs to be called in the middle of doing an OPEN                 *
 *                                                                    *
 *  They are expecting a DCB in R1                                    *
 *                                                                    *

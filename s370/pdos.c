@@ -1511,8 +1511,6 @@ static void pdosProcessSVC(PDOS *pdos)
     }
     else if (svc == 64) /* rdjfcb */
     {
-        int oneexit;
-
         pdos->context->regs[15] = 0;
         gendcb = (DCB *)pdos->context->regs[10]; 
             /* need to protect against this */
@@ -1545,6 +1543,15 @@ static void pdosProcessSVC(PDOS *pdos)
         gendcb->u2.dcbrecfm |= DCBRECU;
         gendcb->dcblrecl = 0;
         gendcb->dcbblksi = 18452;
+    }
+    else if (svc == 22) /* open */
+    {
+        int oneexit;
+        unsigned int ocode;
+
+        ocode = *(int *)pdos->context->regs[1];
+        ocode >>= 24;
+        pdos->context->regs[15] = 0;
         gendcb->dcbcheck = (int)dcheck;
         oneexit = gendcb->u2.dcbexlsa & 0xffffff;
         if (oneexit != 0)
@@ -1555,14 +1562,6 @@ static void pdosProcessSVC(PDOS *pdos)
                 dexit(oneexit, gendcb);
             }
         }
-    }
-    else if (svc == 22) /* open */
-    {
-        unsigned int ocode;
-
-        ocode = *(int *)pdos->context->regs[1];
-        ocode >>= 24;
-        pdos->context->regs[15] = 0;
         if (ocode == 0x80) /* in */
         {
 #if 0

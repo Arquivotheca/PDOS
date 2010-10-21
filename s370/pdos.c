@@ -855,12 +855,14 @@ static int pdosDispatchUntilInterrupt(PDOS *pdos)
             int *pptr;
 
             /* A write request has R1 pointing to a parameter list
-               (of fullwords and more), known as the DECB.
-               first parameter is unknown/unspecified.
-               second parameter is 16 bits of unknown data followed
-               by a halfword length of buffer to write.
-               third parameter is the DCB.
-               fourth parameter is the buffer to be written. */
+               (of fullwords etc), known as the DECB.
+               first is the ECB (fullword)
+               then 8 bits of read flags
+               then 8 bits of write flags
+               then halfword length of buffer to write.
+               then DCB address (fullword)
+               then buffer address (fullword)
+               then optional record address (fullword) */
 
             decb = (char *)pptr;
             pptr = (int *)pdos->context->regs[1];
@@ -909,13 +911,15 @@ static int pdosDispatchUntilInterrupt(PDOS *pdos)
             int *pptr;
 
             /* A read request has R1 pointing to a parameter list
-               (of fullwords and more), known as the DECB.
-               first parameter is unknown/unspecified.
-               second parameter is 16 bits of unknown data followed
-               by a halfword length of buffer to read.
-               third parameter is the DCB.
-               fourth parameter is the buffer to contain data read. */
-            /* we know that they are using R10 for DCB */
+               (of fullwords etc), known as the DECB.
+               first is the ECB (fullword)
+               then 8 bits of read flags
+               then 8 bits of write flags
+               then halfword length of buffer to read.
+               then DCB address (fullword)
+               then buffer address (fullword)
+               then optional record address (fullword) */
+
             pptr = (int *)pdos->context->regs[1];
             len = pptr[1] & 0xffff;
             buf = (char *)pptr[3];

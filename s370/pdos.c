@@ -1600,8 +1600,14 @@ static void pdosProcessSVC(PDOS *pdos)
         char *prog;
         char *parm;
         int newcont = -1;
+        struct {
+            int eploc;
+            int unused1;
+            int ecb;
+        } *sysatlst;
         
-        prog = (char *)pdos->context->regs[2];
+        sysatlst = (void *)pdos->context->regs[15];
+        prog = (char *)sysatlst->eploc;
 #if 0
         printf("got request to run %.8s\n", prog);
 #endif
@@ -1610,10 +1616,10 @@ static void pdosProcessSVC(PDOS *pdos)
         printf("parameter string is %d bytes\n", *(short *)parm);
 #endif
         
-        /* r3 has ECB which is where return code is meant to go */
-        /* we save that in our current RB. But does it belong
-           in the next one? Or somewhere else? */
-        pdos->context->postecb = (ECB *)pdos->context->regs[3];
+        /* We save the ECB (which specifies where the return code
+           is meant to go) in our current RB. But does it logically
+           belong in this one or the next? Or somewhere else entirely */
+        pdos->context->postecb = (ECB *)(sysatlst->ecb & 0xffffff);
 
         /* special exception for special program to look at
            disk blocks */

@@ -383,7 +383,7 @@ typedef struct {
     char unused1a[5];
     char dcbfdad[8];
     char unused1b[19];
-    int *eodad;
+    int  eodad;
     union
     {
         char dcbrecfm;
@@ -972,11 +972,9 @@ static int pdosDispatchUntilInterrupt(PDOS *pdos)
             }
             if (cnt <= 0)
             {
-                /* need to call EOF routine */
-                /* printf("eodad routine has %p %x in it\n", gendcb->eodad,
-                          *gendcb->eodad); */
-                /* EOF routine usually sets R6 to 1, so just do it */
-                pdos->context->regs[6] = 1;
+                /* need to return to EOF routine - don't need to
+                   return here */
+                pdos->context->psw2 = dcb->eodad;
             }
             else
             {

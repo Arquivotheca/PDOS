@@ -1417,7 +1417,7 @@ static void pdosProcessSVC(PDOS *pdos)
             || ((svc == 120) && (pdos->context->regs[1] == 0)))
         {
             pdos->context->regs[15] = 0;
-            if (pdos->context->regs[0] < 16000000L)
+            if (pdos->context->regs[0] < (16 * 1024 * 1024))
             {
                 getmain = (int)memmgrAllocate(
                     &pdos->aspaces[pdos->curr_aspace].o.btlmem,
@@ -1459,7 +1459,7 @@ static void pdosProcessSVC(PDOS *pdos)
             printf("freeing r0 %x, r1 %x\n",
                     pdos->context->regs[0], pdos->context->regs[1]);
 #endif
-            if (pdos->context->regs[1] < 16000000L)
+            if (pdos->context->regs[1] < (16 * 1024 * 1024))
             {
                 memmgrFree(&pdos->aspaces[pdos->curr_aspace].o.btlmem,
                            (char *)pdos->context->regs[1]);
@@ -1509,13 +1509,22 @@ static void pdosProcessSVC(PDOS *pdos)
     }
     else if (svc == 64) /* rdjfcb */
     {
+        int *p;
+
         pdos->context->regs[15] = 0;
-        gendcb = (DCB *)pdos->context->regs[10]; 
-            /* need to protect against this */
-            /* and it's totally wrong anyway */
+        p = (int *)pdos->context->regs[1];
+        /* DCB is pointed to by first parameter */
+        /* needs validation */
+        gendcb = (DCB *)(p[0] & 0xffffff);
 #if 0
         printf("got rdjfcb for %.8s\n", gendcb->dcbddnam);
 #endif
+        /* we assume that any SYS files are terminal input/output,
+           which by default they certainly are. Anything else, we
+           assume that it is a reference to the most recent dynamic
+           allocation, since there is normally a dynamic allocation,
+           rdjfcb then open sequence. We should really have a TIOT
+           table and look that up though. */
         if (memcmp(gendcb->dcbddnam, "SYS", 3) != 0)
         {
             int cyl;            
@@ -1538,6 +1547,9 @@ static void pdosProcessSVC(PDOS *pdos)
                     something sensible, and then go no further */
             }
         }
+        /* we only support RECFM=U files currently */
+        /* for non-SYS files we should really get this info from
+           the VTOC */
         gendcb->u2.dcbrecfm |= DCBRECU;
         gendcb->dcblrecl = 0;
         gendcb->dcbblksi = 18452;

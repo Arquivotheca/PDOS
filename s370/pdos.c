@@ -977,7 +977,8 @@ static int pdosDispatchUntilInterrupt(PDOS *pdos)
             {
                 /* need to return to EOF routine - don't need to
                    return here */
-                pdos->context->psw2 = dcb->eodad;
+                pdos->context->psw2 = ((dcb->eodad & 0x7fffffff)
+                                       | (pdos->context->psw2 & 0x80000000));
             }
             else
             {

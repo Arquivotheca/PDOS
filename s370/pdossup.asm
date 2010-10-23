@@ -308,9 +308,7 @@ GOTRET   DS    0H
 DREAD    DS    0H
          STM   R0,R15,FLCGRSAV        Save application registers
          ST    R14,SVCOPSW+4
-         AIF   ('&SYS' EQ 'S390').MOD31G
-         MVI   SVCOPSW+4,X'00'
-.MOD31G  ANOP
+         NI    SVCOPSW+4,X'80'
          LM    R0,R15,FLCCRSAV        Load OS registers
 *
 * We need to return to 31-bit mode, which PDOS may be operating in.
@@ -334,9 +332,7 @@ DREAD    DS    0H
 DWRITE   DS    0H
          STM   R0,R15,FLCGRSAV        Save application registers
          ST    R14,SVCOPSW+4
-         AIF   ('&SYS' EQ 'S390').MOD31D
-         MVI   SVCOPSW+4,X'00'
-.MOD31D  ANOP
+         NI    SVCOPSW+4,X'80'
          LM    R0,R15,FLCCRSAV        Load OS registers
 *
 * We need to return to 31-bit mode, which PDOS may be operating in.

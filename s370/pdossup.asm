@@ -78,7 +78,7 @@ WAITER1  DC    X'000E0000'  machine check, EC, wait
          DC    X'00000111'  error 111
 WAITER2  DC    X'000E0000'  machine check, EC, wait
          DC    X'00000222'  error 222
-WAITER3  DC    X'000E0000'  machine check, EC, wait
+WAITER3  DC    X'040E0000'  machine check, EC, wait, dat on
          DC    X'00000333'  error 333
 NEWSVC   DC    X'040C0000'  machine check, EC, DAT on
          AIF   ('&SYS' EQ 'S370').MOD24B

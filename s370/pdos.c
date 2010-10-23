@@ -1575,6 +1575,23 @@ static void pdosProcessSVC(PDOS *pdos)
             gendcb->u1.dcboflgs |= DCBOFOPN;
         }
     }
+    else if (svc == 35) /* WTO */
+    {
+        char *p;
+        int len;
+        int flags;
+
+        p = (char *)pdos->context->regs[1];
+        len = *(short *)p;
+        if (len >= (2 * sizeof(short)))
+        {
+            len -= (2 * sizeof(short));
+        }
+        p += sizeof(short);
+        flags = *(short *)p;
+        p += sizeof(short);
+        printf("%.*s\n", len, p);
+    }
     else if (svc == 42) /* attach */
     {
         char *prog;
@@ -2273,6 +2290,8 @@ static int pdosLoadExe(PDOS *pdos, char *prog, char *parm)
    and Appendix B of OS/390 DFSMSdfp Utilities SC26-7343-00
 */
 
+#define PE_DEBUG 0
+
 static int pdosFixPE(PDOS *pdos, char *initial, int *len, int *entry)
 {
     char *p;
@@ -2304,7 +2323,7 @@ static int pdosFixPE(PDOS *pdos, char *initial, int *len, int *entry)
         printf("Not an MVS PE executable\n");
         return (-1);
     }
-#if 0
+#if PE_DEBUG
     printf("MVS PE total length is %d\n", *len);
 #endif
     p = initial;
@@ -2318,7 +2337,7 @@ static int pdosFixPE(PDOS *pdos, char *initial, int *len, int *entry)
             break;
         }
         rem -= l;
-#if 0
+#if PE_DEBUG
         printf("rec %d, offset %d is len %d\n", rec, p - initial, l);
 #endif
 #if 0
@@ -2347,7 +2366,7 @@ static int pdosFixPE(PDOS *pdos, char *initial, int *len, int *entry)
             ent = 0;
             memcpy((char *)&ent + sizeof(ent) - 3, ihapds->pds2epa, 3);
             *entry = (int)(initial + ent);
-#if 0
+#if PE_DEBUG
             printf("module name is %.8s\n", ihapds->pds2name);
             printf("rmode is %s\n", rmode ? "ANY" : "24");
             printf("amode is ");
@@ -2397,16 +2416,16 @@ static int pdosFixPE(PDOS *pdos, char *initial, int *len, int *entry)
 
                 if (l2 == 0) break;
                 q += sizeof(short);
-#if 0
+#if PE_DEBUG
                 printf("load module record is of type %2x (len %5d)"
                        " offset %d\n", 
                        *q, l2, q - p);
 #endif
 
                 t = *q;
-                if ((lastt == 1) || (lastt == 3))
+                if ((lastt == 1) || (lastt == 3) || (lastt == 0x0d))
                 {
-#if 0
+#if PE_DEBUG
                     printf("rectype: program text\n");
                     pdosDumpMem(pdos, q, l2);
 #endif
@@ -2414,6 +2433,12 @@ static int pdosFixPE(PDOS *pdos, char *initial, int *len, int *entry)
                     memmove(upto, q, l2);
                     upto += l2;
                     t = -1;
+                    if (lastt == 0x0d)
+                    {
+                        term = 1;
+                        corrupt = 0;
+                        break;
+                    }
                 }
                 else if (t == 0x20)
                 {
@@ -2422,6 +2447,10 @@ static int pdosFixPE(PDOS *pdos, char *initial, int *len, int *entry)
                 else if (t == 1)
                 {
                     /* printf("rectype: Control\n"); */
+                }
+                else if (t == 0x0d)
+                {
+                    /* printf("rectype: Control, about to end\n"); */
                 }
                 else if (t == 2)
                 {
@@ -2448,7 +2477,7 @@ static int pdosFixPE(PDOS *pdos, char *initial, int *len, int *entry)
                         break;
                     }
                 }
-                else if (t == 0xe)
+                else if (t == 0x0e)
                 {
                     /* printf("rectype: Last record of module\n"); */
                     if (pdosProcessRLD(pdos, initial, q, l2) != 0)
@@ -2483,7 +2512,9 @@ static int pdosFixPE(PDOS *pdos, char *initial, int *len, int *entry)
                 q += l2;
                 if (r2 == 0)
                 {
-                    /* printf("another clean exit\n"); */
+#if PE_DEBUG
+                    printf("another clean exit\n");
+#endif
                     break;
                 }
                 else if (r2 < (10 + sizeof(short)))
@@ -2500,7 +2531,9 @@ static int pdosFixPE(PDOS *pdos, char *initial, int *len, int *entry)
         p = p + l;
         if (rem == 0)
         {
-            /* printf("breaking cleanly\n"); */
+#if PE_DEBUG
+            printf("breaking cleanly\n");
+#endif
         }
         else if (rem < 2)
         {

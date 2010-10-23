@@ -722,10 +722,7 @@ int pdosInit(PDOS *pdos)
     }
     if (__consdn == 0)
     {
-        char tbuf[MAXBLKSZ + 1];
-        char *p;
-        char *q;
-        char *r;
+        char tbuf[MAXBLKSZ + 2];
         int cnt;
 
 #if DSKDEBUG
@@ -741,28 +738,32 @@ int pdosInit(PDOS *pdos)
         /* find out which device console really is */
         if (cnt > 0)
         {
-            tbuf[cnt] = '\0';
-            p = strstr(tbuf, "3215-C");
-            /* make sure sentinel exists */
-            if ((p != NULL) && (strchr(p, '\n') != NULL))
+            char *p;
+            char *q;
+            char *fin;
+            int ctr = 0;
+
+            strcpy(tbuf + cnt, "\n"); /* ensure sentinel */
+            fin = tbuf + cnt;
+            p = tbuf;
+            while (p < fin)
             {
-                cnt = 0;
-                r = tbuf; /* yeah, we'll miss the first line if any, 
-                             so sue me */
-                while ((q = strchr(r + 1, '\n')) < p)
+                q = strchr(p, '\n');
+                *q = '\0';
+                if (isdigit((unsigned char)p[0]))
                 {
-                    if (isdigit((unsigned char)*(q + 1)))
+                    ctr++;
+                    if (strstr(p, "3215") != NULL)
                     {
-                        cnt++;
-                    }
-                    r = q;
-                }
-                cnt--;
 #if defined(S390)
-                __consdn = 0x10000 + cnt;
+                        __consdn = 0x10000 + ctr;
 #else
-                sscanf(r + 1, "%x", &__consdn);
+                        sscanf(p, "%x", &__consdn);
 #endif
+                        break;
+                    }
+                }
+                p = q + 1;
             }
         }
     }

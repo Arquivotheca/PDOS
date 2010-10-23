@@ -608,6 +608,7 @@ typedef struct {
 
 static DCB *gendcb = NULL; /* +++ need to eliminate this state info */
 static IOB geniob; /* +++ move this somewhere */
+static char lastds[FILENAME_MAX]; /* needs to be in TIOT */
 
 void gotret(void);
 int adisp(void);
@@ -627,6 +628,7 @@ static int pdosDispatchUntilInterrupt(PDOS *pdos);
 static void pdosDumpregs(PDOS *pdos);
 static void pdosInitAspaces(PDOS *pdos);
 static void pdosProcessSVC(PDOS *pdos);
+static void pdosSVC99(PDOS *pdos);
 static int pdosDoDIR(PDOS *pdos, char *parm);
 static void brkyd(int *year, int *month, int *day);
 static int pdosDumpBlk(PDOS *pdos, char *parm);
@@ -634,7 +636,7 @@ static int pdosFindFile(PDOS *pdos, char *dsn, int *c, int *h, int *r);
 static int pdosLoadExe(PDOS *pdos, char *prog, char *parm);
 static int pdosFixPE(PDOS *pdos, char *initial, int *len, int *entry);
 static int pdosProcessRLD(PDOS *pdos, char *initial, char *rld, int len);
-static int pdosDumpMem(PDOS *pdos, char *tbuf, int cnt);
+static int pdosDumpMem(PDOS *pdos, void *buf, int cnt);
 #if 0
 static int pdosLoadPE(PDOS *pdos, char *prog, char *parm);
 #endif
@@ -1368,7 +1370,6 @@ static void pdosInitAspaces(PDOS *pdos)
 
 static void pdosProcessSVC(PDOS *pdos)
 {
-    static char lastds[FILENAME_MAX];
     int svc;
     int getmain;
        /* should move to PDOS and use memmgr - but virtual memory
@@ -1473,30 +1474,7 @@ static void pdosProcessSVC(PDOS *pdos)
     }
     else if (svc == 99)
     {
-        int cyl;
-        int head;
-        int rec;
-        
-        /* dataset name is usually in R7 */
-#if 0
-        printf("dynalloc for %.44s\n", pdos->context->regs[7]);
-        /* ddname is usually 6 bytes from R2 */
-        printf("ddname is %p %.8s\n", pdos->context->regs[2] + 6,
-            pdos->context->regs[2] + 6);
-#endif
-        /* save dataset away */        
-        sprintf(lastds, "%.44s", pdos->context->regs[7]);
-        if (pdosFindFile(pdos, lastds, &cyl, &head, &rec) != 0)
-        {
-            strcpy(lastds, "");
-            pdos->context->regs[15] = 12;
-            pdos->context->regs[0] = 12;
-        }
-        else
-        {
-            pdos->context->regs[15] = 0;
-            pdos->context->regs[0] = 0;
-        }
+        pdosSVC99(pdos);
     }
     else if (svc == 24) /* devtype */
     {
@@ -1662,6 +1640,132 @@ static void pdosProcessSVC(PDOS *pdos)
     }
     return;
 }
+
+
+
+typedef struct {
+  char len; /* length of request block, always 20 */
+  char verb; /* dynamic allocation function requested */
+  char flag1;
+  char flag2;
+  short error_reason; /* returned */
+  short info_reason; /* returned */
+  void *tu_list; /* list of pointers to text units */
+  int reserved;
+  char moreflags[4]; /* extraflags */
+} SVC99RB;
+
+typedef struct {
+  short key; /* key defining what this text unit is */
+  short numparms; /* number of parms that follow */
+  short parm1_len;
+  char parm1[98];
+  /* parm2_len etc would theoretically follow, but we
+  /* can't define them, because the length of 98 is probably
+     not correct in the first place */
+} SVC99TU;
+
+
+static void pdosSVC99(PDOS *pdos)
+{
+    int cyl;
+    int head;
+    int rec;
+    SVC99RB *svc99rb;
+    SVC99TU **svc99tu;
+
+    svc99rb = *(SVC99RB **)pdos->context->regs[1];
+    if (svc99rb->verb == 2) /* unallocate */
+    {
+        /* unconditional success */
+        pdos->context->regs[15] = 0;
+        pdos->context->regs[0] = 0;
+        return;
+    }
+    else if (svc99rb->verb == 1) /* allocate */
+    {
+        svc99tu = svc99rb->tu_list;
+        while (1)
+        {
+            if (((int)*svc99tu & 0x7fffffff) != 0)
+            {
+                if ((*svc99tu)->key == 1) /* DDNAME */
+                {
+#if 0
+                    printf("dynalloc ddname is %.8s\n", (*svc99tu)->parm1);
+#endif
+                }
+                else if ((*svc99tu)->key == 2) /* DSNAME */
+                {
+#if 0
+                    printf("dynalloc dsname is %.44s\n", (*svc99tu)->parm1);
+#endif
+                    /* save dataset away */
+                    sprintf(lastds, "%.44s", (*svc99tu)->parm1);
+                }
+                else if ((*svc99tu)->key == 4) /* DISP */
+                {
+#if 0
+                    int disp;
+
+                    disp = (*svc99tu)->parm1[0];
+                    if (disp == 4) /* NEW */
+                    {
+                        printf("dynalloc disp is NEW\n");
+                    }
+                    else if (disp == 8) /* SHR */
+                    {
+                        printf("dynalloc disp is SHR\n");
+                    }
+#endif
+                }
+                else if ((*svc99tu)->key == 0x49) /* RECFM */
+                {
+#if 0
+                    int recfm;
+                    
+                    recfm = (*svc99tu)->parm1[0];
+                    if (recfm == 0x40) /* V */
+                    {
+                        printf("file is RECFM V\n");
+                    }
+#endif
+                }
+                else if ((*svc99tu)->key == 0x42) /* LRECL */
+                {
+#if 0
+                    int lrecl;
+                    
+                    lrecl = *(short *)((*svc99tu)->parm1);
+                    printf("lrecl is %d\n", lrecl);
+#endif
+                }
+            }
+            if (((int)*svc99tu & 0x80000000) != 0) break;
+            svc99tu++;
+        }
+        if (pdosFindFile(pdos, lastds, &cyl, &head, &rec) != 0)
+        {
+            strcpy(lastds, "");
+            pdos->context->regs[15] = 12;
+            pdos->context->regs[0] = 12;
+            svc99rb->error_reason = 12;
+        }
+        else
+        {
+            pdos->context->regs[15] = 0;
+            pdos->context->regs[0] = 0;
+        }
+        return;
+    }
+    /* fail anything else */
+    pdos->context->regs[15] = 12;
+    pdos->context->regs[0] = 12;
+    svc99rb->error_reason = 12;
+    return;
+}
+
+
 
 
 #define PSW_ENABLE_INT 0x040C0000 /* actually disable interrupts for now */
@@ -2476,7 +2580,7 @@ static int pdosProcessRLD(PDOS *pdos, char *initial, char *rld, int len)
 }
 
 
-static int pdosDumpMem(PDOS *pdos, char *tbuf, int cnt)
+static int pdosDumpMem(PDOS *pdos, void *buf, int cnt)
 {
     int ret = 0;
     int c, pos1, pos2;
@@ -2484,6 +2588,7 @@ static int pdosDumpMem(PDOS *pdos, char *tbuf, int cnt)
     char prtln[100];
     long i;
     long start = 0;
+    char *tbuf = (char *)buf;
 
     if (cnt > 0)
     {

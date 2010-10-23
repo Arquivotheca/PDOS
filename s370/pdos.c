@@ -924,6 +924,7 @@ static int pdosDispatchUntilInterrupt(PDOS *pdos)
                then optional record address (fullword) */
 
             pptr = (int *)pdos->context->regs[1];
+            decb = (char *)pptr;
             len = pptr[1] & 0xffff;
             buf = (char *)pptr[3];
             dcb = (DCB *)pptr[2];

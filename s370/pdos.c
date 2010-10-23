@@ -752,7 +752,6 @@ int pdosInit(PDOS *pdos)
                 *q = '\0';
                 if (isdigit((unsigned char)p[0]))
                 {
-                    ctr++;
                     if (strstr(p, "3215") != NULL)
                     {
 #if defined(S390)
@@ -762,6 +761,7 @@ int pdosInit(PDOS *pdos)
 #endif
                         break;
                     }
+                    ctr++;
                 }
                 p = q + 1;
             }

@@ -23,6 +23,7 @@ static char prompt[50] = ">";
 static int singleCommand = 0;
 static int primary = 0;
 static int term = 0;
+static int showrc = 0;
 
 static void parseArgs(int argc, char **argv);
 static void readAutoExec(void);
@@ -183,6 +184,10 @@ static void processInput(void)
     {
         /* PosReboot(); */
     }
+    else if (ins_strcmp(buf, "showrc") == 0)
+    {
+        showrc = (showrc == 0);
+    }
 #if 0
     else if ((strlen(buf) == 2) && (buf[1] == ':'))
     {
@@ -198,7 +203,10 @@ static void processInput(void)
         }
         /* printf("pcomm is calling %s\n", buf); */
         rc = system(buf);
-        /* printf("rc from program is %d\n", rc); */
+        if (showrc)
+        {
+            printf("rc from program is %d\n", rc);
+        }
     }
     return;
 }

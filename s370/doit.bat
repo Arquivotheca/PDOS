@@ -31,6 +31,7 @@ copy pcommin.txt pcomm.in
 copy world.txt world.bin
 copy sample.txt sample.c
 copy gcc.txt gcc.bin
+copy wtoworld.txt wtoworld.bin
 echo PDOS00 3390-1 * separate >ctl.txt
 echo PLOAD.SYS SEQ pload.bin TRK 15 1 0 PS U 0 18452 >>ctl.txt
 echo SYSVTOC VTOC TRK 10 >>ctl.txt
@@ -41,6 +42,7 @@ echo AUTOEXEC.BAT SEQ pcomm.in TRK 3 1 0 PS U 0 18452 >>ctl.txt
 echo WORLD.EXE SEQ world.bin TRK 15 1 0 PS U 0 18452 >>ctl.txt
 echo SAMPLE.C SEQ sample.c TRK 3 1 0 PS U 0 18452 >>ctl.txt
 echo GCC.EXE SEQ gcc.bin CYL 4 1 0 PS U 0 18452 >>ctl.txt
+echo WTOWORLD.EXE SEQ wtoworld.bin TRK 1 1 0 PS U 0 18452 >>ctl.txt
 del pdos00.199
 dasdload -bz2 ctl.txt pdos00.199
 copy pdos00.199 \mvs380\dasd

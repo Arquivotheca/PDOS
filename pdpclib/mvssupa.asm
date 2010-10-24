@@ -1582,33 +1582,45 @@ RETURNGC FUNEXIT RC=(R5)
 *     Linker/Binder: RENT,REFR,REUS                                   *
 *                                                                     *
 *---------------------------------------------------------------------*
-*     Return codes:  when R15:0 R15:1-3 has return from program.      *
+*     Return codes:  when R15:0 R15 has return from program.          *
+*     Else R15 is 0480400n   GETMAIN failed                           *
 *       R15 is 04806nnn  ATTACH failed                                *
 *       R15 is 1400000n  PARM list error: n= 1,2, or 3 (req/pgm/parm) *
-*       R15 is 80sss000 or 80000uuu Subtask ABENDED (SYS sss/User uuu)*
 *                                                                     *
 ***********************************************************************
-@@SYSTEM FUNHEAD SAVE=(SYSATWRK,SYSATDLN,78)  ISSUE OS OR TSO COMMAND
-         L     R15,4(,R13)        GET CALLER'S SAVE AREA
-         LA    R11,16(,R15)       REMEMBER THE RETURN CODE ADDRESS
+@@SYSTEM FUNHEAD ,                ISSUE OS OR TSO COMMAND
+         LA    R11,16(,R13)       REMEMBER THE RETURN CODE ADDRESS
+         MVC   0(4,R11),=X'04804000'  PRESET FOR GETMAIN FAILURE
          LR    R9,R1              SAVE PARAMETER LIST ADDRESS
-         SPACE 1
+         LA    R0,SYSATDLN        GET LENGTH OF SAVE AND WORK AREA
+         GETMAIN RC,LV=(0)        GET STORAGE
+         LTR   R15,R15            SUCCESSFUL ?
+         BZ    SYSATHAV           YES
+         STC   R15,3(,R11)        SET RETURN VALUES
+         B     SYSATRET           RELOAD AND RETURN
+*    CLEAR GOTTEN STORAGE AND ESTABLISH SAVE AREA
+*
+SYSATHAV ST    R1,8(,R13)         LINK OURS TO CALLER'S SAVE AREA
+         ST    R13,4(,R1)         LINK CALLER'S TO OUR AREA
+         LR    R13,R1
+         USING SYSATWRK,R13
+         XC    SYSATZER,SYSATZER  CLEAR DYNAMIC STUFF
          MVC   0(4,R11),=X'14000002'  PRESET FOR PARM ERROR
          LDINT R4,0(,R9)          REQUEST TYPE
          LDINT R5,4(,R9)          LENGTH OF PROGRAM NAME
          L     R6,8(,R9)          -> PROGRAM NAME
          LDINT R7,12(,R9)         LENGTH OF PARM
          L     R8,16(,R9)         -> PARM TEXT
-         SPACE 1
 *   NOTE THAT THE CALLER IS EITHER COMPILER CODE, OR A COMPILER
 *   LIBRARY ROUTINE, SO WE DO MINIMAL VALIDITY CHECKING
 *
 *   EXAMINE PROGRAM NAME LENGTH AND STRING
 *
+         LTR   R5,R5              ANY LENGTH ?
+         BNP   SYSATEXT           NO; OOPS
          CH    R5,=H'8'           NOT TOO LONG ?
          BH    SYSATEXT           TOO LONG; TOO BAD
-         SH    R5,=H'1'           LENGTH FOR EXECUTE
-         BM    SYSATEXT           NONE; OOPS
+         BCTR  R5,0
          MVC   SYSATPGM(L'SYSATPGM+L'SYSATOTL+1),=CL11' '  PRE-BLANK
          EX    R5,SYSAXPGM        MOVE PROGRAM NAME
          CLC   SYSATPGM,=CL11' '  STILL BLANK ?
@@ -1699,29 +1711,29 @@ SYSATCOM LA    R1,SYSATPRM        PASS ADDRESS OF PARM ADDRESS
          LA    R2,SYSATPGM        POINT TO NAME
          LA    R3,SYSATECB        AND ECB
          ATTACH EPLOC=(R2),       INVOKE THE REQUESTED PROGRAM         *
-               ECB=(R3),SF=(E,SYSATLST)  SZERO=NO,SHSPV=78
-         LTR   R15,R15            CHECK RETURN CODE
+               ECB=(R3),SF=(E,SYSATLST)
+         LTR   R0,R15             CHECK RETURN CODE
          BZ    SYSATWET           GOOD
          MVC   0(4,R11),=X'04806000'  ATTACH FAILED
          STC   R15,3(,R11)        SET ERROR CODE
          B     SYSATEXT           FAIL
 SYSATWET ST    R1,SYSATTCB        SAVE FOR DETACH
          WAIT  ECB=SYSATECB       WAIT FOR IT TO FINISH
-         L     R2,SYSATTCB        GET SUBTASK TCB
-         USING TCB,R2             DECLARE IT
-         MVC   0(4,R11),TCBCMP    COPY RETURN OR ABEND CODE
-         TM    TCBFLGS,TCBFA      ABENDED ?
-         BZ    *+8                NO
-         MVI   0(R11),X'80'       SET ABEND FLAG
+         MVC   1(3,R11),SYSATECB+1
+         MVI   0(R11),0           SHOW CODE FROM PROGRAM
          DETACH SYSATTCB          GET RID OF SUBTASK
-         DROP  R2
          B     SYSATEXT           AND RETURN
 SYSAXPGM OC    SYSATPGM(0),0(R6)  MOVE NAME AND UPPER CASE
 SYSAXTXT MVC   SYSATOTX(0),0(R8)    MOVE PARM TEXT
 SYSAXBLK CLC   SYSATOTX(0),SYSATOTX-1  TEST FOR OPERANDS
 *    PROGRAM EXIT, WITH APPROPRIATE RETURN CODES
 *
-SYSATEXT FUNEXIT ,           RESTORE REGS; SET RETURN CODES
+SYSATEXT LR    R1,R13        COPY STORAGE ADDRESS
+         L     R9,4(,R13)    GET CALLER'S SAVE AREA
+         LA    R0,SYSATDLN   GET ORIGINAL LENGTH
+         FREEMAIN R,A=(1),LV=(0)  AND RELEASE THE STORAGE
+         LR    R13,R9        RESTORE CALLER'S SAVE AREA
+SYSATRET FUNEXIT ,           RESTORE REGS; SET RETURN CODES
          SPACE 1             RETURN TO CALLER
 *    DYNAMICALLY ACQUIRED STORAGE
 *
@@ -1735,7 +1747,7 @@ SYSATOPL DS    2Y     1/4    PARM LENGTH / LENGTH SCANNED
 SYSATPGM DS    CL8    2/4    PROGRAM NAME (SEPARATOR)
 SYSATOTL DS    Y      3/4    OS PARM LENGTH / BLANKS FOR CP CALL
 SYSATOTX DS    CL100  4/4    NORMAL PARM TEXT STRING
-SYSATLST ATTACH EPLOC=SYSATPGM,ECB=SYSATECB,SHSPV=78,SZERO=NO,SF=L
+SYSATLST ATTACH EPLOC=SYSATPGM,ECB=SYSATECB,SF=L
 SYSATZER EQU   SYSATCLR,*-SYSATCLR,C'X'   ADDRESS & SIZE TO CLEAR
 SYSATDLN EQU   *-SYSATWRK     LENGTH OF DYNAMIC STORAGE
          CSECT ,             RESTORE

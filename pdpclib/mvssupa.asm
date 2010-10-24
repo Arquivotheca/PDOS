@@ -88,7 +88,7 @@ MVSSUPA  TITLE 'M V S S U P A  ***  MVS VERSION OF PDP CLIB SUPPORT'
 * For all other environments, just let it naturally default
 * to LOC=RES
 *
-MVSSUPA  CSECT ,
+         CSECT ,
          PRINT GEN
          YREGS
          SPACE 1
@@ -679,7 +679,7 @@ PARM5    DS    A              NEXT PARM
 PARM6    DS    A              NEXT PARM
 PARM7    DS    A              NEXT PARM
 PARM8    DS    A              NEXT PARM
-MVSSUPA  CSECT ,
+         CSECT ,
          SPACE 1
          ORG   CAMDUM+4           Don't need rest
          SPACE 2
@@ -1737,7 +1737,7 @@ SYSATOTX DS    CL100  4/4    NORMAL PARM TEXT STRING
 SYSATLST ATTACH EPLOC=SYSATPGM,ECB=SYSATECB,SHSPV=78,SZERO=NO,SF=L
 SYSATZER EQU   SYSATCLR,*-SYSATCLR,C'X'   ADDRESS & SIZE TO CLEAR
 SYSATDLN EQU   *-SYSATWRK     LENGTH OF DYNAMIC STORAGE
-MVSSUPA  CSECT ,             RESTORE
+         CSECT ,             RESTORE
          SPACE 2
 ***********************************************************************
 *                                                                     *
@@ -1984,7 +1984,7 @@ DYNALWRK DSECT ,             MAP STORAGE
          DS    18A           OUR OS SAVE AREA
 DYNLIST  DYNPAT P=ALL        EXPAND ALLOCATION DATA
 DYNALDLN EQU   *-DYNALWRK     LENGTH OF DYNAMIC STORAGE
-MVSSUPA  CSECT ,             RESTORE
+         CSECT ,             RESTORE
          SPACE 2
 *
 *

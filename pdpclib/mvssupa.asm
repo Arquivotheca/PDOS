@@ -687,7 +687,8 @@ PARM8    DS    A              NEXT PARM
 ***********************************************************************
 *                                                                     *
 *    OPEN DCB EXIT - if RECFM, LRECL, BLKSIZE preset, no change       *
-*                     unless forced by device (e.g., unit record + B) *
+*                     unless forced by device (e.g., unit record      *
+*                     not blocked)                                    *
 *                    for PDS directory read, F, 256, 256 are preset.  *
 *    a) device is unit record - default U, device size, device size   *
 *    b) all others - default to values passed to AOPEN                *

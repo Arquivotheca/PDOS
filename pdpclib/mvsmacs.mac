@@ -10,7 +10,7 @@
          GBLC  &SYS
 .*
 .*   AMUSE sets addressing mode to back to the caller's
-.*         expands nothing or label for S370 or S390
+.*         Expands nothing or label for S370 or S390
 .*         Required after GO24 call to return data to caller
 .*
          AIF   ('&SYS' NE 'S380').OLDSYS
@@ -27,7 +27,7 @@
 *
 *
 *
-         MACRO ,
+         MACRO ,                  FIXED 2010.293
 &NM      FUNEXIT &RC=
          GBLC  &SYS,&ZZSETSA,&ZZSETSL,&ZZSETSP
          GBLB  &ZZSETAM
@@ -59,7 +59,9 @@
 &LBL     L     R14,12(,R13)
          LM    R0,R12,20(R13)
          AGO   .EXMODE
-.JUSTF   LR    R1,R13             SAVE CURRENT SA
+.JUSTF   ANOP  ,
+&LBL     LR    R1,R13             SAVE CURRENT SA
+&LBL     SETC  ''
          L     R13,4(,R13)        REGAIN CALLER'S SA
          FREEMAIN R,A=(1),LV=&ZZSETSL,SP=&ZZSETSP
 .LMALL   ANOP  ,
@@ -72,7 +74,7 @@
 *
 *
 *
-         MACRO ,
+         MACRO ,             UPDATED 2010.293
 &NM      FUNHEAD &ID=YES,&IO=NO,&AM=NO,&SAVE=,&US=YES
 .*
 .*   MACRO TO BEGIN EACH FUNCTION
@@ -124,17 +126,16 @@
 &ZZSETSL SETC  '&SAVE(2)'
 &ZZSETSA SETC  '&SAVE(1)'
          GETMAIN R,LV=&ZZSETSL,SP=&ZZSETSP
-         LR    R14,R1
-         LA    R15,&ZZSETSL
+         LR    R14,R1             START OF NEW AREA
+         LA    R15,&ZZSETSL       LENGTH
          SR    R3,R3              ZERO FILL
          MVCL  R14,R2             CLEAR GOTTEN STORAGE
-         L     R3,32(,R13)        RESTORE R3
-         ST    R1,8(,R13)
-         ST    R13,4(,R1)
+         ST    R1,8(,R13)         POINT DOWN
+         ST    R13,4(,R1)         POINT UP
+         LR    R2,R13             SAVE OLD SAVE
          LR    R13,R1             NEW SAVE AREA
          USING &SAVE(1),R13       DECLARE IT
-         L     R1,4(,R13)         OLD SAVE
-         LM    R14,R1,12(R1)      RESTORE FROM ENTRY
+         LM    R14,R3,12(R2)      RESTORE FROM ENTRY
          MEXIT ,
 .STATIC  LA    R15,&SAVE(1)
          ST    R15,8(,R13)
@@ -148,84 +149,18 @@
 *
 *
          MACRO ,
-&NM      MAPDSINF &PFX=DSI,&DSECT=
-.*
-.*   MAPPING FOR THE PARAMETER AREA FOR THE @@DSINFO ROUTINE.
-.*
-.*   0) PLACE BLANKS INTO THE (DSI)BLANK AREA
-.*   1) DD INFORMATION - CALLER SUPPLIES DDNAME
-.*       RETURN CONTAINS INFORMATION FROM THE DD ENTRY; IF CONCATENATED
-.*         ALSO THE LARGEST BLOCKSIZE AND OR'ED DSORG AND RECFM BITS
-.*
-.*   2) DS INFORMATION - CALLER SUPPLIES DSN, OPTIONALLY (DSI)VOL
-.*       RETURNS INFORMATION FROM THE JFCB, AND IF DASD RESIDENT,
-.*       MERGES THE JFCB INFO WITH THE DSCB1 INFO. FOR THE TIME BEING,
-.*       IT DOES NOT RETURN DIRECTORY BLOCK INFORMATION OR SPACE
-.*       FROM FORMAT 3 DSCBS.
-.*
-         LCLC  &P,&LBL
-&LBL     SETC  '&NM'
-&P       SETC  '&PFX'
-         AIF   ('&P' NE '').HAVEPFX
-&P       SETC  'DSI'
-.HAVEPFX AIF   ('&LBL' NE '').HAVELBL
-&LBL     SETC  '&P'.'SECT'
-.HAVELBL AIF   ('&DSECT' EQ 'NO').NODS
-&LBL     DSECT ,
-         AGO   .COM
-.NODS    ANOP  ,
-&LBL     DS    0F            DECLARE @@DSINFO PARAMETER STRING
-.COM     ANOP  ,
-&P.DDN   DC    CL8' '        DD NAME
-&P.DSN   DC    CL44' '       DATA SET NAME
-&P.MEM   DC    CL8' '        MEMBER NAME OR BLANKS
-&P.VOL   DC    CL6' '        FIRST OR ONLY VOLUME
-&P.BLANK EQU   &P.DDN,*-&P.DDN,C'C'   AREA TO BLANK
-&P.DEVT  DC    XL4'0'        UCB OR CATALOG DEVICE TYPE
-&P.CONC  DC    X'0'          CONCATENATION DATA
-&P.FSEQ  EQU   X'40'           SEQUENTIAL DS
-&P.FPDS  EQU   X'80'           PARTITIONED DS
-&P.FOTH  EQU   X'20'           OTHER - VSAM, ISAM, BDAM...
-&P.FFIX  EQU   X'08'           F/FB
-&P.FVAR  EQU   X'04'           V/VB
-&P.FUND  EQU   X'02'           U
-&P.FLAGS DC    X'0'          FLAGS
-&P.FNCAT EQU   X'80'           DATA SET NOT CATALOGED
-&P.FUCAT EQU   X'40'           CATALOGED, BUT NOT ON DSIVOL
-&P.FNVOL EQU   X'20'           DATA SET NOT ON VOLUME
-&P.VOLCT DC    X'0'          VOLUME COUNT
-&P.RECFM DC    X'0'          RECORD FORMAT
-&P.ORG   DC    XL2'0'        DSORG
-&P.LRECL DC    XL2'0'        RECORD LENGTH
-&P.BLKSI DC    XL2'0'        BLOCK SIZE
-&P.BLKMX DC    XL2'0'        DEVICE MAX SIZE (OR HALF-TRACK)
-&P.NUMTK DC    XL4'0'        TRACKS ALLOCATED IN DSCB1
-&P.NUMUS DC    XL4'0'        TRACKS USED
-&P.DIRCT DC    XL4'0'        RESERVED - PDS DIRECTORY COUNT
-&P.DIRUS DC    XL4'0'        RESERVED - D.E. USED
-&P.ZERO  EQU   &P.FLAGS,*-&P.FLAGS,C'X'
-&P.SLEN  EQU   *-&LBL          PARM LENGTH
-         MEND  ,
-*
-*
-*
-         MACRO ,
-&NM      QBSM  &F1,&F2
+&NM      GO24  &WORK=R15
          GBLC  &SYS
 .*
-.*   QBSM expands as as BSM on environments that require such
-.*   mode switch (S380-only)
-.*   Otherwise it expands as BALR r1,r2 (instead of BSM r1,r2)
-.*   Unless r1 = 0, in which case, a simple BR r2 is done instead
+.*   GO24 sets addressing mode to 24 for S380
+.*         expands nothing or label for S370 or S390
 .*
          AIF   ('&SYS' NE 'S380').OLDSYS
-&NM      BSM   &F1,&F2
+&NM      LA    &WORK,*+6     GET PAST BSM WITH BIT 0 OFF
+         BSM   R0,&WORK      CONTINUE IN 24-BIT MODE
          MEXIT ,
-.OLDSYS  AIF   ('&F1' EQ '0' OR '&F1' EQ 'R0').BR
-&NM      BALR  &F1,&F2
-         MEXIT ,
-.BR      ANOP  ,
-&NM      BR    &F2
+.OLDSYS  AIF   ('&NM' EQ '').MEND
+&NM      DS    0H            DEFINE LABEL ONLY
 .MEND    MEND  ,
 *
 *
@@ -248,28 +183,32 @@
 *
 *
 *
-         MACRO ,
-&NM      GO24  &WORK=R15
-         GBLC  &SYS
-.*
-.*   GO24 sets addressing mode to 24 for S380
-.*         expands nothing or label for S370 or S390
-.*
-         AIF   ('&SYS' NE 'S380').OLDSYS
-&NM      LA    &WORK,*+6     GET PAST BSM WITH BIT 0 OFF
-         BSM   R0,&WORK      CONTINUE IN 24-BIT MODE
-         MEXIT ,
-.OLDSYS  AIF   ('&NM' EQ '').MEND
-&NM      DS    0H            DEFINE LABEL ONLY
-*
-*
-*
-.MEND    MEND  ,
          MACRO ,             COMPILER DEPENDENT LOAD INTEGER
 &NM      LDINT &R,&A         LOAD INTEGER VALUE FROM PARM LIST
          GBLC  &COMP         COMPILER GCC OR C/370
 &NM      L     &R,&A         LOAD PARM VALUE
          AIF ('&COMP' EQ 'GCC').MEND
-* THIS LINE IS FOR ANYTHING NOT GCC: C/370
+.* THIS LINE IS FOR ANYTHING NOT GCC: C/370
          L     &R,0(,&R)     LOAD INTEGER VALUE
+.MEND    MEND  ,
+*
+*
+*
+         MACRO ,
+&NM      QBSM  &F1,&F2
+         GBLC  &SYS
+.*
+.*   QBSM expands as BSM on environments that require such
+.*   mode switch (S380-only)
+.*   Otherwise it expands as BALR r1,r2 (instead of BSM r1,r2)
+.*   Unless r1 = 0, in which case, a simple BR r2 is done instead
+.*
+         AIF   ('&SYS' NE 'S380').OLDSYS
+&NM      BSM   &F1,&F2
+         MEXIT ,
+.OLDSYS  AIF   ('&F1' EQ '0' OR '&F1' EQ 'R0').BR
+&NM      BALR  &F1,&F2
+         MEXIT ,
+.BR      ANOP  ,
+&NM      BR    &F2
 .MEND    MEND  ,

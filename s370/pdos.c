@@ -370,6 +370,12 @@ typedef struct rb {
     char *pptrs[1];
 } RB;
 
+/* note that the TCB has more data in a prefix area */
+typedef struct {
+    char unused1[16];
+    int tcbcmp;
+} TCB;
+
 typedef struct {
     char unused1[32];
     unsigned int svcopsw[2];
@@ -558,6 +564,7 @@ typedef struct {
 
     RB first_rb; /* first request block */
     RB *curr_rb; /* current request block */
+    TCB tcb;
 } ONESPACE;
 
 
@@ -1398,7 +1405,9 @@ static void pdosProcessSVC(PDOS *pdos)
         {
             /* set ECB of person waiting */
             /* +++ needs to run at user priviledge */
-            *pdos->context->rblinkb->postecb = pdos->context->regs[15];
+            *pdos->context->rblinkb->postecb =
+                pdos->aspaces[pdos->curr_aspace].o.tcb.tcbcmp =
+                pdos->context->regs[15];
             pdos->aspaces[pdos->curr_aspace].o.curr_rb = 
                 pdos->context->rblinkb;
 
@@ -1408,6 +1417,10 @@ static void pdosProcessSVC(PDOS *pdos)
 
             pdos->context = pdos->aspaces[pdos->curr_aspace].o.curr_rb;
             pdos->context->regs[15] = 0; /* signal success to caller */
+            /* R1 they are expecting the TCB of the (now-completed)
+               task - ie, yes, this is fudged, as we only support LINK */
+            pdos->context->regs[1] = 
+                (int)&pdos->aspaces[pdos->curr_aspace].o.tcb;
 
             /* free the memory that was allocated to the executable */
             memmgrFree(&pdos->aspaces[pdos->curr_aspace].o.btlmem,

@@ -1,4 +1,10 @@
-./       ADD   NAME=AMUSE
+***********************************************************************
+*                                                                     *
+*  Macros to support MVS                                              *
+*  Written by Gerhard Postpischil                                     *
+*  Released to the public domain                                      *
+*                                                                     *
+***********************************************************************
          MACRO ,
 &NM      AMUSE &WRK1=R14,&WRK2=R15
          GBLC  &SYS
@@ -18,7 +24,9 @@
 .OLDSYS  AIF   ('&NM' EQ '').MEND
 &NM      DS    0H            DEFINE LABEL ONLY
 .MEND    MEND  ,
-./       ADD   NAME=FUNEXIT
+*
+*
+*
          MACRO ,                  FIXED 2010.293
 &NM      FUNEXIT &RC=
          GBLC  &SYS,&ZZSETSA,&ZZSETSL,&ZZSETSP
@@ -63,7 +71,9 @@
          MEXIT ,
 .BSM     BSM   R0,R14
          MEND  ,
-./       ADD   NAME=FUNHEAD
+*
+*
+*
          MACRO ,             UPDATED 2010.293
 &NM      FUNHEAD &ID=YES,&IO=NO,&AM=NO,&SAVE=,&US=YES
 .*
@@ -135,7 +145,9 @@
          AIF   ('&US' EQ 'NO').MEND
          USING &SAVE(1),R13       DECLARE IT
 .MEND    MEND  ,
-./       ADD   NAME=GO24
+*
+*
+*
          MACRO ,
 &NM      GO24  &WORK=R15
          GBLC  &SYS
@@ -150,7 +162,9 @@
 .OLDSYS  AIF   ('&NM' EQ '').MEND
 &NM      DS    0H            DEFINE LABEL ONLY
 .MEND    MEND  ,
-./       ADD   NAME=GO31
+*
+*
+*
          MACRO ,
 &NM      GO31  &WORK=R15
          GBLC  &SYS
@@ -166,7 +180,9 @@
 .OLDSYS  AIF   ('&NM' EQ '').MEND
 &NM      DS    0H            DEFINE LABEL ONLY
 .MEND    MEND  ,
-./       ADD   NAME=LDINT
+*
+*
+*
          MACRO ,             COMPILER DEPENDENT LOAD INTEGER
 &NM      LDINT &R,&A         LOAD INTEGER VALUE FROM PARM LIST
          GBLC  &COMP         COMPILER GCC OR C/370
@@ -175,61 +191,9 @@
 .* THIS LINE IS FOR ANYTHING NOT GCC: C/370
          L     &R,0(,&R)     LOAD INTEGER VALUE
 .MEND    MEND  ,
-./       ADD   NAME=PDPEPIL
-         MACRO
-&N       PDPEPIL
-         GBLB  &PDFEPIL
-         AIF   (&PDFEPIL).ONCED
-&PDFEPIL SETB  1
 *
-* The standard GCC exit code macro
-* by Chris Langford and Dave Jones
-* August, 2006
 *
-* This code is in the public domain and can be used without
-* restriction in any application, either commercial or non-commerical,
-* and can be freely redistributed.
 *
-.ONCED   ANOP  ,
-&N       L     13,4(,13)
-         RETURN (14,12),RC=(15)
-         MEND
-./       ADD   NAME=PDPPRLG
-         MACRO
-&N       PDPPRLG &CINDEX=,&FRAME=,&BASER=,&ENTRY=
-         GBLB  &PDFPRLG
-         AIF   (&PDFPRLG).ONCED
-&PDFPRLG SETB  1
-*
-* The standard GCC entry prolog macro
-* by Chris Langford and Dave Jones
-* August, 2006
-*
-* This code is in the public domain and can be used without
-* restriction in any application, either commercial or non-commerical,
-* and can be freely redistributed.
-*
-.ONCED   AIF   ('&ENTRY' EQ 'NO').NENT
-*
-         ENTRY &N
-.NENT    ANOP
-&N       DS    0H
-         USING *,&BASER
-         SAVE  (14,12),,&N
-         LR    &BASER,15
-         L     15,76(,13)
-         ST    13,4(,15)
-         ST    15,8(,13)
-         LR    13,15
-         AIF   ('&FRAME' EQ '' OR '&FRAME' EQ '0').COMNUM
-         AIF   (T'&FRAME NE 'N').NONNUM
-         AIF   (&FRAME GE 4096).NONNUM
-         LA    15,&FRAME.(,15)
-         AGO   .COMNUM
-.NONNUM  A     15,=A(&FRAME)
-.COMNUM  ST    15,76(13)
-         MEND
-./       ADD   NAME=QBSM
          MACRO ,
 &NM      QBSM  &F1,&F2
          GBLC  &SYS
@@ -248,7 +212,6 @@
 .BR      ANOP  ,
 &NM      BR    &F2
 .MEND    MEND  ,
-./       ADD   NAME=MVSSUPA
 MVSSUPA  TITLE 'M V S S U P A  ***  MVS VERSION OF PDP CLIB SUPPORT'
 ***********************************************************************
 *                                                                     *

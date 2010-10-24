@@ -1420,16 +1420,23 @@ static void pdosProcessSVC(PDOS *pdos)
         if (((svc == 10) && (pdos->context->regs[1] < 0))
             || ((svc == 120) && (pdos->context->regs[1] == 0)))
         {
+            int len;
+
             pdos->context->regs[15] = 0;
-            if (pdos->context->regs[0] < (16 * 1024 * 1024))
+            len = pdos->context->regs[0];
+            if (svc == 10)
+            {
+                len &= 0xffffff;
+            }
+            if (len < (16 * 1024 * 1024))
             {
                 getmain = (int)memmgrAllocate(
                     &pdos->aspaces[pdos->curr_aspace].o.btlmem,
-                    pdos->context->regs[0],
+                    len,
                     0);
 #if MEMDEBUG
                 printf("allocated %x for r0 %x, r1 %x, r15 %x\n", getmain,
-                    pdos->context->regs[0], pdos->context->regs[1],
+                    len, pdos->context->regs[1],
                     pdos->context->regs[15]);
 #endif
             }
@@ -1445,12 +1452,12 @@ static void pdosProcessSVC(PDOS *pdos)
 #else
                 getmain = (int)memmgrAllocate(
                     &pdos->aspaces[pdos->curr_aspace].o.atlmem,
-                    pdos->context->regs[0],
+                    len,
                     0);
 #endif
 #if MEMDEBUG
                 printf("allocated %x for r0 %x, r1 %x, r15 %x\n", getmain,
-                    pdos->context->regs[0], pdos->context->regs[1],
+                    len, pdos->context->regs[1],
                     pdos->context->regs[15]);
 #endif
             }

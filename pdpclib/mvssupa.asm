@@ -1,3 +1,254 @@
+./       ADD   NAME=AMUSE
+         MACRO ,
+&NM      AMUSE &WRK1=R14,&WRK2=R15
+         GBLC  &SYS
+.*
+.*   AMUSE sets addressing mode to back to the caller's
+.*         Expands nothing or label for S370 or S390
+.*         Required after GO24 call to return data to caller
+.*
+         AIF   ('&SYS' NE 'S380').OLDSYS
+&NM      L     &WRK1,4(,R13)      Old save area
+         L     &WRK1,12(,R14)     Caller's mode in high bit
+         N     &WRK1,=X'80000000'   Kill address
+         LA    &WRK2,*+4+2+2      Get new mode and address
+         OR    &WRK1,&WRK2
+         BSM   R0,&WRK1           CONTINUE IN USER MODE
+         MEXIT ,
+.OLDSYS  AIF   ('&NM' EQ '').MEND
+&NM      DS    0H            DEFINE LABEL ONLY
+.MEND    MEND  ,
+./       ADD   NAME=FUNEXIT
+         MACRO ,                  FIXED 2010.293
+&NM      FUNEXIT &RC=
+         GBLC  &SYS,&ZZSETSA,&ZZSETSL,&ZZSETSP
+         GBLB  &ZZSETAM
+         LCLC  &LBL
+&LBL     SETC  '&NM'
+         AIF   ('&ZZSETSL' NE '' AND '&RC' EQ '').JUSTF
+         AIF   ('&ZZSETSA' EQ '').SAMESA
+         AIF   ('&ZZSETSL' NE '').SAMESA
+&LBL     L     R13,4(,R13)        RESTORE HIGHER SA
+&LBL     SETC  ''
+.SAMESA  AIF   ('&RC' EQ '').LMALL
+         AIF   ('&RC' EQ '(15)' OR '&RC' EQ '(R15)').NORC
+         AIF   (K'&RC LT 3).LA
+         AIF   ('&RC'(1,1) NE '(' OR '&RC'(2,1) EQ '(').LA
+         AIF   ('&RC'(K'&RC,1) NE ')' OR '&RC'(K'&RC-1,1) EQ ')').LA
+&LBL     LR    R15,&RC(1)
+&LBL     SETC  ''
+         AGO   .NORC
+.LA      ANOP  ,
+&LBL     LA    R15,&RC            SET RETURN CODE
+&LBL     SETC  ''
+.NORC    AIF   ('&ZZSETSL' EQ '').NOFRM
+         LR    R1,R13             SAVE CURRENT SA
+         L     R13,4(,R13)        REGAIN CALLER'S SA
+         ST    R15,16(,R13)       SAVE RETURN CODE
+         FREEMAIN R,A=(1),LV=&ZZSETSL,SP=&ZZSETSP
+         AGO   .LMALL             GOTTA LOVE SPAGHETTI CODE
+.NOFRM   ANOP  ,
+&LBL     L     R14,12(,R13)
+         LM    R0,R12,20(R13)
+         AGO   .EXMODE
+.JUSTF   ANOP  ,
+&LBL     LR    R1,R13             SAVE CURRENT SA
+&LBL     SETC  ''
+         L     R13,4(,R13)        REGAIN CALLER'S SA
+         FREEMAIN R,A=(1),LV=&ZZSETSL,SP=&ZZSETSP
+.LMALL   ANOP  ,
+&LBL     LM    R14,R12,12(R13)    RELOAD ALL
+.EXMODE  AIF   (&ZZSETAM).BSM
+         BR    R14
+         MEXIT ,
+.BSM     BSM   R0,R14
+         MEND  ,
+./       ADD   NAME=FUNHEAD
+         MACRO ,             UPDATED 2010.293
+&NM      FUNHEAD &ID=YES,&IO=NO,&AM=NO,&SAVE=,&US=YES
+.*
+.*   MACRO TO BEGIN EACH FUNCTION
+.*     HANDLES STANDARD OS ENTRY CONVENTIONS
+.*   ID=  YES | NO      YES GENERATES DC WITH FUNCTION NAME
+.*   IO=  YES | NO      YES GENERATES LOAD / USING FOR ZDCBAREA
+.*   AM=  YES | NO      YES USES BSM TO PRESERVE CALER'S AMODE
+.*   SAVE=name          USES STATIC SAVE AREA OF THAT NAME,
+.*                           SETS R13, AND DECLARES ON USING
+.*   SAVE=(name,len{,subpool})   CREATES SAVE AREA WITH GETMAIN,
+.*                           SETS R13, AND DECLARES ON USING
+.*   US=  YES | NO      YES - want a USING for R13
+.*   Options used here are remembered and handled properly by
+.*     subsequent FUNEXIT macros
+.*
+         GBLC  &SYS,&ZZSETSA,&ZZSETSL,&ZZSETSP
+         GBLB  &ZZSETAM
+         LCLC  &LBL
+         LCLA  &I
+&I       SETA  K'&NM
+&I       SETA  ((&I)/2*2+1)       NEED ODD LENGTH FOR STM ALIGN
+&LBL     SETC  '&NM'
+&ZZSETAM SETB  ('&AM' NE 'NO')
+&ZZSETAM SETB  (&ZZSETAM AND '&SYS' EQ 'S380')
+&ZZSETSA SETC  ''
+&ZZSETSL SETC  ''
+&ZZSETSP SETC  ''
+         ENTRY &NM
+         DROP  ,                  Isolate from other code
+         AIF   ('&ID' EQ 'NO').SKIPID
+&LBL     B     *+4+1+&I-&NM.(,R15)    SKIP LABEL
+         DC    AL1(&I),CL(&I)'&NM'    EXPAND LABEL
+&LBL     SETC  ''
+.SKIPID  AIF   (NOT &ZZSETAM).SKIPAM
+&LBL     BSM   R14,R0                 PRESERVE AMODE
+&LBL     SETC  ''
+.SKIPAM  ANOP  ,
+&LBL     STM   R14,R12,12(R13)    SAVE CALLER'S REGISTERS
+         LR    R12,R15
+         USING &NM,R12
+         AIF   ('&IO' EQ 'NO').SAVE
+         L     R10,0(,R1)         LOAD FILE WORK AREA
+         USING IHADCB,R10
+.SAVE    AIF   ('&SAVE' EQ '').MEND
+         AIF   (N'&SAVE EQ 1).STATIC
+         AIF   (N'&SAVE EQ 2).DYNAM
+&ZZSETSP SETC  '&SAVE(3)'
+.DYNAM   ANOP  ,
+&ZZSETSL SETC  '&SAVE(2)'
+&ZZSETSA SETC  '&SAVE(1)'
+         GETMAIN R,LV=&ZZSETSL,SP=&ZZSETSP
+         LR    R14,R1             START OF NEW AREA
+         LA    R15,&ZZSETSL       LENGTH
+         SR    R3,R3              ZERO FILL
+         MVCL  R14,R2             CLEAR GOTTEN STORAGE
+         ST    R1,8(,R13)         POINT DOWN
+         ST    R13,4(,R1)         POINT UP
+         LR    R2,R13             SAVE OLD SAVE
+         LR    R13,R1             NEW SAVE AREA
+         USING &SAVE(1),R13       DECLARE IT
+         LM    R14,R3,12(R2)      RESTORE FROM ENTRY
+         MEXIT ,
+.STATIC  LA    R15,&SAVE(1)
+         ST    R15,8(,R13)
+         ST    R13,4(,R15)
+         LR    R13,R15
+&ZZSETSA SETC  '&SAVE(1)'
+         AIF   ('&US' EQ 'NO').MEND
+         USING &SAVE(1),R13       DECLARE IT
+.MEND    MEND  ,
+./       ADD   NAME=GO24
+         MACRO ,
+&NM      GO24  &WORK=R15
+         GBLC  &SYS
+.*
+.*   GO24 sets addressing mode to 24 for S380
+.*         expands nothing or label for S370 or S390
+.*
+         AIF   ('&SYS' NE 'S380').OLDSYS
+&NM      LA    &WORK,*+6     GET PAST BSM WITH BIT 0 OFF
+         BSM   R0,&WORK      CONTINUE IN 24-BIT MODE
+         MEXIT ,
+.OLDSYS  AIF   ('&NM' EQ '').MEND
+&NM      DS    0H            DEFINE LABEL ONLY
+.MEND    MEND  ,
+./       ADD   NAME=GO31
+         MACRO ,
+&NM      GO31  &WORK=R15
+         GBLC  &SYS
+.*
+.*   GO31 sets addressing mode to 31 for S380.
+.*         expands nothing or label for S370 or S390
+.*
+         AIF   ('&SYS' NE 'S380').OLDSYS
+&NM      LA    &WORK,*+10    GET PAST BSM WITH BIT 0 ON
+         O     &WORK,=X'80000000'  SET MODE BIT
+         BSM   R0,&WORK            CONTINUE IN 31-BIT MODE
+         MEXIT ,
+.OLDSYS  AIF   ('&NM' EQ '').MEND
+&NM      DS    0H            DEFINE LABEL ONLY
+.MEND    MEND  ,
+./       ADD   NAME=LDINT
+         MACRO ,             COMPILER DEPENDENT LOAD INTEGER
+&NM      LDINT &R,&A         LOAD INTEGER VALUE FROM PARM LIST
+         GBLC  &COMP         COMPILER GCC OR C/370
+&NM      L     &R,&A         LOAD PARM VALUE
+         AIF ('&COMP' EQ 'GCC').MEND
+.* THIS LINE IS FOR ANYTHING NOT GCC: C/370
+         L     &R,0(,&R)     LOAD INTEGER VALUE
+.MEND    MEND  ,
+./       ADD   NAME=PDPEPIL
+         MACRO
+&N       PDPEPIL
+         GBLB  &PDFEPIL
+         AIF   (&PDFEPIL).ONCED
+&PDFEPIL SETB  1
+*
+* The standard GCC exit code macro
+* by Chris Langford and Dave Jones
+* August, 2006
+*
+* This code is in the public domain and can be used without
+* restriction in any application, either commercial or non-commerical,
+* and can be freely redistributed.
+*
+.ONCED   ANOP  ,
+&N       L     13,4(,13)
+         RETURN (14,12),RC=(15)
+         MEND
+./       ADD   NAME=PDPPRLG
+         MACRO
+&N       PDPPRLG &CINDEX=,&FRAME=,&BASER=,&ENTRY=
+         GBLB  &PDFPRLG
+         AIF   (&PDFPRLG).ONCED
+&PDFPRLG SETB  1
+*
+* The standard GCC entry prolog macro
+* by Chris Langford and Dave Jones
+* August, 2006
+*
+* This code is in the public domain and can be used without
+* restriction in any application, either commercial or non-commerical,
+* and can be freely redistributed.
+*
+.ONCED   AIF   ('&ENTRY' EQ 'NO').NENT
+*
+         ENTRY &N
+.NENT    ANOP
+&N       DS    0H
+         USING *,&BASER
+         SAVE  (14,12),,&N
+         LR    &BASER,15
+         L     15,76(,13)
+         ST    13,4(,15)
+         ST    15,8(,13)
+         LR    13,15
+         AIF   ('&FRAME' EQ '' OR '&FRAME' EQ '0').COMNUM
+         AIF   (T'&FRAME NE 'N').NONNUM
+         AIF   (&FRAME GE 4096).NONNUM
+         LA    15,&FRAME.(,15)
+         AGO   .COMNUM
+.NONNUM  A     15,=A(&FRAME)
+.COMNUM  ST    15,76(13)
+         MEND
+./       ADD   NAME=QBSM
+         MACRO ,
+&NM      QBSM  &F1,&F2
+         GBLC  &SYS
+.*
+.*   QBSM expands as BSM on environments that require such
+.*   mode switch (S380-only)
+.*   Otherwise it expands as BALR r1,r2 (instead of BSM r1,r2)
+.*   Unless r1 = 0, in which case, a simple BR r2 is done instead
+.*
+         AIF   ('&SYS' NE 'S380').OLDSYS
+&NM      BSM   &F1,&F2
+         MEXIT ,
+.OLDSYS  AIF   ('&F1' EQ '0' OR '&F1' EQ 'R0').BR
+&NM      BALR  &F1,&F2
+         MEXIT ,
+.BR      ANOP  ,
+&NM      BR    &F2
+.MEND    MEND  ,
+./       ADD   NAME=MVSSUPA
 MVSSUPA  TITLE 'M V S S U P A  ***  MVS VERSION OF PDP CLIB SUPPORT'
 ***********************************************************************
 *                                                                     *
@@ -9,9 +260,9 @@ MVSSUPA  TITLE 'M V S S U P A  ***  MVS VERSION OF PDP CLIB SUPPORT'
 ***********************************************************************
 *                                                                     *
 *  MVSSUPA - Support routines for PDPCLIB under MVS                   *
-*                                                                     *
+*    Additional macros in PDPCLIB.MACLIB                              *
 *  It is currently coded for GCC, but C/370 functionality is          *
-*  still there, it's just not being tested after any change.          *
+*  still there, it's just not being tested after each change.         *
 *                                                                     *
 ***********************************************************************
 *                                                                     *
@@ -80,30 +331,15 @@ MVSSUPA  TITLE 'M V S S U P A  ***  MVS VERSION OF PDP CLIB SUPPORT'
 *
 *
          SPACE 1
-         COPY  MVSMACS
          COPY  PDPTOP
          SPACE 1
-         GBLC  &LOCLOW,&LOCANY    MAKE GETMAINS EASIER
-*
 * For S/390 we need to deliberately request LOC=BELOW storage
-* in some places. For all other environments, just let it
-* naturally default to LOC=RES.
-*
-         AIF   ('&SYS' NE 'S390').NOLOCL
-&LOCLOW  SETC  'LOC=BELOW'
-.NOLOCL  SPACE 1
-*
-* For S/380 we need to deliberately request LOC=ANY storage
+* in some places.
+* For S/380 we need to deliberately request LOC=ANY storage.
 * For all other environments, just let it naturally default
 * to LOC=RES
 *
-         AIF   ('&SYS' NE 'S380').NOLOCA
-&LOCANY  SETC  'LOC=ANY'
-.NOLOCA  SPACE 1
-*
-*
-*
-         CSECT ,
+MVSSUPA  CSECT ,
          PRINT GEN
          YREGS
          SPACE 1
@@ -130,6 +366,7 @@ SUBPOOL  EQU   0                                                      *
 *  MODE = 8/9 Use EXCP for tape, BSAM otherwise (or 32<=JFCPNCP<=65)  *
 *  MODE + 10 = Use BLOCK mode (valid 10-15)                           *
 *  MODE = 80 = GETLINE, 81 = PUTLINE (other bits ignored)             *
+*    N.B.: see comments under Return value
 *3 RECFM - 0 = F, 1 = V, 2 = U. Default/preference set by caller;     *
 *                               actual value returned from open.      *
 *4 LRECL   - Default/preference set by caller; OPEN value returned.   *
@@ -141,12 +378,18 @@ SUBPOOL  EQU   0                                                      *
 *                                                                     *
 *6 ZBUFF2 - pointer to an area that may be written to (size is LRECL) *
 *7 MEMBER - *pointer* to space-padded, 8 character member name.       *
+*    A member name beginning with blank or hex zero is ignored.       *
 *    If pointer is 0 (NULL), no member is requested                   *
 *                                                                     *
 *  Return value:                                                      *
 *  An internal "handle" that allows the assembler routines to         *
 *  keep track of what's what, when READ etc are subsequently          *
 *  called.                                                            *
+*                                                                     *
+*  All passed parameters are subject to overrides based on device     *
+*  capabilities and capacities, e.g., blocking may be turned off.     *
+*  In particular, the MODE flag will have x'40' ORed in for a         *
+*  unit record device.                                                *
 *                                                                     *
 *                                                                     *
 *  Note - more documentation for this and other I/O functions can     *
@@ -184,6 +427,9 @@ SUBPOOL  EQU   0                                                      *
 * PARM6    has ZBUFF2 pointer
          L     R9,PARM7           R9 POINTS TO MEMBER NAME (OF PDS)
          LA    R9,00(,R9)         Strip off high-order bit or byte
+         TM    0(R9),255-X'40'    Either blank or zero?
+         BNZ   *+6                  No
+         SR    R9,R9              Set for no member
          SPACE 1
          L     R4,PARM2           R4 is the MODE.  0=input 1=output
          CH    R4,=H'256'         Call with value?
@@ -191,12 +437,10 @@ SUBPOOL  EQU   0                                                      *
          L     R4,0(,R4)          Load C/370 MODE.  0=input 1=output
          SPACE 1
          AIF   ('&SYS' NE 'S390').NOLOW
-         GETMAIN RU,LV=ZDCBLEN,SP=SUBPOOL,LOC=BELOW
+         GETMAIN R,LV=ZDCBLEN,SP=SUBPOOL,LOC=BELOW
          AGO   .FINLOW
-.NOLOW   ANOP  ,
-         GETMAIN RU,LV=ZDCBLEN,SP=SUBPOOL
-.FINLOW  ANOP  ,
-         LR    R10,R1             Addr.of storage obtained to its base
+.NOLOW   GETMAIN R,LV=ZDCBLEN,SP=SUBPOOL
+.FINLOW  LR    R10,R1             Addr.of storage obtained to its base
          USING IHADCB,R10         Give assembler DCB area base register
          LR    R0,R10             Load output DCB area address
          LA    R1,ZDCBLEN         Load output length of DCB area
@@ -223,6 +467,7 @@ OPCURSE  STC   R4,WWORK           Save to storage
          NI    WWORK+1,7          Retain only open mode bits
          TM    WWORK,IOFTERM      Terminal I/O ?
          BNZ   TERMOPEN           Yes; do completely different
+***> Consider forcing terminal mode if DD is a terminal?
          MVC   DWDDNAM,0(R3)      Move below the line
          DEVTYPE DWDDNAM,DWORK    Check device type
          BXH   R15,R15,FAILDCB    DD missing
@@ -302,9 +547,9 @@ OPQRYBSM TM    WWORK,IOFBLOCK     Block mode ?
          TM    WWORK,X'01'        In or Out
 *DEFUNCT BNZ   OPREPQSM
 OPREPBSM MVC   ZDCBAREA(BSAMDCBL),BSAMDCB  Move DCB template to work
-         TM    DWORK+2,UCB3DACC+UCB3TAPE    Tape or Disk ?      \
-         BM    OPREPCOM           Either; keep RP,WP            \
-         NC    DCBMACR(2),=AL1(DCBMRRD,DCBMRWRT) Strip Point    \
+         TM    DWORK+2,UCB3DACC+UCB3TAPE    Tape or Disk ?
+         BM    OPREPCOM           Either; keep RP,WP
+         NC    DCBMACR(2),=AL1(DCBMRRD,DCBMRWRT) Strip Point
          B     OPREPCOM
          SPACE 1
 OPREPQSM MVC   ZDCBAREA(QSAMDCBL),QSAMDCB
@@ -419,7 +664,7 @@ NOMEM    TM    WWORK,1            See if OPEN input or output
 *
 *---------------------------------------------------------------------*
          OI    JFCBTSDM,JFCNWRIT  Don't mess with DSCB
-         CLI   DEVINFO+2,X'20' UCB3DACC   Is it a DASD device?
+         CLI   DEVINFO+2,UCB3DACC   Is it a DASD device?
          BNE   OPENVSEQ           No; no member name supported
 *---------------------------------------------------------------------*
 * See if DSORG=PO but no member; use member from JFCB if one
@@ -434,7 +679,7 @@ NOMEM    TM    WWORK,1            See if OPEN input or output
          BZ    OPENDIR            No; read directory
          MVC   MEMBER24,JFCBELNM  Save the member name
          NI    JFCBIND1,255-JFCPDS    Reset it
-         XC    JFCBELNM,JFCBELNM  Delete it
+         XC    JFCBELNM,JFCBELNM  Delete it in JFCB
          LA    R9,MEMBER24        Force FIND to prevent 013 abend
          B     OPENMEM            Change DCB to BPAM PO
 *---------------------------------------------------------------------*
@@ -479,7 +724,7 @@ BADOPIN  DS    0H
 BADOPOUT DS    0H
 FAILDCB  N     R4,=F'1'           Mask other option bits
          LA    R7,37(R4,R4)       Preset OPEN error code
-FREEDCB  FREEMAIN RU,LV=ZDCBLEN,A=(R10),SP=SUBPOOL  Free DCB area
+FREEDCB  FREEMAIN R,LV=ZDCBLEN,A=(R10),SP=SUBPOOL  Free DCB area
          LCR   R7,R7              Set return and reason code
          B     RETURNOP           Go return to caller with negative RC
          SPACE 1
@@ -488,7 +733,7 @@ FREEDCB  FREEMAIN RU,LV=ZDCBLEN,A=(R10),SP=SUBPOOL  Free DCB area
 *---------------------------------------------------------------------*
 WRITING  LTR   R9,R9
          BZ    WNOMEM
-         CLI   DEVINFO+2,X'20'    UCB3DACC
+         CLI   DEVINFO+2,UCB3DACC   DASD ?
          BNE   BADOPOUT           Member name invalid
          TM    DS1DSORG,DS1DSGPO  See if DSORG=PO
          BZ    BADOPOUT           Is not PDS, fail request
@@ -519,7 +764,7 @@ WNOMEM2  OPEN  MF=(E,OPENCLOS),TYPE=J
 *---------------------------------------------------------------------*
 GETBUFF  L     R5,BLKSIZE         Load the input blocksize
          LA    R6,4(,R5)          Add 4 in case RECFM=U buffer
-         GETMAIN RU,LV=(R6),SP=SUBPOOL  Get input buffer storage
+         GETMAIN R,LV=(R6),SP=SUBPOOL  Get input buffer storage
          ST    R1,ZBUFF1          Save for cleanup
          ST    R6,ZBUFF1+4           ditto
          ST    R1,BUFFADDR        Save the buffer address for READ
@@ -529,13 +774,13 @@ GETBUFF  L     R5,BLKSIZE         Load the input blocksize
          SPACE 1
          L     R6,LRECL           Get record length
          LA    R6,4(,R6)          Insurance
-         GETMAIN RU,LV=(R6),SP=SUBPOOL  Get VBS build record area
+         GETMAIN R,LV=(R6),SP=SUBPOOL  Get VBS build record area
          ST    R1,ZBUFF2          Save for cleanup
          ST    R6,ZBUFF2+4           ditto
          LA    R14,4(,R1)
          ST    R14,VBSADDR        Save the VBS read/user write
-         L     R5,PARM6           Get caller's BUFFER address   \
-         ST    R14,0(,R5)         and return work address       \
+         L     R5,PARM6           Get caller's BUFFER address
+         ST    R14,0(,R5)         and return work address
          AR    R1,R6              Add size GETMAINed to find end
          ST    R1,VBSEND          Save address after VBS rec.build area
          B     DONEOPEN           Go return to caller with DCB info
@@ -571,7 +816,7 @@ TERMOPEN MVC   IOMFLAGS,WWORK     Save for duration
          ST    R6,BLKSIZE         Return it
          ST    R6,LRECL           Return it
          LA    R6,4(,R6)          Add 4 in case RECFM=U buffer
-         GETMAIN RU,LV=(R6),SP=SUBPOOL  Get input buffer storage
+         GETMAIN R,LV=(R6),SP=SUBPOOL  Get input buffer storage
          ST    R1,ZBUFF2          Save for cleanup
          ST    R6,ZBUFF2+4           ditto
          LA    R1,4(,R1)          Allow for RDW if not V
@@ -612,7 +857,7 @@ SETINDEX STC   R0,RECFMIX         Save for the duration
          MVC   3(1,R5),IOMFLAGS   Pass (updated) file mode back
          CLI   DEVINFO+2,UCB3UREC
          BNE   NOTUNREC           Not unit-record
-         OI    3(R5),X'40'        flag unit-record
+         OI    3(R5),IOFUREC      flag unit-record
 NOTUNREC DS    0H
 *
 * Finished with R5 now
@@ -628,7 +873,7 @@ EOFRLEN  EQU   *-ENDFILE
          LTORG ,
          SPACE 1
 BSAMDCB  DCB   MACRF=(RP,WP),DSORG=PS,DDNAME=BSAMDCB, input and output *
-               EXLST=1-1          JCB and DCB exits added later
+               EXLST=1-1          JFCB and DCB exits added later
 BSAMDCBN EQU   *-BSAMDCB
 READDUM  READ  NONE,              Read record Data Event Control Block *
                SF,                Read record Sequential Forward       *
@@ -685,13 +930,14 @@ PARM5    DS    A              NEXT PARM
 PARM6    DS    A              NEXT PARM
 PARM7    DS    A              NEXT PARM
 PARM8    DS    A              NEXT PARM
-         CSECT ,
+MVSSUPA  CSECT ,
          SPACE 1
          ORG   CAMDUM+4           Don't need rest
          SPACE 2
 ***********************************************************************
 *                                                                     *
 *    OPEN DCB EXIT - if RECFM, LRECL, BLKSIZE preset, no change       *
+*                     unless forced by device (e.g., unit record + B) *
 *                    for PDS directory read, F, 256, 256 are preset.  *
 *    a) device is unit record - default U, device size, device size   *
 *    b) all others - default to values passed to AOPEN                *
@@ -727,7 +973,7 @@ OCDCBX1  OI    IOPFLAGS,IOFDCBEX  Show exit entered
          TR    ZRECFM,=X'90,50,C0,C0'  0-FB  1-VB  2-U
          TM    DCBRECFM,DCBRECLA  ANY RECORD FORMAT SPECIFIED?
          BNZ   OCDCBFH       YES
-         CLI   DEVINFO+2,X'08'    UNIT RECORD?
+         CLI   DEVINFO+2,UCB3UREC  UNIT RECORD?
          BNE   OCDCBFM       NO; USE OVERRIDE
 OCDCBFU  CLI   FILEMODE,0         DID USER REQUEST FB?
          BE    OCDCBFM            YES; USE IT
@@ -737,7 +983,7 @@ OCDCBFM  MVC   DCBRECFM,ZRECFM
 OCDCBFH  LTR   R4,R4
          BNZ   OCDCBLH       HAVE A RECORD LENGTH
          L     R4,DEVINFO+4       SET DEVICE SIZE FOR UNIT RECORD
-         CLI   DEVINFO+2,X'08'    UNIT RECORD?
+         CLI   DEVINFO+2,UCB3UREC   UNIT RECORD?
          BE    OCDCBLH       YES; USE IT
 *   REQUIRES CALLER TO SET LRECL=BLKSIZE FOR RECFM=U DEFAULT
          ICM   R4,15,LRECL   SET LRECL=PREFERRED BLOCK SIZE
@@ -858,7 +1104,7 @@ ALINEX   FUNEXIT RC=(R15)
 *  AREAD - Read from an open data set                                 *
 *                                                                     *
 ***********************************************************************
-@@AREAD  FUNHEAD IO=YES,AM=YES,SAVE=SAVEADCB,US=NO   READ | GET
+@@AREAD  FUNHEAD IO=YES,AM=YES,SAVE=SAVEADCB,US=NO   READ / GET
          L     R3,4(,R1)  R3 points to where to store record pointer
          L     R4,8(,R1)  R4 points to where to store record length
          SR    R0,R0
@@ -1102,8 +1348,12 @@ TGETREAD L     R6,ZIOECT          RESTORE ECT ADDRESS
 *   returns text of 'END' instead of return code 16. Needs DOC fix
 *---------------------------------------------------------------------*
          CLC   =X'00070000C5D5C4',0(R1)  Undocumented EOF?
-         BE    READEOD2           YES; QUIT
-         L     R6,BUFFADDR        GET INPUT BUFFER
+         BNE   TGETNEOF
+         XC    KEPTREC(8),KEPTREC Clear saved record info
+         LA    R6,1
+         LNR   R6,R6              Signal EOF
+         B     TGETFREE           FREE BUFFER AND QUIT
+TGETNEOF L     R6,BUFFADDR        GET INPUT BUFFER
          LR    R8,R1              INPUT LINE W/RDW
          LH    R9,0(,R1)          GET LENGTH
          LR    R7,R9               FOR V, IN LEN = OUT LEN
@@ -1120,10 +1370,10 @@ TGETHAVE ST    R6,0(,R3)          RETURN ADDRESS
          STM   R6,R7,KEPTREC      Remember record info
          ICM   R9,8,=C' '           BLANK FILL
          MVCL  R6,R8              PRESERVE IT FOR USER
-         LH    R0,0(,R1)          GET LENGTH
+         SR    R6,R6              NO EOF
+TGETFREE LH    R0,0(,R1)          GET LENGTH
          ICM   R0,8,=AL1(1)       SUBPOOL 1
          FREEMAIN R,LV=(0),A=(1)  FREE SYSTEM BUFFER
-         SR    R6,R6              NO EOF
          B     READEXIT           TAKE NORMAL EXIT
          SPACE 1
 READEOD  OI    IOPFLAGS,IOFLEOF   Remember that we hit EOF
@@ -1143,7 +1393,7 @@ BADBLOCK WTO   'MVSSUPA - @@AREAD - problem processing RECFM=V(bs) file*
 *  AWRITE - Write to an open data set                                 *
 *                                                                     *
 ***********************************************************************
-@@AWRITE FUNHEAD IO=YES,AM=YES,SAVE=SAVEADCB,US=NO   WRITE | PUT
+@@AWRITE FUNHEAD IO=YES,AM=YES,SAVE=SAVEADCB,US=NO   WRITE / PUT
          LR    R11,R1             SAVE PARM LIST
 WRITMORE NI    IOPFLAGS,255-IOFCURSE   RESET RECURSION
          L     R4,4(,R11)         R4 points to the record address
@@ -1353,11 +1603,11 @@ POINCOM  AMUSE ,
 FREEBUFF LM    R1,R2,ZBUFF1       Look at first buffer
          LTR   R0,R2              Any ?
          BZ    FREEDBF1           No
-         FREEMAIN RU,LV=(0),A=(1),SP=SUBPOOL  Free BLOCK buffer
+         FREEMAIN RC,LV=(0),A=(1),SP=SUBPOOL  Free BLOCK buffer
 FREEDBF1 LM    R1,R2,ZBUFF2       Look at first buffer
          LTR   R0,R2              Any ?
          BZ    FREEDBF2           No
-         FREEMAIN RU,LV=(0),A=(1),SP=SUBPOOL  Free RECRD buffer
+         FREEMAIN RC,LV=(0),A=(1),SP=SUBPOOL  Free RECRD buffer
 FREEDBF2 TM    IOMFLAGS,IOFTERM   TERMINAL I/O MODE?
          BNZ   NOPOOL             YES; SKIP CLOSE/FREEPOOL
          CLOSE MF=(E,OPENCLOS)
@@ -1368,7 +1618,7 @@ FREEDBF2 TM    IOMFLAGS,IOFTERM   TERMINAL I/O MODE?
          BZ    NOPOOL             0-NO
          FREEPOOL ((R10))
 NOPOOL   DS    0H
-         FREEMAIN RU,LV=ZDCBLEN,A=(R10),SP=SUBPOOL
+         FREEMAIN R,LV=ZDCBLEN,A=(R10),SP=SUBPOOL
          FUNEXIT RC=0
          SPACE 2
          PUSH  USING
@@ -1474,10 +1724,10 @@ TRUNCOEX L     R13,4(,R13)
          N     R3,=X'FFFFFFC0'    MULTIPLE OF 64
 *
          AIF   ('&SYS' NE 'S380').NOANY
-         GETMAIN RU,LV=(R3),SP=SUBPOOL,LOC=ANY
+         GETMAIN R,LV=(R3),SP=SUBPOOL,LOC=ANY
          AGO   .FINANY
 .NOANY   ANOP  ,
-         GETMAIN RU,LV=(R3),SP=SUBPOOL
+         GETMAIN R,LV=(R3),SP=SUBPOOL
 .FINANY  ANOP  ,
 *
 * WE STORE THE AMOUNT WE REQUESTED FROM MVS INTO THIS ADDRESS
@@ -1501,7 +1751,7 @@ GETMEX   FUNEXIT RC=(R1)
          S     R1,=F'8'
          L     R0,0(,R1)
 *
-         FREEMAIN RU,LV=(0),A=(1),SP=SUBPOOL
+         FREEMAIN RC,LV=(0),A=(1),SP=SUBPOOL
 *
          FUNEXIT RC=(15)
          LTORG ,
@@ -1534,17 +1784,21 @@ RETURNGC FUNEXIT RC=(R5)
          SPACE 2
 ***********************************************************************
 *                                                                     *
-*  GETTZ - Get the offset from UTC offset in 1.048576 seconds         *
+*  GETTZ - Get the offset from GMT in 1.048576 seconds                *
 *                                                                     *
 ***********************************************************************
-@@GETTZ FUNHEAD ,                 get timezone offset
+* @@GETTZ FUNHEAD ,                 get timezone offset
 *
-         L     R3,CVTPTR
-         USING CVT,R3
-         L     R4,CVTTZ
+*         L     R3,CVTPTR
+*         USING CVT,R3
+*         L     R4,CVTTZ
 *
-RETURNGS FUNEXIT RC=(R4)
-         LTORG ,
+* RETURNGS FUNEXIT RC=(R4)
+*         LTORG ,
+         ENTRY @@GETTZ
+@@GETTZ  L     R15,CVTPTR
+         L     R15,CVTTZ-CVTMAP(,R15)  GET GMT TIME-ZONE OFFSET
+         BR    R14
          SPACE 2
 ***********************************************************************
 *                                                                     *
@@ -1578,45 +1832,33 @@ RETURNGS FUNEXIT RC=(R4)
 *     Linker/Binder: RENT,REFR,REUS                                   *
 *                                                                     *
 *---------------------------------------------------------------------*
-*     Return codes:  when R15:0 R15 has return from program.          *
-*     Else R15 is 0480400n   GETMAIN failed                           *
+*     Return codes:  when R15:0 R15:1-3 has return from program.      *
 *       R15 is 04806nnn  ATTACH failed                                *
 *       R15 is 1400000n  PARM list error: n= 1,2, or 3 (req/pgm/parm) *
+*       R15 is 80sss000 or 80000uuu Subtask ABENDED (SYS sss/User uuu)*
 *                                                                     *
 ***********************************************************************
-@@SYSTEM FUNHEAD ,                ISSUE OS OR TSO COMMAND
-         LA    R11,16(,R13)       REMEMBER THE RETURN CODE ADDRESS
-         MVC   0(4,R11),=X'04804000'  PRESET FOR GETMAIN FAILURE
+@@SYSTEM FUNHEAD SAVE=(SYSATWRK,SYSATDLN,78)  ISSUE OS OR TSO COMMAND
+         L     R15,4(,R13)        GET CALLER'S SAVE AREA
+         LA    R11,16(,R15)       REMEMBER THE RETURN CODE ADDRESS
          LR    R9,R1              SAVE PARAMETER LIST ADDRESS
-         LA    R0,SYSATDLN        GET LENGTH OF SAVE AND WORK AREA
-         GETMAIN RC,LV=(0)        GET STORAGE
-         LTR   R15,R15            SUCCESSFUL ?
-         BZ    SYSATHAV           YES
-         STC   R15,3(,R11)        SET RETURN VALUES
-         B     SYSATRET           RELOAD AND RETURN
-*    CLEAR GOTTEN STORAGE AND ESTABLISH SAVE AREA
-*
-SYSATHAV ST    R1,8(,R13)         LINK OURS TO CALLER'S SAVE AREA
-         ST    R13,4(,R1)         LINK CALLER'S TO OUR AREA
-         LR    R13,R1
-         USING SYSATWRK,R13
-         XC    SYSATZER,SYSATZER  CLEAR DYNAMIC STUFF
+         SPACE 1
          MVC   0(4,R11),=X'14000002'  PRESET FOR PARM ERROR
          LDINT R4,0(,R9)          REQUEST TYPE
          LDINT R5,4(,R9)          LENGTH OF PROGRAM NAME
          L     R6,8(,R9)          -> PROGRAM NAME
          LDINT R7,12(,R9)         LENGTH OF PARM
          L     R8,16(,R9)         -> PARM TEXT
+         SPACE 1
 *   NOTE THAT THE CALLER IS EITHER COMPILER CODE, OR A COMPILER
 *   LIBRARY ROUTINE, SO WE DO MINIMAL VALIDITY CHECKING
 *
 *   EXAMINE PROGRAM NAME LENGTH AND STRING
 *
-         LTR   R5,R5              ANY LENGTH ?
-         BNP   SYSATEXT           NO; OOPS
          CH    R5,=H'8'           NOT TOO LONG ?
          BH    SYSATEXT           TOO LONG; TOO BAD
-         BCTR  R5,0
+         SH    R5,=H'1'           LENGTH FOR EXECUTE
+         BM    SYSATEXT           NONE; OOPS
          MVC   SYSATPGM(L'SYSATPGM+L'SYSATOTL+1),=CL11' '  PRE-BLANK
          EX    R5,SYSAXPGM        MOVE PROGRAM NAME
          CLC   SYSATPGM,=CL11' '  STILL BLANK ?
@@ -1707,29 +1949,29 @@ SYSATCOM LA    R1,SYSATPRM        PASS ADDRESS OF PARM ADDRESS
          LA    R2,SYSATPGM        POINT TO NAME
          LA    R3,SYSATECB        AND ECB
          ATTACH EPLOC=(R2),       INVOKE THE REQUESTED PROGRAM         *
-               ECB=(R3),SF=(E,SYSATLST)
-         LTR   R0,R15             CHECK RETURN CODE
+               ECB=(R3),SF=(E,SYSATLST)  SZERO=NO,SHSPV=78
+         LTR   R15,R15            CHECK RETURN CODE
          BZ    SYSATWET           GOOD
          MVC   0(4,R11),=X'04806000'  ATTACH FAILED
          STC   R15,3(,R11)        SET ERROR CODE
          B     SYSATEXT           FAIL
 SYSATWET ST    R1,SYSATTCB        SAVE FOR DETACH
          WAIT  ECB=SYSATECB       WAIT FOR IT TO FINISH
-         MVC   1(3,R11),SYSATECB+1
-         MVI   0(R11),0           SHOW CODE FROM PROGRAM
+         L     R2,SYSATTCB        GET SUBTASK TCB
+         USING TCB,R2             DECLARE IT
+         MVC   0(4,R11),TCBCMP    COPY RETURN OR ABEND CODE
+         TM    TCBFLGS,TCBFA      ABENDED ?
+         BZ    *+8                NO
+         MVI   0(R11),X'80'       SET ABEND FLAG
          DETACH SYSATTCB          GET RID OF SUBTASK
+         DROP  R2
          B     SYSATEXT           AND RETURN
 SYSAXPGM OC    SYSATPGM(0),0(R6)  MOVE NAME AND UPPER CASE
 SYSAXTXT MVC   SYSATOTX(0),0(R8)    MOVE PARM TEXT
 SYSAXBLK CLC   SYSATOTX(0),SYSATOTX-1  TEST FOR OPERANDS
 *    PROGRAM EXIT, WITH APPROPRIATE RETURN CODES
 *
-SYSATEXT LR    R1,R13        COPY STORAGE ADDRESS
-         L     R9,4(,R13)    GET CALLER'S SAVE AREA
-         LA    R0,SYSATDLN   GET ORIGINAL LENGTH
-         FREEMAIN R,A=(1),LV=(0)  AND RELEASE THE STORAGE
-         LR    R13,R9        RESTORE CALLER'S SAVE AREA
-SYSATRET FUNEXIT ,           RESTORE REGS; SET RETURN CODES
+SYSATEXT FUNEXIT ,           RESTORE REGS; SET RETURN CODES
          SPACE 1             RETURN TO CALLER
 *    DYNAMICALLY ACQUIRED STORAGE
 *
@@ -1743,10 +1985,10 @@ SYSATOPL DS    2Y     1/4    PARM LENGTH / LENGTH SCANNED
 SYSATPGM DS    CL8    2/4    PROGRAM NAME (SEPARATOR)
 SYSATOTL DS    Y      3/4    OS PARM LENGTH / BLANKS FOR CP CALL
 SYSATOTX DS    CL100  4/4    NORMAL PARM TEXT STRING
-SYSATLST ATTACH EPLOC=SYSATPGM,ECB=SYSATECB,SF=L
+SYSATLST ATTACH EPLOC=SYSATPGM,ECB=SYSATECB,SHSPV=78,SZERO=NO,SF=L
 SYSATZER EQU   SYSATCLR,*-SYSATCLR,C'X'   ADDRESS & SIZE TO CLEAR
 SYSATDLN EQU   *-SYSATWRK     LENGTH OF DYNAMIC STORAGE
-         CSECT ,             RESTORE
+MVSSUPA  CSECT ,             RESTORE
          SPACE 2
 ***********************************************************************
 *                                                                     *
@@ -1993,41 +2235,33 @@ DYNALWRK DSECT ,             MAP STORAGE
          DS    18A           OUR OS SAVE AREA
 DYNLIST  DYNPAT P=ALL        EXPAND ALLOCATION DATA
 DYNALDLN EQU   *-DYNALWRK     LENGTH OF DYNAMIC STORAGE
-         CSECT ,             RESTORE
+MVSSUPA  CSECT ,             RESTORE
          SPACE 2
 *
 *
-* Keep this code last because it uses different base register
+* Keep this code last because it makes no difference - no USINGs
 *
-         PUSH  USING
-         DROP  ,
 ***********************************************************************
 *                                                                     *
 *  SETJ - SAVE REGISTERS INTO ENV                                     *
 *                                                                     *
 ***********************************************************************
          ENTRY @@SETJ
-         USING @@SETJ,R15
 @@SETJ   L     R15,0(,R1)         get the env variable
          STM   R0,R14,0(R15)      save registers to be restored
          LA    R15,0              setjmp needs to return 0
          BR    R14                return to caller
-         POP   USING
          SPACE 1
-         PUSH  USING
-         DROP  ,
 ***********************************************************************
 *                                                                     *
 *  LONGJ - RESTORE REGISTERS FROM ENV                                 *
 *                                                                     *
 ***********************************************************************
          ENTRY @@LONGJ
-         USING @@LONGJ,R15
 @@LONGJ  L     R2,0(,R1)          get the env variable
          L     R15,60(,R2)        get the return code
          LM    R0,R14,0(R2)       restore registers
          BR    R14                return to caller
-         POP   USING
          SPACE 2
 *
 * S/370 doesn't support switching modes so this code is useless,
@@ -2079,11 +2313,6 @@ DYNALDLN EQU   *-DYNALWRK     LENGTH OF DYNAMIC STORAGE
 *                                                                     *
 ***********************************************************************
 ***********************************************************************
-*
-*
-*
-         SPACE 2
-*EXTRA*  IEZIOB                   Input/Output Block
          SPACE 2
 *
 ***********************************************************************
@@ -2111,7 +2340,7 @@ OPENLEN  EQU   *-WORKAREA         Length for @@AOPEN processing
          SPACE 2
 ***********************************************************************
 *                                                                     *
-* ZDCBAREA - this is a chunk of memory that is used by the C caller   *
+* ZDCBAREA - the address of this memory is used by the C caller       *
 * as a "handle". The block of memory has different contents depending *
 * on what sort of file is being opened, but it will be whatever the   *
 * assembler code is expecting, and the caller merely needs to         *
@@ -2188,6 +2417,7 @@ IOMFLAGS DS    X             Remember open MODE
 IOFOUT   EQU   X'01'           Output mode
 IOFEXCP  EQU   X'08'           Use EXCP for TAPE
 IOFBLOCK EQU   X'10'           Using BSAM READ/WRITE mode
+IOFUREC  EQU   X'40'           DEVICE IS UNIT RECORD
 IOFTERM  EQU   X'80'           Using GETLINE/PUTLINE
 IOPFLAGS DS    X             Remember prior events
 IOFKEPT  EQU   X'01'           Record info kept

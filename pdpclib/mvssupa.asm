@@ -212,6 +212,58 @@
 .BR      ANOP  ,
 &NM      BR    &F2
 .MEND    MEND  ,
+         MACRO
+&N       PDPPRLG &CINDEX=,&FRAME=,&BASER=,&ENTRY=
+         GBLB  &PDFPRLG
+         AIF   (&PDFPRLG).ONCED
+&PDFPRLG SETB  1
+*
+* The standard GCC entry prolog macro
+* by Chris Langford and Dave Jones
+* August, 2006
+*
+* This code is in the public domain and can be used without
+* restriction in any application, either commercial or non-commerical,
+* and can be freely redistributed.
+*
+.ONCED   AIF   ('&ENTRY' EQ 'NO').NENT
+*
+         ENTRY &N
+.NENT    ANOP
+&N       DS    0H
+         USING *,&BASER
+         SAVE  (14,12),,&N
+         LR    &BASER,15
+         L     15,76(,13)
+         ST    13,4(,15)
+         ST    15,8(,13)
+         LR    13,15
+         AIF   ('&FRAME' EQ '' OR '&FRAME' EQ '0').COMNUM
+         AIF   (T'&FRAME NE 'N').NONNUM
+         AIF   (&FRAME GE 4096).NONNUM
+         LA    15,&FRAME.(,15)
+         AGO   .COMNUM
+.NONNUM  A     15,=A(&FRAME)
+.COMNUM  ST    15,76(13)
+         MEND
+         MACRO
+&N       PDPEPIL
+         GBLB  &PDFEPIL
+         AIF   (&PDFEPIL).ONCED
+&PDFEPIL SETB  1
+*
+* The standard GCC exit code macro
+* by Chris Langford and Dave Jones
+* August, 2006
+*
+* This code is in the public domain and can be used without
+* restriction in any application, either commercial or non-commerical,
+* and can be freely redistributed.
+*
+.ONCED   ANOP  ,
+&N       L     13,4(,13)
+         RETURN (14,12),RC=(15)
+         MEND
 MVSSUPA  TITLE 'M V S S U P A  ***  MVS VERSION OF PDP CLIB SUPPORT'
 ***********************************************************************
 *                                                                     *

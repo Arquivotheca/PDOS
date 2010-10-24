@@ -1582,10 +1582,10 @@ RETURNGC FUNEXIT RC=(R5)
 *     Linker/Binder: RENT,REFR,REUS                                   *
 *                                                                     *
 *---------------------------------------------------------------------*
-*     Return codes:  when R15:0 R15 has return from program.          *
-*     Else R15 is 0480400n   GETMAIN failed                           *
+*     Return codes:  when R15:0 R15:1-3 has return from program.      *
 *       R15 is 04806nnn  ATTACH failed                                *
 *       R15 is 1400000n  PARM list error: n= 1,2, or 3 (req/pgm/parm) *
+*       R15 is 80sss000 or 80000uuu Subtask ABENDED (SYS sss/User uuu)*
 *                                                                     *
 ***********************************************************************
 @@SYSTEM FUNHEAD ,                ISSUE OS OR TSO COMMAND

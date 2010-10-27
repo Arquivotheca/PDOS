@@ -641,8 +641,8 @@ static void brkyd(int *year, int *month, int *day);
 static int pdosDumpBlk(PDOS *pdos, char *parm);
 static int pdosFindFile(PDOS *pdos, char *dsn, int *c, int *h, int *r);
 static int pdosLoadExe(PDOS *pdos, char *prog, char *parm);
-static int pdosFixPE(PDOS *pdos, char *initial, int *len, int *entry);
-static int pdosProcessRLD(PDOS *pdos, char *initial, char *rld, int len);
+static int fixPE(char *buf, int *len, int *entry, int rlad);
+static int processRLD(char *buf, int rlad, char *rld, int len);
 static int pdosDumpMem(PDOS *pdos, void *buf, int cnt);
 #if 0
 static int pdosLoadPE(PDOS *pdos, char *prog, char *parm);
@@ -2253,7 +2253,7 @@ static int pdosLoadExe(PDOS *pdos, char *prog, char *parm)
     exeLen = load - initial;    
     if (pe)
     {
-        if (pdosFixPE(pdos, initial, &exeLen, &entry) != 0)
+        if (fixPE(initial, &exeLen, &entry, (int)initial) != 0)
         {
             memmgrFree(&pdos->aspaces[pdos->curr_aspace].o.btlmem, raw);
             return (-1);
@@ -2306,6 +2306,7 @@ static int pdosLoadExe(PDOS *pdos, char *prog, char *parm)
     return (ret);
 }
 
+
 /* Structures here are documented in Appendix B and E of
    MVS Program Management: Advanced Facilities SA22-7644-01
    and Appendix B of OS/390 DFSMSdfp Utilities SC26-7343-00
@@ -2313,7 +2314,7 @@ static int pdosLoadExe(PDOS *pdos, char *prog, char *parm)
 
 #define PE_DEBUG 0
 
-static int pdosFixPE(PDOS *pdos, char *initial, int *len, int *entry)
+static int fixPE(char *buf, int *len, int *entry, int rlad)
 {
     char *p;
     char *q;
@@ -2337,9 +2338,10 @@ static int pdosFixPE(PDOS *pdos, char *initial, int *len, int *entry)
     int l2;
     int lastt = -1;
     char *lasttxt = NULL;
-    char *upto = initial;
+    char *upto = buf;
+    int initlen = *len;
     
-    if ((*len <= 8) || (*((int *)initial + 1) != 0xca6d0f))
+    if ((*len <= 8) || (*((int *)buf + 1) != 0xca6d0f))
     {
         printf("Not an MVS PE executable\n");
         return (-1);
@@ -2347,7 +2349,7 @@ static int pdosFixPE(PDOS *pdos, char *initial, int *len, int *entry)
 #if PE_DEBUG
     printf("MVS PE total length is %d\n", *len);
 #endif
-    p = initial;
+    p = buf;
     while (1)
     {
         rec++;
@@ -2359,7 +2361,7 @@ static int pdosFixPE(PDOS *pdos, char *initial, int *len, int *entry)
         }
         rem -= l;
 #if PE_DEBUG
-        printf("rec %d, offset %d is len %d\n", rec, p - initial, l);
+        printf("rec %d, offset %d is len %d\n", rec, p - buf, l);
 #endif
 #if 0
         if (1)
@@ -2386,7 +2388,7 @@ static int pdosFixPE(PDOS *pdos, char *initial, int *len, int *entry)
             amode = (ihapds->pds2ftb2 & 0x0c) >> 2;
             ent = 0;
             memcpy((char *)&ent + sizeof(ent) - 3, ihapds->pds2epa, 3);
-            *entry = (int)(initial + ent);
+            *entry = (int)(buf + ent);
 #if PE_DEBUG
             printf("module name is %.8s\n", ihapds->pds2name);
             printf("rmode is %s\n", rmode ? "ANY" : "24");
@@ -2448,7 +2450,6 @@ static int pdosFixPE(PDOS *pdos, char *initial, int *len, int *entry)
                 {
 #if PE_DEBUG
                     printf("rectype: program text\n");
-                    pdosDumpMem(pdos, q, l2);
 #endif
                     lasttxt = q;
                     memmove(upto, q, l2);
@@ -2476,7 +2477,7 @@ static int pdosFixPE(PDOS *pdos, char *initial, int *len, int *entry)
                 else if (t == 2)
                 {
                     /* printf("rectype: RLD\n"); */
-                    if (pdosProcessRLD(pdos, initial, q, l2) != 0)
+                    if (processRLD(buf, rlad, q, l2) != 0)
                     {
                         term = 1;
                         break;
@@ -2490,9 +2491,8 @@ static int pdosFixPE(PDOS *pdos, char *initial, int *len, int *entry)
                     l3 = *(short *)(q + 6) + 16;
 #if 0
                     printf("l3 is %d\n", l3);
-                    pdosDumpMem(pdos, q, l2);
 #endif
-                    if (pdosProcessRLD(pdos, initial, q, l3) != 0)
+                    if (processRLD(buf, rlad, q, l3) != 0)
                     {
                         term = 1;
                         break;
@@ -2501,7 +2501,7 @@ static int pdosFixPE(PDOS *pdos, char *initial, int *len, int *entry)
                 else if (t == 0x0e)
                 {
                     /* printf("rectype: Last record of module\n"); */
-                    if (pdosProcessRLD(pdos, initial, q, l2) != 0)
+                    if (processRLD(buf, rlad, q, l2) != 0)
                     {
                         term = 1;
                         break;
@@ -2568,14 +2568,13 @@ static int pdosFixPE(PDOS *pdos, char *initial, int *len, int *entry)
     }
 #if 0
     printf("dumping new module\n");
-    pdosDumpMem(pdos, initial, upto - initial);
 #endif
-    *len = upto - initial; /* return new module length */
+    *len = upto - buf; /* return new module length */
     return (0);
 }
 
 
-static int pdosProcessRLD(PDOS *pdos, char *initial, char *rld, int len)
+static int processRLD(char *buf, int rlad, char *rld, int len)
 {
     int l;
     char *r;
@@ -2608,10 +2607,18 @@ static int pdosProcessRLD(PDOS *pdos, char *initial, char *rld, int len)
         }
         ll = (*r & 0x0c) >> 2;
         ll++;
-        if (ll != 4)
+        if ((ll != 4) && (ll != 3))
         {
-            printf("untested and unsupported relocation\n");
+            printf("untested and unsupported relocation %d\n", ll);
             return (-1);
+        }
+        if (ll == 3)
+        {
+            if (rlad > 0xffffff)
+            {
+                printf("AL3 prevents relocating this module to %x\n", rlad);
+                return (-1);
+            }
         }
         cont = *r & 0x01; /* do we have A & F continous? */
         r++;
@@ -2624,10 +2631,10 @@ static int pdosProcessRLD(PDOS *pdos, char *initial, char *rld, int len)
         memcpy((char *)&a + sizeof(a) - 3, r, 3);
         /* +++ need bounds checking on this OS code */
         /* printf("need to zap %d bytes at offset %6x\n", ll, a); */
-        zaploc = (int *)(initial + a);
+        zaploc = (int *)(buf + a - ((ll == 3) ? 1 : 0));
         newval = *zaploc;
         /* printf("which means that %8x ", newval); */
-        newval += (int)initial;
+        newval += rlad;
         /* printf("becomes %8x\n", newval); */
         *zaploc = newval;
         r += 3;

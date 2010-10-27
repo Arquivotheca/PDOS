@@ -70,7 +70,7 @@ int main(int argc, char **argv)
 {
     char *load;
     char *start = (char *)PDOS_CODE;
-    void (*entry)(void *) = (void (*)(void *))PDOS_ENTRY;
+    void (*entry)(void *);
     int cyl;
     int head;
     int rec;
@@ -85,7 +85,6 @@ int main(int argc, char **argv)
     void (*fun)(void *);
     int x;
     int cnt;
-    int entpt;
 
     ipldev = initsys();
 #if 0
@@ -122,7 +121,7 @@ int main(int argc, char **argv)
         if (cnt == 0) break; /* reached EOF */
     }
     cnt = load - start;
-    if (fixPE(start, &cnt, (int *)&entpt, (int)start) != 0)
+    if (fixPE(start, &cnt, (int *)&entry, (int)start) != 0)
     {
         printf("MVS PE module corrupt\n");
     }

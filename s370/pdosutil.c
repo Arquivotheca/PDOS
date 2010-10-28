@@ -22,7 +22,7 @@
 /* find a file on disk */
 /* 0 = success, else negative return code */
 
-static int findFile(int ipldev, char *dsn, int *c, int *h, int *r)
+int findFile(int ipldev, char *dsn, int *c, int *h, int *r)
 {
     char *raw;
     char *initial;
@@ -119,7 +119,7 @@ static int findFile(int ipldev, char *dsn, int *c, int *h, int *r)
 
 #define PE_DEBUG 0
 
-static int fixPE(char *buf, int *len, int *entry, int rlad)
+int fixPE(char *buf, int *len, int *entry, int rlad)
 {
     char *p;
     char *q;
@@ -379,7 +379,7 @@ static int fixPE(char *buf, int *len, int *entry, int rlad)
 }
 
 
-static int processRLD(char *buf, int rlad, char *rld, int len)
+int processRLD(char *buf, int rlad, char *rld, int len)
 {
     int l;
     char *r;

@@ -1,17 +1,66 @@
           PDOS - Public Domain Operating System
           -------------------------------------
 
-Version 0.86, released 2007-08-23
+Version 0.8x, released 2010-xx-xx
 Written by Paul Edwards, fight.subjugation@gmail.com
 Released to the public domain
 You may use this entire package for any purpose whatsoever
 without restriction.
 
 
+
 INTRODUCTION
 ------------
 
-There are two aspects to PDOS.
+PDOS currently comes in 5 very different flavors, in
+two broad categories (3 mainframe systems, 2 PC systems):
+
+
+Mainframe:
+
+1. PDOS/390 - runs on an IBM mainframe (S/390 architecture).
+Predominantly designed to be compatible with a subset of the 
+31-bit MVS interface, so that it can run RMODE ANY, AMODE 31
+programs. Also intended to support Posix interface.
+
+2. PDOS/370 - runs on an IBM mainframe (S/370 architecture).
+Predominantly designed to be compatible with a subset of the
+24-bit MVS interface, so that it can run RMODE 24, AMODE 24
+programs.
+
+3. PDOS/380 - runs on Hercules/380 (S/380 architecture).
+Predominantly designed to be compatible with a subset of the
+MVS/380 interface, so that it can RMODE 24, AMODE 31 programs.
+
+
+PC:
+
+1. PDOS/86 - long-term goal is to be compatible with 
+MSDOS, and thus supports a subset of the 16-bit MSDOS API.
+
+2. PDOS/386 - designed to be a 32-bit version of MSDOS,
+so API is similar to PDOS/86, except most values take a
+32-bit integer that would otherwise normally be 16-bit.
+Also an intention to support the Win32 console-mode API
+and Win32 executable format (instead of the current a.out
+format). Also intended to support Posix interface.
+
+
+
+MAINFRAME PURPOSE
+-----------------
+
+To provide an alternative platform to run MVS applications, that
+can be expanded on as required. Also to experiment with different
+techniques. Also in some ways it helps to simply test MVS
+applications, as they get executed in a different environment.
+
+
+
+PC PURPOSE
+----------
+
+There are two aspects to the PC-based PDOS.
 
 1. Practical - I'm not sure what the market requirement
 for this is, but if you need to distribute a floppy disk
@@ -88,8 +137,9 @@ does call 16-bit BIOS functions by switching to
 real mode.
 
 
-INSTALLING
-----------
+
+PC INSTALLING
+-------------
 
 To get the 16-bit version on floppy disk, you need
 to get hold of a program called "rawrite" from the
@@ -110,8 +160,9 @@ this work, because the "sys" command produces an
 incompatible boot sector.
 
 
-DEVELOPMENT ENVIRONMENT
------------------------
+
+PC DEVELOPMENT ENVIRONMENT
+--------------------------
 
 I use the following bits of software.
 
@@ -134,8 +185,9 @@ http://msdn2.microsoft.com/en-us/vstudio/aa718349.aspx
 (go "vcpp5 /c" to extract)
 
 
-RECOMPILING
------------
+
+PC RECOMPILING
+--------------
 
 If you have the above software, you can just type "build"
 and it will rebuild the two DSK files used in the shipment.
@@ -177,6 +229,7 @@ compb
 compbu
 bootupd pdos16.dsk pbootsec.com
 rawrite pdos16.dsk back to floppy
+
 
 
 HISTORY
@@ -224,6 +277,7 @@ which is how many bytes need to be subtracted from an address in order
 for it to be able to access that absolute memory location.
 
 
+
 VERSION HISTORY
 ---------------
 
@@ -264,8 +318,9 @@ available on 1994-07-30.
 0.86  Released 2007-08-23
 
 
-PROGRAM INTERFACE
------------------
+
+PC PROGRAM INTERFACE
+--------------------
 
 The startup code for C programs needed to change for the 32-bit
 version (this is something that programmers don't normally see,
@@ -328,8 +383,9 @@ memory mapping available so whilst the CRT mechanism is implemented, it
 doesn't work, and won't work in the short term.
 
 
-POS INTERFACE
--------------
+
+PC POS INTERFACE
+----------------
 
 Instead of calling int 21h directly yourself (which will currently
 still work), you should instead use the routines provided in header
@@ -384,13 +440,16 @@ BosDiskSectorRead.
    will translate all the 32-bit addresses, buffering them if required.
 
 
-THE OPERATING SYSTEM ITSELF
----------------------------
+
+HANDS-ON USE
+------------
 
 To remain compatible with MSDOS 5's FORMAT, SYS + boot sector, the
 operating system has been split up into the traditional 3 programs,
 IO.SYS, MSDOS.SYS and COMMAND.COM, except they have been renamed to
-PLOAD.COM, PDOS.EXE and PCOMM.EXE respectively.
+PLOAD.COM, PDOS.EXE and PCOMM.EXE respectively. The mainframe
+naming standard is quite simlar, but is PLOAD.SYS, PDOS.SYS and
+COMMAND.EXE.
 
 As far as possible, all code has been written in C, for portability
 between 16 + 32 bit systems, plus portability to other CPUs.  It is
@@ -440,8 +499,26 @@ However, it is intended that as a non-default CONFIG.SYS option, you
 can get PDOS to use internal device drivers.
 
 
-FILES
------
+
+MAINFRAME FILES
+---------------
+
+The "s370" directory contains the main files that comprise the
+mainframe operating systems.
+
+doit.bat - used to compile and everything
+pload.c - standalone loader (PLOAD.SYS)
+pdos.c - standalone operating system (PDOS.SYS)
+pcomm.c - command processor (COMMAND.COM)
+pdosutil.c - common utilities
+pdossup.asm - assembler support routines for PDOS
+ploadsup.asm - assembler support routines for PLOAD
+world.c - example program
+
+
+
+PC FILES
+--------
 
 pload.c - loader for PDOS (IO.SYS)
 pdos.c - PDOS, the operating system (MSDOS.SYS)
@@ -464,8 +541,9 @@ fat.* - fat access functions
 pdpgoal.txt - not the license agreement
 
 
-INTERNALS
----------
+
+PC INTERNALS
+------------
 
 memory map:
 4 gig
@@ -636,10 +714,12 @@ incorporate all source code I have into one huge pcomm.exe
 look at minimizing code that is authorized to hang system.
 
 
+
 OBTAINING
 ---------
 The latest version currently resides at
-http://sourceforge.net/projects/pdos
+http://pdos.sourceforge.net
+
 
 
 DEVELOPING
@@ -647,6 +727,7 @@ DEVELOPING
 Code changes are most welcome! But the code changes must all
 be public domain. Please refer to refer.txt for more information
 on what needs to be done and how to do it.
+
 
 
 CONTACTING THE AUTHOR

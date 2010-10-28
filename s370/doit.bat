@@ -13,6 +13,7 @@ gccmvs -DUSE_MEMMGR -Os -DS380 -S -I . -I ../pdpclib ../pdpclib/signal.c
 gccmvs -DUSE_MEMMGR -Os -DS380 -S -I . -I ../pdpclib ../pdpclib/__memmgr.c
 gccmvs -DUSE_MEMMGR -Os -DS380 -S -I . -I ../pdpclib pload.c
 gccmvs -DUSE_MEMMGR -Os -DS380 -S -I . -I ../pdpclib pdos.c
+gccmvs -DUSE_MEMMGR -Os -DS380 -S -I . -I ../pdpclib pdosutil.c
 gccmvs -DUSE_MEMMGR -Os -DS380 -S -I . -I ../pdpclib pcomm.c
 gccmvs -DUSE_MEMMGR -O0 -DS380 -S -I . -I ../pdpclib world.c
 

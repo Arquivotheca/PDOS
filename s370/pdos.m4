@@ -128,6 +128,9 @@ undivert(pdos.s)/*
 //PDOSSUP  EXEC PDPASM,MEMBER=PDOSSUP
 //SYSIN  DD  *
 undivert(pdossup.asm)/*
+//PDOSUTIL EXEC PDPASM,MEMBER=PDOSUTIL
+//SYSIN  DD  *
+undivert(pdosutil.s)/*
 //PCOMM    EXEC PDPASM,MEMBER=PCOMM
 //SYSIN  DD  *
 undivert(pcomm.s)/*

@@ -60,14 +60,13 @@ static char buf[40000];
    So PDOS can't be more than 1 MB in size unless this is changed */
 #define PDOS_HEAP (PDOS_CODE + 0x100000)
 
-static int ipldev;
-
-static int findFile(char *dsn, int *c, int *h, int *r);
+static int findFile(int ipldev, char *dsn, int *c, int *h, int *r);
 static int fixPE(char *buf, int *len, int *entry, int rlad);
 static int processRLD(char *buf, int rlad, char *rld, int len);
 
 int main(int argc, char **argv)
 {
+    int ipldev;
     char *load;
     char *start = (char *)PDOS_CODE;
     void (*entry)(void *);
@@ -90,7 +89,7 @@ int main(int argc, char **argv)
 #if 0
     printf("IPL device is %x\n", ipldev);
 #endif
-    if (findFile("PDOS.SYS", &cyl, &head, &rec) != 0)
+    if (findFile(ipldev, "PDOS.SYS", &cyl, &head, &rec) != 0)
     {
         printf("PDOS.SYS not found\n");
         return (12);
@@ -139,11 +138,13 @@ int main(int argc, char **argv)
 }
 
 
-/* find a file on disk */
 
 #define MAXBLKSZ 32767
 
-static int findFile(char *dsn, int *c, int *h, int *r)
+/* find a file on disk */
+/* 0 = success, else negative return code */
+
+static int findFile(int ipldev, char *dsn, int *c, int *h, int *r)
 {
     char *raw;
     char *initial;
@@ -153,8 +154,8 @@ static int findFile(char *dsn, int *c, int *h, int *r)
     int cyl;
     int head;
     int rec;
-    static int savearea[20]; /* needs to be in user space */
-    static char *pptrs[1];
+    int i;
+    int j;
     char tbuf[MAXBLKSZ];
     char srchdsn[FILENAME_MAX+10]; /* give an extra space */
     int cnt = -1;

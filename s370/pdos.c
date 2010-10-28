@@ -639,7 +639,7 @@ static void pdosSVC99(PDOS *pdos);
 static int pdosDoDIR(PDOS *pdos, char *parm);
 static void brkyd(int *year, int *month, int *day);
 static int pdosDumpBlk(PDOS *pdos, char *parm);
-static int pdosFindFile(PDOS *pdos, char *dsn, int *c, int *h, int *r);
+static int findFile(int ipldev, char *dsn, int *c, int *h, int *r);
 static int pdosLoadExe(PDOS *pdos, char *prog, char *parm);
 static int fixPE(char *buf, int *len, int *entry, int rlad);
 static int processRLD(char *buf, int rlad, char *rld, int len);
@@ -722,7 +722,7 @@ int pdosInit(PDOS *pdos)
 
     pdos->ipldev = initsys();
     lcreg0(cr0);
-    if (pdosFindFile(pdos, "CONFIG.SYS", &cyl, &head, &rec) != 0)
+    if (findFile(pdos->ipldev, "CONFIG.SYS", &cyl, &head, &rec) != 0)
     {
         printf("config.sys missing\n");
         return (0);
@@ -1534,7 +1534,7 @@ static void pdosProcessSVC(PDOS *pdos)
 #if 0
             printf("must be dataset name %s\n", lastds);
 #endif
-            if (pdosFindFile(pdos, lastds, &cyl, &head, &rec) == 0)
+            if (findFile(pdos->ipldev, lastds, &cyl, &head, &rec) == 0)
             {
                 rec = 0; /* so that we can do increments */
                 join_cchhr(gendcb->dcbfdad + 3, cyl, head, rec);
@@ -1784,7 +1784,7 @@ static void pdosSVC99(PDOS *pdos)
             if (((int)*svc99tu & 0x80000000) != 0) break;
             svc99tu++;
         }
-        if (pdosFindFile(pdos, lastds, &cyl, &head, &rec) != 0)
+        if (findFile(pdos->ipldev, lastds, &cyl, &head, &rec) != 0)
         {
             strcpy(lastds, "");
             pdos->context->regs[15] = 12;
@@ -1997,7 +1997,7 @@ static int pdosDumpBlk(PDOS *pdos, char *parm)
 /* find a file on disk */
 /* 0 = success, else negative return code */
 
-static int pdosFindFile(PDOS *pdos, char *dsn, int *c, int *h, int *r)
+static int findFile(int ipldev, char *dsn, int *c, int *h, int *r)
 {
     char *raw;
     char *initial;
@@ -2038,7 +2038,7 @@ static int pdosFindFile(PDOS *pdos, char *dsn, int *c, int *h, int *r)
     len++; /* force a search for the blank */
     
     /* read VOL1 record which starts on cylinder 0, head 0, record 3 */
-    cnt = rdblock(pdos->ipldev, 0, 0, 3, tbuf, MAXBLKSZ);
+    cnt = rdblock(ipldev, 0, 0, 3, tbuf, MAXBLKSZ);
     if (cnt >= 20)
     {
         cyl = head = rec = 0;
@@ -2048,7 +2048,7 @@ static int pdosFindFile(PDOS *pdos, char *dsn, int *c, int *h, int *r)
         memcpy((char *)&rec + sizeof(int) - 1, tbuf + 19, 1);
         
         while ((cnt =
-               rdblock(pdos->ipldev, cyl, head, rec, &dscb1, sizeof dscb1))
+               rdblock(ipldev, cyl, head, rec, &dscb1, sizeof dscb1))
                > 0)
         {
             if (cnt >= sizeof dscb1)

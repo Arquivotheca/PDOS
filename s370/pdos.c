@@ -640,6 +640,7 @@ static void pdosProcessSVC(PDOS *pdos);
 static void pdosSVC99(PDOS *pdos);
 static int pdosDoDIR(PDOS *pdos, char *parm);
 static void brkyd(int *year, int *month, int *day);
+static int pdosNewF(PDOS *pdos, char *parm);
 static int pdosDumpBlk(PDOS *pdos, char *parm);
 static int pdosLoadExe(PDOS *pdos, char *prog, char *parm);
 static int pdosDumpMem(PDOS *pdos, void *buf, int cnt);
@@ -1652,6 +1653,12 @@ static void pdosProcessSVC(PDOS *pdos)
             *pdos->context->postecb = 0;
             pdos->context->regs[15] = 0;
         }
+        else if (memcmp(prog, "NEWF", 4) == 0)
+        {
+            pdosNewF(pdos, parm);
+            *pdos->context->postecb = 0;
+            pdos->context->regs[15] = 0;
+        }
         else if ((newcont = pdosLoadExe(pdos, prog, parm)) != 0)
         {
             /* +++ not sure what proper return code is */
@@ -1919,6 +1926,75 @@ static void brkyd(int *year, int *month, int *day)
     *day = tms.tm_mday;
 }
 
+
+static int pdosNewF(PDOS *pdos, char *parm)
+{
+    char tbuf[MAXBLKSZ];
+
+    printf("got request to create file %s\n", parm + 2);
+
+    memset(tbuf, '\0', sizeof tbuf);
+    memcpy(tbuf, "\x00\x01\x00\x00\x0d\x2c\x00\x60", 8);
+    strcpy(tbuf + 8, "AAAA");
+    /* free directory space starts at 1 0 12 */    
+    wrblock(pdos->ipldev, 1, 0, 12, tbuf, 140, 0x1d);
+
+#if 0
+C:\devel\pdos\s370>diff temp1.txt temp2.txt
+1c1
+< 000000  C7C3C34B C5E7C540 40404040 40404040  GCC.EXE
+---
+> 000000  E6E3D6E6 D6D9D3C4 4BC5E7C5 40404040  WTOWORLD.EXE
+6,8c6,8
+< 000050  00004000 C0004814 00000000 0080C000  .. .{.........{.
+< 000060  0001003B 042AE600 00810000 06000000  ......W..a......
+< 000070  09000E00 00000000 00000000 00000000  ................
+---
+> 000050  00004000 C0004814 00000000 00808000  .. .{...........
+> 000060  00010000 02DBF000 00010000 0A000000  ......0.........
+> 000070  0A000000 00000000 00000000 00000000  ................
+
+C:\devel\pdos\s370>type temp1.txt
+000000  C7C3C34B C5E7C540 40404040 40404040  GCC.EXE
+000010  40404040 40404040 40404040 40404040
+000020  40404040 40404040 40404040 F1D7C4D6              1PDO
+000030  E2F0F000 016E012E 00000001 7800C8C5  S00..>........HE
+000040  D9C3E4D3 C5E24040 40404000 00000000  RCULES     .....
+000050  00004000 C0004814 00000000 0080C000  .. .{.........{.
+000060  0001003B 042AE600 00810000 06000000  ......W..a......
+000070  09000E00 00000000 00000000 00000000  ................
+000080  00000000 00000000 00000000           ............
+
+/(0009) dumpblk 1 0 6
+dumping cylinder 1, head 0, record 6
+000000  C3D6D4D4 C1D5C44B C5E7C540 40404040  COMMAND.EXE
+000010  40404040 40404040 40404040 40404040
+000020  40404040 40404040 40404040 F1D7C4D6              1PDO
+000030  E2F0F000 016E012F 00000001 7800C8C5  S00..>........HE
+000040  D9C3E4D3 C5E24040 40404000 00000000  RCULES     .....
+000050  00004000 C0004814 00000000 0080C000  .. .{.........{.
+000060  00010001 03754600 00810000 04000000  .........a......
+000070  04000E00 00000000 00000000 00000000  ................
+000080  00000000 00000000 00000000           ............
+
+PDOS00:\>
+/(0009) dumpblk 1 0 7
+dumping cylinder 1, head 0, record 7
+000000  C1E4E3D6 C5E7C5C3 4BC2C1E3 40404040  AUTOEXEC.BAT
+000010  40404040 40404040 40404040 40404040
+000020  40404040 40404040 40404040 F1D7C4D6              1PDO
+000030  E2F0F000 016E012F 00000001 7800C8C5  S00..>........HE
+000040  D9C3E4D3 C5E24040 40404000 00000000  RCULES     .....
+000050  00004000 C0004814 00000000 0080C000  .. .{.........{.
+000060  00010000 02DFEC00 00810000 05000000  .........a......
+000070  05000E00 00000000 00000000 00000000  ................
+000080  00000000 00000000 00000000           ............
+
+#endif
+
+
+    return (0);
+}
 
 
 /* dump block */

@@ -421,21 +421,48 @@ typedef struct {
 } DSCB4;
 
 typedef struct {
-    char ds1dsnam[44];
-    char ds1fmtid;
-    char unused1[8];
-    char ds1credt[3];
-    char unused2[28];
-    char ds1recfm;
-    char unused3;
-    short ds1blkl;
-    short ds1lrecl;
-    char unused4[15];
-    char unused5;
-    char unused6;
+    char ds1dsnam[44]; /* dataset name */
+    char ds1fmtid; /* must be set to '1' */
+    char ds1dssn[6]; /* volser */
+    char ds1volsq[2]; /* volume sequence number */
+    char ds1credt[3]; /* creation date */
+    char ds1expdt[3]; /* expiry date */
+    char ds1noepv; /* number of extents */
+    char ds1nobdb; /* no idea what this is, but 0x78 seems popular */
+    char ds1flag1; 
+    char ds1syscd[13]; /* system code - presumably name of operating system */
+    char ds1refd[3]; /* referral date - ie last time accessed */
+    char ds1smsfg;
+    char ds1scxtf;
+    short ds1scxtv;
+    short ds1dsorg; /* dataset organization, e.g. PS or PO */
+    char ds1recfm; /* record format, e.g. F/V/U */
+    char ds1optcd;
+    short ds1blkl; /* block size */
+    short ds1lrecl; /* logical record length */
+    char ds1keyl;
+    char ds1rkp[2];
+    char ds1dsind; /* is this the last volume for this dataset? */
+    char ds1scal1; /* is this a cylinder request? */
+    char ds1scal3[3]; /* size of secondary allocation */
+    char ds1lstar[3]; /* last TTR actually used - ie the EOF record */
+    char ds1trbal[2]; /* TRKCALC??? */
+    char resv1; /* reserved */
+    char ds1ttthi; /* a 3rd byte for TTR number, ie TTTR for lstar */
+    char ds1ext1[2]; /* first extent - actualy 10 bytes, but we use 
+                        different names currently. First byte is an
+                        extent indicator, second byte is the extent
+                        sequence number. Then we have start CCHH and
+                        end CCHH (4 bytes each) */
     char startcchh[4];
     char endcchh[4];
+    char ds1ext2[10]; /* second extent */
+    char ds1ext3[10]; /* third extent */
+    char ds1ptrds[5]; /* CCHHR pointing to a format-2 or format-3
+                         DSCB which allows unlimited chaining so your
+                         dataset can grow to fill the disk */
 } DSCB1;
+
 
 
 /* A S/370 logical address consists of a segment index, which is
@@ -1932,14 +1959,66 @@ static void brkyd(int *year, int *month, int *day)
 static int pdosNewF(PDOS *pdos, char *parm)
 {
     char tbuf[MAXBLKSZ];
+    DSCB1 *dscb1;
+    int len;
+    char *dsn;
+    int cyl;
 
-    printf("got request to create file %s\n", parm + 2);
+    dsn = parm + 2;
+    printf("got request to create file %s\n", dsn);
+    cyl = 20; /* arbitrary spot */
 
+    dscb1 = (DSCB1 *)tbuf;
+
+    len = strlen(dsn);
+    if (len > sizeof dscb1->ds1dsnam)
+    {
+        len = sizeof dscb1->ds1dsnam;
+    }
+    memset(dscb1, '\0', sizeof(DSCB1));
+    memset(dscb1->ds1dsnam, ' ', sizeof dscb1->ds1dsnam);
+    memcpy(dscb1->ds1dsnam, dsn, len);
+    dscb1->ds1fmtid = '1'; /* format 1 DSCB */
+    memcpy(dscb1->ds1dssn, "PDOS00", 6);
+    dscb1->ds1volsq[1] = 1; /* volume sequence number */
+    memcpy(dscb1->ds1credt, "\x6e\x00\x01", 3); /* 2010-01-01 */
+    memcpy(dscb1->ds1expdt, "\x00\x00\x00", 3); /* 1900-01-00 ? */
+    dscb1->ds1noepv = 1; /* number of extents */
+    dscb1->ds1nobdb = 0x78; /* not sure what this is about */
+    strcpy(dscb1->ds1syscd, "PDOS         "); /* beware NUL */
+    dscb1->ds1dsorg = 0x4000; /* DS1DSGPS */
+    dscb1->ds1recfm = 0xc0; /* DS1RECFU */
+    dscb1->ds1blkl = 18452;
+    dscb1->ds1lrecl = 0;
+    dscb1->ds1dsind = 0x80; /* DS1IND80 = last volume for this dataset */
+    dscb1->ds1scal1 = 0xc0; /* DS1CYL = cylinder request */
+    dscb1->ds1scal3[2] = 1; /* secondary allocation */
+    /* this is meant to be the last used track and block for the dataset
+       in TTR format */
+    /* since we don't know what that will be, just set it to relative
+       track 14 (since this is 0-based, and record 1 */
+    memcpy(dscb1->ds1lstar, "\x00\x0e\x01", 3);
+    /* this is some value apparently from TRKCALC, whatever that is. */
+    /* lower would seem to be more prudent */
+    memcpy(dscb1->ds1trbal, "\x01\x01", 2);
+    dscb1->ds1ext1[0] = 0x81; /* on a cylinder boundary */
+    
+    /* space starts on specified cylinder */
+    memcpy(dscb1->startcchh, (char *)&cyl + sizeof cyl - 2, 2);
+    /* and ends on same cylinder */
+    memcpy(dscb1->endcchh, (char *)&cyl + sizeof cyl - 2, 2);
+    /* last head on that cylinder too */
+    memcpy(dscb1->endcchh + 2, "\x00\x0e", 2);
+    
+    wrblock(pdos->ipldev, 1, 0, 12, tbuf, 140, 0x0d);
+    
+#if 0
     memset(tbuf, '\0', sizeof tbuf);
     memcpy(tbuf, "\x00\x01\x00\x00\x0d\x2c\x00\x60", 8);
     strcpy(tbuf + 8, "AAAA");
     /* free directory space starts at 1 0 12 */    
     wrblock(pdos->ipldev, 1, 0, 12, tbuf, 140, 0x1d);
+#endif
 
 #if 0
 

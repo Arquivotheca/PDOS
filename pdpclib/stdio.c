@@ -70,11 +70,11 @@
 #include "limits.h"
 #include "stddef.h"
 
-/* PDOS and MSDOS use the same interface most of the time */
+/* PDOS/x86 and MSDOS use the same interface most of the time */
 /* Note that PDOS is for the 32-bit version, since the 16-bit
    version uses the MSDOS version since it is compatible with it */
 /* linux is pretty similar too */
-#if defined(__PDOS__) || defined(__gnu_linux__)
+#if (defined(__PDOS__) && !defined(__MVS__)) || defined(__gnu_linux__)
 #define __MSDOS__
 #endif
 
@@ -234,7 +234,7 @@ static void freadSlowB(void *ptr,
 static int examine(const char **formt, FILE *fq, char *s, va_list *arg,
                    int chcount);
 
-#if defined(__CMS__) || defined(MUSIC)
+#if defined(__CMS__) || defined(MUSIC) || defined(PDOS)
 static void filedef(char *fdddname, char *fnm, int mymode);
 static void fdclr(char *ddname);
 #endif
@@ -725,7 +725,7 @@ static void osfopen(void)
         myfile->dynal = 1;
         p = tmpdd;
     }
-#elif defined(MUSIC)
+#elif defined(MUSIC) || defined(PDOS)
     {
         strcpy(newfnm, fnm);
         p = newfnm;
@@ -2377,7 +2377,9 @@ static int examine(const char **formt, FILE *fq, char *s, va_list *arg,
         {
             precision = 1;
         }
-#if defined(__MSDOS__) && !defined(__PDOS__) && !defined(__gnu_linux__)
+#if defined(__MSDOS__) && \
+    !(defined(__PDOS__) && !defined(__MVS__)) && \
+    !defined(__gnu_linux__)
         if (specifier == 'p')
         {
             lng = 1;
@@ -2410,7 +2412,9 @@ static int examine(const char **formt, FILE *fq, char *s, va_list *arg,
         {
             neg = 0;
         }
-#if defined(__MSDOS__) && !defined(__PDOS__) && !defined(__gnu_linux__)
+#if defined(__MSDOS__) && \
+    !(defined(__PDOS__) && !defined(__MVS__)) && \
+    !defined(__gnu_linux__)
         if (!lng)
         {
             ulvalue &= 0xffff;
@@ -2430,7 +2434,9 @@ static int examine(const char **formt, FILE *fq, char *s, va_list *arg,
         }
         if (specifier == 'p')
         {
-#if defined(__MSDOS__) && !defined(__PDOS__) && !defined(__gnu_linux__)
+#if defined(__MSDOS__) && \
+    !(defined(__PDOS__) && !defined(__MVS__)) && \
+    !defined(__gnu_linux__)
             precision = 9;
 #else
             precision = 8;
@@ -2456,7 +2462,9 @@ static int examine(const char **formt, FILE *fq, char *s, va_list *arg,
                 }
             }
             x++;
-#if defined(__MSDOS__) && !defined(__PDOS__) && !defined(__gnu_linux__)
+#if defined(__MSDOS__) && \
+    !(defined(__PDOS__) && !defined(__MVS__)) && \
+    !defined(__gnu_linux__)
             if ((x == 4) && (specifier == 'p'))
             {
                 work[x] = ':';
@@ -2465,7 +2473,9 @@ static int examine(const char **formt, FILE *fq, char *s, va_list *arg,
 #endif
             ulvalue = ulvalue / base;
         }
-#if defined(__MSDOS__) && !defined(__PDOS__) && !defined(__gnu_linux__)
+#if defined(__MSDOS__) && \
+    !(defined(__PDOS__) && !defined(__MVS__)) && \
+    !defined(__gnu_linux__)
         if (specifier == 'p')
         {
             while (x < 5)
@@ -3854,7 +3864,9 @@ static int vvscanf(const char *format, va_list arg, FILE *fp, const char *s)
                             inch();
                         }
 /* DOS has a ':' in the pointer - skip that */
-#if defined(__MSDOS__) && !defined(__PDOS__) && !defined(__gnu_linux__)
+#if defined(__MSDOS__) && \
+    !(defined(__PDOS__) && !defined(__MVS__)) && \
+    !defined(__gnu_linux__)
                         else if ((*format == 'p') && (ch == ':'))
                         {
                             inch();
@@ -5236,7 +5248,7 @@ __PDPCLIB_API__ size_t fread(void *ptr, size_t size, size_t nmemb, FILE *stream)
    Following code issues a FILEDEF for MUSIC
 */
 
-#ifdef MUSIC
+#if defined(MUSIC) || (defined(PDOS) && defined(__MVS__))
 
 static struct {
   char len; /* length of request block, always 20 */

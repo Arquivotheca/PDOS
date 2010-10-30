@@ -74,7 +74,7 @@ static char buffer2[BUFSIZ + 8];
 static char buffer3[BUFSIZ + 8];
 #endif
 
-#ifdef __PDOS__
+#if defined(__PDOS__) && !defined(__MVS__)
 #include <support.h>
 #include <pos.h>
 int __abscor;
@@ -97,13 +97,13 @@ int __start(char *p, char *pgmname, char *ep)
 int __start(char *p, char *pgmname, int tso)
 #elif defined(__gnu_linux__)
 int __start(int argc, char **argv)
-#elif defined(__PDOS__)
+#elif (defined(__PDOS__) && !defined(__MVS__))
 int __start(int *i1, int *i2, int *i3, POS_EPARMS *exep)
 #else
 __PDPCLIB_API__ int CTYP __start(char *p)
 #endif
 {
-#if defined(__PDOS__) || defined(__CMS__)
+#if (defined(__PDOS__) && !defined(__MVS__)) || defined(__CMS__)
     char *p;
 #endif
     int x;
@@ -125,7 +125,7 @@ __PDPCLIB_API__ int CTYP __start(char *p)
     char parmbuf[310]; /* z/VSE can have a PARM up to 300 characters */
 #endif
 
-#ifdef __PDOS__
+#if defined(__PDOS__) && !defined(__MVS__)
     p = exep->psp;
     __abscor = exep->abscor;
     __vidptr = ABSADDR(0xb8000);
@@ -669,7 +669,7 @@ __PDPCLIB_API__ int CTYP __start(char *p)
         p++;
     }
 #endif
-#if defined(__MSDOS__) || defined(__PDOS__)
+#if defined(__MSDOS__) || (defined(__PDOS__) && !defined(__MVS__))
     argv[0] = "";
 
 #ifdef __MSDOS__

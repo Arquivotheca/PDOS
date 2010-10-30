@@ -246,7 +246,12 @@ NEWIO    DC    X'000C0000'  machine check, EC, DAT off
 *  parameter 4 = record                                              *
 *  parameter 5 = buffer                                              *
 *  parameter 6 = size of buffer                                      *
-*  parameter 7 = key length (0 if none)                              *
+*  parameter 7 = command code (x'5' for data, x'd' for key + data,   *
+*                x'1d' for count, key, data. Normally x'1d' is       *
+*                required (but the 8 byte counter field does not     *
+*                include the length of the counter itself; also, the *
+*                record number passed to the routine must be one     *
+*                less than in the counter field).                    *
 *                                                                    *
 *  return = length of data written, or -1 on error                   *
 *                                                                    *
@@ -266,7 +271,9 @@ WRBLOCK  DS    0H
          STCM  R2,B'0011',WRHH1
          STCM  R2,B'0011',WRHH2
          L     R2,12(R1)    Record
-         STC   R2,WRR         
+         STC   R2,WRR
+         L     R2,24(R1)    Command code
+         STC   R2,WRLDCCW
          L     R2,16(R1)    Buffer
 * It is a requirement of using this routine that V=R. If it is
 * ever required to support both V and R, then LRA could be used,
@@ -345,15 +352,15 @@ WRORB    DS    0F
 WRSEEK   CCW   7,WRBBCCHH,X'40',6       40 = chain command
 WRSRCH   CCW   X'31',WRCCHHR,X'40',5    40 = chain command
          CCW   8,WRSRCH,0,0
-* X'D' = write key and data
-WRLDCCW  CCW   X'D',0,X'20',32767     20 = ignore length issues
+* X'1D' = write count, key and data
+WRLDCCW  CCW   X'1D',0,X'20',32767     20 = ignore length issues
          AGO   .WR390F
 .WR390   ANOP
 WRSEEK   CCW1  7,WRBBCCHH,X'40',6       40 = chain command
 WRSRCH   CCW1  X'31',WRCCHHR,X'40',5    40 = chain command
          CCW1  8,WRSRCH,0,0
-* X'D' = write key and data
-WRLDCCW  CCW1  X'D',0,X'20',32767     20 = ignore length issues
+* X'1D' = write count, key and data
+WRLDCCW  CCW1  X'1D',0,X'20',32767     20 = ignore length issues
 .WR390F  ANOP
 WRFINCHN EQU   *
          DS    0H

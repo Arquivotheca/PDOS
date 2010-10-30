@@ -238,6 +238,153 @@ NEWIO    DC    X'000C0000'  machine check, EC, DAT off
 *
 **********************************************************************
 *                                                                    *
+*  WRBLOCK - write a block to disk                                   *
+*                                                                    *
+*  parameter 1 = device                                              *
+*  parameter 2 = cylinder                                            *
+*  parameter 3 = head                                                *
+*  parameter 4 = record                                              *
+*  parameter 5 = buffer                                              *
+*  parameter 6 = size of buffer                                      *
+*  parameter 7 = key length (0 if none)                              *
+*                                                                    *
+*  return = length of data written, or -1 on error                   *
+*                                                                    *
+**********************************************************************
+         ENTRY WRBLOCK
+WRBLOCK  DS    0H
+         SAVE  (14,12),,WRBLOCK
+         LR    R12,R15
+         USING WRBLOCK,R12
+         USING PSA,R0
+*
+         L     R10,0(R1)    Device number
+         L     R2,4(R1)     Cylinder
+         STCM  R2,B'0011',WRCC1
+         STCM  R2,B'0011',WRCC2
+         L     R2,8(R1)     Head
+         STCM  R2,B'0011',WRHH1
+         STCM  R2,B'0011',WRHH2
+         L     R2,12(R1)    Record
+         STC   R2,WRR         
+         L     R2,16(R1)    Buffer
+* It is a requirement of using this routine that V=R. If it is
+* ever required to support both V and R, then LRA could be used,
+* and check for a 0 return, and if so, do a BNZ.
+*         LRA   R2,0(R2)     Get real address
+         L     R7,20(R1)    Bytes to read
+         AIF   ('&SYS' EQ 'S390').WR390B
+         STCM  R2,B'0111',WRLDCCW+1   This requires BTL buffer
+         STH   R7,WRLDCCW+6  Store in WRITE CCW
+         AGO   .WR390C
+.WR390B  ANOP
+         ST    R2,WRLDCCW+4
+         STH   R7,WRLDCCW+2
+.WR390C  ANOP
+*
+* Interrupt needs to point to CONT now. Again, I would hope for
+* something more sophisticated in PDOS than this continual
+* initialization.
+*
+         MVC   FLCINPSW(8),WRNEWIO
+         STOSM FLCINPSW,X'00'  Work with DAT on or OFF
+* R3 points to CCW chain
+         LA    R3,WRSEEK
+         ST    R3,FLCCAW    Store in CAW
+*
+*
+         AIF   ('&SYS' EQ 'S390').WR31B
+         SIO   0(R10)
+*         TIO   0(R10)
+         AGO   .WR24B
+.WR31B   ANOP
+         LR    R1,R10       R1 needs to contain subchannel
+         LA    R9,WRIRB
+         TSCH  0(R9)        Clear pending interrupts
+         LA    R10,WRORB
+         SSCH  0(R10)
+.WR24B   ANOP
+*
+*
+         LPSW  WRWTNOER     Wait for an interrupt
+         DC    H'0'
+WRCONT   DS    0H           Interrupt will automatically come here
+         AIF   ('&SYS' EQ 'S390').WR31H
+         SH    R7,FLCCSW+6  Subtract residual count to get bytes read
+         LR    R15,R7
+* After a successful CCW chain, CSW should be pointing to end
+         CLC   FLCCSW(4),=A(WRFINCHN)
+         BE    WRALLFIN
+         AGO   .WR24H
+.WR31H   ANOP
+         TSCH  0(R9)
+         SH    R7,10(R9)
+         LR    R15,R7
+         CLC   4(4,R9),=A(WRFINCHN)
+         BE    WRALLFIN
+.WR24H   ANOP
+         L     R15,=F'-1'   error return
+WRALLFIN DS    0H
+         RETURN (14,12),RC=(15)
+         LTORG
+*
+*
+         AIF   ('&SYS' NE 'S390').WR390G
+         DS    0F
+WRIRB    DS    24F
+WRORB    DS    0F
+         DC    F'0'
+         DC    X'0080FF00'  Logical-Path Mask (enable all?) + format-1
+         DC    A(WRSEEK)
+         DC    5F'0'
+.WR390G  ANOP
+*
+*
+         DS    0D
+         AIF   ('&SYS' EQ 'S390').WR390
+WRSEEK   CCW   7,WRBBCCHH,X'40',6       40 = chain command
+WRSRCH   CCW   X'31',WRCCHHR,X'40',5    40 = chain command
+         CCW   8,WRSRCH,0,0
+* X'D' = write key and data
+WRLDCCW  CCW   X'D',0,X'20',32767     20 = ignore length issues
+         AGO   .WR390F
+.WR390   ANOP
+WRSEEK   CCW1  7,WRBBCCHH,X'40',6       40 = chain command
+WRSRCH   CCW1  X'31',WRCCHHR,X'40',5    40 = chain command
+         CCW1  8,WRSRCH,0,0
+* X'D' = write key and data
+WRLDCCW  CCW1  X'D',0,X'20',32767     20 = ignore length issues
+.WR390F  ANOP
+WRFINCHN EQU   *
+         DS    0H
+WRBBCCHH DC    X'000000000000'
+         ORG   *-4
+WRCC1    DS    CL2
+WRHH1    DS    CL2
+WRCCHHR  DC    X'0000000005'
+         ORG   *-5
+WRCC2    DS    CL2
+WRHH2    DS    CL2
+WRR      DS    C
+         DS    0D
+WRWTNOER DC    X'060E0000'  I/O, machine check, EC, wait, DAT on
+         DC    X'00000000'  no error
+WRNEWIO  DC    X'000C0000'  machine check, EC, DAT off
+         AIF   ('&SYS' EQ 'S370').WRMOD24
+         DC    A(X'80000000'+WRCONT)  continuation after I/O request
+         AGO   .WRMOD31
+.WRMOD24 ANOP
+         DC    A(WRCONT)    continuation after I/O request
+.WRMOD31 ANOP
+*
+         DROP  ,
+*
+*
+*
+*
+*
+**********************************************************************
+*                                                                    *
 *  ADISP - dispatch a bit of code                                    *
 *                                                                    *
 **********************************************************************

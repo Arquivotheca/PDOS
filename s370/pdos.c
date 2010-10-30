@@ -420,6 +420,23 @@ typedef struct {
     char unused2[74];
 } DSCB4;
 
+typedef struct {
+    char ds1dsnam[44];
+    char ds1fmtid;
+    char unused1[8];
+    char ds1credt[3];
+    char unused2[28];
+    char ds1recfm;
+    char unused3;
+    short ds1blkl;
+    short ds1lrecl;
+    char unused4[15];
+    char unused5;
+    char unused6;
+    char startcchh[4];
+    char endcchh[4];
+} DSCB1;
+
 
 /* A S/370 logical address consists of a segment index, which is
    bits 8-11 (for 1MB index), for the 16 possible values, then
@@ -1830,22 +1847,7 @@ static int pdosDoDIR(PDOS *pdos, char *parm)
     int head;
     int rec;
     char tbuf[MAXBLKSZ];
-    struct {
-        char ds1dsnam[44];
-        char ds1fmtid;
-        char unused1[8];
-        char ds1credt[3];
-        char unused2[28];
-        char ds1recfm;
-        char unused3;
-        short ds1blkl;
-        short ds1lrecl;
-        char unused4[15];
-        char unused5;
-        char unused6;
-        char startcchh[4];
-        char endcchh[4];
-    } dscb1;
+    DSCB1 dscb1;
     int cnt;
     char *p;
     int year;
@@ -2061,15 +2063,7 @@ static int pdosLoadExe(PDOS *pdos, char *prog, char *parm)
     int cnt = -1;
     int lastcnt = 0;
     int ret = 0;
-    struct {
-        char ds1dsnam[44];
-        char ds1fmtid;
-        char unused1[60];
-        char unused2;
-        char unused3;
-        char startcchh[4];
-        char endcchh[4];
-    } dscb1;
+    DSCB1 dscb1;
     int pe = 0;
     int exeLen;
 

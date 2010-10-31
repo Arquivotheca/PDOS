@@ -903,7 +903,7 @@ static int pdosDispatchUntilInterrupt(PDOS *pdos)
             int len;
             char *buf;
             int cr = 0;
-            char tbuf[MAXBLKSZ];
+            char tbuf[MAXBLKSZ + 8];
             char *fin;
             int l;
             char *p;
@@ -931,31 +931,78 @@ static int pdosDispatchUntilInterrupt(PDOS *pdos)
 #if 0
             printf("got a request to write block %p, len %d\n", buf, len);
 #endif
-            /* assume RECFM=U, with caller providing NL */            
-            /* although this was specified to be a unit record
-               device, some applications ignore that, so be prepared
-               for more than one NL */
-            fin = buf + len;
-            p = buf;
-            while (p < fin)
+            if (memcmp(dcb->dcbfdad,
+                       "\x00\x00\x00\x00\x00\x00\x00\x00", 8) == 0)
             {
-                q = memchr(p, '\n', fin - p);
-                if (q == NULL)
+                /* assume RECFM=U, with caller providing NL */            
+                /* although this was specified to be a unit record
+                   device, some applications ignore that, so be prepared
+                   for more than one NL */
+                fin = buf + len;
+                p = buf;
+                while (p < fin)
                 {
-                    cr = 0;
-                    q = fin;
+                    q = memchr(p, '\n', fin - p);
+                    if (q == NULL)
+                    {
+                        cr = 0;
+                        q = fin;
+                    }
+                    else
+                    {
+                        cr = 1; /* assembler needs to do with CR */
+                    }
+                    memcpy(tbuf, p, q - p);
+                    __conswr(q - p, tbuf, cr);
+                    p = q;
+                    if (cr)
+                    {
+                        p++;
+                    }
                 }
-                else
+            }
+            else
+            {
+                int cyl;
+                int head;
+                int rec;
+                int cnt;
+                
+                split_cchhr(dcb->dcbfdad + 3, &cyl, &head, &rec);
+                rec++;
+#if DSKDEBUG
+                printf("writing from %p to %d, %d, %d\n",
+                       buf,
+                       cyl, head, rec);
+#endif
+                memcpy(tbuf, "\x00\x01\x00\x00\x0d\x2c\x00\x60", 8);
+                *(short *)tbuf = cyl;
+                *(short *)(tbuf + 2) = head;
+                tbuf[4] = rec;
+                tbuf[5] = 0;
+                *(short *)(tbuf + 6) = len;
+                memcpy(tbuf + 8, buf, len);
+
+                cnt = wrblock(pdos->ipldev, cyl, head, rec - 1,
+                              tbuf, len + 8, 0x1d);
+                if (cnt < 0)
                 {
-                    cr = 1; /* assembler needs to do with CR */
+                    rec = 0;
+                    head++;
+                    cnt = wrblock(pdos->ipldev, cyl, head, rec - 1,
+                                  tbuf, len + 8, 0x1d);
+                    if (cnt < 0)
+                    {
+                        head = 0;
+                        cyl++;
+                        cnt = wrblock(pdos->ipldev, cyl, head, rec - 1,
+                                      tbuf, len + 8, 0x1d);
+                    }
                 }
-                memcpy(tbuf, p, q - p);
-                __conswr(q - p, tbuf, cr);
-                p = q;
-                if (cr)
-                {
-                    p++;
-                }
+#if DSKDEBUG
+                printf("cnt is %d\n", cnt);
+#endif
+                join_cchhr(dcb->dcbfdad + 3, cyl, head, rec);
             }
         }
         else if (ret == 3) /* got a READ request */

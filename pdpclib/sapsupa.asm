@@ -827,8 +827,10 @@ CRNEWIO  DC    X'000C0000'  machine check, EC, DAT off
 *  MVS documentation for this (which is very complicated)             *
 *                                                                     *
 ***********************************************************************
+         ENTRY @@SVC99
+@@SVC99  DS    0H
          ENTRY @@DYNAL
-@@DYNAL  EQU   *
+@@DYNAL  DS    0H
          SAVE  (14,12),,@@DYNAL   Save caller's regs.
          LR    R12,R15
          USING @@DYNAL,R12

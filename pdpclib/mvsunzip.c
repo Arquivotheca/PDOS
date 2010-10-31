@@ -20,9 +20,10 @@
 #define MAXBUF 2000000L
 
 static int fasc(int asc);
+static void usage(void);
 static int onefile(FILE *infile);
 static char *ascii2l(char *buf);
-static char *outn;
+static char *outn = NULL;
 static int binary = 0;
 #ifdef __CMS__
 static int disk = '\0';
@@ -31,47 +32,44 @@ static int disk = '\0';
 int main(int argc, char **argv)
 {
     FILE *infile;
+    int aupto = 2;
 
+    if (argc <= 1) usage();
 #ifdef __CMS__
-    if ((argc <= 1) || ((argc >= 4) && (strcmp(argv[3], "BINARY") != 0)))
-#elif defined(MUSIC)
-    if ((argc <= 1) || ((argc >= 3) && (strcmp(argv[2], "binary") != 0)))
-#else
-    if ((argc <= 2) || ((argc >= 4) && (strcmp(argv[3], "binary") != 0)))
-#endif
+    if (argc > aupto)
     {
-#if defined(__CMS__)
-        printf("usage: mvsunzip <infile> [disk] [BINARY]\n");
-        printf("where infile is a sequential file\n");
-        printf("e.g. mvsunzip dd:input\n");
-#elif defined(MUSIC)
-        printf("usage: mvsunzip <infile> [binary]\n");
-        printf("where infile is a sequential file\n");
-        printf("e.g. mvsunzip dd:input\n");
-#else
-        printf("usage: mvsunzip <infile> <outfile> [binary]\n");
-        printf("where infile is a sequential file\n");
-        printf("and outfile is a PDS\n");
-        printf("e.g. mvsunzip dd:input dd:output\n");
-#endif
-        return (0);
+        if (strlen(argv[aupto]) == 1)
+        {
+            disk = argv[aupto][0];
+            aupto++;
+        }
     }
+#endif
+
 #ifndef __CMS__
-    outn = *(argv+2);
-#else
-    if (argc >= 3)
+    if (argc > aupto)
     {
-        disk = argv[2][0];
+        if ((strcmp(argv[aupto], "binary") != 0)
+           && (strcmp(argv[aupto], "BINARY") != 0))
+        {
+            outn = argv[aupto];
+            aupto++;
+        }
     }
 #endif
-#ifdef MUSIC
-    if (argc >= 3)
-#else
-    if (argc >= 4)
-#endif
+
+    if (argc > aupto)
     {
-        binary = 1;
+        if ((strcmp(argv[aupto], "binary") == 0)
+           || (strcmp(argv[aupto], "BINARY") == 0))
+        {
+            binary = 1;
+            aupto++;
+        }
     }
+    
+    if (argc > aupto) usage();
+
     printf("processing data from %s\n", *(argv + 1));
     infile = fopen(*(argv+1), "rb");
     if (infile == NULL)
@@ -81,6 +79,21 @@ int main(int argc, char **argv)
     }
     while (onefile(infile)) ;
     return (0);
+}
+
+static void usage(void)
+{
+#if defined(__CMS__)
+    printf("usage: mvsunzip <infile> [disk] [BINARY]\n");
+    printf("where infile is a sequential file\n");
+    printf("e.g. mvsunzip dd:input\n");
+#else
+    printf("usage: mvsunzip <infile> [outpds] [binary]\n");
+    printf("where infile is a sequential file\n");
+    printf("and outpds is a PDS (not supported on all systems)\n");
+    printf("e.g. mvsunzip dd:input dd:output\n");
+#endif
+    exit(EXIT_FAILURE);
 }
 
 static int onefile(FILE *infile)
@@ -187,24 +200,14 @@ static int onefile(FILE *infile)
         p = strrchr(p, '\\') + 1;
     }
 
-#if !defined(__CMS__) && !defined(MUSIC)
-    if (strchr(p, '.') != NULL) *strchr(p, '.') = '\0';
-    while (strchr(p, '-') != NULL) *strchr(p, '-') = '@';
-    while (strchr(p, '_') != NULL) *strchr(p, '_') = '@';
-#endif
-
-#if defined(MUSIC)
-    strcpy(newfnm, p);
-    /* automatically truncate filenames down to MUSIC length */
-    if (strlen(newfnm) > 17)
+    if (outn != NULL)
     {
-        p = strrchr(newfnm, '.');
-        if (p != NULL)
-        {
-            memmove(p - (strlen(newfnm) - 17), p, strlen(p) + 1);
-        }
+        if (strchr(p, '.') != NULL) *strchr(p, '.') = '\0';
+        while (strchr(p, '-') != NULL) *strchr(p, '-') = '@';
+        while (strchr(p, '_') != NULL) *strchr(p, '_') = '@';
     }
-#elif defined(__CMS__)
+
+#if defined(__CMS__)
     if (strchr(p, '.') != NULL) *strchr(p, '.') = ' ';
     if (disk != '\0')
     {
@@ -222,7 +225,25 @@ static int onefile(FILE *infile)
         sprintf(newfnm, "%s", p);
     }
 #else
-    sprintf(newfnm, "%s(%s)", outn, p);
+    if (outn != NULL)
+    {
+        sprintf(newfnm, "%s(%s)", outn, p);
+    }
+    else
+    {
+        strcpy(newfnm, p);
+#if defined(MUSIC)
+        /* automatically truncate filenames down to MUSIC length */
+        if (strlen(newfnm) > 17)
+        {
+            p = strrchr(newfnm, '.');
+            if (p != NULL)
+            {
+                memmove(p - (strlen(newfnm) - 17), p, strlen(p) + 1);
+            }
+        }
+#endif
+    }
 #endif
 
     if (binary)

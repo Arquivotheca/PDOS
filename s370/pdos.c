@@ -844,7 +844,7 @@ int pdosInit(PDOS *pdos)
     daton();
 
     pdos->next_data_cyl = 20;
-    pdos->next_dir_block = 12;
+    pdos->next_dir_block = 13; /* +++ remove this */
     if (pdosLoadPcomm(pdos) != 0)
     {
         datoff();
@@ -983,6 +983,8 @@ static int pdosDispatchUntilInterrupt(PDOS *pdos)
                 *(short *)(tbuf + 6) = len;
                 memcpy(tbuf + 8, buf, len);
 
+                /* record number must be one less when using 0x1d
+                   destructive (of track) write (to set block size) */
                 cnt = wrblock(pdos->ipldev, cyl, head, rec - 1,
                               tbuf, len + 8, 0x1d);
                 if (cnt < 0)
@@ -1654,8 +1656,17 @@ static void pdosProcessSVC(PDOS *pdos)
     {
         int oneexit;
         unsigned int ocode;
+        int *p;
 
-        ocode = *(int *)pdos->context->regs[1];
+        p = (int *)pdos->context->regs[1];
+        /* DCB is pointed to by first parameter */
+        /* needs validation */
+        gendcb = (DCB *)(p[0] & 0xffffff);
+#if 0
+        printf("in open, DCB is %p\n", gendcb);
+#endif
+
+        ocode = p[0];
         ocode >>= 24;
         pdos->context->regs[15] = 0;
         gendcb->dcbcheck = (int)dcheck;
@@ -1748,12 +1759,6 @@ static void pdosProcessSVC(PDOS *pdos)
             *pdos->context->postecb = 0;
             pdos->context->regs[15] = 0;
         }
-        else if (memcmp(prog, "NEWF", 4) == 0)
-        {
-            /* pdosNewF(pdos, parm); */
-            *pdos->context->postecb = 0;
-            pdos->context->regs[15] = 0;
-        }
         else if ((newcont = pdosLoadExe(pdos, prog, parm)) != 0)
         {
             /* +++ not sure what proper return code is */
@@ -1777,7 +1782,72 @@ static void pdosProcessSVC(PDOS *pdos)
     }
     else if (svc == 20) /* close */
     {
-        /* do nothing */
+        DCB *dcb;
+        int *p;
+        unsigned int ocode;
+
+        p = (int *)pdos->context->regs[1];
+        /* DCB is pointed to by first parameter */
+        /* needs validation */
+        dcb = (DCB *)(p[0] & 0xffffff);
+#if 0
+        printf("in close, DCB is %p\n", dcb);
+        printf("ddname to close is %.8s\n", dcb->dcbddnam);
+#endif
+
+        ocode = p[0];
+        ocode >>= 24;
+
+        /* if this is a disk file, and, it was open for write, need to 
+           write an EOF record */
+        if ((memcmp(dcb->dcbfdad,
+                   "\x00\x00\x00\x00\x00\x00\x00\x00", 8) != 0)
+            && (ocode == 0x8f))
+        {
+            int cyl;
+            int head;
+            int rec;
+            int cnt;
+            int len = 0;
+            char tbuf[8]; /* +++ needs to be short-aligned */
+            
+            split_cchhr(dcb->dcbfdad + 3, &cyl, &head, &rec);
+            rec++;
+#if DSKDEBUG
+            printf("writing from %p to %d, %d, %d\n",
+                   tbuf,
+                   cyl, head, rec);
+#endif
+            memcpy(tbuf, "\x00\x01\x00\x00\x0d\x2c\x00\x60", 8);
+            *(short *)tbuf = cyl;
+            *(short *)(tbuf + 2) = head;
+            tbuf[4] = rec;
+            tbuf[5] = 0;
+            *(short *)(tbuf + 6) = len;
+
+            /* record number must be one less when using 0x1d
+               destructive (of track) write (to set block size) */
+            cnt = wrblock(pdos->ipldev, cyl, head, rec - 1,
+                          tbuf, len + 8, 0x1d);
+            if (cnt < 0)
+            {
+                rec = 0;
+                head++;
+                cnt = wrblock(pdos->ipldev, cyl, head, rec - 1,
+                              tbuf, len + 8, 0x1d);
+                if (cnt < 0)
+                {
+                    head = 0;
+                    cyl++;
+                    cnt = wrblock(pdos->ipldev, cyl, head, rec - 1,
+                                  tbuf, len + 8, 0x1d);
+                }
+            }
+#if DSKDEBUG
+            printf("cnt is %d\n", cnt);
+#endif
+            join_cchhr(dcb->dcbfdad + 3, cyl, head, rec);
+        }
     }
     return;
 }
@@ -2039,7 +2109,9 @@ static int pdosNewF(PDOS *pdos, char *parm)
     int dirblk;
 
     dsn = parm;
+#if 0
     printf("got request to create file %s\n", dsn);
+#endif
     cyl = pdos->next_data_cyl++;
     dirblk = pdos->next_dir_block++;
 

@@ -655,6 +655,8 @@ typedef struct {
     int shutdown;
     int ipldev;
     int curr_aspace; /* current address space */
+    int next_data_cyl; /* next place to allocate files */
+    int next_dir_block; /* next place to store a directory block */
 } PDOS;
 
 /*static PDOS pdos;*/
@@ -841,6 +843,8 @@ int pdosInit(PDOS *pdos)
 #endif
     daton();
 
+    pdos->next_data_cyl = 20;
+    pdos->next_dir_block = 12;
     if (pdosLoadPcomm(pdos) != 0)
     {
         datoff();
@@ -1985,10 +1989,12 @@ static int pdosNewF(PDOS *pdos, char *parm)
     int len;
     char *dsn;
     int cyl;
+    int dirblk;
 
     dsn = parm;
     printf("got request to create file %s\n", dsn);
-    cyl = 20; /* arbitrary spot */
+    cyl = pdos->next_data_cyl++;
+    dirblk = pdos->next_dir_block++;
 
     dscb1 = (DSCB1 *)tbuf;
 
@@ -2032,7 +2038,7 @@ static int pdosNewF(PDOS *pdos, char *parm)
     /* last head on that cylinder too */
     memcpy(dscb1->endcchh + 2, "\x00\x0e", 2);
     
-    wrblock(pdos->ipldev, 1, 0, 12, tbuf, 140, 0x0d);
+    wrblock(pdos->ipldev, 1, 0, dirblk, tbuf, 140, 0x0d);
     
 #if 0
     memset(tbuf, '\0', sizeof tbuf);

@@ -367,6 +367,89 @@ undivert(world.s)/*
 //SYSTERM  DD  SYSOUT=*
 //SYSIN    DD  DUMMY
 //*
+//* Copy the HEXDUMP utility
+//*
+//IEBCOPY  EXEC PGM=IEBCOPY
+//SYSUT1   DD DSN=PDPCLIB.LINKLIB,DISP=SHR
+//SYSUT2   DD DSN=&&COPY,SPACE=(CYL,(1,1)),UNIT=SYSALLDA,
+//         DISP=(NEW,PASS)
+//SYSPRINT DD SYSOUT=*
+//SYSIN DD *
+ COPY INDD=((SYSUT1,R)),OUTDD=SYSUT2
+ SELECT MEMBER=HEXDUMP
+/*
+//*
+//COPYFILE EXEC PGM=COPYFILE,PARM='-bb dd:in dd:out'
+//STEPLIB  DD  DSN=PDPCLIB.LINKLIB,DISP=SHR
+//IN       DD  DSN=&&COPY,DISP=(OLD,DELETE)
+//OUT      DD  DSN=&&HEX(HEXDUMP),DISP=(OLD,PASS)
+//SYSPRINT DD  SYSOUT=*
+//SYSTERM  DD  SYSOUT=*
+//SYSIN    DD  DUMMY
+//*
+//*
+//* Copy the COPYFILE utility
+//*
+//IEBCOPY  EXEC PGM=IEBCOPY
+//SYSUT1   DD DSN=PDPCLIB.LINKLIB,DISP=SHR
+//SYSUT2   DD DSN=&&COPY,SPACE=(CYL,(1,1)),UNIT=SYSALLDA,
+//         DISP=(NEW,PASS)
+//SYSPRINT DD SYSOUT=*
+//SYSIN DD *
+ COPY INDD=((SYSUT1,R)),OUTDD=SYSUT2
+ SELECT MEMBER=COPYFILE
+/*
+//*
+//COPYFILE EXEC PGM=COPYFILE,PARM='-bb dd:in dd:out'
+//STEPLIB  DD  DSN=PDPCLIB.LINKLIB,DISP=SHR
+//IN       DD  DSN=&&COPY,DISP=(OLD,DELETE)
+//OUT      DD  DSN=&&HEX(COPYFILE),DISP=(OLD,PASS)
+//SYSPRINT DD  SYSOUT=*
+//SYSTERM  DD  SYSOUT=*
+//SYSIN    DD  DUMMY
+//*
+//* Copy the MVSUNZIP utility
+//*
+//IEBCOPY  EXEC PGM=IEBCOPY
+//SYSUT1   DD DSN=PDPCLIB.LINKLIB,DISP=SHR
+//SYSUT2   DD DSN=&&COPY,SPACE=(CYL,(1,1)),UNIT=SYSALLDA,
+//         DISP=(NEW,PASS)
+//SYSPRINT DD SYSOUT=*
+//SYSIN DD *
+ COPY INDD=((SYSUT1,R)),OUTDD=SYSUT2
+ SELECT MEMBER=MVSUNZIP
+/*
+//*
+//COPYFILE EXEC PGM=COPYFILE,PARM='-bb dd:in dd:out'
+//STEPLIB  DD  DSN=PDPCLIB.LINKLIB,DISP=SHR
+//IN       DD  DSN=&&COPY,DISP=(OLD,DELETE)
+//OUT      DD  DSN=&&HEX(MVSUNZIP),DISP=(OLD,PASS)
+//SYSPRINT DD  SYSOUT=*
+//SYSTERM  DD  SYSOUT=*
+//SYSIN    DD  DUMMY
+//*
+//* Copy the MVSENDEC utility
+//*
+//IEBCOPY  EXEC PGM=IEBCOPY
+//SYSUT1   DD DSN=PDPCLIB.LINKLIB,DISP=SHR
+//SYSUT2   DD DSN=&&COPY,SPACE=(CYL,(1,1)),UNIT=SYSALLDA,
+//         DISP=(NEW,PASS)
+//SYSPRINT DD SYSOUT=*
+//SYSIN DD *
+ COPY INDD=((SYSUT1,R)),OUTDD=SYSUT2
+ SELECT MEMBER=MVSENDEC
+/*
+//*
+//COPYFILE EXEC PGM=COPYFILE,PARM='-bb dd:in dd:out'
+//STEPLIB  DD  DSN=PDPCLIB.LINKLIB,DISP=SHR
+//IN       DD  DSN=&&COPY,DISP=(OLD,DELETE)
+//OUT      DD  DSN=&&HEX(MVSENDEC),DISP=(OLD,PASS)
+//SYSPRINT DD  SYSOUT=*
+//SYSTERM  DD  SYSOUT=*
+//SYSIN    DD  DUMMY
+//*
+//*
+//*
 //IEBCOPY  EXEC PGM=IEBCOPY
 //SYSUT1   DD DSN=&&LOADLIB,DISP=(OLD,PASS)
 //SYSUT2   DD DSN=&&COPY,SPACE=(CYL,(1,1)),UNIT=SYSALLDA,
@@ -400,8 +483,8 @@ dir
 echo let's dump the IPL1 record
 dumpblk 0 0 1
 
-echo let's run a program
-world aBc DeF
+echo unzip header files
+mvsunzip allh.zip
 
 echo what version of GCC do we have here?
 gcc --version
@@ -410,7 +493,7 @@ echo what options does GCC have?
 gcc --help
 
 echo let's do a compile already!
-gcc -S sample.c
+gcc -S -I . sample.c
 
 echo what did we get?
 type sample.s
@@ -425,9 +508,12 @@ echo that's enough for now - enter further commands yourself!
 //SYSTERM  DD  SYSOUT=*
 //OUT      DD  DSN=&&HEX(SAMPLE),DISP=(OLD,PASS)
 //IN       DD  *
+#include <stdio.h>
+
 int main(void)
 {
     printf("hello, world\n");
+    printf("maximum file size is %d\n", FILENAME_MAX);
     return (0);
 }
 /*

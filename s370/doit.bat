@@ -45,6 +45,11 @@ echo SAMPLE.C SEQ sample.c CYL 1 1 0 PS U 0 18452 >>ctl.txt
 echo SAMPLE2.C SEQ sample.c CYL 1 1 0 PS U 0 18452 >>ctl.txt
 echo GCC.EXE SEQ gcc.bin CYL 4 1 0 PS U 0 18452 >>ctl.txt
 echo WTOWORLD.EXE SEQ wtoworld.bin CYL 1 1 0 PS U 0 18452 >>ctl.txt
+echo ALLH.ZIP SEQ allh.zip CYL 1 1 0 PS U 0 18452 >>ctl.txt
+echo HEXDUMP.EXE SEQ hexdump.txt CYL 1 1 0 PS U 0 18452 >>ctl.txt
+echo COPYFILE.EXE SEQ copyfile.txt CYL 1 1 0 PS U 0 18452 >>ctl.txt
+echo MVSUNZIP.EXE SEQ mvsunzip.txt CYL 1 1 0 PS U 0 18452 >>ctl.txt
+echo MVSENDEC.EXE SEQ mvsendec.txt CYL 1 1 0 PS U 0 18452 >>ctl.txt
 del pdos00.199
 dasdload -bz2 ctl.txt pdos00.199
 copy pdos00.199 \mvs380\dasd

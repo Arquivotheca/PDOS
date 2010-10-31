@@ -5316,6 +5316,7 @@ static void filedef(char *fdddname, char *fnm, int mymode)
         if ( mymode )
         {
             tu[2].parm1[0] = 0x04; /* NEW */
+#if !defined(__PDOS__) /* PDOS uses RECFM=U by default */
             /* if binary */
             if (modeType == 5)
             {
@@ -5337,6 +5338,7 @@ static void filedef(char *fdddname, char *fnm, int mymode)
                 tu[4].parm1[0] = 0; /* LRECL = 255 */
                 tu[4].parm1[1] = 255;
             }
+#endif
         }
         errno = __svc99(&rb);
     }

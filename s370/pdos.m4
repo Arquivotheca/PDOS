@@ -410,7 +410,10 @@ echo what options does GCC have?
 gcc --help
 
 echo let's do a compile already!
-gcc -S -o - sample.c
+gcc -S sample.c
+
+echo what did we get?
+type sample.s
 
 echo that's enough for now - enter further commands yourself!
 /*

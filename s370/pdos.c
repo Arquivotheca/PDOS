@@ -655,8 +655,6 @@ typedef struct {
     int shutdown;
     int ipldev;
     int curr_aspace; /* current address space */
-    int next_data_cyl; /* next place to allocate files */
-    int next_dir_block; /* next place to store a directory block */
 } PDOS;
 
 /*static PDOS pdos;*/
@@ -687,6 +685,7 @@ static void pdosSVC99(PDOS *pdos);
 static int pdosDoDIR(PDOS *pdos, char *parm);
 static void brkyd(int *year, int *month, int *day);
 static int pdosNewF(PDOS *pdos, char *parm);
+static int pdosGetMaxima(PDOS *pdos, int *maxdir, int *maxcyl);
 static int pdosDumpBlk(PDOS *pdos, char *parm);
 static int pdosLoadExe(PDOS *pdos, char *prog, char *parm);
 static int pdosDumpMem(PDOS *pdos, void *buf, int cnt);
@@ -843,8 +842,6 @@ int pdosInit(PDOS *pdos)
 #endif
     daton();
 
-    pdos->next_data_cyl = 20;
-    pdos->next_dir_block = 13; /* +++ remove this */
     if (pdosLoadPcomm(pdos) != 0)
     {
         datoff();
@@ -2112,8 +2109,9 @@ static int pdosNewF(PDOS *pdos, char *parm)
 #if 0
     printf("got request to create file %s\n", dsn);
 #endif
-    cyl = pdos->next_data_cyl++;
-    dirblk = pdos->next_dir_block++;
+    pdosGetMaxima(pdos, &dirblk, &cyl);
+    cyl++;
+    dirblk++;
 
     dscb1 = (DSCB1 *)tbuf;
 
@@ -2193,6 +2191,50 @@ static int pdosNewF(PDOS *pdos, char *parm)
 #endif
 
 
+    return (0);
+}
+
+
+static int pdosGetMaxima(PDOS *pdos, int *maxdir, int *maxcyl)
+{
+    int cyl;
+    int head;
+    int rec;
+    char tbuf[MAXBLKSZ];
+    DSCB1 dscb1;
+    int cnt;
+    char *p;
+    int year;
+    int month;
+    int day;
+    int recfm;
+    char *blk;
+    
+    *maxdir = *maxcyl = 0;
+    /* read VOL1 record which starts on cylinder 0, head 0, record 3 */
+    cnt = rdblock(pdos->ipldev, 0, 0, 3, tbuf, MAXBLKSZ);
+    if (cnt >= 20)
+    {
+        split_cchhr(tbuf + 15, &cyl, &head, &rec);
+        rec += 2; /* first 2 blocks are of no interest */
+        
+        while ((cnt = rdblock(pdos->ipldev, cyl, head, rec, &dscb1,
+                              sizeof dscb1)),
+               cnt > 0)
+        {
+            int c, h, r;
+            
+            if (dscb1.ds1dsnam[0] == '\0') break;
+            split_cchhr(dscb1.endcchh, &c, &h, &r);
+            if (c > *maxcyl)
+            {
+                *maxcyl = c;
+            }
+            rec++;
+        }
+        *maxdir = rec - 1;
+    }
+    
     return (0);
 }
 

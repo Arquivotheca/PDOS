@@ -1699,7 +1699,7 @@ static void pdosProcessSVC(PDOS *pdos)
         }
         else if (memcmp(prog, "NEWF", 4) == 0)
         {
-            pdosNewF(pdos, parm);
+            /* pdosNewF(pdos, parm); */
             *pdos->context->postecb = 0;
             pdos->context->regs[15] = 0;
         }
@@ -1763,6 +1763,7 @@ static void pdosSVC99(PDOS *pdos)
     int rec;
     SVC99RB *svc99rb;
     SVC99TU **svc99tu;
+    int new = -1;
 
     svc99rb = *(SVC99RB **)pdos->context->regs[1];
     if (svc99rb->verb == 2) /* unallocate */
@@ -1795,17 +1796,22 @@ static void pdosSVC99(PDOS *pdos)
                 }
                 else if ((*svc99tu)->key == 4) /* DISP */
                 {
-#if 0
                     int disp;
 
                     disp = (*svc99tu)->parm1[0];
                     if (disp == 4) /* NEW */
                     {
+                        new = 1;
+#if 0
                         printf("dynalloc disp is NEW\n");
+#endif
                     }
                     else if (disp == 8) /* SHR */
                     {
+                        new = 0;
+#if 0
                         printf("dynalloc disp is SHR\n");
+#endif
                     }
 #endif
                 }
@@ -1834,17 +1840,30 @@ static void pdosSVC99(PDOS *pdos)
             if (((int)*svc99tu & 0x80000000) != 0) break;
             svc99tu++;
         }
-        if (findFile(pdos->ipldev, lastds, &cyl, &head, &rec) != 0)
+        if (new == -1)
         {
-            strcpy(lastds, "");
             pdos->context->regs[15] = 12;
             pdos->context->regs[0] = 12;
             svc99rb->error_reason = 12;
         }
-        else
+        else if (new == 0)
         {
-            pdos->context->regs[15] = 0;
-            pdos->context->regs[0] = 0;
+            if (findFile(pdos->ipldev, lastds, &cyl, &head, &rec) != 0)
+            {
+                strcpy(lastds, "");
+                pdos->context->regs[15] = 12;
+                pdos->context->regs[0] = 12;
+                svc99rb->error_reason = 12;
+            }
+            else
+            {
+                pdos->context->regs[15] = 0;
+                pdos->context->regs[0] = 0;
+            }
+        }
+        else if (new == 1)
+        {
+            pdosNewF(pdos, lastds);
         }
         return;
     }
@@ -1964,7 +1983,7 @@ static int pdosNewF(PDOS *pdos, char *parm)
     char *dsn;
     int cyl;
 
-    dsn = parm + 2;
+    dsn = parm;
     printf("got request to create file %s\n", dsn);
     cyl = 20; /* arbitrary spot */
 

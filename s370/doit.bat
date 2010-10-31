@@ -42,6 +42,7 @@ echo COMMAND.EXE SEQ pcomm.bin CYL 1 1 0 PS U 0 18452 >>ctl.txt
 echo AUTOEXEC.BAT SEQ pcomm.in CYL 1 1 0 PS U 0 18452 >>ctl.txt
 echo WORLD.EXE SEQ world.bin CYL 1 1 0 PS U 0 18452 >>ctl.txt
 echo SAMPLE.C SEQ sample.c CYL 1 1 0 PS U 0 18452 >>ctl.txt
+echo SAMPLE2.C SEQ sample.c CYL 1 1 0 PS U 0 18452 >>ctl.txt
 echo GCC.EXE SEQ gcc.bin CYL 4 1 0 PS U 0 18452 >>ctl.txt
 echo WTOWORLD.EXE SEQ wtoworld.bin CYL 1 1 0 PS U 0 18452 >>ctl.txt
 del pdos00.199

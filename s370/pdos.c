@@ -1813,7 +1813,6 @@ static void pdosSVC99(PDOS *pdos)
                         printf("dynalloc disp is SHR\n");
 #endif
                     }
-#endif
                 }
                 else if ((*svc99tu)->key == 0x49) /* RECFM */
                 {
@@ -1845,25 +1844,29 @@ static void pdosSVC99(PDOS *pdos)
             pdos->context->regs[15] = 12;
             pdos->context->regs[0] = 12;
             svc99rb->error_reason = 12;
+            strcpy(lastds, "");
         }
-        else if (new == 0)
+        else
         {
             if (findFile(pdos->ipldev, lastds, &cyl, &head, &rec) != 0)
             {
-                strcpy(lastds, "");
-                pdos->context->regs[15] = 12;
-                pdos->context->regs[0] = 12;
-                svc99rb->error_reason = 12;
+                if (new == 1)
+                {
+                    pdosNewF(pdos, lastds);
+                }
+                else
+                {
+                    strcpy(lastds, "");
+                    pdos->context->regs[15] = 12;
+                    pdos->context->regs[0] = 12;
+                    svc99rb->error_reason = 12;
+                }
             }
             else
             {
                 pdos->context->regs[15] = 0;
                 pdos->context->regs[0] = 0;
             }
-        }
-        else if (new == 1)
-        {
-            pdosNewF(pdos, lastds);
         }
         return;
     }

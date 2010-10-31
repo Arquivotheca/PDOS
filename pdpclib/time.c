@@ -16,7 +16,7 @@
 #include "stddef.h"
 
 /* pdos and msdos use the same interface most of the time) */
-#ifdef __PDOS__
+#if defined(__PDOS__) && !defined(__MVS__)
 #define __MSDOS__
 #endif
 

@@ -234,7 +234,8 @@ static void freadSlowB(void *ptr,
 static int examine(const char **formt, FILE *fq, char *s, va_list *arg,
                    int chcount);
 
-#if defined(__CMS__) || defined(MUSIC) || defined(PDOS)
+#if defined(__CMS__) || defined(MUSIC) || \
+    (defined(__PDOS__) && defined(__MVS__))
 static void filedef(char *fdddname, char *fnm, int mymode);
 static void fdclr(char *ddname);
 #endif
@@ -725,7 +726,7 @@ static void osfopen(void)
         myfile->dynal = 1;
         p = tmpdd;
     }
-#elif defined(MUSIC) || defined(PDOS)
+#elif defined(MUSIC) || (defined(__PDOS__) && defined(__MVS__))
     {
         strcpy(newfnm, fnm);
         p = newfnm;
@@ -5248,7 +5249,7 @@ __PDPCLIB_API__ size_t fread(void *ptr, size_t size, size_t nmemb, FILE *stream)
    Following code issues a FILEDEF for MUSIC
 */
 
-#if defined(MUSIC) || (defined(PDOS) && defined(__MVS__))
+#if defined(MUSIC) || (defined(__PDOS__) && defined(__MVS__))
 
 static struct {
   char len; /* length of request block, always 20 */

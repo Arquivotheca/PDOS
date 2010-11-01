@@ -1600,6 +1600,10 @@ static void pdosProcessSVC(PDOS *pdos)
                "\x30\x50\x08\x0B" /* 08 = unit record */
                "\x00\x00\x7f\xff", /* device size = 32767 byte blocks */
                8);
+        if (memcmp((void *)pdos->context->regs[1], "SYS", 3) != 0)
+        {
+            ((char *)pdos->context->regs[0])[2] = 0;
+        }
         pdos->context->regs[15] = 0;
     }
     else if (svc == 64) /* rdjfcb */

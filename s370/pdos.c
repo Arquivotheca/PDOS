@@ -428,27 +428,33 @@ typedef struct {
     char ds1credt[3]; /* creation date */
     char ds1expdt[3]; /* expiry date */
     char ds1noepv; /* number of extents */
-    char ds1nobdb; /* no idea what this is, but 0x78 seems popular */
+        /* The count does not include the label track, if any. If the
+           first extent type is x'40', then the data set has LABEL=SUL, and
+           in (MVS) limited to 15 extents. */
+        
+    char ds1nobdb; /* number of free bytes in the last block of a
+                      PDS. Hercules currently using random values
+                      like 0x78 */
     char ds1flag1; 
     char ds1syscd[13]; /* system code - presumably name of operating system */
-    char ds1refd[3]; /* referral date - ie last time accessed */
+    char ds1refd[3]; /* reference date - ie last time accessed */
     char ds1smsfg;
     char ds1scxtf;
     short ds1scxtv;
     short ds1dsorg; /* dataset organization, e.g. PS or PO */
     char ds1recfm; /* record format, e.g. F/V/U */
-    char ds1optcd;
+    char ds1optcd; /* mainly used for BDAM and ISAM */
     short ds1blkl; /* block size */
     short ds1lrecl; /* logical record length */
     char ds1keyl;
     char ds1rkp[2];
-    char ds1dsind; /* is this the last volume for this dataset? */
+    char ds1dsind; /* flags, e.g. is this the last volume for this dataset? */
     char ds1scal1; /* is this a cylinder request? */
     char ds1scal3[3]; /* size of secondary allocation */
     char ds1lstar[3]; /* last TTR actually used - ie the EOF record */
     char ds1trbal[2]; /* TRKCALC??? */
     char resv1; /* reserved */
-    char ds1ttthi; /* a 3rd byte for TTR number, ie TTTR for lstar */
+    char ds1ttthi; /* a extra byte for TTR number, ie make lstart TTTR */
     char ds1ext1[2]; /* first extent - actualy 10 bytes, but we use 
                         different names currently. First byte is an
                         extent indicator, second byte is the extent
@@ -2133,7 +2139,6 @@ static int pdosNewF(PDOS *pdos, char *parm)
     memcpy(dscb1->ds1credt, "\x6e\x00\x01", 3); /* 2010-01-01 */
     memcpy(dscb1->ds1expdt, "\x00\x00\x00", 3); /* 1900-01-00 ? */
     dscb1->ds1noepv = 1; /* number of extents */
-    dscb1->ds1nobdb = 0x78; /* not sure what this is about */
     strcpy(dscb1->ds1syscd, "PDOS         "); /* beware NUL */
     dscb1->ds1dsorg = 0x4000; /* DS1DSGPS */
     dscb1->ds1recfm = 0xc0; /* DS1RECFU */

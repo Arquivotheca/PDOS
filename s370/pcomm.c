@@ -31,6 +31,7 @@ static void processInput(void);
 static void putPrompt(void);
 static void dotype(char *file);
 static void dodir(char *pattern);
+static void dohelp(void);
 static void changedir(char *to);
 static void changedisk(int drive);
 static int ins_strcmp(char *one, char *two);
@@ -188,6 +189,10 @@ static void processInput(void)
     {
         showrc = (showrc == 0);
     }
+    else if (ins_strcmp(buf, "help") == 0)
+    {
+        dohelp();
+    }
 #if 0
     else if ((strlen(buf) == 2) && (buf[1] == ':'))
     {
@@ -240,6 +245,20 @@ static void dotype(char *file)
 
 static void dodir(char *pattern)
 {
+    return;
+}
+
+static void dohelp(void)
+{
+    printf("The following commands are available:\n\n");
+    printf("HELP - display this help\n");
+    printf("TYPE - display contents of a file\n");
+    printf("DUMPBLK - dump a block on disk\n");
+    printf("DIR - display directory\n");
+    printf("SHOWRC - display return code from programs\n");
+    printf("EXIT - exit operating system\n");
+    printf("ECHO - display provided text\n");
+    printf("anything else will be assumed to be a .EXE program\n");
     return;
 }
 

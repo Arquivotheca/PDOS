@@ -35,7 +35,7 @@ copy gcc.txt gcc.bin
 copy wtoworld.txt wtoworld.bin
 echo PDOS00 3390-1 * separate >ctl.txt
 echo PLOAD.SYS SEQ pload.bin TRK 10 1 0 PS U 0 18452 >>ctl.txt
-echo SYSVTOC VTOC CYL 1 >>ctl.txt
+echo SYSVTOC VTOC CYL 2 >>ctl.txt
 echo PDOS.SYS SEQ pdos.bin CYL 1 1 0 PS U 0 18452 >>ctl.txt
 echo CONFIG.SYS SEQ pdos.in CYL 1 1 0 PS U 0 18452 >>ctl.txt
 echo COMMAND.EXE SEQ pcomm.bin CYL 1 1 0 PS U 0 18452 >>ctl.txt
@@ -46,6 +46,7 @@ echo SAMPLE2.C SEQ sample.c CYL 1 1 0 PS U 0 18452 >>ctl.txt
 echo GCC.EXE SEQ gcc.bin CYL 4 1 0 PS U 0 18452 >>ctl.txt
 echo WTOWORLD.EXE SEQ wtoworld.bin CYL 1 1 0 PS U 0 18452 >>ctl.txt
 echo ALLH.ZIP SEQ allh.zip CYL 1 1 0 PS U 0 18452 >>ctl.txt
+echo ALL.ZIP SEQ all.zip CYL 50 1 0 PS U 0 18452 >>ctl.txt
 echo HEXDUMP.EXE SEQ hexdump.txt CYL 1 1 0 PS U 0 18452 >>ctl.txt
 echo COPYFILE.EXE SEQ copyfile.txt CYL 1 1 0 PS U 0 18452 >>ctl.txt
 echo MVSUNZIP.EXE SEQ mvsunzip.txt CYL 1 1 0 PS U 0 18452 >>ctl.txt

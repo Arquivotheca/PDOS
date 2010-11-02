@@ -1064,7 +1064,7 @@ static int pdosDispatchUntilInterrupt(PDOS *pdos)
                               tbuf, len);
                 if (cnt < 0)
                 {
-                    rec = 0;
+                    rec = 1;
                     head++;
                     cnt = rdblock(pdos->ipldev, cyl, head, rec, 
                                   tbuf, len);

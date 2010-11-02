@@ -993,7 +993,7 @@ static int pdosDispatchUntilInterrupt(PDOS *pdos)
                               tbuf, len + 8, 0x1d);
                 if (cnt < 0)
                 {
-                    rec = 0;
+                    rec = 1;
                     head++;
                     cnt = wrblock(pdos->ipldev, cyl, head, rec - 1,
                                   tbuf, len + 8, 0x1d);
@@ -1839,7 +1839,7 @@ static void pdosProcessSVC(PDOS *pdos)
                           tbuf, len + 8, 0x1d);
             if (cnt < 0)
             {
-                rec = 0;
+                rec = 1;
                 head++;
                 cnt = wrblock(pdos->ipldev, cyl, head, rec - 1,
                               tbuf, len + 8, 0x1d);
@@ -2033,6 +2033,7 @@ static int pdosDoDIR(PDOS *pdos, char *parm)
     int day;
     int recfm;
     char *blk;
+    int errcnt = 0;
     
     /* read VOL1 record which starts on cylinder 0, head 0, record 3 */
     cnt = rdblock(pdos->ipldev, 0, 0, 3, tbuf, MAXBLKSZ);
@@ -2041,12 +2042,33 @@ static int pdosDoDIR(PDOS *pdos, char *parm)
         split_cchhr(tbuf + 15, &cyl, &head, &rec);
         rec += 2; /* first 2 blocks are of no interest */
         
-        while ((cnt = rdblock(pdos->ipldev, cyl, head, rec, &dscb1,
-                              sizeof dscb1)),
-               cnt > 0)
+        while (errcnt < 4)
         {
             int c, h, r;
             
+            cnt = rdblock(pdos->ipldev, cyl, head, rec, &dscb1,
+                          sizeof dscb1);
+            if (cnt < 0)
+            {
+                errcnt++;
+                if (errcnt == 1)
+                {
+                    rec++;
+                }
+                else if (errcnt == 2)
+                {
+                    rec = 1;
+                    head++;
+                }
+                else if (errcnt == 3)
+                {
+                    rec = 1;
+                    head = 0;
+                    cyl++;
+                }
+                continue;
+            }
+            errcnt = 0;
             if (dscb1.ds1dsnam[0] == '\0') break;
             dscb1.ds1dsnam[44] = '\0';
             p = strchr(dscb1.ds1dsnam, ' ');

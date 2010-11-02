@@ -49,6 +49,7 @@ int findFile(int ipldev, char *dsn, int *c, int *h, int *r)
         char endcchh[4];
     } dscb1;
     int len;
+    int errcnt = 0;
 
     if (memchr(dsn, '\0', FILENAME_MAX) == NULL)
     {
@@ -72,10 +73,30 @@ int findFile(int ipldev, char *dsn, int *c, int *h, int *r)
         memcpy((char *)&head + sizeof(int) - 2, tbuf + 17, 2);
         memcpy((char *)&rec + sizeof(int) - 1, tbuf + 19, 1);
         
-        while ((cnt =
-               rdblock(ipldev, cyl, head, rec, &dscb1, sizeof dscb1))
-               > 0)
+        while (errcnt < 4)
         {
+            cnt = rdblock(ipldev, cyl, head, rec, &dscb1, sizeof dscb1);
+            if (cnt < 0)
+            {
+                errcnt++;
+                if (errcnt == 1)
+                {
+                    rec++;
+                }
+                else if (errcnt == 2)
+                {
+                    rec = 1;
+                    head++;
+                }
+                else if (errcnt == 3)
+                {
+                    rec = 1;
+                    head = 0;
+                    cyl++;
+                }
+                continue;
+            }
+            errcnt = 0;
             if (cnt >= sizeof dscb1)
             {
                 if (dscb1.ds1fmtid == '1')
@@ -94,6 +115,11 @@ int findFile(int ipldev, char *dsn, int *c, int *h, int *r)
                                dscb1.startcchh + 2, 2);
                         break;
                     }
+                }
+                else if (dscb1.ds1dsnam[0] == '\0')
+                {
+                    cnt = -1;
+                    break;
                 }
             }
             rec++;

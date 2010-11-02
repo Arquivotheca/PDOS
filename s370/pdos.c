@@ -691,7 +691,8 @@ static void pdosSVC99(PDOS *pdos);
 static int pdosDoDIR(PDOS *pdos, char *parm);
 static void brkyd(int *year, int *month, int *day);
 static int pdosNewF(PDOS *pdos, char *parm);
-static int pdosGetMaxima(PDOS *pdos, int *maxdir, int *maxcyl);
+static int pdosGetMaxima(PDOS *pdos, int *dircyl, int *dirhead,
+                         int *dirrec, int *datacyl);
 static int pdosDumpBlk(PDOS *pdos, char *parm);
 static int pdosLoadExe(PDOS *pdos, char *prog, char *parm);
 static int pdosDumpMem(PDOS *pdos, void *buf, int cnt);
@@ -2112,16 +2113,20 @@ static int pdosNewF(PDOS *pdos, char *parm)
     DSCB1 *dscb1;
     int len;
     char *dsn;
-    int cyl;
-    int dirblk;
+    int datacyl;
+    int dircyl;
+    int dirhead;
+    int dirrec;
+    int cnt;
 
     dsn = parm;
 #if 0
     printf("got request to create file %s\n", dsn);
 #endif
-    pdosGetMaxima(pdos, &dirblk, &cyl);
-    cyl++;
-    dirblk++;
+    pdosGetMaxima(pdos, &dircyl, &dirhead, &dirrec, &datacyl);
+#if 0
+    printf("maxima is %d %d %d and cyl %d\n", dircyl, dirhead, dirrec, datacyl);
+#endif
 
     dscb1 = (DSCB1 *)tbuf;
 
@@ -2158,13 +2163,16 @@ static int pdosNewF(PDOS *pdos, char *parm)
     dscb1->ds1ext1[0] = 0x81; /* on a cylinder boundary */
     
     /* space starts on specified cylinder */
-    memcpy(dscb1->startcchh, (char *)&cyl + sizeof cyl - 2, 2);
+    memcpy(dscb1->startcchh, (char *)&datacyl + sizeof datacyl - 2, 2);
     /* and ends on same cylinder */
-    memcpy(dscb1->endcchh, (char *)&cyl + sizeof cyl - 2, 2);
+    memcpy(dscb1->endcchh, (char *)&datacyl + sizeof datacyl - 2, 2);
     /* last head on that cylinder too */
     memcpy(dscb1->endcchh + 2, "\x00\x0e", 2);
     
-    wrblock(pdos->ipldev, 1, 0, dirblk, tbuf, 140, 0x0d);
+    cnt = wrblock(pdos->ipldev, dircyl, dirhead, dirrec, tbuf, 140, 0x0d);
+#if 0
+    printf("cnt from wrblock is %d\n", cnt);
+#endif
     
 #if 0
     memset(tbuf, '\0', sizeof tbuf);
@@ -2204,7 +2212,11 @@ static int pdosNewF(PDOS *pdos, char *parm)
 }
 
 
-static int pdosGetMaxima(PDOS *pdos, int *maxdir, int *maxcyl)
+/* the directory will point to the first empty directory.
+   The data cylinder will point to the first empty space */
+
+static int pdosGetMaxima(PDOS *pdos, int *dircyl, int *dirhead,
+                         int *dirrec, int *datacyl)
 {
     int cyl;
     int head;
@@ -2218,8 +2230,9 @@ static int pdosGetMaxima(PDOS *pdos, int *maxdir, int *maxcyl)
     int day;
     int recfm;
     char *blk;
+    int errcnt = 0;
     
-    *maxdir = *maxcyl = 0;
+    *dirrec = *dirhead = *dircyl = *datacyl = 0;
     /* read VOL1 record which starts on cylinder 0, head 0, record 3 */
     cnt = rdblock(pdos->ipldev, 0, 0, 3, tbuf, MAXBLKSZ);
     if (cnt >= 20)
@@ -2227,21 +2240,47 @@ static int pdosGetMaxima(PDOS *pdos, int *maxdir, int *maxcyl)
         split_cchhr(tbuf + 15, &cyl, &head, &rec);
         rec += 2; /* first 2 blocks are of no interest */
         
-        while ((cnt = rdblock(pdos->ipldev, cyl, head, rec, &dscb1,
-                              sizeof dscb1)),
-               cnt > 0)
+        while (errcnt < 4)
         {
-            int c, h, r;
-            
-            if (dscb1.ds1dsnam[0] == '\0') break;
-            split_cchhr(dscb1.endcchh, &c, &h, &r);
-            if (c > *maxcyl)
+            cnt = rdblock(pdos->ipldev, cyl, head, rec, &dscb1,
+                          sizeof dscb1);
+            if (cnt < 0)
             {
-                *maxcyl = c;
+                errcnt++;
+                if (errcnt == 1)
+                {
+                    rec++;
+                }
+                else if (errcnt == 2)
+                {
+                    rec = 1;
+                    head++;
+                }
+                else if (errcnt == 3)
+                {
+                    rec = 1;
+                    head = 0;
+                    cyl++;
+                }
+                continue;
             }
-            rec++;
+            else
+            {
+                int c, h, r;
+
+                errcnt = 0;
+                if (dscb1.ds1dsnam[0] == '\0') break;
+                split_cchhr(dscb1.endcchh, &c, &h, &r);
+                if (c >= *datacyl)
+                {
+                    *datacyl = c + 1;
+                }
+                rec++;
+            }
         }
-        *maxdir = rec - 1;
+        *dirrec = rec;
+        *dirhead = head;
+        *dircyl = cyl;
     }
     
     return (0);

@@ -484,7 +484,8 @@ echo let's dump the IPL1 record
 dumpblk 0 0 1
 
 echo unzip header files
-mvsunzip allh.zip
+mvsunzip all.zip
+dir
 
 echo what version of GCC do we have here?
 gcc --version
@@ -493,10 +494,13 @@ echo what options does GCC have?
 gcc --help
 
 echo let's do a compile already!
-gcc -S -I . sample.c
+gcc -Os -S -I . -DPUREISO -DHAVE_CONFIG_H -DIN_GCC -ansi -pedantic alias.c
+rem gcc -S -I . sample.c
+dir
 
 echo what did we get?
-type sample.s
+type alias.s
+rem type sample.s
 
 echo that's enough for now - enter further commands yourself!
 /*

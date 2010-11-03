@@ -121,6 +121,8 @@ static void processInput(void)
 {
     char *p;
     int rc;
+    char fnm[FILENAME_MAX];
+    FILE *fp;    
 
     len = strlen(buf);
     if ((len > 0) && (buf[len - 1] == '\n'))
@@ -201,6 +203,22 @@ static void processInput(void)
 #endif
     else
     {
+        /* see if batch file exists */
+        strcpy(fnm, buf);
+        strcat(fnm, ".BAT");
+        fp = fopen(fnm, "r");
+        if (fp != NULL)
+        {
+            while (fgets(buf, sizeof buf, fp) != NULL)
+            {
+                processInput();
+                if (term) break;
+            }
+            fclose(fp);
+            return;
+        }
+        
+        /* restore parameter if there is one*/
         if (*p != '\0')
         {
             p--;

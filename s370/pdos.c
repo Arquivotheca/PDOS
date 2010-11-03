@@ -991,16 +991,27 @@ static int pdosDispatchUntilInterrupt(PDOS *pdos)
                    destructive (of track) write (to set block size) */
                 cnt = wrblock(pdos->ipldev, cyl, head, rec - 1,
                               tbuf, len + 8, 0x1d);
-                if (cnt < 0)
+#if DSKDEBUG
+                printf("cnt is %d\n", cnt);
+#endif
+                /* we get a count of 0 when full, so need to retry */
+                if (cnt <= 0)
                 {
                     rec = 1;
                     head++;
+                    *(short *)(tbuf + 2) = head;
+                    tbuf[4] = rec;
                     cnt = wrblock(pdos->ipldev, cyl, head, rec - 1,
                                   tbuf, len + 8, 0x1d);
-                    if (cnt < 0)
+#if DSKDEBUG
+                    printf("cnt is %d\n", cnt);
+#endif
+                    if (cnt <= 0)
                     {
                         head = 0;
                         cyl++;
+                        *(short *)tbuf = cyl;
+                        *(short *)(tbuf + 2) = head;
                         cnt = wrblock(pdos->ipldev, cyl, head, rec - 1,
                                       tbuf, len + 8, 0x1d);
                     }
@@ -1757,9 +1768,12 @@ static void pdosProcessSVC(PDOS *pdos)
            disk blocks */
         if (memcmp(prog, "DUMPBLK", 7) == 0)
         {
-            pdosDumpBlk(pdos, parm);
-            *pdos->context->postecb = 0;
+            *pdos->context->postecb = 
+                pdos->aspaces[pdos->curr_aspace].o.tcb.tcbcmp =
+                pdosDumpBlk(pdos, parm);
             pdos->context->regs[15] = 0;
+            pdos->context->regs[1] = 
+                (int)&pdos->aspaces[pdos->curr_aspace].o.tcb;
         }
         else if (memcmp(prog, "DIR", 3) == 0)
         {
@@ -1837,16 +1851,25 @@ static void pdosProcessSVC(PDOS *pdos)
                destructive (of track) write (to set block size) */
             cnt = wrblock(pdos->ipldev, cyl, head, rec - 1,
                           tbuf, len + 8, 0x1d);
-            if (cnt < 0)
+#if 0
+            printf("destructing write %d %d %d gave %d\n",
+                cyl, head, rec - 1, cnt);
+#endif
+            /* if track is full, count is 0 */
+            if (cnt <= 0)
             {
                 rec = 1;
                 head++;
+                *(short *)(tbuf + 2) = head;
+                tbuf[4] = rec;
                 cnt = wrblock(pdos->ipldev, cyl, head, rec - 1,
                               tbuf, len + 8, 0x1d);
-                if (cnt < 0)
+                if (cnt <= 0)
                 {
                     head = 0;
                     cyl++;
+                    *(short *)tbuf = cyl;
+                    *(short *)(tbuf + 2) = head;
                     cnt = wrblock(pdos->ipldev, cyl, head, rec - 1,
                                   tbuf, len + 8, 0x1d);
                 }
@@ -2377,7 +2400,7 @@ static int pdosDumpBlk(PDOS *pdos, char *parm)
         }
     }
     
-    return (0);
+    return (cnt);
 }
 
 

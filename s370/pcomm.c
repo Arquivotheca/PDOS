@@ -24,6 +24,7 @@ static int singleCommand = 0;
 static int primary = 0;
 static int term = 0;
 static int showrc = 0;
+static int echo = 1;
 
 static void parseArgs(int argc, char **argv);
 static void readAutoExec(void);
@@ -124,6 +125,10 @@ static void processInput(void)
     char fnm[FILENAME_MAX];
     FILE *fp;    
 
+    if (echo)
+    {
+        printf("%s", buf);
+    }
     len = strlen(buf);
     if ((len > 0) && (buf[len - 1] == '\n'))
     {
@@ -161,7 +166,18 @@ static void processInput(void)
     } */
     else if (ins_strcmp(buf, "echo") == 0)
     {
-        printf("%s\n", p);
+        if (ins_strcmp(p, "off") == 0)
+        {
+            echo = 0;
+        }
+        else if (ins_strcmp(p, "on") == 0)
+        {
+            echo = 1;
+        }
+        else
+        {
+            printf("%s\n", p);
+        }
     }
     else if (p == buf)
     {
@@ -211,6 +227,7 @@ static void processInput(void)
         {
             while (fgets(buf, sizeof buf, fp) != NULL)
             {
+                /* recursive call */
                 processInput();
                 if (term) break;
             }

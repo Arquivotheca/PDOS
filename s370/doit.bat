@@ -51,6 +51,7 @@ echo HEXDUMP.EXE SEQ hexdump.txt CYL 1 1 0 PS U 0 18452 >>ctl.txt
 echo COPYFILE.EXE SEQ copyfile.txt CYL 1 1 0 PS U 0 18452 >>ctl.txt
 echo MVSUNZIP.EXE SEQ mvsunzip.txt CYL 1 1 0 PS U 0 18452 >>ctl.txt
 echo MVSENDEC.EXE SEQ mvsendec.txt CYL 1 1 0 PS U 0 18452 >>ctl.txt
+echo DIFF.EXE SEQ diff.txt CYL 1 1 0 PS U 0 18452 >>ctl.txt
 del pdos00.199
 dasdload -bz2 ctl.txt pdos00.199
 copy pdos00.199 \mvs380\dasd

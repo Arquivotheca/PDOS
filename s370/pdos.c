@@ -251,6 +251,11 @@ old virtual memory map:
 #define MEMDEBUG 0
 #endif
 
+/* if you want to detect memory leaks */
+#ifndef REPORT_MEMLEAK
+#define REPORT_MEMLEAK 0
+#endif
+
 /* do you want to debug all disk requests */
 #ifndef DSKDEBUG
 #define DSKDEBUG 0
@@ -1537,6 +1542,10 @@ static void pdosProcessSVC(PDOS *pdos)
             /* free the memory that was allocated to the executable */
             memmgrFree(&pdos->aspaces[pdos->curr_aspace].o.btlmem,
                        pdos->context->next_exe);
+#if REPORT_MEMLEAK
+            printf("exited program, total free space is %d\n",
+                   memmgrTotSize(&pdos->aspaces[pdos->curr_aspace].o.btlmem));
+#endif
         }
     }
     else if ((svc == 120) || (svc == 10))

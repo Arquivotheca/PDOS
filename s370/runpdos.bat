@@ -1,7 +1,7 @@
 @echo off
 rem You can copy this to your path if you want
 rem and run PDOS from batch jobs
-rem You can also simply add the %PDOS390% directory
+rem You can also simply add the %PDOS% directory
 rem to your path
 
 set rcfile=auto_run
@@ -11,7 +11,7 @@ if not exist %1 goto usage
 
 if %2. == . goto usage
 
-pushd %PDOS390%
+pushd %PDOS%
 if exist one.at.a.time goto chk1
 copy nul one.at.a.time
 popd
@@ -70,29 +70,29 @@ set aws=%7
 :noaws
 
 rem copy input data file (typically .zip)
-del %PDOS390%\hercauto.zip
+del %PDOS%\hercauto.zip
 rem create dummy file
-echo dummy >%PDOS390%\hercauto.zip
-copy %PDOS390%\%tranintape%.tdf %PDOS390%\pctomf.tdf
+echo dummy >%PDOS%\hercauto.zip
+copy %PDOS%\%tranintape%.tdf %PDOS%\pctomf.tdf
 if %in% == none goto noin2
-copy %in% %PDOS390%\hercauto.zip
+copy %in% %PDOS%\hercauto.zip
 :noin2
 
 rem initialize output tape (typically to receive .zip)
 rem actually, might use dasdseq here
-hetinit %PDOS390%\mftopc.het MFTOPC OWNER
+hetinit %PDOS%\mftopc.het MFTOPC OWNER
 
 rem initialize AWS tape (typically only used for load/unload)
-hetinit %PDOS390%\awstap.aws AWSTAP OWNER
+hetinit %PDOS%\awstap.aws AWSTAP OWNER
 if %aws% == none goto noaws2
-copy %aws% %PDOS390%\awstap.aws
+copy %aws% %PDOS%\awstap.aws
 :noaws2
 
 rem batch file
-copy %1 %PDOS390%\hercauto.bat
+copy %1 %PDOS%\hercauto.bat
 
 rem now run everything
-pushd %PDOS390%
+pushd %PDOS%
 
 
 
@@ -110,8 +110,8 @@ dasdload -bz2 ctl.txt pdos00.cckd
 
 
 
-SET HERCULES_RC=%PDOS390%/%rcfile%.rc
-SET HERCULES_CNF=%PDOS390%/pdos.cnf
+SET HERCULES_RC=%PDOS%/%rcfile%.rc
+SET HERCULES_CNF=%PDOS%/pdos.cnf
 
 rem If you want to run Hercules as a batch tool and
 rem not see any execution, you just need to redirect
@@ -124,19 +124,19 @@ del hercauto.zip
 popd
 
 rem copy printer output
-copy %PDOS390%\hercules.log %2
+copy %PDOS%\hercules.log %2
 
 rem extract output data file (typically .zip if binary)
 if %out% == none goto noout2
-hetget %tranouto% %PDOS390%\mftopc.het %out% 1
+hetget %tranouto% %PDOS%\mftopc.het %out% 1
 :noout2
 
 rem copy AWS tape in case it was changed
 if %aws% == none goto noaws3
-copy %PDOS390%\awstap.aws %aws%
+copy %PDOS%\awstap.aws %aws%
 :noaws3
 
-pushd %PDOS390%
+pushd %PDOS%
 del one.at.a.time
 popd
 

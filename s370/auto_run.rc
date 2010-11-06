@@ -2,10 +2,9 @@ panrate 1000
 
 hao clear
 
-# When we see "enter commands yourself", we are done
+# When we see "enter commands yourself", we can unzip the package
+# and run hercauto.bat
 hao tgt enter further commands yourself
-hao cmd script termherc.rc
+hao cmd script auto_run2.rc
 
-# On IPL, PDOS will unconditionally unzip the hercauto.zip and
-# run hercauto.bat (if found)
 ipl 1b9

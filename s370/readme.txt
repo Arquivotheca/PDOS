@@ -3,6 +3,11 @@ Welcome to PDOS/390 (and friends).
 This distribution comes with the PDOS operating system
 installed on a 3390.
 
+Users of Hercules under Windows need to create a directory 
+such as c:\pdos, unzip this package into there, preferably
+create an environment variable PDOS pointing to that directory,
+as well as adding it to the path, and then type in "pdos".
+
 If you wish to run on real iron, you will need to dump the 
 3390-1 disk image (pdos00.cckd), restore it to a real 3390, 
 then zap the PDOS.SYS dataset at location 7FC.  Note 

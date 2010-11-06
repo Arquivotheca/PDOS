@@ -66,10 +66,11 @@ Here is an example of how to define the disk under Hercules:
 
 The source for everything included in PDOS is available,
 although some things came from different packages (e.g. the
-GCC compiler), so you'll need to go to that project's
-website to get the source. Everything is linked to under
-the PDOS sourceforge site (including the MVS/380 site).
-Also note that pdptop.mac is copied from pdp390.mac.
+GCC compiler), so please download those separate packages
+to obtain the source and read their license agreements.
+Everything is linked to under the PDOS sourceforge site 
+(including the MVS/380 site). Also note that pdptop.mac is 
+copied from pdp390.mac.
 
 The executables that are supported by PDOS are called
 "MVS PE (Portable Executable)" format, which is simply

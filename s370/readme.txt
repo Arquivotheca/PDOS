@@ -1,9 +1,11 @@
 Welcome to PDOS/390 (and friends).
 
 This distribution comes with the PDOS operating system
-installed on a 3390. You will need to dump the 3390-1
-disk image (pdos00.199), restore it to a real 3390, 
-then zap the SYS1.PDOS dataset at location 7FC.  Note 
+installed on a 3390.
+
+If you wish to run on real iron, you will need to dump the 
+3390-1 disk image (pdos00.cckd), restore it to a real 3390, 
+then zap the PDOS.SYS dataset at location 7FC.  Note 
 that there is an eyecatcher "ZAPCONSL" just before the 
 location.
 
@@ -31,10 +33,10 @@ The following JCL will do that:
 (the example sets the subchannel to x'10038')
 
 If you do not zap it, it will attempt to figure out the
-3215 console address by searching for "3215-C". It relies
-on 3215-C being (only) on the line which has your device,
-and then it will use the relative device number to determine
-the device address. E.g. if this is the 5th device you have
+3215 console address by searching for "3215" (which
+includes "3215-C") in the CONFIG.SYS.  Based on this
+device's logical position within the devices, it will
+determine the address.  E.g. if this is the 5th device you have
 defined, it will set an address of x'10004' (ie it uses
 0-based counting). This matches what Hercules does. In
 S/370 and S/380 modes, it instead uses the specified device
@@ -59,19 +61,30 @@ for device errors) work in the real world.
 
 Here is an example of how to define the disk under Hercules:
 
-01b9      3390      dasd/pdos00.199
+01b9      3390      dasd/pdos00.cckd
 
-Although all the source code for PDOS is provided, the
-build script (doit.bat) makes use of some separately-packaged
-utilities. Also note that pdptop.mac is copied from pdp390.mac.
 
-Note that currently PDOS is only designed to load a single
-load module (PCOMM) and then terminate (which eventuates in
-a wait code of 444). PCOMM is a normal MVS load module doing
-normal MVS calls, but PDOS only supports a fraction of normal
-MVS calls (it's still in design/proof-of-concept stage, basically).
+The source for everything included in PDOS is available,
+although some things came from different packages (e.g. the
+GCC compiler), so you'll need to go to that project's
+website to get the source. Everything is linked to under
+the PDOS sourceforge site (including the MVS/380 site).
+Also note that pdptop.mac is copied from pdp390.mac.
+
+The executables that are supported by PDOS are called
+"MVS PE (Portable Executable)" format, which is simply
+an IEBCOPY unloaded, followed by converting the resultant
+RECFM=V into RECFM=U with RDWs added (same as what happens
+if you ftp from the mainframe with the RDW option). While
+PDOS only supports a fraction of normal MVS calls, that
+fraction is sufficient to do such things as run a C
+compiler to the point where it can even recompile itself.
+Although note that that is currently fudged, so don't try
+to write files more than 1 cylinder in size.
 
 
 Support/feedback can be obtained here:
-
 http://tech.groups.yahoo.com/group/hercules-os380/
+
+Package is available here:
+http://pdos.sourceforge.net

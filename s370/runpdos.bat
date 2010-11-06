@@ -71,8 +71,6 @@ set aws=%7
 
 rem copy input data file (typically .zip)
 del %PDOS%\hercauto.zip
-rem create dummy file
-echo dummy >%PDOS%\hercauto.zip
 copy %PDOS%\%tranintape%.tdf %PDOS%\pctomf.tdf
 if %in% == none goto noin2
 copy %in% %PDOS%\hercauto.zip
@@ -93,7 +91,7 @@ copy %1 %PDOS%\hercauto.bat
 
 rem now run everything
 pushd %PDOS%
-
+zip -0X hercauto hercauto.bat
 
 
 

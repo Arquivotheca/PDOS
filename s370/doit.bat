@@ -68,7 +68,7 @@ copy pdos00.cckd %MVS380%\dasd\pdos00.199
 rem create package suitable for "shipping"
 
 del pdospkg.zip
-zip -9X pdospkg pload.sys pdos.sys config.sys 
+zip -9X pdospkg pload.sys pdos.sys config.sys readme.txt
 zip -9X pdospkg pcomm.exe autoexec.bat world.exe sample.c 
 zip -9X pdospkg wtoworld.exe diff.exe hercauto.zip
 zip -9X pdospkg ctl.txt pdos00.cckd pdos.cnf auto*.rc termherc*.rc

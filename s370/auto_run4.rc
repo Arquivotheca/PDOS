@@ -1,10 +1,7 @@
 hao clear
 
-pause 3
-
-/hercauto
-
 # When we see the PDOS prompt, we are done
 hao tgt PDOS00
 hao cmd script termherc.rc
 
+/hercauto

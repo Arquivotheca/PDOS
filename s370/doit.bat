@@ -65,6 +65,14 @@ dasdload -bz2 ctl.txt pdos00.cckd
 copy pdos00.cckd %MVS380%\dasd\pdos00.199
 
 
+rem Try out the new version of PDOS, and remember to manually do the
+rem mvsunzip pdpi.zip
+
+
+set HERCULES_RC=auto_ipl.rc
+hercules -f pdos.cnf >hercules.log
+
+
 rem create package suitable for "shipping"
 
 del pdospkg.zip
@@ -76,7 +84,3 @@ zip -9X pdospkg runpdos.bat pdos.bat pdpi.zip
 zip -9X pdospkg gcc.exe mvsendec.exe mvsunzip.exe hexdump.exe copyfile.exe
 
 
-rem Try out the new version of PDOS
-
-set HERCULES_RC=auto_ipl.rc
-hercules -f pdos.cnf >hercules.log

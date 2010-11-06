@@ -22,39 +22,32 @@ rem and then change the single conf file to the right one
 
 copy \mvs380\conf\mvs380.conf herc.cnf
 m4 -I . -I ../pdpclib pdos.m4 >pdos.jcl
-call runmvs pdos.jcl output.txt none pload.zip
-unzip -o pload
-copy pload.txt pload.bin
-copy pdos.txt pdos.bin
-copy pdosin.txt pdos.in
-copy pcomm.txt pcomm.bin
-copy pcommin.txt pcomm.in
-copy world.txt world.bin
+call runmvs pdos.jcl output.txt none pdos.zip
+unzip -o pdos
+copy pload.txt pload.sys
+copy pdos.txt pdos.sys
+copy pdosin.txt config.sys
+copy pcomm.txt pcomm.exe
+copy pcommin.txt autoexec.bat
+copy world.txt world.exe
 copy sample.txt sample.c
-copy gcc.txt gcc.bin
-copy wtoworld.txt wtoworld.bin
-echo PDOS00 3390-1 * separate >ctl.txt
-echo PLOAD.SYS SEQ pload.bin TRK 10 1 0 PS U 0 18452 >>ctl.txt
-echo SYSVTOC VTOC CYL 2 >>ctl.txt
-echo PDOS.SYS SEQ pdos.bin CYL 1 1 0 PS U 0 18452 >>ctl.txt
-echo CONFIG.SYS SEQ pdos.in CYL 1 1 0 PS U 0 18452 >>ctl.txt
-echo COMMAND.EXE SEQ pcomm.bin CYL 1 1 0 PS U 0 18452 >>ctl.txt
-echo AUTOEXEC.BAT SEQ pcomm.in CYL 1 1 0 PS U 0 18452 >>ctl.txt
-echo WORLD.EXE SEQ world.bin CYL 1 1 0 PS U 0 18452 >>ctl.txt
-echo SAMPLE.C SEQ sample.c CYL 1 1 0 PS U 0 18452 >>ctl.txt
-echo SAMPLE2.C SEQ sample.c CYL 1 1 0 PS U 0 18452 >>ctl.txt
-echo GCC.EXE SEQ gcc.bin CYL 4 1 0 PS U 0 18452 >>ctl.txt
-echo WTOWORLD.EXE SEQ wtoworld.bin CYL 1 1 0 PS U 0 18452 >>ctl.txt
-echo ALLH.ZIP SEQ allh.zip CYL 1 1 0 PS U 0 18452 >>ctl.txt
-echo ALL.ZIP SEQ all.zip CYL 50 1 0 PS U 0 18452 >>ctl.txt
-echo HEXDUMP.EXE SEQ hexdump.txt CYL 1 1 0 PS U 0 18452 >>ctl.txt
-echo COPYFILE.EXE SEQ copyfile.txt CYL 1 1 0 PS U 0 18452 >>ctl.txt
-echo MVSUNZIP.EXE SEQ mvsunzip.txt CYL 1 1 0 PS U 0 18452 >>ctl.txt
-echo MVSENDEC.EXE SEQ mvsendec.txt CYL 1 1 0 PS U 0 18452 >>ctl.txt
-echo DIFF.EXE SEQ diff.txt CYL 1 1 0 PS U 0 18452 >>ctl.txt
-del pdos00.199
-dasdload -bz2 ctl.txt pdos00.199
-copy pdos00.199 \mvs380\dasd
+copy wtoworld.txt wtoworld.exe
+copy diff.txt diff.exe
+
+echo echo nothing to run >hercauto.bat
+del hercauto.zip
+zip -0X hercauto hercauto.bat
+
+del pdospkg.zip
+zip -9X pdospkg pload.sys pdos.sys config.sys 
+zip -9X pdospkg pcomm.exe autoexec.bat world.exe sample.c 
+zip -9X pdospkg wtoworld.exe diff.exe hercauto.zip
+
+unzip -o gccpdos
+
+del pdos00.cckd
+dasdload -bz2 ctl.txt pdos00.cckd
+copy pdos00.cckd \mvs380\dasd\pdos00.199
 copy \mvs380\conf\mvs380_380.conf \mvs380\conf\mvs380.conf
 call startmvs ipl1b9
 copy \mvs380\conf\mvs380_std.conf \mvs380\conf\mvs380.conf

@@ -349,101 +349,23 @@ undivert(world.s)/*
 //SYSTERM  DD  SYSOUT=*
 //SYSIN    DD  DUMMY
 //*
+//* Copy DIFF.  Note that this should really be part of
+//* the SEASIK package rather than here
+//*
 //IEBCOPY  EXEC PGM=IEBCOPY
-//SYSUT1   DD DSN=GCC.LINKLIB,DISP=SHR
+//SYSUT1   DD DSN=DIFFUTIL.LINKLIB,DISP=SHR
 //SYSUT2   DD DSN=&&COPY,SPACE=(CYL,(1,1)),UNIT=SYSALLDA,
 //         DISP=(NEW,PASS)
 //SYSPRINT DD SYSOUT=*
 //SYSIN DD *
  COPY INDD=((SYSUT1,R)),OUTDD=SYSUT2
- SELECT MEMBER=GCC
+ SELECT MEMBER=DIFF
 /*
 //*
 //COPYFILE EXEC PGM=COPYFILE,PARM='-bb dd:in dd:out'
 //STEPLIB  DD  DSN=PDPCLIB.LINKLIB,DISP=SHR
 //IN       DD  DSN=&&COPY,DISP=(OLD,DELETE)
-//OUT      DD  DSN=&&HEX(GCC),DISP=(OLD,PASS)
-//SYSPRINT DD  SYSOUT=*
-//SYSTERM  DD  SYSOUT=*
-//SYSIN    DD  DUMMY
-//*
-//* Copy the HEXDUMP utility
-//*
-//IEBCOPY  EXEC PGM=IEBCOPY
-//SYSUT1   DD DSN=PDPCLIB.LINKLIB,DISP=SHR
-//SYSUT2   DD DSN=&&COPY,SPACE=(CYL,(1,1)),UNIT=SYSALLDA,
-//         DISP=(NEW,PASS)
-//SYSPRINT DD SYSOUT=*
-//SYSIN DD *
- COPY INDD=((SYSUT1,R)),OUTDD=SYSUT2
- SELECT MEMBER=HEXDUMP
-/*
-//*
-//COPYFILE EXEC PGM=COPYFILE,PARM='-bb dd:in dd:out'
-//STEPLIB  DD  DSN=PDPCLIB.LINKLIB,DISP=SHR
-//IN       DD  DSN=&&COPY,DISP=(OLD,DELETE)
-//OUT      DD  DSN=&&HEX(HEXDUMP),DISP=(OLD,PASS)
-//SYSPRINT DD  SYSOUT=*
-//SYSTERM  DD  SYSOUT=*
-//SYSIN    DD  DUMMY
-//*
-//*
-//* Copy the COPYFILE utility
-//*
-//IEBCOPY  EXEC PGM=IEBCOPY
-//SYSUT1   DD DSN=PDPCLIB.LINKLIB,DISP=SHR
-//SYSUT2   DD DSN=&&COPY,SPACE=(CYL,(1,1)),UNIT=SYSALLDA,
-//         DISP=(NEW,PASS)
-//SYSPRINT DD SYSOUT=*
-//SYSIN DD *
- COPY INDD=((SYSUT1,R)),OUTDD=SYSUT2
- SELECT MEMBER=COPYFILE
-/*
-//*
-//COPYFILE EXEC PGM=COPYFILE,PARM='-bb dd:in dd:out'
-//STEPLIB  DD  DSN=PDPCLIB.LINKLIB,DISP=SHR
-//IN       DD  DSN=&&COPY,DISP=(OLD,DELETE)
-//OUT      DD  DSN=&&HEX(COPYFILE),DISP=(OLD,PASS)
-//SYSPRINT DD  SYSOUT=*
-//SYSTERM  DD  SYSOUT=*
-//SYSIN    DD  DUMMY
-//*
-//* Copy the MVSUNZIP utility
-//*
-//IEBCOPY  EXEC PGM=IEBCOPY
-//SYSUT1   DD DSN=PDPCLIB.LINKLIB,DISP=SHR
-//SYSUT2   DD DSN=&&COPY,SPACE=(CYL,(1,1)),UNIT=SYSALLDA,
-//         DISP=(NEW,PASS)
-//SYSPRINT DD SYSOUT=*
-//SYSIN DD *
- COPY INDD=((SYSUT1,R)),OUTDD=SYSUT2
- SELECT MEMBER=MVSUNZIP
-/*
-//*
-//COPYFILE EXEC PGM=COPYFILE,PARM='-bb dd:in dd:out'
-//STEPLIB  DD  DSN=PDPCLIB.LINKLIB,DISP=SHR
-//IN       DD  DSN=&&COPY,DISP=(OLD,DELETE)
-//OUT      DD  DSN=&&HEX(MVSUNZIP),DISP=(OLD,PASS)
-//SYSPRINT DD  SYSOUT=*
-//SYSTERM  DD  SYSOUT=*
-//SYSIN    DD  DUMMY
-//*
-//* Copy the MVSENDEC utility
-//*
-//IEBCOPY  EXEC PGM=IEBCOPY
-//SYSUT1   DD DSN=PDPCLIB.LINKLIB,DISP=SHR
-//SYSUT2   DD DSN=&&COPY,SPACE=(CYL,(1,1)),UNIT=SYSALLDA,
-//         DISP=(NEW,PASS)
-//SYSPRINT DD SYSOUT=*
-//SYSIN DD *
- COPY INDD=((SYSUT1,R)),OUTDD=SYSUT2
- SELECT MEMBER=MVSENDEC
-/*
-//*
-//COPYFILE EXEC PGM=COPYFILE,PARM='-bb dd:in dd:out'
-//STEPLIB  DD  DSN=PDPCLIB.LINKLIB,DISP=SHR
-//IN       DD  DSN=&&COPY,DISP=(OLD,DELETE)
-//OUT      DD  DSN=&&HEX(MVSENDEC),DISP=(OLD,PASS)
+//OUT      DD  DSN=&&HEX(DIFF),DISP=(OLD,PASS)
 //SYSPRINT DD  SYSOUT=*
 //SYSTERM  DD  SYSOUT=*
 //SYSIN    DD  DUMMY
@@ -484,7 +406,7 @@ echo let's dump the IPL1 record
 dumpblk 0 0 1
 
 echo unzip header files
-mvsunzip all.zip
+mvsunzip pdpclib.zip
 dir
 
 echo what version of GCC do we have here?
@@ -493,14 +415,8 @@ gcc --version
 echo what options does GCC have?
 gcc --help
 
-echo let's do a compile already!
-gcc -Os -S -I . -DPUREISO -DHAVE_CONFIG_H -DIN_GCC -ansi -pedantic alias.c
-rem gcc -S -I . sample.c
-dir
-
-echo what did we get?
-type alias.s
-rem type sample.s
+mvsunzip hercauto.zip
+hercauto
 
 echo that's enough for now - enter further commands yourself!
 /*

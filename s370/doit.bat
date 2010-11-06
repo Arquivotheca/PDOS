@@ -53,15 +53,6 @@ del hercauto.zip
 zip -0X hercauto hercauto.bat
 
 
-rem create package suitable for "shipping"
-
-del pdospkg.zip
-zip -9X pdospkg pload.sys pdos.sys config.sys 
-zip -9X pdospkg pcomm.exe autoexec.bat world.exe sample.c 
-zip -9X pdospkg wtoworld.exe diff.exe hercauto.zip
-zip -9X pdospkg ctl.txt
-
-
 rem get GCC/PDPCLIB utilities
 
 unzip -o gccpdos
@@ -72,6 +63,15 @@ rem build DASD. Put a copy into MVS/380 area for no particular reason
 del pdos00.cckd
 dasdload -bz2 ctl.txt pdos00.cckd
 copy pdos00.cckd %MVS380%\dasd\pdos00.199
+
+
+rem create package suitable for "shipping"
+
+del pdospkg.zip
+zip -9X pdospkg pload.sys pdos.sys config.sys 
+zip -9X pdospkg pcomm.exe autoexec.bat world.exe sample.c 
+zip -9X pdospkg wtoworld.exe diff.exe hercauto.zip
+zip -9X pdospkg ctl.txt pdos00.cckd pdos*.cnf
 
 
 rem Try out the new version of PDOS

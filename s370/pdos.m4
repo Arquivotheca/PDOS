@@ -404,7 +404,9 @@ echo type "help" for some example commands
 echo note that in order to use GCC:
 gcc --version
 
-echo you will need to type in "mvsunzip pdpi.zip" first
+echo you need a command such as:
+echo gcc -S -I . -o - sample.c
+echo the package should have shipped with "mvsunzip pdpi.zip" already run
 
 echo that's enough for now - enter further commands yourself!
 echo on

@@ -1,9 +1,5 @@
-pause 1
-
 hao clear
 
-# When we see the PDOS prompt, we are done
+# For some reason, Hercules sees an extra prompt, so trigger on that too
 hao tgt PDOS00
-hao cmd script termherc.rc
-
-/hercauto
+hao cmd script auto_run4.rc

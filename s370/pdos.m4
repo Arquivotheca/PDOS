@@ -397,28 +397,17 @@ undivert(world.s)/*
 //SYSTERM  DD  SYSOUT=*
 //OUT      DD  DSN=&&HEX(PCOMMIN),DISP=(OLD,PASS)
 //IN       DD  *
-rem this is an example autoexec.bat
+echo off
+echo welcome to autoexec.bat
+echo type "help" for some example commands
 
-echo let's do a directory listing
-dir
-
-echo let's dump the IPL1 record
-dumpblk 0 0 1
-
-echo unzip header files
-mvsunzip pdpclib.zip
-dir
-
-echo what version of GCC do we have here?
+echo note that in order to use GCC:
 gcc --version
 
-echo what options does GCC have?
-gcc --help
-
-mvsunzip hercauto.zip
-hercauto
+echo you will need to type in "mvsunzip pdpi.zip" first
 
 echo that's enough for now - enter further commands yourself!
+echo on
 /*
 //*
 //COPYFILE EXEC PGM=COPYFILE,PARM='-tt dd:in dd:out'

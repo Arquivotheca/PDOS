@@ -75,6 +75,7 @@ typedef struct {
 #define memmgrFree __mmFree
 #define memmgrFreeId __mmFId
 #define memmgrMaxSize __mmMaxSize
+#define memmgrTotSize __mmTotSize
 #define memmgrIntegrity __mmIntegrity
 #define memmgrRealloc __mmRealloc
 #define memmgrDebug __mmDebug
@@ -88,6 +89,7 @@ void *memmgrAllocate(MEMMGR *memmgr, size_t bytes, int id);
 void memmgrFree(MEMMGR *memmgr, void *ptr);
 void memmgrFreeId(MEMMGR *memmgr, int id);
 size_t memmgrMaxSize(MEMMGR *memmgr);
+size_t memmgrTotSize(MEMMGR *memmgr);
 void memmgrIntegrity(MEMMGR *memmgr);
 int memmgrRealloc(MEMMGR *memmgr, void *ptr, size_t newsize);
 

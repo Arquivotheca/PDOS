@@ -502,6 +502,25 @@ size_t memmgrMaxSize(MEMMGR *memmgr)
     return (max);
 }
 
+/* find total amount of memory available */
+size_t memmgrTotSize(MEMMGR *memmgr)
+{
+    MEMMGRN *p;
+    size_t tot = 0;
+
+    p = memmgr->startf;
+
+    while (p != NULL)
+    {
+        if (p->size != 0)
+        {
+            tot += (p->size - MEMMGRN_SZ);
+        }
+        p = p->next;
+    }
+    return (tot);
+}
+
 int memmgrDebug = 0;
 int memmgrDebug2 = 0;
 

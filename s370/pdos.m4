@@ -445,7 +445,7 @@ int main(void)
 //SYSTERM  DD  SYSOUT=*
 //OUT      DD  DSN=&&HEX(PDOSIN),DISP=(OLD,PASS)
 //IN       DD  *
-undivert(herc.cnf)/*
+undivert(pdos.cnf)/*
 //*
 //ZIP      EXEC PGM=MINIZIP,PARM='-0 -x .txt -l -o dd:out dd:in'
 //STEPLIB  DD  DSN=MINIZIP.LINKLIB,DISP=SHR

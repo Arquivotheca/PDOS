@@ -17,7 +17,7 @@ gccmvs -DUSE_MEMMGR -D__PDOS__ -Os -DS390 -S -I . -I ../pdpclib pdosutil.c
 gccmvs -DUSE_MEMMGR -D__PDOS__ -Os -DS390 -S -I . -I ../pdpclib pcomm.c
 gccmvs -DUSE_MEMMGR -D__PDOS__ -O0 -DS390 -S -I . -I ../pdpclib world.c
 
-sleep 2
+sleep 1
 
 rem when globally changing, change the DS3x0 to whatever
 rem and then change the single conf file in the next line to the right one

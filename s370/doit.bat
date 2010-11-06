@@ -20,10 +20,9 @@ gccmvs -DUSE_MEMMGR -D__PDOS__ -O0 -DS390 -S -I . -I ../pdpclib world.c
 sleep 1
 
 rem when globally changing, change the DS3x0 to whatever
-rem and then change the next two files
+rem and then change the next file
 
 copy pdos390.cnf pdos.cnf
-copy pdos390.bat pdos.bat
 
 
 rem we did compiles already, but now need to do assembles and

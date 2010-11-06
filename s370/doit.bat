@@ -20,9 +20,10 @@ gccmvs -DUSE_MEMMGR -D__PDOS__ -O0 -DS390 -S -I . -I ../pdpclib world.c
 sleep 1
 
 rem when globally changing, change the DS3x0 to whatever
-rem and then change the single conf file in the next line to the right one
+rem and then change the next two files
 
 copy pdos390.cnf pdos.cnf
+copy pdos390.bat pdos.bat
 
 
 rem we did compiles already, but now need to do assembles and
@@ -71,7 +72,9 @@ del pdospkg.zip
 zip -9X pdospkg pload.sys pdos.sys config.sys 
 zip -9X pdospkg pcomm.exe autoexec.bat world.exe sample.c 
 zip -9X pdospkg wtoworld.exe diff.exe hercauto.zip
-zip -9X pdospkg ctl.txt pdos00.cckd pdos*.cnf
+zip -9X pdospkg ctl.txt pdos00.cckd pdos.cnf auto*.rc termherc*.rc
+zip -9X pdospkg runpdos.bat pdos.bat pdpi.zip
+zip -9X pdospkg gcc.exe mvsendec.exe mvsunzip.exe hexdump.exe copyfile.exe
 
 
 rem Try out the new version of PDOS

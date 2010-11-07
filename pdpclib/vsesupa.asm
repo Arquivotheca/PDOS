@@ -349,10 +349,26 @@ NOTSYSI  DS    0H
          ST    R6,DCBLRECL
          LA    R6,2    +++ hardcode to recfm=U
          ST    R6,DCBRECFM
+*
+* Here we need to choose tape or disk
+* There's probably a better way than looking at the name of
+* the DD, to see if it starts with "MT", as a convention, 
+* but of course it would be better if this was
+* transparent to the programmer in the first place!
+*
+         CLC   0(2,R3),=C'MT'
+         BNE   NOTTAP
          LA    R5,MTIN
          ST    R5,PTRDTF
          OPEN  (R5)
          B     DONEOPEN
+*
+NOTTAP   DS    0H
+         LA    R5,SDIN
+         ST    R5,PTRDTF
+         OPEN  (R5)
+         B     DONEOPEN
+*
          B     BADOPEN
 WRITING  DS    0H
 *         USING ZDCBAREA,R2

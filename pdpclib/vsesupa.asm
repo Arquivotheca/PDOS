@@ -633,6 +633,7 @@ MYLINE   DS    CL80
          L     R3,ASMBUF
 *         PUT   (R2),(R3)
          L     R5,PTRDTF
+         LR    R8,R4           Length of write expected in R8
          PUT   (R5),(R3)
 .NMM2    ANOP
          AIF   ('&OUTM' NE 'L').NLM3

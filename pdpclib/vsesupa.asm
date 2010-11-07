@@ -68,6 +68,133 @@ R14      EQU   14
 R15      EQU   15
 SUBPOOL  EQU   0
 *
+TABDDN   DSECT
+         USING     *,R9
+DDN      DS        CL8
+POINTER  DS        F
+TABLEN   EQU       *-TABDDN
+@@VSESUP CSECT
+***********************************************************************
+*                                                                     *
+*  VSEFIL - contributed by Louis Millon                               *
+*                                                                     *
+*  Allows access to CIL in order to read RECFM=U binary files in a    *
+*  PDS-like manner.                                                   *
+*                                                                     *
+*  CALL      PAULOBJ1,(OPEN,DDN)                                      *
+*  CALL      PAULOBJ1,(GET,DDN,RECADDR,RECLEN)                        *
+*  CALL      PAULOBJ1,(CLOSE,DDN)                                     *
+*                                                                     *
+*  "OPEN" etc must be CL8 with that string. DDN is CL8. Other two F   *
+*                                                                     *
+***********************************************************************
+         ENTRY @@VSEFIL
+@@VSEFIL EQU   *
+         USING     *,R3
+         SAVE      (14,12)
+         LR        R3,R15
+         LR        R10,R1
+         B         DEBCODE
+MAXFILE  EQU       5                             NUMBER OF FILE
+*                                                WHICH MAY BE OPENED AT
+*                                                THE SAME TIME
+AREA     DC        (TABLEN*MAXFILE)X'00'
+         DC        F'-1'                         END OF TABLE
+FILENAME DS        CL8
+DEBCODE  DS        0H
+         L         R15,0(R10)                    FUNCTION
+         CLC       =C'GET',0(R15)
+         BE        GET
+         CLC       =C'OPEN',0(R15)
+         BE        OPEN
+         CLC       =C'CLOSE',0(R15)
+         BE        CLOSE
+         RETURN    (14,12),RC=8                  INVALID FUNCTION
+OPEN     DS        0H
+         L         R15,4(R10)
+         MVC       FILENAME,0(R15)               DDNAME
+         LA        R9,AREA
+         LA        R15,MAXFILE
+LOOPOPEN DS        0H
+         CLC       DDN,FILENAME
+         BE        ALREADY                       THIS FILE IS ALREADY
+*                                                OPENED
+         LA        R9,TABLEN(R9)
+         BCT       R15,LOOPOPEN                  THE FILE IS NOT OPEN
+         LA        R9,AREA                       SEEK FOR A VACANT
+         LA        R15,MAXFILE                   POSITION IN THE ARRAY
+LOOPOPN2 DS        0H
+         CLC       DDN,=8X'0'                    POSITION IS FREE?
+         BE        OKOPEN                        YES
+         LA        R9,TABLEN(R9)
+         BCT       R15,LOOPOPEN                  NEXT OCCURENCE
+         RETURN    (14,12),RC=12                 ARRAY IS FULL
+ALREADY  RETURN    (14,12),RC=8                  FILE ALREADY OPENED
+OKOPEN   DS        0H
+         LA        R1,FILENAME
+         CDLOAD    (1)
+         ST        R0,POINTER
+         LTR       R15,R15
+         BZ        R15OK
+         LNR       R15,R15
+         RETURN    (14,12),RC=(R15)              CDLOAD FAIL
+R15OK    EQU       *
+         MVC       DDN,FILENAME
+         RETURN    (14,12),RC=0
+CLOSE    DS        0H
+         L         R15,4(R10)
+         MVC       FILENAME,0(R15)
+         LA        R9,AREA
+         LA        R15,MAXFILE
+LOOPCLOS DS        0H
+         CLC       DDN,FILENAME
+         BE        OKCLOSE
+         LA        R9,TABLEN(R9)
+         BCT       R15,LOOPOPEN
+         RETURN    (14,12),RC=8                  DDNAME NOTFND IN ARRAY
+OKCLOSE  DS        0H
+         LA        R1,FILENAME
+         CDDELETE  (1)                           REMOVE PHASE FROM GETV
+         XC        DDN,DDN
+         XC        POINTER,POINTER
+         RETURN    (14,12),RC=0
+GET      DS        0H
+         LA        R15,FILENAME
+         MVC       FILENAME,0(R15)
+         LA        R9,AREA
+         LA        R15,MAXFILE
+LOOPGET  DS        0H
+         CLC       DDN,FILENAME
+         BE        OKGET
+         LA        R9,TABLEN(R9)
+         BCT       R15,LOOPOPEN
+         RETURN    (14,12),RC=12                 DDNAME NOTFND IN ARRAY
+OKGET    DS        0H
+         L         R15,POINTER
+         CLC       0(4,R15),=F'0'
+         BNE       NOEOF
+         RETURN    (14,12),RC=8                  EOF
+NOEOF    DS        0H
+         L         R14,POINTER
+         L         R15,12(R10)
+         MVC       0(4,R15),0(R14)               LENGTH OF RECORD
+         LA        R14,4(R14)                    SKIP RECLEN
+         L         R15,08(R10)
+         ST        R14,0(R15)                    AADR OF RECORD
+         L         R14,POINTER
+         AL        R14,0(R14)                    SKIP RECORD
+         LA        R14,4(R14)                    AND LENGTH
+         ST        R14,POINTER                   NEXT RECORD
+         RETURN    (14,12),RC=0
+         LTORG
+***********************************************************************
+*                                                                     *
+*  GETTZ - Get the offset from GMT in 1.048576 seconds                *
+*                                                                     *
+***********************************************************************
+         ENTRY @@GETTZ
+@@GETTZ  LA    R15,0
+         BR    R14
 ***********************************************************************
 *
 *  AOPEN - Open a dataset

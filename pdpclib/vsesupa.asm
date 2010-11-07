@@ -392,6 +392,7 @@ WNOMEM   DS    0H
 *
          L     R6,DCBLRECL
          LA    R5,SYSPRT
+         ST    R5,PTRDTF
          OPEN  (R5)
          B     FINO1
 *
@@ -410,6 +411,7 @@ NOTSYS   DS    0H
 *
          L     R6,DCBLRECL
          LA    R5,SYSTRM
+         ST    R5,PTRDTF
          OPEN  (R5)
          B     FINO1
 *
@@ -422,11 +424,12 @@ NOTSYST  DS    0H
          ST    R6,DCBRECFM
          L     R6,DCBLRECL
          LA    R5,SDOUT
+         ST    R5,PTRDTF
          OPEN  (R5)
          B     FINO1
 *
 FINO1    DS    0H
-         ST    R5,PTRDTF
+*         ST    R5,PTRDTF
 * R5 is free again
 *
 * Handle will be returned in R7
@@ -690,7 +693,15 @@ NFRCL    DS    0H
          L     R5,PTRDTF
          LTR   R5,R5
          BZ    NOTOP1
+* The CLOSE appears to be abending when called in 31-bit mode,
+* despite it being an SVC. So we need to switch to 24-bit mode
+         AIF   ('&SYS' NE 'S380').N380CL1
+         CALL  @@SETM24
+.N380CL1 ANOP
          CLOSE (R5)
+         AIF   ('&SYS' NE 'S380').N380CL2
+         CALL  @@SETM31
+.N380CL2 ANOP
 NOTOP1   DS    0H
          LA    R15,0
 *
@@ -1047,6 +1058,6 @@ RDEOF    DS    1F
 ASMBUF   DS    A                  Pointer to an area for PUTing data
 MEMBER24 DS    CL8
 INTSTOR  DS    CL200              Internal storage for GET
-ZDCBLEN  EQU   *-ZDCBAREA
+ZDCBLEN  EQU   *-WORKAREA
 *
          END

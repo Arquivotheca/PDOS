@@ -81,9 +81,9 @@ TABLEN   EQU       *-TABDDN
 *  Allows access to CIL in order to read RECFM=U binary files in a    *
 *  PDS-like manner.                                                   *
 *                                                                     *
-*  CALL      PAULOBJ1,(OPEN,DDN)                                      *
-*  CALL      PAULOBJ1,(GET,DDN,RECADDR,RECLEN)                        *
-*  CALL      PAULOBJ1,(CLOSE,DDN)                                     *
+*  CALL      @@VSEFIL,(OPEN,DDN)                                      *
+*  CALL      @@VSEFIL,(GET,DDN,RECADDR,RECLEN)                        *
+*  CALL      @@VSEFIL,(CLOSE,DDN)                                     *
 *                                                                     *
 *  "OPEN" etc must be CL8 with that string. DDN is CL8. Other two F   *
 *                                                                     *

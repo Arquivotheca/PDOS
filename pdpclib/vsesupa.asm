@@ -137,7 +137,7 @@ OKOPEN   DS        0H
          LTR       R15,R15
          BZ        R15OK
          LNR       R15,R15
-         RETURN    (14,12),RC=(R15)              CDLOAD FAIL
+         RETURN    (14,12),RC=(15)              CDLOAD FAIL
 R15OK    EQU       *
          MVC       DDN,FILENAME
          RETURN    (14,12),RC=0
@@ -415,6 +415,16 @@ NOTSYS   DS    0H
 *
 *         CNTRL SYSPRT,SP,1
 NOTSYST  DS    0H
+* Assume RECFM=U
+         LA    R6,80   +++ hardcode to 80
+         ST    R6,DCBLRECL
+         LA    R6,2    +++ hardcode to undefined
+         ST    R6,DCBRECFM
+         L     R6,DCBLRECL
+         LA    R5,SDOUT
+         OPEN  (R5)
+         B     FINO1
+*
 FINO1    DS    0H
          ST    R5,PTRDTF
 * R5 is free again
@@ -709,6 +719,9 @@ SYSPRT   DTFPR CONTROL=YES,BLKSIZE=80,DEVADDR=SYSLST,MODNAME=PRINTMOD, X
                IOAREA1=IO1,RECFORM=FIXUNB,WORKA=YES
 SYSTRM   DTFPR CONTROL=YES,BLKSIZE=80,DEVADDR=SYS005,MODNAME=PRINTMOD, X
                IOAREA1=IO1,RECFORM=FIXUNB,WORKA=YES
+SDOUT    DTFSD BLKSIZE=80,DEVADDR=SYS010,DEVICE=3350,                  X
+               IOAREA1=IO1,RECFORM=UNDEF,WORKA=YES,                    X
+               TYPEFLE=OUTPUT,RECSIZE=(8)
 PRINTMOD PRMOD CONTROL=YES,RECFORM=FIXUNB,WORKA=YES
 *
 SDIN     DTFSD BLKSIZE=19069,DEVADDR=SYS010,DEVICE=3350,               X

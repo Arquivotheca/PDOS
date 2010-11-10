@@ -154,7 +154,7 @@ LOOPCLOS DS        0H
          RETURN    (14,12),RC=8                  DDNAME NOTFND IN ARRAY
 OKCLOSE  DS        0H
          LA        R1,FILENAME
-         CDDELETE  (1)                           REMOVE PHASE FROM GETV
+*         CDDELETE  (1)                       REMOVE PHASE FROM GETV
          XC        DDN,DDN
          XC        POINTER,POINTER
          RETURN    (14,12),RC=0

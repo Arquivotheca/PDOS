@@ -283,6 +283,8 @@ NOEOF    DS        0H
 * 16(,R1) has BLKSIZE
 * 20(,R1) has ASMBUF pointer
 *
+         LA    R9,0
+         ST    R9,ISMEM
          L     R9,24(,R1)         R9 POINTS TO MEMBER NAME (OF PDS)
          LA    R9,0(,R9)          Strip off high-order bit or byte
 *
@@ -319,6 +321,19 @@ NOEOF    DS        0H
 *         RDJFCB ((R2),INPUT)
          LTR   R9,R9
          BZ    NOMEM
+         ST    R9,ISMEM
+         MVC   MEMBER24,0(R9)
+         LA    R9,=C'OPEN    '
+         ST    R9,P1VF
+         LA    R9,MEMBER24
+         ST    R9,P2VF
+         LA    R1,PMVF
+         CALL  @@VSEFIL
+         L     R6,=F'19069'   +++ hardcode to 19069
+         ST    R6,DCBLRECL
+         LA    R6,2    +++ hardcode to recfm=U
+         ST    R6,DCBRECFM
+         B     DONEOPEN
 *         USING ZDCBAREA,R2
 *         MVC   JFCBELNM,0(R9)
 *         OI    JFCBIND1,JFCPDS
@@ -579,6 +594,9 @@ JPTR     DS    F
          L     R4,8(R1)         R4 point to a length
          LA    R6,0
 *         ST    R6,RDEOF         
+         L     R9,ISMEM
+         LTR   R9,R9
+         BNZ   GMEM
          LA    R5,INTSTOR         
          ST    R5,0(R3)
          L     R8,DCBLRECL
@@ -588,6 +606,20 @@ JPTR     DS    F
          BNE   GOTEOF
          LA    R15,0             SUCCESS
          B     FINFIL
+GMEM     DS    0H                got member
+         LA    R9,=C'GET     '
+         ST    R9,P1VF
+         LA    R9,MEMBER24
+         ST    R9,P2VF
+         ST    R3,P3VF
+         ST    R4,P4VF
+         LA    R1,PMVF
+         CALL  @@VSEFIL
+         L     R8,0(R4)
+         L     R9,0(R4)
+         LTR   R9,R9
+         BNZ   FINFIL
+         B     GOTEOF
 GOTEOF   DS    0H
          LA    R15,1             FAIL
 *         ST    R6,0(R4)
@@ -714,7 +746,19 @@ NFRCL    DS    0H
          AIF   ('&SYS' NE 'S380').N380CL1
          CALL  @@SETM24
 .N380CL1 ANOP
+         L     R9,ISMEM
+         LTR   R9,R9
+         BNZ   GMEM2
          CLOSE (R5)
+         B     NORM
+GMEM2    DS    0H
+         LA    R9,=C'CLOSE   '
+         ST    R9,P1VF
+         LA    R9,MEMBER24
+         ST    R9,P2VF
+         LA    R1,PMVF
+         CALL  @@VSEFIL
+NORM     DS    0H
          AIF   ('&SYS' NE 'S380').N380CL2
          CALL  @@SETM31
 .N380CL2 ANOP
@@ -1073,6 +1117,12 @@ DSCBCCHH DS    CL5                CCHHR of DSCB returned by OBTAIN
 RDEOF    DS    1F
 ASMBUF   DS    A                  Pointer to an area for PUTing data
 MEMBER24 DS    CL8
+ISMEM    DS    F                  Flag whether this is a PDS
+PMVF     DS    0F
+P1VF     DS    A
+P2VF     DS    A
+P3VF     DS    A
+P4VF     DS    A
 INTSTOR  DS    CL200              Internal storage for GET
 ZDCBLEN  EQU   *-WORKAREA
 *

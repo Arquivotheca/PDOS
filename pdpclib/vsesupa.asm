@@ -290,7 +290,7 @@ WNOMEM   DS    0H
 *         BZ    BADOPEN            OPEN failed
 *
          CLC   0(8,R3),=C'SYSPRINT'
-         BNE   NOTSYS
+         BNE   NOTSYSPR
 *
 * We use the register notation, because other than the standard
 * files, all files will have their data stored in ZDCBAREA, not
@@ -307,7 +307,7 @@ WNOMEM   DS    0H
          B     FINO1
 *
 *         CNTRL SYSPRT,SP,1
-NOTSYS   DS    0H
+NOTSYSPR DS    0H
          CLC   0(8,R3),=C'SYSTERM '
          BNE   NOTSYST
 *
@@ -327,6 +327,22 @@ NOTSYS   DS    0H
 *
 *         CNTRL SYSPRT,SP,1
 NOTSYST  DS    0H
+         CLC   0(8,R3),=C'SYSPUNCH'
+         BNE   NOTSYSPU
+* We use the register notation, because other than the standard
+* files, all files will have their data stored in ZDCBAREA, not
+* a local variable.
+         LA    R6,80   +++ hardcode to 80
+         ST    R6,DCBLRECL
+         LA    R6,0    +++ hardcode to fixed
+         ST    R6,DCBRECFM
+*
+         L     R6,DCBLRECL
+         LA    R5,SYSPCH
+         ST    R5,PTRDTF
+         OPEN  (R5)
+         B     FINO1
+NOTSYSPU DS    0H
 * Assume RECFM=U
          LA    R6,80   +++ hardcode to 80
          ST    R6,DCBLRECL
@@ -664,7 +680,10 @@ RETURNAC DS    0H
 * This macro is only for reading from stdin
 SYSIN    DTFCD DEVADDR=SYSIPT,IOAREA1=IO1,BLKSIZE=80,RECFORM=FIXUNB,   X
                WORKA=YES,EOFADDR=GOTEOF,MODNAME=CARDMOD
-CARDMOD  CDMOD RECFORM=FIXUNB,WORKA=YES             
+SYSPCH   DTFCD DEVADDR=SYS007,IOAREA1=IO1,BLKSIZE=80,RECFORM=FIXUNB,   X
+               WORKA=YES,TYPEFLE=OUTPUT,DEVICE=2540,MODNAME=PCHMOD
+CARDMOD  CDMOD RECFORM=FIXUNB,WORKA=YES,TYPEFLE=INPUT
+PCHMOD   CDMOD RECFORM=FIXUNB,WORKA=YES,TYPEFLE=OUTPUT
 * These macros are only used for writing to stdout and stderr
 SYSPRT   DTFPR CONTROL=YES,BLKSIZE=80,DEVADDR=SYSLST,MODNAME=PRINTMOD, X
                IOAREA1=IO1,RECFORM=FIXUNB,WORKA=YES

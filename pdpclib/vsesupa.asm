@@ -346,7 +346,9 @@ NOTSYSPU DS    0H
 * Assume RECFM=U
 * Note that output files can't really use up to the full 19069
 * and 18452 is a better match for a 3390 anyway
-         L     R6,=F'18452'   +++ hardcode to 18452
+* However, we're running out of addressable workspace unless a
+* restructure is done, so we set a limit of 1000
+         L     R6,=F'1000'   +++ hardcode to 1000
          ST    R6,DCBLRECL
          LA    R6,2    +++ hardcode to undefined
          ST    R6,DCBRECFM
@@ -695,8 +697,8 @@ SYSPRT   DTFPR CONTROL=YES,BLKSIZE=80,DEVADDR=SYSLST,MODNAME=PRINTMOD, X
                IOAREA1=IO1,RECFORM=FIXUNB,WORKA=YES
 SYSTRM   DTFPR CONTROL=YES,BLKSIZE=80,DEVADDR=SYS005,MODNAME=PRINTMOD, X
                IOAREA1=IO1,RECFORM=FIXUNB,WORKA=YES
-SDOUT    DTFSD BLKSIZE=19069,DEVADDR=SYS009,DEVICE=3350,               X
-               IOAREA1=WORKI1,RECFORM=UNDEF,WORKA=YES,                 X
+SDOUT    DTFSD BLKSIZE=1016,DEVADDR=SYS009,DEVICE=3350,                X
+               IOAREA1=WORKO1,RECFORM=UNDEF,WORKA=YES,                 X
                TYPEFLE=OUTPUT,RECSIZE=(8)
 PRINTMOD PRMOD CONTROL=YES,RECFORM=FIXUNB,WORKA=YES
 *
@@ -1099,6 +1101,7 @@ NOEOF    DS        0H
 * should be dynamically allocated for each handle. It looks
 * to me like this is used to store an entire track rather
 * than a single block, so can't be shared.
+WORKO1    DS    CL1024
 WORKI1    DS    CL19169
 *
 WORKAREA DSECT

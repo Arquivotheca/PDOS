@@ -52,7 +52,14 @@ int main(int argc, char **argv)
         }
     }
     in_name = *(argv + off + 1);
-    fp = fopen(in_name, in);
+    if (strcmp(in_name, "-") == 0)
+    {
+        fp = stdin;
+    }
+    else
+    {
+        fp = fopen(in_name, in);
+    }
     if (fp == NULL)
     {
         printf("failed to open %s for reading\n", in_name);
@@ -60,7 +67,14 @@ int main(int argc, char **argv)
     }
 
     out_name = *(argv + off + 2);
-    fq = fopen(out_name, out);
+    if (strcmp(out_name, "-") == 0)
+    {
+        fq = stdout;
+    }
+    else
+    {
+        fq = fopen(out_name, out);
+    }
     if (fq == NULL)
     {
         printf("failed to open %s for writing\n", out_name);

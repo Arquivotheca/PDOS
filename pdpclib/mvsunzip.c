@@ -200,6 +200,16 @@ static int onefile(FILE *infile)
         p = strrchr(p, '\\') + 1;
     }
 
+#if defined(__VSE__)
+    if (outn != NULL)
+    {
+        if (strcmp(p, outn) != 0)
+        {
+            return (1); /* just skip this file */
+        }
+    }
+#endif
+
     if (outn != NULL)
     {
         if (strchr(p, '.') != NULL) *strchr(p, '.') = '\0';
@@ -227,7 +237,28 @@ static int onefile(FILE *infile)
 #else
     if (outn != NULL)
     {
+#if defined(__VSE__)
+        FILE *sp;
+        char *z = p;
+        
+        while (*z != '\0')
+        {
+            *z = toupper((unsigned char)*z);
+            z++;
+        }
+        sp = fopen("dd:syspunch", "w");
+        fprintf(sp,
+                "* $$ JOB JNM=PUTCIL\n"
+                "* $$ LST LST=SYSLST,CLASS=A\n"
+                "// JOB PUTCIL\n"
+                "// OPTION CATAL\n"
+                " PHASE %s,*\n",
+                p);
+        fclose(sp);
+        sprintf(newfnm, "dd:out");
+#else
         sprintf(newfnm, "%s(%s)", outn, p);
+#endif
     }
     else
     {

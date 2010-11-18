@@ -992,7 +992,7 @@ LOOPCLOS DS        0H
          CLC       DDN,FILENAME
          BE        OKCLOSE
          LA        R9,TABLEN(R9)
-         BCT       R15,LOOPOPEN
+         BCT       R15,LOOPCLOS
          RETURN    (14,12),RC=8                  DDNAME NOTFND IN ARRAY
 OKCLOSE  DS        0H
          LA        R1,FILENAME
@@ -1009,7 +1009,7 @@ LOOPGET  DS        0H
          CLC       DDN,FILENAME
          BE        OKGET
          LA        R9,TABLEN(R9)
-         BCT       R15,LOOPOPEN
+         BCT       R15,LOOPGET
          RETURN    (14,12),RC=12                 DDNAME NOTFND IN ARRAY
 OKGET    DS        0H
          L         R15,POINTER

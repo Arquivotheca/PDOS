@@ -969,7 +969,7 @@ LOOPOPN2 DS        0H
          CLC       DDN,=8X'0'                    POSITION IS FREE?
          BE        OKOPEN                        YES
          LA        R9,TABLEN(R9)
-         BCT       R15,LOOPOPEN                  NEXT OCCURENCE
+         BCT       R15,LOOPOPN2                  NEXT OCCURENCE
          RETURN    (14,12),RC=12                 ARRAY IS FULL
 ALREADY  RETURN    (14,12),RC=8                  FILE ALREADY OPENED
 OKOPEN   DS        0H

@@ -344,7 +344,9 @@ NOTSYST  DS    0H
          B     FINO1
 NOTSYSPU DS    0H
 * Assume RECFM=U
-         L     R6,=F'19069'   +++ hardcode to 19069
+* Note that output files can't really use up to the full 19069
+* and 18452 is a better match for a 3390 anyway
+         L     R6,=F'18452'   +++ hardcode to 18452
          ST    R6,DCBLRECL
          LA    R6,2    +++ hardcode to undefined
          ST    R6,DCBRECFM

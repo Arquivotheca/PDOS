@@ -170,7 +170,7 @@ TABLEN   EQU       *-TABDDN
          LR    R2,R13             Access DCB
          LA    R2,WORKLEN(R2)     Point past save area
          LR    R0,R2              Load output DCB area address
-         LA    R1,ZDCBLEN         Load output length of DCB area
+         L     R1,=A(ZDCBLEN)     Load output length of DCB area
          S     R1,=A(WORKLEN)     Adjust for save area
          LR    R5,R11             Preserve parameter list
          LA    R11,0              Pad of X'00' and no input length
@@ -1147,7 +1147,7 @@ P1VF     DS    A
 P2VF     DS    A
 P3VF     DS    A
 P4VF     DS    A
-INTSTOR  DS    CL200              Internal storage for GET
+INTSTOR  DS    CL19069            Internal storage for GET
 ZDCBLEN  EQU   *-WORKAREA
 *
          END

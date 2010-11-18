@@ -240,6 +240,12 @@ static int onefile(FILE *infile)
 #if defined(__VSE__)
         FILE *sp;
         char *z = p;
+        static char jobcard[1000] =
+                "* $$ JOB JNM=PUTCIL\n"
+                "* $$ LST LST=SYSLST,CLASS=A\n"
+                "// JOB PUTCIL\n"
+                "// OPTION CATAL\n"
+                " PHASE %s,*\n";
         
         while (*z != '\0')
         {
@@ -247,13 +253,7 @@ static int onefile(FILE *infile)
             z++;
         }
         sp = fopen("dd:syspunch", "w");
-        fprintf(sp,
-                "* $$ JOB JNM=PUTCIL\n"
-                "* $$ LST LST=SYSLST,CLASS=A\n"
-                "// JOB PUTCIL\n"
-                "// OPTION CATAL\n"
-                " PHASE %s,*\n",
-                p);
+        fprintf(sp, jobcard, p);
         fclose(sp);
         sprintf(newfnm, "dd:out");
 #else

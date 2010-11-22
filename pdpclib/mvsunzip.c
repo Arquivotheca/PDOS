@@ -205,6 +205,10 @@ static int onefile(FILE *infile)
     {
         if (strcmp(p, outn) != 0)
         {
+            if (binary)
+            {
+                fread(buf, size, 1, infile);
+            }
             return (1); /* just skip this file */
         }
     }

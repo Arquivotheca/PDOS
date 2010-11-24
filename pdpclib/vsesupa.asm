@@ -699,7 +699,7 @@ SYSIN    DTFCD DEVADDR=SYSIPT,IOAREA1=IO1,BLKSIZE=80,RECFORM=FIXUNB,   X
 * Use a type of CMBND to stop it from punching blank cards
 * This also means we need a dummy EOF. The other option is to
 * use a 2501, but that seems less commonly available
-SYSPCH   DTFDI DEVADDR=SYSPCH,IOAREA1=IO1,RECSIZE=80
+SYSPCH   DTFDI DEVADDR=SYSPCH,IOAREA1=IO1,RECSIZE=81
 CARDMOD  CDMOD RECFORM=FIXUNB,WORKA=YES,TYPEFLE=INPUT
 PCHMOD   CDMOD RECFORM=FIXUNB,WORKA=YES,TYPEFLE=CMBND
 * These macros are only used for writing to stdout and stderr

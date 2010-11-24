@@ -164,6 +164,7 @@ TABLEN   EQU       *-TABDDN
 *
          LA    R9,0
          ST    R9,ISMEM
+         ST    R9,ISDI
          L     R9,24(,R1)         R9 POINTS TO MEMBER NAME (OF PDS)
          LA    R9,0(,R9)          Strip off high-order bit or byte
 *
@@ -336,6 +337,8 @@ NOTSYST  DS    0H
          ST    R6,DCBLRECL
          LA    R6,0    +++ hardcode to fixed
          ST    R6,DCBRECFM
+         LA    R6,1
+         ST    R6,ISDI   syspunch is device-independent
 *
          L     R6,DCBLRECL
          LA    R5,SYSPCH
@@ -584,7 +587,16 @@ MYLINE   DS    CL80
 *         PUT   (R2),(R3)
          L     R5,PTRDTF
          LR    R8,R4           Length of write expected in R8
+         L     R9,ISDI
+         LTR   R9,R9
+         BNZ   GDI
          PUT   (R5),(R3)
+         B     DONEPUT
+GDI      DS    0H
+         MVC   IO1+1(80),0(R3)   +++ hardcode buffer and length
+         MVI   IO1,C' '
+         PUT   (R5)
+DONEPUT  DS    0H
 .NMM2    ANOP
          AIF   ('&OUTM' NE 'L').NLM3
          ST    R1,0(R3)
@@ -687,9 +699,7 @@ SYSIN    DTFCD DEVADDR=SYSIPT,IOAREA1=IO1,BLKSIZE=80,RECFORM=FIXUNB,   X
 * Use a type of CMBND to stop it from punching blank cards
 * This also means we need a dummy EOF. The other option is to
 * use a 2501, but that seems less commonly available
-SYSPCH   DTFCD DEVADDR=SYS007,IOAREA1=IO1,BLKSIZE=80,RECFORM=FIXUNB,   X
-               WORKA=YES,TYPEFLE=CMBND,DEVICE=2540,MODNAME=PCHMOD,     X
-               EOFADDR=GOTEOF
+SYSPCH   DTFDI DEVADDR=SYSPCH,IOAREA1=IO1,RECSIZE=80
 CARDMOD  CDMOD RECFORM=FIXUNB,WORKA=YES,TYPEFLE=INPUT
 PCHMOD   CDMOD RECFORM=FIXUNB,WORKA=YES,TYPEFLE=CMBND
 * These macros are only used for writing to stdout and stderr
@@ -1147,6 +1157,7 @@ RDEOF    DS    1F
 ASMBUF   DS    A                  Pointer to an area for PUTing data
 MEMBER24 DS    CL8
 ISMEM    DS    F                  Flag whether this is a PDS
+ISDI     DS    F                  Flag whether this is dev-independent
 PMVF     DS    0F
 P1VF     DS    A
 P2VF     DS    A

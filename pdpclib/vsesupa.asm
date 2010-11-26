@@ -947,7 +947,7 @@ SYSTEMLN EQU   *-SYSTMWRK    LENGTH OF DYNAMIC STORAGE
          LR        R3,R15
          LR        R10,R1
          B         DEBCODE
-MAXFILE  EQU       5                             NUMBER OF FILE
+MAXFILE  EQU       20                            NUMBER OF FILE
 *                                                WHICH MAY BE OPENED AT
 *                                                THE SAME TIME
 AREA     DC        (TABLEN*MAXFILE)X'00'

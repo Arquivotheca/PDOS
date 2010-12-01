@@ -245,10 +245,6 @@ static int onefile(FILE *infile)
         FILE *sp;
         char *z = p;
         static char jobcard[1000] =
-                "* $$ JOB JNM=PUTCIL\n"
-                "* $$ LST LST=SYSLST,CLASS=A\n"
-                "// JOB PUTCIL\n"
-                "// OPTION CATAL\n"
                 " PHASE %s,*\n";
         
         while (*z != '\0')

@@ -68,7 +68,7 @@ int main(int argc, char **argv)
     }
     
     memset(card, 0x00, sizeof card);
-    sprintf(card, "\x02ESD");
+    sprintf(card, "\x02" "ESD");
     *(short *)(card + 10) = 0x20; /* length of this ESD is the minimal 0x20 */
     *(short *)(card + 14) = 1; /* CSECT 1 */
     memset(card + 16, ' ', 8); /* name is blank */
@@ -96,7 +96,7 @@ int main(int argc, char **argv)
                 r -= sizeof(int);
             }
             memset(card, 0x00, sizeof card);
-            sprintf(card, "\x02TXT");
+            sprintf(card, "\x02" "TXT");
             *(int *)(card + 4) = x; /* origin */
             *(int *)(card + 8) = r; /* byte count */
             *(int *)(card + 12) = 2; /* CSECT 2 */
@@ -105,7 +105,7 @@ int main(int argc, char **argv)
         }
     }
     memset(card, 0x00, sizeof card);
-    sprintf(card, "\x02END");
+    sprintf(card, "\x02" "END");
     fwrite(card, 1, sizeof card, fq);
 
     return (0);

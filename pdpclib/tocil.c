@@ -67,6 +67,14 @@ int main(int argc, char **argv)
         return (EXIT_FAILURE);
     }
     
+    memset(card, ' ', sizeof card);
+    memcpy(card, "/*", 2);
+    fwrite(card, 1, sizeof card, fq);
+
+    memset(card, ' ', sizeof card);
+    memcpy(card, " INCLUDE", 8);
+    fwrite(card, 1, sizeof card, fq);
+
     memset(card, 0x00, sizeof card);
     sprintf(card, "\x02" "ESD");
     *(short *)(card + 10) = 0x20; /* length of this ESD is the minimal 0x20 */

@@ -32,9 +32,10 @@ int main(int argc, char **argv)
     size_t x;
     size_t r;
 
-    if (argc <= 2)
+    if (argc <= 3)
     {
-        fprintf(stderr, "usage: tocil <binary file> <object file>\n");
+        fprintf(stderr, "usage: tocil <binary file> <object file> "
+                "<phase name>\n");
         fprintf(stderr, "will read binary file and write to object file\n");
         return (EXIT_FAILURE);
     }
@@ -66,13 +67,10 @@ int main(int argc, char **argv)
         fprintf(stderr, "failed to open %s for output\n", *(argv + 2));
         return (EXIT_FAILURE);
     }
-    
-    memset(card, ' ', sizeof card);
-    memcpy(card, "/*", 2);
-    fwrite(card, 1, sizeof card, fq);
 
     memset(card, ' ', sizeof card);
-    memcpy(card, " INCLUDE", 8);
+    sprintf(card, " PHASE %.8s,*", *(argv + 3));
+    *(card + strlen(card)) = ' ';
     fwrite(card, 1, sizeof card, fq);
 
     memset(card, 0x00, sizeof card);

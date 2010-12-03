@@ -593,8 +593,8 @@ MYLINE   DS    CL80
          PUT   (R5),(R3)
          B     DONEPUT
 GDI      DS    0H
-         MVC   IO1+1(80),0(R3)   +++ hardcode buffer and length
-         MVI   IO1,C' '
+         MVC   IO2+1(80),0(R3)   +++ hardcode buffer and length
+         MVI   IO2,C' '
          PUT   (R5)
 DONEPUT  DS    0H
 .NMM2    ANOP
@@ -699,7 +699,7 @@ SYSIN    DTFCD DEVADDR=SYSIPT,IOAREA1=IO1,BLKSIZE=80,RECFORM=FIXUNB,   X
 * Use a type of CMBND to stop it from punching blank cards
 * This also means we need a dummy EOF. The other option is to
 * use a 2501, but that seems less commonly available
-SYSPCH   DTFDI DEVADDR=SYSPCH,IOAREA1=IO1,RECSIZE=81
+SYSPCH   DTFDI DEVADDR=SYSPCH,IOAREA1=IO2,RECSIZE=81
 CARDMOD  CDMOD RECFORM=FIXUNB,WORKA=YES,TYPEFLE=INPUT
 PCHMOD   CDMOD RECFORM=FIXUNB,WORKA=YES,TYPEFLE=CMBND
 * These macros are only used for writing to stdout and stderr
@@ -719,7 +719,8 @@ MTIN     DTFMT BLKSIZE=19069,DEVADDR=SYS011,MODNAME=MTINMOD,           X
                IOAREA1=WORKI1,RECFORM=UNDEF,WORKA=YES,FILABL=NO,       X
                TYPEFLE=INPUT,RECSIZE=(8),EOFADDR=GOTEOF
 MTINMOD  MTMOD WORKA=YES,RECFORM=UNDEF
-IO1      DS    CL200
+IO1      DS    CL100
+IO2      DS    CL100
 *
 ***********************************************************************
 *

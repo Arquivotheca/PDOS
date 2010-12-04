@@ -15,9 +15,10 @@
 #include <string.h>
 
 #define MAXBUF 2000000L
-#define MAXRLEN 1000 /* maximum length of a single record */
 #define CARDLEN 80
 #define MAXCDATA 56  /* maximum data bytes on TXT record */
+#define MAXRLEN MAXCDATA * 10 - 4 /* maximum length of a single record */
+    /* the 4 is to ensure the length is never on a card by itself */
 
 int main(int argc, char **argv)
 {
@@ -31,6 +32,7 @@ int main(int argc, char **argv)
     size_t upto;
     size_t x;
     size_t r;
+    size_t subtot;
 
     if (argc <= 2)
     {
@@ -39,7 +41,7 @@ int main(int argc, char **argv)
         return (EXIT_FAILURE);
     }
 
-    buf = malloc(MAXBUF);
+    buf = malloc(MAXBUF + 4);
     if (buf == NULL)
     {
         fprintf(stderr, "out of memory error\n");
@@ -59,6 +61,8 @@ int main(int argc, char **argv)
         fprintf(stderr, "file too big (%ld or more) to process\n", MAXBUF);
         return (EXIT_FAILURE);
     }
+    memset(buf + tot, 0x00, 4);
+    tot += 4;
 
     fq = fopen(*(argv + 2), "wb");
     if (fq == NULL)
@@ -82,11 +86,23 @@ int main(int argc, char **argv)
     *(short *)(card + 10) = 0x20; /* length of this ESD is the minimal 0x20 */
     *(short *)(card + 14) = 1; /* CSECT 1 */
     memset(card + 16, ' ', 8); /* name is blank */
+
     *(card + 24) = 0x04; /* PC for some reason */
+
+#if 0
+    /* is this required? */
+    *(int *)(card + 28) = tot + 
+        (tot/MAXRLEN + ((tot % MAXRLEN) != 0)) * sizeof(int);
+#endif
+
     memcpy(card + 32, "TOTO    ", 8); /* total? */
-    *(int *)(card + 44) = tot - 12; /* total minus 12 for some reason */
+    
+    /* is this required? */
+    *(int *)(card + 44) = tot + 
+        (tot/MAXRLEN + ((tot % MAXRLEN) != 0)) * sizeof(int);
     fwrite(card, 1, sizeof card, fq);
 
+    subtot = 0;
     for (upto = 0; upto < tot; upto += rem)
     {
         rem = tot - upto;
@@ -107,15 +123,31 @@ int main(int argc, char **argv)
             }
             memset(card, 0x00, sizeof card);
             sprintf(card, "\x02" "TXT");
-            *(int *)(card + 4) = x; /* origin */
-            *(int *)(card + 8) = r; /* byte count */
-            *(int *)(card + 12) = 2; /* CSECT 2 */
-            memcpy(card + 16, buf + upto + x, r);
+            *(int *)(card + 4) = subtot; /* origin */
+            *(int *)(card + 8) = r + ((x == 0) ? sizeof(int) : 0);
+                /* byte count */
+            *(int *)(card + 12) = 1; /* CSECT 1 - was 2 */
+            if (x == 0)
+            {
+                *(int *)(card + 16) = r;
+                memcpy(card + 16 + sizeof(int), buf + upto, r);
+                subtot += (r + sizeof(int));
+            }
+            else
+            {
+                memcpy(card + 16, buf + upto + x, r);
+                subtot += r;
+            }
             fwrite(card, 1, sizeof card, fq);
         }
     }
     memset(card, 0x00, sizeof card);
     sprintf(card, "\x02" "END");
+#if 0
+    /* is this required? */
+    *(int *)(card + 24) = tot + 
+        (tot/MAXRLEN + ((tot % MAXRLEN) != 0)) * sizeof(int);
+#endif
     fwrite(card, 1, sizeof card, fq);
 
     return (0);

@@ -130,6 +130,10 @@ int main(int argc, char **argv)
             if (x == 0)
             {
                 *(int *)(card + 16) = rem;
+                if ((upto + rem) >= tot)
+                {
+                    *(int *)(card + 16) -= 4;
+                }
                 memcpy(card + 16 + sizeof(int), buf + upto, r);
                 subtot += (r + sizeof(int));
             }

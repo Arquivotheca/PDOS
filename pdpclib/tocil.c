@@ -17,7 +17,7 @@
 #define MAXBUF 2000000L
 #define CARDLEN 80
 #define MAXCDATA 56  /* maximum data bytes on TXT record */
-#define MAXRLEN MAXCDATA * 10 - 4 /* maximum length of a single record */
+#define MAXRLEN (MAXCDATA * 10 - 4) /* maximum length of a single record */
     /* the 4 is to ensure the length is never on a card by itself */
 
 int main(int argc, char **argv)

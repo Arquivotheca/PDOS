@@ -81,7 +81,7 @@ undivert(vsesupa.asm)/*
 // ASSGN SYS005,SYSLST
 // OPTION DUMP
 // OPTION SYSPARM='aBc DeF'
-// EXEC PDPTEST,SIZE=999K
+// EXEC PDPTEST,SIZE=AUTO
 /*
 /&
 * $$ EOJ

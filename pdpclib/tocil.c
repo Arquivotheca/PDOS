@@ -129,7 +129,7 @@ int main(int argc, char **argv)
             *(int *)(card + 12) = 1; /* CSECT 1 - was 2 */
             if (x == 0)
             {
-                *(int *)(card + 16) = r;
+                *(int *)(card + 16) = rem;
                 memcpy(card + 16 + sizeof(int), buf + upto, r);
                 subtot += (r + sizeof(int));
             }

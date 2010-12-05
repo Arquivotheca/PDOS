@@ -1081,10 +1081,6 @@ NOEOF    DS        0H
 *
 .NOMODE  ANOP  ,                  S/370 doesn't support MODE switching
 *
-*         IEZIOB                   Input/Output Block
-*
-*ZDCBLEN  EQU   =A(TDCBLEN)
-*WORKLEN  EQU   =A(TWRKLEN)
 *
 * Not sure why this needs to be kept way down here.
 * But it should be temporary anyway, as the I/O buffers
@@ -1094,19 +1090,16 @@ NOEOF    DS        0H
 WORKO1    DS    CL1024
 WORKI1    DS    CL19169
 *
+*
 WORKAREA DSECT
 SAVEAREA DS    18F
 WORKLEN  EQU   *-WORKAREA
-*
-*         DCBD  DSORG=PS,DEVD=DA   Map Data Control Block
-*         ORG   IHADCB             Overlay the DCB DSECT
+* Note that the handle starts from the WORKAREA DSECT, but
+* initialization starts at ZDCBAREA (since we don't want to
+* initialize our save area). Some more appropriate names
+* should probably be found.
 ZDCBAREA DS    0H
-*         DS    CL(INDCBLN)
-*         DS    CL(OUTDCBLN)
 OPENCLOS DS    F                  OPEN/CLOSE parameter list
-         DS    0H
-*EOFR24   DS    CL(EOFRLEN)
-*         IHADECB DSECT=NO         Data Event Control Block
 BLKSIZE  DS    F                  Save area for input DCB BLKSIZE
 LRECL    DS    F                  Save area for input DCB LRECL
 BUFFADDR DS    F                  Location of the BLOCK Buffer
@@ -1122,19 +1115,11 @@ DCBLRECL DS    F                  Logical record length
 DCBRECFM DS    F                  Record format
 JFCBPTR  DS    F
 JFCB     DS    0F
-*         IEFJFCBN LIST=YES        SYS1.AMODGEN JOB File Control Block
-* Format 1 Data Set Control Block
 DSCB     DS    0F
-*         IECSDSL1 (1)             Map the Format 1 DSCB
 DSCBCCHH DS    CL5                CCHHR of DSCB returned by OBTAIN
          DS    CL47               Rest of OBTAIN's 148 byte work area
-*CLOSEMB  DS    CL(CLOSEMLN)
-         DS    0F
-*OPENMB   DS    CL(OPENMLN)
-         DS    0F
-*WOPENMB  DS    CL(WOPENMLN)
 RDEOF    DS    1F
-ASMBUF   DS    A                  Pointer to an area for PUTing data
+ASMBUF   DS    A                  Pointer to a 32k area for PUTing data
 MEMBER24 DS    CL8
 ISMEM    DS    F                  Flag whether this is a PDS
 ISDI     DS    F                  Flag whether this is dev-independent
@@ -1143,6 +1128,8 @@ P1VF     DS    A
 P2VF     DS    A
 P3VF     DS    A
 P4VF     DS    A
+* We should probably get rid of this variable and just use ASMBUF
+* for both GET (non-library) and PUT.
 INTSTOR  DS    CL19169            Internal storage for GET
 ZDCBLEN  EQU   *-WORKAREA
 *

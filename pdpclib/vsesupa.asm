@@ -541,13 +541,23 @@ DONEPUT  DS    0H
 *                                                                    *
 *  ACLOSE - Close file                                               *
 *                                                                    *
+*  This routine takes a single parameter - a handle as given by the  *
+*  (successful) return from AOPEN.                                   *
+*                                                                    *
 **********************************************************************
          ENTRY @@ACLOSE
 @@ACLOSE EQU   *
          SAVE  (14,12),,@@ACLOSE
          LR    R12,R15
          USING @@ACLOSE,R12
-         LR    R11,R1
+         LR    R11,R1           SAVE
+*
+* The CLOSE appears to be abending when called in 31-bit mode,
+* despite it being an SVC. So we need to switch to 24-bit mode
+         AIF   ('&SYS' NE 'S380').N380CL1
+         CALL  @@SETM24
+.N380CL1 ANOP
+*
          L     R1,0(R1)         R1 CONTAINS HANDLE
          ST    R13,4(R1)
          ST    R1,8(R13)
@@ -555,35 +565,33 @@ DONEPUT  DS    0H
          LR    R1,R11
          USING WORKAREA,R13
 *
+*
 * If we are doing move mode, free internal assembler buffer
+*
          AIF   ('&OUTM' NE 'M').NMM6
          L     R5,ASMBUF
          LTR   R5,R5
          BZ    NFRCL
-         L     R6,=F'32768'
+         L     R6,=F'32768'     +++ hardcode length of ASMBUF
          FREEVIS LENGTH=(R6),ADDRESS=(R5)
 NFRCL    DS    0H
 .NMM6    ANOP
-*         MVC   CLOSEMB,CLOSEMAC
-*         CLOSE ((R2)),MF=(E,CLOSEMB),MODE=31
-* CAN'T USE MODE=31 WITH MVS 3.8
-*         CLOSE ((R2)),MF=(E,CLOSEMB)
-*         FREEPOOL ((R2))
-*         FREEVIS LENGTH=ZDCBLEN,ADDRESS=(R2)
-*         CLOSE SYSPRT
-         L     R5,PTRDTF
+*
+*
+         L     R5,PTRDTF        Get DTF
          LTR   R5,R5
-         BZ    NOTOP1
-* The CLOSE appears to be abending when called in 31-bit mode,
-* despite it being an SVC. So we need to switch to 24-bit mode
-         AIF   ('&SYS' NE 'S380').N380CL1
-         CALL  @@SETM24
-.N380CL1 ANOP
-         L     R9,ISMEM
+         BZ    NOTOPEN
+         L     R9,ISMEM         Is this a library member?
          LTR   R9,R9
          BNZ   GMEM2
+*
+* Normal file - just do a close.
+*
          CLOSE (R5)
-         B     NORM
+         B     DONECLOS
+*
+* We have a library member, so call VSEFIL to close
+*
 GMEM2    DS    0H
          LA    R9,=C'CLOSE   '
          ST    R9,P1VF
@@ -591,11 +599,19 @@ GMEM2    DS    0H
          ST    R9,P2VF
          LA    R1,PMVF
          CALL  @@VSEFIL
-NORM     DS    0H
-         AIF   ('&SYS' NE 'S380').N380CL2
-         CALL  @@SETM31
-.N380CL2 ANOP
-NOTOP1   DS    0H
+         B     DONECLOS
+*
+* We probably shouldn't have a specific detection for a close
+* of a file that is not open, as it's a logic error regardless.
+*
+NOTOPEN  DS    0H
+         LA    R15,1
+         B     RETURNAC
+*
+* We should have some error detection here, but for now, just
+* set success unconditionally
+*
+DONECLOS DS    0H
          LA    R15,0
 *
 RETURNAC DS    0H
@@ -604,14 +620,14 @@ RETURNAC DS    0H
          LR    R7,R15
          L     R0,=A(ZDCBLEN)
          FREEVIS
+*
+         AIF   ('&SYS' NE 'S380').N380CL2
+         CALL  @@SETM31
+.N380CL2 ANOP
+*
          LR    R15,R7
          RETURN (14,12),RC=(15)
          LTORG
-* CLOSEMAC CLOSE (),MF=L,MODE=31
-* CAN'T USE MODE=31 WITH MVS 3.8
-*CLOSEMAC CLOSE (),MF=L
-*CLOSEMLN EQU   *-CLOSEMAC
-*
 *
 *
 *

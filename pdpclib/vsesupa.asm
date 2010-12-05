@@ -500,18 +500,13 @@ RETURNAR DS    0H
 *
          L     R2,0(,R1)          R2 contains GETMAINed address
          L     R3,4(,R1)          R3 points to the record address
+         L     R3,0(R3)           R3 now has actual buffer address
          L     R4,8(,R1)          R4 points to the length
          L     R4,0(,R4)          R4 now has actual length
 *
-*         STCM  R4,B'0011',DCBLRECL
-*
-         AIF   ('&OUTM' NE 'L').NLM2
-*        PUT   (R2)
-.NLM2    ANOP
-         AIF   ('&OUTM' NE 'M').NMM2
 * In move mode, always use our internal buffer. Ignore passed parm.
-         L     R3,ASMBUF
-*         PUT   (R2),(R3)
+*         L     R3,ASMBUF
+*
          L     R5,PTRDTF
          LR    R8,R4           Length of write expected in R8
          L     R9,ISDI

@@ -11,7 +11,8 @@
 *                                                                     *
 *  This assembler code has a long history - starting off as C/370     *
 *  under MVS then modified for GCC, then ported to CMS, MUSIC/SP      *
-*  and then finally VSE. A rewrite should be considered.              *
+*  and then finally VSE. A rewrite by someone with deep VSE           *
+*  experience should be considered.                                   *
 *                                                                     *
 ***********************************************************************
 *
@@ -111,6 +112,11 @@ R15      EQU   15
 *  This makes it possible to change anything in here that isn't       *
 *  working to your satisfaction, without needing to change the C      *
 *  code at all.                                                       *
+*                                                                     *
+*  Note that currently the DTFs are set up largely based on DDNAME.   *
+*  Although this wasn't the original intention, perhaps the DDNAMEs   *
+*  could be used more extensively to provide DCB info, e.g. having    *
+*  DDNAMEs of F80A, F80B etc.                                         *
 *                                                                     *
 ***********************************************************************
          ENTRY @@AOPEN

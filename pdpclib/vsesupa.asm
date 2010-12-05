@@ -177,7 +177,7 @@ SUBPOOL  EQU   0
 * We should be able to have 32k records here
          L     R6,=F'19069'   +++ hardcode to 19069
          ST    R6,DCBLRECL
-         LA    R6,2    +++ hardcode to recfm=U
+         LA    R6,2           +++ hardcode to recfm=U
          ST    R6,DCBRECFM
          B     DONEOPEN
 NOMEM    DS    0H
@@ -294,10 +294,8 @@ NOTSYSPU DS    0H
 * Assume RECFM=U
 * Note that output files can't really use up to the full 19069
 * and 18452 is a better match for a 3390 anyway
-* However, we're running out of addressable workspace unless a
-* restructure is done, so we set a limit of 1000
 *
-         L     R6,=F'1000'    +++ hardcode to 1000
+         L     R6,=F'18452'   +++ hardcode to 18452
          ST    R6,DCBLRECL
          LA    R6,2           +++ hardcode to undefined
          ST    R6,DCBRECFM
@@ -665,11 +663,7 @@ SYSTRM   DTFPR CONTROL=YES,BLKSIZE=80,DEVADDR=SYS005,MODNAME=PRINTMOD, X
 PRINTMOD PRMOD CONTROL=YES,RECFORM=FIXUNB,WORKA=YES
 *
 * This is for writing to a sequential disk file
-* Note that the size is kept low (1000) so as to avoid addressability
-* problems, because it is currently using a variable in this CSECT
-* instead of doing something sensible like using a buffer in the
-* dynamic area.
-SDOUT    DTFSD BLKSIZE=1016,DEVADDR=SYS009,DEVICE=3350,                X
+SDOUT    DTFSD BLKSIZE=19069,DEVADDR=SYS009,DEVICE=3350,               X
                IOAREA1=WORKO1,RECFORM=UNDEF,WORKA=YES,                 X
                TYPEFLE=OUTPUT,RECSIZE=(8)
 *

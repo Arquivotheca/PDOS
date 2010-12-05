@@ -258,7 +258,7 @@ WNOMEM   DS    0H
          LA    R5,SYSPRT
          ST    R5,PTRDTF
          OPEN  (R5)
-         B     DONEOPWR
+         B     DONEOPEN
 *
 NOTSYSPR DS    0H
          CLC   0(8,R3),=C'SYSTERM '
@@ -271,7 +271,7 @@ NOTSYSPR DS    0H
          LA    R5,SYSTRM
          ST    R5,PTRDTF
          OPEN  (R5)
-         B     DONEOPWR
+         B     DONEOPEN
 *
 NOTSYST  DS    0H
          CLC   0(8,R3),=C'SYSPUNCH'
@@ -286,7 +286,7 @@ NOTSYST  DS    0H
          LA    R5,SYSPCH
          ST    R5,PTRDTF
          OPEN  (R5)
-         B     DONEOPWR
+         B     DONEOPEN
 *
 NOTSYSPU DS    0H
 *
@@ -302,20 +302,20 @@ NOTSYSPU DS    0H
          LA    R5,SDOUT
          ST    R5,PTRDTF
          OPEN  (R5)
-         B     DONEOPWR
+         B     DONEOPEN
 *
-* We've done the open for write, and now need to allocate a buffer 
-* that the C code can write to. The buffer needs to be below the
+*
+DONEOPEN DS    0H
+*
+* We've done the open (read or write), and now need to allocate a 
+* buffer that the C code can write to (or in the case of read,
+* that the assembler code can use). The buffer needs to be below the
 * line, so it's simpler if the assembler code allocates it on
 * behalf of the C caller. We should really allocate a buffer size
 * based on what is actually required rather than this hardcoded
 * maximum possible.
 *
-DONEOPWR DS    0H
-         AIF   ('&OUTM' NE 'M').NMM4
          L     R6,=F'32768'
-*
-* Give caller an internal buffer to write to. Below the line!
 *
 * S/370 can't handle LOC=BELOW
 *
@@ -330,15 +330,14 @@ DONEOPWR DS    0H
          ST    R1,ASMBUF
          L     R5,20(,R11)        R5 points to ASMBUF
          ST    R1,0(R5)           save the pointer
+* Note that in the case of read, the caller doesn't need to know
+* the address (something appropriate is returned in the read
+* function - and appropriate means that the assembler may have
+* deblocked the records and be pointing to that), but it seems 
+* harmless to set the value anyway.
 *
-.NMM4    ANOP
-         B     DONEOPEN
 *
-*
-* Finished opening file (read or write) and ready to return to
-* caller. So set the values that they are expecting.
-*
-DONEOPEN DS    0H
+* Set other values that the caller needs to know
 *
 * The LRECL
          L     R6,DCBLRECL
@@ -417,7 +416,7 @@ RETURNOP DS    0H
 * For non-library files, we read into an internal buffer that
 * is stored in the zdcbarea. Set that fact immediately.
 *
-         LA    R5,INTSTOR         
+         L     R5,ASMBUF
          ST    R5,0(R3)
 *
 * The DTF macro is expecting to get the maximum length in R8
@@ -565,16 +564,12 @@ DONEPUT  DS    0H
          USING WORKAREA,R13
 *
 *
-* If we are doing move mode, free internal assembler buffer
-*
-         AIF   ('&OUTM' NE 'M').NMM6
          L     R5,ASMBUF
          LTR   R5,R5
          BZ    NFRCL
          L     R6,=F'32768'     +++ hardcode length of ASMBUF
          FREEVIS LENGTH=(R6),ADDRESS=(R5)
 NFRCL    DS    0H
-.NMM6    ANOP
 *
 *
          L     R5,PTRDTF        Get DTF
@@ -1095,7 +1090,13 @@ ZDCBAREA DS    0H
 PTRDTF   DS    F                  Pointer to the DTF in use
 DCBLRECL DS    F                  Logical record length
 DCBRECFM DS    F                  Record format
-ASMBUF   DS    A                  Pointer to a 32k area for PUTing data
+*
+* In the case of read, the internal assembler routines require
+* a buffer (below the line) to read into, before the data can
+* be given to the C caller.
+* In the case of write, the C caller needs a BTL buffer to
+* write to.
+ASMBUF   DS    A                  Pointer to a 32k area for I/O
 MEMBER24 DS    CL8
 ISMEM    DS    F                  Flag whether this is a PDS
 ISDI     DS    F                  Flag whether this is dev-independent
@@ -1104,9 +1105,6 @@ P1VF     DS    A
 P2VF     DS    A
 P3VF     DS    A
 P4VF     DS    A
-* We should probably get rid of this variable and just use ASMBUF
-* for both GET (non-library) and PUT.
-INTSTOR  DS    CL19169            Internal storage for GET
 ZDCBLEN  EQU   *-WORKAREA
 *
          END

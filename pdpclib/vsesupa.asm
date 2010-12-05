@@ -693,8 +693,8 @@ IO1      DS    CL200
 * instead of the dynamically-allocated DSECT. But at least the
 * fact that they are being shared makes it not so bad.
 * An extra 100 bytes to be helpful.
-WORKI1   DS    CL19169
-WORKO1   DS    CL19169
+WORKI1   DS    CL32767
+WORKO1   DS    CL32767
 *
 *
 ***********************************************************************

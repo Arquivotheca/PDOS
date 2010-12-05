@@ -394,9 +394,11 @@ RETURNOP DS    0H
          LR    R12,R15
          USING @@AREAD,R12
          LR    R11,R1
+*
          AIF ('&SYS' EQ 'S370').NOMOD1
          CALL  @@SETM24
 .NOMOD1  ANOP
+*
          L     R1,0(R1)         R1 CONTAINS HANDLE
          ST    R13,4(R1)
          ST    R1,8(R13)
@@ -453,43 +455,53 @@ FINFIL   DS    0H
 RETURNAR DS    0H
          LR    R1,R13
          L     R13,SAVEAREA+4
+*
          AIF ('&SYS' EQ 'S370').NOMOD2
          LR    R7,R15            Preserve R15 over call
          CALL  @@SETM31
          LR    R15,R7
 .NOMOD2  ANOP
+*
          RETURN (14,12),RC=(15)
          LTORG
 *
 *
 *
-***********************************************************************
-*
-*  AWRITE - Write to an open dataset
-*
-***********************************************************************
+**********************************************************************
+*                                                                    *
+*  AWRITE - Write to file                                            *
+*                                                                    *
+*  This function takes 3 parameters:                                 *
+*                                                                    *
+*  1. A handle (previously returned by AOPEN)                        *
+*  2. Address of buffer to be written (also previously obtained      *
+*     from AOPEN).                                                   *
+*  3. Length of data to be written (which may be ignored for a file  *
+*     that is of an expected length, e.g. fixed 80)                  *
+*                                                                    *
+**********************************************************************
          ENTRY @@AWRITE
 @@AWRITE EQU   *
          SAVE  (14,12),,@@AWRITE
          LR    R12,R15
          USING @@AWRITE,R12
-         L     R2,0(,R1)          R2 contains GETMAINed address
-         L     R3,4(,R1)          R3 points to the record address
-         L     R4,8(,R1)          R4 points to the length
-         L     R4,0(,R4)          R4 now has actual length
-*         USING ZDCBAREA,R2
-*        GETMAIN RU,LV=WORKLEN,SP=SUBPOOL
          LR    R11,R1             SAVE
-         LR    R1,R2              R1 IS NOW HANDLE
-         ST    R13,4(,R1)
-         ST    R1,8(,R13)
-         LR    R13,R1
-         LR    R1,R11             RESTORE
-*        USING WORKAREA,R13
 *
          AIF   ('&SYS' NE 'S380').N380WR1
          CALL  @@SETM24
 .N380WR1 ANOP
+*
+         L     R1,0(R1)           R1 IS NOW HANDLE
+         ST    R13,4(,R1)
+         ST    R1,8(,R13)
+         LR    R13,R1
+         LR    R1,R11             RESTORE
+         USING WORKAREA,R13
+*
+         L     R2,0(,R1)          R2 contains GETMAINed address
+         L     R3,4(,R1)          R3 points to the record address
+         L     R4,8(,R1)          R4 points to the length
+         L     R4,0(,R4)          R4 now has actual length
 *
 *         STCM  R4,B'0011',DCBLRECL
 *

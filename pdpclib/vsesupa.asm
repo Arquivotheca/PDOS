@@ -223,7 +223,7 @@ NOTTAP   DS    0H
          ST    R5,PTRDTF
          OPEN  (R5)
          B     DONEOPEN
-* Can't reach here
+* Can't reach here, since all files are currently considered valid
          B     BADOPEN
 *
 *
@@ -248,70 +248,59 @@ WNOMEM   DS    0H
          ST    R6,DCBLRECL
          LA    R6,0           +++ hardcode to fixed
          ST    R6,DCBRECFM
-*
          L     R6,DCBLRECL
          LA    R5,SYSPRT
          ST    R5,PTRDTF
          OPEN  (R5)
-         B     FINO1
+         B     DONEOPWR
 *
-*         CNTRL SYSPRT,SP,1
 NOTSYSPR DS    0H
          CLC   0(8,R3),=C'SYSTERM '
          BNE   NOTSYST
-*
-* We use the register notation, because other than the standard
-* files, all files will have their data stored in ZDCBAREA, not
-* a local variable.
-         LA    R6,80   +++ hardcode to 80
+         LA    R6,80          +++ hardcode to 80
          ST    R6,DCBLRECL
-         LA    R6,0    +++ hardcode to fixed
+         LA    R6,0           +++ hardcode to fixed
          ST    R6,DCBRECFM
-*
          L     R6,DCBLRECL
          LA    R5,SYSTRM
          ST    R5,PTRDTF
          OPEN  (R5)
-         B     FINO1
+         B     DONEOPWR
 *
-*         CNTRL SYSPRT,SP,1
 NOTSYST  DS    0H
          CLC   0(8,R3),=C'SYSPUNCH'
          BNE   NOTSYSPU
-* We use the register notation, because other than the standard
-* files, all files will have their data stored in ZDCBAREA, not
-* a local variable.
-         LA    R6,80   +++ hardcode to 80
+         LA    R6,80          +++ hardcode to 80
          ST    R6,DCBLRECL
-         LA    R6,0    +++ hardcode to fixed
+         LA    R6,0           +++ hardcode to fixed
          ST    R6,DCBRECFM
          LA    R6,1
          ST    R6,ISDI   syspunch is device-independent
-*
          L     R6,DCBLRECL
          LA    R5,SYSPCH
          ST    R5,PTRDTF
          OPEN  (R5)
-         B     FINO1
+         B     DONEOPWR
+*
 NOTSYSPU DS    0H
+*
 * Assume RECFM=U
 * Note that output files can't really use up to the full 19069
 * and 18452 is a better match for a 3390 anyway
 * However, we're running out of addressable workspace unless a
 * restructure is done, so we set a limit of 1000
-         L     R6,=F'1000'   +++ hardcode to 1000
+*
+         L     R6,=F'1000'    +++ hardcode to 1000
          ST    R6,DCBLRECL
-         LA    R6,2    +++ hardcode to undefined
+         LA    R6,2           +++ hardcode to undefined
          ST    R6,DCBRECFM
          L     R6,DCBLRECL
          LA    R5,SDOUT
          ST    R5,PTRDTF
          OPEN  (R5)
-         B     FINO1
+         B     DONEOPWR
 *
-FINO1    DS    0H
-*         ST    R5,PTRDTF
-* R5 is free again
+DONEOPWR DS    0H
 *
 * Handle will be returned in R7
 *
@@ -334,6 +323,7 @@ FINO1    DS    0H
 * R5 now free again         
 *
 .NMM4    ANOP
+         B     DONEOPEN
 DONEOPEN DS    0H
          LR    R7,R13
 *         SR    R6,R6

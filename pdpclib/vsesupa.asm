@@ -1087,8 +1087,9 @@ NOEOF    DS        0H
 * should be dynamically allocated for each handle. It looks
 * to me like this is used to store an entire track rather
 * than a single block, so can't be shared.
-WORKO1    DS    CL1024
-WORKI1    DS    CL19169
+* Add an extra 100 bytes to be helpful.
+WORKO1   DS    CL19169
+WORKI1   DS    CL19169
 *
 *
 WORKAREA DSECT

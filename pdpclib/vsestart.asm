@@ -50,25 +50,12 @@ SUBPOOL  EQU   0
          USING @@CRT0,R10
 *
          LR    R8,R15            save R15 so that we can get the PARM
-*
-*LOOP     LA    R5,1(R5)
-*         B     LOOP
          LR    R11,R1            save R1 so we can get the PARM
          LR    R9,R13            save R13 so we can get flag byte
-*         GETMAIN R,LV=STACKLEN,SP=SUBPOOL
          GETVIS LENGTH=STACKLEN
-*LOOP     B     LOOP
          ST    R13,4(R1)
-*         ST    R1,8(R13)
          LR    R13,R1
          USING STACK,R13
-*DW* SAVE STACK POINTER FOR SETJMP/LONGJMP
-*         EXTRN @@MANSTK
-*         L     R3,=V(@@MANSTK)
-*         ST    R13,0(R3)
-*         L     R2,=A(STACKLEN)
-*         ST    R2,4(R3)
-*DW END OF MOD
 *
          LA    R2,0
          ST    R2,DUMMYPTR       WHO KNOWS WHAT THIS IS USED FOR
@@ -199,10 +186,7 @@ EXITADDR DS    F
 MAINSTK  DS    32000F
 MAINLEN  EQU   *-MAINSTK
 STKLTMP  EQU   *-STACK
-*         NUCON
-         AIF   ('&SYS' NE 'S380').N380ST4
-*         USERSAVE
-.N380ST4 ANOP
+*
 COMREG   MAPCOMR
 *
 * MAPACCT - map ACCTABLE - from DOS/VS supervisor

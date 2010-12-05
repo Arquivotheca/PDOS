@@ -37,7 +37,6 @@ R12      EQU   12
 R13      EQU   13
 R14      EQU   14
 R15      EQU   15
-SUBPOOL  EQU   0
 *
 **********************************************************************
 *                                                                    *
@@ -1091,7 +1090,6 @@ ZDCBAREA DS    0H
 PTRDTF   DS    F                  Pointer to the DTF in use
 DCBLRECL DS    F                  Logical record length
 DCBRECFM DS    F                  Record format
-RDEOF    DS    1F
 ASMBUF   DS    A                  Pointer to a 32k area for PUTing data
 MEMBER24 DS    CL8
 ISMEM    DS    F                  Flag whether this is a PDS

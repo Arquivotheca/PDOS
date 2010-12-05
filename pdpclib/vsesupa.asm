@@ -1,18 +1,18 @@
 ***********************************************************************
-*
-*  This program written by Paul Edwards.
-*  Released to the public domain
-*
-*  Extensively modified by others
-*
+*                                                                     *
+*  This program written by Paul Edwards.                              *
+*  Released to the public domain                                      *
+*                                                                     *
+*  Contributions from Louis Millon etc also public domain.            *
+*                                                                     *
 ***********************************************************************
-*
-*  VSESUPA - Support routines for PDPCLIB under DOS/VSE
-*
-*  This assembler code has a long history - starting off as C/370
-*  under MVS then modified for GCC, then ported to CMS, MUSIC/SP
-*  and then finally VSE. A rewrite should be considered.
-*
+*                                                                     *
+*  VSESUPA - Support routines for PDPCLIB under DOS/VSE               *
+*                                                                     *
+*  This assembler code has a long history - starting off as C/370     *
+*  under MVS then modified for GCC, then ported to CMS, MUSIC/SP      *
+*  and then finally VSE. A rewrite should be considered.              *
+*                                                                     *
 ***********************************************************************
 *
          COPY  PDPTOP
@@ -38,63 +38,63 @@ R13      EQU   13
 R14      EQU   14
 R15      EQU   15
 *
-**********************************************************************
-*                                                                    *
-*  AOPEN - Open a file                                               *
-*                                                                    *
-*  Parameters are:                                                   *
-*  DDNAME - space-padded, 8 character DDNAME to be opened            *
-*  MODE - 0 = READ, 1 = WRITE, 2 = UPDATE (update not supported)     *
-*  RECFM - 0 = F, 1 = V, 2 = U. This is an output from this function *
-*  LRECL - This function will determine the LRECL                    *
-*  BLKSIZE - This function will determine the block size             *
-*  ASMBUF - pointer to a 32K area which can be written to (only      *
-*    needs to be set in move mode)                                   *
-*  MEMBER - *pointer* to space-padded, 8 character member name.      *
-*    If pointer is 0 (NULL), no member is requested                  *
-*                                                                    *
-*  Return value:                                                     *
-*  An internal "handle" that allows the assembler routines to        *
-*  keep track of what's what when READ etc are subsequently          *
-*  called.                                                           *
-*                                                                    *
-*                                                                    *
-*  Note - more documentation for this and other I/O functions can    *
-*  be found halfway through the stdio.c file in PDPCLIB.             *
-*                                                                    *
-*                                                                    *
-*                                                                    *
-*  In the general case of an open of a disk file, ideally the        *
-*  OPEN should allocate its storage area (ZDCBAREA - what "handle"   *
-*  points to, and then it should copy the DTFSD into part of that    *
-*  "DCB area" (it is called that for historical reasons and will     *
-*  probably be renamed). The OPEN macro, using register notation,    *
-*  points to that area, which will have first been modified to put   *
-*  in the DDNAME (DLBL) being opened. This way we only need a        *
-*  single DTFSD in the main code, which is reused any number of      *
-*  times. However, at the moment we have simply assumed a single     *
-*  RECFM=U input file and a single RECFM=U output file, which is     *
-*  sufficient to allow a C compile to go through.                    *
-*                                                                    *
-*  The stdin/stdout/stderr are treated differently - each of those   *
-*  has its own DTF, because they are special files (not disks).      *
-*  The special files are SYSIPT, SYSLST and SYSLOG respectively.     *
-*                                                                    *
-*  Another technique that has been used is for accessing members of  *
-*  a PDS - they are assumed to be in the CIL, and loaded, then       *
-*  data is read from them as if it was a RECFM=U dataset.            *
-*                                                                    *
-*  Note that under VSE, the "suggested" DCB info is never actually   *
-*  used currently.                                                   *
-*                                                                    *
-*  Also note that the C code is totally flexible in that it will     *
-*  do whatever this assembler code tells it to. ie you can set any   *
-*  file to any RECFM/LRECL and it will do its work based on that.    *
-*  This makes it possible to change anything in here that isn't      *
-*  working to your satisfaction, without needing to change the C     *
-*  code at all.                                                      *
-*                                                                    *
-**********************************************************************
+***********************************************************************
+*                                                                     *
+*  AOPEN - Open a file                                                *
+*                                                                     *
+*  Parameters are:                                                    *
+*  DDNAME - space-padded, 8 character DDNAME to be opened             *
+*  MODE - 0 = READ, 1 = WRITE, 2 = UPDATE (update not supported)      *
+*  RECFM - 0 = F, 1 = V, 2 = U. This is an output from this function  *
+*  LRECL - This function will determine the LRECL                     *
+*  BLKSIZE - This function will determine the block size              *
+*  ASMBUF - pointer to a 32K area which can be written to (only       *
+*    needs to be set in move mode)                                    *
+*  MEMBER - *pointer* to space-padded, 8 character member name.       *
+*    If pointer is 0 (NULL), no member is requested                   *
+*                                                                     *
+*  Return value:                                                      *
+*  An internal "handle" that allows the assembler routines to         *
+*  keep track of what's what when READ etc are subsequently           *
+*  called.                                                            *
+*                                                                     *
+*                                                                     *
+*  Note - more documentation for this and other I/O functions can     *
+*  be found halfway through the stdio.c file in PDPCLIB.              *
+*                                                                     *
+*                                                                     *
+*                                                                     *
+*  In the general case of an open of a disk file, ideally the         *
+*  OPEN should allocate its storage area (ZDCBAREA - what "handle"    *
+*  points to, and then it should copy the DTFSD into part of that     *
+*  "DCB area" (it is called that for historical reasons and will      *
+*  probably be renamed). The OPEN macro, using register notation,     *
+*  points to that area, which will have first been modified to put    *
+*  in the DDNAME (DLBL) being opened. This way we only need a         *
+*  single DTFSD in the main code, which is reused any number of       *
+*  times. However, at the moment we have simply assumed a single      *
+*  RECFM=U input file and a single RECFM=U output file, which is      *
+*  sufficient to allow a C compile to go through.                     *
+*                                                                     *
+*  The stdin/stdout/stderr are treated differently - each of those    *
+*  has its own DTF, because they are special files (not disks).       *
+*  The special files are SYSIPT, SYSLST and SYSLOG respectively.      *
+*                                                                     *
+*  Another technique that has been used is for accessing members of   *
+*  a PDS - they are assumed to be in the CIL, and loaded, then        *
+*  data is read from them as if it was a RECFM=U dataset.             *
+*                                                                     *
+*  Note that under VSE, the "suggested" DCB info is never actually    *
+*  used currently.                                                    *
+*                                                                     *
+*  Also note that the C code is totally flexible in that it will      *
+*  do whatever this assembler code tells it to. ie you can set any    *
+*  file to any RECFM/LRECL and it will do its work based on that.     *
+*  This makes it possible to change anything in here that isn't       *
+*  working to your satisfaction, without needing to change the C      *
+*  code at all.                                                       *
+*                                                                     *
+***********************************************************************
          ENTRY @@AOPEN
 @@AOPEN  EQU   *
          SAVE  (14,12),,@@AOPEN
@@ -374,19 +374,19 @@ RETURNOP DS    0H
          LTORG
 *
 *
-**********************************************************************
-*                                                                    *
-*  AREAD - Read from file                                            *
-*                                                                    *
-*  This function takes 3 parameters:                                 *
-*                                                                    *
-*  1. A handle (previously returned by AOPEN)                        *
-*  2. A buffer pointer - this is an output variable - the assembler  *
-*     routine will read the data and then inform the caller where    *
-*     the data is located.                                           *
-*  3. Length of data (also output).                                  *
-*                                                                    *
-**********************************************************************
+***********************************************************************
+*                                                                     *
+*  AREAD - Read from file                                             *
+*                                                                     *
+*  This function takes 3 parameters:                                  *
+*                                                                     *
+*  1. A handle (previously returned by AOPEN)                         *
+*  2. A buffer pointer - this is an output variable - the assembler   *
+*     routine will read the data and then inform the caller where     *
+*     the data is located.                                            *
+*  3. Length of data (also output).                                   *
+*                                                                     *
+***********************************************************************
          ENTRY @@AREAD
 @@AREAD  EQU   *
          SAVE  (14,12),,@@AREAD
@@ -466,19 +466,19 @@ RETURNAR DS    0H
 *
 *
 *
-**********************************************************************
-*                                                                    *
-*  AWRITE - Write to file                                            *
-*                                                                    *
-*  This function takes 3 parameters:                                 *
-*                                                                    *
-*  1. A handle (previously returned by AOPEN)                        *
-*  2. Address of buffer to be written (also previously obtained      *
-*     from AOPEN).                                                   *
-*  3. Length of data to be written (which may be ignored for a file  *
-*     that is of an expected length, e.g. fixed 80)                  *
-*                                                                    *
-**********************************************************************
+***********************************************************************
+*                                                                     *
+*  AWRITE - Write to file                                             *
+*                                                                     *
+*  This function takes 3 parameters:                                  *
+*                                                                     *
+*  1. A handle (previously returned by AOPEN)                         *
+*  2. Address of buffer to be written (also previously obtained       *
+*     from AOPEN).                                                    *
+*  3. Length of data to be written (which may be ignored for a file   *
+*     that is of an expected length, e.g. fixed 80)                   *
+*                                                                     *
+***********************************************************************
          ENTRY @@AWRITE
 @@AWRITE EQU   *
          SAVE  (14,12),,@@AWRITE
@@ -536,14 +536,14 @@ DONEPUT  DS    0H
          RETURN (14,12),RC=(15)
          LTORG
 *
-**********************************************************************
-*                                                                    *
-*  ACLOSE - Close file                                               *
-*                                                                    *
-*  This routine takes a single parameter - a handle as given by the  *
-*  (successful) return from AOPEN.                                   *
-*                                                                    *
-**********************************************************************
+***********************************************************************
+*                                                                     *
+*  ACLOSE - Close file                                                *
+*                                                                     *
+*  This routine takes a single parameter - a handle as given by the   *
+*  (successful) return from AOPEN.                                    *
+*                                                                     *
+***********************************************************************
          ENTRY @@ACLOSE
 @@ACLOSE EQU   *
          SAVE  (14,12),,@@ACLOSE
@@ -686,9 +686,9 @@ WORKO1   DS    CL32767
 *
 *
 ***********************************************************************
-*
-*  GETM - GET MEMORY
-*
+*                                                                     *
+*  GETM - GET MEMORY                                                  *
+*                                                                     *
 ***********************************************************************
          ENTRY @@GETM
 @@GETM   EQU   *
@@ -745,9 +745,9 @@ RETURNGM DS    0H
          LTORG
 *
 ***********************************************************************
-*
-*  FREEM - FREE MEMORY
-*
+*                                                                     *
+*  FREEM - FREE MEMORY                                                *
+*                                                                     *
 ***********************************************************************
          ENTRY @@FREEM
 @@FREEM  EQU   *
@@ -771,16 +771,16 @@ RETURNFM DS    0H
          RETURN (14,12),RC=(15)
          LTORG
 ***********************************************************************
-*
-*  GETCLCK - GET THE VALUE OF THE MVS CLOCK TIMER AND MOVE IT TO AN
-*  8-BYTE FIELD.  THIS 8-BYTE FIELD DOES NOT NEED TO BE ALIGNED IN
-*  ANY PARTICULAR WAY.
-*
-*  E.G. CALL 'GETCLCK' USING WS-CLOCK1
-*
-*  THIS FUNCTION ALSO RETURNS THE NUMBER OF SECONDS SINCE 1970-01-01
-*  BY USING SOME EMPERICALLY-DERIVED MAGIC NUMBERS
-*
+*                                                                     *
+*  GETCLCK - GET THE VALUE OF THE MVS CLOCK TIMER AND MOVE IT TO AN   *
+*  8-BYTE FIELD.  THIS 8-BYTE FIELD DOES NOT NEED TO BE ALIGNED IN    *
+*  ANY PARTICULAR WAY.                                                *
+*                                                                     *
+*  E.G. CALL 'GETCLCK' USING WS-CLOCK1                                *
+*                                                                     *
+*  THIS FUNCTION ALSO RETURNS THE NUMBER OF SECONDS SINCE 1970-01-01  *
+*  BY USING SOME EMPERICALLY-DERIVED MAGIC NUMBERS                    *
+*                                                                     *
 ***********************************************************************
          ENTRY @@GETCLK
 @@GETCLK EQU   *
@@ -802,9 +802,9 @@ RETURNGC DS    0H
          RETURN (14,12),RC=(15)
          LTORG
 ***********************************************************************
-*
-*  SYSTEM - execute another command
-*
+*                                                                     *
+*  SYSTEM - execute another command                                   *
+*                                                                     *
 ***********************************************************************
          ENTRY @@SYSTEM
 @@SYSTEM EQU   *
@@ -854,9 +854,9 @@ CMDTEXT  DS    CL200         COMMAND ITSELF
 SYSTEMLN EQU   *-SYSTMWRK    LENGTH OF DYNAMIC STORAGE
 @@VSESUP CSECT ,
 ***********************************************************************
-*
-*  IDCAMS - dummy function to keep MVS happy
-*
+*                                                                     *
+*  IDCAMS - dummy function to keep MVS happy                          *
+*                                                                     *
 ***********************************************************************
          ENTRY @@IDCAMS
 @@IDCAMS EQU   *
@@ -870,9 +870,9 @@ SYSTEMLN EQU   *-SYSTMWRK    LENGTH OF DYNAMIC STORAGE
          LTORG
 *
 ***********************************************************************
-*
-*  DYNAL - dummy function to keep MVS happy
-*
+*                                                                     *
+*  DYNAL - dummy function to keep MVS happy                           *
+*                                                                     *
 ***********************************************************************
          ENTRY @@DYNAL
 @@DYNAL EQU   *
@@ -1016,6 +1016,7 @@ NOEOF    DS        0H
          RETURN    (14,12),RC=0
          LTORG
          DROP      R3
+*
 ***********************************************************************
 *                                                                     *
 *  GETTZ - Get the offset from GMT in 1.048576 seconds                *
@@ -1024,10 +1025,11 @@ NOEOF    DS        0H
          ENTRY @@GETTZ
 @@GETTZ  LA    R15,0
          BR    R14
+*
 ***********************************************************************
-*
-*  SETJ - SAVE REGISTERS INTO ENV
-*
+*                                                                     *
+*  SETJ - SAVE REGISTERS INTO ENV                                     *
+*                                                                     *
 ***********************************************************************
          ENTRY @@SETJ
          USING @@SETJ,R15
@@ -1038,9 +1040,9 @@ NOEOF    DS        0H
          LTORG ,
 *
 ***********************************************************************
-*
-*  LONGJ - RESTORE REGISTERS FROM ENV
-*
+*                                                                     *
+*  LONGJ - RESTORE REGISTERS FROM ENV                                 *
+*                                                                     *
 ***********************************************************************
          ENTRY @@LONGJ
          USING @@LONGJ,R15
@@ -1055,9 +1057,9 @@ NOEOF    DS        0H
 *
          AIF   ('&SYS' EQ 'S370').NOMODE  If S/370 we can't switch mode
 ***********************************************************************
-*
-*  SETM24 - Set AMODE to 24
-*
+*                                                                     *
+*  SETM24 - Set AMODE to 24                                           *
+*                                                                     *
 ***********************************************************************
          ENTRY @@SETM24
          USING @@SETM24,R15
@@ -1065,9 +1067,9 @@ NOEOF    DS        0H
          BSM   0,R14              Return in amode 24
 *
 ***********************************************************************
-*
-*  SETM31 - Set AMODE to 31
-*
+*                                                                     *
+*  SETM31 - Set AMODE to 31                                           *
+*                                                                     *
 ***********************************************************************
          ENTRY @@SETM31
          USING @@SETM31,R15
@@ -1085,7 +1087,10 @@ WORKLEN  EQU   *-WORKAREA
 * Note that the handle starts from the WORKAREA DSECT, but
 * initialization starts at ZDCBAREA (since we don't want to
 * initialize our save area). Some more appropriate names
-* should probably be found.
+* should probably be found. And the WORKLEN is for functions
+* unrelated to I/O which don't need access to the DCB stuff.
+* ZDCBLEN includes the length of the work area, since the
+* I/O functions still need a save area.
 ZDCBAREA DS    0H
 PTRDTF   DS    F                  Pointer to the DTF in use
 DCBLRECL DS    F                  Logical record length

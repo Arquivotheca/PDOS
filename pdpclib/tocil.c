@@ -145,8 +145,11 @@ int main(int argc, char **argv)
             fwrite(card, 1, sizeof card, fq);
         }
     }
-    memset(card, 0x00, sizeof card);
-    sprintf(card, "\x02" "END");
+    memset(card, ' ', sizeof card);
+/*    memset(card + 5, ' ', 3);
+    sprintf(card, "\x02" "END"); */
+    memcpy(card, "\x02" "END", 4);
+    *(short *)(card + 14) = 1; /* CSECT 1 */
 #if 0
     /* is this required? */
     *(int *)(card + 24) = tot + 

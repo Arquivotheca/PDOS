@@ -130,9 +130,9 @@ R15      EQU   15
          LR    R1,R11
          USING WORKAREA,R13
 *
-         L     R3,0(R1)         R3 POINTS TO DDNAME
-         L     R4,4(R1)         R4 POINTS TO MODE
-         L     R4,0(R4)         R4 now has value of mode
+         L     R3,0(R1)           R3 POINTS TO DDNAME
+         L     R6,4(R1)
+         LDINT R6,0(R6)           R6 now has value of mode
 * 08(,R1) has RECFM
 * Note that R5 is used as a scratch register
          L     R8,12(,R1)         R8 POINTS TO LRECL
@@ -155,11 +155,6 @@ R15      EQU   15
          MVCL  R0,R10             Clear DCB area to binary zeroes
          LR    R11,R5             Restore parameter list
 * R5 free again
-* THIS LINE IS FOR GCC
-         LR    R6,R4
-* THIS LINE IS FOR C/370
-*         L     R6,0(R4)
-*
 *
 *
          LTR   R6,R6

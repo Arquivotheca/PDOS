@@ -300,13 +300,17 @@ NOTSYSPU DS    0H
          OPEN  (R5)
          B     DONEOPWR
 *
+* We've done the open for write, and now need to allocate a buffer 
+* that the C code can write to. The buffer needs to be below the
+* line, so it's simpler if the assembler code allocates it on
+* behalf of the C caller. We should really allocate a buffer size
+* based on what is actually required rather than this hardcoded
+* maximum possible.
+*
 DONEOPWR DS    0H
-*
-* Handle will be returned in R7
-*
-         LR    R7,R13
          AIF   ('&OUTM' NE 'M').NMM4
          L     R6,=F'32768'
+*
 * Give caller an internal buffer to write to. Below the line!
 *
 * S/370 can't handle LOC=BELOW
@@ -317,16 +321,21 @@ DONEOPWR DS    0H
 .MVT8090 ANOP  ,                  S/390
          GETVIS LENGTH=(R6),LOC=BELOW
 .GETOENE ANOP
+*
+* Give this buffer pointer back to caller
          ST    R1,ASMBUF
          L     R5,20(,R11)        R5 points to ASMBUF
          ST    R1,0(R5)           save the pointer
-* R5 now free again         
 *
 .NMM4    ANOP
          B     DONEOPEN
+*
+*
+* Finished opening file (read or write) and ready to return to
+* caller.
+*
 DONEOPEN DS    0H
-         LR    R7,R13
-*         SR    R6,R6
+*
          L     R6,DCBLRECL
 *         L     R6,=F'80'  hardcoded to lrecl=80
          ST    R6,0(R8)
@@ -350,14 +359,14 @@ VARIABLE DS    0H
 DONESET  DS    0H
          L     R5,8(,R11)         Point to RECFM
          ST    R6,0(R5)
-* Finished with R5 now
-         LR    R15,R7
          B     RETURNOP
 BADOPEN  DS    0H
-         L     R13,SAVEAREA+4
          L     R0,=A(ZDCBLEN)
+         LR    R1,R13
+         L     R7,SAVEAREA+4
          FREEVIS
          L     R15,=F'-1'
+         LR    R13,R7
          RETURN (14,12),RC=(15)
 *
 ENDFILE  LA    R6,1
@@ -365,40 +374,16 @@ ENDFILE  LA    R6,1
          BR    R14
 EOFRLEN  EQU   *-ENDFILE
 *
+*
+* Good return - handle is in ZDCBAREA, which is R13. So we don't
+* want to free that memory!
+*
 RETURNOP DS    0H
-         LR    R1,R13
+         LR    R15,R13
          L     R13,SAVEAREA+4
-         LR    R7,R15
-         L     R0,=A(ZDCBLEN)
-* If all goes according to plan, keep the allocated memory
-*         FREEVIS
-         LR    R15,R7
          RETURN (14,12),RC=(15)
          LTORG
-* OPENMAC  OPEN  (,INPUT),MF=L,MODE=31
-* CAN'T USE MODE=31 ON MVS 3.8
-*OPENMAC  OPEN  (,INPUT),MF=L,TYPE=J
-*OPENMLN  EQU   *-OPENMAC
-* WOPENMAC OPEN  (,OUTPUT),MF=L,MODE=31
-* CAN'T USE MODE=31 ON MVS 3.8
-*WOPENMAC OPEN  (,OUTPUT),MF=L
-*WOPENMLN EQU   *-WOPENMAC
-*INDCB    DCB   MACRF=GL,DSORG=PS,EODAD=ENDFILE,EXLST=JPTR
-* LEAVE OUT EODAD AND EXLST, FILLED IN LATER
-*INDCB    DCB   MACRF=GL,DSORG=PS,EODAD=ENDFILE,EXLST=JPTR
-*INDCBLN  EQU   *-INDCB
 JPTR     DS    F
-*
-* OUTDCB changes depending on whether we are in LOCATE mode or
-* MOVE mode
-         AIF   ('&OUTM' NE 'L').NLM1
-*OUTDCB   DCB   MACRF=PL,DSORG=PS
-.NLM1    ANOP
-         AIF   ('&OUTM' NE 'M').NMM1
-*OUTDCB   DCB   MACRF=PM,DSORG=PS
-.NMM1    ANOP
-*OUTDCBLN EQU   *-OUTDCB
-*
 *
 *
 **********************************************************************

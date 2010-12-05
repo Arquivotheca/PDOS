@@ -98,6 +98,9 @@ R15      EQU   15
 *  Another technique that has been used is for accessing members of   *
 *  a PDS - they are assumed to be in the CIL, and loaded, then        *
 *  data is read from them as if it was a RECFM=U dataset.             *
+*  It is expected that this technique will be expanded in the future  *
+*  to also allow a similar operation from a source statement          *
+*  library.                                                           *
 *                                                                     *
 *  Note that under VSE, the "suggested" DCB info is never actually    *
 *  used currently.                                                    *

@@ -39,21 +39,6 @@ R14      EQU   14
 R15      EQU   15
 SUBPOOL  EQU   0
 *
-***********************************************************************
-*
-*  AOPEN - Open a dataset
-*
-*  Note that under MUSIC, RECFM=F is the only reliable thing. It is
-*  possible to use RECFM=V like this:
-*  /file myin tape osrecfm(v) lrecl(32756) vol(PCTOMF) old
-*  but it is being used outside the normal MVS interface. All this
-*  stuff really needs to be rewritten per normal MUSIC coding.
-*
-*
-*  Note - more documentation for this and other I/O functions can
-*  be found halfway through the stdio.c file in PDPCLIB.
-*
-***********************************************************************
 **********************************************************************
 *                                                                    *
 *  AOPEN - Open a file                                               *
@@ -99,6 +84,9 @@ SUBPOOL  EQU   0
 *  Another technique that has been used is for accessing members of  *
 *  a PDS - they are assumed to be in the CIL, and loaded, then       *
 *  data is read from them as if it was a RECFM=U dataset.            *
+*                                                                    *
+*  Note that under VSE, the "suggested" DCB info is never actually   *
+*  used currently.                                                   *
 *                                                                    *
 **********************************************************************
          ENTRY @@AOPEN
@@ -150,25 +138,26 @@ SUBPOOL  EQU   0
          LR    R6,R4
 * THIS LINE IS FOR C/370
 *         L     R6,0(R4)
+*
+*
+*
          LTR   R6,R6
          BNZ   WRITING
-* READING
-*         USING IHADCB,R2
-*         MVC   ZDCBAREA(INDCBLN),INDCB
-*         LA    R10,JFCB
-* EXIT TYPE 07 + 80 (END OF LIST INDICATOR)
-*         ICM   R10,B'1000',=X'87'
-*         ST    R10,JFCBPTR
-*         LA    R10,JFCBPTR
-         LA    R4,ENDFILE
-*         ST    R4,DCBEODAD
-*         ST    R10,DCBEXLST
-*         MVC   DCBDDNAM,0(R3)
-*         MVC   OPENMB,OPENMAC
 *
-*         RDJFCB ((R2),INPUT)
+* So now we're doing the reading code
+*
+         LA    R4,ENDFILE
+* Something like RDJFCB would be good here, if VSE has such a thing
          LTR   R9,R9
          BZ    NOMEM
+*
+* Although VSE doesn't have PDSes with members, it has something
+* similar - libraries. It is actually the Core Image library that
+* is the most flexible, allowing binary data to be stored.
+* Unfortunately this can't be directly read or written! But what
+* we can do is use LNKEDT to build a module, then load it later,
+* to be read as a file.
+*
          ST    R9,ISMEM
          MVC   MEMBER24,0(R9)
          LA    R9,=C'OPEN    '
@@ -177,40 +166,43 @@ SUBPOOL  EQU   0
          ST    R9,P2VF
          LA    R1,PMVF
          CALL  @@VSEFIL
+*
+* We should be able to have 32k records here
          L     R6,=F'19069'   +++ hardcode to 19069
          ST    R6,DCBLRECL
          LA    R6,2    +++ hardcode to recfm=U
          ST    R6,DCBRECFM
          B     DONEOPEN
-*         USING ZDCBAREA,R2
-*         MVC   JFCBELNM,0(R9)
-*         OI    JFCBIND1,JFCPDS
 NOMEM    DS    0H
-*         OPEN  ((R2),INPUT),MF=(E,OPENMB),MODE=31,TYPE=J
-* CAN'T USE MODE=31 ON MVS 3.8, OR WITH TYPE=J
-*         OPEN  ((R2),INPUT),MF=(E,OPENMB),TYPE=J
-*         TM    DCBOFLGS,DCBOFOPN  Did OPEN work?
-*         BZ    BADOPEN            OPEN failed
-         CLC   0(8,R3),=C'SYSIN   '
-         BNE   NOTSYSI
+*
+* Normal datasets just need to be opened - but unfortunately
+* we don't know what their DCB info is. What we basically do
+* to get around that problem is to hardcode DCB info based on
+* the DDNAME. There are various techniques that could be used
+* to work around this limitation, and one should be implemented.
 *
 * We use the register notation, because other than the standard
-* files, all files will have their data stored in ZDCBAREA, not
-* a local variable.
-         LA    R6,80   +++ hardcode to 80
+* files, all files will read/write data from a field in ZDCBAREA
+* rather than a variable defined in this CSECT.
+*
+         CLC   0(8,R3),=C'SYSIN   '
+         BNE   NOTSYSI
+         LA    R6,80          +++ hardcode to 80
          ST    R6,DCBLRECL
-         LA    R6,0    +++ hardcode to fixed
+         LA    R6,0           +++ hardcode to fixed
          ST    R6,DCBRECFM
          LA    R5,SYSIN
          ST    R5,PTRDTF
          OPEN  (R5)
-* R5 is free again
          B     DONEOPEN
 *
 NOTSYSI  DS    0H
+*
+* All other files currently defined are RECFM=U
+*
          L     R6,=F'19069'   +++ hardcode to 19069
          ST    R6,DCBLRECL
-         LA    R6,2    +++ hardcode to recfm=U
+         LA    R6,2           +++ hardcode to recfm=U
          ST    R6,DCBRECFM
 *
 * Here we need to choose tape or disk
@@ -231,42 +223,30 @@ NOTTAP   DS    0H
          ST    R5,PTRDTF
          OPEN  (R5)
          B     DONEOPEN
-*
+* Can't reach here
          B     BADOPEN
+*
+*
+*
 WRITING  DS    0H
-*         USING ZDCBAREA,R2
-*         MVC   ZDCBAREA(OUTDCBLN),OUTDCB
-*         LA    R10,JFCB
-* EXIT TYPE 07 + 80 (END OF LIST INDICATOR)
-*         ICM   R10,B'1000',=X'87'
-*         ST    R10,JFCBPTR
-*         LA    R10,JFCBPTR
-*         ST    R10,DCBEXLST
-*         MVC   DCBDDNAM,0(R3)
-*         MVC   WOPENMB,WOPENMAC
 *
-*         RDJFCB ((R2),OUTPUT)
-*        LTR   R9,R9
-         BZ    WNOMEM
-*         USING ZDCBAREA,R2
-*         MVC   JFCBELNM,0(R9)
-*         OI    JFCBIND1,JFCPDS
-WNOMEM   DS    0H
-*         OPEN  ((R2),OUTPUT),MF=(E,WOPENMB),MODE=31,TYPE=J
-* CAN'T USE MODE=31 ON MVS 3.8, OR WITH TYPE=J
-*         OPEN  ((R2),OUTPUT),MF=(E,WOPENMB),TYPE=J
-*         TM    DCBOFLGS,DCBOFOPN  Did OPEN work?
-*         BZ    BADOPEN            OPEN failed
+* Would be good if we could do a RDJFCB here to get DCB info.
+* Instead, we just assume it from the DD name.
 *
-         CLC   0(8,R3),=C'SYSPRINT'
-         BNE   NOTSYSPR
+* Writing to a member of a library is not directly supported in VSE,
+* and the workaround for this situation is done outside of this
+* assembler code, so nothing to see here folks!
 *
 * We use the register notation, because other than the standard
-* files, all files will have their data stored in ZDCBAREA, not
-* a local variable.
-         LA    R6,80   +++ hardcode to 80
+* files, all files will read/write data from a field in ZDCBAREA
+* rather than a variable defined in this CSECT.
+*
+WNOMEM   DS    0H
+         CLC   0(8,R3),=C'SYSPRINT'
+         BNE   NOTSYSPR
+         LA    R6,80          +++ hardcode to 80
          ST    R6,DCBLRECL
-         LA    R6,0    +++ hardcode to fixed
+         LA    R6,0           +++ hardcode to fixed
          ST    R6,DCBRECFM
 *
          L     R6,DCBLRECL

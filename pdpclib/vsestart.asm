@@ -8,14 +8,14 @@
 *                                                                    *
 *  VSESTART - STARTUP ROUTINES FOR VSE FOR USE WITH GCC.             *
 *                                                                    *
-*  Just make this call @@START. Don't worry about passing any        *
-*  parameters, they will be ignored for now.                         *
+*  This code is able to handle z/VSE-style parameters. It saves the  *
+*  UPSI as well for later use by the C code.  The stack is allocated *
+*  here, below the line                                              *
 *                                                                    *
 **********************************************************************
          COPY  PDPTOP
-.NOMODE ANOP
          PRINT GEN
-* YREGS IS NOT AVAILABLE WITH IFOX
+* REGEQU IS NOT AVAILABLE ON DOS/VS
 *         YREGS
 R0       EQU   0
 R1       EQU   1
@@ -39,15 +39,18 @@ SUBPOOL  EQU   0
 @@CRT0   EQU   *
 *         ENTRY CEESTART
 *CEESTART EQU   *
+*
+* DOS/VS doesn't require or allow saving of registers
 *         SAVE  (14,12),,@@CRT0
 *
          BALR  R10,R0
-         USING *,R10
-*
          LA    R10,0(R10)        clean address
+         BCTR  R10,0
+         BCTR  R10,0
+         USING @@CRT0,R10
+*
          LR    R8,R15            save R15 so that we can get the PARM
 *
-*         USING @@CRT0,R10
 *LOOP     LA    R5,1(R5)
 *         B     LOOP
          LR    R11,R1            save R1 so we can get the PARM

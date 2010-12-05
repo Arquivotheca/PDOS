@@ -39,13 +39,6 @@ R14      EQU   14
 R15      EQU   15
 SUBPOOL  EQU   0
 *
-* This is used by VSEFIL
-TABDDN   DSECT
-         USING     *,R9
-DDN      DS        CL8
-POINTER  DS        F
-TABLEN   EQU       *-TABDDN
-@@VSESUP CSECT
 ***********************************************************************
 *
 *  AOPEN - Open a dataset
@@ -901,6 +894,18 @@ SYSTEMLN EQU   *-SYSTMWRK    LENGTH OF DYNAMIC STORAGE
 * Keep this code last because it uses a different base register
 *
          DROP  R12
+*
+*
+*
+* This is used by VSEFIL
+*
+TABDDN   DSECT
+         USING     *,R9
+DDN      DS        CL8
+POINTER  DS        F
+TABLEN   EQU       *-TABDDN
+*
+@@VSESUP CSECT
 ***********************************************************************
 *                                                                     *
 *  VSEFIL - contributed by Louis Millon                               *

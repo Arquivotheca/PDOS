@@ -332,34 +332,24 @@ DONEOPWR DS    0H
 *
 *
 * Finished opening file (read or write) and ready to return to
-* caller.
+* caller. So set the values that they are expecting.
 *
 DONEOPEN DS    0H
 *
+* The LRECL
          L     R6,DCBLRECL
-*         L     R6,=F'80'  hardcoded to lrecl=80
          ST    R6,0(R8)
-*         TM    DCBRECFM,DCBRECF
-*         BNO   VARIABLE
-* This looks really whacky, but is correct
-* We check for V, in order to split between F and U
-* Because U has both F and V
-*         TM    DCBRECFM,DCBRECV
-*         B     FIXED  +++ hardcoded to recfm=f
+* The RECFM
          L     R6,DCBRECFM
-         B     DONESET
-         BNO   FIXED
-         L     R6,=F'2'
-         B     DONESET
-FIXED    DS    0H
-         L     R6,=F'0'
-         B     DONESET
-VARIABLE DS    0H
-         L     R6,=F'1'
-DONESET  DS    0H
          L     R5,8(,R11)         Point to RECFM
          ST    R6,0(R5)
+* Now return success
          B     RETURNOP
+*
+*
+* We failed to open the file, so free the allocated memory and
+* return an error.
+*
 BADOPEN  DS    0H
          L     R0,=A(ZDCBLEN)
          LR    R1,R13
@@ -400,13 +390,6 @@ JPTR     DS    F
          AIF ('&SYS' EQ 'S370').NOMOD1
          CALL  @@SETM24
 .NOMOD1  ANOP
-*         AIF   ('&SYS' NE 'S370').BELOW1
-* CAN'T USE "BELOW" ON MVS 3.8
-*         GETMAIN R,LV=WORKLEN,SP=SUBPOOL
-*         AGO   .NOBEL1
-*.BELOW1  ANOP
-*         GETMAIN R,LV=WORKLEN,SP=SUBPOOL,LOC=BELOW
-*.NOBEL1  ANOP
          L     R1,0(R1)         R1 CONTAINS HANDLE
          ST    R13,4(R1)
          ST    R1,8(R13)

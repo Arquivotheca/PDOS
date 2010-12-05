@@ -88,6 +88,13 @@ SUBPOOL  EQU   0
 *  Note that under VSE, the "suggested" DCB info is never actually   *
 *  used currently.                                                   *
 *                                                                    *
+*  Also note that the C code is totally flexible in that it will     *
+*  do whatever this assembler code tells it to. ie you can set any   *
+*  file to any RECFM/LRECL and it will do its work based on that.    *
+*  This makes it possible to change anything in here that isn't      *
+*  working to your satisfaction, without needing to change the C     *
+*  code at all.                                                      *
+*                                                                    *
 **********************************************************************
          ENTRY @@AOPEN
 @@AOPEN  EQU   *
@@ -631,33 +638,56 @@ RETURNAC DS    0H
 *
 *
 *
-* This macro is only for reading from stdin
+* Note that a lot of these macros use the same storage buffer,
+* because by their nature, the C caller will always read or
+* write an entire block at a time.
+*
+*
+* This is for reading from stdin
 SYSIN    DTFCD DEVADDR=SYSIPT,IOAREA1=IO1,BLKSIZE=80,RECFORM=FIXUNB,   X
                WORKA=YES,EOFADDR=GOTEOF,MODNAME=CARDMOD
-* Use a type of CMBND to stop it from punching blank cards
-* This also means we need a dummy EOF. The other option is to
-* use a 2501, but that seems less commonly available
-SYSPCH   DTFDI DEVADDR=SYSPCH,IOAREA1=IO1,RECSIZE=81
 CARDMOD  CDMOD RECFORM=FIXUNB,WORKA=YES,TYPEFLE=INPUT
-PCHMOD   CDMOD RECFORM=FIXUNB,WORKA=YES,TYPEFLE=CMBND
-* These macros are only used for writing to stdout and stderr
+*
+* This is for writing to SYSPUNCH in a device-independent manner
+* Note that it is a requirement to allow for a control character
+SYSPCH   DTFDI DEVADDR=SYSPCH,IOAREA1=IO1,RECSIZE=81
+*
+* This is for writing to stdout (SYSPRINT)
+* At some point this will need to be made device-independent so
+* that it can be redirected - and it will need to be increased
+* to 121 to do so.
 SYSPRT   DTFPR CONTROL=YES,BLKSIZE=80,DEVADDR=SYSLST,MODNAME=PRINTMOD, X
                IOAREA1=IO1,RECFORM=FIXUNB,WORKA=YES
+*
+* This is for writing to stderr (SYSTERM)
 SYSTRM   DTFPR CONTROL=YES,BLKSIZE=80,DEVADDR=SYS005,MODNAME=PRINTMOD, X
                IOAREA1=IO1,RECFORM=FIXUNB,WORKA=YES
+PRINTMOD PRMOD CONTROL=YES,RECFORM=FIXUNB,WORKA=YES
+*
+* This is for writing to a sequential disk file
+* Note that the size is kept low (1000) so as to avoid addressability
+* problems, because it is currently using a variable in this CSECT
+* instead of doing something sensible like using a buffer in the
+* dynamic area.
 SDOUT    DTFSD BLKSIZE=1016,DEVADDR=SYS009,DEVICE=3350,                X
                IOAREA1=WORKO1,RECFORM=UNDEF,WORKA=YES,                 X
                TYPEFLE=OUTPUT,RECSIZE=(8)
-PRINTMOD PRMOD CONTROL=YES,RECFORM=FIXUNB,WORKA=YES
 *
+* This is for reading from a sequential disk file
 SDIN     DTFSD BLKSIZE=19069,DEVADDR=SYS010,DEVICE=3350,               X
                IOAREA1=WORKI1,RECFORM=UNDEF,WORKA=YES,                 X
                TYPEFLE=INPUT,RECSIZE=(8),EOFADDR=GOTEOF
+*
+* This is for reading from a tape
 MTIN     DTFMT BLKSIZE=19069,DEVADDR=SYS011,MODNAME=MTINMOD,           X
                IOAREA1=WORKI1,RECFORM=UNDEF,WORKA=YES,FILABL=NO,       X
                TYPEFLE=INPUT,RECSIZE=(8),EOFADDR=GOTEOF
 MTINMOD  MTMOD WORKA=YES,RECFORM=UNDEF
+*
+* For the standard files, this is sufficient for input and output
 IO1      DS    CL200
+*
+*
 *
 ***********************************************************************
 *

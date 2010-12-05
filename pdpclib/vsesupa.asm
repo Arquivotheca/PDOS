@@ -153,8 +153,8 @@ SUBPOOL  EQU   0
 *
 * So now we're doing the reading code
 *
-         LA    R4,ENDFILE
 * Something like RDJFCB would be good here, if VSE has such a thing
+*
          LTR   R9,R9
          BZ    NOMEM
 *
@@ -363,11 +363,6 @@ BADOPEN  DS    0H
          L     R15,=F'-1'
          LR    R13,R7
          RETURN (14,12),RC=(15)
-*
-ENDFILE  LA    R6,1
-         ST    R6,RDEOF
-         BR    R14
-EOFRLEN  EQU   *-ENDFILE
 *
 *
 * Good return - handle is in ZDCBAREA, which is R13. So we don't
@@ -1093,25 +1088,9 @@ WORKLEN  EQU   *-WORKAREA
 * initialize our save area). Some more appropriate names
 * should probably be found.
 ZDCBAREA DS    0H
-OPENCLOS DS    F                  OPEN/CLOSE parameter list
-BLKSIZE  DS    F                  Save area for input DCB BLKSIZE
-LRECL    DS    F                  Save area for input DCB LRECL
-BUFFADDR DS    F                  Location of the BLOCK Buffer
-BUFFEND  DS    F                  Address after end of current block
-BUFFCURR DS    F                  Current record in the buffer
-VBSADDR  DS    F                  Location of the VBS record build area
-VBSEND   DS    F                  Addr. after end VBS record build area
-VBSCURR  DS    F                  Location to store next byte
-RDRECPTR DS    F                  Where to store record pointer
-RDLENPTR DS    F                  Where to store read length
 PTRDTF   DS    F                  Pointer to the DTF in use
 DCBLRECL DS    F                  Logical record length
 DCBRECFM DS    F                  Record format
-JFCBPTR  DS    F
-JFCB     DS    0F
-DSCB     DS    0F
-DSCBCCHH DS    CL5                CCHHR of DSCB returned by OBTAIN
-         DS    CL47               Rest of OBTAIN's 148 byte work area
 RDEOF    DS    1F
 ASMBUF   DS    A                  Pointer to a 32k area for PUTing data
 MEMBER24 DS    CL8

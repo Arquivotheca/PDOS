@@ -689,6 +689,14 @@ IO1      DS    CL200
 *
 *
 *
+* This is pretty crappy - storing large variables in the CSECT
+* instead of the dynamically-allocated DSECT. But at least the
+* fact that they are being shared makes it not so bad.
+* An extra 100 bytes to be helpful.
+WORKI1   DS    CL19169
+WORKO1   DS    CL19169
+*
+*
 ***********************************************************************
 *
 *  GETM - GET MEMORY
@@ -1081,15 +1089,6 @@ NOEOF    DS        0H
 *
 .NOMODE  ANOP  ,                  S/370 doesn't support MODE switching
 *
-*
-* Not sure why this needs to be kept way down here.
-* But it should be temporary anyway, as the I/O buffers
-* should be dynamically allocated for each handle. It looks
-* to me like this is used to store an entire track rather
-* than a single block, so can't be shared.
-* Add an extra 100 bytes to be helpful.
-WORKO1   DS    CL19169
-WORKI1   DS    CL19169
 *
 *
 WORKAREA DSECT

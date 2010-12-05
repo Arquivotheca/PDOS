@@ -15,6 +15,20 @@
 *                                                                     *
 ***********************************************************************
 *
+*
+* LDINT macro
+*
+         MACRO ,             COMPILER DEPENDENT LOAD INTEGER
+&NM      LDINT &R,&A         LOAD INTEGER VALUE FROM PARM LIST
+         GBLC  &COMP         COMPILER GCC OR C/370
+&NM      L     &R,&A         LOAD PARM VALUE
+         AIF ('&COMP' EQ 'GCC').MEND
+.* THIS LINE IS FOR ANYTHING NOT GCC: C/370
+         L     &R,0(,&R)     LOAD INTEGER VALUE
+.MEND    MEND  ,
+*
+*
+*
          COPY  PDPTOP
 *
 @@VSESUP CSECT
@@ -37,6 +51,7 @@ R12      EQU   12
 R13      EQU   13
 R14      EQU   14
 R15      EQU   15
+*
 *
 ***********************************************************************
 *                                                                     *
@@ -414,7 +429,8 @@ RETURNOP DS    0H
          BNZ   GMEM
 *
 * For non-library files, we read into an internal buffer that
-* is stored in the zdcbarea. Set that fact immediately.
+* was allocated earlier and is pointed to by the zdcbarea. Set 
+* that fact immediately.
 *
          L     R5,ASMBUF
          ST    R5,0(R3)
@@ -691,15 +707,7 @@ WORKO1   DS    CL32767
          LR    R12,R15
          USING @@GETM,R12
 *
-         L     R2,0(,R1)
-         AIF ('&COMP' NE 'GCC').GETMC
-* THIS LINE IS FOR GCC
-         LR    R3,R2
-         AGO   .GETMEND
-.GETMC   ANOP
-* THIS LINE IS FOR C/370
-         L     R3,0(,R2)
-.GETMEND ANOP
+         LDINT R3,0(,R1)          LOAD REQUESTED STORAGE SIZE
          LR    R4,R3
          LA    R3,8(,R3)
 *
@@ -709,7 +717,6 @@ WORKO1   DS    CL32767
          N     R3,=X'FFFFFFC0'
 *
          AIF   ('&SYS' NE 'S380').N380GM1
-*         GETMAIN RU,LV=(R3),SP=SUBPOOL,LOC=ANY
 *
 * When in 380 mode, we need to keep the program below the
 * line, but we have the ability to use storage above the
@@ -727,7 +734,7 @@ WORKO1   DS    CL32767
          LA    R15,0
          B     RETURNGM
 GOODGM   DS    0H
-* WE STORE THE AMOUNT WE REQUESTED FROM MVS INTO THIS ADDRESS
+* WE STORE THE AMOUNT WE REQUESTED FROM VSE INTO THIS ADDRESS
          ST    R3,0(R1)
 * AND JUST BELOW THE VALUE WE RETURN TO THE CALLER, WE SAVE
 * THE AMOUNT THEY REQUESTED
@@ -754,13 +761,7 @@ RETURNGM DS    0H
          S     R2,=F'8'
          L     R3,0(,R2)
 *
-         AIF   ('&SYS' NE 'S380').N380FM1
-* On S/380, nothing to free - using preallocated memory block
-*         FREEMAIN LENGTH=(R3),ADDRESS=(R2)
-         AGO   .N380FM2
-.N380FM1 ANOP
          FREEVIS LENGTH=(R3),ADDRESS=(R2)
-.N380FM2 ANOP
 *
 RETURNFM DS    0H
          RETURN (14,12),RC=(15)
@@ -918,7 +919,7 @@ TABLEN   EQU       *-TABDDN
          LR        R3,R15
          LR        R10,R1
          B         DEBCODE
-MAXFILE  EQU       20                            NUMBER OF FILE
+MAXFILE  EQU       200                           NUMBER OF FILES
 *                                                WHICH MAY BE OPENED AT
 *                                                THE SAME TIME
 AREA     DC        (TABLEN*MAXFILE)X'00'
@@ -977,6 +978,10 @@ LOOPCLOS DS        0H
          RETURN    (14,12),RC=8                  DDNAME NOTFND IN ARRAY
 OKCLOSE  DS        0H
          LA        R1,FILENAME
+*
+* This function is not available on DOS/VS, which is a real
+* shame. It should probably be added to VSE/380 and then
+* reinstated.
 *         CDDELETE  (1)                       REMOVE PHASE FROM GETV
          XC        DDN,DDN
          XC        POINTER,POINTER

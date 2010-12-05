@@ -761,6 +761,7 @@ RETURNGM DS    0H
 RETURNFM DS    0H
          RETURN (14,12),RC=(15)
          LTORG
+*
 ***********************************************************************
 *                                                                     *
 *  GETCLCK - GET THE VALUE OF THE MVS CLOCK TIMER AND MOVE IT TO AN   *
@@ -792,9 +793,12 @@ RETURNFM DS    0H
 RETURNGC DS    0H
          RETURN (14,12),RC=(15)
          LTORG
+*
 ***********************************************************************
 *                                                                     *
 *  SYSTEM - execute another command                                   *
+*                                                                     *
+*  Not currently implemented, but ideally should be                   *
 *                                                                     *
 ***********************************************************************
          ENTRY @@SYSTEM
@@ -844,9 +848,10 @@ CMDLEN   DS    H             LENGTH OF COMMAND
 CMDTEXT  DS    CL200         COMMAND ITSELF
 SYSTEMLN EQU   *-SYSTMWRK    LENGTH OF DYNAMIC STORAGE
 @@VSESUP CSECT ,
+*
 ***********************************************************************
 *                                                                     *
-*  IDCAMS - dummy function to keep MVS happy                          *
+*  IDCAMS - dummy function to keep VSE happy                          *
 *                                                                     *
 ***********************************************************************
          ENTRY @@IDCAMS
@@ -862,7 +867,7 @@ SYSTEMLN EQU   *-SYSTMWRK    LENGTH OF DYNAMIC STORAGE
 *
 ***********************************************************************
 *                                                                     *
-*  DYNAL - dummy function to keep MVS happy                           *
+*  DYNAL - dummy function to keep VSE happy                           *
 *                                                                     *
 ***********************************************************************
          ENTRY @@DYNAL
@@ -878,7 +883,8 @@ SYSTEMLN EQU   *-SYSTMWRK    LENGTH OF DYNAMIC STORAGE
 *
 *
 *
-* Keep this code last because it uses a different base register
+* Keep the below functions last because they use different
+* base registers
 *
          DROP  R12
 *
@@ -975,8 +981,9 @@ OKCLOSE  DS        0H
          LA        R1,FILENAME
 *
 * This function is not available on DOS/VS, which is a real
-* shame. It should probably be added to VSE/380 and then
-* reinstated.
+* shame. It should probably be added to VSE/380 (at least as
+* a dummy) and then reinstated, so that it produces better
+* results on z/VSE.
 *         CDDELETE  (1)                       REMOVE PHASE FROM GETV
          XC        DDN,DDN
          XC        POINTER,POINTER

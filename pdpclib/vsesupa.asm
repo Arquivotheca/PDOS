@@ -9,38 +9,9 @@
 *
 *  VSESUPA - Support routines for PDPCLIB under DOS/VSE
 *
-*  It is currently coded for GCC, but C/370 functionality is
-*  still there, it's just not being tested after any change.
-*
-***********************************************************************
-*
-* Note that the VBS support may not be properly implemented.
-* Note that this code issues WTOs. It should be changed to just
-* set a return code an exit gracefully instead. I'm not talking
-* about that dummy WTO. But on the subject of that dummy WTO - it
-* should be made consistent with the rest of PDPCLIB which doesn't
-* use that to set the RMODE/AMODE. It should be consistent one way
-* or the other.
-*
-* Here are some of the errors reported:
-*
-*  OPEN input failed return code is: -37
-*  OPEN output failed return code is: -39
-*
-* FIND input member return codes are:
-* Original, before the return and reason codes had
-* negative translations added refer to copyrighted:
-* DFSMS Macro Instructions for Data Sets
-* RC = 0 Member was found.
-* RC = -1024 Member not found.
-* RC = -1028 RACF allows PDSE EXECUTE, not PDSE READ.
-* RC = -1032 PDSE share not available.
-* RC = -1036 PDSE is OPENed output to a different member.
-* RC = -2048 Directory I/O error.
-* RC = -2052 Out of virtual storage.
-* RC = -2056 Invalid DEB or DEB not on TCB or TCBs DEB chain.
-* RC = -2060 PDSE I/O error flushing system buffers.
-* RC = -2064 Invalid FIND, no DCB address.
+*  This assembler code has a long history - starting off as C/370
+*  under MVS then modified for GCC, then ported to CMS, MUSIC/SP
+*  and then finally VSE. A rewrite should be considered.
 *
 ***********************************************************************
 *
@@ -68,6 +39,7 @@ R14      EQU   14
 R15      EQU   15
 SUBPOOL  EQU   0
 *
+* This is used by VSEFIL
 TABDDN   DSECT
          USING     *,R9
 DDN      DS        CL8
@@ -115,7 +87,7 @@ TABLEN   EQU       *-TABDDN
 *                                                                    *
 *                                                                    *
 *                                                                    *
-*  VSE notes - in the general case of an open of a disk file, the    *
+*  In the general case of an open of a disk file, ideally the        *
 *  OPEN should allocate its storage area (ZDCBAREA - what "handle"   *
 *  points to, and then it should copy the DTFSD into part of that    *
 *  "DCB area" (it is called that for historical reasons and will     *
@@ -123,14 +95,17 @@ TABLEN   EQU       *-TABDDN
 *  points to that area, which will have first been modified to put   *
 *  in the DDNAME (DLBL) being opened. This way we only need a        *
 *  single DTFSD in the main code, which is reused any number of      *
-*  times.                                                            *
+*  times. However, at the moment we have simply assumed a single     *
+*  RECFM=U input file and a single RECFM=U output file, which is     *
+*  sufficient to allow a C compile to go through.                    *
 *                                                                    *
 *  The stdin/stdout/stderr are treated differently - each of those   *
 *  has its own DTF, because they are special files (not disks).      *
 *  The special files are SYSIPT, SYSLST and SYSLOG respectively.     *
 *                                                                    *
-*  Note that as of time of writing, only the special files have      *
-*  been implemented.                                                 *
+*  Another technique that has been used is for accessing members of  *
+*  a PDS - they are assumed to be in the CIL, and loaded, then       *
+*  data is read from them as if it was a RECFM=U dataset.            *
 *                                                                    *
 **********************************************************************
          ENTRY @@AOPEN

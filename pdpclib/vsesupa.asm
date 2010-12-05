@@ -373,12 +373,19 @@ RETURNOP DS    0H
          L     R13,SAVEAREA+4
          RETURN (14,12),RC=(15)
          LTORG
-JPTR     DS    F
 *
 *
 **********************************************************************
 *                                                                    *
 *  AREAD - Read from file                                            *
+*                                                                    *
+*  This function takes 3 parameters:                                 *
+*                                                                    *
+*  1. A handle (previously returned by AOPEN)                        *
+*  2. A buffer pointer - this is an output variable - the assembler  *
+*     routine will read the data and then inform the caller where    *
+*     the data is located.                                           *
+*  3. Length of data (also output).                                  *
 *                                                                    *
 **********************************************************************
          ENTRY @@AREAD
@@ -397,60 +404,62 @@ JPTR     DS    F
          LR    R1,R11
          USING WORKAREA,R13
 *
-*        L     R2,0(R1)         R2 CONTAINS HANDLE
          L     R3,4(R1)         R3 POINTS TO BUF POINTER
-         L     R4,8(R1)         R4 point to a length
-         LA    R6,0
-*         ST    R6,RDEOF         
+         L     R4,8(R1)         R4 points to a length
+*
+* See if this is a library file
+*
          L     R9,ISMEM
          LTR   R9,R9
          BNZ   GMEM
+*
+* For non-library files, we read into an internal buffer that
+* is stored in the zdcbarea. Set that fact immediately.
+*
          LA    R5,INTSTOR         
          ST    R5,0(R3)
+*
+* The DTF macro is expecting to get the maximum length in R8
+*
          L     R8,DCBLRECL
-         L     R7,PTRDTF         
+         L     R7,PTRDTF
          GET   (R7),(R5)
-         LTR   R6,R6
-         BNE   GOTEOF
+* If GET reaches EOF, the "GOTEOF" label will be branched to
+* automatically.
          LA    R15,0             SUCCESS
+         ST    R8,0(R4)          store length actually read
          B     FINFIL
+*
+* This is a library file, so we need to call VSEFIL
+*
 GMEM     DS    0H                got member
          LA    R9,=C'GET     '
          ST    R9,P1VF
          LA    R9,MEMBER24
          ST    R9,P2VF
+* Let VSEFIL directly set our caller's parameters
          ST    R3,P3VF
          ST    R4,P4VF
          LA    R1,PMVF
          CALL  @@VSEFIL
-         L     R8,0(R4)
          L     R9,0(R4)
          LTR   R9,R9
          BNZ   FINFIL
          B     GOTEOF
 GOTEOF   DS    0H
          LA    R15,1             FAIL
-*         ST    R6,0(R4)
 FINFIL   DS    0H
-*
-*
-         ST    R8,0(R4)          store length read
-*         L     R5,DCBLRECL
-*         L     R15,RDEOF
 *
 RETURNAR DS    0H
          LR    R1,R13
          L     R13,SAVEAREA+4
-         LR    R7,R15
-*        FREEVIS LENGTH=WORKLEN
          AIF ('&SYS' EQ 'S370').NOMOD2
+         LR    R7,R15            Preserve R15 over call
          CALL  @@SETM31
-.NOMOD2  ANOP
-*         ST    R5,0(R4)         Tell caller the length read
          LR    R15,R7
+.NOMOD2  ANOP
          RETURN (14,12),RC=(15)
          LTORG
-MYLINE   DS    CL80
 *
 *
 *

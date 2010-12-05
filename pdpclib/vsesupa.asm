@@ -500,41 +500,41 @@ RETURNAR DS    0H
 *
          L     R2,0(,R1)          R2 contains GETMAINed address
          L     R3,4(,R1)          R3 points to the record address
-         L     R3,0(R3)           R3 now has actual buffer address
-         L     R4,8(,R1)          R4 points to the length
-         L     R4,0(,R4)          R4 now has actual length
-*
-* In move mode, always use our internal buffer. Ignore passed parm.
-*         L     R3,ASMBUF
+         L     R3,0(,R3)          R3 now has actual buffer address
+         L     R8,8(,R1)          R8 points to the length
+         L     R8,0(,R8)          R8 now has actual length
 *
          L     R5,PTRDTF
-         LR    R8,R4           Length of write expected in R8
-         L     R9,ISDI
+         L     R9,ISDI            Is this device-independent?
          LTR   R9,R9
          BNZ   GDI
+*
+* Normal file. PUT needs the DTF pointer, the buffer, and our
+* DTF is expecting the length in R8
+*
          PUT   (R5),(R3)
          B     DONEPUT
+*
+* Got a device-indepentent DTF - we only support a RECSIZE of 81
+* including control character for this type - should be made
+* more flexible.
+*
 GDI      DS    0H
-         MVC   IO1+1(80),0(R3)   +++ hardcode buffer and length
-         MVI   IO1,C' '
+         MVC   IO1+1(80),0(R3)   +++ hardcode IO1 and length
+         MVI   IO1,C' '          space seems to be OK as control char
          PUT   (R5)
+*
+* We have written to file, but should really check for any error
+*
 DONEPUT  DS    0H
-.NMM2    ANOP
-         AIF   ('&OUTM' NE 'L').NLM3
-         ST    R1,0(R3)
-.NLM3    ANOP
 *
          AIF   ('&SYS' NE 'S380').N380WR2
          CALL  @@SETM31
 .N380WR2 ANOP
 *
-*        LR    R1,R13
-*        L     R13,SAVEAREA+4
          L     R13,4(R13)
-*        FREEVIS LENGTH=WORKLEN
-         LA    R15,0
+         LA    R15,0             +++ hardcode success
          RETURN (14,12),RC=(15)
-*
          LTORG
 *
 **********************************************************************

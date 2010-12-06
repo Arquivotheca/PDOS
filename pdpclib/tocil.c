@@ -72,7 +72,7 @@ int main(int argc, char **argv)
     }
 
     memset(card, ' ', sizeof card);
-    sprintf(card, "\x02" "ESD");
+    memcpy(card, "\x02" "ESD", 4);
     *(short *)(card + 10) = 0x20; /* length of this ESD is the minimal 0x20 */
     *(short *)(card + 14) = 1; /* CSECT 1 */
     memset(card + 16, ' ', 8); /* name is blank */
@@ -80,7 +80,7 @@ int main(int argc, char **argv)
     *(int *)(card + 24) = 0; /* assembled origin = 0 */
     *(card + 24) = 0x04; /* PC for some reason */
     *(int *)(card + 28) = 0; /* AMODE + length - for some reason we
-        don't need to set this properly. */
+        don't need to set the length properly. */
 
 #if 0
     /* is this required? */
@@ -114,12 +114,13 @@ int main(int argc, char **argv)
             {
                 r -= sizeof(int);
             }
-            memset(card, 0x00, sizeof card);
-            sprintf(card, "\x02" "TXT");
+            memset(card, ' ', sizeof card);
+            memcpy(card, "\x02" "TXT", 4);
             *(int *)(card + 4) = subtot; /* origin */
-            *(int *)(card + 8) = r + ((x == 0) ? sizeof(int) : 0);
+            card[4] = ' ';
+            *(short *)(card + 10) = r + ((x == 0) ? sizeof(int) : 0);
                 /* byte count */
-            *(int *)(card + 12) = 1; /* CSECT 1 - was 2 */
+            *(int *)(card + 12) = 1; /* CSECT 1 */
             if (x == 0)
             {
                 *(int *)(card + 16) = rem;

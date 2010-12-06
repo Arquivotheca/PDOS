@@ -71,23 +71,16 @@ int main(int argc, char **argv)
         return (EXIT_FAILURE);
     }
 
-#if 0
     memset(card, ' ', sizeof card);
-    memcpy(card, "/*", 2);
-    fwrite(card, 1, sizeof card, fq);
-
-    memset(card, ' ', sizeof card);
-    memcpy(card, " INCLUDE", 8);
-    fwrite(card, 1, sizeof card, fq);
-#endif
-
-    memset(card, 0x00, sizeof card);
     sprintf(card, "\x02" "ESD");
     *(short *)(card + 10) = 0x20; /* length of this ESD is the minimal 0x20 */
     *(short *)(card + 14) = 1; /* CSECT 1 */
     memset(card + 16, ' ', 8); /* name is blank */
 
+    *(int *)(card + 24) = 0; /* assembled origin = 0 */
     *(card + 24) = 0x04; /* PC for some reason */
+    *(int *)(card + 28) = 0; /* AMODE + length - for some reason we
+        don't need to set this properly. */
 
 #if 0
     /* is this required? */
@@ -145,10 +138,8 @@ int main(int argc, char **argv)
             fwrite(card, 1, sizeof card, fq);
         }
     }
-    memset(card, '\0', sizeof card);
-    sprintf(card, "\x02" "END");
-    *(short *)(card + 14) = 1; /* CSECT 1 */
-    memset(card + 16, ' ', 6);
+    memset(card, ' ', sizeof card);
+    memcpy(card, "\x02" "END", 4);
 #if 0
     /* is this required? */
     *(int *)(card + 24) = tot + 

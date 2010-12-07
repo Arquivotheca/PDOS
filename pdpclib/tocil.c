@@ -61,6 +61,7 @@ int main(int argc, char **argv)
         fprintf(stderr, "file too big (%ld or more) to process\n", MAXBUF);
         return (EXIT_FAILURE);
     }
+    /* The file needs an EOF marker */
     memset(buf + tot, 0x00, 4);
     tot += 4;
 

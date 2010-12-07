@@ -244,7 +244,7 @@ NOTSYSI  DS    0H
          B     DONEOPEN
 *
 NOTTAP   DS    0H
-         LA    R5,SDIN
+         LA    R5,SDI1
          ST    R5,PTRDTF
          OPEN  (R5)
          B     DONEOPEN
@@ -318,7 +318,7 @@ NOTSYSPU DS    0H
          LA    R6,2           +++ hardcode to undefined
          ST    R6,DCBRECFM
          L     R6,DCBLRECL
-         LA    R5,SDOUT
+         LA    R5,SDO1
          ST    R5,PTRDTF
          OPEN  (R5)
          B     DONEOPEN
@@ -672,12 +672,12 @@ SYSTRM   DTFPR CONTROL=YES,BLKSIZE=80,DEVADDR=SYS005,MODNAME=PRINTMOD, X
 PRINTMOD PRMOD CONTROL=YES,RECFORM=FIXUNB,WORKA=YES
 *
 * This is for writing to a sequential disk file
-SDOUT    DTFSD BLKSIZE=19069,DEVICE=3350,                              X
+SDO1     DTFSD BLKSIZE=19069,DEVICE=3350,                              X
                IOAREA1=WORKO1,RECFORM=UNDEF,WORKA=YES,                 X
                TYPEFLE=OUTPUT,RECSIZE=(8)
 *
 * This is for reading from a sequential disk file
-SDIN     DTFSD BLKSIZE=19069,DEVADDR=SYS010,DEVICE=3350,               X
+SDI1     DTFSD BLKSIZE=19069,DEVADDR=SYS010,DEVICE=3350,               X
                IOAREA1=WORKI1,RECFORM=UNDEF,WORKA=YES,                 X
                TYPEFLE=INPUT,RECSIZE=(8),EOFADDR=GOTEOF
 *

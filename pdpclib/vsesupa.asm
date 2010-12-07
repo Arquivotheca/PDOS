@@ -677,7 +677,7 @@ SDO1     DTFSD BLKSIZE=19069,DEVICE=3350,                              X
                TYPEFLE=OUTPUT,RECSIZE=(8)
 *
 * This is for reading from a sequential disk file
-SDI1     DTFSD BLKSIZE=19069,DEVADDR=SYS010,DEVICE=3350,               X
+SDI1     DTFSD BLKSIZE=19069,DEVADDR=SYS000,DEVICE=3350,               X
                IOAREA1=WORKI1,RECFORM=UNDEF,WORKA=YES,                 X
                TYPEFLE=INPUT,RECSIZE=(8),EOFADDR=GOTEOF
 *

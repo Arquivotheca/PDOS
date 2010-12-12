@@ -32,7 +32,7 @@
 *
          COPY  PDPTOP
 *
-@@VSESUP CSECT
+         CSECT
          PRINT GEN
 * REGEQU is not standard
 *         REGEQU
@@ -856,7 +856,7 @@ CMDPREF  DS    CL8           FIXED PREFIX
 CMDLEN   DS    H             LENGTH OF COMMAND
 CMDTEXT  DS    CL200         COMMAND ITSELF
 SYSTEMLN EQU   *-SYSTMWRK    LENGTH OF DYNAMIC STORAGE
-@@VSESUP CSECT ,
+         CSECT ,
 *
 ***********************************************************************
 *                                                                     *
@@ -907,7 +907,7 @@ DDN      DS        CL8
 POINTER  DS        F
 TABLEN   EQU       *-TABDDN
 *
-@@VSESUP CSECT
+         CSECT
 ***********************************************************************
 *                                                                     *
 *  VSEFIL - contributed by Louis Millon                               *

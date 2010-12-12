@@ -14,13 +14,15 @@ undivert(pdpprlg.mac)undivert(pdpepil.mac)         END
 /*
 // DLBL IJSYSIN,'WORK.FILE',0,SD
 // EXTENT SYSIPT,WORK01
-CLOSE SYSPCH,PUNCH                                    
+CLOSE SYSPCH,PUNCH
+// OPTION NOEDECK
+*
 ASSGN SYSIPT,DISK,VOL=WORK01,SHR
+// EXEC MAINT                                         
+CLOSE SYSIPT,READER
 *
 * Now do the copy libs
 *
-// EXEC MAINT                                         
-CLOSE SYSIPT,READER
 // EXEC MAINT
  CATALS A.PDPTOP
  BKEND

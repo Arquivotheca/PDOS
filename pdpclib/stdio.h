@@ -65,7 +65,7 @@ typedef struct
 #elif defined(__gnu_linux__)
     int hfile;
 #endif
-#if (defined(__MVS__) || defined(__CMS__))
+#if (defined(__MVS__) || defined(__CMS__) || defined(__VSE__))
     void *hfile;
     void *asmbuf;
     int recfm;
@@ -78,6 +78,11 @@ typedef struct
     int reallyt;    /* 1 = this is really a text file */
     int dynal;      /* 1 = this file was dynamically allocated */
     int line_buf;   /* 1 = this file is unit record device */
+#endif
+#if defined(__VSE__)
+    int vse_punch;  /* 1 = this is writing to a VSE library */
+    char *vselupto; /* where we are up to in the internal buffer */
+    char *vselend; /* end of the internal buffer */
 #endif
     int quickBin;  /* 1 = do DosRead NOW!!!! */
     int quickText; /* 1 = quick text mode */
@@ -146,6 +151,10 @@ typedef unsigned long fpos_t;
 #define __WRITE_MODE 1
 #define __READ_MODE 2
 
+#define __RECFM_F 0
+#define __RECFM_V 1
+#define __RECFM_U 2
+
 #if 0
 extern FILE *stdin;
 extern FILE *stdout;
@@ -161,6 +170,11 @@ FILE **__gterr(void);
 #define stdin (*(__gtin()))
 #define stdout (*(__gtout()))
 #define stderr (*(__gterr()))
+
+#if defined(__VSE__)
+extern char *__vsepb;
+extern FILE *__stdpch;
+#endif
 
 int printf(const char *format, ...);
 FILE *fopen(const char *filename, const char *mode);

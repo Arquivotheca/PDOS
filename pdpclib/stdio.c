@@ -156,8 +156,34 @@ static FILE permFiles[3];
 /* We need to choose whether we are doing move mode or
    locate mode */
 #if !LOCMODE /* move mode */
+
+
+#if defined(__VSE__)
+
+/* for VSE, library files are actually written to memory
+   during processing */
+
+#define lbegwrite(stream, len) \
+   ( \
+    ((stream)->vselupto + (len) > (stream->vselend)) ? \
+     (dptr = NULL, lenwrite = 0) : \
+     (dptr = (stream)->vselupto, lenwrite = (len)) \
+   )
+#define lfinwrite(stream) ((stream)->vselupto += lenwrite)
+
+#define vbegwrite(stream, len) (lenwrite = (len), dptr = (stream)->asmbuf)
+#define vfinwrite(stream) (__awrite((stream)->hfile, &dptr, &lenwrite))
+
+#define begwrite(stream, len) ((stream)->vse_punch ? \
+    lbegwrite((stream), (len)) : vbegwrite((stream), (len)))
+#define finwrite(stream) ((stream)->vse_punch ? \
+    lfinwrite(stream) : vfinwrite(stream))
+
+#else
 #define begwrite(stream, len) (lenwrite = (len), dptr = (stream)->asmbuf)
 #define finwrite(stream) (__awrite((stream)->hfile, &dptr, &lenwrite))
+#endif
+
 #else /* locate mode */
 #define begwrite(stream, len) (lenwrite = (len), \
     __awrite((stream)->hfile, &dptr, &lenwrite))
@@ -184,6 +210,11 @@ static FILE  *myfile;
 static int    spareSpot;
 static int    err;
 static int    inreopen = 0;
+
+/* for VSE library files being punched */
+#define VSE_LIB_LIM 1000000
+char *__vsepb = NULL;
+FILE *__stdpch = NULL;
 
 static const char *fnm;
 static const char *modus;
@@ -281,6 +312,54 @@ __PDPCLIB_API__ int vfprintf(FILE *stream, const char *format, va_list arg)
 
 __PDPCLIB_API__ FILE *fopen(const char *filename, const char *mode)
 {
+#if defined(__VSE__)
+    char *p;
+    char *q;
+    char memname[9];
+    int memlen;
+    char phase[80];
+
+    /* for VSE, we cannot write directly to a library, we
+       instead need to punch appropriate controls */
+    /* note that both w and wb are treated the same */
+    if ((*mode == 'w') && ((p = strchr(filename, '(')) != NULL))
+    {
+        q = strchr(filename, ')');
+        if (q <= p) return (NULL);
+        memlen = q - p - 1;
+        if (memlen > (sizeof memname - 1))
+        {
+            memlen = (sizeof memname - 1);
+        }
+        memcpy(memname, p + 1, memlen);
+        memname[memlen] = '\0';
+        for (p = memname; *p != '\0'; p++)
+        {
+            *p = toupper((unsigned char)*p);
+        }
+        if (__stdpch == NULL)
+        {
+            __vsepb = malloc(VSE_LIB_LIM);
+            if (__vsepb == NULL) return (NULL);
+            __stdpch = fopen("dd:syspunch", "wb");
+            if (__stdpch != NULL)
+            {
+                __stdpch->vse_punch = 1;
+                __stdpch->vselupto = __vsepb;
+                __stdpch->vselend = __vsepb + VSE_LIB_LIM;
+                __stdpch->reallyu = 1;
+            }
+        }
+        if (__stdpch != NULL)
+        {
+            memset(phase, ' ', sizeof phase);
+            sprintf(phase, " PHASE %s,*\n", memname);
+            phase[strlen(phase)] = ' ';
+            fwrite(phase, 1, sizeof phase, __stdpch);
+        }
+        return (__stdpch);
+    }
+#endif
     fnm = filename;
     modus = mode;
     err = 0;
@@ -305,6 +384,12 @@ __PDPCLIB_API__ FILE *fopen(const char *filename, const char *mode)
     {
         myfile = NULL;
     }
+#if defined(__VSE__)
+    else
+    {
+        myfile->vse_punch = 0;
+    }
+#endif
     return (myfile);
 }
 
@@ -855,13 +940,13 @@ static void osfopen(void)
        fails */
     if (myfile->textMode)
     {
-        myfile->recfm = 1; /* VB */
+        myfile->recfm = __RECFM_V;
         myfile->lrecl = 255;
         myfile->blksize = 6233;
     }
     else
     {
-        myfile->recfm = 2; /* U */
+        myfile->recfm = __RECFM_U;
         myfile->lrecl = 0;
         myfile->blksize = 6233;
     }
@@ -898,7 +983,7 @@ static void osfopen(void)
         return;
     }
     /* if we have a RECFM=U, do special processing */
-    if (myfile->recfm == 2)
+    if (myfile->recfm == __RECFM_U)
     {
         myfile->reallyu = 1;
         myfile->quickBin = 0; /* switch off to be on the safe side */
@@ -906,12 +991,12 @@ static void osfopen(void)
         /* if open for writing, kludge to switch to fixed */
         if (mode == 1)
         {
-            myfile->recfm = 0;
+            myfile->recfm = __RECFM_F;
         }
         /* if open for reading, kludge to switch to variable */
         else if (mode == 0)
         {
-            myfile->recfm = 1;
+            myfile->recfm = __RECFM_V;
         }
         /* we need to work with a decent lrecl in case the
            assembler routine set the real thing */
@@ -929,7 +1014,7 @@ static void osfopen(void)
     }
     /* if we have RECFM=V, the usable lrecl is 4 bytes shorter
        than we are told, so just adjust that here */
-    else if (myfile->recfm == 1)
+    else if (myfile->recfm == __RECFM_V)
     {
        if (myfile->lrecl > 4)
        {
@@ -953,6 +1038,12 @@ static void osfopen(void)
             myfile->style = 0;
         }
     }
+    
+    /* by the time we reach here, there is no RECFM=U, so
+       we only have 2 forms of binary (starting at 0) and
+       two forms of text (starting at 2), so we just need
+       to add the recfm (0 or 1) to the above. It should
+       probably be done in a less complicated manner! */
     myfile->style += myfile->recfm;
 
     if (myfile->style == VARIABLE_TEXT)
@@ -975,6 +1066,21 @@ static void osfopen(void)
     return;
 }
 
+
+#if defined(__VSE__)
+static int vseCloseLib(FILE *stream)
+{
+    char buf[80];
+    
+    stream->vse_punch = 0;
+    memset(buf, ' ', sizeof buf);
+    sprintf(buf, "%d", stream->vselupto - __vsepb);
+    fwrite(buf, 1, sizeof buf, stream);
+    stream->vse_punch = 1;
+}
+#endif
+
+
 __PDPCLIB_API__ int fclose(FILE *stream)
 {
 #ifdef __OS2__
@@ -989,6 +1095,13 @@ __PDPCLIB_API__ int fclose(FILE *stream)
         return (EOF);
     }
     fflush(stream);
+#ifdef __VSE__
+    /* vsepb is set to NULL by pdpclib upon exit */
+    if (stream->vse_punch && (__vsepb != NULL))
+    {
+        return (vseCloseLib(stream));
+    }
+#endif
 #ifdef __OS2__
     rc = DosClose(stream->hfile);
 #endif
@@ -1003,8 +1116,9 @@ __PDPCLIB_API__ int fclose(FILE *stream)
     {
         if (stream->reallyu)
         {
-            /* no action required, the flush would have done
-               everything already */
+            /* we should not get to here, because the flush would
+               have taken care of it. perhaps we can generate an
+               internal error */
         }
         else if (stream->textMode)
         {

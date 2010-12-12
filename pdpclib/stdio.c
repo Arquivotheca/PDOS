@@ -339,7 +339,7 @@ __PDPCLIB_API__ FILE *fopen(const char *filename, const char *mode)
         }
         if (__stdpch == NULL)
         {
-            __vsepb = malloc(VSE_LIB_LIM);
+            __vsepb = malloc(VSE_LIB_LIM + 4);
             if (__vsepb == NULL) return (NULL);
             __stdpch = fopen("dd:syspunch", "wb");
             if (__stdpch != NULL)
@@ -1070,16 +1070,111 @@ static void osfopen(void)
 
 
 #if defined(__VSE__)
+
+#define CARDLEN 80
+#define MAXCDATA 56  /* maximum data bytes on TXT record */
+#define MAXRLEN (MAXCDATA * 10 - 4) /* maximum length of a single record */
+    /* the 4 is to ensure the length is never on a card by itself */
+
 static int vseCloseLib(FILE *stream)
 {
-    char buf[80];
-    
+    char card[CARDLEN];
+    size_t cnt;
+    size_t tot;
+    size_t rem;
+    size_t upto;
+    size_t x;
+    size_t r;
+    size_t subtot;
+
     stream->vse_punch = 0;
-    memset(buf, ' ', sizeof buf);
-    sprintf(buf, "%d", stream->vselupto - __vsepb);
-    fwrite(buf, 1, sizeof buf, stream);
+
+    tot = stream->vselupto - __vsepb;
+    /* The file needs an EOF marker */
+    memset(__vsepb + tot, 0x00, 4);
+    tot += 4;
+
+    memset(card, ' ', sizeof card);
+    memcpy(card, "\x02" "ESD", 4);
+    *(short *)(card + 10) = 0x20; /* length of this ESD is the minimal 0x20 */
+    *(short *)(card + 14) = 1; /* CSECT 1 */
+    memset(card + 16, ' ', 8); /* name is blank */
+
+    *(int *)(card + 24) = 0; /* assembled origin = 0 */
+    *(card + 24) = 0x04; /* PC for some reason */
+    *(int *)(card + 28) = 0; /* AMODE + length - for some reason we
+        don't need to set the length properly. */
+
+#if 0
+    /* is this required? */
+    *(int *)(card + 28) = tot + 
+        (tot/MAXRLEN + ((tot % MAXRLEN) != 0)) * sizeof(int);
+#endif
+
+    memcpy(card + 32, "TOTO    ", 8); /* total? */
+    
+    /* is this required? */
+    *(int *)(card + 44) = tot + 
+        (tot/MAXRLEN + ((tot % MAXRLEN) != 0)) * sizeof(int);
+    fwrite(card, 1, sizeof card, stream);
+
+    subtot = 0;
+    for (upto = 0; upto < tot; upto += rem)
+    {
+        rem = tot - upto;
+        if (rem > MAXRLEN)
+        {
+            rem = MAXRLEN;
+        }
+        for (x = 0; x < rem; x += r)
+        {
+            r = rem - x;
+            if (r > MAXCDATA)
+            {
+                r = MAXCDATA;
+            }
+            if ((x == 0) && (r > (MAXCDATA - sizeof(int))))
+            {
+                r -= sizeof(int);
+            }
+            memset(card, ' ', sizeof card);
+            memcpy(card, "\x02" "TXT", 4);
+            *(int *)(card + 4) = subtot; /* origin */
+            card[4] = ' ';
+            *(short *)(card + 10) = r + ((x == 0) ? sizeof(int) : 0);
+                /* byte count */
+            *(int *)(card + 12) = 1; /* CSECT 1 */
+            if (x == 0)
+            {
+                *(int *)(card + 16) = rem;
+                if ((upto + rem) >= tot)
+                {
+                    *(int *)(card + 16) -= 4;
+                }
+                memcpy(card + 16 + sizeof(int), __vsepb + upto, r);
+                subtot += (r + sizeof(int));
+            }
+            else
+            {
+                memcpy(card + 16, __vsepb + upto + x, r);
+                subtot += r;
+            }
+            fwrite(card, 1, sizeof card, stream);
+        }
+    }
+    memset(card, ' ', sizeof card);
+    memcpy(card, "\x02" "END", 4);
+#if 0
+    /* is this required? */
+    *(int *)(card + 24) = tot + 
+        (tot/MAXRLEN + ((tot % MAXRLEN) != 0)) * sizeof(int);
+#endif
+    fwrite(card, 1, sizeof card, stream);
+
     stream->vselupto = __vsepb;
     stream->vse_punch = 1;
+
+    return (0);
 }
 #endif
 

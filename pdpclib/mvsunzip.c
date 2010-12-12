@@ -214,7 +214,11 @@ static int onefile(FILE *infile)
     }
 #endif
 
-    if (outn != NULL)
+    if ((outn != NULL)
+#if defined(__VSE__)
+        || (!binary)
+#endif
+       )
     {
         if (strchr(p, '.') != NULL) *strchr(p, '.') = '\0';
         while (strchr(p, '-') != NULL) *strchr(p, '-') = '@';
@@ -241,28 +245,19 @@ static int onefile(FILE *infile)
 #else
     if (outn != NULL)
     {
-#if defined(__VSE__)
-        FILE *sp;
-        char *z = p;
-        static char jobcard[1000] =
-                " PHASE %s,*\n";
-        
-        while (*z != '\0')
-        {
-            *z = toupper((unsigned char)*z);
-            z++;
-        }
-        sp = fopen("dd:syspunch", "w");
-        fprintf(sp, jobcard, p);
-        fclose(sp);
-        sprintf(newfnm, "dd:out");
+#ifdef __VSE__
+        strcpy(newfnm, "dd:out");
 #else
         sprintf(newfnm, "%s(%s)", outn, p);
 #endif
     }
     else
     {
+#ifdef __VSE__
+        sprintf(newfnm, "dd:out(%s)", p);
+#else
         strcpy(newfnm, p);
+#endif
 #if defined(MUSIC)
         /* automatically truncate filenames down to MUSIC length */
         if (strlen(newfnm) > 17)

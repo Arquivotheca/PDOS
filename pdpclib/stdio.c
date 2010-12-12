@@ -1078,6 +1078,7 @@ static int vseCloseLib(FILE *stream)
     memset(buf, ' ', sizeof buf);
     sprintf(buf, "%d", stream->vselupto - __vsepb);
     fwrite(buf, 1, sizeof buf, stream);
+    stream->vselupto = __vsepb;
     stream->vse_punch = 1;
 }
 #endif
@@ -1101,7 +1102,9 @@ __PDPCLIB_API__ int fclose(FILE *stream)
     /* vsepb is set to NULL by pdpclib upon exit */
     if (stream->vse_punch && (__vsepb != NULL))
     {
-        return (vseCloseLib(stream));
+        stream->upto = stream->fbuf;
+        stream->bufStartR = 0;
+        return (vseCloseLib(stream));        
     }
 #endif
 #ifdef __OS2__

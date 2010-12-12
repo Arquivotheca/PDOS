@@ -352,10 +352,12 @@ __PDPCLIB_API__ FILE *fopen(const char *filename, const char *mode)
         }
         if (__stdpch != NULL)
         {
+            __stdpch->vse_punch = 0;
             memset(phase, ' ', sizeof phase);
-            sprintf(phase, " PHASE %s,*\n", memname);
+            sprintf(phase, " PHASE %s,*", memname);
             phase[strlen(phase)] = ' ';
             fwrite(phase, 1, sizeof phase, __stdpch);
+            __stdpch->vse_punch = 1;
         }
         return (__stdpch);
     }

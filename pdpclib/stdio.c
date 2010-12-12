@@ -166,10 +166,10 @@ static FILE permFiles[3];
 #define lbegwrite(stream, len) \
    ( \
     ((stream)->vselupto + (len) > (stream->vselend)) ? \
-     (dptr = NULL, lenwrite = 0) : \
-     (dptr = (stream)->vselupto, lenwrite = (len)) \
+     (lenwrite = 0, dptr = NULL) : \
+     (lenwrite = (len), dptr = (stream)->vselupto) \
    )
-#define lfinwrite(stream) ((stream)->vselupto += lenwrite)
+#define lfinwrite(stream) (((stream)->vselupto += lenwrite), lenwrite)
 
 #define vbegwrite(stream, len) (lenwrite = (len), dptr = (stream)->asmbuf)
 #define vfinwrite(stream) (__awrite((stream)->hfile, &dptr, &lenwrite))

@@ -167,7 +167,7 @@ static FILE permFiles[3];
    ( \
     ((stream)->vselupto + (len) > (stream->vselend)) ? \
      (lenwrite = 0, dptr = NULL) : \
-     (lenwrite = (len), dptr = (stream)->vselupto) \
+     (lenwrite = (len), dptr = (unsigned char *)(stream)->vselupto) \
    )
 #define lfinwrite(stream) (((stream)->vselupto += lenwrite), lenwrite)
 

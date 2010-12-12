@@ -47,7 +47,6 @@
 * MVS/XA and earlier versions of MVS/ESA should use the S/380
 * hybrid
 *
-* Comment these out to avoid errors on z/VSE
-*        AMODE 31
-*        RMODE 24
+         AMODE 31
+         RMODE 24
 *

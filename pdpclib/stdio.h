@@ -19,7 +19,7 @@
 #ifndef __SIZE_T_DEFINED
 #define __SIZE_T_DEFINED
 #if (defined(__OS2__) || defined(__32BIT__) || defined(__MVS__) \
-    || defined(__CMS__))
+    || defined(__CMS__) || defined(__VSE__))
 typedef unsigned long size_t;
 #elif (defined(__MSDOS__) || defined(__DOS__) || defined(__POWERC) \
     || defined(__WIN32__) || defined(__gnu_linux__))
@@ -128,7 +128,7 @@ typedef unsigned long fpos_t;
 /* #define BUFSIZ 8192 */
 /*#define BUFSIZ 5120*/
 
-#if defined(__MVS__)
+#if defined(__MVS__) || defined(__VSE__)
 /* set it to maximum possible LRECL to simplify processing */
 /* also add in room for a RDW and dword align it just to be
    on the safe side */

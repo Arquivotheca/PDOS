@@ -16,7 +16,7 @@
 /*
   Some constants - at present these are only defined for IBM
 */
-#if defined(__MVS__) || defined (__CMS__)
+#if defined(__MVS__) || defined (__CMS__) || defined(__VSE__)
 /*
  This is about the nearest thing we can get to inf wthout
 */

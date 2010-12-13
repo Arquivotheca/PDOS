@@ -14,7 +14,7 @@
 #define __SETJMP_INCLUDED
 
 typedef struct {
-#if defined(__MVS__) || defined(__CMS__)
+#if defined(__MVS__) || defined(__CMS__) || defined(__VSE__)
     int regs[15];
 #elif defined(__WIN32__) || defined(__32BIT__) || defined(__OS2__) \
     || defined(__gnu_linux__)

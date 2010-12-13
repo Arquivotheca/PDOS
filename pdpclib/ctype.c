@@ -12,7 +12,7 @@
 
 #include "stddef.h"
 
-#if !defined(__MVS__) && !defined(__CMS__)
+#if !defined(__MVS__) && !defined(__CMS__) && !defined(__VSE__)
 static unsigned short __isbufR[257] = {
     0x0000U, /* EOF */
     0x0004U, /* NUL */

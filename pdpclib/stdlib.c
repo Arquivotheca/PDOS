@@ -16,6 +16,11 @@
 #include "ctype.h"
 #include "stddef.h"
 
+/* VSE is similar to MVS */
+#if defined(__VSE__)
+#define __MVS__ 1
+#endif
+
 /* PDOS and MSDOS use the same interface most of the time */
 #if defined(__PDOS__) && !defined(__MVS__)
 #define __MSDOS__

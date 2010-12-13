@@ -16,7 +16,7 @@
 #ifndef __SIZE_T_DEFINED
 #define __SIZE_T_DEFINED
 #if (defined(__OS2__) || defined(__32BIT__) || defined(__MVS__) \
-    || defined(__CMS__))
+    || defined(__CMS__) || defined(__VSE__))
 typedef unsigned long size_t;
 #elif (defined(__MSDOS__) || defined(__DOS__) || defined(__POWERC) \
     || defined(__WIN32__) || defined(__gnu_linux__))
@@ -35,7 +35,7 @@ typedef struct { long int quot; long int rem; } ldiv_t;
 
 #define NULL ((void *)0)
 #define EXIT_SUCCESS 0
-#if defined(__MVS__) || defined(__CMS__)
+#if defined(__MVS__) || defined(__CMS__) || defined(__VSE__)
 #define EXIT_FAILURE 12
 #else
 #define EXIT_FAILURE 1
@@ -50,7 +50,7 @@ void *malloc(size_t size);
 void *calloc(size_t nmemb, size_t size);
 void *realloc(void *ptr, size_t size);
 void free(void *ptr);
-#if defined(__MVS__) || defined(__CMS__)
+#if defined(__MVS__) || defined(__CMS__) || defined(__VSE__)
 void abort(void) __attribute__((noreturn));
 void exit(int status) __attribute__((noreturn));
 #else

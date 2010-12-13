@@ -15,6 +15,11 @@
 #include "stdio.h"
 #include "stddef.h"
 
+/* just get VSE to use MVS for now */
+#if defined(__VSE__)
+#define __MVS__ 1
+#endif
+
 /* pdos and msdos use the same interface most of the time) */
 #if defined(__PDOS__) && !defined(__MVS__)
 #define __MSDOS__

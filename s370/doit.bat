@@ -83,4 +83,4 @@ zip -9X pdospkg ctl.txt pdos00.cckd pdos.cnf auto*.rc termherc*.rc
 zip -9X pdospkg runpdos.bat pdos.bat pdpi.zip
 zip -9X pdospkg gcc.exe mvsendec.exe mvsunzip.exe hexdump.exe copyfile.exe
 
-
+rem Simply unzip the package into c:\pdos or whatever and it's done

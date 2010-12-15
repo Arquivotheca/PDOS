@@ -1,9 +1,5 @@
 # PDOS sort of needs 592 MB. The first address space only
 # needs 160 MB though. And even that isn't really required.
-# However, due to the way that PDOS initializes address
-# spaces, a small amount of memory is used in each, thus
-# mandating the high requirement
-
 MAINSIZE             600
 
 ARCHMODE             ESA/390

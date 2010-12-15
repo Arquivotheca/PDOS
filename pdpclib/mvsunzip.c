@@ -35,7 +35,7 @@ static int disk = '\0';
 #ifdef __VSE__
 /* this is required for VSE */
 static char *outdd = NULL;
-static char *zipmem = NULL;
+static char *zipm = NULL;
 #endif
 
 int main(int argc, char **argv)

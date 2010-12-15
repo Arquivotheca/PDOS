@@ -305,11 +305,11 @@ static int onefile(FILE *infile)
 #elif defined(__VSE__)
     if (zipm == NULL)
     {
-        strcpy(newfnm, outdd);
+        sprintf(newfnm, "%s(%s)", outdd, p);
     }
     else
     {
-        sprintf(newfnm, "%s(%s)", outdd, p);
+        strcpy(newfnm, outdd);
     }
 
 #elif defined(__MVS__)

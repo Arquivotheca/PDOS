@@ -2367,6 +2367,7 @@ static int pdosDumpBlk(PDOS *pdos, char *parm)
     char prtln[100];
     long i;
     long start = 0;
+    int dev;
 
     tbuf[0] = '\0';
     i = *(short *)parm;
@@ -2376,9 +2377,14 @@ static int pdosDumpBlk(PDOS *pdos, char *parm)
         memcpy(tbuf, parm, i);
         tbuf[i] = '\0';
     }
-    sscanf(tbuf, "%d %d %d", &cyl, &head, &rec);
-    printf("dumping cylinder %d, head %d, record %d\n", cyl, head, rec);
-    cnt = rdblock(pdos->ipldev, cyl, head, rec, tbuf, MAXBLKSZ);
+    sscanf(tbuf, "%x %d %d %d", &dev, &cyl, &head, &rec);
+    if (dev == 0)
+    {
+        dev = pdos->ipldev;
+    }
+    printf("dumping cylinder %d, head %d, record %d of device %x\n",
+           cyl, head, rec, dev);
+    cnt = rdblock(dev, cyl, head, rec, tbuf, MAXBLKSZ);
     if (cnt > 0)
     {
         for (i = 0; i < cnt; i++)
@@ -2441,6 +2447,7 @@ static int pdosZapBlk(PDOS *pdos, char *parm)
     long start = 0;
     int off;
     int nval;
+    int dev;
 
     tbuf[0] = '\0';
     i = *(short *)parm;
@@ -2450,10 +2457,15 @@ static int pdosZapBlk(PDOS *pdos, char *parm)
         memcpy(tbuf, parm, i);
         tbuf[i] = '\0';
     }
-    sscanf(tbuf, "%d %d %d %i %i", &cyl, &head, &rec, &off, &nval);
+    sscanf(tbuf, "%x %d %d %d %i %i", &dev, &cyl, &head, &rec, &off, &nval);
+    if (dev == 0)
+    {
+        dev = pdos->ipldev;
+    }
     printf("zapping cylinder %d, head %d, record %d, "
-           "byte %X to %0.2X\n", cyl, head, rec, off, nval);
-    cnt = rdblock(pdos->ipldev, cyl, head, rec, tbuf, MAXBLKSZ);
+           "byte %X of device %x to %0.2X\n",
+           cyl, head, rec, off, dev, nval);
+    cnt = rdblock(dev, cyl, head, rec, tbuf, MAXBLKSZ);
     if (cnt > 0)
     {
         if (off >= cnt)
@@ -2463,7 +2475,7 @@ static int pdosZapBlk(PDOS *pdos, char *parm)
         else
         {
             tbuf[off] = nval;
-            wrblock(pdos->ipldev, cyl, head, rec, tbuf, cnt, 0x0d);
+            wrblock(dev, cyl, head, rec, tbuf, cnt, 0x0d);
         }
     }
     

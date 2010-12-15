@@ -23,10 +23,19 @@ static int fasc(int asc);
 static void usage(void);
 static int onefile(FILE *infile);
 static char *ascii2l(char *buf);
-static char *outn = NULL;
+
+/* for MVS, pdsn is the optional PDS name. */
+#ifdef __MVS__
+static char *pdsn = NULL;
+#endif
 static int binary = 0;
 #ifdef __CMS__
 static int disk = '\0';
+#endif
+#ifdef __VSE__
+/* this is required for VSE */
+static char *outdd = NULL;
+static char *zipmem = NULL;
 #endif
 
 int main(int argc, char **argv)
@@ -35,6 +44,8 @@ int main(int argc, char **argv)
     int aupto = 2;
 
     if (argc <= 1) usage();
+
+/* check to see if we have a CMS minidisk provided */
 #ifdef __CMS__
     if (argc > aupto)
     {
@@ -46,18 +57,46 @@ int main(int argc, char **argv)
     }
 #endif
 
-#ifndef __CMS__
+/* VSE requires an output DDNAME, even for library output */
+#ifdef __VSE__
+    if (argc > aupto)
+    {
+        outdd = argv[aupto++];
+    }
+    else
+    {
+        usage();
+    }
+#endif
+
+/* MVS has an optional pds for output */
+#ifdef __MVS__
     if (argc > aupto)
     {
         if ((strcmp(argv[aupto], "binary") != 0)
            && (strcmp(argv[aupto], "BINARY") != 0))
         {
-            outn = argv[aupto];
+            pdsn = argv[aupto];
             aupto++;
         }
     }
 #endif
 
+/* VSE may request just a single file - should probably enable
+   for other systems too */
+#ifdef __VSE__
+    if (argc > aupto)
+    {
+        if ((strcmp(argv[aupto], "binary") != 0)
+           && (strcmp(argv[aupto], "BINARY") != 0))
+        {
+            zipm = argv[aupto];
+            aupto++;
+        }
+    }
+#endif
+
+/* all systems - see if this is a binary file */
     if (argc > aupto)
     {
         if ((strcmp(argv[aupto], "binary") == 0)
@@ -87,6 +126,10 @@ static void usage(void)
     printf("usage: mvsunzip <infile> [disk] [BINARY]\n");
     printf("where infile is a sequential file\n");
     printf("e.g. mvsunzip dd:input\n");
+#elif defined(__VSE__)
+    printf("usage: mvsunzip <infile> <outdd> [file] [binary]\n");
+    printf("where outdd can be either a sequential file or library\n");
+    printf("and file is the name of the file in the zip archive\n");
 #else
     printf("usage: mvsunzip <infile> [outpds] [binary]\n");
     printf("where infile is a sequential file\n");
@@ -109,6 +152,7 @@ static int onefile(FILE *infile)
     FILE *newf;
     int extra;
     char *p;
+    int skip = 0;
 
     if (buf == NULL)
     {
@@ -201,24 +245,39 @@ static int onefile(FILE *infile)
     }
 
 #if defined(__VSE__)
-    if (outn != NULL)
+    if (zipm != NULL)
     {
-        if (strcmp(p, outn) != 0)
+        if (strcmp(p, zipm) != 0)
         {
-            if (binary)
+            for (x = 0; x < size; x += MAXBUF)
             {
-                fread(buf, size, 1, infile);
+                size_t y;
+
+                y = size - x;
+                if (y > MAXBUF)
+                {
+                    y = MAXBUF;
+                }
+                fread(buf, y, 1, infile);
             }
-            return (1); /* just skip this file */
+            return (1); /* skip this file */
         }
     }
 #endif
 
-    if ((outn != NULL)
-#if defined(__VSE__)
-        || (!binary)
+/* for MVS, if no PDS name was provided, we use the zip member
+   unchanged, via dynamic allocation. Otherwise, needs to be mangled.
+   for VSE, we do not have dynamic allocation, and always have
+   an output DD. But we only need to construct a member
+   of a library when we have no zip member requested */
+
+#if defined(__MVS__)
+    if (pdsn != NULL)
+#elif defined(__VSE__)
+    if (zipm == NULL)
+#else
+    if (0)
 #endif
-       )
     {
         if (strchr(p, '.') != NULL) *strchr(p, '.') = '\0';
         while (strchr(p, '-') != NULL) *strchr(p, '-') = '@';
@@ -242,22 +301,28 @@ static int onefile(FILE *infile)
     {
         sprintf(newfnm, "%s", p);
     }
-#else
-    if (outn != NULL)
+
+#elif defined(__VSE__)
+    if (zipm == NULL)
     {
-#ifdef __VSE__
-        strcpy(newfnm, "dd:out");
-#else
-        sprintf(newfnm, "%s(%s)", outn, p);
-#endif
+        strcpy(newfnm, outdd);
     }
     else
     {
-#ifdef __VSE__
-        sprintf(newfnm, "dd:out(%s)", p);
-#else
+        sprintf(newfnm, "%s(%s)", outdd, p);
+    }
+
+#elif defined(__MVS__)
+    if (pdsn != NULL)
+    {
+        sprintf(newfnm, "%s(%s)", pdsn, p);
+    }
+    else
+    {
+        /* MVS will do dynamic allocation of the unchanged zip
+           file member. Note that PDOS relies heavily on this
+           style */
         strcpy(newfnm, p);
-#endif
 #if defined(MUSIC)
         /* automatically truncate filenames down to MUSIC length */
         if (strlen(newfnm) > 17)
@@ -271,6 +336,7 @@ static int onefile(FILE *infile)
 #endif
     }
 #endif
+
 
     if (binary)
     {

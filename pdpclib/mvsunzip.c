@@ -247,7 +247,7 @@ static int onefile(FILE *infile)
 #if defined(__VSE__)
     if (zipm != NULL)
     {
-        if (strcmp(p, zipm) != 0)
+        if ((strcmp(p, zipm) != 0) && binary)
         {
             for (x = 0; x < size; x += MAXBUF)
             {

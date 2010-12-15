@@ -699,6 +699,7 @@ static int pdosNewF(PDOS *pdos, char *parm);
 static int pdosGetMaxima(PDOS *pdos, int *dircyl, int *dirhead,
                          int *dirrec, int *datacyl);
 static int pdosDumpBlk(PDOS *pdos, char *parm);
+static int pdosZapBlk(PDOS *pdos, char *parm);
 static int pdosLoadExe(PDOS *pdos, char *prog, char *parm);
 static int pdosDumpMem(PDOS *pdos, void *buf, int cnt);
 #if 0
@@ -1784,6 +1785,15 @@ static void pdosProcessSVC(PDOS *pdos)
             pdos->context->regs[1] = 
                 (int)&pdos->aspaces[pdos->curr_aspace].o.tcb;
         }
+        else if (memcmp(prog, "ZAPBLK", 6) == 0)
+        {
+            *pdos->context->postecb = 
+                pdos->aspaces[pdos->curr_aspace].o.tcb.tcbcmp =
+                pdosZapBlk(pdos, parm);
+            pdos->context->regs[15] = 0;
+            pdos->context->regs[1] = 
+                (int)&pdos->aspaces[pdos->curr_aspace].o.tcb;
+        }
         else if (memcmp(prog, "DIR", 3) == 0)
         {
             pdosDoDIR(pdos, parm);
@@ -2406,6 +2416,54 @@ static int pdosDumpBlk(PDOS *pdos, char *parm)
         if (x % 16 != 0)
         {
             printf("%s\n", prtln);
+        }
+    }
+    
+    return (cnt);
+}
+
+
+/* zap block */
+
+static int pdosZapBlk(PDOS *pdos, char *parm)
+{
+    int cyl;
+    int head;
+    int rec;
+    char tbuf[MAXBLKSZ];
+    long cnt = -1;
+    int lastcnt = 0;
+    int ret = 0;
+    int c, pos1, pos2;
+    long x = 0L;
+    char prtln[100];
+    long i;
+    long start = 0;
+    int off;
+    int nval;
+
+    tbuf[0] = '\0';
+    i = *(short *)parm;
+    parm += sizeof(short);
+    if (i < (sizeof tbuf - 1))
+    {
+        memcpy(tbuf, parm, i);
+        tbuf[i] = '\0';
+    }
+    sscanf(tbuf, "%d %d %d %i %i", &cyl, &head, &rec, &off, &nval);
+    printf("zapping cylinder %d, head %d, record %d, "
+           "byte %X to %0.2X\n", cyl, head, rec, off, nval);
+    cnt = rdblock(pdos->ipldev, cyl, head, rec, tbuf, MAXBLKSZ);
+    if (cnt > 0)
+    {
+        if (off >= cnt)
+        {
+            printf("byte to zap is out of range\n");
+        }
+        else
+        {
+            tbuf[off] = nval;
+            wrblock(pdos->ipldev, cyl, head, rec, tbuf, cnt, 0x0d);
         }
     }
     

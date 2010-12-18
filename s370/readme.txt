@@ -3,10 +3,73 @@ Welcome to PDOS/390 (and friends).
 This distribution comes with the PDOS operating system
 installed on a 3390.
 
+
+
+
+RUNNING ON HERCULES UNDER WINDOWS
+---------------------------------
+
 Users of Hercules under Windows need to create a directory 
 such as c:\pdos, unzip this package into there, preferably
 create an environment variable PDOS pointing to that directory,
 as well as adding it to the path, and then type in "pdos".
+
+
+
+RUNNING ON HERCULES UNDER LINUX
+-------------------------------
+
+Unfortunately you will need to convert the pdos.bat file
+yourself. Actually you just need the single call to
+"hercules". All the other stuff is optional.
+
+
+
+OBTAINING SOURCE
+----------------
+
+The source for everything included in PDOS is available,
+although some things came from different packages (e.g. the
+GCC compiler), so please download those separate packages
+to obtain the source and read their license agreements.
+Everything is linked to under the PDOS sourceforge site 
+(including the MVS/380 site). Also note that pdptop.mac is 
+copied from pdp390.mac.
+
+
+
+TECHNICAL NOTES
+---------------
+
+The executables that are supported by PDOS are called
+"MVS PE (Portable Executable)" format, which is simply
+an IEBCOPY unloaded, followed by converting the resultant
+RECFM=V into RECFM=U with RDWs added (same as what happens
+if you ftp from the mainframe with the RDW option). While
+PDOS only supports a fraction of normal MVS calls, that
+fraction is sufficient to do such things as run a C
+compiler to the point where it can even recompile itself.
+Although note that that is currently fudged, so don't try
+to write files more than 1 cylinder in size.
+
+
+FURTHER INFORMATION
+-------------------
+
+Support/feedback can be obtained here:
+http://tech.groups.yahoo.com/group/hercules-os380/
+
+Package is available here:
+http://pdos.sourceforge.net
+
+
+
+
+
+
+
+ADDENDUM: RUNNING ON REAL IRON
+------------------------------
 
 If you wish to run on real iron, you will need to dump the 
 3390-1 disk image (pdos00.cckd), restore it to a real 3390, 
@@ -67,30 +130,3 @@ for device errors) work in the real world.
 Here is an example of how to define the disk under Hercules:
 
 01b9      3390      dasd/pdos00.cckd
-
-
-The source for everything included in PDOS is available,
-although some things came from different packages (e.g. the
-GCC compiler), so please download those separate packages
-to obtain the source and read their license agreements.
-Everything is linked to under the PDOS sourceforge site 
-(including the MVS/380 site). Also note that pdptop.mac is 
-copied from pdp390.mac.
-
-The executables that are supported by PDOS are called
-"MVS PE (Portable Executable)" format, which is simply
-an IEBCOPY unloaded, followed by converting the resultant
-RECFM=V into RECFM=U with RDWs added (same as what happens
-if you ftp from the mainframe with the RDW option). While
-PDOS only supports a fraction of normal MVS calls, that
-fraction is sufficient to do such things as run a C
-compiler to the point where it can even recompile itself.
-Although note that that is currently fudged, so don't try
-to write files more than 1 cylinder in size.
-
-
-Support/feedback can be obtained here:
-http://tech.groups.yahoo.com/group/hercules-os380/
-
-Package is available here:
-http://pdos.sourceforge.net

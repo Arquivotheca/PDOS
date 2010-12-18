@@ -6,7 +6,9 @@
 *
 * Standard C parms
 *
+// ASSGN SYS000,DISK,VOL=WORK01,SHR
 // ASSGN SYS005,SYSLST
+// ASSGN SYS007,SYSPCH
 // OPTION DUMP
 *
 *
@@ -15,7 +17,7 @@
 *
 // OPTION EDECK,NODECK  
 // DLBL IJSYSPH,'WORK.FILE',0,SD
-// EXTENT SYSPCH,WORK01,1,0,3,6
+// EXTENT SYSPCH,,,,3,6
 ASSGN SYSPCH,DISK,VOL=WORK01,SHR
 // EXEC ASSEMBLY
 undivert(pdpprlg.mac)undivert(pdpepil.mac)         END
@@ -25,7 +27,6 @@ CLOSE SYSPCH,PUNCH
 *
 *
 // DLBL IJSYSIN,'WORK.FILE',0,SD
-// EXTENT SYSIPT,WORK01
 ASSGN SYSIPT,DISK,VOL=WORK01,SHR
 // EXEC MAINT                                         
 CLOSE SYSIPT,READER
@@ -44,7 +45,6 @@ undivert(pdptop.mac) BKEND
 *
 * Now assemble the main routine
 *
-* // OPTION LINK
 // OPTION CATAL
  PHASE PDPTEST,*
 // EXEC ASSEMBLY
@@ -52,8 +52,6 @@ undivert(vsestart.asm)/*
 *
 * Now assemble the subroutines
 *
-* // OPTION LINK
-*  // OPTION CATAL
 // EXEC ASSEMBLY
 undivert(start.s)/*
 // EXEC ASSEMBLY
@@ -90,6 +88,8 @@ undivert(vsesupa.asm)/*
 * Allow room for a standard-label tape, just in case one is used
 // LBLTYP TAPE
 // EXEC LNKEDT
+*
+*
 *
 * Now run the app
 *

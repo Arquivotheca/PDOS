@@ -2,8 +2,16 @@
 * $$ LST LST=SYSLST,CLASS=A
 // JOB TRY31BIT
 *
-* Get the direct macros in
 *
+*
+* Standard C parms
+*
+// ASSGN SYS005,SYSLST
+// OPTION DUMP
+*
+*
+*
+* Get the direct macros in
 *
 // OPTION EDECK,NODECK  
 // DLBL IJSYSPH,'WORK.FILE',0,SD
@@ -12,14 +20,18 @@ ASSGN SYSPCH,DISK,VOL=WORK01,SHR
 // EXEC ASSEMBLY
 undivert(pdpprlg.mac)undivert(pdpepil.mac)         END
 /*
-// DLBL IJSYSIN,'WORK.FILE',0,SD
-// EXTENT SYSIPT,WORK01
 CLOSE SYSPCH,PUNCH
 // OPTION NOEDECK
 *
+*
+// DLBL IJSYSIN,'WORK.FILE',0,SD
+// EXTENT SYSIPT,WORK01
 ASSGN SYSIPT,DISK,VOL=WORK01,SHR
 // EXEC MAINT                                         
 CLOSE SYSIPT,READER
+*
+*
+*
 *
 * Now do the copy libs
 *
@@ -28,6 +40,7 @@ CLOSE SYSIPT,READER
  BKEND
 undivert(pdptop.mac) BKEND
 /*
+*
 *
 * Now assemble the main routine
 *
@@ -80,10 +93,9 @@ undivert(vsesupa.asm)/*
 *
 * Now run the app
 *
-// ASSGN SYS005,SYSLST
-// OPTION DUMP
-// OPTION SYSPARM='aBc DeF'
 // EXEC PDPTEST,SIZE=AUTO,PARM='one two Three'
-/*
+*
+*
+*
 /&
 * $$ EOJ

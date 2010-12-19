@@ -389,11 +389,10 @@ Get the latest version working under MUSIC/SP again.
 Get it working (again) with other MVS C compilers such as C/370.
 Add code on MVS to detect a real terminal and do appropriate
   flushing for use on interactive programs.
-Under TSO as a CP, PUTLINE etc shold be used.
 Read/write blocks instead of records on mainframe.
 Allow open for update and append on various environments.
 long arithmetic to be implemented on MSDOS.
-A proper port to DOS/VS(E).
+VSE port needs to be more flexible with file opens.
 Ports to some of the more obscure mainframe environments such as TSS.
 A port to z/TPF.
 Update MSDOS/Windows/OS2 code to cope with a x'1a' (ctrl-z) as

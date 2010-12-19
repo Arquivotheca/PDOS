@@ -13,6 +13,10 @@ Users of Hercules under Windows need to create a directory
 such as c:\pdos, unzip this package into there, preferably
 create an environment variable PDOS pointing to that directory,
 as well as adding it to the path, and then type in "pdos".
+After it starts, try running "world abc def", which has a 
+loop in it which will hopefully take long enough for you 
+to see that it executes in 31-bit mode, even though it waits
+in 24-bit mode.
 
 
 

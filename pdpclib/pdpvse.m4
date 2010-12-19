@@ -46,7 +46,7 @@ undivert(pdptop.mac) BKEND
 * Now assemble the main routine
 *
 // OPTION CATAL
- PHASE PDPTEST,*
+ PHASE PDPTEST,S+80
 // EXEC ASSEMBLY
 undivert(vsestart.asm)/*
 *
@@ -85,8 +85,6 @@ undivert(vsesupa.asm)/*
 *
 * Now link the whole app
 *
-* Allow room for a standard-label tape, just in case one is used
-// LBLTYP TAPE
 // EXEC LNKEDT
 *
 *

@@ -270,8 +270,7 @@ static void freadSlowB(void *ptr,
 static int examine(const char **formt, FILE *fq, char *s, va_list *arg,
                    int chcount);
 
-#if defined(__CMS__) || defined(MUSIC) || \
-    (defined(__PDOS__) && defined(__MVS__))
+#if defined(__CMS__) || defined(__MVS__)
 static void filedef(char *fdddname, char *fnm, int mymode);
 static void fdclr(char *ddname);
 #endif
@@ -818,10 +817,14 @@ static void osfopen(void)
         myfile->dynal = 1;
         p = tmpdd;
     }
-#elif defined(MUSIC) || (defined(__PDOS__) && defined(__MVS__))
+#elif defined(__MVS__)
+    if ((strchr(fnm, '\'') == NULL) && (strchr(fnm, '(') == NULL))
     {
         strcpy(newfnm, fnm);
         p = newfnm;
+
+        /* The SVC 99 interface on MVS requires an uppercase
+           filename in order to be found via a catalog search */
         while (*p != '\0')
         {
             *p = toupper((unsigned char)*p);
@@ -835,7 +838,12 @@ static void osfopen(void)
         myfile->dynal = 1;
         p = tmpdd;
     }
-#elif defined(__MVS__)
+
+    /* This is our traditional function for MVS. Keep it for now,
+       for the complex strings. For the simple strings, which
+       are always used on environments such as PDOS and MUSIC,
+       use the code above instead. */
+    else
     {
         char rawf[FILENAME_MAX]; /* file name without member,
                                     suitable for dynamic allocation */
@@ -880,7 +888,7 @@ static void osfopen(void)
             }
         }
 
-        /* MVS probably expects uppercase filenames */
+        /* MVS requires uppercase filenames */
         p = rawf;
         while (*p != '\0')
         {
@@ -5465,10 +5473,11 @@ __PDPCLIB_API__ size_t fread(void *ptr, size_t size, size_t nmemb, FILE *stream)
 #endif
 
 /*
-   Following code issues a FILEDEF for MUSIC
+   filedef dynamically allocates a file (via SVC 99) on MVS-like
+   environments.
 */
 
-#if defined(MUSIC) || (defined(__PDOS__) && defined(__MVS__))
+#if defined(__MVS__)
 
 static struct {
   char len; /* length of request block, always 20 */

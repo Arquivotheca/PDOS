@@ -1,21 +1,33 @@
-gccmvs -DUSE_MEMMGR -D__PDOS__ -Os -DS380 -S -I . -I ../pdpclib ../pdpclib/start.c
-gccmvs -DUSE_MEMMGR -D__PDOS__ -Os -DS380 -S -I . -I ../pdpclib ../pdpclib/stdio.c
-gccmvs -DUSE_MEMMGR -D__PDOS__ -Os -DS380 -S -I . -I ../pdpclib ../pdpclib/stdlib.c
-gccmvs -DUSE_MEMMGR -D__PDOS__ -Os -DS380 -S -I . -I ../pdpclib ../pdpclib/ctype.c
-gccmvs -DUSE_MEMMGR -D__PDOS__ -Os -DS380 -S -I . -I ../pdpclib ../pdpclib/string.c
-gccmvs -DUSE_MEMMGR -D__PDOS__ -Os -DS380 -S -I . -I ../pdpclib ../pdpclib/time.c
-gccmvs -DUSE_MEMMGR -D__PDOS__ -Os -DS380 -S -I . -I ../pdpclib ../pdpclib/errno.c
-gccmvs -DUSE_MEMMGR -D__PDOS__ -Os -DS380 -S -I . -I ../pdpclib ../pdpclib/assert.c
-gccmvs -DUSE_MEMMGR -D__PDOS__ -Os -DS380 -S -I . -I ../pdpclib ../pdpclib/locale.c
-gccmvs -DUSE_MEMMGR -D__PDOS__ -Os -DS380 -S -I . -I ../pdpclib ../pdpclib/math.c
-gccmvs -DUSE_MEMMGR -D__PDOS__ -Os -DS380 -S -I . -I ../pdpclib ../pdpclib/setjmp.c
-gccmvs -DUSE_MEMMGR -D__PDOS__ -Os -DS380 -S -I . -I ../pdpclib ../pdpclib/signal.c
-gccmvs -DUSE_MEMMGR -D__PDOS__ -Os -DS380 -S -I . -I ../pdpclib ../pdpclib/__memmgr.c
-gccmvs -DUSE_MEMMGR -D__PDOS__ -Os -DS380 -S -I . -I ../pdpclib pload.c
-gccmvs -DUSE_MEMMGR -D__PDOS__ -Os -DS380 -S -I . -I ../pdpclib pdos.c
-gccmvs -DUSE_MEMMGR -D__PDOS__ -Os -DS380 -S -I . -I ../pdpclib pdosutil.c
-gccmvs -DUSE_MEMMGR -D__PDOS__ -Os -DS380 -S -I . -I ../pdpclib pcomm.c
-gccmvs -DUSE_MEMMGR -D__PDOS__ -O0 -DS380 -S -I . -I ../pdpclib world.c
+rem theoretically we could have a different C library for all 3
+rem of MVS applications, PDOS applications and standalone programs,
+rem which would require 3 different conditional compilations.
+rem However, PDOS applications are sufficiently close to MVS that
+rem a special compilation is not required. In addition, the
+rem structure and scope of standalone programs (such as the PDOS
+rem operating system itself) don't use most of the C library
+rem functions, and the bit that they do use can fit within the
+rem same structure so long as the assembler code is changed.
+rem That is how we get away without requiring a special version
+rem of the C library!
+
+gccmvs -DUSE_MEMMGR -Os -DS380 -S -I . -I ../pdpclib ../pdpclib/start.c
+gccmvs -DUSE_MEMMGR -Os -DS380 -S -I . -I ../pdpclib ../pdpclib/stdio.c
+gccmvs -DUSE_MEMMGR -Os -DS380 -S -I . -I ../pdpclib ../pdpclib/stdlib.c
+gccmvs -DUSE_MEMMGR -Os -DS380 -S -I . -I ../pdpclib ../pdpclib/ctype.c
+gccmvs -DUSE_MEMMGR -Os -DS380 -S -I . -I ../pdpclib ../pdpclib/string.c
+gccmvs -DUSE_MEMMGR -Os -DS380 -S -I . -I ../pdpclib ../pdpclib/time.c
+gccmvs -DUSE_MEMMGR -Os -DS380 -S -I . -I ../pdpclib ../pdpclib/errno.c
+gccmvs -DUSE_MEMMGR -Os -DS380 -S -I . -I ../pdpclib ../pdpclib/assert.c
+gccmvs -DUSE_MEMMGR -Os -DS380 -S -I . -I ../pdpclib ../pdpclib/locale.c
+gccmvs -DUSE_MEMMGR -Os -DS380 -S -I . -I ../pdpclib ../pdpclib/math.c
+gccmvs -DUSE_MEMMGR -Os -DS380 -S -I . -I ../pdpclib ../pdpclib/setjmp.c
+gccmvs -DUSE_MEMMGR -Os -DS380 -S -I . -I ../pdpclib ../pdpclib/signal.c
+gccmvs -DUSE_MEMMGR -Os -DS380 -S -I . -I ../pdpclib ../pdpclib/__memmgr.c
+gccmvs -DUSE_MEMMGR -Os -DS380 -S -I . -I ../pdpclib pload.c
+gccmvs -DUSE_MEMMGR -Os -DS380 -S -I . -I ../pdpclib pdos.c
+gccmvs -DUSE_MEMMGR -Os -DS380 -S -I . -I ../pdpclib pdosutil.c
+gccmvs -DUSE_MEMMGR -Os -DS380 -S -I . -I ../pdpclib pcomm.c
+gccmvs -DUSE_MEMMGR -O0 -DS380 -S -I . -I ../pdpclib world.c
 
 sleep 1
 

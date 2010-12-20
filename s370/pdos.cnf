@@ -2,7 +2,7 @@
 # needs 160 MB though. And even that isn't really required.
 MAINSIZE             600
 
-ARCHMODE             ESA/390
+ARCHMODE             S/380
 
 CPUSERIAL            000611
 CPUMODEL             4381

@@ -891,6 +891,23 @@ SYSTEMLN EQU   *-SYSTMWRK    LENGTH OF DYNAMIC STORAGE
          LTORG
 *
 *
+***********************************************************************
+*                                                                     *
+*  SVC99 - dummy function to keep VSE happy                           *
+*                                                                     *
+***********************************************************************
+         ENTRY @@SVC99
+@@SVC99  EQU   *
+         SAVE  (14,12),,@@SVC99
+         LR    R12,R15
+         USING @@SVC99,R12
+*
+         LA    R15,0
+*
+         RETURN (14,12),RC=(15)
+         LTORG
+*
+*
 *
 * Keep the below functions last because they use different
 * base registers

@@ -818,7 +818,10 @@ static void osfopen(void)
         p = tmpdd;
     }
 #elif defined(__MVS__)
+
+#if !defined(MUSIC) /* for MUSIC, send everything through to SVC99 */
     if ((strchr(fnm, '\'') == NULL) && (strchr(fnm, '(') == NULL))
+#endif
     {
         strcpy(newfnm, fnm);
         p = newfnm;
@@ -839,6 +842,7 @@ static void osfopen(void)
         p = tmpdd;
     }
 
+#if !defined(MUSIC)
     /* This is our traditional function for MVS. Keep it for now,
        for the complex strings. For the simple strings, which
        are always used on environments such as PDOS and MUSIC,
@@ -907,6 +911,8 @@ static void osfopen(void)
 
         p = newfnm;
     }
+#endif /* MUSIC */
+
 #else
     {
         p = (char *)fnm;

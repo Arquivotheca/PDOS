@@ -550,6 +550,22 @@ RETURNFM DS    0H
 RETURNGC DS    0H
          RETURN (14,12),RC=(15)
          LTORG
+*
+*
+*
+***********************************************************************
+*                                                                     *
+*  GETTZ - Get the offset from GMT in 1.048576 seconds                *
+*  dummy function for MUSIC - not sure if supported                   *
+*                                                                     *
+***********************************************************************
+         ENTRY @@GETTZ
+@@GETTZ  LA    R15,0
+         BR    R14
+         SPACE 2
+*
+*
+*
 ***********************************************************************
 *
 *  SYSTEM - execute another command

@@ -53,6 +53,8 @@ SUBPOOL  EQU   0
          LR    R11,R1            save R1 so we can get the PARM
          LR    R9,R13            save R13 so we can get flag byte
          GETVIS LENGTH=STACKLEN
+         LTR   R15,R15
+         BNZ   NOMEM  
          ST    R13,4(R1)
          LR    R13,R1
          USING STACK,R13
@@ -133,6 +135,13 @@ RETURNMS DS    0H
          FREEVIS LENGTH=STACKLEN
          LR    R15,R14
          EOJ
+NOMEM    DS    0H
+         EXCP  CCB
+         WAIT  CCB
+         EOJ
+ERRMSG   DC    C'PDPCLIB HAS INSUFFICIENT MEMORY - NO SIZE=AUTO?'
+CCB      CCB   SYSLOG,CCW
+CCW      CCW   X'09',ERRMSG,0,L'ERRMSG
 SAVER4   DS    F
 SAVER13  DS    F
          LTORG

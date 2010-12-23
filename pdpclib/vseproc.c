@@ -88,6 +88,7 @@ int main(int argc, char **argv)
     }
     if (p != NULL)
     {
+        fprintf(fq, " CATALP VSEPROC\n");
         p = fn_start;
         while (p != fn_end)
         {
@@ -97,6 +98,8 @@ int main(int argc, char **argv)
                     p, p, p, p, p, p, p, p, p, p, p, p, p, p, p);
             p = q + 1;
         }
+        fprintf(fq, "/+\n");
     }
+    fclose(fq);
     return (0);
 }

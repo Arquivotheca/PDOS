@@ -19,10 +19,11 @@
 
 #define MAXBUF 2000000L
 
-static int fasc(int asc);
 static void usage(void);
 static int onefile(FILE *infile);
 static char *ascii2l(char *buf);
+static int fasc(int asc);
+static int ins_strcmp(char *one, char *two);
 
 /* for MVS, pdsn is the optional PDS name. */
 #ifdef __MVS__
@@ -73,8 +74,7 @@ int main(int argc, char **argv)
 #ifdef __MVS__
     if (argc > aupto)
     {
-        if ((strcmp(argv[aupto], "binary") != 0)
-           && (strcmp(argv[aupto], "BINARY") != 0))
+        if (ins_strcmp(argv[aupto], "binary") != 0)
         {
             pdsn = argv[aupto];
             aupto++;
@@ -87,8 +87,7 @@ int main(int argc, char **argv)
 #ifdef __VSE__
     if (argc > aupto)
     {
-        if ((strcmp(argv[aupto], "binary") != 0)
-           && (strcmp(argv[aupto], "BINARY") != 0))
+        if (ins_strcmp(argv[aupto], "binary") != 0)
         {
             zipm = argv[aupto];
             aupto++;
@@ -99,8 +98,7 @@ int main(int argc, char **argv)
 /* all systems - see if this is a binary file */
     if (argc > aupto)
     {
-        if ((strcmp(argv[aupto], "binary") == 0)
-           || (strcmp(argv[aupto], "BINARY") == 0))
+        if (ins_strcmp(argv[aupto], "binary") == 0)
         {
             binary = 1;
             aupto++;
@@ -247,7 +245,7 @@ static int onefile(FILE *infile)
 #if defined(__VSE__)
     if (zipm != NULL)
     {
-        if (strcmp(p, zipm) != 0)
+        if (ins_strcmp(p, zipm) != 0)
         {
             if (!binary) return (1);
             for (x = 0; x < size; x += MAXBUF)
@@ -509,3 +507,22 @@ static int fasc(int asc)
     default   : return(0);
   }
 }
+
+static int ins_strcmp(char *one, char *two)
+{
+    while (toupper(*one) == toupper(*two))
+    {
+        if (*one == '\0')
+        {
+            return (0);
+        }
+        one++;
+        two++;
+    }
+    if (toupper(*one) < toupper(*two))
+    {
+        return (-1);
+    }
+    return (1);
+}
+

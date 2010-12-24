@@ -216,6 +216,8 @@ NOMEM    DS    0H
          ST    R6,DCBLRECL
          LA    R6,0           +++ hardcode to fixed
          ST    R6,DCBRECFM
+         LA    R6,1
+         ST    R6,ISDI   sysin is device-independent
          LA    R5,SYSIN
          ST    R5,PTRDTF
          OPEN  (R5)
@@ -443,7 +445,27 @@ RETURNOP DS    0H
 *
          L     R8,DCBLRECL
          L     R7,PTRDTF
+*
+         L     R9,ISDI            Is this device-independent?
+         LTR   R9,R9
+         BNZ   GDIR
+*
+* Normal file. GET needs the DTF pointer, the buffer, and our
+* DTF is expecting the length in R8
+*
          GET   (R7),(R5)
+         B     DONEGET
+*
+* Got a device-indepentent DTF - we only support a RECSIZE of 80,
+* and do not support a file containing an intiial control 
+* character, so if you have such a file you will need to trim
+* it down using a separate utility first.
+*
+GDIR     DS    0H          Got a device-independent
+         GET   (R7)
+         LA    R8,80     +++ hardcoded length of 80
+         MVC   0(80,R5),IO1  +++ hardcode IO1 and length
+DONEGET  DS    0H
 * If GET reaches EOF, the "GOTEOF" label will be branched to
 * automatically.
          LA    R15,0             SUCCESS
@@ -525,7 +547,7 @@ RETURNAR DS    0H
          L     R5,PTRDTF
          L     R9,ISDI            Is this device-independent?
          LTR   R9,R9
-         BNZ   GDI
+         BNZ   GDIW
 *
 * Normal file. PUT needs the DTF pointer, the buffer, and our
 * DTF is expecting the length in R8
@@ -537,7 +559,7 @@ RETURNAR DS    0H
 * including control character for this type - should be made
 * more flexible.
 *
-GDI      DS    0H
+GDIW     DS    0H
          MVC   IO1+1(80),0(R3)   +++ hardcode IO1 and length
          MVI   IO1,C' '          space seems to be OK as control char
          PUT   (R5)
@@ -651,9 +673,7 @@ RETURNAC DS    0H
 *
 *
 * This is for reading from stdin
-SYSIN    DTFCD DEVADDR=SYSIPT,IOAREA1=IO1,BLKSIZE=80,RECFORM=FIXUNB,   X
-               WORKA=YES,EOFADDR=GOTEOF,MODNAME=CARDMOD
-CARDMOD  CDMOD RECFORM=FIXUNB,WORKA=YES,TYPEFLE=INPUT
+SYSIN    DTFDI DEVADDR=SYSIPT,IOAREA1=IO1,RECSIZE=80,EOFADDR=GOTEOF
 *
 * This is for writing to SYSPUNCH in a device-independent manner
 * Note that it is a requirement to allow for a control character

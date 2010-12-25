@@ -722,16 +722,19 @@ SDI1     DTFSD BLKSIZE=19069,DEVADDR=SYS000,DEVICE=3350,               X
                TYPEFLE=INPUT,RECSIZE=(8),EOFADDR=GOTEOF
 *
 * This is for reading from a tape
-MTIN     DTFMT BLKSIZE=19069,DEVADDR=SYS011,MODNAME=MTOMOD,            X
+MTIN     DTFMT BLKSIZE=19069,DEVADDR=SYS011,MODNAME=MTMOD,             X
                IOAREA1=WORKI1,RECFORM=UNDEF,WORKA=YES,FILABL=NO,       X
                TYPEFLE=INPUT,RECSIZE=(8),EOFADDR=GOTEOF
-*MTINMOD  MTMOD WORKA=YES,RECFORM=UNDEF,TYPEFLE=INPUT
 *
 * This is for writing to a tape
-MTOUT    DTFMT BLKSIZE=19069,DEVADDR=SYS011,MODNAME=MTOMOD,            X
+MTOUT    DTFMT BLKSIZE=19069,DEVADDR=SYS011,MODNAME=MTMOD,             X
                IOAREA1=WORKO1,RECFORM=UNDEF,WORKA=YES,FILABL=STD,      X
                TYPEFLE=OUTPUT,RECSIZE=(8)
-MTOMOD   MTMOD WORKA=YES,RECFORM=UNDEF,TYPEFLE=OUTPUT
+*
+* For some reason this MOD can be shared by both input and
+* output, and in fact, there's not much choice, because otherwise
+* we get duplicate symbols.
+MTMOD    MTMOD WORKA=YES,RECFORM=UNDEF
 *
 * For the standard files, this is sufficient for input and output
 IO1      DS    CL200

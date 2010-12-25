@@ -320,10 +320,30 @@ NOTSYSPU DS    0H
          LA    R6,2           +++ hardcode to undefined
          ST    R6,DCBRECFM
          L     R6,DCBLRECL
+*
+*
+* Here we need to choose tape or disk
+* There's probably a better way than looking at the name of
+* the DD, to see if it starts with "MT", as a convention, 
+* but of course it would be better if this was
+* transparent to the programmer in the first place!
+*
+         CLC   0(2,R3),=C'MT'
+         BNE   NOTTAPW
+         LA    R5,MTOUT
+         ST    R5,PTRDTF
+         OPEN  (R5)
+         B     DONEOPEN
+*
+NOTTAPW  DS    0H
          LA    R5,SDO1
          ST    R5,PTRDTF
          OPEN  (R5)
          B     DONEOPEN
+* Can't reach here, since all files are currently considered valid
+         B     BADOPEN
+*
+*
 *
 *
 DONEOPEN DS    0H
@@ -702,10 +722,16 @@ SDI1     DTFSD BLKSIZE=19069,DEVADDR=SYS000,DEVICE=3350,               X
                TYPEFLE=INPUT,RECSIZE=(8),EOFADDR=GOTEOF
 *
 * This is for reading from a tape
-MTIN     DTFMT BLKSIZE=19069,DEVADDR=SYS011,MODNAME=MTINMOD,           X
+MTIN     DTFMT BLKSIZE=19069,DEVADDR=SYS011,MODNAME=MTOMOD,            X
                IOAREA1=WORKI1,RECFORM=UNDEF,WORKA=YES,FILABL=NO,       X
                TYPEFLE=INPUT,RECSIZE=(8),EOFADDR=GOTEOF
-MTINMOD  MTMOD WORKA=YES,RECFORM=UNDEF
+*MTINMOD  MTMOD WORKA=YES,RECFORM=UNDEF,TYPEFLE=INPUT
+*
+* This is for writing to a tape
+MTOUT    DTFMT BLKSIZE=19069,DEVADDR=SYS011,MODNAME=MTOMOD,            X
+               IOAREA1=WORKO1,RECFORM=UNDEF,WORKA=YES,FILABL=STD,      X
+               TYPEFLE=OUTPUT,RECSIZE=(8)
+MTOMOD   MTMOD WORKA=YES,RECFORM=UNDEF,TYPEFLE=OUTPUT
 *
 * For the standard files, this is sufficient for input and output
 IO1      DS    CL200

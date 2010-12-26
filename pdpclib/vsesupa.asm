@@ -85,6 +85,9 @@ R15      EQU   15
 *    For output only, F80 may be specified to force the data to be    *
 *    unblocked. It has no meaning (and is invalid) on input.          *
 *    A similar situation exists for tapes.                            *
+*    That's the theoretical input - sort of like an SDI1,FB,80,6480   *
+*    In practice we don't yet have the ability to deblock, so any     *
+*    FB80 file must in actual fact be F80.                            *
 *  MODE - 0 = READ, 1 = WRITE, 2 = UPDATE (update not supported)      *
 *  RECFM - 0 = F, 1 = V, 2 = U. This is an output from this function  *
 *  LRECL - This function will determine the LRECL                     *

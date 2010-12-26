@@ -60,6 +60,31 @@ R15      EQU   15
 *                                                                     *
 *  Parameters are:                                                    *
 *  DDNAME - space-padded, 8 character DDNAME to be opened             *
+*    Note that in VSE, the DDNAME may be expanded to be more than 8   *
+*    bytes. It represents not just the 7-character filename on the    *
+*    DLBL, but may also include recfm, lrecl and blksize info.        *
+*    It is not expected that there is much call for that though,      *
+*    so there are reasonable defaults.                                *
+*    First we have a fairly fixed portion - e.g. SDO1, which is the   *
+*    disk label, which is also the macro name, the typefle (I or O)   *
+*    of the macro, and it's sequence number (currently statically     *
+*    defined, but potentially it will be dynamic).                    *
+*    All files are defined as RECFM=U, since that gives the program   *
+*    the flexibility to decide how to treat it, and in DOS there is   *
+*    no-one else who will disagree, with the info not stored in the   *
+*    VTOC or catalog or DCB or anywhere else.                         *
+*    The next bit of the DDNAME says how you want the file to be      *
+*    internally treated. The default is RECFM=U which for input files *
+*    is the maximum possible for a 3350, but on output it is a        *
+*    figure that is more flexible for the sort of data that may be    *
+*    stored - 6480 - a multiple of both 80 and 81, that fits on most  *
+*    disk types, while still being over 90% efficient on a 3390.      *
+*    Otherwise the user may specify FB80 which will treat the data    *
+*    as F80 records, blocked to 6480, which depending on other things *
+*    may trigger breakdown of records, stripping of blanks etc.       *
+*    For output only, F80 may be specified to force the data to be    *
+*    unblocked. It has no meaning (and is invalid) on input.          *
+*    A similar situation exists for tapes.                            *
 *  MODE - 0 = READ, 1 = WRITE, 2 = UPDATE (update not supported)      *
 *  RECFM - 0 = F, 1 = V, 2 = U. This is an output from this function  *
 *  LRECL - This function will determine the LRECL                     *
@@ -88,9 +113,9 @@ R15      EQU   15
 *  points to that area, which will have first been modified to put    *
 *  in the DDNAME (DLBL) being opened. This way we only need a         *
 *  single DTFSD in the main code, which is reused any number of       *
-*  times. However, at the moment we have simply assumed a single      *
-*  RECFM=U input file and a single RECFM=U output file, which is      *
-*  sufficient to allow a C compile to go through.                     *
+*  times. However, at the moment we have simply assumed a small       *
+*  number of files, which is sufficient to allow a C compile to go    *
+*  through.                                                           *
 *                                                                     *
 *  The stdin/stdout/stderr are treated differently - each of those    *
 *  has its own DTF, because they are special files (not disks).       *
@@ -103,20 +128,12 @@ R15      EQU   15
 *  to also allow a similar operation from a source statement          *
 *  library.                                                           *
 *                                                                     *
-*  Note that under VSE, the "suggested" DCB info is never actually    *
-*  used currently.                                                    *
-*                                                                     *
 *  Also note that the C code is totally flexible in that it will      *
 *  do whatever this assembler code tells it to. ie you can set any    *
 *  file to any RECFM/LRECL and it will do its work based on that.     *
 *  This makes it possible to change anything in here that isn't       *
 *  working to your satisfaction, without needing to change the C      *
 *  code at all.                                                       *
-*                                                                     *
-*  Note that currently the DTFs are set up largely based on DDNAME.   *
-*  Although this wasn't the original intention, perhaps the DDNAMEs   *
-*  could be used more extensively to provide DCB info, e.g. having    *
-*  DDNAMEs of F80A, F80B etc.                                         *
 *                                                                     *
 ***********************************************************************
          ENTRY @@AOPEN
@@ -240,12 +257,14 @@ NOTSYSI  DS    0H
 *
          CLC   0(2,R3),=C'MT'
          BNE   NOTTAP
-         LA    R5,MTIN
+         LA    R5,MTI1
          ST    R5,PTRDTF
          OPEN  (R5)
          B     DONEOPEN
 *
 NOTTAP   DS    0H
+* Need to allow more input files, and DCB info
+*
          LA    R5,SDI1
          ST    R5,PTRDTF
          OPEN  (R5)
@@ -310,14 +329,18 @@ NOTSYST  DS    0H
          B     DONEOPEN
 *
 NOTSYSPU DS    0H
-         CLC   0(8,R3),=C'F80O1   '
+*
+* We should really make this smart enough to be allocated to
+* any SDO file, and for it to pick up the LRECL as well.
+*
+         CLC   0(8,R3),=C'SDO1F80 '
          BNE   NOTF80O1
          LA    R6,80          +++ hardcode to 80
          ST    R6,DCBLRECL
          LA    R6,0           +++ hardcode to fixed
          ST    R6,DCBRECFM
          L     R6,DCBLRECL
-         LA    R5,F80O1
+         LA    R5,SDO1
          ST    R5,PTRDTF
          OPEN  (R5)
          B     DONEOPEN
@@ -326,7 +349,8 @@ NOTF80O1 DS    0H
 *
 * Assume RECFM=U
 * Note that output files can't really use up to the full 19069
-* and 18452 is a better match for a 3390 anyway
+* and 18452 is a better match for a 3390 anyway. However, this
+* needs to be changed to 80 * 81. Also we need to allow SDO2 etc
 *
          L     R6,=F'18452'   +++ hardcode to 18452
          ST    R6,DCBLRECL
@@ -335,18 +359,17 @@ NOTF80O1 DS    0H
          L     R6,DCBLRECL
 *
 *
-* Here we need to choose tape or disk
-* There's probably a better way than looking at the name of
-* the DD, to see if it starts with "MT", as a convention, 
-* but of course it would be better if this was
-* transparent to the programmer in the first place!
+* Here we need to choose tape or disk. Actually only MTO1 is
+* currently supported, but we don't check for that.
 *
          CLC   0(2,R3),=C'MT'
          BNE   NOTTAPW
-         LA    R5,MTOUT
+         LA    R5,MTO1
          ST    R5,PTRDTF
          OPEN  (R5)
          B     DONEOPEN
+*
+*
 *
 NOTTAPW  DS    0H
          LA    R5,SDO1
@@ -724,13 +747,6 @@ SYSTRM   DTFPR CONTROL=YES,BLKSIZE=80,DEVADDR=SYS005,MODNAME=PRINTMOD, X
                IOAREA1=IO1,RECFORM=FIXUNB,WORKA=YES
 PRINTMOD PRMOD CONTROL=YES,RECFORM=FIXUNB,WORKA=YES
 *
-* This is for writing to an unblocked F80 file. Very inefficient,
-* but needed for various system utilities. Note that the blocksize
-* needs to be 8 bytes more than we need.
-F80O1    DTFSD BLKSIZE=88,DEVICE=3350,                                 X
-               IOAREA1=WORKO1,RECFORM=FIXUNB,WORKA=YES,                X
-               TYPEFLE=OUTPUT                       
-*
 * This is for writing to a sequential disk file
 SDO1     DTFSD BLKSIZE=19069,DEVICE=3350,                              X
                IOAREA1=WORKO1,RECFORM=UNDEF,WORKA=YES,                 X
@@ -742,12 +758,12 @@ SDI1     DTFSD BLKSIZE=19069,DEVADDR=SYS000,DEVICE=3350,               X
                TYPEFLE=INPUT,RECSIZE=(8),EOFADDR=GOTEOF
 *
 * This is for reading from a tape
-MTIN     DTFMT BLKSIZE=19069,DEVADDR=SYS011,MODNAME=MTMOD,             X
+MTI1     DTFMT BLKSIZE=19069,DEVADDR=SYS011,MODNAME=MTMOD,             X
                IOAREA1=WORKI1,RECFORM=UNDEF,WORKA=YES,FILABL=NO,       X
                TYPEFLE=INPUT,RECSIZE=(8),EOFADDR=GOTEOF
 *
 * This is for writing to a tape
-MTOUT    DTFMT BLKSIZE=19069,DEVADDR=SYS011,MODNAME=MTMOD,             X
+MTO1     DTFMT BLKSIZE=19069,DEVADDR=SYS011,MODNAME=MTMOD,             X
                IOAREA1=WORKO1,RECFORM=UNDEF,WORKA=YES,FILABL=STD,      X
                TYPEFLE=OUTPUT,RECSIZE=(8)
 *

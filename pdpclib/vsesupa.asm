@@ -263,9 +263,27 @@ NOTSYSI  DS    0H
          B     DONEOPEN
 *
 NOTTAP   DS    0H
+*
 * Need to allow more input files, and DCB info
 *
+         CLC   0(8,R3),=C'SDI1FB80'
+         BNE   NFB80I1
+*
+* Warning - either this assembler code, or the calling C program,
+* should be made sophisticated enough to handle FB. But at the
+* moment, such deblocking is not available, so although the
+* syntax caters for FB, we actually only support F.
+*
+         LA    R6,0           +++ hardcode to recfm=F
+         ST    R6,DCBRECFM
+         L     R6,=F'80'      +++ hardcode to 80
+         ST    R6,DCBLRECL
+NFB80I1  DS    0H
          LA    R5,SDI1
+         CLC   0(4,R3),=C'SDI1'
+         BE    GOTSDI1
+         LA    R5,SDI2        +++ assume SDI2
+GOTSDI1  DS    0H
          ST    R5,PTRDTF
          OPEN  (R5)
          B     DONEOPEN
@@ -350,9 +368,10 @@ NOTF80O1 DS    0H
 * Assume RECFM=U
 * Note that output files can't really use up to the full 19069
 * and 18452 is a better match for a 3390 anyway. However, this
-* needs to be changed to 80 * 81. Also we need to allow SDO2 etc
+* is set to 80 * 81 for ease of use by other programs.
+* Also note that we need to cater for SDO2 etc too
 *
-         L     R6,=F'18452'   +++ hardcode to 18452
+         L     R6,=F'6480'    +++ hardcode to 6480
          ST    R6,DCBLRECL
          LA    R6,2           +++ hardcode to undefined
          ST    R6,DCBRECFM
@@ -754,6 +773,11 @@ SDO1     DTFSD BLKSIZE=19069,DEVICE=3350,                              X
 *
 * This is for reading from a sequential disk file
 SDI1     DTFSD BLKSIZE=19069,DEVADDR=SYS000,DEVICE=3350,               X
+               IOAREA1=WORKI1,RECFORM=UNDEF,WORKA=YES,                 X
+               TYPEFLE=INPUT,RECSIZE=(8),EOFADDR=GOTEOF
+*
+* Another SD
+SDI2     DTFSD BLKSIZE=19069,DEVADDR=SYS000,DEVICE=3350,               X
                IOAREA1=WORKI1,RECFORM=UNDEF,WORKA=YES,                 X
                TYPEFLE=INPUT,RECSIZE=(8),EOFADDR=GOTEOF
 *

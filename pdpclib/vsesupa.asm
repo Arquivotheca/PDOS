@@ -310,6 +310,19 @@ NOTSYST  DS    0H
          B     DONEOPEN
 *
 NOTSYSPU DS    0H
+         CLC   0(8,R3),=C'F80O1   '
+         BNE   NOTF80O1
+         LA    R6,80          +++ hardcode to 80
+         ST    R6,DCBLRECL
+         LA    R6,0           +++ hardcode to fixed
+         ST    R6,DCBRECFM
+         L     R6,DCBLRECL
+         LA    R5,F80O1
+         ST    R5,PTRDTF
+         OPEN  (R5)
+         B     DONEOPEN
+*
+NOTF80O1 DS    0H
 *
 * Assume RECFM=U
 * Note that output files can't really use up to the full 19069
@@ -570,7 +583,7 @@ RETURNAR DS    0H
          BNZ   GDIW
 *
 * Normal file. PUT needs the DTF pointer, the buffer, and our
-* DTF is expecting the length in R8
+* DTF is expecting the length in R8 (unless the DTF is fixed)
 *
          PUT   (R5),(R3)
          B     DONEPUT
@@ -710,6 +723,13 @@ SYSPRT   DTFPR CONTROL=YES,BLKSIZE=80,DEVADDR=SYSLST,MODNAME=PRINTMOD, X
 SYSTRM   DTFPR CONTROL=YES,BLKSIZE=80,DEVADDR=SYS005,MODNAME=PRINTMOD, X
                IOAREA1=IO1,RECFORM=FIXUNB,WORKA=YES
 PRINTMOD PRMOD CONTROL=YES,RECFORM=FIXUNB,WORKA=YES
+*
+* This is for writing to an unblocked F80 file. Very inefficient,
+* but needed for various system utilities. Note that the blocksize
+* needs to be 8 bytes more than we need.
+F80O1    DTFSD BLKSIZE=88,DEVICE=3350,                                 X
+               IOAREA1=WORKO1,RECFORM=FIXUNB,WORKA=YES,                X
+               TYPEFLE=OUTPUT                       
 *
 * This is for writing to a sequential disk file
 SDO1     DTFSD BLKSIZE=19069,DEVICE=3350,                              X

@@ -917,6 +917,33 @@ RETURNGC DS    0H
 *
 ***********************************************************************
 *                                                                     *
+*  LOAD - load a module into memory                                   *
+*                                                                     *
+*  parm1 = program name                                               *
+*  parm2 = memory address                                             *
+*                                                                     *
+*  entry point address returned in R15                                *
+*                                                                     *
+*  Not currently used, but it might be!                               *
+*                                                                     *
+***********************************************************************
+         ENTRY @@LOAD
+@@LOAD   EQU   *
+         SAVE  (14,12),,@@LOAD
+         LR    R12,R15
+         USING @@LOAD,R12
+*
+         L     R2,0(,R1)
+         L     R3,4(,R1)
+         LOAD  (R2),(R3)
+         LR    R15,R1
+*
+RETURNLD DS    0H
+         RETURN (14,12),RC=(15)
+         LTORG
+*
+***********************************************************************
+*                                                                     *
 *  SYSTEM - execute another command                                   *
 *                                                                     *
 *  Not currently implemented, but ideally should be                   *

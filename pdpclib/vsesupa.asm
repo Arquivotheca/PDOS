@@ -769,11 +769,6 @@ SYSTRM   DTFPR CONTROL=YES,BLKSIZE=80,DEVADDR=SYS005,MODNAME=PRINTMOD, X
                IOAREA1=IO1,RECFORM=FIXUNB,WORKA=YES
 PRINTMOD PRMOD CONTROL=YES,RECFORM=FIXUNB,WORKA=YES
 *
-* This is for writing to a sequential disk file
-SDO1     DTFSD BLKSIZE=19069,DEVICE=3350,                              X
-               IOAREA1=WORKO1,RECFORM=UNDEF,WORKA=YES,                 X
-               TYPEFLE=OUTPUT,RECSIZE=(8)
-*
 * This is for reading from a sequential disk file
 SDI1     DTFSD BLKSIZE=19069,DEVADDR=SYS000,DEVICE=3350,               X
                IOAREA1=WORKI1,RECFORM=UNDEF,WORKA=YES,                 X
@@ -783,6 +778,11 @@ SDI1     DTFSD BLKSIZE=19069,DEVADDR=SYS000,DEVICE=3350,               X
 SDI2     DTFSD BLKSIZE=19069,DEVADDR=SYS000,DEVICE=3350,               X
                IOAREA1=WORKI1,RECFORM=UNDEF,WORKA=YES,                 X
                TYPEFLE=INPUT,RECSIZE=(8),EOFADDR=GOTEOF
+*
+* This is for writing to a sequential disk file
+SDO1     DTFSD BLKSIZE=19069,DEVICE=3350,                              X
+               IOAREA1=WORKO1,RECFORM=UNDEF,WORKA=YES,                 X
+               TYPEFLE=OUTPUT,RECSIZE=(8)
 *
 * This is for reading from a tape
 MTI1     DTFMT BLKSIZE=19069,DEVADDR=SYS011,MODNAME=MTMOD,             X

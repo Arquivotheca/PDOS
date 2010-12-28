@@ -17,4 +17,5 @@ rem zip -0X pdpvse *.s *.exec *.asm *.mac
 
 m4 -I . pdpvse.m4 >pdpvse.jcl
 rem call sub pdpvse.jcl
+sleep 2
 call runvse pdpvse.jcl output.txt

@@ -3,7 +3,7 @@
 *  This program written by Paul Edwards.                              *
 *  Released to the public domain                                      *
 *                                                                     *
-*  Contributions from Louis Millon etc also public domain.            *
+*  Contributions from Louis Millon et al also public domain.          *
 *                                                                     *
 ***********************************************************************
 *                                                                     *
@@ -12,7 +12,13 @@
 *  This assembler code has a long history - starting off as C/370     *
 *  under MVS then modified for GCC, then ported to CMS, MUSIC/SP      *
 *  and then finally VSE. A rewrite by someone with deep VSE           *
-*  experience should be considered.                                   *
+*  experience should be considered. Also, it will probably be         *
+*  necessary at some point to introduce a flag to say whether it is   *
+*  being built for z/VSE or DOS/VS R34, as new functionality like     *
+*  the use of LABEL/LPL for dynamic file allocation shouldn't be      *
+*  held back by the older DOS/VS. Perhaps dummy macros can be         *
+*  created rather than a flag, but either way, z/VSE should never be  *
+*  seriously compromised.                                             *
 *                                                                     *
 ***********************************************************************
 *

@@ -644,7 +644,7 @@ RETURNAR DS    0H
 * more flexible.
 *
 GDIW     DS    0H
-         MVC   IO1+1(80),0(R3)   +++ hardcode IO1 and length
+         EX    R8,WRMOVE
          MVI   IO1,C' '          space seems to be OK as control char
          PUT   (R5)
 *
@@ -659,6 +659,7 @@ DONEPUT  DS    0H
          L     R13,4(R13)
          LA    R15,0             +++ hardcode success
          RETURN (14,12),RC=(15)
+WRMOVE   MVC   IO1+1(80),0(R3)   +++ hardcode IO1 and length
          LTORG
 *
 ***********************************************************************

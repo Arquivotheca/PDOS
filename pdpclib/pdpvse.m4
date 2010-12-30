@@ -4,9 +4,9 @@
 *
 *
 *
-* Standard C parms
+* Standard assignments for C programs
 *
-// ASSGN SYS000,DISK,VOL=WORK01,SHR
+// ASSGN SYS000,SYSLNK
 // ASSGN SYS005,SYSLST
 // ASSGN SYS007,SYSPCH
 // OPTION DUMP
@@ -16,9 +16,9 @@
 * Get the direct macros in
 *
 // OPTION EDECK,NODECK  
-// DLBL IJSYSPH,'WORK.FILE',0,SD
-// EXTENT SYSPCH,,,,3,6
-ASSGN SYSPCH,DISK,VOL=WORK01,SHR
+// DLBL IJSYSPH,'PDPPUNCH.DAT',0,SD
+// EXTENT SYSPCH,,,,10000,100
+ASSGN SYSPCH,SYS000
 // EXEC ASSEMBLY
 undivert(pdpprlg.mac)undivert(pdpepil.mac)         END
 /*
@@ -26,7 +26,9 @@ CLOSE SYSPCH,PUNCH
 // OPTION NOEDECK
 *
 *
-// DLBL IJSYSIN,'WORK.FILE',0,SD
+*
+*
+// DLBL IJSYSIN,'PDPPUNCH.DAT'
 ASSGN SYSIPT,DISK,VOL=WORK01,SHR
 // EXEC MAINT                                         
 CLOSE SYSIPT,READER

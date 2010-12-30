@@ -317,10 +317,12 @@ WRITING  DS    0H
 WNOMEM   DS    0H
          CLC   0(8,R3),=C'SYSPRINT'
          BNE   NOTSYSPR
-         LA    R6,80          +++ hardcode to 80
+         LA    R6,120         lrecl = 120
          ST    R6,DCBLRECL
-         LA    R6,0           +++ hardcode to fixed
+         LA    R6,0           recfm = fixed
          ST    R6,DCBRECFM
+         LA    R6,1
+         ST    R6,ISDI   sysprint is device-independent
          L     R6,DCBLRECL
          LA    R5,SYSPRT
          ST    R5,PTRDTF
@@ -343,9 +345,9 @@ NOTSYSPR DS    0H
 NOTSYST  DS    0H
          CLC   0(8,R3),=C'SYSPUNCH'
          BNE   NOTSYSPU
-         LA    R6,80          +++ hardcode to 80
+         LA    R6,80          lrecl = 80
          ST    R6,DCBLRECL
-         LA    R6,0           +++ hardcode to fixed
+         LA    R6,0           recfm = fixe
          ST    R6,DCBRECFM
          LA    R6,1
          ST    R6,ISDI   syspunch is device-independent
@@ -763,11 +765,7 @@ SYSIN    DTFDI DEVADDR=SYSIPT,IOAREA1=IO1,RECSIZE=80,EOFADDR=GOTEOF
 SYSPCH   DTFDI DEVADDR=SYSPCH,IOAREA1=IO1,RECSIZE=81
 *
 * This is for writing to stdout (SYSPRINT)
-* At some point this will need to be made device-independent so
-* that it can be redirected - and it will need to be increased
-* to 121 to do so.
-SYSPRT   DTFPR CONTROL=YES,BLKSIZE=80,DEVADDR=SYSLST,MODNAME=PRINTMOD, X
-               IOAREA1=IO1,RECFORM=FIXUNB,WORKA=YES
+SYSPRT   DTFDI DEVADDR=SYSLST,IOAREA1=IO1,RECSIZE=121
 *
 * This is for writing to stderr (SYSTERM)
 SYSTRM   DTFPR CONTROL=YES,BLKSIZE=80,DEVADDR=SYS005,MODNAME=PRINTMOD, X

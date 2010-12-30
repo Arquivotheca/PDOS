@@ -91,14 +91,8 @@ undivert(vsesupa.asm)/*
 *
 * Now run the app
 *
-// DLBL IJSYSLS,'WORK.FILE',0,SD
-// EXTENT SYSLST,,,,3,6
-ASSGN SYSLST,SYS000
 // EXEC PDPTEST,SIZE=AUTO,PARM='one two Three'
-CLOSE SYSLST,PRINTER
 *
-// DLBL SDI1,'WORK.FILE'
-// EXEC HEXDUMP,PARM='dd:sdi1'
 *
 *
 /&

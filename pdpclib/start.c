@@ -762,14 +762,6 @@ void __exit(int status)
         }
     }
 #endif
-#if defined(__VSE__)
-    if (__vsepb != NULL)
-    {
-        free(__vsepb);
-        __vsepb = NULL;
-    }
-    if (__stdpch != NULL) fclose(__stdpch);
-#endif
 
     for (x = 0; x < __NFILE; x++)
     {
@@ -778,6 +770,15 @@ void __exit(int status)
             fclose(__userFiles[x]);
         }
     }
+
+#if defined(__VSE__)
+    if (__vsepb != NULL)
+    {
+        free(__vsepb);
+        __vsepb = NULL;
+    }
+    if (__stdpch != NULL) fclose(__stdpch);
+#endif
 
     if (stdout != NULL) fflush(stdout);
     if (stderr != NULL) fflush(stderr);

@@ -639,9 +639,7 @@ RETURNAR DS    0H
          PUT   (R5),(R3)
          B     DONEPUT
 *
-* Got a device-indepentent DTF - we only support a RECSIZE of 81
-* including control character for this type - should be made
-* more flexible.
+* Got a device-independent DTF (which requires a control character)
 *
 GDIW     DS    0H
          EX    R8,WRMOVE
@@ -659,7 +657,7 @@ DONEPUT  DS    0H
          L     R13,4(R13)
          LA    R15,0             +++ hardcode success
          RETURN (14,12),RC=(15)
-WRMOVE   MVC   IO1+1(80),0(R3)   +++ hardcode IO1 and length
+WRMOVE   MVC   IO1+1(0),0(R3)    +++ hardcode IO1
          LTORG
 *
 ***********************************************************************

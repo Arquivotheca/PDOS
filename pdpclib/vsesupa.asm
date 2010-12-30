@@ -645,7 +645,7 @@ RETURNAR DS    0H
 *
 GDIW     DS    0H
          EX    R8,WRMOVE
-         MVI   IO1,C' '          space seems to be OK as control char
+         MVI   IO1,C'W'          V seems to double up, CSERV uses W
          PUT   (R5)
 *
 * We have written to file, but should really check for any error

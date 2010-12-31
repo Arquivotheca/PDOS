@@ -30,7 +30,7 @@ int main(int argc, char **argv)
         printf("by default it will trim 81-character files down to\n");
         printf("80 by stripping a leading control character\n");
         printf("use -i121 to override input length\n");
-        printf("e.g. vsemanip -i121 dd:u18452i1 dd:u18452o1\n");
+        printf("e.g. vsemanip -i121 dd:sdi1 dd:sdo1\n");
         return (EXIT_FAILURE);
     }
 

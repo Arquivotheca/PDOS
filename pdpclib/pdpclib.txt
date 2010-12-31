@@ -385,13 +385,12 @@ Get DD overrides implemented for MVS the same way that SMP calls
 Stack checking at least for stack overwrite on termination.
 Check buffer sizes in AOPEN are not excessive.
 Check IBM's use of CRAB/DSA prior to getting code reentrant again.
-Get the latest version working under MUSIC/SP again.
 Get it working (again) with other MVS C compilers such as C/370.
-Add code on MVS to detect a real terminal and do appropriate
-  flushing for use on interactive programs.
-Read/write blocks instead of records on mainframe.
+Ensure no anomalies remain with regards to flushing on MVS
+  when in an interactive environment.
+Read/write blocks instead of records on all mainframe platforms.
 Allow open for update and append on various environments.
-long arithmetic to be implemented on MSDOS.
+Long arithmetic to be implemented on MSDOS.
 VSE port needs to be more flexible with file opens.
 Ports to some of the more obscure mainframe environments such as TSS.
 A port to z/TPF.
@@ -425,8 +424,9 @@ Jim Nutt and Rob Duff for releasing strftime to the public domain.
 Rowan Crowe for some mods to memcpy.
 Matthew Parker for getting the program name under MSDOS.
 And last but not least, my wife, for putting up with me in
-  the many many man-days it took me to write this, when I should
-  have been doing family-related things.
+  the many many man-days/weeks/months/years (lost track) it
+  took me to write this, when I should have been doing 
+  family-related things.
 
 Also, I have used a small amount of code from libnix,
 another public domain C runtime library available here:

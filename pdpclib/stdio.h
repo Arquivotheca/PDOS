@@ -172,7 +172,6 @@ FILE **__gterr(void);
 #define stderr (*(__gterr()))
 
 #if defined(__VSE__)
-extern char *__vsepb;
 extern FILE *__stdpch;
 #endif
 

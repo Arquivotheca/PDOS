@@ -218,7 +218,7 @@ static int    inreopen = 0;
 
 /* for VSE library files being punched */
 #define VSE_LIB_LIM 1000000
-char *__vsepb = NULL;
+static char *__vsepb = NULL;
 FILE *__stdpch = NULL;
 
 static const char *fnm;
@@ -348,7 +348,7 @@ __PDPCLIB_API__ FILE *fopen(const char *filename, const char *mode)
             __stdpch = fopen("dd:syspunch", "wb");
             if (__stdpch != NULL)
             {
-                __stdpch->vse_punch = 1;
+                __stdpch->vse_punch = 2;
                 __stdpch->vselupto = __vsepb;
                 __stdpch->vselend = __vsepb + VSE_LIB_LIM;
                 __stdpch->reallyu = 1;
@@ -361,7 +361,7 @@ __PDPCLIB_API__ FILE *fopen(const char *filename, const char *mode)
             sprintf(phase, " PHASE %s,*", memname);
             phase[strlen(phase)] = ' ';
             fwrite(phase, 1, sizeof phase, __stdpch);
-            __stdpch->vse_punch = 1;
+            __stdpch->vse_punch = 2; /* in an active file */
         }
         return (__stdpch);
     }
@@ -1191,7 +1191,7 @@ static int vseCloseLib(FILE *stream)
     fwrite(card, 1, sizeof card, stream);
 
     stream->vselupto = __vsepb;
-    stream->vse_punch = 1;
+    stream->vse_punch = 1; /* still the punch, but not active */
 
     return (0);
 }
@@ -1213,12 +1213,19 @@ __PDPCLIB_API__ int fclose(FILE *stream)
     }
     fflush(stream);
 #ifdef __VSE__
-    /* vsepb is set to NULL by pdpclib upon exit */
-    if (stream->vse_punch && (__vsepb != NULL))
+    /* only take action if in an active file */
+    if (stream->vse_punch == 2)
     {
         stream->upto = stream->fbuf;
         stream->bufStartR = 0;
         return (vseCloseLib(stream));        
+    }
+    /* closing an inactive punch must be the real thing, so free
+       the buffer and go through the rest of the close logic. */
+    else if (stream->vse_punch == 1)
+    {
+        free(__vsepb);
+        __vsepb = NULL;
     }
 #endif
 #ifdef __OS2__

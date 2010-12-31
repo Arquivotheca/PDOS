@@ -67,7 +67,7 @@ int main(int argc, char **argv)
         fwrite(buf + 1, outlen, 1, fq);
     }
 
-    fclose(fp);
     fclose(fq);
+    fclose(fp);
     return (0);
 }

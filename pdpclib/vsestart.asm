@@ -35,6 +35,10 @@ R14      EQU   14
 R15      EQU   15
 SUBPOOL  EQU   0
          CSECT
+*
+* Put an eyecatcher here to ensure program has been linked
+* correctly.
+         DC    C'PDPCLIB!'
          ENTRY @@CRT0
 @@CRT0   EQU   *
 *         ENTRY CEESTART
@@ -51,7 +55,6 @@ SUBPOOL  EQU   0
 *
          LR    R8,R15            save R15 so that we can get the PARM
          LR    R11,R1            save R1 so we can get the PARM
-         LR    R9,R13            save R13 so we can get flag byte
          GETVIS LENGTH=STACKLEN
          LTR   R15,R15
          BNZ   NOMEM  
@@ -228,4 +231,4 @@ ACCTEXEC DS    CL8                JOB STEP PHASE NAME
 ACCTHICR DS    F                  JOB STEP HI-CORE ADDRESS
 ACCTIMES DS    3F                 EXECUTION TIME BREAKDOWN FIELDS
 ACCTSIOS DS    X                  START OF SIO TABLE
-         END   @@CRT0
+         END

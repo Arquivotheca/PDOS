@@ -1,8 +1,8 @@
             Public Domain C runtime library
             -------------------------------
 
-Version : 3.xx
-Released: xxxx-xx-xx
+Version : 3.10
+Released: 2011-01-01
 
 Written by Paul Edwards.
 Released to the public domain.
@@ -362,7 +362,7 @@ available on 1994-07-30.
       Also MUSIC/SP has a working target. VSE also has a working
       target, but it's still very much alpha.
 
-3.xx  Released xxxx-xx-xx
+3.10  Released 2011-01-01
       VSE target completely revamped and is now good enough to
       release a GCCVSE.
       A "standalone" target is provided for S/3x0 hardware,

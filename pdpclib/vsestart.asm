@@ -40,7 +40,7 @@ SUBPOOL  EQU   0
 * correctly.
          DC    C'PDPCLIB!'
          ENTRY @@CRT0
-@@CRT0   EQU   *
+@@CRT0   DS    0H
 *         ENTRY CEESTART
 *CEESTART EQU   *
 *

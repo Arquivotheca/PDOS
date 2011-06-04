@@ -665,6 +665,7 @@ typedef struct {
     int exitcode;
     int shutdown;
     int ipldev;
+    int curdev;
     int curr_aspace; /* current address space */
 } PDOS;
 
@@ -779,6 +780,7 @@ int pdosInit(PDOS *pdos)
     int rec;
 
     pdos->ipldev = initsys();
+    pdos->curdev = pdos->ipldev;
     lcreg0(cr0);
     if (findFile(pdos->ipldev, "CONFIG.SYS", &cyl, &head, &rec) != 0)
     {
@@ -2076,9 +2078,10 @@ static int pdosDoDIR(PDOS *pdos, char *parm)
     int recfm;
     char *blk;
     int errcnt = 0;
+    int dev = pdos->curdev;
     
     /* read VOL1 record which starts on cylinder 0, head 0, record 3 */
-    cnt = rdblock(pdos->ipldev, 0, 0, 3, tbuf, MAXBLKSZ);
+    cnt = rdblock(dev, 0, 0, 3, tbuf, MAXBLKSZ);
     if (cnt >= 20)
     {
         split_cchhr(tbuf + 15, &cyl, &head, &rec);
@@ -2088,8 +2091,7 @@ static int pdosDoDIR(PDOS *pdos, char *parm)
         {
             int c, h, r;
             
-            cnt = rdblock(pdos->ipldev, cyl, head, rec, &dscb1,
-                          sizeof dscb1);
+            cnt = rdblock(dev, cyl, head, rec, &dscb1, sizeof dscb1);
             if (cnt < 0)
             {
                 errcnt++;

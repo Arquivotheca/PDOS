@@ -33,6 +33,7 @@ sleep 1
 
 rem when globally changing, change the DS3x0 to whatever
 rem and then change the next file
+rem also you will need to change pdptop.mac
 
 copy pdos380.cnf pdos.cnf
 

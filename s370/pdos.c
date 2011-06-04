@@ -2230,7 +2230,8 @@ static int pdosNewF(PDOS *pdos, char *parm)
     
     /* space starts on specified cylinder */
     memcpy(dscb1->startcchh, (char *)&datacyl + sizeof datacyl - 2, 2);
-    /* and ends on same cylinder */
+    /* and ends on the next cylinder (thus 2 cylinders per file) */
+    datacyl++;
     memcpy(dscb1->endcchh, (char *)&datacyl + sizeof datacyl - 2, 2);
     /* last head on that cylinder too */
     memcpy(dscb1->endcchh + 2, "\x00\x0e", 2);

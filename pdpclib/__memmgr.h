@@ -5,6 +5,44 @@
 /*                                                                   */
 /*********************************************************************/
 
+#if 0
+
+Example usage:
+
+MEMMGR memmgr; /* define an instance of the object */
+char *ptr; /* scratch pointer */
+
+
+memmgrDefaults(&memmgr); /* always called to set up object defaults */
+memmgrInit(&memmgr); /* Initialize object */
+memmgrSupply(&memmmgr, (void *)0x04100000, 32 * 1024 * 1024);
+  /* Supply the object with a buffer that starts at the 65 MB location
+     and is 32 MB in size. This can be called multiple times to give
+     memmgr multiple blocks of memory to manage */
+ptr = memmgrAllocate(&memmgr, 500, 0);
+  /* allocate 500 bytes of memory. 0 is an "optional" ID if you want
+     to group memory blocks. ptr will be NULL if memory couldn't be
+     obtained */
+memmgrFree(&memmgr, ptr); /* free memory associated with this
+                             pointer */
+memmgrTerm(&memmgr); /* Terminate object */
+
+
+Other functions:
+
+memmgrFreeID(&memmgr, 5); /* free all memory with an ID of 5 */
+printf("largest block of memory available is %d\n",
+       memmgrMaxSize(&memmgr));
+printf("total amount of available memory is %d\n",
+       memmgrTotSize(&memmgr));
+memmgrIntegrity(&memmgr); /* check any memory chain corruption */
+memmgrRealloc(&memmgr, ptr, 1000); /* resize the object to be 1000
+  bytes. Returns 0 if successful, negative if the request failed for
+  any reason. */
+
+#endif
+
+
 #ifndef MEMMGR_INCLUDED
 #define MEMMGR_INCLUDED
 

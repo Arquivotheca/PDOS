@@ -59,7 +59,7 @@
 /*                                                                   */
 /*  Registers are provided and loaded prior to execution of the      */
 /*  LPSW. The LPSW will refer to an address in low memory so that    */
-/*  no base register (ir R0) can be used.                            */
+/*  no base register (ie R0) can be used.                            */
 /*                                                                   */
 /*********************************************************************/
 
@@ -2840,7 +2840,7 @@ int main(int argc, char **argv)
            into account the last executing task, to decide
            which task to schedule next. As part of that, it
            will also mark the last task as "no longer executing" */
-        task  = getNextAvailTask();
+        task = getNextAvailTask();
         if (task == NULL)
         {
             /* suspend the computer until an interrupt occurs */

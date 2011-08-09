@@ -186,7 +186,7 @@ SUBPOOL  EQU   0                                                      *
          BL    *+8                Yes; else pointer
          L     R4,0(,R4)          Load C/370 MODE.  0=input 1=output
          SPACE 1
-         AIF   ('&SYS' NE 'S390').NOLOW
+         AIF   ('&ZSYS' NE 'S390').NOLOW
          GETMAIN R,LV=ZDCBLEN,SP=SUBPOOL,LOC=BELOW
          AGO   .FINLOW
 .NOLOW   GETMAIN R,LV=ZDCBLEN,SP=SUBPOOL
@@ -321,7 +321,7 @@ OPREPJFC LA    R14,JFCB
          ST    R14,DCBXLST+4
          LA    R14,OCDCBEX        POINT TO DCB EXIT
 * Both S380 and S390 operate in 31-bit mode so need a stub
-         AIF   ('&SYS' EQ 'S370').NODP24
+         AIF   ('&ZSYS' EQ 'S370').NODP24
          ST    R14,DOPE31         Address of 31-bit exit
          OI    DOPE31,X'80'       Set high bit = AMODE 31
          MVC   DOPE24,DOPEX24     Move in stub code
@@ -790,7 +790,7 @@ OCDCBXX  STH   R3,DCBBLKSI   UPDATE POSSIBLY CHANGED BLOCK SIZE
          ST    R3,BLKSIZE    UPDATE POSSIBLY CHANGED BLOCK SIZE
          ST    R4,LRECL        AND RECORD LENGTH
          MVC   ZRECFM,DCBRECFM    DITTO
-         AIF   ('&SYS' EQ 'S370').NOOPSW
+         AIF   ('&ZSYS' EQ 'S370').NOOPSW
          BSM   R0,R14
          AGO   .OPNRET
 .NOOPSW  ANOP  ,
@@ -799,7 +799,7 @@ OCDCBXX  STH   R3,DCBBLKSI   UPDATE POSSIBLY CHANGED BLOCK SIZE
          POP   USING
          SPACE 2
 *
-         AIF   ('&SYS' EQ 'S370').NODOP24
+         AIF   ('&ZSYS' EQ 'S370').NODOP24
 ***********************************************************************
 *                                                                     *
 *    OPEN DCB EXIT - 24 bit stub                                      *
@@ -1381,7 +1381,7 @@ NOPOOL   DS    0H
 *---------------------------------------------------------------------*
 TRUNCOUT B     *+14-TRUNCOUT(,R15)   SKIP LABEL
          DC    AL1(9),CL(9)'TRUNCOUT' EXPAND LABEL
-         AIF   ('&SYS' NE 'S380').NOTRUBS
+         AIF   ('&ZSYS' NE 'S380').NOTRUBS
          BSM   R14,R0             PRESERVE AMODE
 .NOTRUBS STM   R14,R12,12(R13)    SAVE CALLER'S REGISTERS
          LR    R12,R15
@@ -1474,7 +1474,7 @@ TRUNCOEX L     R13,4(,R13)
          A     R3,=A(8+(64-1))    OVERHEAD PLUS ROUNDING
          N     R3,=X'FFFFFFC0'    MULTIPLE OF 64
 *
-         AIF   ('&SYS' NE 'S380').NOANY
+         AIF   ('&ZSYS' NE 'S380').NOANY
          GETMAIN RU,LV=(R3),SP=SUBPOOL,LOC=ANY
          AGO   .FINANY
 .NOANY   ANOP  ,
@@ -2072,7 +2072,7 @@ RETURN99 DS    0H
 * S/370 doesn't support switching modes so this code is useless,
 * and won't compile anyway because "BSM" is not known.
 *
-         AIF   ('&SYS' EQ 'S370').NOMODE  If S/370 we can't switch mode
+         AIF   ('&ZSYS' EQ 'S370').NOMODE If S/370 we can't switch mode
          PUSH  USING
          DROP  ,
 ***********************************************************************
@@ -2197,7 +2197,7 @@ ZGETLINE GETLINE MF=L             TWO WORD GTPB
 OPENCLOS DS    A                  OPEN/CLOSE parameter list
 DCBXLST  DS    2A                 07 JFCB / 85 DCB EXIT
 EOFR24   DS    CL(EOFRLEN)
-         AIF   ('&SYS' EQ 'S370').NOD24  If S/370, no 24-bit OPEN exit
+         AIF   ('&ZSYS' EQ 'S370').NOD24  If S/370, no 24-bit OPEN exit
          DS    0H
 DOPE24   DS    CL(DOPELEN)        DCB open 24-bit code
 DOPE31   DS    A                  Address of DCB open exit

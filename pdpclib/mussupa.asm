@@ -117,7 +117,7 @@ SUBPOOL  EQU   0
          L     R9,24(,R1)         R9 POINTS TO MEMBER NAME (OF PDS)
          LA    R9,0(,R9)          Strip off high-order bit or byte
 *
-         AIF   ('&SYS' EQ 'S390').BELOW
+         AIF   ('&ZSYS' EQ 'S390').BELOW
 * CAN'T USE "BELOW" ON MVS 3.8
          GETMAIN R,LV=ZDCBLEN,SP=SUBPOOL
          AGO   .CHKBLWE
@@ -199,7 +199,7 @@ WNOMEM   DS    0H
 *
 * S/370 can't handle LOC=BELOW
 *
-         AIF   ('&SYS' NE 'S370').MVT8090  If not S/370 then 380 or 390
+         AIF   ('&ZSYS' NE 'S370').MVT8090  If not S/370 then 380 or 390
          GETMAIN R,LV=(R6),SP=SUBPOOL  No LOC= for S/370
          AGO   .GETOENE
 .MVT8090 ANOP  ,                  S/380 or S/390
@@ -291,10 +291,10 @@ OUTDCBLN EQU   *-OUTDCB
          LR    R12,R15
          USING @@AREAD,R12
          LR    R11,R1
-         AIF ('&SYS' EQ 'S370').NOMOD1
+         AIF ('&ZSYS' EQ 'S370').NOMOD1
          CALL  @@SETM24
 .NOMOD1  ANOP
-*         AIF   ('&SYS' NE 'S370').BELOW1
+*         AIF   ('&ZSYS' NE 'S370').BELOW1
 * CAN'T USE "BELOW" ON MVS 3.8
 *         GETMAIN R,LV=WORKLEN,SP=SUBPOOL
 *         AGO   .NOBEL1
@@ -325,7 +325,7 @@ RETURNAR DS    0H
          L     R13,SAVEAREA+4
          LR    R7,R15
 *        FREEMAIN RU,LV=WORKLEN,A=(R1),SP=SUBPOOL
-         AIF ('&SYS' EQ 'S370').NOMOD2
+         AIF ('&ZSYS' EQ 'S370').NOMOD2
          CALL  @@SETM31
 .NOMOD2  ANOP
          ST    R5,0(R4)         Tell caller the length read
@@ -356,7 +356,7 @@ RETURNAR DS    0H
          LR    R13,R1
 *        USING WORKAREA,R13
 *
-         AIF   ('&SYS' NE 'S380').N380WR1
+         AIF   ('&ZSYS' NE 'S380').N380WR1
          CALL  @@SETM24
 .N380WR1 ANOP
 *
@@ -374,7 +374,7 @@ RETURNAR DS    0H
          ST    R1,0(R3)
 .NLM3    ANOP
 *
-         AIF   ('&SYS' NE 'S380').N380WR2
+         AIF   ('&ZSYS' NE 'S380').N380WR2
          CALL  @@SETM31
 .N380WR2 ANOP
 *
@@ -395,7 +395,7 @@ RETURNAR DS    0H
          LR    R12,R15
          USING @@ACLOSE,R12
          LR    R11,R1
-         AIF   ('&SYS' EQ 'S390').BELOW3
+         AIF   ('&ZSYS' EQ 'S390').BELOW3
 * CAN'T USE "BELOW" ON MVS 3.8
          GETMAIN R,LV=WORKLEN,SP=SUBPOOL
          AGO   .NOBEL3
@@ -470,7 +470,7 @@ CLOSEMLN EQU   *-CLOSEMAC
          A     R3,=A(64-1)
          N     R3,=X'FFFFFFC0'
 *
-         AIF   ('&SYS' NE 'S380').N380GM1
+         AIF   ('&ZSYS' NE 'S380').N380GM1
 *         GETMAIN RU,LV=(R3),SP=SUBPOOL,LOC=ANY
 * Hardcode the ATL memory area provided by latest MUSIC.
 * Note that this function will only work if the C library
@@ -508,7 +508,7 @@ RETURNGM DS    0H
          S     R2,=F'8'
          L     R3,0(,R2)
 *
-         AIF   ('&SYS' NE 'S380').N380FM1
+         AIF   ('&ZSYS' NE 'S380').N380FM1
 * On S/380, nothing to free - using preallocated memory block
 *         FREEMAIN RU,LV=(R3),A=(R2),SP=SUBPOOL
          AGO   .N380FM2
@@ -747,7 +747,7 @@ RETURN99 DS    0H
 * S/370 doesn't support switching modes so this code is useless,
 * and won't compile anyway because "BSM" is not known.
 *
-         AIF   ('&SYS' EQ 'S370').NOMODE  If S/370 we can't switch mode
+         AIF   ('&ZSYS' EQ 'S370').NOMODE  If S/370 we can't switch mode
 ***********************************************************************
 *
 *  SETM24 - Set AMODE to 24

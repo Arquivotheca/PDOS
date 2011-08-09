@@ -152,7 +152,7 @@ R15      EQU   15
          USING @@AOPEN,R12
          LR    R11,R1
          L     R0,=A(ZDCBLEN)
-         AIF   ('&SYS' EQ 'S390').BELOW
+         AIF   ('&ZSYS' EQ 'S390').BELOW
 * USE DEFAULT LOC=RES for S/370 and S/380
          GETVIS
          AGO   .CHKBLWE
@@ -426,7 +426,7 @@ DONEOPEN DS    0H
 *
 * S/370 can't handle LOC=BELOW
 *
-         AIF   ('&SYS' EQ 'S390').MVT8090  If not 390
+         AIF   ('&ZSYS' EQ 'S390').MVT8090  If not 390
          GETVIS LENGTH=(R6)  Use default LOC=RES for S/370 and S/380
          AGO   .GETOENE
 .MVT8090 ANOP  ,                  S/390
@@ -500,7 +500,7 @@ RETURNOP DS    0H
          USING @@AREAD,R12
          LR    R11,R1
 *
-         AIF ('&SYS' EQ 'S370').NOMOD1
+         AIF ('&ZSYS' EQ 'S370').NOMOD1
          CALL  @@SETM24
 .NOMOD1  ANOP
 *
@@ -582,7 +582,7 @@ RETURNAR DS    0H
          LR    R1,R13
          L     R13,SAVEAREA+4
 *
-         AIF ('&SYS' EQ 'S370').NOMOD2
+         AIF ('&ZSYS' EQ 'S370').NOMOD2
          LR    R7,R15            Preserve R15 over call
          CALL  @@SETM31
          LR    R15,R7
@@ -613,7 +613,7 @@ RETURNAR DS    0H
          USING @@AWRITE,R12
          LR    R11,R1             SAVE
 *
-         AIF   ('&SYS' NE 'S380').N380WR1
+         AIF   ('&ZSYS' NE 'S380').N380WR1
          CALL  @@SETM24
 .N380WR1 ANOP
 *
@@ -652,7 +652,7 @@ GDIW     DS    0H
 *
 DONEPUT  DS    0H
 *
-         AIF   ('&SYS' NE 'S380').N380WR2
+         AIF   ('&ZSYS' NE 'S380').N380WR2
          CALL  @@SETM31
 .N380WR2 ANOP
 *
@@ -679,7 +679,7 @@ WRMOVE   MVC   IO1+1(0),0(R3)    +++ hardcode IO1
 *
 * The CLOSE appears to be abending when called in 31-bit mode,
 * despite it being an SVC. So we need to switch to 24-bit mode
-         AIF   ('&SYS' NE 'S380').N380CL1
+         AIF   ('&ZSYS' NE 'S380').N380CL1
          CALL  @@SETM24
 .N380CL1 ANOP
 *
@@ -742,7 +742,7 @@ RETURNAC DS    0H
          L     R0,=A(ZDCBLEN)
          FREEVIS
 *
-         AIF   ('&SYS' NE 'S380').N380CL2
+         AIF   ('&ZSYS' NE 'S380').N380CL2
          CALL  @@SETM31
 .N380CL2 ANOP
 *
@@ -835,7 +835,7 @@ WORKO1   DS    CL32767
          A     R3,=A(64-1)
          N     R3,=X'FFFFFFC0'
 *
-         AIF   ('&SYS' NE 'S380').N380GM1
+         AIF   ('&ZSYS' NE 'S380').N380GM1
 *
 * When in 380 mode, we need to keep the program below the
 * line, but we have the ability to use storage above the
@@ -1225,7 +1225,7 @@ NOEOF    DS        0H
 * S/370 doesn't support switching modes so this code is useless,
 * and won't compile anyway because "BSM" is not known.
 *
-         AIF   ('&SYS' EQ 'S370').NOMODE  If S/370 we can't switch mode
+         AIF   ('&ZSYS' EQ 'S370').NOMODE  If S/370 we can't switch mode
 ***********************************************************************
 *                                                                     *
 *  SETM24 - Set AMODE to 24                                           *

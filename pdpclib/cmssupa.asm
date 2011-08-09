@@ -99,7 +99,7 @@ SUBPOOL  EQU   0
 *         L     R9,24(,R1)         R9 POINTS TO MEMBER NAME (OF PDS)
 *         LA    R9,00(,R9)         Strip off high-order bit or byte
 *
-         AIF   ('&SYS' EQ 'S390').BELOW
+         AIF   ('&ZSYS' EQ 'S390').BELOW
 * CAN'T USE "BELOW" ON MVS 3.8
          GETMAIN R,LV=ZDCBLEN,SP=SUBPOOL
          AGO   .CHKBLWE
@@ -191,7 +191,7 @@ WNOMEM   DS    0H
 *
 * S/370 can't handle LOC=BELOW
 *
-         AIF   ('&SYS' NE 'S370').MVT8090  If not S/370 then 380 or 390
+         AIF   ('&ZSYS' NE 'S370').MVT8090 If not S/370 then 380 or 390
          GETMAIN R,LV=(R6),SP=SUBPOOL  No LOC= for S/370
          AGO   .GETOENE
 .MVT8090 ANOP  ,                  S/380 or S/390
@@ -286,10 +286,10 @@ OUTDCBLN EQU   *-OUTDCB
          LR    R12,R15
          USING @@AREAD,R12
          LR    R11,R1
-         AIF ('&SYS' EQ 'S370').NOMOD1
+         AIF ('&ZSYS' EQ 'S370').NOMOD1
          CALL  @@SETM24
 .NOMOD1  ANOP
-*         AIF   ('&SYS' NE 'S370').BELOW1
+*         AIF   ('&ZSYS' NE 'S370').BELOW1
 * CAN'T USE "BELOW" ON MVS 3.8
 *         GETMAIN R,LV=WORKLEN,SP=SUBPOOL
 *         AGO   .NOBEL1
@@ -320,7 +320,7 @@ RETURNAR DS    0H
          L     R13,SAVEAREA+4
          LR    R7,R15
 *        FREEMAIN R,LV=WORKLEN,A=(R1),SP=SUBPOOL
-         AIF ('&SYS' EQ 'S370').NOMOD2
+         AIF ('&ZSYS' EQ 'S370').NOMOD2
          CALL  @@SETM31
 .NOMOD2  ANOP
          ST    R5,0(R4)         Tell caller the length read
@@ -347,7 +347,7 @@ RETURNAR DS    0H
          STH   R4,DCBLRECL      store length to write
          L     R3,4(R1)         R3 POINTS TO BUF POINTER
 *
-         AIF ('&SYS' EQ 'S370').NOMOD3
+         AIF ('&ZSYS' EQ 'S370').NOMOD3
          CALL  @@SETM24
 .NOMOD3  ANOP
          LA    R1,SAVEADCB
@@ -368,7 +368,7 @@ RETURNAR DS    0H
          AIF   ('&OUTM' NE 'L').NLM3
          ST    R1,0(R3)
 .NLM3    ANOP
-         AIF ('&SYS' EQ 'S370').NOMOD4
+         AIF ('&ZSYS' EQ 'S370').NOMOD4
          CALL  @@SETM31
 .NOMOD4  ANOP
          LA    R15,0
@@ -394,7 +394,7 @@ RETURNAW DS    0H
          LR    R12,R15
          USING @@ACLOSE,R12
          LR    R11,R1
-         AIF   ('&SYS' EQ 'S390').BELOW3
+         AIF   ('&ZSYS' EQ 'S390').BELOW3
 * CAN'T USE "BELOW" ON MVS 3.8
          GETMAIN R,LV=WORKLEN,SP=SUBPOOL
          AGO   .NOBEL3
@@ -466,7 +466,7 @@ CLOSEMLN EQU   *-CLOSEMAC
 * for this program to reside below the line. As such,
 * we need to use LOC=ANY to get ATL memory.
 *
-         AIF   ('&SYS' NE 'S370').ANYCHKY
+         AIF   ('&ZSYS' NE 'S370').ANYCHKY
 * CAN'T USE "ANY" ON MVS 3.8
          GETMAIN R,LV=(R3),SP=SUBPOOL
          AGO   .ANYCHKE
@@ -502,7 +502,7 @@ RETURNGM DS    0H
          L     R2,0(R1)
          S     R2,=F'8'
          L     R3,0(R2)
-         AIF   ('&SYS' EQ 'S370').F370
+         AIF   ('&ZSYS' EQ 'S370').F370
          FREEMAIN RU,LV=(R3),A=(R2),SP=SUBPOOL
          AGO   .FINFREE
 .F370    ANOP
@@ -537,7 +537,7 @@ RETURNFM DS    0H
          LR    R12,R15
          USING @@SVC202,R12
          LR    R11,R1           NEED TO RESTORE R1 FOR C
-         AIF ('&SYS' NE 'S380').NOMODS1
+         AIF ('&ZSYS' NE 'S380').NOMODS1
          CALL  @@SETM24
 .NOMODS1 ANOP
          L     R3,0(R1)         R3 POINTS TO SVC202 PARM LIST
@@ -547,7 +547,7 @@ RETURNFM DS    0H
          ST    R6,0(R5)         AND SAVE IN RETURN CODE
          LR    R1,R3
 *
-         AIF   ('&SYS' EQ 'S390').DOCALL
+         AIF   ('&ZSYS' EQ 'S390').DOCALL
          SVC   202              ISSUE COMMAND
          DC    AL4(SV202ER)     ERROR
          AGO   .FINCALL
@@ -557,7 +557,7 @@ RETURNFM DS    0H
 *
 SV202RT  EQU    *
          LR    R7,R15
-         AIF ('&SYS' NE 'S380').NOMODS2
+         AIF ('&ZSYS' NE 'S380').NOMODS2
          CALL  @@SETM31
 .NOMODS2 ANOP
          LR    R15,R7
@@ -716,7 +716,7 @@ RETURNGC DS    0H
 * S/370 doesn't support switching modes so this code is useless,
 * and won't compile anyway because "BSM" is not known.
 *
-         AIF   ('&SYS' EQ 'S370').NOMODE2 If S/370 we can't switch mode
+         AIF   ('&ZSYS' EQ 'S370').NOMODE2 If S/370 can't switch mode
 **********************************************************************
 *                                                                    *
 *  SETM24 - Set AMODE to 24                                          *

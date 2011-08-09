@@ -101,7 +101,7 @@ CONTPARM DS    0H
 * Set R4 to true if we were called in 31-bit mode
 *
          LA    R4,0
-         AIF   ('&SYS' EQ 'S370').NOBSM
+         AIF   ('&ZSYS' EQ 'S370').NOBSM
          BSM   R4,R0
 .NOBSM   ANOP
          ST    R4,SAVER4
@@ -112,7 +112,7 @@ CONTPARM DS    0H
 *
          LA    R1,PARMLIST
 *
-         AIF   ('&SYS' NE 'S380').N380ST1
+         AIF   ('&ZSYS' NE 'S380').N380ST1
 * If we were called in AMODE 31, don't bother setting mode now
          LTR   R4,R4
          BNZ   IN31
@@ -123,7 +123,7 @@ IN31     DS    0H
          CALL  @@START
          LR    R9,R15
 *
-         AIF   ('&SYS' NE 'S380').N380ST2
+         AIF   ('&ZSYS' NE 'S380').N380ST2
 * If we were called in AMODE 31, don't switch back to 24-bit
          LTR   R4,R4
          BNZ   IN31B
@@ -160,7 +160,7 @@ SAVER13  DS    F
          L     R13,=A(SAVER13)
          L     R13,0(R13)
 *
-         AIF   ('&SYS' NE 'S380').N380ST3
+         AIF   ('&ZSYS' NE 'S380').N380ST3
          L     R4,=A(SAVER4)
          L     R4,0(R4)
 * If we were called in AMODE 31, don't switch back to 24-bit

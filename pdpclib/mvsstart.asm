@@ -99,7 +99,7 @@ CEESTART EQU   *
 *
          LA    R1,PARMLIST
 *
-         AIF   ('&SYS' NE 'S380').N380ST1
+         AIF   ('&ZSYS' NE 'S380').N380ST1
 *
 * Set R4 to true if we were called in 31-bit mode
 *
@@ -115,7 +115,7 @@ IN31     DS    0H
 *
          CALL  @@START
 *
-         AIF   ('&SYS' NE 'S380').N380ST2
+         AIF   ('&ZSYS' NE 'S380').N380ST2
 * If we were called in AMODE 31, don't switch back to 24-bit
          LTR   R4,R4
          BNZ   IN31B
@@ -145,7 +145,7 @@ SAVER13  DS    F
          L     R13,=A(SAVER13)
          L     R13,0(R13)
 *
-         AIF   ('&SYS' NE 'S380').N380ST3
+         AIF   ('&ZSYS' NE 'S380').N380ST3
          L     R4,=A(SAVER4)
          L     R4,0(R4)
 * If we were called in AMODE 31, don't switch back to 24-bit

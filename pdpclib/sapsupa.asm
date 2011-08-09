@@ -216,10 +216,10 @@ OUTDCBLN EQU   *-OUTDCB
          LR    R12,R15
          USING @@AREAD,R12
          LR    R11,R1
-         AIF ('&SYS' EQ 'S370').NOMOD1
+         AIF ('&ZSYS' EQ 'S370').NOMOD1
          CALL  @@SETM24
 .NOMOD1  ANOP
-*         AIF   ('&SYS' NE 'S370').BELOW1
+*         AIF   ('&ZSYS' NE 'S370').BELOW1
 * CAN'T USE "BELOW" ON MVS 3.8
 *         GETMAIN R,LV=WORKLEN,SP=SUBPOOL
 *         AGO   .NOBEL1
@@ -250,7 +250,7 @@ RETURNAR DS    0H
          L     R13,SAVEAREA+4
          LR    R7,R15
 *        FREEMAIN RU,LV=WORKLEN,A=(R1),SP=SUBPOOL
-         AIF ('&SYS' EQ 'S370').NOMOD2
+         AIF ('&ZSYS' EQ 'S370').NOMOD2
          CALL  @@SETM31
 .NOMOD2  ANOP
          ST    R5,0(R4)         Tell caller the length read
@@ -284,7 +284,7 @@ RETURNAR DS    0H
          LR    R13,R1
 *        USING WORKAREA,R13
 *
-         AIF   ('&SYS' NE 'S380').N380WR1
+         AIF   ('&ZSYS' NE 'S380').N380WR1
 *         CALL  @@SETM24
 .N380WR1 ANOP
 *
@@ -324,7 +324,7 @@ DONEDIAG DS    0H
          ST    R1,0(R6)
 .NLM3    ANOP
 *
-         AIF   ('&SYS' NE 'S380').N380WR2
+         AIF   ('&ZSYS' NE 'S380').N380WR2
 *         CALL  @@SETM31
 .N380WR2 ANOP
 *
@@ -608,7 +608,7 @@ SYSTEMLN EQU   *-SYSTMWRK    LENGTH OF DYNAMIC STORAGE
          LA    R7,1
 NOSPACE  DS    0H
 NOCRREQ  DS    0H
-         AIF   ('&SYS' EQ 'S390').CHN390G
+         AIF   ('&ZSYS' EQ 'S390').CHN390G
          STCM  R2,B'0111',CCHAIN+1   This requires BTL buffer
          STH   R7,CCHAIN+6     Store length in WRITE CCW
          AGO   .CHN390H
@@ -628,7 +628,7 @@ NOCRREQ  DS    0H
          ST    R3,FLCCAW    Store in CAW
 *
 *
-         AIF   ('&SYS' EQ 'S390').SIO31M
+         AIF   ('&ZSYS' EQ 'S390').SIO31M
          SIO   0(R10)
 *         TIO   0(R10)
          AGO   .SIO24M
@@ -646,7 +646,7 @@ NOCRREQ  DS    0H
          LPSW  CWAITNER     Wait for an interrupt
          DC    H'0'
 CCONT    DS    0H           Interrupt will automatically come here
-         AIF   ('&SYS' EQ 'S390').SIO31N
+         AIF   ('&ZSYS' EQ 'S390').SIO31N
          SH    R7,FLCCSW+6  Subtract residual count to get bytes read
          LR    R15,R7
 * After a successful CCW chain, CSW should be pointing to end
@@ -666,7 +666,7 @@ CALLFIN  DS    0H
          LTORG
 *
 *
-         AIF   ('&SYS' NE 'S390').NOT390P
+         AIF   ('&ZSYS' NE 'S390').NOT390P
          DS    0F
 CIRB     DS    24F
 CORB     DS    0F
@@ -678,7 +678,7 @@ CORB     DS    0F
 *
 *
          DS    0D
-         AIF   ('&SYS' EQ 'S390').CHN390I
+         AIF   ('&ZSYS' EQ 'S390').CHN390I
 * X'09' = write with automatic carriage return
 CCHAIN   CCW   X'09',0,X'20',0    20 = ignore length issues
          AGO   .CHN390J
@@ -690,7 +690,7 @@ CFINCHN  EQU   *
 CWAITNER DC    X'060E0000'  I/O, machine check, EC, wait, DAT on
          DC    X'00000000'  no error
 CNEWIO   DC    X'000C0000'  machine check, EC, DAT off
-         AIF   ('&SYS' EQ 'S370').MOD24Q
+         AIF   ('&ZSYS' EQ 'S370').MOD24Q
          DC    A(X'80000000'+CCONT)  continuation after I/O request
          AGO   .MOD31Q
 .MOD24Q  ANOP
@@ -722,7 +722,7 @@ CNEWIO   DC    X'000C0000'  machine check, EC, DAT off
          L     R10,0(R10)
          L     R7,0(R1)        Bytes to read
          L     R2,4(R1)        Buffer to read into
-         AIF   ('&SYS' EQ 'S390').CRD390G
+         AIF   ('&ZSYS' EQ 'S390').CRD390G
          STCM  R2,B'0111',CRDCHN+1   This requires BTL buffer
          STH   R7,CRDCHN+6     Store length in READ CCW
          AGO   .CRD390H
@@ -742,7 +742,7 @@ CNEWIO   DC    X'000C0000'  machine check, EC, DAT off
          ST    R3,FLCCAW    Store in CAW
 *
 *
-         AIF   ('&SYS' EQ 'S390').CRD31M
+         AIF   ('&ZSYS' EQ 'S390').CRD31M
          SIO   0(R10)
 *         TIO   0(R10)
          AGO   .CRD24M
@@ -760,7 +760,7 @@ CNEWIO   DC    X'000C0000'  machine check, EC, DAT off
          LPSW  CRWTNER      Wait for an interrupt
          DC    H'0'
 CRCONT   DS    0H           Interrupt will automatically come here
-         AIF   ('&SYS' EQ 'S390').CRD31N
+         AIF   ('&ZSYS' EQ 'S390').CRD31N
          SH    R7,FLCCSW+6  Subtract residual count to get bytes read
          LR    R15,R7
 * After a successful CCW chain, CSW should be pointing to end
@@ -780,7 +780,7 @@ CRALLFIN DS    0H
          LTORG
 *
 *
-         AIF   ('&SYS' NE 'S390').CRD390P
+         AIF   ('&ZSYS' NE 'S390').CRD390P
          DS    0F
 CRIRB    DS    24F
 CRORB    DS    0F
@@ -792,7 +792,7 @@ CRORB    DS    0F
 *
 *
          DS    0D
-         AIF   ('&SYS' EQ 'S390').CRD390I
+         AIF   ('&ZSYS' EQ 'S390').CRD390I
 * X'0A' = read inquiry
 CRDCHN   CCW   X'0A',0,X'20',0    20 = ignore length issues
          AGO   .CRD390J
@@ -804,7 +804,7 @@ CRDFCHN  EQU   *
 CRWTNER  DC    X'060E0000'  I/O, machine check, EC, wait, DAT on
          DC    X'00000000'  no error
 CRNEWIO  DC    X'000C0000'  machine check, EC, DAT off
-         AIF   ('&SYS' EQ 'S370').CRD24Q
+         AIF   ('&ZSYS' EQ 'S370').CRD24Q
          DC    A(X'80000000'+CRCONT)  continuation after I/O request
          AGO   .CRD31Q
 .CRD24Q  ANOP
@@ -898,7 +898,7 @@ RETURN99 DS    0H
 * S/370 doesn't support switching modes so this code is useless,
 * and won't compile anyway because "BSM" is not known.
 *
-         AIF   ('&SYS' EQ 'S370').NOMODE  If S/370 we can't switch mode
+         AIF   ('&ZSYS' EQ 'S370').NOMODE If S/370 we can't switch mode
 ***********************************************************************
 *
 *  SETM24 - Set AMODE to 24

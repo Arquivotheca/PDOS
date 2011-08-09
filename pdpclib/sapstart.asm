@@ -46,7 +46,7 @@ ENTSTRT  EQU   2048         Create a predictable usable entry point
 *
 ORIGIN   DS    0D
          DC    X'000C0000'  EC mode + Machine Check enabled
-         AIF   ('&SYS' EQ 'S370').MOD24A
+         AIF   ('&ZSYS' EQ 'S370').MOD24A
          DC    A(X'80000000'+POSTIPL)
          AGO   .MOD31A
 .MOD24A  ANOP
@@ -89,7 +89,7 @@ POSTIPL  DS    0H
          L     R5,=A(CHUNKSZ) Current address
          LA    R6,1         R6 = head
          LA    R7,2         R7 = record
-         AIF   ('&SYS' EQ 'S390').SIO31A
+         AIF   ('&ZSYS' EQ 'S390').SIO31A
          SIO   0(R10)
          AGO   .SIO24A
 .SIO31A  ANOP
@@ -105,7 +105,7 @@ POSTIPL  DS    0H
 *
 *
 *
-         AIF   ('&SYS' NE 'S390').NOT390A
+         AIF   ('&ZSYS' NE 'S390').NOT390A
          DS    0F
 ALLIOINT DC    X'FF000000'
 IRB      DS    24F
@@ -122,7 +122,7 @@ ORB      DS    0F
 WAITNOER DC    X'020E0000'  I/O, machine check, EC, wait
          DC    X'00000000'  no error
 NEWIO    DC    X'000C0000'  machine check enabled + EC
-         AIF   ('&SYS' EQ 'S370').MOD24B
+         AIF   ('&ZSYS' EQ 'S370').MOD24B
          DC    A(X'80000000'+STAGE2)
          AGO   .MOD31B
 .MOD24B  ANOP
@@ -166,7 +166,7 @@ INRANGE  DS    0H
 * set maximum.
          C     R4,=A(MAXBLKS)  R4=Maximum blocks to read
          BH    STAGE3
-         AIF   ('&SYS' EQ 'S390').SIO31B
+         AIF   ('&ZSYS' EQ 'S390').SIO31B
          SIO   0(R10)       Read next block
          AGO   .SIO24B
 .SIO31B  ANOP
@@ -180,7 +180,7 @@ STAGE3   DS    0H
          LPSW  ST4PSW
          DS    0D
 ST4PSW   DC    X'000C0000'  EC mode + Machine Check enabled
-         AIF   ('&SYS' EQ 'S370').MOD24C
+         AIF   ('&ZSYS' EQ 'S370').MOD24C
          DC    A(X'80000000'+STAGE4)
          AGO   .MOD31C
 .MOD24C  ANOP
@@ -292,7 +292,7 @@ FEN1     EQU   *
          LA    R5,SAVEAREA
          ST    R5,SAVER13
 *
-         AIF   ('&SYS' NE 'S380').N380ST1
+         AIF   ('&ZSYS' NE 'S380').N380ST1
 *
 * Set R4 to true if we were called in 31-bit mode
 *
@@ -308,7 +308,7 @@ IN31     DS    0H
 *
          CALL  @@START
 *
-         AIF   ('&SYS' NE 'S380').N380ST2
+         AIF   ('&ZSYS' NE 'S380').N380ST2
 * If we were called in AMODE 31, don't switch back to 24-bit
          LTR   R4,R4
          BNZ   IN31B
@@ -337,7 +337,7 @@ SAVER13  DC    F'0'
          L     R13,=A(SAVER13)
          L     R13,0(R13)
 *
-         AIF   ('&SYS' NE 'S380').N380ST3
+         AIF   ('&ZSYS' NE 'S380').N380ST3
          L     R4,=A(SAVER4)
          L     R4,0(R4)
 * If we were called in AMODE 31, don't switch back to 24-bit

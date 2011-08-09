@@ -46,7 +46,7 @@ INITSYS  DS    0H
          MVC   FLCPNPSW(8),WAITER3
 *
 * Prepare CR6 for interrupts
-         AIF   ('&SYS' NE 'S390').SIO24A
+         AIF   ('&ZSYS' NE 'S390').SIO24A
          LCTL  6,6,ALLIOINT CR6 needs to enable all interrupts
 .SIO24A  ANOP
 *
@@ -63,7 +63,7 @@ INITSYS  DS    0H
 *
 *
 *
-         AIF   ('&SYS' NE 'S390').NOT390A
+         AIF   ('&ZSYS' NE 'S390').NOT390A
          DS    0F
 ALLIOINT DC    X'FF000000'
 .NOT390A ANOP
@@ -118,7 +118,7 @@ RDBLOCK  DS    0H
 * and check for a 0 return, and if so, do a BNZ.
 *         LRA   R2,0(R2)     Get real address
          L     R7,20(R1)    Bytes to read
-         AIF   ('&SYS' EQ 'S390').CHN390B
+         AIF   ('&ZSYS' EQ 'S390').CHN390B
          STCM  R2,B'0111',LOADCCW+1   This requires BTL buffer
          STH   R7,LOADCCW+6  Store in READ CCW
          AGO   .CHN390C
@@ -138,7 +138,7 @@ RDBLOCK  DS    0H
          ST    R3,FLCCAW    Store in CAW
 *
 *
-         AIF   ('&SYS' EQ 'S390').SIO31B
+         AIF   ('&ZSYS' EQ 'S390').SIO31B
          SIO   0(R10)
 *         TIO   0(R10)
          AGO   .SIO24B
@@ -154,7 +154,7 @@ RDBLOCK  DS    0H
          LPSW  WAITNOER     Wait for an interrupt
          DC    H'0'
 CONT     DS    0H           Interrupt will automatically come here
-         AIF   ('&SYS' EQ 'S390').SIO31H
+         AIF   ('&ZSYS' EQ 'S390').SIO31H
          SH    R7,FLCCSW+6  Subtract residual count to get bytes read
          LR    R15,R7
 * After a successful CCW chain, CSW should be pointing to end
@@ -174,7 +174,7 @@ ALLFINE  DS    0H
          LTORG
 *
 *
-         AIF   ('&SYS' NE 'S390').NOT390B
+         AIF   ('&ZSYS' NE 'S390').NOT390B
          DS    0F
 IRB      DS    24F
 ORB      DS    0F
@@ -186,7 +186,7 @@ ORB      DS    0F
 *
 *
          DS    0D
-         AIF   ('&SYS' EQ 'S390').CHN390
+         AIF   ('&ZSYS' EQ 'S390').CHN390
 SEEK     CCW   7,BBCCHH,X'40',6       40 = chain command
 SEARCH   CCW   X'31',CCHHR,X'40',5    40 = chain command
          CCW   8,SEARCH,0,0
@@ -215,7 +215,7 @@ R        DS    C
 WAITNOER DC    X'060E0000'  I/O, machine check, EC, wait, DAT on
          DC    X'00000000'  no error
 NEWIO    DC    X'000C0000'  machine check, EC, DAT off
-         AIF   ('&SYS' EQ 'S370').MOD24
+         AIF   ('&ZSYS' EQ 'S370').MOD24
          DC    A(X'80000000'+CONT)  continuation after I/O request
          AGO   .MOD31
 .MOD24   ANOP

@@ -48,7 +48,7 @@ INITSYS  DS    0H
          MVC   SVCNPSW(8),NEWSVC
 *
 * Prepare CR6 for interrupts
-         AIF   ('&SYS' NE 'S390').SIO24A
+         AIF   ('&ZSYS' NE 'S390').SIO24A
          LCTL  6,6,ALLIOINT CR6 needs to enable all interrupts
 .SIO24A  ANOP
 *
@@ -65,7 +65,7 @@ INITSYS  DS    0H
          LTORG
 *
 *
-         AIF   ('&SYS' NE 'S390').NOT390A
+         AIF   ('&ZSYS' NE 'S390').NOT390A
          DS    0F
 ALLIOINT DC    X'FF000000'
 .NOT390A ANOP
@@ -81,7 +81,7 @@ WAITER2  DC    X'000E0000'  machine check, EC, wait
 WAITER3  DC    X'040E0000'  machine check, EC, wait, dat on
          DC    X'00000333'  error 333
 NEWSVC   DC    X'040C0000'  machine check, EC, DAT on
-         AIF   ('&SYS' EQ 'S370').MOD24B
+         AIF   ('&ZSYS' EQ 'S370').MOD24B
          DC    A(X'80000000'+GOTSVC)  SVC handler
          AGO   .MOD31B
 .MOD24B  ANOP
@@ -126,7 +126,7 @@ RDBLOCK  DS    0H
 * and check for a 0 return, and if so, do a BNZ.
 *         LRA   R2,0(R2)     Get real address
          L     R7,20(R1)    Bytes to read
-         AIF   ('&SYS' EQ 'S390').CHN390B
+         AIF   ('&ZSYS' EQ 'S390').CHN390B
          STCM  R2,B'0111',LOADCCW+1   This requires BTL buffer
          STH   R7,LOADCCW+6  Store in READ CCW
          AGO   .CHN390C
@@ -146,7 +146,7 @@ RDBLOCK  DS    0H
          ST    R3,FLCCAW    Store in CAW
 *
 *
-         AIF   ('&SYS' EQ 'S390').SIO31B
+         AIF   ('&ZSYS' EQ 'S390').SIO31B
          SIO   0(R10)
 *         TIO   0(R10)
          AGO   .SIO24B
@@ -162,7 +162,7 @@ RDBLOCK  DS    0H
          LPSW  WAITNOER     Wait for an interrupt
          DC    H'0'
 CONT     DS    0H           Interrupt will automatically come here
-         AIF   ('&SYS' EQ 'S390').SIO31H
+         AIF   ('&ZSYS' EQ 'S390').SIO31H
          SH    R7,FLCCSW+6  Subtract residual count to get bytes read
          LR    R15,R7
 * After a successful CCW chain, CSW should be pointing to end
@@ -182,7 +182,7 @@ ALLFINE  DS    0H
          LTORG
 *
 *
-         AIF   ('&SYS' NE 'S390').NOT390B
+         AIF   ('&ZSYS' NE 'S390').NOT390B
          DS    0F
 IRB      DS    24F
 ORB      DS    0F
@@ -194,7 +194,7 @@ ORB      DS    0F
 *
 *
          DS    0D
-         AIF   ('&SYS' EQ 'S390').CHN390
+         AIF   ('&ZSYS' EQ 'S390').CHN390
 SEEK     CCW   7,BBCCHH,X'40',6       40 = chain command
 SEARCH   CCW   X'31',CCHHR,X'40',5    40 = chain command
          CCW   8,SEARCH,0,0
@@ -223,7 +223,7 @@ R        DS    C
 WAITNOER DC    X'060E0000'  I/O, machine check, EC, wait, DAT on
          DC    X'00000000'  no error
 NEWIO    DC    X'000C0000'  machine check, EC, DAT off
-         AIF   ('&SYS' EQ 'S370').MOD24
+         AIF   ('&ZSYS' EQ 'S370').MOD24
          DC    A(X'80000000'+CONT)  continuation after I/O request
          AGO   .MOD31
 .MOD24   ANOP
@@ -280,7 +280,7 @@ WRBLOCK  DS    0H
 * and check for a 0 return, and if so, do a BNZ.
 *         LRA   R2,0(R2)     Get real address
          L     R7,20(R1)    Bytes to read
-         AIF   ('&SYS' EQ 'S390').WR390B
+         AIF   ('&ZSYS' EQ 'S390').WR390B
          STCM  R2,B'0111',WRLDCCW+1   This requires BTL buffer
          STH   R7,WRLDCCW+6  Store in WRITE CCW
          AGO   .WR390C
@@ -300,7 +300,7 @@ WRBLOCK  DS    0H
          ST    R3,FLCCAW    Store in CAW
 *
 *
-         AIF   ('&SYS' EQ 'S390').WR31B
+         AIF   ('&ZSYS' EQ 'S390').WR31B
          SIO   0(R10)
 *         TIO   0(R10)
          AGO   .WR24B
@@ -316,7 +316,7 @@ WRBLOCK  DS    0H
          LPSW  WRWTNOER     Wait for an interrupt
          DC    H'0'
 WRCONT   DS    0H           Interrupt will automatically come here
-         AIF   ('&SYS' EQ 'S390').WR31H
+         AIF   ('&ZSYS' EQ 'S390').WR31H
          SH    R7,FLCCSW+6  Subtract residual count to get bytes read
          LR    R15,R7
 * After a successful CCW chain, CSW should be pointing to end
@@ -336,7 +336,7 @@ WRALLFIN DS    0H
          LTORG
 *
 *
-         AIF   ('&SYS' NE 'S390').WR390G
+         AIF   ('&ZSYS' NE 'S390').WR390G
          DS    0F
 WRIRB    DS    24F
 WRORB    DS    0F
@@ -348,7 +348,7 @@ WRORB    DS    0F
 *
 *
          DS    0D
-         AIF   ('&SYS' EQ 'S390').WR390
+         AIF   ('&ZSYS' EQ 'S390').WR390
 WRSEEK   CCW   7,WRBBCCHH,X'40',6       40 = chain command
 WRSRCH   CCW   X'31',WRCCHHR,X'40',5    40 = chain command
          CCW   8,WRSRCH,0,0
@@ -377,7 +377,7 @@ WRR      DS    C
 WRWTNOER DC    X'060E0000'  I/O, machine check, EC, wait, DAT on
          DC    X'00000000'  no error
 WRNEWIO  DC    X'000C0000'  machine check, EC, DAT off
-         AIF   ('&SYS' EQ 'S370').WRMOD24
+         AIF   ('&ZSYS' EQ 'S370').WRMOD24
          DC    A(X'80000000'+WRCONT)  continuation after I/O request
          AGO   .WRMOD31
 .WRMOD24 ANOP
@@ -466,7 +466,7 @@ DREAD    DS    0H
          LM    R0,R15,FLCCRSAV        Load OS registers
 *
 * We need to return to 31-bit mode, which PDOS may be operating in.
-         AIF   ('&SYS' EQ 'S370').MOD24G
+         AIF   ('&ZSYS' EQ 'S370').MOD24G
          CALL  @@SETM31
 .MOD24G  ANOP
          LA    R15,3
@@ -490,7 +490,7 @@ DWRITE   DS    0H
          LM    R0,R15,FLCCRSAV        Load OS registers
 *
 * We need to return to 31-bit mode, which PDOS may be operating in.
-         AIF   ('&SYS' EQ 'S370').MOD24D
+         AIF   ('&ZSYS' EQ 'S370').MOD24D
          CALL  @@SETM31
 .MOD24D  ANOP
          LA    R15,2
@@ -538,7 +538,7 @@ DEXIT    DS    0H
 *
          L     R2,0(R1)               their exit
          L     R3,4(R1)               actual DCB for them
-         AIF   ('&SYS' EQ 'S370').MOD24E
+         AIF   ('&ZSYS' EQ 'S370').MOD24E
          CALL  @@SETM24
 .MOD24E  ANOP
 *
@@ -546,7 +546,7 @@ DEXIT    DS    0H
          LR    R1,R3
          BALR  R14,R15
 *
-         AIF   ('&SYS' EQ 'S370').MOD24F
+         AIF   ('&ZSYS' EQ 'S370').MOD24F
          CALL  @@SETM31
 .MOD24F  ANOP
 *

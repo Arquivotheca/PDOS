@@ -181,8 +181,8 @@ int main(int argc, char **argv)
                     memcpy(&buf[205+extadj], to, strlen(to));
                 }
             }
-
         }
+        /* in case the record length has changed, regenerate the RDW */
         if (diff != 0)
         {
             lll[0] = (reclen + 4) >> 8;

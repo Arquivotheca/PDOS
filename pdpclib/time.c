@@ -244,19 +244,25 @@ __PDPCLIB_API__ struct tm *localtime(const time_t *timer)
                       by 16384, this doesn't exceed a 32-bit 
                       signed integer, so we're safe.
 
-                      Note that we have to take care of rounding
-                      on top of that too though. */
+                      However, the TZ offset value is actually
+                      truncated, e.g. -27465.8 is stored as -27465,
+                      which combined with the 1.048576 granularity
+                      means that we don't have 1-second accuracy.
+                      So we round to the nearest minute. */
     o = o * 16384;
-    r = o % 15625;
     o /= 15625;
-    if ((o > 0) && (r > 7812))
+    /* now we have an inaccurate seconds */
+    r = o % 60;
+    o /= 60; /* convert to minutes */
+    if ((o >= 0) && (r >= 30))
     {
         o++;
     }
-    else if ((o < 0) && (r < -7812))
+    else if ((o <= 0) && (r <= -30))
     {
         o--;
     }
+    o *= 60; /* convert to seconds */
     t += o;
     return (gmtime(&t));
 #else

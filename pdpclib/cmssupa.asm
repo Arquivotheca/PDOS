@@ -232,7 +232,7 @@ DONESET  DS    0H
          LR    R15,R7
          B     RETURNOP
 BADOPEN  DS    0H
-         FREEMAIN RU,LV=ZDCBLEN,A=(R2),SP=SUBPOOL  Free DCB area
+         FREEMAIN R,LV=ZDCBLEN,A=(R2),SP=SUBPOOL  Free DCB area
          L     R15,=F'-1'
          B     RETURNOP           Go return to caller with negative RC
 *

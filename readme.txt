@@ -651,9 +651,16 @@ runaout() is just one executable format that may be run.
 
 The first bit of the pload executable must fit into 3 * 512 bytes,
 as that is all the boot sector loads.  When this was last measured,
-1998-08-30, there were 465 bytes spare.  3*512 bytes corresponds to
+2012-11-11, there were 542 bytes spare.  3*512 bytes corresponds to
 a map reading of 0700h because of the org 0100h required for COM
-files.
+files. There are 4 modules - ploadst, pload, int13x and near,
+which are used to load the data beyond 3*512. And in "near", it is
+only the first 3 functions that are actually called (by pload).
+So in tlink you can change "-x" to "-m" to get a memory map, and
+you look at the publics by value and then look for the __I4M which
+is the first bit of unneeded code. Subtract 0100h from this value
+to find out the amount of code in use. Then subtract that value
+from 3*512 to find out how much space is still available.
 
 
 

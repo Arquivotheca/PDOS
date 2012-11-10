@@ -14,8 +14,9 @@
 #define __STDARG_INCLUDED
 
 /* don't use builtins on MVS until they have been implemented */
+/* don't use on EMX either */
 #if defined(__GNUC__) && !defined(__MVS__) && !defined(__CMS__) \
-    && !defined(__VSE__)
+    && !defined(__VSE__) && !defined(__EMX__)
 
 #ifndef __GNUC_VA_LIST
 #define __GNUC_VA_LIST

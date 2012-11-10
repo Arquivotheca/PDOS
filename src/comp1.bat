@@ -10,4 +10,5 @@ tcc -O -c -mt -DNEED_DUMP -I..\pdpclib pload.c fat.c bos.c pdosload.c ..\pdpclib
 rem the order of the following stuff is critical so that the first 3*512
 rem bytes have sufficient stuff to do the rest of the load of itself!!!
 rem it is ploadst, pload, int13x and near that need to be in the first 3*512
+rem and only the first 3 functions of near
 tlink -t -x ploadst+pload+int13x+near+support+bos+dossupc+fat+string+pdosload+lldos,pload.com,,,

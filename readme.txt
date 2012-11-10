@@ -30,20 +30,21 @@ programs.
 
 3. PDOS/380 - runs on Hercules/380 (S/380 architecture).
 Predominantly designed to be compatible with a subset of the
-MVS/380 interface, so that it can RMODE 24, AMODE 31 programs.
+MVS/380 interface, so that it can run RMODE 24, AMODE 31 programs.
 
 
 PC:
 
-1. PDOS/86 - long-term goal is to be compatible with 
+1. PDOS/86 (aka PDOS16) - long-term goal is to be compatible with 
 MSDOS, and thus supports a subset of the 16-bit MSDOS API.
 
-2. PDOS/386 - designed to be a 32-bit version of MSDOS,
+2. PDOS/386 (aka PDOS32) - designed to be a 32-bit version of MSDOS,
 so API is similar to PDOS/86, except most values take a
 32-bit integer that would otherwise normally be 16-bit.
-Also an intention to support the Win32 console-mode API
-and Win32 executable format (instead of the current a.out
-format). Also intended to support Posix interface.
+It may one day support the Win32 console-mode API
+and Win32 executable format, but current intention is to
+just be a viable development environment, using the existing
+a.out format. Also intended to support Posix interface.
 
 
 
@@ -114,10 +115,10 @@ environments, e.g. MVS, MSDOS and any POS-compliant
 operating system (e.g. MSDOS and PDOS are both
 POS-compliant).
 
-4. PDOS-16, an operating system which can be
+4. PDOS/86, an operating system which can be
 considered a clone of MSDOS.
 
-5. PDOS-32, a 32-bit operating system, which
+5. PDOS/386, a 32-bit operating system, which
 can't be considered a clone of any existing
 operating system (that I know of, anyway).
 It shares similarities with MSDOS, except it 
@@ -131,7 +132,7 @@ necessitates all applications to be recompiled,
 although not necessarily rewritten.  At a later
 stage, it may support the Windows NT API so that
 32-bit console mode executables can be run
-unchanged.  Note that PDOS-32 is pure 32-bit.  It
+unchanged.  Note that PDOS/386 is pure 32-bit.  It
 doesn't have any 16-bit code in it, although it
 does call 16-bit BIOS functions by switching to
 real mode.
@@ -176,6 +177,14 @@ http://www.openwatcom.org
 
 EMX 0.9d (which includes GCC 2.8.1) (for 32-bit C compiler and assembler):
 http://hobbes.nmsu.edu/cgi-bin/h-browse?sh=1&dir=//pub/os2/dev/emx/v0.9d
+
+Bochs 2.4.5
+http://bochs.sourceforge.net/
+
+I have a 900 MB C drive (FAT-16) under Bochs on which I do
+development, and then install the newly-created executables
+onto the D drive, then reboot using a slightly different Bochs
+configuration to test PDOS.
 
 raread/rawrite (unknown origin)
 
@@ -647,6 +656,7 @@ a map reading of 0700h because of the org 0100h required for COM
 files.
 
 
+
 FUTURE DEVELOPMENT
 ------------------
 
@@ -717,6 +727,7 @@ look at minimizing code that is authorized to hang system.
 
 OBTAINING
 ---------
+
 The latest version currently resides at
 http://pdos.sourceforge.net
 
@@ -724,6 +735,7 @@ http://pdos.sourceforge.net
 
 DEVELOPING
 ----------
+
 Code changes are most welcome! But the code changes must all
 be public domain. Please refer to refer.txt for more information
 on what needs to be done and how to do it.
@@ -734,7 +746,7 @@ CONTACTING THE AUTHOR
 ---------------------
 
 If you have any enhancements to PDOS, please send 
-the code changes to the email address listed above.
+the code changes to mutazilah@gmail.com .
 Please ensure that your code changes are public 
 domain, if you create a new source file, include 
 an explicit PD notice.  It is my intention to build 

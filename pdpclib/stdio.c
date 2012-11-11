@@ -75,7 +75,7 @@
 #define __MVS__ 1
 #endif
 
-/* PDOS/x86 and MSDOS use the same interface most of the time */
+/* PDOS/386 and MSDOS use the same interface most of the time */
 /* Note that PDOS is for the 32-bit version, since the 16-bit
    version uses the MSDOS version since it is compatible with it */
 /* linux is pretty similar too */

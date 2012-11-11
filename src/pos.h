@@ -63,6 +63,10 @@ void *PosGetInterruptVector(int intnum); /* func 35 */
 
 int PosChangeDir(char *to); /* func 3b */
 
+int PosCreatFile(const char *name, /* func 3c */
+                 int attrib,
+                 int *handle);
+
 int PosOpenFile(const char *name, /* func 3d */
                 int mode,
                 int *handle);

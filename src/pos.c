@@ -217,7 +217,32 @@ int PosChangeDir(char *to)
     }    
 }
 
-int PosOpenFile(const char *buffer,
+int PosCreatFile(const char *name,
+                 int attrib,
+                 int *handle)
+{
+    union REGS regsin;
+    union REGS regsout;
+    struct SREGS sregs;
+    
+    regsin.h.ah = 0x3c;
+    regsin.x.cx = attrib;
+#ifdef __32BIT__    
+    regsin.d.edx = (unsigned int)name;
+#else
+    sregs.ds = FP_SEG(name);
+    regsin.x.dx = FP_OFF(name);
+#endif    
+    int86x(0x21, &regsin, &regsout, &sregs);
+#ifdef __32BIT__
+    *handle = regsout.d.eax;
+#else
+    *handle = regsout.x.ax;
+#endif
+    return (regsout.x.cflag);
+}
+
+int PosOpenFile(const char *name,
                 int mode,
                 int *handle)
 {
@@ -228,10 +253,10 @@ int PosOpenFile(const char *buffer,
     regsin.h.ah = 0x3d;
     regsin.h.al = (unsigned char)mode;
 #ifdef __32BIT__    
-    regsin.d.edx = (unsigned int)buffer;
+    regsin.d.edx = (unsigned int)name;
 #else
-    sregs.ds = FP_SEG(buffer);
-    regsin.x.dx = FP_OFF(buffer);
+    sregs.ds = FP_SEG(name);
+    regsin.x.dx = FP_OFF(name);
 #endif    
     int86x(0x21, &regsin, &regsout, &sregs);
 #ifdef __32BIT__

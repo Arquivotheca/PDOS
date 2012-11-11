@@ -12,7 +12,14 @@ int __open(const char *filename, int mode, int *errind)
     int handle;
     int ret;
 
-    ret = PosOpenFile(filename, mode, &handle);
+    if (mode == 0)
+    {
+        ret = PosOpenFile(filename, 0, &handle);
+    }
+    else if (mode == 1)
+    {
+        ret = PosCreatFile(filename, 0, &handle);
+    }
     *errind = ret;
     return (handle);
 }

@@ -75,6 +75,7 @@ static void loadPcomm(void);
 static void loadExe(char *prog, PARMBLOCK *parmblock);
 static int fixexe32(unsigned char *psp, unsigned long entry, unsigned int sp);
 static int bios2driv(int bios);
+static int fileCreat(const char *fnm, int attrib);
 static int fileOpen(const char *fnm);
 static int fileClose(int fno);
 static int fileRead(int fno, void *buf, size_t szbuf);
@@ -83,6 +84,7 @@ static void upper_str(char *str);
 void dumplong(unsigned long x);
 void dumpbuf(unsigned char *buf, int len);
 static void readLogical(void *diskptr, long sector, void *buf);
+static void writeLogical(void *diskptr, long sector, void *buf);
 static int readAbs(void *buf, 
                    int sectors, 
                    int drive, 
@@ -93,6 +95,16 @@ static int readLBA(void *buf,
                    int sectors, 
                    int drive, 
                    unsigned long sector);
+static int writeAbs(void *buf, 
+                    int sectors, 
+                    int drive, 
+                    int track, 
+                    int head, 
+                    int sect);
+static int writeLBA(void *buf, 
+                    int sectors, 
+                    int drive, 
+                    unsigned long sector);
 static void analyseBpb(DISKINFO *diskinfo, unsigned char *bpb);
 int pdosstrt(void);
 
@@ -233,6 +245,7 @@ void pdosRun(void)
         fatInit(&disks[bootDriveLogical].fat, 
                 bootBPB, 
                 readLogical, 
+                writeLogical, 
                 &disks[bootDriveLogical]);
         strcpy(disks[bootDriveLogical].cwd, "");
         disks[bootDriveLogical].accessed = 1;
@@ -431,7 +444,8 @@ static void processPartition(int drive, unsigned char *prm)
     }
     disks[lastDrive].drive = drive;
     fatDefaults(&disks[lastDrive].fat);
-    fatInit(&disks[lastDrive].fat, bpb, readLogical, &disks[lastDrive]);
+    fatInit(&disks[lastDrive].fat, bpb, readLogical, 
+        writeLogical, &disks[lastDrive]);
     strcpy(disks[lastDrive].cwd, "");
     disks[lastDrive].accessed = 1;
     lastDrive++;
@@ -638,6 +652,21 @@ static void int21handler(union REGS *regsin,
 #endif            
             break;
             
+        case 0x3c:
+#ifdef __32BIT__
+            p = SUBADDRFIX(regsin->d.edx);
+            ret = PosCreatFile(p, regsin->x.cx, &regsout->d.eax);
+#else            
+            p = MK_FP(sregs->ds, regsin->x.dx);
+            ret = PosCreatFile(p, regsin->x.cx, &regsout->x.ax);
+#endif            
+            if (ret < 0)
+            {
+                regsout->x.cflag = 1;
+                regsout->x.ax = -ret;
+            }
+            break;
+            
         case 0x3d:
 #ifdef __32BIT__
             p = SUBADDRFIX(regsin->d.edx);
@@ -721,6 +750,10 @@ static void int21handler(union REGS *regsin,
 #endif                                                
             break;
             
+        case 0x43:
+            regsout->x.cflag = 1;
+            break;
+
         case 0x44:
             if (regsin->h.al == 0x00)
             {
@@ -1065,6 +1098,37 @@ int PosChangeDir(char *to)
     }
     upper_str(cwd);
     return (0);
+}
+
+int PosCreatFile(const char *name, int attrib, int *handle)
+{
+    char filename[MAX_PATH];
+    int fno;
+
+    if (name[1] == ':')
+    {
+        name += 2;
+    }
+    if ((name[0] == '\\') || (name[0] == '/'))
+    {
+        fno = fileCreat(name, attrib);
+    }
+    else
+    {
+        strcpy(filename, cwd);
+        strcat(filename, "\\");
+        strcat(filename, name);
+        fno = fileCreat(filename, attrib);
+    }
+    if (fno < 0)
+    {
+        *handle = -fno;
+    }
+    else
+    {
+        *handle = fno;
+    }
+    return (fno);
 }
 
 int PosOpenFile(const char *name, int mode, int *handle)
@@ -2033,6 +2097,45 @@ static int bios2driv(int bios)
     return (drive);
 }
 
+static int fileCreat(const char *fnm, int attrib)
+{
+    int x;
+    const char *p;
+    int drive;
+    int rc;
+    char tempf[FILENAME_MAX];
+
+    strcpy(tempf, fnm);
+    upper_str(tempf);
+    fnm = tempf;
+    p = strchr(fnm, ':');
+    if (p == NULL)
+    {
+        p = fnm;
+        drive = currentDrive;
+    }
+    else
+    {
+        drive = *(p - 1);
+        drive = toupper(drive) - 'A';
+        p++;
+    }
+    for (x = 0; x < MAXFILES; x++)
+    {
+        if (!fhandle[x].inuse)
+        {
+            fhandle[x].inuse = 1;
+            fhandle[x].special = 0;
+            break;
+        }
+    }
+    if (x == MAXFILES) return (-4); /* 4 = too many open files */
+    rc = fatCreatFile(&disks[drive].fat, p, &fhandle[x].fatfile, attrib);
+    if (rc < 0) return (rc);
+    fhandle[x].fatptr = &disks[drive].fat;
+    return (x);
+}
+
 static int fileOpen(const char *fnm)
 {
     int x;
@@ -2114,7 +2217,7 @@ static void accessDisk(int drive)
     analyseBpb(&disks[drive], bpb);
     disks[drive].lba = 0;
     fatDefaults(&disks[drive].fat);
-    fatInit(&disks[drive].fat, bpb, readLogical, &disks[drive]);
+    fatInit(&disks[drive].fat, bpb, readLogical, writeLogical, &disks[drive]);
     strcpy(disks[drive].cwd, "");
     disks[drive].accessed = 1;
     return;
@@ -2188,6 +2291,36 @@ static void readLogical(void *diskptr, long sector, void *buf)
     return;
 }
 
+static void writeLogical(void *diskptr, long sector, void *buf)
+{
+    int track;
+    int head;
+    int sect;
+    DISKINFO *diskinfo;
+    int ret;
+
+    diskinfo = (DISKINFO *)diskptr;
+    sector += diskinfo->hidden;
+    track = sector / diskinfo->sectors_per_cylinder;
+    head = sector % diskinfo->sectors_per_cylinder;
+    sect = head % diskinfo->sectors_per_track + 1;
+    head = head / diskinfo->sectors_per_track;
+    if (diskinfo->lba)
+    {
+        ret = writeLBA(buf, 1, diskinfo->drive, sector);
+    }
+    else
+    {
+        ret = writeAbs(buf, 1, diskinfo->drive, track, head, sect);
+    }
+    if (ret != 0)
+    {
+        printf("failed to write sector %ld - halting\n", sector);
+        for (;;) ;
+    }
+    return;
+}
+
 static int readAbs(void *buf, 
                    int sectors, 
                    int drive, 
@@ -2247,6 +2380,74 @@ static int readLBA(void *buf,
 #ifdef __32BIT__    
             memcpy(buf, transferbuf, 512);
 #endif        
+            ret = 0;
+            break;
+        }
+        BosDiskReset(drive);
+        tries++;
+    }
+    return (ret);
+}
+
+static int writeAbs(void *buf, 
+                    int sectors, 
+                    int drive, 
+                    int track, 
+                    int head, 
+                    int sect)
+{
+    int rc;
+    int ret = -1;
+    int tries;
+#ifdef __32BIT__
+    void *writebuf = transferbuf;
+#else
+    void *writebuf = buf;
+#endif
+
+    unused(sectors);
+#ifdef __32BIT__    
+    memcpy(transferbuf, buf, 512);
+#endif        
+    tries = 0;
+    while (tries < 5)
+    {
+        rc = BosDiskSectorWrite(writebuf, 1, drive, track, head, sect);
+        if (rc == 0)
+        {
+            ret = 0;
+            break;
+        }
+        BosDiskReset(drive);
+        tries++;
+    }
+    return (ret);
+}
+
+static int writeLBA(void *buf, 
+                    int sectors, 
+                    int drive, 
+                    unsigned long sector)
+{
+    int rc;
+    int ret = -1;
+    int tries;
+#ifdef __32BIT__
+    void *writebuf = transferbuf;
+#else
+    void *writebuf = buf;
+#endif
+
+    unused(sectors);
+#ifdef __32BIT__    
+    memcpy(transferbuf, buf, 512);
+#endif        
+    tries = 0;
+    while (tries < 5)
+    {
+        rc = BosDiskSectorWLBA(writebuf, 1, drive, sector, 0);
+        if (rc == 0)
+        {
             ret = 0;
             break;
         }

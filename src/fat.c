@@ -9,6 +9,7 @@ static void fatGetStartCluster(FAT *fat, const char *fnm, FATFILE *fatfile);
 static void fatNextSearch(FAT *fat, char *search, const char **upto, int *last);
 static void fatRootSearch(FAT *fat, char *search, FATFILE *fatfile);
 static void fatDirSearch(FAT *fat, char *search, FATFILE *fatfile);
+static void fatRootUpdate(FAT *fat, char *search, FATFILE *fatfile);
 static void fatClusterAnalyse(FAT *fat,
                               unsigned int cluster,
                               unsigned long *startSector,
@@ -18,7 +19,13 @@ static void fatDirSectorSearch(FAT *fat,
                                FATFILE *fatfile,
                                unsigned long startSector,
                                int numsectors);
+static void fatDirSectorUpdate(FAT *fat,
+                               char *search,
+                               FATFILE *fatfile,
+                               unsigned long startSector,
+                               int numsectors);
 static void fatReadLogical(FAT *fat, long sector, void *buf);
+static void fatWriteLogical(FAT *fat, long sector, void *buf);
 
 
 /*
@@ -44,9 +51,11 @@ void fatDefaults(FAT *fat)
 void fatInit(FAT *fat, 
              unsigned char *bpb,
              void (*readLogical)(void *diskptr, long sector, void *buf),
+             void (*writeLogical)(void *diskptr, long sector, void *buf),
              void *parm)
 {
     fat->readLogical = readLogical;
+    fat->writeLogical = writeLogical;
     fat->parm = parm;
     fat->drive = bpb[25];
     fat->sector_size = bpb[0] | ((unsigned int)bpb[1] << 8);
@@ -119,6 +128,55 @@ static int fatEndCluster(FAT *fat, unsigned int cluster)
         {
             return (1);
         }
+    }
+    return (0);
+}
+
+
+/* Return codes should be negative */
+
+int fatCreatFile(FAT *fat, const char *fnm, FATFILE *fatfile, int attrib)
+{
+    char search[11];
+    const char *upto;
+    int last;
+    int root = 0;
+
+    fat->notfound = 0;
+    if ((fnm[0] == '\\') || (fnm[0] == '/'))
+    {
+        fnm++;
+    }
+    upto = fnm;
+    fatfile->cluster = 0;
+    fatNextSearch(fat, search, &upto, &last);
+    if (fat->notfound) return (-3);
+    if (!last)
+    {
+        fatRootSearch(fat, search, fatfile);
+        if (fat->notfound) return (-3);
+    }
+    else
+    {
+        root = 1;
+    }
+    while (!last)
+    {
+        fatNextSearch(fat, search, &upto, &last);
+        if (fat->notfound) return (-3);
+        if (!last)
+        {
+            fatDirSearch(fat, search, fatfile);
+            if (fat->notfound) return (-3);
+        }
+    }
+    if (root)
+    {
+        fatRootUpdate(fat, search, fatfile);
+    }
+    else
+    {
+        /* fatDirUpdate */
     }
     return (0);
 }
@@ -405,6 +463,20 @@ static void fatDirSearch(FAT *fat, char *search, FATFILE *fatfile)
 
 
 /*
+ * fatRootUpdate - update the root directory with entry
+ * (given by "search").  The root directory is defined by a
+ * starting sector number and the previously determined size
+ * (number of sectors).
+ */
+ 
+static void fatRootUpdate(FAT *fat, char *search, FATFILE *fatfile)
+{
+    fatDirSectorUpdate(fat, search, fatfile, fat->rootstart, fat->rootsize);
+    return;
+}
+
+
+/*
  * fatClusterAnalyse - given a cluster number, this function
  * determines the sector that the cluster starts and also the
  * next cluster number in the chain.
@@ -503,6 +575,61 @@ static void fatDirSectorSearch(FAT *fat,
 
 
 /*
+ * fatDirSectorUpdate - go through a block of sectors (as specified
+ * by startSector and numsectors) which consist entirely of directory
+ * entries, looking for a place to put the "search" string.  When 
+ * spare spot is found, update the directory with a starting cluster.
+ * retrieve some
+ * information about the file, including the starting cluster and the
+ * file size.  If we get to the end of the directory (NUL in first
+ * character of directory entry), append new entry to end. If we
+ * reach the end of this block of sectors without reaching the
+ * end of directory marker or finding a spare spot, we set the cluster to 0.
+ */
+
+static void fatDirSectorUpdate(FAT *fat,
+                               char *search,
+                               FATFILE *fatfile,
+                               unsigned long startSector,
+                               int numsectors)
+{
+    int x;
+    unsigned char buf[MAXSECTSZ];
+    unsigned char *p;
+    char dirent[32];
+    int found = 0;
+    
+    for (x = 0; x < numsectors && !found; x++)
+    {
+        fatReadLogical(fat, startSector + x, buf);
+        for (p = buf; p < buf + fat->sector_size; p += 32)
+        {
+            if (*p == '\0')
+            {
+                fatfile->cluster = 50; /* +++ */
+                memset(p, '\0', 32);
+                memcpy(p, search, 11);
+                p[0x1a + 1] = (fatfile->cluster >> 8) & 0xff;
+                p[0x1a] = fatfile->cluster & 0xff;
+                /* p[0x0b] = attrib; */ /* +++ */
+                /* p[0x16], len 4 = datetime */ /* +++ */
+                p += 32; /* +++ */
+                *p = '\0'; /* +++ */
+                fatWriteLogical(fat, startSector + x, buf);
+                found = 1;
+                break;
+            }
+        }
+    }
+    if (!found)
+    {
+        fatfile->cluster = 0;
+    }
+    return;
+}
+
+
+/*
  * fatReadLogical - read a logical disk sector by calling the
  * function provided at initialization.
  */
@@ -512,3 +639,16 @@ static void fatReadLogical(FAT *fat, long sector, void *buf)
     fat->readLogical(fat->parm, sector, buf);
     return;
 }
+
+
+/*
+ * fatWriteLogical - read a logical disk sector by calling the
+ * function provided at initialization.
+ */
+ 
+static void fatWriteLogical(FAT *fat, long sector, void *buf)
+{
+    fat->writeLogical(fat->parm, sector, buf);
+    return;
+}
+

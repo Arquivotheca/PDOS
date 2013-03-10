@@ -88,6 +88,12 @@ int BosDiskSectorRLBA(void         *buffer, /* 13:42 */
                       unsigned long sector,
                       unsigned long hisector);
 
+int BosDiskSectorWLBA(void         *buffer, /* 13:43 */
+                      unsigned int sectors,
+                      unsigned int drive,
+                      unsigned long sector,
+                      unsigned long hisector);
+
 long BosExtendedMemorySize(void); /* 15:88 */
 
 int BosReadKeyboardCharacter(int *scancode, int *ascii); /* 16:0 */

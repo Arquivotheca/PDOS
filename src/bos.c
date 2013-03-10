@@ -376,6 +376,11 @@ int BosDiskSectorWrite(void         *buffer,
     regsin.h.dl = (unsigned char)drive;
     sregs.es = FP_SEG(buffer);
     regsin.x.bx = FP_OFF(buffer);
+#ifdef __32BIT__
+    sregs.es = ((unsigned long)ADDR2ABS(buffer) >> 4) & 0xffffU;
+    regsin.x.bx = (unsigned long)ADDR2ABS(buffer) & 0xf;
+    regsin.d.ebx = (sregs.es << 16) | regsin.x.bx;
+#endif
     int86x(0x13, &regsin, &regsout, &sregs);
     return (regsout.x.cflag);
 }
@@ -444,6 +449,69 @@ int BosDiskSectorRLBA(void         *buffer,
     unsigned char *packet;
     
     regsin.h.ah = 0x42;
+    regsin.h.dl = (unsigned char)drive;
+    packet = lpacket;
+#ifdef __32BIT__
+    /* kludge - the caller will be giving us an
+       address in low memory for the buffer, which
+       will have enough room for the packet too */
+    packet = (unsigned char *)buffer + 512;
+#endif
+    packet[0] = sizeof lpacket;
+    packet[1] = 0;
+    packet[2] = sectors & 0xff;
+    packet[3] = (sectors >> 8) & 0xff;
+    packet[4] = FP_OFF(buffer) & 0xff;
+    packet[5] = (FP_OFF(buffer) >> 8) & 0xff;
+    packet[6] = FP_SEG(buffer) & 0xff;
+    packet[7] = (FP_SEG(buffer) >> 8) & 0xff;
+    packet[8] = sector & 0xff;
+    packet[9] = (sector >> 8) & 0xff;
+    packet[10] = (sector >> 16) & 0xff;
+    packet[11] = (sector >> 24) & 0xff;
+    packet[12] = hisector & 0xff;
+    packet[13] = (hisector >> 8) & 0xff;
+    packet[14] = (hisector >> 16) & 0xff;
+    packet[15] = (hisector >> 24) & 0xff;
+    sregs.ds = FP_SEG(packet);
+    regsin.x.si = FP_OFF(packet);
+#ifdef __32BIT__
+    /* first of all fix up the buffer address in the packet */
+    sregs.ds = ((unsigned long)ADDR2ABS(buffer) >> 4) & 0xffffU;
+    regsin.x.si = (unsigned long)ADDR2ABS(buffer) & 0xf;
+    packet[4] = regsin.x.si & 0xff;
+    packet[5] = (regsin.x.si >> 8) & 0xff;
+    packet[6] = sregs.ds & 0xff;
+    packet[7] = (sregs.ds >> 8) & 0xff;
+    
+    /* now we set the packet address */
+    sregs.ds = ((unsigned long)ADDR2ABS(packet) >> 4) & 0xffffU;
+    regsin.x.si = (unsigned long)ADDR2ABS(packet) & 0xf;
+    
+    /* and ds gets stored in upper edx for real mode */
+    regsin.d.edx = (sregs.ds << 16) | regsin.x.dx;
+#endif        
+    
+    int86x(0x13, &regsin, &regsout, &sregs);
+    return (regsout.h.ah);
+}
+
+/* BosDiskSectorWLBA - write using LBA Int 13h Function 43h */
+/* returns 0 if successful, otherwise error code */
+
+int BosDiskSectorWLBA(void         *buffer,
+                      unsigned int sectors,
+                      unsigned int drive,
+                      unsigned long sector,
+                      unsigned long hisector)
+{
+    union REGS regsin;
+    union REGS regsout;
+    struct SREGS sregs;
+    unsigned char lpacket[16];
+    unsigned char *packet;
+    
+    regsin.h.ah = 0x43;
     regsin.h.dl = (unsigned char)drive;
     packet = lpacket;
 #ifdef __32BIT__

@@ -69,7 +69,7 @@ void pdosload(void)
     bpb = (unsigned char *)(0x7c00 - 0x600 + 11);
     analyseBpb(&diskinfo, bpb);
     fatDefaults(&gfat);
-    fatInit(&gfat, bpb, readLogical, &diskinfo);
+    fatInit(&gfat, bpb, readLogical, 0, &diskinfo);
 #ifdef PDOS32    
     a20e(); /* enable a20 line */
     pp.transferbuf = ADDR2ABS(transferbuf);

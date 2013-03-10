@@ -1,3 +1,4 @@
+
 #include <string.h>
 
 #include "fat.h"
@@ -60,6 +61,10 @@ void fatInit(FAT *fat,
     fat->drive = bpb[25];
     fat->sector_size = bpb[0] | ((unsigned int)bpb[1] << 8);
     fat->sectors_per_cluster = bpb[2];
+#if 0
+    printf("sector_size is %x\n", (int)fat->sector_size);
+    printf("sec per clus is %x\n", (int)fat->sectors_per_cluster);
+#endif
     fat->numfats = bpb[5];
     fat->fatsize = bpb[11] | ((unsigned int)bpb[12] << 8);
     fat->sectors_per_disk = bpb[8] | ((unsigned int)bpb[9] << 8);
@@ -627,7 +632,7 @@ static void fatDirSectorUpdate(FAT *fat,
             if (*p == '\0')
             {
                 fatfile->cluster = 50; /* +++ */
-                fatfile->sectorStart = 50 * 32768/512; /* +++ */
+                fatfile->sectorStart = 50 * 2048/512; /* +++ */
                 fatfile->sectorUpto = 0; /* +++ */
                 memset(p, '\0', 32);
                 memcpy(p, search, 11);
@@ -635,6 +640,8 @@ static void fatDirSectorUpdate(FAT *fat,
                 p[0x1a] = fatfile->cluster & 0xff;
                 /* p[0x0b] = attrib; */ /* +++ */
                 /* p[0x16], len 4 = datetime */ /* +++ */
+                p[0x1c + 1] = 0;
+                p[0x1c] = 10;
                 p += 32; /* +++ */
                 *p = '\0'; /* +++ */
                 fatWriteLogical(fat, startSector + x, buf);

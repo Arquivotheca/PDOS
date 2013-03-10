@@ -27,6 +27,7 @@ static void fatDirSectorUpdate(FAT *fat,
                                int numsectors);
 static void fatReadLogical(FAT *fat, long sector, void *buf);
 static void fatWriteLogical(FAT *fat, long sector, void *buf);
+static void fatMarkCluster(FAT *fat, unsigned int cluster);
 
 
 /*
@@ -632,6 +633,7 @@ static void fatDirSectorUpdate(FAT *fat,
             if (*p == '\0')
             {
                 fatfile->cluster = 50; /* +++ */
+                fatMarkCluster(fat, fatfile->cluster);
                 fatfile->sectorStart = (fatfile->cluster - 2)
                     * (long)fat->sectors_per_cluster
                     + fat->filestart;                    
@@ -684,3 +686,24 @@ static void fatWriteLogical(FAT *fat, long sector, void *buf)
     return;
 }
 
+static void fatMarkCluster(FAT *fat, unsigned int cluster)
+{
+    unsigned long fatSector;
+    static unsigned char buf[MAXSECTSZ];
+    int offset;
+    
+    fatSector = (cluster - 2) * (long)fat->sectors_per_cluster
+                + fat->filestart;
+    /* +++ need fat12 logic too */
+    if (fat->fat16)
+    {
+        fatSector = fat->fatstart + (cluster * 2) / fat->sector_size;
+        fatReadLogical(fat, fatSector, buf);
+        offset = (cluster * 2) % fat->sector_size;
+        buf[offset] = 0xff; /* +++ */
+        buf[offset + 1] = 0xff;
+        fatWriteLogical(fat, fatSector, buf);
+    }
+
+    return;
+}

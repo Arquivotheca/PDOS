@@ -1219,6 +1219,10 @@ int PosWriteFile(int fh, const void *data, size_t len)
             BosWriteText(0, p[x], 0);
         }
     }
+    else
+    {
+        len = fileWrite(fh, data, len);
+    }
     return (len);
 }
 
@@ -2186,6 +2190,15 @@ static int fileRead(int fno, void *buf, size_t szbuf)
     size_t ret;
 
     ret = fatReadFile(fhandle[fno].fatptr, &fhandle[fno].fatfile, buf, szbuf);
+    return (ret);
+}
+
+
+static int fileWrite(int fno, void *buf, size_t szbuf)
+{
+    size_t ret;
+
+    ret = fatWriteFile(fhandle[fno].fatptr, &fhandle[fno].fatfile, buf, szbuf);
     return (ret);
 }
 

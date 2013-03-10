@@ -301,6 +301,26 @@ size_t fatReadFile(FAT *fat, FATFILE *fatfile, void *buf, size_t szbuf)
 
 
 /*
+ * fatWriteFile - write to an already-open file.
+ +++
+ */
+ 
+size_t fatWriteFile(FAT *fat, FATFILE *fatfile, void *buf, size_t szbuf)
+{
+    static unsigned char bbuf[MAXSECTSZ];
+    
+    if (szbuf < MAXSECTSZ)
+    {
+        memcpy(bbuf, buf, szbuf);
+        fatWriteLogical(fat,
+                        fatfile->sectorStart + fatfile->sectorUpto, 
+                        bbuf);
+    }
+    return (szbuf);
+}
+
+    
+/*
  * fatGetStartCluster - given a filename, retrieve the starting
  * cluster, or set notfound flag if not found.
  */
@@ -607,6 +627,8 @@ static void fatDirSectorUpdate(FAT *fat,
             if (*p == '\0')
             {
                 fatfile->cluster = 50; /* +++ */
+                fatfile->sectorStart = 50 * 32768/512; /* +++ */
+                fatfile->sectorUpto = 0; /* +++ */
                 memset(p, '\0', 32);
                 memcpy(p, search, 11);
                 p[0x1a + 1] = (fatfile->cluster >> 8) & 0xff;
@@ -642,7 +664,7 @@ static void fatReadLogical(FAT *fat, long sector, void *buf)
 
 
 /*
- * fatWriteLogical - read a logical disk sector by calling the
+ * fatWriteLogical - write a logical disk sector by calling the
  * function provided at initialization.
  */
  

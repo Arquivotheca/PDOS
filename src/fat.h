@@ -60,5 +60,6 @@ void fatTerm(FAT *fat);
 int fatCreatFile(FAT *fat, const char *fnm, FATFILE *fatfile, int attrib);
 int fatOpenFile(FAT *fat, const char *fnm, FATFILE *fatfile);
 size_t fatReadFile(FAT *fat, FATFILE *fatfile, void *buf, size_t szbuf);
+size_t fatWriteFile(FAT *fat, FATFILE *fatfile, void *buf, size_t szbuf);
 
 #endif

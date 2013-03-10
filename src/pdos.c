@@ -2181,7 +2181,10 @@ static int fileOpen(const char *fnm)
 
 static int fileClose(int fno)
 {
-    fhandle[fno].inuse = 0;    
+    if (!fhandle[fno].special)
+    {
+        fhandle[fno].inuse = 0;
+    }
     return (0);
 }
 

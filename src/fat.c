@@ -632,7 +632,9 @@ static void fatDirSectorUpdate(FAT *fat,
             if (*p == '\0')
             {
                 fatfile->cluster = 50; /* +++ */
-                fatfile->sectorStart = 50 * (2048/512); /* +++ */
+                fatfile->sectorStart = 50 * (2048/512)
+                    + fat->rootstart + fat->rootsize
+                    - 2 * (2048/512); /* +++ */                
                 fatfile->sectorUpto = 0; /* +++ */
                 memset(p, '\0', 32);
                 memcpy(p, search, 11);

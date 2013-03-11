@@ -692,8 +692,6 @@ static void fatMarkCluster(FAT *fat, unsigned int cluster)
     static unsigned char buf[MAXSECTSZ];
     int offset;
     
-    fatSector = (cluster - 2) * (long)fat->sectors_per_cluster
-                + fat->filestart;
     /* +++ need fat12 logic too */
     if (fat->fat16)
     {

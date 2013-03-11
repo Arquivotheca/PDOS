@@ -634,7 +634,9 @@ static void fatDirSectorUpdate(FAT *fat,
             if (*p == '\0')
             {
                 fatfile->cluster = fatFindFreeCluster(fat); /* 50; */ /* +++ */
+#if 1
                 printf("got cluster %x\n", fatfile->cluster);
+#endif            
                 fatMarkCluster(fat, fatfile->cluster);
                 fatfile->sectorStart = (fatfile->cluster - 2)
                     * (long)fat->sectors_per_cluster
@@ -713,24 +715,33 @@ static unsigned int fatFindFreeCluster(FAT *fat)
     static unsigned char buf[MAXSECTSZ];
     unsigned long fatSector;
     int found = 0;
+    int x;
+    unsigned int ret;
     
     if (fat->fat16)
     {
-        for (fatSector = fat->fatstart; fatSector < fat->rootstart; fatSector++)
+        for (fatSector = fat->fatstart;
+             fatSector < fat->rootstart;
+             fatSector++)
         {
+            printf("reading sector %d\n", fatSector);
             fatReadLogical(fat, fatSector, buf);
             for (x = 0; x < MAXSECTSZ; x += 2)
             {
+                printf("at %x, got %x and %x\n", x, buf[x], buf[x + 1]);
                 if ((buf[x] == 0) && (buf[x + 1] == 0))
                 {
                     found = 1;
                     break;
                 }
             }
+            if (found) break;
         }
         if (found)
         {
-            return (fatSector-fat->fatstart)*MAXSECTSZ/2+x/2);
+            ret = (fatSector-fat->fatstart)*MAXSECTSZ/2 + x/2;
+            printf("ret is %x\n", ret);
+            return (ret);
         }
     }
     return (0);

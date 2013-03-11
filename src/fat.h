@@ -47,6 +47,9 @@ typedef struct {
     unsigned int nextCluster;
     unsigned int byteUpto;
     unsigned int sectorUpto;
+    unsigned long dirSect;
+    unsigned int dirOffset;
+    unsigned long totbytes;
     int dir;
 } FATFILE;
 

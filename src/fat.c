@@ -322,6 +322,14 @@ size_t fatWriteFile(FAT *fat, FATFILE *fatfile, void *buf, size_t szbuf)
         fatWriteLogical(fat,
                         fatfile->sectorStart + fatfile->sectorUpto, 
                         bbuf);
+        fatfile->totbytes += szbuf;
+        fatReadLogical(fat,
+                       fatfile->dirSect,
+                       bbuf);
+        bbuf[fatfile->dirOffset + 0x1c] = fatfile->totbytes;
+        fatWriteLogical(fat,
+                        fatfile->dirSect,
+                        bbuf);        
     }
     return (szbuf);
 }
@@ -649,8 +657,11 @@ static void fatDirSectorUpdate(FAT *fat,
                 p[0x1a] = fatfile->cluster & 0xff;
                 /* p[0x0b] = attrib; */ /* +++ */
                 /* p[0x16], len 4 = datetime */ /* +++ */
+                fatfile->totbytes = 0;
                 p[0x1c + 1] = 0;
-                p[0x1c] = 10;
+                p[0x1c] = fatfile->totbytes;
+                fatfile->dirSect = startSector + x;
+                fatfile->dirOffset = (p - buf);
                 p += 32; /* +++ */
                 *p = '\0'; /* +++ */
                 fatWriteLogical(fat, startSector + x, buf);

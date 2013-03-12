@@ -78,7 +78,7 @@ void fatInit(FAT *fat,
     fat->bytes_per_cluster = fat->sector_size * fat->sectors_per_cluster;
 #if 0
     printf("sector_size is %x\n", (int)fat->sector_size);
-    printf("sec per clus is %x\n", (int)fat->sectors_per_cluster);
+    printf("sectors per cluster is %x\n", (int)fat->sectors_per_cluster);
 #endif
     fat->numfats = bpb[5];
     fat->fatsize = bpb[11] | ((unsigned int)bpb[12] << 8);

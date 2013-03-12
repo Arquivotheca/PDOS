@@ -327,7 +327,6 @@ size_t fatReadFile(FAT *fat, FATFILE *fatfile, void *buf, size_t szbuf)
 
 /*
  * fatWriteFile - write to an already-open file.
- +++
  */
  
 size_t fatWriteFile(FAT *fat, FATFILE *fatfile, void *buf, size_t szbuf)
@@ -724,7 +723,7 @@ static void fatDirSectorUpdate(FAT *fat,
         {
             if (*p == '\0')
             {
-                fatfile->cluster = fatFindFreeCluster(fat); /* 50; */ /* +++ */
+                fatfile->cluster = fatFindFreeCluster(fat);
 #if 0
                 printf("got cluster %x\n", fatfile->cluster);
 #endif            
@@ -733,7 +732,7 @@ static void fatDirSectorUpdate(FAT *fat,
                     * (long)fat->sectors_per_cluster
                     + fat->filestart;                    
                     
-                fatfile->sectorUpto = 0; /* +++ */
+                fatfile->sectorUpto = 0;
                 memset(p, '\0', 32);
                 memcpy(p, search, 11);
                 p[0x1a + 1] = (fatfile->cluster >> 8) & 0xff;
@@ -799,7 +798,7 @@ static void fatMarkCluster(FAT *fat, unsigned int cluster)
         fatSector = fat->fatstart + (cluster * 2) / fat->sector_size;
         fatReadLogical(fat, fatSector, buf);
         offset = (cluster * 2) % fat->sector_size;
-        buf[offset] = 0xff; /* +++ */
+        buf[offset] = 0xff;
         buf[offset + 1] = 0xff;
         fatWriteLogical(fat, fatSector, buf);
     }

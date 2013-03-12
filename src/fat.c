@@ -260,28 +260,48 @@ size_t fatReadFile(FAT *fat, FATFILE *fatfile, void *buf, size_t szbuf)
 {
     size_t bytesRead = 0;
     static unsigned char bbuf[MAXSECTSZ];
-    int sectorsAvail;
     int bytesAvail;
+    int sectorsAvail;
     
-    bytesAvail = fat->sector_size;
+    /* until we reach the end of the chain */
     while (!fatEndCluster(fat, fatfile->currentCluster))
     {
+        /* assume all sectors in cluster are available */
         sectorsAvail = fatfile->sectorCount;
+        
+        if (fatEndCluster(fat, fatfile->nextCluster) && !fatfile->dir)
+        {
+            /* exception - a full cluster has 0 last sectors */
+            if (fatfile->lastSectors != 0)
+            {
+                /* reduce sectors available */
+                sectorsAvail = fatfile->lastSectors + 1;
+            }
+        }
+        
+        /* cycle through the sectors */
         while (fatfile->sectorUpto != sectorsAvail)
         {
+            /* assume whole sector is available */
             bytesAvail = fat->sector_size;
+            
+            /* but if this is the last cluster, we need special processing */
             if (fatEndCluster(fat, fatfile->nextCluster) && !fatfile->dir)
             {
+                /* if we have reached the last sector, abide by lastBytes */
                 if (fatfile->sectorUpto == fatfile->lastSectors)
                 {
                     bytesAvail = fatfile->lastBytes;
                 }
             }
+            /* while we haven't used up the bytesAvail */
             while (fatfile->byteUpto != bytesAvail)
             {
+                /* read data */
                 fatReadLogical(fat,
                                fatfile->sectorStart + fatfile->sectorUpto, 
                                bbuf);
+                /* copy data to supplied buffer */
                 if ((bytesAvail - fatfile->byteUpto)
                     > (szbuf - bytesRead))
                 {

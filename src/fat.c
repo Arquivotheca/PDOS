@@ -264,19 +264,9 @@ size_t fatReadFile(FAT *fat, FATFILE *fatfile, void *buf, size_t szbuf)
     int bytesAvail;
     
     bytesAvail = fat->sector_size;
-    sectorsAvail = fatfile->sectorCount;
     while (!fatEndCluster(fat, fatfile->currentCluster))
     {
         sectorsAvail = fatfile->sectorCount;
-#if 0
-        /* I don't know what this code was used for, but it is
-           preventing files of size exactly a cluster from
-           being read. */
-        if (fatEndCluster(fat, fatfile->nextCluster) && !fatfile->dir)
-        {
-            sectorsAvail = fatfile->lastSectors + 1;
-        }
-#endif
         while (fatfile->sectorUpto != sectorsAvail)
         {
             bytesAvail = fat->sector_size;

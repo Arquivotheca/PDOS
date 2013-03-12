@@ -336,7 +336,7 @@ size_t fatWriteFile(FAT *fat, FATFILE *fatfile, void *buf, size_t szbuf)
        we will not break into a new sector or cluster */
 
     if (szbuf == 0) return (0);    
-    rem = fat->sector_size - fatfile->lastbytes;
+    rem = fat->sector_size - fatfile->lastBytes;
     if ((fatfile->lastBytes != 0) && (rem != 0))
     {
         fatReadLogical(fat,
@@ -346,19 +346,20 @@ size_t fatWriteFile(FAT *fat, FATFILE *fatfile, void *buf, size_t szbuf)
     
     if (szbuf <= rem)
     {
-        memcpy(bbuf + fatfile->lastbytes,
+        memcpy(bbuf + fatfile->lastBytes,
                buf,
                szbuf);
         fatWriteLogical(fat,
                         fatfile->sectorStart + fatfile->sectorUpto, 
                         bbuf);
-        fatfile->lastbytes += szbuf;
+        fatfile->lastBytes += szbuf;
+        fatfile->totbytes += szbuf;
     }
     else
     {
         if (rem != 0)
         {
-            memcpy(bbuf + fatfile->lastbytes,
+            memcpy(bbuf + fatfile->lastBytes,
                    buf,
                    rem);
             fatWriteLogical(fat,
@@ -374,7 +375,7 @@ size_t fatWriteFile(FAT *fat, FATFILE *fatfile, void *buf, size_t szbuf)
         }
         while (tsz > fat->sector_size)
         {
-            memcpy(bbuf, buf + done, fat->sector_size);
+            memcpy(bbuf, (char *)buf + done, fat->sector_size);
             fatWriteLogical(fat,
                             fatfile->sectorStart + fatfile->sectorUpto, 
                             bbuf);
@@ -386,27 +387,28 @@ size_t fatWriteFile(FAT *fat, FATFILE *fatfile, void *buf, size_t szbuf)
             tsz -= fat->sector_size;
             done += fat->sector_size;
         }
-        memcpy(bbuf, buf + done, tsz);
+        memcpy(bbuf, (char *)buf + done, tsz);
         fatWriteLogical(fat,
                         fatfile->sectorStart + fatfile->sectorUpto, 
                         bbuf);
-        fatfile->lastbytes = tsz;
+        fatfile->lastBytes = tsz;
         
         fatfile->totbytes += szbuf;
-        fatReadLogical(fat,
-                       fatfile->dirSect,
-                       bbuf);
-        bbuf[fatfile->dirOffset + 0x1c] = fatfile->totbytes & 0xff;
-        bbuf[fatfile->dirOffset + 0x1c + 1]
-            = (fatfile->totbytes >> 8) & 0xff;
-        bbuf[fatfile->dirOffset + 0x1c + 2]
-            = (fatfile->totbytes >> 16) & 0xff;
-        bbuf[fatfile->dirOffset + 0x1c + 3]
-            = (fatfile->totbytes >> 24) & 0xff;
-        fatWriteLogical(fat,
-                        fatfile->dirSect,
-                        bbuf);        
     }
+
+    fatReadLogical(fat,
+                   fatfile->dirSect,
+                   bbuf);
+    bbuf[fatfile->dirOffset + 0x1c] = fatfile->totbytes & 0xff;
+    bbuf[fatfile->dirOffset + 0x1c + 1]
+        = (fatfile->totbytes >> 8) & 0xff;
+    bbuf[fatfile->dirOffset + 0x1c + 2]
+        = (fatfile->totbytes >> 16) & 0xff;
+    bbuf[fatfile->dirOffset + 0x1c + 3]
+        = (fatfile->totbytes >> 24) & 0xff;
+    fatWriteLogical(fat,
+                    fatfile->dirSect,
+                    bbuf);        
     return (szbuf);
 }
 
@@ -740,6 +742,7 @@ static void fatDirSectorUpdate(FAT *fat,
                 p[0x1c + 3] = 0;
                 fatfile->dirSect = startSector + x;
                 fatfile->dirOffset = (p - buf);
+                fatfile->lastBytes = 0;
                 p += 32; /* +++ */
                 *p = '\0'; /* +++ */
                 fatWriteLogical(fat, startSector + x, buf);
@@ -850,7 +853,7 @@ static void fatChain(FAT *fat, FATFILE *fatfile)
         fatReadLogical(fat, fatSector, buf);
         offset = (oldcluster * 2) % fat->sector_size;
         buf[offset] = newcluster & 0xff;
-        buf[offset + 1] = newcluster >> 8);
+        buf[offset + 1] = newcluster >> 8;
         fatWriteLogical(fat, fatSector, buf);
         
         fatMarkCluster(fat, newcluster);

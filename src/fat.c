@@ -8,6 +8,9 @@
 /*                                                                   */
 /*  fat - file allocation table routinesm                            */
 /*                                                                   */
+/*  layout is boot sector, then FAT (clusters) then root directory   */
+/*  then file storage area                                           */
+/*                                                                   */
 /*********************************************************************/
 
 #include <string.h>

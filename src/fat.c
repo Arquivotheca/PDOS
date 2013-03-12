@@ -362,8 +362,13 @@ size_t fatWriteFile(FAT *fat, FATFILE *fatfile, void *buf, size_t szbuf)
     /* Regardless of whether szbuf is 0 or remaining bytes is 0,
        we will not break into a new sector or cluster */
 
-    if (szbuf == 0) return (0);    
+    if (szbuf == 0) return (0);
+    
+    /* get remainder of bytes in current sector */
     rem = fat->sector_size - fatfile->lastBytes;
+    
+    /* If the last written bytes were 0, or the remainder 0, we
+       don't need to update (and thus read) this sector */
     if ((fatfile->lastBytes != 0) && (rem != 0))
     {
         fatReadLogical(fat,
@@ -371,6 +376,8 @@ size_t fatWriteFile(FAT *fat, FATFILE *fatfile, void *buf, size_t szbuf)
                        bbuf);
     }
     
+    /* if the size of data to be written fits in to the remaining
+       space, then update the just-read buffer */
     if (szbuf <= rem)
     {
         memcpy(bbuf + fatfile->lastBytes,
@@ -384,6 +391,8 @@ size_t fatWriteFile(FAT *fat, FATFILE *fatfile, void *buf, size_t szbuf)
     }
     else
     {
+        /* we have more data than can fit in this sector.
+           so use up remaining space */
         if (rem != 0)
         {
             memcpy(bbuf + fatfile->lastBytes,
@@ -393,13 +402,16 @@ size_t fatWriteFile(FAT *fat, FATFILE *fatfile, void *buf, size_t szbuf)
                             fatfile->sectorStart + fatfile->sectorUpto, 
                             bbuf);
         }
-        done = rem;
-        tsz = szbuf - rem;
+        done = rem; /* advance position in user-provided buffer */
+        tsz = szbuf - rem; /* size of user-provided data remaining */
         fatfile->sectorUpto++;
+        /* as soon as we get up to a full sector it is time to break
+           into a new cluster */
         if (fatfile->sectorUpto == fat->sectors_per_cluster)
         {
             fatChain(fat, fatfile);
         }
+        /* go through data, each full sector at a time */
         while (tsz > fat->sector_size)
         {
             memcpy(bbuf, (char *)buf + done, fat->sector_size);
@@ -407,6 +419,8 @@ size_t fatWriteFile(FAT *fat, FATFILE *fatfile, void *buf, size_t szbuf)
                             fatfile->sectorStart + fatfile->sectorUpto, 
                             bbuf);
             fatfile->sectorUpto++;
+            
+            /* break into a new cluster when full */
             if (fatfile->sectorUpto == fat->sectors_per_cluster)
             {
                 fatChain(fat, fatfile);
@@ -418,11 +432,15 @@ size_t fatWriteFile(FAT *fat, FATFILE *fatfile, void *buf, size_t szbuf)
         fatWriteLogical(fat,
                         fatfile->sectorStart + fatfile->sectorUpto, 
                         bbuf);
+        /* lastBytes records the amount of data written to the
+           last sector */
         fatfile->lastBytes = tsz;
         
+        /* totbytes contains the size of the entire file */
         fatfile->totbytes += szbuf;
     }
 
+    /* now update the directory sector with the new file size */
     fatReadLogical(fat,
                    fatfile->dirSect,
                    bbuf);
@@ -863,6 +881,8 @@ static unsigned int fatFindFreeCluster(FAT *fat)
     return (0);
 }
 
+/* fatChain - break into a new cluster */
+
 static void fatChain(FAT *fat, FATFILE *fatfile)
 {
     unsigned long fatSector;
@@ -876,16 +896,23 @@ static void fatChain(FAT *fat, FATFILE *fatfile)
     /* +++ need fat12 logic too */
     if (fat->fat16)
     {
+        /* for fat-16, each cluster in the FAT takes up 2 bytes */
         fatSector = fat->fatstart + (oldcluster * 2) / fat->sector_size;
+        /* read the FAT sector that contains this cluster entry */
         fatReadLogical(fat, fatSector, buf);
         offset = (oldcluster * 2) % fat->sector_size;
+        /* point the old cluster towards the new one */
         buf[offset] = newcluster & 0xff;
         buf[offset + 1] = newcluster >> 8;
         fatWriteLogical(fat, fatSector, buf);
         
+        /* mark the new cluster as last */
         fatMarkCluster(fat, newcluster);
         
+        /* update to new cluster */
         fatfile->cluster = newcluster;
+        
+        /* update to new set of sectors */
         fatfile->sectorStart = (fatfile->cluster - 2)
                     * (long)fat->sectors_per_cluster
                     + fat->filestart;                    

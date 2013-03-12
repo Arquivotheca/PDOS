@@ -830,6 +830,9 @@ static void fatWriteLogical(FAT *fat, long sector, void *buf)
     return;
 }
 
+
+/* fatMarkCluster - mark a cluster as end of chain */
+
 static void fatMarkCluster(FAT *fat, unsigned int cluster)
 {
     unsigned long fatSector;
@@ -850,6 +853,9 @@ static void fatMarkCluster(FAT *fat, unsigned int cluster)
     return;
 }
 
+
+/* fatFindFreeCluster - get next available free cluster */
+
 static unsigned int fatFindFreeCluster(FAT *fat)
 {
     static unsigned char buf[MAXSECTSZ];
@@ -857,7 +863,8 @@ static unsigned int fatFindFreeCluster(FAT *fat)
     int found = 0;
     int x;
     unsigned int ret;
-    
+
+    /* +++ need fat12 logic too */    
     if (fat->fat16)
     {
         for (fatSector = fat->fatstart;
@@ -883,6 +890,7 @@ static unsigned int fatFindFreeCluster(FAT *fat)
     }
     return (0);
 }
+
 
 /* fatChain - break into a new cluster */
 

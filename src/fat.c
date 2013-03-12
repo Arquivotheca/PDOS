@@ -1,3 +1,14 @@
+/*********************************************************************/
+/*                                                                   */
+/*  This Program Written by Paul Edwards.                            */
+/*  Released to the Public Domain                                    */
+/*                                                                   */
+/*********************************************************************/
+/*********************************************************************/
+/*                                                                   */
+/*  fat - file allocation table routinesm                            */
+/*                                                                   */
+/*********************************************************************/
 
 #include <string.h>
 
@@ -29,6 +40,7 @@ static void fatReadLogical(FAT *fat, long sector, void *buf);
 static void fatWriteLogical(FAT *fat, long sector, void *buf);
 static void fatMarkCluster(FAT *fat, unsigned int cluster);
 static unsigned int fatFindFreeCluster(FAT *fat);
+static void fatChain(FAT *fat, FATFILE *fatfile);
 
 
 /*
@@ -63,6 +75,7 @@ void fatInit(FAT *fat,
     fat->drive = bpb[25];
     fat->sector_size = bpb[0] | ((unsigned int)bpb[1] << 8);
     fat->sectors_per_cluster = bpb[2];
+    fat->bytes_per_cluster = fat->sector_size * fat->sectors_per_cluster;
 #if 0
     printf("sector_size is %x\n", (int)fat->sector_size);
     printf("sec per clus is %x\n", (int)fat->sectors_per_cluster);
@@ -315,18 +328,81 @@ size_t fatReadFile(FAT *fat, FATFILE *fatfile, void *buf, size_t szbuf)
 size_t fatWriteFile(FAT *fat, FATFILE *fatfile, void *buf, size_t szbuf)
 {
     static unsigned char bbuf[MAXSECTSZ];
-    
-    if (szbuf < MAXSECTSZ)
+    size_t rem; /* remaining bytes in sector */
+    size_t tsz; /* temporary size */
+    size_t done; /* written bytes */
+
+    /* Regardless of whether szbuf is 0 or remaining bytes is 0,
+       we will not break into a new sector or cluster */
+
+    if (szbuf == 0) return (0);    
+    rem = fat->sector_size - fatfile->lastbytes;
+    if ((fatfile->lastBytes != 0) && (rem != 0))
     {
-        memcpy(bbuf, buf, szbuf);
+        fatReadLogical(fat,
+                       fatfile->sectorStart + fatfile->sectorUpto, 
+                       bbuf);
+    }
+    
+    if (szbuf <= rem)
+    {
+        memcpy(bbuf + fatfile->lastbytes,
+               buf,
+               szbuf);
         fatWriteLogical(fat,
                         fatfile->sectorStart + fatfile->sectorUpto, 
                         bbuf);
+        fatfile->lastbytes += szbuf;
+    }
+    else
+    {
+        if (rem != 0)
+        {
+            memcpy(bbuf + fatfile->lastbytes,
+                   buf,
+                   rem);
+            fatWriteLogical(fat,
+                            fatfile->sectorStart + fatfile->sectorUpto, 
+                            bbuf);
+        }
+        done = rem;
+        tsz = szbuf - rem;
+        fatfile->sectorUpto++;
+        if (fatfile->sectorUpto == fat->sectors_per_cluster)
+        {
+            fatChain(fat, fatfile);
+        }
+        while (tsz > fat->sector_size)
+        {
+            memcpy(bbuf, buf + done, fat->sector_size);
+            fatWriteLogical(fat,
+                            fatfile->sectorStart + fatfile->sectorUpto, 
+                            bbuf);
+            fatfile->sectorUpto++;
+            if (fatfile->sectorUpto == fat->sectors_per_cluster)
+            {
+                fatChain(fat, fatfile);
+            }
+            tsz -= fat->sector_size;
+            done += fat->sector_size;
+        }
+        memcpy(bbuf, buf + done, tsz);
+        fatWriteLogical(fat,
+                        fatfile->sectorStart + fatfile->sectorUpto, 
+                        bbuf);
+        fatfile->lastbytes = tsz;
+        
         fatfile->totbytes += szbuf;
         fatReadLogical(fat,
                        fatfile->dirSect,
                        bbuf);
-        bbuf[fatfile->dirOffset + 0x1c] = fatfile->totbytes;
+        bbuf[fatfile->dirOffset + 0x1c] = fatfile->totbytes & 0xff;
+        bbuf[fatfile->dirOffset + 0x1c + 1]
+            = (fatfile->totbytes >> 8) & 0xff;
+        bbuf[fatfile->dirOffset + 0x1c + 2]
+            = (fatfile->totbytes >> 16) & 0xff;
+        bbuf[fatfile->dirOffset + 0x1c + 3]
+            = (fatfile->totbytes >> 24) & 0xff;
         fatWriteLogical(fat,
                         fatfile->dirSect,
                         bbuf);        
@@ -658,8 +734,10 @@ static void fatDirSectorUpdate(FAT *fat,
                 /* p[0x0b] = attrib; */ /* +++ */
                 /* p[0x16], len 4 = datetime */ /* +++ */
                 fatfile->totbytes = 0;
-                p[0x1c + 1] = 0;
                 p[0x1c] = fatfile->totbytes;
+                p[0x1c + 1] = 0;
+                p[0x1c + 2] = 0;
+                p[0x1c + 3] = 0;
                 fatfile->dirSect = startSector + x;
                 fatfile->dirOffset = (p - buf);
                 p += 32; /* +++ */
@@ -754,3 +832,36 @@ static unsigned int fatFindFreeCluster(FAT *fat)
     }
     return (0);
 }
+
+static void fatChain(FAT *fat, FATFILE *fatfile)
+{
+    unsigned long fatSector;
+    static unsigned char buf[MAXSECTSZ];
+    int offset;
+    unsigned int newcluster;
+    unsigned int oldcluster;
+    
+    oldcluster = fatfile->cluster;
+    newcluster = fatFindFreeCluster(fat);
+    /* +++ need fat12 logic too */
+    if (fat->fat16)
+    {
+        fatSector = fat->fatstart + (oldcluster * 2) / fat->sector_size;
+        fatReadLogical(fat, fatSector, buf);
+        offset = (oldcluster * 2) % fat->sector_size;
+        buf[offset] = newcluster & 0xff;
+        buf[offset + 1] = newcluster >> 8);
+        fatWriteLogical(fat, fatSector, buf);
+        
+        fatMarkCluster(fat, newcluster);
+        
+        fatfile->cluster = newcluster;
+        fatfile->sectorStart = (fatfile->cluster - 2)
+                    * (long)fat->sectors_per_cluster
+                    + fat->filestart;                    
+        fatfile->sectorUpto = 0;
+    }
+
+    return;
+}
+

@@ -14,6 +14,7 @@ typedef struct {
     unsigned long sectors_per_cylinder;
     unsigned long sectors_per_disk;
     unsigned int sectors_per_cluster;
+    unsigned int bytes_per_cluster;
     unsigned int numfats;
     unsigned int bootstart;
     unsigned int fatstart;

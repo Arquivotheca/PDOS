@@ -272,7 +272,11 @@ size_t fatReadFile(FAT *fat, FATFILE *fatfile, void *buf, size_t szbuf)
         if (fatEndCluster(fat, fatfile->nextCluster) && !fatfile->dir)
         {
             /* exception - a full cluster has 0 last sectors */
-            if (fatfile->lastSectors != 0)
+            if (fatfile->lastSectors == 0) && fatfile->lastBytes == 0)
+            {
+                /* do nothing */
+            }
+            else
             {
                 /* reduce sectors available */
                 sectorsAvail = fatfile->lastSectors + 1;
@@ -291,7 +295,15 @@ size_t fatReadFile(FAT *fat, FATFILE *fatfile, void *buf, size_t szbuf)
                 /* if we have reached the last sector, abide by lastBytes */
                 if (fatfile->sectorUpto == fatfile->lastSectors)
                 {
-                    bytesAvail = fatfile->lastBytes;
+                    /* exception - a full cluster has 0 last sectors */
+                    if (fatfile->lastSectors == 0) && fatfile->lastBytes == 0)
+                    {
+                        /* do nothing */
+                    }
+                    else
+                    {
+                        bytesAvail = fatfile->lastBytes;
+                    }
                 }
             }
             /* while we haven't used up the bytesAvail */

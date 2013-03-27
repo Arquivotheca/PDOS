@@ -982,7 +982,7 @@ static void fatNuke(FAT *fat, unsigned int cluster)
                 buffered = fatSector;
             }
             offset = (cluster * 2) % fat->sector_size;
-            newcluster = buf[offset + 1] << 8 | buf[offset];
+            cluster = buf[offset + 1] << 8 | buf[offset];
             buf[offset] = 0x00;
             buf[offset + 1] = 0x00;
         }

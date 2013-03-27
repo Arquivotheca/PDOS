@@ -44,6 +44,7 @@ static void fatWriteLogical(FAT *fat, long sector, void *buf);
 static void fatMarkCluster(FAT *fat, unsigned int cluster);
 static unsigned int fatFindFreeCluster(FAT *fat);
 static void fatChain(FAT *fat, FATFILE *fatfile);
+static void fatNuke(FAT *fat, unsigned int cluster);
 
 
 /*
@@ -758,14 +759,20 @@ static void fatDirSectorUpdate(FAT *fat,
     unsigned char buf[MAXSECTSZ];
     unsigned char *p;
     char dirent[32];
-    int found = 0;
+    int found = 0; /* if filename already exists, or we've hit end of dir */
     
     for (x = 0; x < numsectors && !found; x++)
     {
         fatReadLogical(fat, startSector + x, buf);
         for (p = buf; p < buf + fat->sector_size; p += 32)
         {
-            if (*p == '\0')
+            if (memcmp(p, search, 11) == 0)
+             {
+                fatfile->cluster = p[0x1a + 1] << 8 | p[0x1a];
+                fatNuke(fat, fatfile->cluster);
+                found = 1;
+            }
+            if (found || (*p == '\0'))
             {
                 fatfile->cluster = fatFindFreeCluster(fat);
 #if 0
@@ -791,9 +798,25 @@ static void fatDirSectorUpdate(FAT *fat,
                 fatfile->dirSect = startSector + x;
                 fatfile->dirOffset = (p - buf);
                 fatfile->lastBytes = 0;
-                p += 32; /* +++ */
-                *p = '\0'; /* +++ */
-                fatWriteLogical(fat, startSector + x, buf);
+                p += 32;
+                if (!found)
+                {
+                    if (p != (buf + fat->sector_size))
+                    {
+                        *p = '\0';
+                        fatWriteLogical(fat, startSector + x, buf);
+                    }
+                    else
+                    {
+                        fatWriteLogical(fat, startSector + x, buf);
+                        if ((x + 1) != numsectors)
+                        {
+                            fatReadLogical(fat, startSector + x + 1, buf);
+                            buf[0] = '\0';
+                            fatWriteLogical(fat, startSector + x + 1, buf);
+                        }
+                    }
+                }
                 found = 1;
                 break;
             }
@@ -933,3 +956,40 @@ static void fatChain(FAT *fat, FATFILE *fatfile)
     return;
 }
 
+
+/* delete a file by setting cluster chain to zeros */
+
+static void fatNuke(FAT *fat, unsigned int cluster)
+{
+    unsigned long fatSector;
+    static unsigned char buf[MAXSECTSZ];
+    int offset;
+    int buffered = 0;
+
+    while (!fatEndCluster(fat, cluster))
+    {
+        /* +++ need fat12 logic too */
+        if (fat->fat16)
+        {
+            fatSector = fat->fatstart + (cluster * 2) / fat->sector_size;
+            if (buffered != fatSector)
+            {
+                if (buffered != 0)
+                {
+                    fatWriteLogical(fat, buffered, buf);
+                }
+                fatReadLogical(fat, fatSector, buf);
+                buffered = fatSector;
+            }
+            offset = (cluster * 2) % fat->sector_size;
+            newcluster = buf[offset + 1] << 8 | buf[offset];
+            buf[offset] = 0x00;
+            buf[offset + 1] = 0x00;
+        }
+    }
+    if (buffered != 0)
+    {
+        fatWriteLogical(fat, buffered, buf);
+    }
+    return;
+}

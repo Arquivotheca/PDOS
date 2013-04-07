@@ -767,7 +767,7 @@ static void fatDirSectorUpdate(FAT *fat,
         for (p = buf; p < buf + fat->sector_size; p += 32)
         {
             if (memcmp(p, search, 11) == 0)
-             {
+            {
                 fatfile->cluster = p[0x1a + 1] << 8 | p[0x1a];
                 fatNuke(fat, fatfile->cluster);
                 found = 1;

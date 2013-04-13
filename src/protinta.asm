@@ -318,9 +318,9 @@ runreal proc
 runreal_stage3 label near
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; convert return long return code into 32 bit int
-        shl edx, 16
-        mov dx, ax
-        mov eax, edx
+        shl edx, 16  ; preserve the contents of dx by shifting
+        mov dx, ax   ; combine with contents of ax
+        mov eax, edx ; move the new value into eax
         
         pop ebx
         pop ecx        

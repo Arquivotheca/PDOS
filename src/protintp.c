@@ -8,6 +8,10 @@
 /*                                                                   */
 /*  protintp - part of protint                                       */
 /*                                                                   */
+/*  This is linked in to the protected mode executable. Interrupts   */
+/*  are channeled into this code, and either get handled by PDOS     */
+/*  or redirected to real mode                                       */
+/*                                                                   */
 /*********************************************************************/
 
 #include "support.h"

@@ -8,6 +8,10 @@
 /*                                                                   */
 /*  protint - protected mode interface                               */
 /*                                                                   */
+/*  This code is linked into the real mode executable and allows     */
+/*  the execution of a protected mode binary, and also for the       */
+/*  protected mode to call a real mode interrupt (runreal).          */
+/*                                                                   */
 /*********************************************************************/
 
 #include <stdio.h>

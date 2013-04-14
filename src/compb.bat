@@ -1,3 +1,3 @@
 @echo off
-tasm -zi -mx -Dmemodel=tiny pbootsec.asm
+wasmr -zq -zcm -Dmemodel=tiny pbootsec.asm
 tlink -t -x pbootsec,pbootsec.com,,,

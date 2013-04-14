@@ -1,1 +1,1 @@
-bcc -w bootupd.c
+tcc -w bootupd.c

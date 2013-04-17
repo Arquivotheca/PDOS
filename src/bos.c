@@ -327,6 +327,9 @@ int BosDiskStatus(unsigned int drive, unsigned int *status)
     return (0);
 }
 
+
+/* BosDiskSectorRead - read using track etc Int 13h Function 02h */
+
 int BosDiskSectorRead(void         *buffer,
                       unsigned int sectors,
                       unsigned int drive,

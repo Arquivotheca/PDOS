@@ -127,7 +127,7 @@ loadsecs proc
 
 ; read 3 sectors
 mov bx, 0700h
-mov cl, 010h
+mov cl, 151
 call saferead
 add bx, 0200h
 add cl, 1
@@ -163,7 +163,7 @@ saferead endp
 reset proc
 
 mov ah, 00h ; function
-mov dl, 00h ; drive
+mov dl, 080h ; drive
 
 int 013h
 
@@ -185,7 +185,7 @@ mov ah, 02h ; code
 mov al, 01h ; 1 sector
 mov ch, 00h ; track 0 
 mov dh, 01h ; head
-mov dl, 00h ; drive
+mov dl, 080h ; drive
 
 int 013h
 

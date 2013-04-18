@@ -105,6 +105,9 @@ void fatInit(FAT *fat,
     fat->rootsize = fat->rootentries / (fat->sector_size / 32);
     fat->sectors_per_track = (bpb[13] | ((unsigned int)bpb[14] << 8));
     fat->filestart = fat->rootstart + fat->rootsize;
+#if 0
+    printf("filestart is %d\n", fat->filestart);
+#endif
     fat->num_tracks = fat->sectors_per_disk / fat->sectors_per_track;
     fat->num_cylinders = (unsigned int)(fat->num_tracks / fat->num_heads);
     fat->sectors_per_cylinder = fat->sectors_per_track * fat->num_heads;

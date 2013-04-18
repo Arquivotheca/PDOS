@@ -128,7 +128,7 @@ loadsecs proc
 
 ; read 3 sectors
 mov bx, 0700h
-mov cl, 26
+mov cl, 26  ; +++ needs to be 010h for floppy
 call saferead
 add bx, 0200h
 add cl, 1
@@ -186,7 +186,7 @@ mov es, ax  ; buffer segment
 mov ah, 02h ; code
 mov al, 01h ; 1 sector
 mov ch, 00h ; track 0 
-mov dh, 03h ; head
+mov dh, 03h ; head   ; +++ should be 01h for floppy
 ; dl should not have changed since boot time
 ; mov dl, 080h ; drive
 

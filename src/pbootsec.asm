@@ -164,7 +164,8 @@ saferead endp
 reset proc
 
 mov ah, 00h ; function
-mov dl, 080h ; drive
+; dl should not have changed since boot time
+; mov dl, 080h ; drive
 
 int 013h
 
@@ -186,7 +187,8 @@ mov ah, 02h ; code
 mov al, 01h ; 1 sector
 mov ch, 00h ; track 0 
 mov dh, 03h ; head
-mov dl, 080h ; drive
+; dl should not have changed since boot time
+; mov dl, 080h ; drive
 
 int 013h
 

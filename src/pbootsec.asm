@@ -128,7 +128,7 @@ loadsecs proc
 
 ; read 3 sectors
 mov bx, 0700h
-mov cl, 25
+mov cl, 26
 call saferead
 add bx, 0200h
 add cl, 1

@@ -5,7 +5,7 @@ rem then this batch file will produce the 16-bit and 32-bit
 rem boot images that comprise the executable distribution of pdos
 
 set drive=a
-set loc=d:\devel\pdos\src
+set loc=c:\devel\pdos\src
 
 cd pdpclib
 del *.obj

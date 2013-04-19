@@ -1,5 +1,0 @@
-hao clear
-
-# For some reason, Hercules sees an extra prompt, so trigger on that too
-hao tgt PDOS00
-hao cmd script auto_run4.rc

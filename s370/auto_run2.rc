@@ -1,7 +1,0 @@
-hao clear
-
-# When we see the PDOS prompt, we can run hercauto.bat
-hao tgt PDOS00
-hao cmd script auto_run3.rc
-
-/mvsunzip hercauto.zip

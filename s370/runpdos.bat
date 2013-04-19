@@ -4,7 +4,7 @@ rem and run PDOS from batch jobs
 rem You can also simply add the %PDOS% directory
 rem to your path
 
-set rcfile=auto_run
+set rcfile=autorun
 
 if %1. == . goto usage
 if not exist %1 goto usage

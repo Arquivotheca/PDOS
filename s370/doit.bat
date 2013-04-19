@@ -10,32 +10,32 @@ rem same structure so long as the assembler code is changed.
 rem That is how we get away without requiring a special version
 rem of the C library!
 
-gccmvs -DUSE_MEMMGR -Os -DS380 -S -I . -I ../pdpclib ../pdpclib/start.c
-gccmvs -DUSE_MEMMGR -Os -DS380 -S -I . -I ../pdpclib ../pdpclib/stdio.c
-gccmvs -DUSE_MEMMGR -Os -DS380 -S -I . -I ../pdpclib ../pdpclib/stdlib.c
-gccmvs -DUSE_MEMMGR -Os -DS380 -S -I . -I ../pdpclib ../pdpclib/ctype.c
-gccmvs -DUSE_MEMMGR -Os -DS380 -S -I . -I ../pdpclib ../pdpclib/string.c
-gccmvs -DUSE_MEMMGR -Os -DS380 -S -I . -I ../pdpclib ../pdpclib/time.c
-gccmvs -DUSE_MEMMGR -Os -DS380 -S -I . -I ../pdpclib ../pdpclib/errno.c
-gccmvs -DUSE_MEMMGR -Os -DS380 -S -I . -I ../pdpclib ../pdpclib/assert.c
-gccmvs -DUSE_MEMMGR -Os -DS380 -S -I . -I ../pdpclib ../pdpclib/locale.c
-gccmvs -DUSE_MEMMGR -Os -DS380 -S -I . -I ../pdpclib ../pdpclib/math.c
-gccmvs -DUSE_MEMMGR -Os -DS380 -S -I . -I ../pdpclib ../pdpclib/setjmp.c
-gccmvs -DUSE_MEMMGR -Os -DS380 -S -I . -I ../pdpclib ../pdpclib/signal.c
-gccmvs -DUSE_MEMMGR -Os -DS380 -S -I . -I ../pdpclib ../pdpclib/__memmgr.c
-gccmvs -DUSE_MEMMGR -Os -DS380 -S -I . -I ../pdpclib pload.c
-gccmvs -DUSE_MEMMGR -Os -DS380 -S -I . -I ../pdpclib pdos.c
-gccmvs -DUSE_MEMMGR -Os -DS380 -S -I . -I ../pdpclib pdosutil.c
-gccmvs -DUSE_MEMMGR -Os -DS380 -S -I . -I ../pdpclib pcomm.c
-gccmvs -DUSE_MEMMGR -O0 -DS380 -S -I . -I ../pdpclib world.c
+gccmvs -DUSE_MEMMGR -Os -DS390 -S -I . -I ../pdpclib ../pdpclib/start.c
+gccmvs -DUSE_MEMMGR -Os -DS390 -S -I . -I ../pdpclib ../pdpclib/stdio.c
+gccmvs -DUSE_MEMMGR -Os -DS390 -S -I . -I ../pdpclib ../pdpclib/stdlib.c
+gccmvs -DUSE_MEMMGR -Os -DS390 -S -I . -I ../pdpclib ../pdpclib/ctype.c
+gccmvs -DUSE_MEMMGR -Os -DS390 -S -I . -I ../pdpclib ../pdpclib/string.c
+gccmvs -DUSE_MEMMGR -Os -DS390 -S -I . -I ../pdpclib ../pdpclib/time.c
+gccmvs -DUSE_MEMMGR -Os -DS390 -S -I . -I ../pdpclib ../pdpclib/errno.c
+gccmvs -DUSE_MEMMGR -Os -DS390 -S -I . -I ../pdpclib ../pdpclib/assert.c
+gccmvs -DUSE_MEMMGR -Os -DS390 -S -I . -I ../pdpclib ../pdpclib/locale.c
+gccmvs -DUSE_MEMMGR -Os -DS390 -S -I . -I ../pdpclib ../pdpclib/math.c
+gccmvs -DUSE_MEMMGR -Os -DS390 -S -I . -I ../pdpclib ../pdpclib/setjmp.c
+gccmvs -DUSE_MEMMGR -Os -DS390 -S -I . -I ../pdpclib ../pdpclib/signal.c
+gccmvs -DUSE_MEMMGR -Os -DS390 -S -I . -I ../pdpclib ../pdpclib/__memmgr.c
+gccmvs -DUSE_MEMMGR -Os -DS390 -S -I . -I ../pdpclib pload.c
+gccmvs -DUSE_MEMMGR -Os -DS390 -S -I . -I ../pdpclib pdos.c
+gccmvs -DUSE_MEMMGR -Os -DS390 -S -I . -I ../pdpclib pdosutil.c
+gccmvs -DUSE_MEMMGR -Os -DS390 -S -I . -I ../pdpclib pcomm.c
+gccmvs -DUSE_MEMMGR -O0 -DS390 -S -I . -I ../pdpclib world.c
 
 sleep 1
 
 rem when globally changing, change the DS3x0 to whatever
-rem and then change the next file
+rem and then change the file in the next line after comments
 rem also you will need to change pdptop.mac
 
-copy pdos380.cnf pdos.cnf
+copy pdos390.cnf pdos.cnf
 
 
 rem we did compiles already, but now need to do assembles and
@@ -68,7 +68,7 @@ zip -0X hercauto hercauto.bat
 
 rem get GCC/PDPCLIB utilities
 
-unzip -o gccpdos
+unzip -o \download\gccpdos
 
 
 rem build DASD. Put a copy into MVS/380 area for no particular reason

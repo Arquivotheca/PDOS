@@ -5,8 +5,8 @@ Version 0.8x, released 2010-xx-xx
 Written by Paul Edwards, fight.subjugation@gmail.com
 Released to the public domain
 You may use this entire package for any purpose whatsoever
-without restriction.
-
+without restriction, as discussed here:
+http://creativecommons.org/publicdomain/zero/1.0/
 
 
 INTRODUCTION

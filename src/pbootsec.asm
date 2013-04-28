@@ -158,14 +158,11 @@ bypass:
   ;Patch DS here if we aren't a com file
   mov  ax, 07b0h
   mov  ds, ax
+  mov  es, ax
  Skip:
  xor  ax, ax   ;Zeroize ax
  mov  ss, ax
  mov  sp, 07c00h
- push cs
- pop  ds
- push cs
- pop  es
 
  mov  [BootDisk], dl   ;Store our boot disk
 

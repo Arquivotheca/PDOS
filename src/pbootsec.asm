@@ -25,7 +25,7 @@ _BSS ends
 
 _TEXT segment word public 'CODE'
 
-org 07c00h
+org 0100h
 top:
 
 public start

@@ -136,7 +136,7 @@ VolumeID    dd  0     ;Volume's ID, we don't care for it ;)
 ; offset 2b
 VolumeLabel db  'PDOS Volume'  ;11 bytes
 ; offset 36
-FileSystem  db  'FAT  '   ;File system (FAT12 or FAT16)
+FileSystem  db  'FAT     '   ;File system (FAT12 or FAT16)
 
 ; offset 3e and onwards is our own code
 

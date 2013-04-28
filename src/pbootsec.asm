@@ -97,28 +97,48 @@ start proc
 ;bpb db 51 dup(?)
 
 ;Lets make an actual BPB
+; offset 3
 OEMName           db 'PDOS x.x'
+; offset b
 BytesPerSector    dw 512   ;512 bytes is normal ;)
+; offset d
 SectorsPerClustor db 1     ;Sector == cluster
+; offset e
 ReservedSectors   dw 1     ;Reserve the boot sector
+; offset 10
 FatCount          db 2     ;2 copies of the fat is standard
+; offset 11
 RootEntries       dw 224   ;# of root entries
+; offset 13
 TotalSectors16    dw 0     ;# of sectors on the disk
+; offset 15
 MediaType         db 0f8h  ;Ignored for most things
+; offset 16
 FatSize16         dw 0     ;Size of a single fat in sectors
+; offset 18
 SectorsPerTrack   dw 0     ;Sectors Per Track
+; offset 1a
 Heads             dw 0     ;Head count
+; offset 1c (DOS 3.31+)
 HiddenSectors     dd 0     ;# of hidden sectors
+; offset 20
 TotalSectors32    dd 0     ;# of sectors, 32-bit!
 
 ;Start of our Fat12/16 info
+; offset 24
 DriveNum    db  0     ;Drive number (0x0x - floppy, 0x8x - hd
+; offset 25
 Reserved    db  0     ;Reserved, set to 0
+; offset 26
 BootSig     db  0x29    ;Set to 0x29 if next 3 values are present
+; offset 27
 VolumeID    dd  0     ;Volume's ID, we don't care for it ;)
+; offset 2b
 VolumeLabel db  'PDOS Volume'  ;11 bytes
+; offset 36
 FileSystem  db  'FAT  '   ;File system (FAT12 or FAT16)
 
+; offset 3e and onwards is our own code
 
 BootDisk db 0
 ; new disk parameter table

@@ -213,7 +213,7 @@ cmp ax, 05h
 jge giveup
 first:
 call secread
-jnz retry
+jc retry
 giveup:
 ret
 

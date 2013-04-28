@@ -148,6 +148,16 @@ BootDisk db 0
 bypass:
 ;Always clear direction bit first, just incase bios leaves it unset
  cld
+ ;This should grab our current instruction pointer
+ call GetIP
+ GetIP:
+ pop  ax
+ cmp  ax, 07000h
+ jge  Skip
+  ;Patch DS here if we aren't a com file
+  mov  ax, 07b0h
+  mov  ds, ax
+ Skip:
  xor  ax, ax   ;Zeroize ax
  mov  ss, ax
  mov  sp, 07c00h

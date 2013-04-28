@@ -152,8 +152,9 @@ bypass:
  call GetIP
  GetIP:
  pop  ax
- cmp  ax, 07000h
- jge  Skip
+ and ax, 0ff00h
+ cmp  ax, 0100h
+ je  Skip
   ;Patch DS here if we aren't a com file
   mov  ax, 07b0h
   mov  ds, ax

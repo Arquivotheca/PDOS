@@ -31,7 +31,7 @@ top:
 public start
 start proc
 
-;Jump over out BPB
+;Jump over our BPB
  jmp bypass
  nop
 
@@ -148,7 +148,8 @@ bypass:
  retf
 start endp
 
-;Calculates the location of our file to load (after Fat, after hidden sectors, etc)
+;Calculates the location of our file to load (after Fat, after hidden 
+;sectors, etc)
 ;Inputs:
 ;   (None)
 ;Outputs:
@@ -166,7 +167,8 @@ CalculateLocation proc
  ;Use bx to hold our value, as ax is needed by mul/div!
  mov  bx, [ReservedSectors]
  mov  ax, [FatSize16]
- xor  dx, dx      ;Must zeroize dx before a multiply so our carry flag doesn't get set
+ xor  dx, dx      ;Must zeroize dx before a multiply so our carry flag 
+                  ;doesn't get set
  mul  byte ptr [FatCount]
  add  bx, ax
 

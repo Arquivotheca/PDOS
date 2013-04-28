@@ -151,8 +151,10 @@ bypass:
  xor  ax, ax   ;Zeroize ax
  mov  ss, ax
  mov  sp, 07c00h
- mov  ds, ax   ;Set data segment to 0x000
- mov  es, ax
+ push cs
+ pop  ds
+ push cs
+ pop  es
 
  mov  [BootDisk], dl   ;Store our boot disk
 

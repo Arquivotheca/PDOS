@@ -158,6 +158,7 @@ bypass:
   ;Patch DS here if we aren't a com file
   mov  ax, 07b0h
   mov  ds, ax
+  mov  ax, 0
   mov  es, ax
  Skip:
  xor  ax, ax   ;Zeroize ax

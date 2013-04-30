@@ -2,8 +2,6 @@
 ;
 ; This program written by Paul Edwards
 ; Released to the public domain
-; Revamped by William Bryan.
-; All changes remain public domain
 
 ; This code will be loaded to location 07C00h by the BIOS
 ; We set the stack at 07C00h and make it grow down
@@ -199,6 +197,7 @@ CalculateLocation proc
 
  ;Use bx to hold our value, as ax is needed by mul/div!
  mov  bx, [ReservedSectors]
+ add  bx, word ptr [HiddenSectors] ; +++ hack - should be dword
  mov  ax, [FatSize16]
  xor  dx, dx      ;Must zeroize dx before a multiply so our carry flag 
                   ;doesn't get set
@@ -277,7 +276,6 @@ ReadSingleSector proc
  RetryRead:
   call ResetDrive   ;Get drive ready..
   mov  dl, [BootDisk]  ;Grab our boot disk
-  inc  dh ; ++ hack
   mov  ax, 0x0201   ;Read function, one sector
   int  13h
   jc   RetryRead

@@ -275,6 +275,7 @@ ReadSingleSector proc
  RetryRead:
   call ResetDrive   ;Get drive ready..
   mov  dl, [BootDisk]  ;Grab our boot disk
+  inc  dh ; ++ hack
   mov  ax, 0x0201   ;Read function, one sector
   int  13h
   jc   RetryRead

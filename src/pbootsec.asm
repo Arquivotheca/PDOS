@@ -2,6 +2,8 @@
 ;
 ; This program written by Paul Edwards
 ; Released to the public domain
+; Revamped by William Bryan.
+; All changes remain public domain
 
 ; This code will be loaded to location 07C00h by the BIOS
 ; We set the stack at 07C00h and make it grow down

@@ -278,11 +278,11 @@ ReadSingleSector proc
   mov  ax, 0x0201   ;Read function, one sector
   int  13h
   jc   RetryRead
- push es
- push dx
- push cx
- push bx
- push ax
+ pop es
+ pop dx
+ pop cx
+ pop bx
+ pop ax
  ret
 ReadSingleSector endp
 

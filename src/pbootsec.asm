@@ -298,7 +298,7 @@ ResetDrive endp
 
 ;Read a single sector from a floppy disk
 ;Inputs:
-; ax - sector to read
+; dx:ax - sector to read
 ; es:bx - dest
 ;Outputs:
 ; (None)
@@ -325,7 +325,7 @@ ReadSingleSector endp
 
 ;Read multiple sectors
 ;Inputs:
-; ax - sector to read
+; dx:ax - sector to read
 ; es:bx - dest
 ; cx - # of sectors
 ;Outputs:
@@ -337,6 +337,9 @@ ReadSectors proc
   call ReadSingleSector
   add  bx,  [BytesPerSector] ;Next sector
   inc  ax                    ;Next LBA
+  jnc SkipInc                ;If no overflow, don't increment dx
+   inc dx                    ;If we had a carry, we must increment dx
+SkipInc:
   loop ReadNextSector        ;Until cx = 0
  pop  bx
  pop  ax

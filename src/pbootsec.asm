@@ -122,7 +122,8 @@ SectorsPerTrack   dw 0     ;Sectors Per Track
 ; offset 1a
 Heads             dw 0     ;Head count
 ; offset 1c (DOS 3.31+)
-HiddenSectors     dd 0     ;# of hidden sectors
+HiddenSectors_Low  dw 0    ;Lower 16-bits of hidden sector count
+HiddenSectors_High dw 0    ;Upper 16-bits of hidden sector count
 ; offset 20
 TotalSectors32    dd 0     ;# of sectors, 32-bit!
 
@@ -186,37 +187,56 @@ start endp
 ;Inputs:
 ; (None)
 ;Outputs:
-; ax - sector to load
+; dx:ax - sector to load
 CalculateLocation proc
 ;In order to calculate our data start:
 ;RootStart = ReservedSectors + FatCount * FatSectors
 ;DataStart = RootStart + RootEntryCount * 32 / BytesPerSector
 
- ;Store bx, cx, and dx for later
+;Store bx and cx so they aren't trashed
  push bx
  push cx
+
+;Lets first start calculating the dynamic values
+ mov ax, [FatSize16]
+ xor dx, dx
+ xor cx, cx
+ mov cl, [FatCount]
+ mul cx ;Multiply by a word to ensure dx:ax is the result
+; DX:AX = FatSize16 * FatCount
+
+;Store the results for later
+ push ax
  push dx
 
- ;Use bx to hold our value, as ax is needed by mul/div!
- mov  bx, [ReservedSectors]
- add  bx, word ptr [HiddenSectors] ; +++ hack - should be dword
- mov  ax, [FatSize16]
- xor  dx, dx      ;Must zeroize dx before a multiply so our carry flag 
-                  ;doesn't get set
- mul  byte ptr [FatCount]
- add  bx, ax
+;Zeroize dx before our multiply
+ xor dx, dx
+ mov ax, [RootEntries]
+ mov cx, 32
+ mul cx
+; DX:AX = RootEntries * 32
+ div word ptr [BytesPerSector]   ;Divide by # of bytes per sector
+; AX = RootEntries * 32 / BytesPerSector
+; DX = RootEntries * 32 % BytesPerSector
 
- mov  ax, [RootEntries]
- mov  cl, 5
- shl  ax, cl      ;Same as * 32
- xor  dx, dx      ;Must zeroize dx before a divide
- div  word ptr [BytesPerSector]   ;Divide by # of bytes per sector
+ pop dx ;Restor DX to original value
+ pop bx ;Restore old value of AX into BX
 
- ;Add previous calculation stored in bx into ax to give it our final location!
- add  ax, bx
+;So, we must add BX into AX to combine the numbers
+ add ax, bx
 
- ;Restore dx, and cx, bx
- pop  dx
+;But, if it overflows (carry flag set), we must increment DX to compensate
+ xor cx, cx ;Zeroize cx
+ adc dx, cx ;ADC will add 0 (cx) and if carry flag set add 1
+
+;Now we must add our reserved and hidden sectors
+ add ax, [ReservedSectors]
+ adc dx, cx ;ADC will add 0 (cx) and if carry flag set add 1
+
+ add ax, [HiddenSectors_Low]
+ adc dx, [HiddenSectors_High] ;ADC will add 0 (cx) and if carry flag set add 1
+
+;Restore cx and bx
  pop  cx
  pop  bx
  ret

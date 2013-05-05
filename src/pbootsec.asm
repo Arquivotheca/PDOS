@@ -182,9 +182,9 @@ start endp
 ;Calculates the location of our file to load (after Fat, after hidden 
 ;sectors, etc)
 ;Inputs:
-;   (None)
+; (None)
 ;Outputs:
-;   ax - sector to load
+; ax - sector to load
 CalculateLocation proc
 ;In order to calculate our data start:
 ;RootStart = ReservedSectors + FatCount * FatSectors
@@ -222,31 +222,45 @@ CalculateLocation endp
 
 ;Convert LBA -> CHS
 ;Inputs:
-; ax - sector
+; dx:ax - sector (32-bit value)
 ;Outputs:
-;   Standard CHS format for use by int 13h
+; Standard CHS format for use by int 13h
+; INT 13h allows 256 heads, 1024 cylinders, and 63 sectors max
+; Cylinder = LBA / (Heads_Per_Cylinder * Sectors_Per_Track)
+; Temp = LBA % (Heads_Per_Cylinder * Sectors_Per_Track)
+; Heads = Temp / Sectors_Per_Track
+; Sector = Temp % Sectors_Per_Track + 1
+; CX = Cylinder (Highest 10-bits), Sector (Lower 6-bits)
+; DH = Head
+; DL = Drive
+; Div = Dx:AX / value
+;  AX = Quotient (Result)
+;  DX = Remainder (Leftover, Modulus)
 Lba2Chs proc
- xor  dx, dx      ;Must zeroize dx before a divide
  div  word ptr [SectorsPerTrack]
+; AX = DX:AX / SectorsPerTrack (Temp)
+; DX = DX:AX % SectorsPerTrack (Sector)
  mov  cl,  dl     ;Sector #
- inc  cl
- xor  dx, dx       ;Zero out dx again
+ inc  cl ;Add one since sector starts at 1, not zero
+ xor  dx, dx       ;Zero out dx, so now we are just working on AX
  div  word ptr [Heads]
+; AX = AX / Heads ( = Cylinder)
+; DX = AX % Heads ( = Head)
  mov  dh,  dl     ;Mov dl into dh (dh=head)
- mov  ch,  al     ;Mov cylinder into ch
+;Have to store cx because 8086 needs it to be able to shl!
  push cx
  mov  cl, 6
- shl  ah,  cl
+ shl  ax,  cl ;Move cylinder 6-bits up to make room for Sector
  pop  cx
- or  cl,  ah
+ or  cx,  ax
  ret
 Lba2Chs endp
 
 ;Used to reset our drive before we use it
 ;Inputs:
-;   (None)
+; (None)
 ;Outputs:
-;   (None)
+; (None)
 ResetDrive proc
  push ax
  push dx
@@ -262,10 +276,10 @@ ResetDrive endp
 
 ;Read a single sector from a floppy disk
 ;Inputs:
-;   ax - sector to read
-;   es:bx - dest
+; ax - sector to read
+; es:bx - dest
 ;Outputs:
-;   (None)
+; (None)
 ReadSingleSector proc
  push ax
  push bx
@@ -289,11 +303,11 @@ ReadSingleSector endp
 
 ;Read multiple sectors
 ;Inputs:
-;   ax - sector to read
-;   es:bx - dest
-;   cx - # of sectors
+; ax - sector to read
+; es:bx - dest
+; cx - # of sectors
 ;Outputs:
-;   (None)
+; (None)
 ReadSectors proc
  push ax
  push bx

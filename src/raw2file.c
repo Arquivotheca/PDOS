@@ -19,9 +19,9 @@
 
 #include "bos.h"
 
-#define STARTSECT 0x800 /* 0x7c1 */
-#define NUMSECT 50000
-#define DRIVE 0x82
+/* start sector is set to 0x800 - 1 MB */
+/* this shows up as 0x7c1 relative to the partition start */
+#define STARTSECT 0x800
 
 static int readLBA(void *buf, 
                    int sectors, 

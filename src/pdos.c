@@ -940,7 +940,27 @@ static void int21handler(union REGS *regsin,
                 regsout->x.cflag = 1;
             }
             break;
+        case 0x60:
+#ifdef __32BIT__
+            p = SUBADDRFIX(regsin->d.esi);
+            q = SUBADDRFIX(regsin->d.edi);
+#else
+            p = MK_FP(sregs->ds, regsin->x.si);
+            q = MK_FP(sregs->es, regsin->x.di);
+#endif      
+            ret=PosTruename(p,q);
 
+            if(ret < 0)
+             {
+                regsout->x.cflag=1;
+#ifdef __32BIT__	
+                regsout->d.eax=-ret;
+#else
+                regsout->x.ax=-ret;
+#endif
+             }
+             break;
+          
         /* emx calls are 0x7f */
 #ifdef __32BIT__
         case 0x7f:
@@ -1443,6 +1463,12 @@ int PosFindNext(void)
 int PosRenameFile(const char *old, const char *new)
 {
     return (0);
+}
+
+int PosTruename(char *prename,char *postname)
+{
+    strcpy(postname,prename);
+    return(0);	
 }
 
 void PosDisplayInteger(int x)

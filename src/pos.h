@@ -91,6 +91,8 @@ int PosGetDeviceInformation(int handle, unsigned int *devinfo);
 
 int PosBlockDeviceRemovable(int drive); /* func 44 subfunc 8 */
 
+int PosBlockDeviceRemote(int drive,int *da); /* func 44 subfunc 9*/
+
 int PosGetCurDir(int drive, char *dir); /* func 47 */
 
 void *PosAllocMem(unsigned int size); /* func 48 */

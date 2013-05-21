@@ -463,6 +463,40 @@ int PosBlockDeviceRemovable(int drive)
 #endif            
 }
 
+/*Get the status of the remote device */
+int PosBlockDeviceRemote(int drive,int *da)
+{
+    union REGS regsin;
+    union REGS regsout;
+
+    regsin.h.ah = 0x44;
+    regsin.h.al = 0x09;
+    regsin.h.bl = (char)drive;
+    int86(0x21, &regsin, &regsout);
+#ifdef __32BIT__
+    if (regsout.x.cflag)
+    {
+        regsout.d.eax = -regsout.d.eax;
+    }
+    else
+    {
+        *da= regsout.d.edx;
+    }
+    return (regsout.d.eax);
+#else
+    if (regsout.x.cflag)
+    {
+        regsout.x.ax = -regsout.x.ax;
+    }
+    else
+    {
+        *da= regsout.x.dx;
+    }
+    return (regsout.x.ax);
+#endif            
+}
+/**/
+
 int PosGetCurDir(int drive, char *dir)
 {
     union REGS regsin;

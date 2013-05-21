@@ -480,6 +480,7 @@ int PosBlockDeviceRemote(int drive,int *da)
     }
     else
     {
+        regsout.d.eax = 0;
         *da= regsout.d.edx;
     }
     return (regsout.d.eax);
@@ -490,6 +491,7 @@ int PosBlockDeviceRemote(int drive,int *da)
     }
     else
     {
+        regsout.x.ax = 0;
         *da= regsout.x.dx;
     }
     return (regsout.x.ax);

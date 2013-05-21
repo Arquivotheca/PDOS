@@ -91,7 +91,8 @@ int PosGetDeviceInformation(int handle, unsigned int *devinfo);
 
 int PosBlockDeviceRemovable(int drive); /* func 44 subfunc 8 */
 
-int PosBlockDeviceRemote(int drive,int *da); /* func 44 subfunc 9*/
+int PosBlockDeviceRemote(int drive,int *da); /* func 44 subfunc 9 */
+
 
 int PosGetCurDir(int drive, char *dir); /* func 47 */
 
@@ -116,6 +117,8 @@ int PosFindFirst(char *pat, int attrib); /* func 4e */
 int PosFindNext(void); /* func 4f */
 
 int PosRenameFile(const char *old, const char *new); /* func 56 */
+
+int PosTruename(char *prename,char *postname); /*func 60*/
 
 
 /* The following functions are extensions... */

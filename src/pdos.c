@@ -546,7 +546,7 @@ static void int21handler(union REGS *regsin,
     void *tempdta;
     PARMBLOCK *pb;
 
-#if 1
+#if 0
     if (debugcnt < 50)
     {
         printf("ZZZ %d %04x YYY\n",debugcnt, regsin->x.ax);    

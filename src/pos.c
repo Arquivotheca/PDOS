@@ -749,6 +749,46 @@ int PosRenameFile(const char *old, const char *new)
     return (regsout.x.ax);
 }
 
+/*Determine the canonical name of the specified filename or path*/
+int PosTruename(char *prename,char *postname)
+{
+    union REGS regsin;
+    union REGS regsout;
+    struct SREGS sregs;
+	
+    regsin.h.ah=0x60;
+#ifdef __32BIT__
+    regsin.d.esi = (int)prename;
+    regsin.d.edi = (int)postname;
+#else 
+    regsin.x.si = FP_OFF(prename);  	
+    sregs.ds = FP_SEG(prename);
+    regsin.x.di = FP_OFF(postname);	    
+    sregs.es = FP_SEG(postname);    
+#endif
+    int86x(0x21,&regsin,&regsout,&sregs);
+#ifdef __32BIT__
+    if (regsout.x.cflag)
+    {
+        regsout.d.eax = -regsout.d.eax;
+    }
+    else
+    {
+        regsout.d.eax = 0;    
+    }
+    return (regsout.d.eax);
+#else
+    if (regsout.x.cflag)
+    {
+        regsout.x.ax = -regsout.x.ax;
+    }
+    else
+    {
+        regsout.x.ax = 0;    
+    }
+    return (regsout.x.ax);
+#endif
+}
 
 /* extension to display an integer for debugging purposes */
 

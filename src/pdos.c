@@ -546,10 +546,10 @@ static void int21handler(union REGS *regsin,
     void *tempdta;
     PARMBLOCK *pb;
 
-#if 0
-    if (debugcnt < 400)
+#if 1
+    if (debugcnt < 50)
     {
-        printf("%x\n", regsin->x.ax);    
+        printf("ZZZ %d %04x YYY\n",debugcnt, regsin->x.ax);    
         /*dumplong(regsin->x.ax);*/
         debugcnt++;
     }
@@ -786,6 +786,30 @@ static void int21handler(union REGS *regsin,
                     regsout->x.ax = -regsout->x.ax;
                 }
 #endif
+            }
+         
+
+            /* Implementing the Int 21h/AX=4409 call*/
+            else if (regsin->h.al == 0x09)
+            {
+#ifdef __32BIT__
+                regsout->d.eax = PosBlockDeviceRemote(regsin->h.bl,
+                                                      &regsout->d.edx);
+                if ((int)regsout->d.eax < 0)
+                {
+                    regsout->x.cflag = 1;
+                    regsout->d.eax = -regsout->d.eax;
+                }
+#else                
+                regsout->x.ax = PosBlockDeviceRemote(regsin->h.bl,
+                                                     &regsout->x.dx);
+                if ((int)regsout->x.ax < 0)
+                {
+                    regsout->x.cflag = 1;
+                    regsout->x.ax = -regsout->x.ax;
+                }
+#endif
+   /**/
             }
             break;
                                     
@@ -1271,7 +1295,13 @@ int PosBlockDeviceRemovable(int drive)
         return (1);
     }
 }
-
+/*Gets the status of remote device if error returns the error code*/
+int PosBlockDeviceRemote(int drive,int *da)
+{
+    *da=0;
+    return (0);
+}
+/**/
 int PosGetCurDir(int drive, char *buf)
 {
     if (drive == 0)

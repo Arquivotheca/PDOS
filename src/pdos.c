@@ -559,6 +559,10 @@ static void int21handler(union REGS *regsin,
         case 0x02:
             PosDisplayOutput(regsin->h.dl);
             break;
+			
+        case 0x07:
+            regsout->h.al = PosDirectCharInputNoEcho();
+            break;			
 
         case 0x08:
             regsout->h.al = PosGetCharInputNoEcho();
@@ -1029,6 +1033,20 @@ void PosDisplayOutput(int ch)
     PosWriteFile(1, buf, 1);
     return;
 }
+
+/*Get Character Input from DOS*/
+int PosDirectCharInputNoEcho(void)
+{
+    int scan;
+    int ascii;
+
+
+    BosReadKeyboardCharacter(&scan, &ascii);
+
+    return ascii;
+}
+/**/
+
 
 /* Written By NECDET COKYAZICI, Public Domain */
 

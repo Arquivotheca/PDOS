@@ -35,6 +35,20 @@ void PosDisplayOutput(int ch)
     return;
 }
 
+/*Direct Character input Int21/AH=07h*/
+
+int PosDirectCharInputNoEcho(void)
+{
+    union REGS regsin;
+    union REGS regsout;
+    
+    regsin.h.ah = 0x07;
+    int86(0x21, &regsin, &regsout);
+
+    return (regsout.h.al);
+}
+/**/
+
 /* Written By NECDET COKYAZICI, Public Domain */
 
 int PosGetCharInputNoEcho(void)

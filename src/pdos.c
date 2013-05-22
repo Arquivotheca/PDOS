@@ -319,7 +319,7 @@ static void initdisks(void)
     for (x = 0x80; x < 0x84; x++)
     {
         rc = BosFixedDiskStatus(x);
-        if (rc == 0)
+        if (1) /* rc == 0) */
         {
             scanPartition(x);
         }

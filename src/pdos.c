@@ -559,7 +559,7 @@ static void int21handler(union REGS *regsin,
         case 0x02:
             PosDisplayOutput(regsin->h.dl);
             break;
-			
+
         case 0x07:
             regsout->h.al = PosDirectCharInputNoEcho();
             break;			
@@ -975,7 +975,7 @@ static void int21handler(union REGS *regsin,
             if(ret < 0)
              {
                 regsout->x.cflag=1;
-#ifdef __32BIT__	
+#ifdef __32BIT__
                 regsout->d.eax=-ret;
 #else
                 regsout->x.ax=-ret;
@@ -1504,7 +1504,7 @@ int PosRenameFile(const char *old, const char *new)
 int PosTruename(char *prename,char *postname)
 {
     strcpy(postname,prename);
-    return(0);	
+    return(0);
 }
 
 void PosDisplayInteger(int x)

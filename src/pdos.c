@@ -319,7 +319,7 @@ static void initdisks(void)
     for (x = 0x80; x < 0x84; x++)
     {
         rc = BosFixedDiskStatus(x);
-        if (1) /* rc == 0) */
+        if (1) /* (rc == 0) */
         {
             scanPartition(x);
         }
@@ -813,8 +813,26 @@ static void int21handler(union REGS *regsin,
                     regsout->x.ax = -regsout->x.ax;
                 }
 #endif
+             }
+             
    /**/
-            }
+   /*Function to dump the contents of DS,DX register*/
+            else if (regsin->h.al == 0x0D)  
+            {
+              int x;
+              int y;
+              p = MK_FP(sregs->ds, regsin->x.dx);
+              
+               for (x = 0; x < 5; x++) 
+                {
+                 for (y = 0; y < 16; y++)
+                  {
+                   printf("%02X", *((char *)p + 16 * x + y));
+                  }
+                  printf("\n");
+                }
+               for(;;);
+            } 
             break;
                                     
         case 0x47:

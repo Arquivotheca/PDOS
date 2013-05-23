@@ -769,15 +769,15 @@ int PosTruename(char *prename,char *postname)
     union REGS regsin;
     union REGS regsout;
     struct SREGS sregs;
-	
+
     regsin.h.ah=0x60;
 #ifdef __32BIT__
     regsin.d.esi = (int)prename;
     regsin.d.edi = (int)postname;
 #else 
-    regsin.x.si = FP_OFF(prename);  	
+    regsin.x.si = FP_OFF(prename);
     sregs.ds = FP_SEG(prename);
-    regsin.x.di = FP_OFF(postname);	    
+    regsin.x.di = FP_OFF(postname);    
     sregs.es = FP_SEG(postname);    
 #endif
     int86x(0x21,&regsin,&regsout,&sregs);

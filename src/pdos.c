@@ -562,7 +562,7 @@ static void int21handler(union REGS *regsin,
 
         case 0x07:
             regsout->h.al = PosDirectCharInputNoEcho();
-            break;			
+            break;
 
         case 0x08:
             regsout->h.al = PosGetCharInputNoEcho();

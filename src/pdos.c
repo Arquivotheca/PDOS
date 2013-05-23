@@ -827,7 +827,7 @@ static void int21handler(union REGS *regsin,
                 {
                  for (y = 0; y < 16; y++)
                   {
-                   printf("%02X", *((char *)p + 16 * x + y));
+                   printf("%02X", *((unsigned char *)p + 16 * x + y));
                   }
                   printf("\n");
                 }

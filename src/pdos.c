@@ -813,25 +813,26 @@ static void int21handler(union REGS *regsin,
                     regsout->x.ax = -regsout->x.ax;
                 }
 #endif
-             }
+            }
              
    /**/
    /*Function to dump the contents of DS,DX register*/
             else if (regsin->h.al == 0x0D)  
             {
-              int x;
-              int y;
-              p = MK_FP(sregs->ds, regsin->x.dx);
+                int x;
+                int y;
+                
+                p = MK_FP(sregs->ds, regsin->x.dx);
               
-               for (x = 0; x < 5; x++) 
+                for (x = 0; x < 5; x++) 
                 {
-                 for (y = 0; y < 16; y++)
-                  {
-                   printf("%02X", *((unsigned char *)p + 16 * x + y));
-                  }
-                  printf("\n");
+                    for (y = 0; y < 16; y++)
+                    {
+                        printf("%02X", *((unsigned char *)p + 16 * x + y));
+                    }
+                    printf("\n");
                 }
-               for(;;);
+                for(;;);
             } 
             break;
                                     

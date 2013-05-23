@@ -12,5 +12,5 @@ typedef struct {
     unsigned char HiddenSectors_Low[2];
     unsigned char HiddenSectors_High[2];
     unsigned char TotalSectors32[4];
-} BPB_STRUCT;
+} BPB;
 

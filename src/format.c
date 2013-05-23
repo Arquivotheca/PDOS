@@ -97,7 +97,7 @@ static int vvprintf(const char *format, va_list arg, FILE *fq, char *s)
             else if (strchr("eEgGfF", *format) != NULL && *format != 0)
             {
                 vdbl = va_arg(arg, double);
-                /* dblcvt(vdbl, *format, 0, 6, numbuf); */   /* 'e','f' etc. */
+                dblcvt(vdbl, *format, 0, 6, numbuf);   /* 'e','f' etc. */
                 len = strlen(numbuf);
                 if (fq == NULL)
                 {
@@ -475,7 +475,7 @@ static int examine(const char **formt, FILE *fq, char *s, va_list *arg,
             precision = 6;
         }
         vdbl = va_arg(*arg, double);
-        /* dblcvt(vdbl, specifier, width, precision, work); */ /* 'e','f' etc. */
+        dblcvt(vdbl, specifier, width, precision, work);   /* 'e','f' etc. */
         slen = strlen(work);
         if (fq == NULL)
         {

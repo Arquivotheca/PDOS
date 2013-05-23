@@ -10,6 +10,8 @@ void dumpbuf(void *, int);
 
 typedef int FILE;
 
+#define DBL_MANT_DIG 14
+
 static int examine(const char **formt, FILE *fq, char *s, va_list *arg, 
                    int chcount);
 static int vvprintf(const char *format, va_list arg, FILE *fq, char *s);

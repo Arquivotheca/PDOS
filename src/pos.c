@@ -513,6 +513,63 @@ int PosBlockDeviceRemote(int drive,int *da)
 }
 /**/
 
+/*Device request function call 440D*/
+int PosGenericBlockDeviceRequest(int drive,
+                                 int catcode,
+                                 int function,
+                                 void *parmblock)
+{
+    union REGS regsin;
+    union REGS regsout;
+    struct SREGS sregs;
+
+    regsin.h.ah = 0x44;
+    regsin.h.al = 0x0D;
+    regsin.h.bl = drive;
+    regsin.h.ch = catcode;
+    regsin.h.cl = function;
+   
+/*debug statements*/
+    printf("dx is %02x \n",regsin.x.dx);
+    printf("ds is %02x \n",sregs.ds);
+/**/   
+#ifdef __32BIT__    
+    regsin.d.edx = (unsigned int)parmblock;
+#else
+    sregs.ds = FP_SEG(parmblock);
+    regsin.x.dx = FP_OFF(parmblock);
+#endif    
+    int86x(0x21, &regsin, &regsout, &sregs);
+    
+/*debug statements*/
+    printf("dx is %02x \n",regsout.x.dx);
+    printf("ds is %02x \n",sregs.ds);
+/**/    
+#ifdef __32BIT__
+    if (regsout.x.cflag)
+    {
+        regsout.d.eax = -regsout.d.eax;
+    }
+    else
+    {
+        regsout.d.eax = 0;
+    }
+    return (regsout.d.eax);    
+#else
+    if (regsout.x.cflag)
+    {
+        regsout.x.ax = -regsout.x.ax;
+    }
+    else
+    {
+        regsout.x.ax = 0;
+    }
+    return (regsout.x.ax);
+#endif          
+}
+    
+
+/**/
 int PosGetCurDir(int drive, char *dir)
 {
     union REGS regsin;

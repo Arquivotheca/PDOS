@@ -832,7 +832,6 @@ static void int21handler(union REGS *regsin,
                     }
                     printf("\n");
                 }
-                for(;;);
             } 
             break;
                                     

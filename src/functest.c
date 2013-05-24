@@ -11,7 +11,7 @@
 /*********************************************************************/
 
 #include <stdio.h>
-
+#include <string.h>
 #include "pos.h"
 #include "bos.h"
 
@@ -221,10 +221,50 @@ static int testDriveParms(void)
     return (0);
 }
 
+/*Function For testing function call 440D*/
+static int testGenericBlockDeviceRequest(void)
+{
+    int ret;
+    int x;
+    int y;
+    PB_1560 parm_block;
+    char *p=&parm_block;
+
+    memset(&parm_block,'\x00',sizeof parm_block);
+    memset(parm_block.bpb.FatSize16,'\xff',sizeof parm_block.bpb.FatSize16);
+    parm_block.special_function=4;
+    /*Hexdump of parm_block for freedos*/
+    for (x = 0; x < 5; x++) 
+    {
+        for (y = 0; y < 16; y++)
+        {
+           printf("%02X", *((unsigned char *)p + 16 * x + y));
+        }
+           printf("\n");
+    }
+    /**/
+    ret=PosGenericBlockDeviceRequest(0x04,0x08,0x60,&parm_block);
+    /*Hexdump of parm_block for freedos*/
+    for (x = 0; x < 5; x++) 
+    {
+        for (y = 0; y < 16; y++)
+        {
+           printf("%02X", *((unsigned char *)p + 16 * x + y));
+        }
+           printf("\n");
+    }
+    /**/
+    printf("return is\n",ret);
+    return(0);
+}
+
+/**/
 int main(void)
 {
 /*    testDriveParms();
     testDisk(); */
-    testExtendedMemory();
+
+    /*testExtendedMemory()*/
+    testGenericBlockDeviceRequest();
     return (0);
 }

@@ -227,7 +227,7 @@ static int testGenericBlockDeviceRequest(void)
     int ret;
     int x;
     int y;
-    static PB_1560 parm_block;
+    PB_1560 parm_block;
     char *p=&parm_block;
 
     memset(&parm_block,'\x00',sizeof parm_block);

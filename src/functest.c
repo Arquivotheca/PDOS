@@ -254,7 +254,7 @@ static int testGenericBlockDeviceRequest(void)
            printf("\n");
     }
     /**/
-    printf("return is\n",ret);
+    printf("return is %d\n",ret);
     return(0);
 }
 

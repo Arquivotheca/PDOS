@@ -238,9 +238,9 @@ static int testGenericBlockDeviceRequest(void)
     {
         for (y = 0; y < 16; y++)
         {
-           printf("%02X", *((unsigned char *)p + 16 * x + y));
+            printf("%02X", *((unsigned char *)p + 16 * x + y));
         }
-           printf("\n");
+        printf("\n");
     }
     /**/
     ret=PosGenericBlockDeviceRequest(0x04,0x08,0x60,&parm_block);
@@ -249,9 +249,9 @@ static int testGenericBlockDeviceRequest(void)
     {
         for (y = 0; y < 16; y++)
         {
-           printf("%02X", *((unsigned char *)p + 16 * x + y));
+            printf("%02X", *((unsigned char *)p + 16 * x + y));
         }
-           printf("\n");
+        printf("\n");
     }
     /**/
     printf("return is %d\n",ret);

@@ -185,5 +185,6 @@ typedef struct {
      unsigned char special_function;
      unsigned char reservedspace[6];
      BPB bpb;
+     unsigned char reserve2[100]; /* for OSes with bigger BPBs */
 }PB_1560;
 /**/

@@ -40,6 +40,7 @@ typedef struct {
 
 typedef struct {
     FAT fat;
+    BPB bpb;
     char cwd[MAX_PATH];
     int accessed;
     unsigned long sectors_per_cylinder;
@@ -546,8 +547,8 @@ static void int21handler(union REGS *regsin,
     void *tempdta;
     PARMBLOCK *pb;
 
-#if 0
-    if (debugcnt < 50)
+#if 1
+    if (debugcnt < 200)
     {
         printf("ZZZ %d %04x YYY\n",debugcnt, regsin->x.ax);    
         /*dumplong(regsin->x.ax);*/
@@ -818,20 +819,18 @@ static void int21handler(union REGS *regsin,
    /**/
    /*Function to dump the contents of DS,DX register*/
             else if (regsin->h.al == 0x0D)  
-            {
-                int x;
-                int y;
-                
+            {               
+#ifdef __32BIT__
+                p=SUBADDRFIX(regsin->d.edx);
+                regsout->d.eax =PosGenericBlockDeviceRequest(regsin->h.bl,
+                                                             regsin->h.ch,
+                                                             regsin->h.cl,p);
+#else
                 p = MK_FP(sregs->ds, regsin->x.dx);
-              
-                for (x = 0; x < 5; x++) 
-                {
-                    for (y = 0; y < 16; y++)
-                    {
-                        printf("%02X", *((unsigned char *)p + 16 * x + y));
-                    }
-                    printf("\n");
-                }
+                regsout->x.ax =PosGenericBlockDeviceRequest(regsin->h.bl,
+                                                            regsin->h.ch,
+                                                            regsin->h.cl,p);
+#endif   
             } 
             break;
                                     
@@ -1355,6 +1354,26 @@ int PosBlockDeviceRemovable(int drive)
 int PosBlockDeviceRemote(int drive,int *da)
 {
     *da=0;
+    return (0);
+}
+/**/
+
+/*Implementation of the function call 440D*/
+int PosGenericBlockDeviceRequest(int drive,int catcode,int function,
+                                 void *parm_block)
+{   
+    PB_1560 *pb;
+	
+    if (drive == 0)
+    {
+        drive = currentDrive;
+    }
+    else
+    {
+        drive--;
+    }
+    pb=parm_block;
+    memcpy(&pb->bpb, &disks[drive].bpb, sizeof pb->bpb);
     return (0);
 }
 /**/
@@ -2576,6 +2595,7 @@ static void analyseBpb(DISKINFO *diskinfo, unsigned char *bpb)
     diskinfo->sectors_per_track = (bpb[13] | ((unsigned int)bpb[14] << 8));
     diskinfo->sectors_per_cylinder = diskinfo->sectors_per_track 
                                      * diskinfo->num_heads;
+    memcpy(&diskinfo->bpb, bpb, sizeof diskinfo->bpb);
     return;
 }
 

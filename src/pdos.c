@@ -1366,7 +1366,7 @@ int PosGenericBlockDeviceRequest(int drive,int catcode,int function,
                                  void *parm_block)
 {   
     PB_1560 *pb;
-	
+
     if (drive == 0)
     {
         drive = currentDrive;
@@ -1780,7 +1780,7 @@ int int25(unsigned int *regs)
     static union REGS regsin;
     static union REGS regsout;
     static struct SREGS sregs;
-	DP *dp;
+    DP *dp;
     void *p;
 
     regsin.d.eax = regs[0];

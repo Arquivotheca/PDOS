@@ -136,8 +136,9 @@ void PosReboot(void); /* func f3.01 */
 
 void PosSetRunTime(void *pstart, void *capi); /* func f3.02 */
 
+/*INT25 */
 unsigned int PosAbsoluteDiskRead(int drive, unsigned int sectors, 
-                                 unsigned int start_sector, void *buf); /*INT25 */
+                                 unsigned int start_sector, void *buf);
 
 
 /* An easier-for-HLLs-to-use interface should also have been provided

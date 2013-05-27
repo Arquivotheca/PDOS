@@ -83,7 +83,7 @@ jmp fintry
 not21:
 
 cmp intnum, 025h
-jne not21
+jne not25
 int 025h
 jmp fintry
 not25:

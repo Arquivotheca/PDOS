@@ -53,8 +53,8 @@ void PosSetInterruptVector(int intnum, void *handler); /* func 25 */
 void PosGetSystemDate(int *year, int *month, int *day, int *dow); /* func 2a */
 
 void PosGetSystemTime(int *hour, /* func 2c */
-                      int *min, 
-                      int *sec, 
+                      int *min,
+                      int *sec,
                       int *hundredths);
 
 void *PosGetDTA(void); /* func 2f */
@@ -72,18 +72,18 @@ int PosCreatFile(const char *name, /* func 3c */
 int PosOpenFile(const char *name, /* func 3d */
                 int mode,
                 int *handle);
-                
+
 int PosCloseFile(int handle); /* func 3e */
 
 void PosReadFile(int fh, /* func 3f */
-                 void *data, 
-                 size_t bytes, 
+                 void *data,
+                 size_t bytes,
                  size_t *readbytes);
-                 
+
 int PosWriteFile(int handle, /* func 40 */
                  const void *data,
                  size_t len);
-                 
+
 int PosDeleteFile(const char *fname); /* func 41 */
 
 long PosMoveFilePointer(int handle, long offset, int whence); /* func 42 */
@@ -136,6 +136,9 @@ void PosReboot(void); /* func f3.01 */
 
 void PosSetRunTime(void *pstart, void *capi); /* func f3.02 */
 
+unsigned int PosAbsoluteDiskRead(int drive, unsigned int sectors, 
+                                 unsigned int start_sector, void *buf); /*INT25 */
+
 
 /* An easier-for-HLLs-to-use interface should also have been provided
    for executables.  Here is the makings of such an interface... */
@@ -182,9 +185,17 @@ typedef struct {
 
 /*Structure  for function call 440D*/
 typedef struct {
-     unsigned char special_function;
-     unsigned char reservedspace[6];
-     BPB bpb;
-     unsigned char reserve2[100]; /* for OSes with bigger BPBs */
+    unsigned char special_function;
+    unsigned char reservedspace[6];
+    BPB bpb;
+    unsigned char reserve2[100]; /* for OSes with bigger BPBs */
 }PB_1560;
+/**/
+
+/*Structure for int25*/
+typedef struct{
+    unsigned long sectornumber;
+    unsigned int numberofsectors;
+    void *transferaddress;
+}DP;
 /**/

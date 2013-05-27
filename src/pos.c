@@ -28,7 +28,7 @@ void PosTermNoRC(void)
 void PosDisplayOutput(int ch)
 {
     union REGS regsin;
-    
+
     regsin.h.ah = 0x02;
     regsin.h.dl = ch;
     int86i(0x21, &regsin);
@@ -41,7 +41,7 @@ int PosDirectCharInputNoEcho(void)
 {
     union REGS regsin;
     union REGS regsout;
-    
+
     regsin.h.ah = 0x07;
     int86(0x21, &regsin, &regsout);
 
@@ -55,7 +55,7 @@ int PosGetCharInputNoEcho(void)
 {
     union REGS regsin;
     union REGS regsout;
-    
+
     regsin.h.ah = 0x08;
     int86(0x21, &regsin, &regsout);
 
@@ -71,10 +71,10 @@ void PosDisplayString(const char *buf)
     regsin.h.ah = 0x09;
 #ifdef __32BIT__
     regsin.d.edx = (int)buf;
-#else        
+#else
     regsin.x.dx = FP_OFF(buf);
     sregs.ds = FP_SEG(buf);
-#endif    
+#endif
     int86x(0x21, &regsin, &regsout, &sregs);
     return;
 }
@@ -84,7 +84,7 @@ int PosSelectDisk(int drive)
 {
     union REGS regsin;
     union REGS regsout;
-    
+
     regsin.h.ah = 0x0e;
     regsin.h.dl = drive;
     int86(0x21, &regsin, &regsout);
@@ -95,7 +95,7 @@ int PosGetDefaultDrive(void)
 {
     union REGS regsin;
     union REGS regsout;
-    
+
     regsin.h.ah = 0x19;
     int86(0x21, &regsin, &regsout);
     return (regsout.h.al);
@@ -110,10 +110,10 @@ void PosSetDTA(void *dta)
     regsin.h.ah = 0x1a;
 #ifdef __32BIT__
     regsin.d.edx = (int)dta;
-#else        
+#else
     sregs.ds = FP_SEG(dta);
     regsin.x.dx = FP_OFF(dta);
-#endif    
+#endif
     int86x(0x21, &regsin, &regsout, &sregs);
     return;
 }
@@ -123,7 +123,7 @@ void PosSetInterruptVector(int intnum, void *handler)
     union REGS regsin;
     union REGS regsout;
     struct SREGS sregs;
-    
+
     regsin.h.ah = 0x25;
     regsin.h.al = (char)intnum;
 #ifdef __32BIT__
@@ -140,7 +140,7 @@ void PosGetSystemDate(int *year, int *month, int *day, int *dow)
 {
     union REGS regsin;
     union REGS regsout;
-    
+
     regsin.h.ah = 0x2a;
     int86(0x21, &regsin, &regsout);
     *year = regsout.x.cx;
@@ -154,7 +154,7 @@ void PosGetSystemTime(int *hour, int *min, int *sec, int *hundredths)
 {
     union REGS regsin;
     union REGS regsout;
-    
+
     regsin.h.ah = 0x2c;
     int86(0x21, &regsin, &regsout);
     *hour = regsout.h.ch;
@@ -175,9 +175,9 @@ void *PosGetDTA(void)
     int86x(0x21, &regsin, &regsout, &sregs);
 #ifdef __32BIT__
     dta = (void *)regsout.d.ebx;
-#else        
+#else
     dta = MK_FP(sregs.es, regsout.x.bx);
-#endif    
+#endif
     return (dta);
 }
 
@@ -185,7 +185,7 @@ unsigned int PosGetDosVersion(void)
 {
     union REGS regsin;
     union REGS regsout;
-    
+
     regsin.h.ah = 0x30;
     int86(0x21, &regsin, &regsout);
     return ((regsout.h.al << 8) | regsout.h.ah);
@@ -196,13 +196,13 @@ void *PosGetInterruptVector(int intnum)
     union REGS regsin;
     union REGS regsout;
     struct SREGS sregs;
-    
+
     regsin.h.ah = 0x35;
     regsin.h.al = (char)intnum;
     int86x(0x21, &regsin, &regsout, &sregs);
 #ifdef __32BIT__
     return ((void *)regsout.d.ebx);
-#else        
+#else
     return (MK_FP(sregs.es, regsout.x.bx));
 #endif
 }
@@ -212,14 +212,14 @@ int PosChangeDir(char *to)
     union REGS regsin;
     union REGS regsout;
     struct SREGS sregs;
-    
+
     regsin.h.ah = 0x3b;
 #ifdef __32BIT__
     regsin.d.edx = (int)to;
-#else        
+#else
     regsin.x.dx = FP_OFF(to);
     sregs.ds = FP_SEG(to);
-#endif    
+#endif
     int86x(0x21, &regsin, &regsout, &sregs);
     if (regsout.x.cflag)
     {
@@ -228,7 +228,7 @@ int PosChangeDir(char *to)
     else
     {
         return (0);
-    }    
+    }
 }
 
 int PosCreatFile(const char *name,
@@ -238,15 +238,15 @@ int PosCreatFile(const char *name,
     union REGS regsin;
     union REGS regsout;
     struct SREGS sregs;
-    
+
     regsin.h.ah = 0x3c;
     regsin.x.cx = attrib;
-#ifdef __32BIT__    
+#ifdef __32BIT__
     regsin.d.edx = (unsigned int)name;
 #else
     sregs.ds = FP_SEG(name);
     regsin.x.dx = FP_OFF(name);
-#endif    
+#endif
     int86x(0x21, &regsin, &regsout, &sregs);
 #ifdef __32BIT__
     *handle = regsout.d.eax;
@@ -263,15 +263,15 @@ int PosOpenFile(const char *name,
     union REGS regsin;
     union REGS regsout;
     struct SREGS sregs;
-    
+
     regsin.h.ah = 0x3d;
     regsin.h.al = (unsigned char)mode;
-#ifdef __32BIT__    
+#ifdef __32BIT__
     regsin.d.edx = (unsigned int)name;
 #else
     sregs.ds = FP_SEG(name);
     regsin.x.dx = FP_OFF(name);
-#endif    
+#endif
     int86x(0x21, &regsin, &regsout, &sregs);
 #ifdef __32BIT__
     *handle = regsout.d.eax;
@@ -285,11 +285,11 @@ int PosCloseFile(int handle)
 {
     union REGS regsin;
     union REGS regsout;
-    
+
     regsin.h.ah = 0x3e;
 #ifdef __32BIT__
     regsin.d.ebx = handle;
-#else        
+#else
     regsin.x.bx = handle;
 #endif
     int86(0x21, &regsin, &regsout);
@@ -305,7 +305,7 @@ int PosCloseFile(int handle)
         regsout.x.ax = 0;
     }
     return (regsout.x.ax);
-#endif            
+#endif
 }
 
 void PosReadFile(int fh, void *data, size_t bytes, size_t *readbytes)
@@ -313,18 +313,18 @@ void PosReadFile(int fh, void *data, size_t bytes, size_t *readbytes)
     union REGS regsin;
     union REGS regsout;
     struct SREGS sregs;
-     
+
     regsin.h.ah = 0x3f;
 #ifdef __32BIT__
     regsin.d.ebx = (unsigned int)fh;
-    regsin.d.ecx = (unsigned int)bytes;    
+    regsin.d.ecx = (unsigned int)bytes;
     regsin.d.edx = (unsigned int)data;
-#else        
+#else
     regsin.x.bx = (unsigned int)fh;
     regsin.x.cx = (unsigned int)bytes;
     sregs.ds = FP_SEG(data);
     regsin.x.dx = FP_OFF(data);
-#endif    
+#endif
     int86x(0x21, &regsin, &regsout, &sregs);
     if (regsout.x.cflag)
     {
@@ -334,7 +334,7 @@ void PosReadFile(int fh, void *data, size_t bytes, size_t *readbytes)
     {
 #ifdef __32BIT__
         *readbytes = regsout.d.eax;
-#else            
+#else
         *readbytes = regsout.x.ax;
 #endif
     }
@@ -348,18 +348,18 @@ int PosWriteFile(int handle,
     union REGS regsin;
     union REGS regsout;
     struct SREGS sregs;
-    
+
     regsin.h.ah = 0x40;
 #ifdef __32BIT__
     regsin.d.ebx = (unsigned int)handle;
-    regsin.d.ecx = (unsigned int)len;    
+    regsin.d.ecx = (unsigned int)len;
     regsin.d.edx = (unsigned int)data;
-#else        
+#else
     regsin.x.bx = (unsigned int)handle;
     regsin.x.cx = (unsigned int)len;
     sregs.ds = FP_SEG(data);
     regsin.x.dx = FP_OFF(data);
-#endif    
+#endif
     int86x(0x21, &regsin, &regsout, &sregs);
     if (regsout.x.cflag)
     {
@@ -369,7 +369,7 @@ int PosWriteFile(int handle,
     {
 #ifdef __32BIT__
         return (regsout.d.eax);
-#else            
+#else
         return (regsout.x.ax);
 #endif
     }
@@ -380,11 +380,11 @@ int PosDeleteFile(const char *fname)
     union REGS regsin;
     union REGS regsout;
     struct SREGS sregs;
-    
+
     regsin.h.ah = 0x41;
 #ifdef __32BIT__
     regsin.d.edx = (int)fname;
-#else        
+#else
     sregs.ds = FP_SEG(fname);
     regsin.x.dx = FP_OFF(fname);
 #endif
@@ -400,12 +400,12 @@ long PosMoveFilePointer(int handle, long offset, int whence)
 {
     union REGS regsin;
     union REGS regsout;
-    
+
     regsin.h.ah = 0x42;
 #ifdef __32BIT__
     regsin.d.ebx = handle;
     regsin.d.edx = offset;
-#else        
+#else
     regsin.x.bx = handle;
     regsin.x.dx = FP_OFF(offset);
     regsin.x.cx = FP_SEG(offset);
@@ -425,14 +425,14 @@ long PosMoveFilePointer(int handle, long offset, int whence)
         regsout.x.dx = 0xffff;
     }
     return (((unsigned long)regsout.x.dx << 16) | regsout.x.ax);
-#endif            
+#endif
 }
 
 int PosGetDeviceInformation(int handle, unsigned int *devinfo)
 {
     union REGS regsin;
     union REGS regsout;
-    
+
     regsin.h.ah = 0x44;
     regsin.h.al = 0x00;
 #ifdef __32BIT__
@@ -457,7 +457,7 @@ int PosBlockDeviceRemovable(int drive)
 {
     union REGS regsin;
     union REGS regsout;
-    
+
     regsin.h.ah = 0x44;
     regsin.h.al = 0x08;
     regsin.h.bl = (char)drive;
@@ -474,7 +474,7 @@ int PosBlockDeviceRemovable(int drive)
         regsout.x.ax = -regsout.x.ax;
     }
     return (regsout.x.ax);
-#endif            
+#endif
 }
 
 /*Get the status of the remote device */
@@ -509,7 +509,7 @@ int PosBlockDeviceRemote(int drive,int *da)
         *da= regsout.x.dx;
     }
     return (regsout.x.ax);
-#endif            
+#endif
 }
 /**/
 
@@ -528,23 +528,23 @@ int PosGenericBlockDeviceRequest(int drive,
     regsin.h.bl = drive;
     regsin.h.ch = catcode;
     regsin.h.cl = function;
-   
+
 /*debug statements*/
     printf("dx is %02x \n",regsin.x.dx);
     printf("ds is %02x \n",sregs.ds);
-/**/   
-#ifdef __32BIT__    
+/**/
+#ifdef __32BIT__
     regsin.d.edx = (unsigned int)parmblock;
 #else
     sregs.ds = FP_SEG(parmblock);
     regsin.x.dx = FP_OFF(parmblock);
-#endif    
+#endif
     int86x(0x21, &regsin, &regsout, &sregs);
-    
+
 /*debug statements*/
     printf("dx is %02x \n",regsout.x.dx);
     printf("ds is %02x \n",sregs.ds);
-/**/    
+/**/
 #ifdef __32BIT__
     if (regsout.x.cflag)
     {
@@ -554,7 +554,7 @@ int PosGenericBlockDeviceRequest(int drive,
     {
         regsout.d.eax = 0;
     }
-    return (regsout.d.eax);    
+    return (regsout.d.eax);
 #else
     if (regsout.x.cflag)
     {
@@ -565,9 +565,9 @@ int PosGenericBlockDeviceRequest(int drive,
         regsout.x.ax = 0;
     }
     return (regsout.x.ax);
-#endif          
+#endif
 }
-    
+
 
 /**/
 int PosGetCurDir(int drive, char *dir)
@@ -575,39 +575,39 @@ int PosGetCurDir(int drive, char *dir)
     union REGS regsin;
     union REGS regsout;
     struct SREGS sregs;
-    
+
     regsin.h.ah = 0x47;
     regsin.h.dl = drive;
-#ifdef __32BIT__    
+#ifdef __32BIT__
     regsin.d.esi = (unsigned int)dir;
 #else
     regsin.x.si = FP_OFF(dir);
     sregs.ds = FP_SEG(dir);
-#endif    
+#endif
     int86x(0x21, &regsin, &regsout, &sregs);
     if (regsout.x.cflag)
     {
-#ifdef __32BIT__    
+#ifdef __32BIT__
         return (regsout.d.eax);
 #else
         return (regsout.x.ax);
-#endif        
+#endif
     }
     else
     {
         return (0);
-    }    
+    }
 }
 
 void *PosAllocMem(unsigned int size)
 {
     union REGS regsin;
     union REGS regsout;
-    
+
     regsin.h.ah = 0x48;
 #ifdef __32BIT__
     regsin.d.ebx = size;
-#else        
+#else
     regsin.x.bx = size;
     regsin.x.bx >>= 4;
     if ((size % 16) != 0)
@@ -628,18 +628,18 @@ void *PosAllocMem(unsigned int size)
         regsout.x.ax = 0;
     }
     return (MK_FP(regsout.x.ax, 0));
-#endif            
+#endif
 }
 
 void *PosAllocMemPages(unsigned int pages, unsigned int *maxpages)
 {
     union REGS regsin;
     union REGS regsout;
-    
+
     regsin.h.ah = 0x48;
 #ifdef __32BIT__
     regsin.d.ebx = pages * 16;
-#else        
+#else
     regsin.x.bx = pages;
 #endif
     int86(0x21, &regsin, &regsout);
@@ -663,7 +663,7 @@ void *PosAllocMemPages(unsigned int pages, unsigned int *maxpages)
         *maxpages = regsout.x.bx;
     }
     return (MK_FP(regsout.x.ax, 0));
-#endif            
+#endif
 }
 
 int PosFreeMem(void *ptr)
@@ -671,11 +671,11 @@ int PosFreeMem(void *ptr)
     union REGS regsin;
     union REGS regsout;
     struct SREGS sregs;
-    
+
     regsin.h.ah = 0x49;
 #ifdef __32BIT__
     regsin.d.ebx = (int)ptr;
-#else        
+#else
     sregs.es = FP_SEG(ptr);
 #endif
     int86x(0x21, &regsin, &regsout, &sregs);
@@ -691,12 +691,12 @@ int PosReallocMem(void *ptr, unsigned int newpages, unsigned int *maxp)
     union REGS regsin;
     union REGS regsout;
     struct SREGS sregs;
-    
+
     regsin.h.ah = 0x4a;
 #ifdef __32BIT__
     regsin.d.ecx = (int)ptr;
     regsin.d.ebx = newpages;
-#else        
+#else
     sregs.es = FP_SEG(ptr);
     regsin.x.bx = newpages;
 #endif
@@ -718,7 +718,7 @@ void PosExec(char *prog, void *parmblock)
     union REGS regsin;
     union REGS regsout;
     struct SREGS sregs;
-     
+
     regsin.h.ah = 0x4b;
     regsin.h.al = 0;
 #ifdef __32BIT__
@@ -729,7 +729,7 @@ void PosExec(char *prog, void *parmblock)
     regsin.x.dx = FP_OFF(prog);
     sregs.es = FP_SEG(parmblock);
     regsin.x.bx = FP_OFF(parmblock);
-#endif    
+#endif
     int86x(0x21, &regsin, &regsout, &sregs);
     return;
 }
@@ -737,7 +737,7 @@ void PosExec(char *prog, void *parmblock)
 void PosTerminate(int rc)
 {
     union REGS regsin;
-    
+
     regsin.h.ah = 0x4c;
     regsin.h.al = rc;
     int86i(0x21, &regsin);
@@ -748,7 +748,7 @@ int PosGetReturnCode(void)
 {
     union REGS regsin;
     union REGS regsout;
-    
+
     regsin.h.ah = 0x4d;
     int86(0x21, &regsin, &regsout);
     return (regsout.x.ax);
@@ -759,15 +759,15 @@ int PosFindFirst(char *pat, int attrib)
     union REGS regsin;
     union REGS regsout;
     struct SREGS sregs;
-    
+
     regsin.h.ah = 0x4e;
     regsin.x.cx = attrib;
 #ifdef __32BIT__
     regsin.d.edx = (int)pat;
-#else        
+#else
     regsin.x.dx = FP_OFF(pat);
     sregs.ds = FP_SEG(pat);
-#endif    
+#endif
     int86x(0x21, &regsin, &regsout, &sregs);
     if (regsout.x.cflag)
     {
@@ -783,9 +783,9 @@ int PosFindNext(void)
 {
     union REGS regsin;
     union REGS regsout;
-    
+
     regsin.h.ah = 0x4f;
-    int86(0x21, &regsin, &regsout);    
+    int86(0x21, &regsin, &regsout);
     if (regsout.x.cflag)
     {
         return (regsout.x.ax);
@@ -801,12 +801,12 @@ int PosRenameFile(const char *old, const char *new)
     union REGS regsin;
     union REGS regsout;
     struct SREGS sregs;
-    
+
     regsin.h.ah = 0x56;
 #ifdef __32BIT__
     regsin.d.edx = (int)old;
     regsin.d.edi = (int)new;
-#else        
+#else
     sregs.ds = FP_SEG(old);
     regsin.x.dx = FP_OFF(old);
     sregs.es = FP_SEG(new);
@@ -831,11 +831,11 @@ int PosTruename(char *prename,char *postname)
 #ifdef __32BIT__
     regsin.d.esi = (int)prename;
     regsin.d.edi = (int)postname;
-#else 
+#else
     regsin.x.si = FP_OFF(prename);
     sregs.ds = FP_SEG(prename);
-    regsin.x.di = FP_OFF(postname);    
-    sregs.es = FP_SEG(postname);    
+    regsin.x.di = FP_OFF(postname);
+    sregs.es = FP_SEG(postname);
 #endif
     int86x(0x21,&regsin,&regsout,&sregs);
 #ifdef __32BIT__
@@ -845,7 +845,7 @@ int PosTruename(char *prename,char *postname)
     }
     else
     {
-        regsout.d.eax = 0;    
+        regsout.d.eax = 0;
     }
     return (regsout.d.eax);
 #else
@@ -855,7 +855,7 @@ int PosTruename(char *prename,char *postname)
     }
     else
     {
-        regsout.x.ax = 0;    
+        regsout.x.ax = 0;
     }
     return (regsout.x.ax);
 #endif
@@ -866,14 +866,14 @@ int PosTruename(char *prename,char *postname)
 void PosDisplayInteger(int x)
 {
     union REGS regsin;
-    
+
     regsin.h.ah = 0xf3;
     regsin.h.al = 0;
-#ifdef __32BIT__    
+#ifdef __32BIT__
     regsin.d.ecx = x;
 #else
     regsin.x.cx = x;
-#endif        
+#endif
     int86i(0x21, &regsin);
     return;
 }
@@ -883,7 +883,7 @@ void PosDisplayInteger(int x)
 void PosReboot(void)
 {
     union REGS regsin;
-    
+
     regsin.h.ah = 0xf3;
     regsin.h.al = 1;
     int86i(0x21, &regsin);
@@ -895,17 +895,15 @@ void PosReboot(void)
 void PosSetRunTime(void *pstart, void *capi)
 {
     union REGS regsin;
-    
+
     regsin.h.ah = 0xf3;
     regsin.h.al = 2;
-#ifdef __32BIT__    
+#ifdef __32BIT__
     regsin.d.ebx = (int)pstart;
     regsin.d.ecx = (int)capi;
 #endif
     int86i(0x21, &regsin);
 }
-
-
 
 /* int86n - do an interrupt with no registers */
 
@@ -916,14 +914,52 @@ static void int86n(unsigned int intno)
 
     int86(intno, &regsin, &regsout);
     return;
-}    
+}
 
 /* int86i - do an interrupt with input registers only */
 
 static void int86i(unsigned int intno, union REGS *regsin)
 {
     union REGS regsout;
-    
+
     int86(intno, regsin, &regsout);
     return;
-}    
+}
+
+/*int 25 function call*/
+unsigned int PosAbsoluteDiskRead(int drive, unsigned int sectors,
+                                 unsigned int start_sector, void *buf)
+{
+    union REGS regsin;
+    union REGS regsout;
+    struct SREGS sregs;
+    DP dp;
+
+    regsin.h.al = drive;
+#ifdef __32BIT__
+    regsin.d.ecx = 0xffff;
+    regsin.d.ebx=(int)&dp;
+#else
+    regsin.x.cx = 0xffff;
+    sregs.ds = FP_SEG(&dp);
+    regsin.x.bx = FP_OFF(&dp);
+#endif
+    dp.sectornumber=start_sector;
+    dp.numberofsectors=sectors;
+    dp.transferaddress=buf;
+    int86x(0x25,&regsin,&regsout,&sregs);
+#ifdef __32BIT__
+    if (!regsout.x.cflag)
+    {
+        regsout.d.eax = 0;
+    }
+    return (regsout.d.eax);
+#else
+    if (!regsout.x.cflag)
+    {
+        regsout.x.ax = 0;
+    }
+    return (regsout.x.ax);
+#endif
+}
+/**/

@@ -1,5 +1,5 @@
 ; support.asm - assembler support functions for DOS
-; 
+;
 ; This program written by Paul Edwards
 ; Released to the public domain
 
@@ -81,6 +81,12 @@ jne not21
 int 021h
 jmp fintry
 not21:
+
+cmp intnum, 025h
+jne not21
+int 025h
+jmp fintry
+not25:
 
 fintry:
 
@@ -187,6 +193,12 @@ jne xnot21
 int 021h
 jmp xfintry
 xnot21:
+
+cmp intnum, 025h
+jne xnot25
+int 025h
+jmp xfintry
+xnot25:
 
 xfintry:
 

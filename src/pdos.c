@@ -70,6 +70,9 @@ static int ff_search(void);
 #ifdef __32BIT__                         
 int int20(unsigned int *regs);
 int int21(unsigned int *regs);
+/*Interuppt 25 */
+int int25(unsigned int *regs);
+/**/
 #endif
 static void loadConfig(void);
 static void loadPcomm(void);
@@ -1770,6 +1773,36 @@ int int21(unsigned int *regs)
     regs[6] = regsout.d.cflag;
     return (0);
 }
+
+/*Intreuppt 25*/
+int int25(unsigned int *regs)
+{
+    static union REGS regsin;
+    static union REGS regsout;
+    static struct SREGS sregs;
+	DP *dp;
+    void *p;
+
+    regsin.d.eax = regs[0];
+    regsin.d.ebx = regs[1];
+    regsin.d.ecx = regs[2];
+    regsin.d.edx = regs[3];
+    regsin.d.esi = regs[4];
+    regsin.d.edi = regs[5];
+    regsin.d.cflag = 0;
+    memcpy(&regsout, &regsin, sizeof regsout);
+    p = SUBADDRFIX(dp->transferaddress);
+    PosAbsoluteDiskRead(regsin.h.al,dp->numberofsectors,dp->sectornumber,p);
+    regs[0] = regsout.d.eax;
+    regs[1] = regsout.d.ebx;
+    regs[2] = regsout.d.ecx;
+    regs[3] = regsout.d.edx;
+    regs[4] = regsout.d.esi;
+    regs[5] = regsout.d.edi;
+    regs[6] = regsout.d.cflag;
+    return (0);
+}
+/**/
 #else
 void int20(unsigned int *regptrs,
            unsigned int es,
@@ -1846,6 +1879,49 @@ void int21(unsigned int *regptrs,
     regptrs[8] = regsout.x.ax;
     return;
 }
+
+/*Interuppt 25*/
+void int25(unsigned int *regptrs,
+           unsigned int es,
+           unsigned int ds,
+           unsigned int di,
+           unsigned int si,
+           unsigned int dx,
+           unsigned int cx,
+           unsigned int bx,
+           unsigned int cflag,
+           unsigned int ax)
+{
+    static union REGS regsin;
+    static union REGS regsout;
+    static struct SREGS sregs;
+    DP *dp;
+    void *p;
+
+    regsin.x.ax = ax;
+    regsin.x.bx = bx;
+    regsin.x.cx = cx;
+    regsin.x.dx = dx;
+    regsin.x.si = si;
+    regsin.x.di = di;
+    regsin.x.cflag = 0;
+    sregs.ds = ds;
+    sregs.es = es;
+    memcpy(&regsout, &regsin, sizeof regsout);
+    p=dp->transferaddress;
+    PosAbsoluteDiskRead(regsin.h.al,dp->numberofsectors,dp->sectornumber,p);
+    regptrs[0] = sregs.es;
+    regptrs[1] = sregs.ds;
+    regptrs[2] = regsout.x.di;
+    regptrs[3] = regsout.x.si;
+    regptrs[4] = regsout.x.dx;
+    regptrs[5] = regsout.x.cx;
+    regptrs[6] = regsout.x.bx;
+    regptrs[7] = regsout.x.cflag;
+    regptrs[8] = regsout.x.ax;
+    return;
+}
+/**/
 #endif
 
 static void loadConfig(void)
@@ -2722,3 +2798,12 @@ static int pdos16MemmgrReallocPages(MEMMGR *memmgr,
 }
 
 #endif
+
+/*int 25 function call*/
+unsigned int PosAbsoluteDiskRead(int drive, unsigned int sectors, 
+                                 unsigned int start_sector, void *buf)
+{
+    printf("Test Absolute Disk Read");
+    return(0);
+}
+/**/

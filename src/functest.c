@@ -18,7 +18,7 @@
 static int testBosGetVideoMode(void)
 {
     int columns, mode, page;
-    
+
     BosGetVideoMode(&columns, &mode, &page);
     printf("columns is %d\n", columns);
     printf("mode is %x\n", mode);
@@ -35,8 +35,8 @@ static int testBosWriteText(void)
 static int testBosReadGraphics(void)
 {
     int colour;
-    
-    BosSetVideoMode(0x12);   
+
+    BosSetVideoMode(0x12);
     BosReadGraphicsPixel(0, 20, 40, &colour);
     BosSetVideoMode(0x02);
     printf("colour is %x\n", colour);
@@ -46,8 +46,8 @@ static int testBosReadGraphics(void)
 static int testBosWriteGraphicsPixel(void)
 {
     int x, y;
- 
-    BosSetVideoMode(0x12);   
+
+    BosSetVideoMode(0x12);
     for (x=0; x<480; x++)
     {
         for (y=0; y<640; y++)
@@ -81,7 +81,7 @@ static int testBosWriteCharAttrib(void)
 static int testBosReadCharAttrib(void)
 {
     int ch, attrib;
-    
+
     BosReadCharAttrib(0, &ch, &attrib);
     printf("ch is %x, attrib is %x\n", ch, attrib);
     return (0);
@@ -99,7 +99,7 @@ static int testBosReadLightPen(void)
     int trigger;
     unsigned long pcolumn, prow1, prow2;
     int crow, ccol;
-    
+
     BosReadLightPen(&trigger, &pcolumn, &prow1, &prow2, &crow, &ccol);
     printf("trigger is %d\n", trigger);
     return (0);
@@ -108,8 +108,8 @@ static int testBosReadLightPen(void)
 static int testBosReadCursorPosition(void)
 {
     int cursorStart, cursorEnd, row, column;
-    
-    BosReadCursorPosition(0, 
+
+    BosReadCursorPosition(0,
                           &cursorStart,
                           &cursorEnd,
                           &row,
@@ -161,7 +161,7 @@ static int testDisk(void)
     unsigned long status;
 
     rc = BosDiskReset(drive);
-    printf("rc is %d\n", rc);       
+    printf("rc is %d\n", rc);
     rc = BosDiskStatus(drive, &status);
     printf("rc is %d\n", rc);
     printf("status is %lx\n", status);
@@ -178,14 +178,14 @@ static int testDisk(void)
             }
             fclose(fq);
         }
-    } 
+    }
     return (0);
 }
 
 static int testExtendedMemory(void)
 {
     long memsize;
-    
+
     memsize = BosExtendedMemorySize();
     printf("memsize is %ld\n", memsize);
     return (0);
@@ -201,10 +201,10 @@ static int testDriveParms(void)
     unsigned char *parmtable;
     unsigned long drivetype;
     int x;
-    
+
     for (x = 0x80; x < 0x84; x++)
     {
-        rc = BosDriveParms(x, 
+        rc = BosDriveParms(x,
                            &tracks,
                            &sectors,
                            &heads,
@@ -234,7 +234,7 @@ static int testGenericBlockDeviceRequest(void)
     memset(parm_block.bpb.FatSize16,'\xff',sizeof parm_block.bpb.FatSize16);
     parm_block.special_function=4;
     /*Hexdump of parm_block for freedos*/
-    for (x = 0; x < 5; x++) 
+    for (x = 0; x < 5; x++)
     {
         for (y = 0; y < 16; y++)
         {
@@ -245,7 +245,7 @@ static int testGenericBlockDeviceRequest(void)
     /**/
     ret=PosGenericBlockDeviceRequest(0x04,0x08,0x60,&parm_block);
     /*Hexdump of parm_block for freedos*/
-    for (x = 0; x < 5; x++) 
+    for (x = 0; x < 5; x++)
     {
         for (y = 0; y < 16; y++)
         {
@@ -257,14 +257,40 @@ static int testGenericBlockDeviceRequest(void)
     printf("return is %d\n",ret);
     return(0);
 }
-
 /**/
+
+/*Function for testing int 25 call*/
+static int testAbsoluteDiskRead(void)
+{
+    unsigned int ret;
+    int x;
+    int y;
+    char buf[512];
+    char *p=&buf;
+
+    ret=PosAbsoluteDiskRead(0x04,0x01,0x01,buf);
+    /*Hexdump of dp for freedos*/
+    for (x = 0; x < 5; x++)
+    {
+        for (y = 0; y < 16; y++)
+        {
+            printf("%02x", *((unsigned char *)p + 16 * x + y));
+        }
+        printf("\n");
+    }
+    /**/
+    printf("return is %d\n",ret);
+    return(0);
+}
+/**/
+
 int main(void)
 {
 /*    testDriveParms();
     testDisk(); */
 
     /*testExtendedMemory()*/
-    testGenericBlockDeviceRequest();
+    /*testGenericBlockDeviceRequest();*/
+    testAbsoluteDiskRead();
     return (0);
 }

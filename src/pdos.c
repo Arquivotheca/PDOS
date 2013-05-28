@@ -1793,7 +1793,7 @@ int int25(unsigned int *regs)
     memcpy(&regsout, &regsin, sizeof regsout);
     dp=SUBADDRFIX(regsin.d.ebx);
     p = SUBADDRFIX(dp->transferaddress);
-    PosAbsoluteDiskRead(regsin.h.al,dp->numberofsectors,dp->sectornumber,p);
+    PosAbsoluteDiskRead(regsin.h.al,dp->sectornumber,dp->numberofsectors,p);
     regs[0] = regsout.d.eax;
     regs[1] = regsout.d.ebx;
     regs[2] = regsout.d.ecx;
@@ -1911,7 +1911,7 @@ void int25(unsigned int *regptrs,
     memcpy(&regsout, &regsin, sizeof regsout);
     dp=MK_FP(sregs.ds,regsin.x.bx)
     p=dp->transferaddress;
-    PosAbsoluteDiskRead(regsin.h.al,dp->numberofsectors,dp->sectornumber,p);
+    PosAbsoluteDiskRead(regsin.h.al,dp->sectornumber,dp->numberofsectors,p);
     regptrs[0] = sregs.es;
     regptrs[1] = sregs.ds;
     regptrs[2] = regsout.x.di;
@@ -2802,8 +2802,8 @@ static int pdos16MemmgrReallocPages(MEMMGR *memmgr,
 #endif
 
 /*int 25 function call*/
-unsigned int PosAbsoluteDiskRead(int drive, unsigned int sectors,
-                                 unsigned int start_sector, void *buf)
+unsigned int PosAbsoluteDiskRead(int drive, unsigned long start_sector,
+                                 unsigned int sectors, void *buf)
 {
     long x;
     for(x=0;x<sectors;x++)

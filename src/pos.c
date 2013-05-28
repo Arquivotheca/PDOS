@@ -927,8 +927,8 @@ static void int86i(unsigned int intno, union REGS *regsin)
 }
 
 /*int 25 function call*/
-unsigned int PosAbsoluteDiskRead(int drive, unsigned int sectors,
-                                 unsigned int start_sector, void *buf)
+unsigned int PosAbsoluteDiskRead(int drive,unsigned long start_sector,
+                                 unsigned int sectors,void *buf)
 {
     union REGS regsin;
     union REGS regsout;

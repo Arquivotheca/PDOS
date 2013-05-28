@@ -55,7 +55,7 @@ static int testBosWriteGraphicsPixel(void)
             BosWriteGraphicsPixel(0, 3, x, y);
         }
     }
-    sleep(5);
+    /*sleep(5);*/
     BosSetVideoMode(0x02);
     return (0);
 }

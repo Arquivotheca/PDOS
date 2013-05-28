@@ -2805,11 +2805,10 @@ static int pdos16MemmgrReallocPages(MEMMGR *memmgr,
 unsigned int PosAbsoluteDiskRead(int drive, unsigned int sectors,
                                  unsigned int start_sector, void *buf)
 {
-    DP dp;
     long x;
-    for(x=0;x<sizeof(dp->numberofsectors);x++)
+    for(x=0;x<sectors;x++)
     {
-     readLogical(&disks[drive],x,dp->transferaddress+x*512);
+     readLogical(&disks[drive],x,(char *)buf+x*512);
     }
     printf("Test Absolute Disk Read \n");
     return(0);

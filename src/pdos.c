@@ -59,15 +59,15 @@ static void processExtended(int drive, unsigned char *prm);
 
 static void initfiles(void);
 
-static void int21handler(union REGS *regsin, 
-                         union REGS *regsout, 
+static void int21handler(union REGS *regsin,
+                         union REGS *regsout,
                          struct SREGS *sregs);
 
 static void make_ff(char *pat);
 static void scrunchf(char *dest, char *new);
 static int ff_search(void);
 
-#ifdef __32BIT__                         
+#ifdef __32BIT__
 int int20(unsigned int *regs);
 int int21(unsigned int *regs);
 /*Interuppt 25 */
@@ -89,25 +89,25 @@ void dumplong(unsigned long x);
 void dumpbuf(unsigned char *buf, int len);
 static void readLogical(void *diskptr, long sector, void *buf);
 static void writeLogical(void *diskptr, long sector, void *buf);
-static int readAbs(void *buf, 
-                   int sectors, 
-                   int drive, 
-                   int track, 
-                   int head, 
+static int readAbs(void *buf,
+                   int sectors,
+                   int drive,
+                   int track,
+                   int head,
                    int sect);
-static int readLBA(void *buf, 
-                   int sectors, 
-                   int drive, 
+static int readLBA(void *buf,
+                   int sectors,
+                   int drive,
                    unsigned long sector);
-static int writeAbs(void *buf, 
-                    int sectors, 
-                    int drive, 
-                    int track, 
-                    int head, 
+static int writeAbs(void *buf,
+                    int sectors,
+                    int drive,
+                    int track,
+                    int head,
                     int sect);
-static int writeLBA(void *buf, 
-                    int sectors, 
-                    int drive, 
+static int writeLBA(void *buf,
+                    int sectors,
+                    int drive,
                     unsigned long sector);
 static void analyseBpb(DISKINFO *diskinfo, unsigned char *bpb);
 int pdosstrt(void);
@@ -123,7 +123,7 @@ static void pdos16MemmgrFree(MEMMGR *memmgr, void *ptr);
 static void *pdos16MemmgrAllocate(MEMMGR *memmgr, size_t bytes, int id);
 static void *pdos16MemmgrAllocPages(MEMMGR *memmgr, size_t pages, int id);
 static void pdos16MemmgrFreePages(MEMMGR *memmgr, size_t page);
-static int pdos16MemmgrReallocPages(MEMMGR *memmgr, 
+static int pdos16MemmgrReallocPages(MEMMGR *memmgr,
                                     void *ptr,
                                     size_t newpages);
 #endif
@@ -206,7 +206,7 @@ void pdosRun(void)
 
 #ifdef __32BIT__
     __vidptr = ABSADDR(0xb8000);
-#endif    
+#endif
 #if (!defined(USING_EXE) && !defined(__32BIT__))
     instint();
 #endif
@@ -217,7 +217,7 @@ void pdosRun(void)
            "16"
 #endif
            "\n");
- 
+
 #ifndef __32BIT__
     bootBPB = (unsigned char *)ABSADDR(0x7c00 + 11);
 #endif
@@ -246,10 +246,10 @@ void pdosRun(void)
         }
         disks[bootDriveLogical] = bootinfo;
         fatDefaults(&disks[bootDriveLogical].fat);
-        fatInit(&disks[bootDriveLogical].fat, 
-                bootBPB, 
-                readLogical, 
-                writeLogical, 
+        fatInit(&disks[bootDriveLogical].fat,
+                bootBPB,
+                readLogical,
+                writeLogical,
                 &disks[bootDriveLogical]);
         strcpy(disks[bootDriveLogical].cwd, "");
         disks[bootDriveLogical].accessed = 1;
@@ -283,7 +283,7 @@ void pdosRun(void)
     memmgrSupply(&memmgr, ABSADDR(0x700000), memavail);
 #else
     memmgrSupply(&memmgr, ABSADDR(0x200000), memavail);
-#endif    
+#endif
 #else
     /* Ok, time for some heavy hacking.  Because we want to
        be able to supply a full 64k to DOS apps, we can't
@@ -305,7 +305,7 @@ void pdosRun(void)
 #ifndef USING_EXE
     loadPcomm();
     memmgrTerm(&memmgr);
-#endif    
+#endif
     return;
 }
 
@@ -313,13 +313,13 @@ void pdosRun(void)
    for each partition
    for each extended partion
    gather bpb info, plus (real) drive number */
-   
+
 static void initdisks(void)
 {
     int rc;
     int x;
 
-    lastDrive = 2;    
+    lastDrive = 2;
     for (x = 0x80; x < 0x84; x++)
     {
         rc = BosFixedDiskStatus(x);
@@ -359,7 +359,7 @@ static void scanPartition(int drive)
     /* read partition table */
     rc = readAbs(buf, sectors, drive, track, head, sector);
     if (rc == 0)
-    {        
+    {
         psector = 0;
         /* for each partition */
         for (x = 0; x < PT_ENT; x++)
@@ -418,9 +418,9 @@ static void processPartition(int drive, unsigned char *prm)
     }
     else
     {
-        rc = readAbs(buf, 
-                     sectors, 
-                     drive, 
+        rc = readAbs(buf,
+                     sectors,
+                     drive,
                      track,
                      head,
                      sect);
@@ -431,15 +431,15 @@ static void processPartition(int drive, unsigned char *prm)
     }
     bpb = buf + 11;
     analyseBpb(&disks[lastDrive], bpb);
-    
+
     /* we set the lba to whatever mode we are currently in */
     disks[lastDrive].lba = lba;
-    
+
     /* the number of hidden sectors doesn't appear to be properly
        filled in for extended partitions when formatted with MSDOS,
        so we just use the value computed already */
     disks[lastDrive].hidden = sector;
-    
+
     /* if physical disks and hidden sectors match, this is the boot drive */
     if ((drive == bootDrivePhysical)
         && (disks[lastDrive].hidden == bootinfo.hidden))
@@ -448,7 +448,7 @@ static void processPartition(int drive, unsigned char *prm)
     }
     disks[lastDrive].drive = drive;
     fatDefaults(&disks[lastDrive].fat);
-    fatInit(&disks[lastDrive].fat, bpb, readLogical, 
+    fatInit(&disks[lastDrive].fat, bpb, readLogical,
         writeLogical, &disks[lastDrive]);
     strcpy(disks[lastDrive].cwd, "");
     disks[lastDrive].accessed = 1;
@@ -493,8 +493,8 @@ static void processExtended(int drive, unsigned char *prm)
         else
         {
             readAbs(buf,
-                    sectors, 
-                    drive, 
+                    sectors,
+                    drive,
                     track,
                     head,
                     sect);
@@ -509,7 +509,7 @@ static void processExtended(int drive, unsigned char *prm)
         }
         head = buf[PT_OFFSET + 1 * PT_LEN + 1];
         sect = buf[PT_OFFSET + 1 * PT_LEN + 2] & 0x1f;
-        track = (((unsigned int)buf[PT_OFFSET + 1 * PT_LEN + 2] 
+        track = (((unsigned int)buf[PT_OFFSET + 1 * PT_LEN + 2]
                 & 0xc0) << 2)
                 | buf[PT_OFFSET + 1 * PT_LEN + 3];
         sector = buf[PT_OFFSET + 1 * PT_LEN + 8]
@@ -524,7 +524,7 @@ static void processExtended(int drive, unsigned char *prm)
 static void initfiles(void)
 {
     int x;
-    
+
     fhandle[0].inuse = 1;
     fhandle[1].inuse = 1;
     fhandle[2].inuse = 1;
@@ -539,8 +539,8 @@ static void initfiles(void)
     return;
 }
 
-static void int21handler(union REGS *regsin, 
-                         union REGS *regsout, 
+static void int21handler(union REGS *regsin,
+                         union REGS *regsout,
                          struct SREGS *sregs)
 {
     void *p;
@@ -553,11 +553,11 @@ static void int21handler(union REGS *regsin,
 #if 0
     if (debugcnt < 200)
     {
-        printf("ZZZ %d %04x YYY\n",debugcnt, regsin->x.ax);    
+        printf("ZZZ %d %04x YYY\n",debugcnt, regsin->x.ax);
         /*dumplong(regsin->x.ax);*/
         debugcnt++;
     }
-#endif    
+#endif
     switch (regsin->h.ah)
     {
         case 0x02:
@@ -579,7 +579,7 @@ static void int21handler(union REGS *regsin,
         case 0x0e:
             regsout->h.al = PosSelectDisk(regsin->h.dl);
             break;
-            
+
         case 0x19:
             regsout->h.al = PosGetDefaultDrive();
             break;
@@ -587,25 +587,25 @@ static void int21handler(union REGS *regsin,
         case 0x1a:
 #ifdef __32BIT__
             tempdta = SUBADDRFIX(regsin->d.edx);
-#else                        
+#else
             tempdta = MK_FP(sregs->ds, regsin->x.dx);
-#endif            
+#endif
             PosSetDTA(tempdta);
             break;
 
         case 0x25:
 #ifdef __32BIT__
             p = SUBADDRFIX(regsin->d.edx);
-#else                        
+#else
             p = MK_FP(sregs->ds, regsin->x.dx);
-#endif            
+#endif
             PosSetInterruptVector(regsin->h.al, p);
             break;
-            
+
         case 0x2a:
             {
                 int year, month, day, dow;
-                
+
                 PosGetSystemDate(&year, &month, &day, &dow);
                 regsout->x.cx = year;
                 regsout->h.dh = month;
@@ -617,7 +617,7 @@ static void int21handler(union REGS *regsin,
         case 0x2c:
             {
                 int hour, minute, second, hundredths;
-                
+
                 PosGetSystemTime(&hour, &minute, &second, &hundredths);
                 regsout->h.ch = hour;
                 regsout->h.cl = minute;
@@ -630,10 +630,10 @@ static void int21handler(union REGS *regsin,
             tempdta = PosGetDTA();
 #ifdef __32BIT__
             regsout->d.ebx = (int)ADDRFIXSUB(tempdta);
-#else                        
+#else
             regsout->x.bx = FP_OFF(tempdta);
             sregs->es = FP_SEG(tempdta);
-#endif            
+#endif
             break;
 
         case 0x30:
@@ -641,63 +641,63 @@ static void int21handler(union REGS *regsin,
             regsout->x.bx = 0;
             regsout->x.cx = 0;
             break;
-        
+
         case 0x35:
             p = PosGetInterruptVector(regsin->h.al);
 #ifdef __32BIT__
             regsout->d.ebx = (int)ADDRFIXSUB(p);
-#else                        
+#else
             regsout->x.bx = FP_OFF(p);
             sregs->es = FP_SEG(p);
 #endif
             break;
-            
+
         case 0x3b:
-#ifdef __32BIT__        
+#ifdef __32BIT__
             regsout->d.eax = PosChangeDir(SUBADDRFIX(regsin->d.edx));
 #else
             regsout->x.ax = PosChangeDir(MK_FP(sregs->ds, regsin->x.dx));
-#endif            
+#endif
             break;
-            
+
         case 0x3c:
 #ifdef __32BIT__
             p = SUBADDRFIX(regsin->d.edx);
             ret = PosCreatFile(p, regsin->x.cx, &regsout->d.eax);
-#else            
+#else
             p = MK_FP(sregs->ds, regsin->x.dx);
             ret = PosCreatFile(p, regsin->x.cx, &regsout->x.ax);
-#endif            
+#endif
             if (ret < 0)
             {
                 regsout->x.cflag = 1;
                 regsout->x.ax = -ret;
             }
             break;
-            
+
         case 0x3d:
 #ifdef __32BIT__
             p = SUBADDRFIX(regsin->d.edx);
             ret = PosOpenFile(p, regsin->h.al, &regsout->d.eax);
-#else            
+#else
             p = MK_FP(sregs->ds, regsin->x.dx);
             ret = PosOpenFile(p, regsin->h.al, &regsout->x.ax);
-#endif            
+#endif
             if (ret < 0)
             {
                 regsout->x.cflag = 1;
                 regsout->x.ax = 0x02;
             }
             break;
-            
+
         case 0x3e:
-#ifdef __32BIT__        
+#ifdef __32BIT__
             regsout->d.eax = PosCloseFile(regsin->d.ebx);
 #else
             regsout->x.ax = PosCloseFile(regsin->x.bx);
-#endif            
+#endif
             break;
-            
+
         case 0x3f:
 #ifdef __32BIT__
             p = SUBADDRFIX(regsin->d.edx);
@@ -706,7 +706,7 @@ static void int21handler(union REGS *regsin,
                         regsin->d.ecx,
                         &readbytes);
             regsout->d.eax = readbytes;
-#else            
+#else
             p = MK_FP(sregs->ds, regsin->x.dx);
             PosReadFile(regsin->x.bx,
                         p,
@@ -715,7 +715,7 @@ static void int21handler(union REGS *regsin,
             regsout->x.ax = readbytes;
 #endif
             break;
-            
+
         case 0x40:
 #ifdef __32BIT__
             p = SUBADDRFIX(regsin->d.edx);
@@ -735,7 +735,7 @@ static void int21handler(union REGS *regsin,
             p = SUBADDRFIX(regsin->d.edx);
 #else
             p = MK_FP(sregs->ds, regsin->x.dx);
-#endif            
+#endif
             regsout->x.ax = PosDeleteFile(p);
             if (regsout->x.ax != 0)
             {
@@ -755,9 +755,9 @@ static void int21handler(union REGS *regsin,
                                            regsin->h.al);
             regsout->x.cx = readbytes >> 16;
             regsout->x.dx = readbytes & 0xffff;
-#endif                                                
+#endif
             break;
-            
+
         case 0x43:
             regsout->x.cflag = 1;
             break;
@@ -786,7 +786,7 @@ static void int21handler(union REGS *regsin,
                     regsout->x.cflag = 1;
                     regsout->d.eax = -regsout->d.eax;
                 }
-#else                
+#else
                 regsout->x.ax = PosBlockDeviceRemovable(regsin->h.bl);
                 if ((int)regsout->x.ax < 0)
                 {
@@ -795,7 +795,7 @@ static void int21handler(union REGS *regsin,
                 }
 #endif
             }
-         
+
 
             /* Implementing the Int 21h/AX=4409 call*/
             else if (regsin->h.al == 0x09)
@@ -808,7 +808,7 @@ static void int21handler(union REGS *regsin,
                     regsout->x.cflag = 1;
                     regsout->d.eax = -regsout->d.eax;
                 }
-#else                
+#else
                 regsout->x.ax = PosBlockDeviceRemote(regsin->h.bl,
                                                      &regsout->x.dx);
                 if ((int)regsout->x.ax < 0)
@@ -818,11 +818,11 @@ static void int21handler(union REGS *regsin,
                 }
 #endif
             }
-             
+
    /**/
    /*Function to dump the contents of DS,DX register*/
-            else if (regsin->h.al == 0x0D)  
-            {               
+            else if (regsin->h.al == 0x0D)
+            {
 #ifdef __32BIT__
                 p=SUBADDRFIX(regsin->d.edx);
                 regsout->d.eax =PosGenericBlockDeviceRequest(regsin->h.bl,
@@ -833,10 +833,10 @@ static void int21handler(union REGS *regsin,
                 regsout->x.ax =PosGenericBlockDeviceRequest(regsin->h.bl,
                                                             regsin->h.ch,
                                                             regsin->h.cl,p);
-#endif   
-            } 
+#endif
+            }
             break;
-                                    
+
         case 0x47:
 #ifdef __32BIT__
             p = SUBADDRFIX(regsin->d.esi);
@@ -844,9 +844,9 @@ static void int21handler(union REGS *regsin,
 #else
             p = MK_FP(sregs->ds, regsin->x.si);
             regsout->x.ax = PosGetCurDir(regsin->h.dl, p);
-#endif            
+#endif
             break;
-            
+
         case 0x48:
 #ifdef __32BIT__
             regsout->d.eax = (int)PosAllocMem(regsin->d.ebx);
@@ -869,21 +869,21 @@ static void int21handler(union REGS *regsin,
             {
                 regsout->x.ax = FP_SEG(p) + (FP_OFF(p) >> 4);
             }
-#endif            
+#endif
             break;
-        
+
         case 0x49:
 #ifdef __32BIT__
             regsout->d.eax = PosFreeMem(SUBADDRFIX(regsin->d.ebx));
 #else
             regsout->x.ax = PosFreeMem(MK_FP(sregs->es, 0));
-#endif            
+#endif
             if (regsout->x.ax != 0)
             {
                 regsout->x.cflag = 1;
             }
             break;
-            
+
         case 0x4a:
 #ifdef __32BIT__
             regsout->d.eax = PosReallocPages(SUBADDRFIX(regsin->d.ecx),
@@ -899,9 +899,9 @@ static void int21handler(union REGS *regsin,
                 regsout->x.cflag = 1;
             }
             break;
-            
+
         case 0x4b:
-#ifdef __32BIT__        
+#ifdef __32BIT__
              pb = SUBADDRFIX(regsin->d.ebx);
              if (pb != NULL)
              {
@@ -911,9 +911,9 @@ static void int21handler(union REGS *regsin,
 #else
              PosExec(MK_FP(sregs->ds, regsin->x.dx),
                      MK_FP(sregs->es, regsin->x.bx));
-#endif                     
+#endif
              break;
-             
+
         case 0x4c:
 #if (!defined(USING_EXE))
              PosTerminate(regsin->h.al);
@@ -923,9 +923,9 @@ static void int21handler(union REGS *regsin,
         case 0x4d:
              regsout->x.ax = PosGetReturnCode();
              break;
-             
+
         case 0x4e:
-#ifdef __32BIT__        
+#ifdef __32BIT__
              regsout->d.eax = PosFindFirst(SUBADDRFIX(regsin->d.edx),
                                            regsin->x.cx);
              if (regsout->d.eax != 0)
@@ -939,9 +939,9 @@ static void int21handler(union REGS *regsin,
              {
                  regsout->x.cflag = 1;
              }
-#endif                                          
+#endif
              break;
-             
+
         case 0x4f:
              regsout->x.ax = PosFindNext();
              if (regsout->x.ax != 0)
@@ -949,7 +949,7 @@ static void int21handler(union REGS *regsin,
                  regsout->x.cflag = 1;
              }
              break;
-             
+
         case 0x56:
 #ifdef __32BIT__
             p = SUBADDRFIX(regsin->d.edx);
@@ -957,7 +957,7 @@ static void int21handler(union REGS *regsin,
 #else
             p = MK_FP(sregs->ds, regsin->x.dx);
             q = MK_FP(sregs->es, regsin->x.di);
-#endif            
+#endif
             regsout->x.ax = PosRenameFile(p, q);
             if (regsout->x.ax != 0)
             {
@@ -971,7 +971,7 @@ static void int21handler(union REGS *regsin,
 #else
             p = MK_FP(sregs->ds, regsin->x.si);
             q = MK_FP(sregs->es, regsin->x.di);
-#endif      
+#endif
             ret=PosTruename(p,q);
 
             if(ret < 0)
@@ -984,7 +984,7 @@ static void int21handler(union REGS *regsin,
 #endif
              }
              break;
-          
+
         /* emx calls are 0x7f */
 #ifdef __32BIT__
         case 0x7f:
@@ -1010,7 +1010,7 @@ static void int21handler(union REGS *regsin,
         case 0xf3:
             if (regsin->h.al == 0)
             {
-#ifdef __32BIT__            
+#ifdef __32BIT__
                 PosDisplayInteger(regsin->d.ecx);
 #else
                 PosDisplayInteger(regsin->x.cx);
@@ -1022,17 +1022,17 @@ static void int21handler(union REGS *regsin,
             }
             else if (regsin->h.al == 2)
             {
-#ifdef __32BIT__            
+#ifdef __32BIT__
                 PosSetRunTime(SUBADDRFIX(regsin->d.ebx),
                               SUBADDRFIX(regsin->d.ecx));
-#endif                              
+#endif
             }
             break;
 
         default:
              /*printf("unimplemented dos call %x\n", regsin->x.ax);*/
              break;
-             
+
     }
     return;
 }
@@ -1080,7 +1080,7 @@ int PosGetCharInputNoEcho(void)
 
     return ascii;
 }
-            
+
 void PosDisplayString(const char *buf)
 {
     const char *p;
@@ -1125,7 +1125,7 @@ void *PosGetDTA(void)
 
 void PosSetDTA(void *p)
 {
-    dta = p;    
+    dta = p;
     return;
 }
 
@@ -1139,7 +1139,7 @@ void PosSetInterruptVector(int intnum, void *handler)
 unsigned int PosGetDosVersion(void)
 {
     int version;
-    
+
     /* set to 4.00 */
     version = (0x00 << 8) | 0x04;
     return (version);
@@ -1153,7 +1153,7 @@ void *PosGetInterruptVector(int intnum)
 int PosChangeDir(char *to)
 {
     char *p;
-    
+
     if (strcmp(to, "..") == 0)
     {
         p = strrchr(cwd, '\\');
@@ -1247,7 +1247,7 @@ int PosOpenFile(const char *name, int mode, int *handle)
 int PosCloseFile(int fno)
 {
     int ret;
-    
+
     ret = fileClose(fno);
     return (ret);
 }
@@ -1264,7 +1264,7 @@ void PosReadFile(int fh, void *data, size_t bytes, size_t *readbytes)
         {
             int scan;
             int ascii;
-            
+
             BosReadKeyboardCharacter(&scan, &ascii);
             p[x] = ascii;
             BosWriteText(0, ascii, 0);
@@ -1364,7 +1364,7 @@ int PosBlockDeviceRemote(int drive,int *da)
 /*Implementation of the function call 440D*/
 int PosGenericBlockDeviceRequest(int drive,int catcode,int function,
                                  void *parm_block)
-{   
+{
     PB_1560 *pb;
 
     if (drive == 0)
@@ -1396,14 +1396,14 @@ int PosGetCurDir(int drive, char *buf)
 
 void *PosAllocMem(unsigned int size)
 {
-    return (memmgrAllocate(&memmgr, size, 0)); 
+    return (memmgrAllocate(&memmgr, size, 0));
 }
 
 #ifdef __32BIT__
 void *PosAllocMemPages(unsigned int pages, unsigned int *maxpages)
 {
     void *p;
-    
+
     p = memmgrAllocate(&memmgr, pages * 16, 0);
     if (p == NULL)
     {
@@ -1415,7 +1415,7 @@ void *PosAllocMemPages(unsigned int pages, unsigned int *maxpages)
 void *PosAllocMemPages(unsigned int pages, unsigned int *maxpages)
 {
     void *p;
-    
+
     p = pdos16MemmgrAllocPages(&memmgr, pages, 0);
     if (p == NULL)
     {
@@ -1463,7 +1463,7 @@ void PosExec(char *prog, void *parmblock)
 {
     PARMBLOCK *parms = parmblock;
     char tempp[FILENAME_MAX];
-    
+
     if ((strchr(prog, '\\') == NULL)
         && (strchr(prog, '/') == NULL))
     {
@@ -1486,7 +1486,7 @@ void PosTerminate(int rc)
     callwithbypass(rc);
     return;
 }
-             
+
 int PosGetReturnCode(void)
 {
     return (lastrc);
@@ -1495,7 +1495,7 @@ int PosGetReturnCode(void)
 int PosFindFirst(char *pat, int attrib)
 {
     int ret;
-    
+
     attr = attrib;
     memset(dta, '\0', 0x15); /* clear out reserved area */
     make_ff(pat);
@@ -1552,7 +1552,7 @@ void PosReboot(void)
 {
     int *posttype = (int *)0x472;
     void (*postfunc)(void) = (void (*)(void))MK_FP(0xffff, 0x0000);
-    
+
     *posttype = 0x1234;
     postfunc();
     return;
@@ -1567,7 +1567,7 @@ void PosSetRunTime(void *pstart, void *c_api)
 #ifdef __32BIT__
     exec_subcor = subcor;
 #endif
-    return;    
+    return;
 }
 #endif
 
@@ -1577,7 +1577,7 @@ void PosSetRunTime(void *pstart, void *c_api)
 static void make_ff(char *pat)
 {
     char *p;
-    
+
     strcpy(ff_pat, pat);
     upper_str(ff_pat);
     scrunchf(ff_path, ff_pat);
@@ -1614,7 +1614,7 @@ static void scrunchf(char *dest, char *new)
     char *p;
     int drive;
 
-    strcpy(dest, "");    
+    strcpy(dest, "");
     mycwd = cwd;
     if (strchr(new, ':') != NULL)
     {
@@ -1665,7 +1665,7 @@ static int ff_search(void)
     unsigned char buf[32];
     char file[13];
     char *p;
-    
+
     ret = fileRead(ff_handle, buf, sizeof buf);
     while ((ret == sizeof buf) && (buf[0] != '\0'))
     {
@@ -1690,18 +1690,18 @@ static int ff_search(void)
             {
                 *p-- = '\0';
             }
-            if (patmat(file, ff_pat) 
-            
+            if (patmat(file, ff_pat)
+
                 /* if it is not a directory, or they asked for
                    directories, then that is OK */
                 && (((buf[0x0b] & 0x10) == 0)
                     || ((attr & 0x10) != 0))
-                    
+
                 /* if it is not a volume label, or they asked
                    for volume labels, then that is OK */
                 && (((buf[0x0b] & 0x08) == 0)
                     || ((attr & 0x08) != 0))
-                    
+
                )
             {
                 if ((p != NULL) && (*p == '.')) *p = '\0';
@@ -1780,7 +1780,7 @@ int int25(unsigned int *regs)
     static union REGS regsin;
     static union REGS regsout;
     static struct SREGS sregs;
-    DP *dp;
+	DP *dp;
     void *p;
 
     regsin.d.eax = regs[0];
@@ -1791,6 +1791,7 @@ int int25(unsigned int *regs)
     regsin.d.edi = regs[5];
     regsin.d.cflag = 0;
     memcpy(&regsout, &regsin, sizeof regsout);
+    dp=SUBADDRFIX(regsin.d.ebx);
     p = SUBADDRFIX(dp->transferaddress);
     PosAbsoluteDiskRead(regsin.h.al,dp->numberofsectors,dp->sectornumber,p);
     regs[0] = regsout.d.eax;
@@ -1908,6 +1909,7 @@ void int25(unsigned int *regptrs,
     sregs.ds = ds;
     sregs.es = es;
     memcpy(&regsout, &regsin, sizeof regsout);
+    dp=MK_FP(sregs.ds,regsin.x.bx)
     p=dp->transferaddress;
     PosAbsoluteDiskRead(regsin.h.al,dp->numberofsectors,dp->sectornumber,p);
     regptrs[0] = sregs.es;
@@ -1942,7 +1944,7 @@ static void loadConfig(void)
                 if (memcmp(buf, "SHELL=", 6) == 0)
                 {
                     char *p;
-                    
+
                     memcpy(shell, buf + 6, sizeof shell);
                     shell[sizeof shell - 1] = '\0';
                     p = strchr(shell, '\r');
@@ -1999,9 +2001,9 @@ static void loadExe(char *prog, PARMBLOCK *parmblock)
 {
 #ifdef __32BIT__
     struct exec firstbit;
-#else    
+#else
     unsigned char firstbit[10];
-#endif    
+#endif
     unsigned int headerLen;
     unsigned char *header;
     unsigned char *envptr;
@@ -2042,16 +2044,16 @@ static void loadExe(char *prog, PARMBLOCK *parmblock)
         headerLen = *(unsigned int *)&firstbit[8];
         headerLen *= 16;
         header = memmgrAllocate(&memmgr, headerLen, 0);
-        memcpy(header, firstbit, sizeof firstbit);    
+        memcpy(header, firstbit, sizeof firstbit);
         fileRead(fno, header + sizeof firstbit, headerLen - sizeof firstbit);
     }
-#endif    
+#endif
 
     envptr = memmgrAllocate(&memmgr, strlen(prog) + 9, 0);
 #ifndef __32BIT__
     origenv = envptr;
     envptr = (unsigned char *)FP_NORM(envptr);
-#endif    
+#endif
     memcpy(envptr, "A=B\0\0", 5);
     *((unsigned int *)(envptr + 5)) = 1; /* who knows why */
     memcpy(envptr + 7, prog, strlen(prog) + 1);
@@ -2064,7 +2066,7 @@ static void loadExe(char *prog, PARMBLOCK *parmblock)
     if (isexe)
     {
         exeLen = *(unsigned int *)&header[4];
-        exeLen = (exeLen + 1) * 512 - headerLen;        
+        exeLen = (exeLen + 1) * 512 - headerLen;
     }
     else
     {
@@ -2090,9 +2092,9 @@ static void loadExe(char *prog, PARMBLOCK *parmblock)
         memmgrFree(&memmgr, header);
         memmgrFree(&memmgr, envptr);
         return;
-    }    
+    }
 
-    /* set various values in the psp */    
+    /* set various values in the psp */
     psp[0] = 0xcd;
     psp[1] = 0x20;
 #ifndef __32BIT__
@@ -2105,15 +2107,15 @@ static void loadExe(char *prog, PARMBLOCK *parmblock)
         /* 1 for the count and 1 for the return */
         memcpy(psp + 0x80, parmblock->cmdtail, parmblock->cmdtail[0] + 1 + 1);
     }
-    
+
     exeStart = psp + 0x100;
-#ifndef __32BIT__    
+#ifndef __32BIT__
     exeStart = (unsigned char *)FP_NORM(exeStart);
 #endif
 
 #ifdef __32BIT__
     fileRead(fno, exeStart, firstbit.a_text);
-    fileRead(fno, 
+    fileRead(fno,
              exeStart + N_DATADDR(firstbit) - N_TXTADDR(firstbit),
              firstbit.a_data);
 #else
@@ -2122,7 +2124,7 @@ static void loadExe(char *prog, PARMBLOCK *parmblock)
         unsigned int maxread = 32768;
         unsigned long totalRead = 0;
         char *upto;
-        
+
         while (totalRead < exeLen)
         {
             if ((exeLen - totalRead) < maxread)
@@ -2158,14 +2160,14 @@ static void loadExe(char *prog, PARMBLOCK *parmblock)
                      ((unsigned long)exeStart + relocStart[relocI]);
             *fixSeg = *fixSeg + addSeg;
         }
-    
+
         ss = *(unsigned int *)&header[0xe];
         ss += addSeg;
         sp = *(unsigned int *)&header[0x10];
 
         /* This 16:16 arithmetic will work because the exeStart
            offset is 0 */
-        exeEntry = (unsigned char *)((unsigned long)exeStart 
+        exeEntry = (unsigned char *)((unsigned long)exeStart
                                      + *(unsigned long *)&header[0x14]);
     }
     else
@@ -2186,7 +2188,7 @@ static void loadExe(char *prog, PARMBLOCK *parmblock)
         bss[y] = '\0';
     }
     sp = N_BSSADDR(firstbit) + firstbit.a_bss + 0x8000;
-#endif           
+#endif
 #if (!defined(USING_EXE) && !defined(__32BIT__))
     olddta = dta;
     dta = psp + 0x80;
@@ -2212,7 +2214,7 @@ static int fixexe32(unsigned char *psp, unsigned long entry, unsigned int sp)
     char *source;
     char *dest;
     unsigned long dataStart;
-    unsigned int *header;    
+    unsigned int *header;
     void *abs;
     struct {
         unsigned short limit_15_0;
@@ -2231,10 +2233,10 @@ static int fixexe32(unsigned char *psp, unsigned long entry, unsigned int sp)
     commandLine = psp + 0x80;
 
     exeStart = (unsigned long)psp + 0x100 - 0x10000;
-    
+
     dataStart = exeStart;
     dataStart = (unsigned long)ADDR2ABS(dataStart);
-    
+
     /* now we need to record the subroutine's absolute offset fix */
     oldsubcor = subcor;
     subcor = dataStart;
@@ -2249,7 +2251,7 @@ static int fixexe32(unsigned char *psp, unsigned long entry, unsigned int sp)
     exeparms.pstart = ADDRFIXSUB(exec_pstart);
     exeparms.crt = exec_c_api;
     exeparms.subcor = exec_subcor;
-        
+
     /* now we set the GDT entry directly */
     /* after first of all saving the old values */
     realcode = (void *)((char *)gdt + 0x28);
@@ -2257,14 +2259,14 @@ static int fixexe32(unsigned char *psp, unsigned long entry, unsigned int sp)
     realcode->base_15_0 = exeStart & 0xffff;
     realcode->base_23_16 = (exeStart >> 16) & 0xff;
     realcode->base_31_24 = (exeStart >> 24) & 0xff;
-    
+
     /* now set the data values */
     realdata = (void *)((char *)gdt + 0x30);
     savedata = *realdata;
     realdata->base_15_0 = dataStart & 0xffff;
     realdata->base_23_16 = (dataStart >> 16) & 0xff;
     realdata->base_31_24 = (dataStart >> 24) & 0xff;
-    
+
     ret = call32(entry, ADDRFIXSUB(&exeparms), sp);
     subcor = oldsubcor;
     *realcode = savecode;
@@ -2276,7 +2278,7 @@ static int fixexe32(unsigned char *psp, unsigned long entry, unsigned int sp)
 static int bios2driv(int bios)
 {
     int drive;
-    
+
     if (bios >= 0x80)
     {
         drive = bios - 0x80 + 2;
@@ -2402,9 +2404,9 @@ static void accessDisk(int drive)
     int sector = 1;
     unsigned char *bpb;
 
-    rc = readAbs(buf, 
-                 sectors, 
-                 drive, 
+    rc = readAbs(buf,
+                 sectors,
+                 drive,
                  track,
                  head,
                  sector);
@@ -2429,7 +2431,7 @@ static void accessDisk(int drive)
 static void upper_str(char *str)
 {
     int x;
-    
+
     for (x = 0; str[x] != '\0'; x++)
     {
         str[x] = toupper(str[x]);
@@ -2442,7 +2444,7 @@ void dumplong(unsigned long x)
     int y;
     char *z = "0123456789abcdef";
     char buf[9];
-    
+
     for (y = 0; y < 8; y++)
     {
         buf[7 - y] = z[x & 0x0f];
@@ -2524,11 +2526,11 @@ static void writeLogical(void *diskptr, long sector, void *buf)
     return;
 }
 
-static int readAbs(void *buf, 
-                   int sectors, 
-                   int drive, 
-                   int track, 
-                   int head, 
+static int readAbs(void *buf,
+                   int sectors,
+                   int drive,
+                   int track,
+                   int head,
                    int sect)
 {
     int rc;
@@ -2547,9 +2549,9 @@ static int readAbs(void *buf,
         rc = BosDiskSectorRead(readbuf, 1, drive, track, head, sect);
         if (rc == 0)
         {
-#ifdef __32BIT__    
+#ifdef __32BIT__
             memcpy(buf, transferbuf, 512);
-#endif        
+#endif
             ret = 0;
             break;
         }
@@ -2559,9 +2561,9 @@ static int readAbs(void *buf,
     return (ret);
 }
 
-static int readLBA(void *buf, 
-                   int sectors, 
-                   int drive, 
+static int readLBA(void *buf,
+                   int sectors,
+                   int drive,
                    unsigned long sector)
 {
     int rc;
@@ -2580,9 +2582,9 @@ static int readLBA(void *buf,
         rc = BosDiskSectorRLBA(readbuf, 1, drive, sector, 0);
         if (rc == 0)
         {
-#ifdef __32BIT__    
+#ifdef __32BIT__
             memcpy(buf, transferbuf, 512);
-#endif        
+#endif
             ret = 0;
             break;
         }
@@ -2592,11 +2594,11 @@ static int readLBA(void *buf,
     return (ret);
 }
 
-static int writeAbs(void *buf, 
-                    int sectors, 
-                    int drive, 
-                    int track, 
-                    int head, 
+static int writeAbs(void *buf,
+                    int sectors,
+                    int drive,
+                    int track,
+                    int head,
                     int sect)
 {
     int rc;
@@ -2609,9 +2611,9 @@ static int writeAbs(void *buf,
 #endif
 
     unused(sectors);
-#ifdef __32BIT__    
+#ifdef __32BIT__
     memcpy(transferbuf, buf, 512);
-#endif        
+#endif
     tries = 0;
     while (tries < 5)
     {
@@ -2627,9 +2629,9 @@ static int writeAbs(void *buf,
     return (ret);
 }
 
-static int writeLBA(void *buf, 
-                    int sectors, 
-                    int drive, 
+static int writeLBA(void *buf,
+                    int sectors,
+                    int drive,
                     unsigned long sector)
 {
     int rc;
@@ -2642,9 +2644,9 @@ static int writeLBA(void *buf,
 #endif
 
     unused(sectors);
-#ifdef __32BIT__    
+#ifdef __32BIT__
     memcpy(transferbuf, buf, 512);
-#endif        
+#endif
     tries = 0;
     while (tries < 5)
     {
@@ -2669,7 +2671,7 @@ static void analyseBpb(DISKINFO *diskinfo, unsigned char *bpb)
                        | ((unsigned long)bpb[19] << 16)
                        | ((unsigned long)bpb[20] << 24);
     diskinfo->sectors_per_track = (bpb[13] | ((unsigned int)bpb[14] << 8));
-    diskinfo->sectors_per_cylinder = diskinfo->sectors_per_track 
+    diskinfo->sectors_per_cylinder = diskinfo->sectors_per_track
                                      * diskinfo->num_heads;
     memcpy(&diskinfo->bpb, bpb, sizeof diskinfo->bpb);
     return;
@@ -2717,7 +2719,7 @@ int displayd(void)
 static void *pdos16MemmgrAllocate(MEMMGR *memmgr, size_t bytes, int id)
 {
     size_t pages;
-    
+
     /* we need to round up bytes to nearest page */
     pages = bytes / 16 + ((bytes & 0x0f) != 0 ? 1 : 0);
     return (pdos16MemmgrAllocPages(memmgr, pages, id));
@@ -2759,7 +2761,7 @@ static void *pdos16MemmgrAllocPages(MEMMGR *memmgr, size_t pages, int id)
         return (ptr);
     }
     abs = ADDR2ABS(ptr);
-    
+
     /* and because we wasted 0x10000 for control blocks, we
        skip that, and the bit above 3000 we multiply by 16. */
     abs -= (unsigned long)PDOS16_MEMSTART * 16;
@@ -2774,13 +2776,13 @@ static void *pdos16MemmgrAllocPages(MEMMGR *memmgr, size_t pages, int id)
 static void pdos16MemmgrFreePages(MEMMGR *memmgr, size_t page)
 {
     void *ptr;
-    
+
     ptr = MK_FP(page, 0);
     pdos16MemmgrFree(memmgr, ptr);
     return;
 }
 
-static int pdos16MemmgrReallocPages(MEMMGR *memmgr, 
+static int pdos16MemmgrReallocPages(MEMMGR *memmgr,
                                     void *ptr,
                                     size_t newpages)
 {
@@ -2800,10 +2802,16 @@ static int pdos16MemmgrReallocPages(MEMMGR *memmgr,
 #endif
 
 /*int 25 function call*/
-unsigned int PosAbsoluteDiskRead(int drive, unsigned int sectors, 
+unsigned int PosAbsoluteDiskRead(int drive, unsigned int sectors,
                                  unsigned int start_sector, void *buf)
 {
-    printf("Test Absolute Disk Read");
+    DP dp;
+    long x;
+    for(x=0;x<sizeof(dp->numberofsectors);x++)
+    {
+     readLogical(&disks[drive],x,dp->transferaddress+x*512);
+    }
+    printf("Test Absolute Disk Read \n");
     return(0);
 }
 /**/

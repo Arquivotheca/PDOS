@@ -1915,7 +1915,7 @@ void int25(unsigned int *regptrs,
     sregs.ds = ds;
     sregs.es = es;
     memcpy(&regsout, &regsin, sizeof regsout);
-    dp=MK_FP(sregs.ds,regsin.x.bx)
+    dp=MK_FP(sregs.ds,regsin.x.bx);
     p=dp->transferaddress;
     PosAbsoluteDiskRead(regsin.h.al,dp->sectornumber,dp->numberofsectors,p);
     regptrs[0] = sregs.es;

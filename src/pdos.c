@@ -893,10 +893,16 @@ static void int21handler(union REGS *regsin,
             regsout->x.ax = PosReallocPages(MK_FP(sregs->es, 0),
                                             regsin->x.bx,
                                             &regsout->x.bx);
+            /* printf("returning from 4a\n"); */
+            regsout->x.ax = 0;                                
 #endif
             if (regsout->x.ax != 0)
             {
                 regsout->x.cflag = 1;
+            }
+            else
+            {
+                regsout->x.cflag = 0;
             }
             break;
 

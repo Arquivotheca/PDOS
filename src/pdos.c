@@ -989,7 +989,19 @@ static void int21handler(union REGS *regsin,
 #endif
              }
              break;
-
+        /*Function call AX=7303h*/
+        case 0x73:
+            if(regsin->h.al==0x03)
+            {
+                regsout->x.cflag=0;
+#ifdef __32BIT__
+                regsout->d.eax=0;
+#else
+                regsout->h.al=0;
+#endif
+            }
+            break;
+         /**/
         /* emx calls are 0x7f */
 #ifdef __32BIT__
         case 0x7f:

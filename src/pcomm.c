@@ -50,6 +50,7 @@ static void processInput(void);
 static void putPrompt(void);
 static void dotype(char *file);
 static void dodir(char *pattern);
+static void dover(void);
 static void changedir(char *to);
 static void changedisk(int drive);
 static int ins_strcmp(char *one, char *two);
@@ -163,6 +164,10 @@ static void processInput(void)
     {
         dodir(p);
     }
+    else if (ins_strcmp(buf, "ver") == 0)
+    {
+        dover();
+    }
     else if (ins_strcmp(buf, "echo") == 0)
     {
         printf("%s\n", p);
@@ -268,6 +273,12 @@ static void dodir(char *pattern)
                tms->tm_sec);
         ret = PosFindNext();
     }
+    return;
+}
+
+static void dover(void)
+{
+    printf("%s %s\n", __DATE__, __TIME__);
     return;
 }
 

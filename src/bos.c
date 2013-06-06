@@ -16,6 +16,21 @@
 static void int86n(unsigned int intno);
 static void int86i(unsigned int intno, union REGS *regsin);
 
+/*BosGetSystemTime-BIOS Int 1Ah*/
+
+unsigned long BosGetSystemTime(void)
+{
+    union REGS regsin;
+    union REGS regsout;
+
+    regsin.h.ah=0x00;
+    int86(0x1A,&regsin,&regsout);
+
+    return((unsigned long)regsout.x.cx << 16 | regsout.x.dx);
+}
+
+/**/
+
 /* BosPrintScreen - BIOS Int 05h */
 
 int BosPrintScreen(void)

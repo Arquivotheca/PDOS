@@ -33,6 +33,12 @@ mov si, word ptr [si + 8]
 
 push bp
 
+cmp intnum, 1Ah
+jne not1A
+int 1Ah
+jmp fintry
+not1A:
+
 cmp intnum, 08h
 jne not8
 int 08h
@@ -150,6 +156,12 @@ mov di, word ptr [si + 10]
 mov si, word ptr [si + 8]
 
 pop ds; load previously saved value for ds
+
+cmp intnum, 1Ah
+jne xnot1A
+int 1Ah
+jmp xfintry
+xnot1A:
 
 cmp intnum, 08h
 jne xnot8

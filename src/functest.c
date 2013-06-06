@@ -284,6 +284,16 @@ static int testAbsoluteDiskRead(void)
 }
 /**/
 
+static int testBosGetSystemTime(void)
+{
+    union REGS regsout;
+	 
+    BosGetSystemTime();
+    printf("Time is %d "\n",regsout.x.dx):
+    return (0);
+}
+
+
 int main(void)
 {
 /*    testDriveParms();
@@ -291,6 +301,6 @@ int main(void)
 
     /*testExtendedMemory()*/
     /*testGenericBlockDeviceRequest();*/
-    testAbsoluteDiskRead();
+    /*testAbsoluteDiskRead();*/
     return (0);
 }

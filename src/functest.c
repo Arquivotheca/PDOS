@@ -287,7 +287,7 @@ static int testAbsoluteDiskRead(void)
 static int testBosGetSystemTime(void)
 {
     union REGS regsout;
-	 
+
     BosGetSystemTime();
     printf("Time is %d "\n",regsout.x.dx):
     return (0);

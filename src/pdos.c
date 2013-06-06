@@ -1797,7 +1797,7 @@ int int25(unsigned int *regs)
     static union REGS regsin;
     static union REGS regsout;
     static struct SREGS sregs;
-	DP *dp;
+    DP *dp;
     void *p;
 
     regsin.d.eax = regs[0];

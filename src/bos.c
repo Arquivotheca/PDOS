@@ -25,7 +25,9 @@ unsigned long BosGetSystemTime(void)
 
     regsin.h.ah=0x00;
     int86(0x1A,&regsin,&regsout);
-
+#ifdef __32BIT__
+    return((unsigned long)regsout.d.edx);
+#endif
     return((unsigned long)regsout.x.cx << 16 | regsout.x.dx);
 }
 
@@ -47,7 +49,7 @@ int BosPrintScreen(void)
 int BosSetVideoMode(unsigned int mode)
 {
     union REGS regsin;
-    
+
     regsin.h.ah = 0x00;
     regsin.h.al = (unsigned char)mode;
     int86i(0x10, &regsin);
@@ -60,7 +62,7 @@ int BosSetVideoMode(unsigned int mode)
 int BosSetCursorType(int top, int bottom)
 {
     union REGS regsin;
-    
+
     regsin.h.ah = 0x01;
     regsin.h.ch = top;
     regsin.h.cl = bottom;
@@ -74,7 +76,7 @@ int BosSetCursorType(int top, int bottom)
 int BosSetCursorPosition(int page, int row, int column)
 {
     union REGS regsin;
-    
+
     regsin.h.ah = 0x02;
     regsin.h.bh = page;
     regsin.h.dh = row;
@@ -86,14 +88,14 @@ int BosSetCursorPosition(int page, int row, int column)
 
 /* BosReadCursorPositon - BIOS Int 10h Function 03h */
 
-int BosReadCursorPosition(int page, 
+int BosReadCursorPosition(int page,
                           int *cursorStart,
                           int *cursorEnd,
                           int *row,
                           int *column)
 {
     union REGS regs;
-    
+
     regs.h.ah = 0x03;
     regs.h.bh = page;
     int86(0x10, &regs, &regs);
@@ -115,7 +117,7 @@ int BosReadLightPen(int *trigger,
                     int *ccol)
 {
     union REGS regs;
-    
+
     regs.h.ah = 0x04;
     int86(0x10, &regs, &regs);
     *trigger = regs.h.ah;
@@ -125,7 +127,7 @@ int BosReadLightPen(int *trigger,
     *crow = regs.h.dh;
     *ccol = regs.h.dl;
     return (0);
-}                    
+}
 
 
 /* BosSetActiveDisplayPage - BIOS Int 10h Function 05h */
@@ -133,7 +135,7 @@ int BosReadLightPen(int *trigger,
 int BosSetActiveDisplayPage(int page)
 {
     union REGS regsin;
-    
+
     regsin.h.ah = 0x05;
     regsin.h.al = page;
     int86i(0x10, &regsin);
@@ -151,7 +153,7 @@ int BosScrollWindowUp(int numLines,
                       int endCol)
 {
     union REGS regsin;
-    
+
     regsin.h.ah = 0x06;
     regsin.h.al = numLines;
     regsin.h.bh = attrib;
@@ -174,7 +176,7 @@ int BosScrollWindowDown(int numLines,
                         int endCol)
 {
     union REGS regsin;
-    
+
     regsin.h.ah = 0x07;
     regsin.h.al = numLines;
     regsin.h.bh = attrib;
@@ -193,7 +195,7 @@ int BosReadCharAttrib(int page, int *ch, int *attrib)
 {
     union REGS regsin;
     union REGS regsout;
-    
+
     regsin.h.ah = 0x08;
     regsin.h.bh = page;
     int86(0x10, &regsin, &regsout);
@@ -208,7 +210,7 @@ int BosReadCharAttrib(int page, int *ch, int *attrib)
 int BosWriteCharAttrib(int page, int ch, int attrib, unsigned int num)
 {
     union REGS regsin;
-    
+
     regsin.h.ah = 0x09;
     regsin.h.al = ch;
     regsin.h.bh = page;
@@ -224,7 +226,7 @@ int BosWriteCharAttrib(int page, int ch, int attrib, unsigned int num)
 int BosWriteCharCursor(int page, int ch, int col, unsigned int num)
 {
     union REGS regsin;
-    
+
     regsin.h.ah = 0x0a;
     regsin.h.al = ch;
     regsin.h.bh = page;
@@ -240,7 +242,7 @@ int BosWriteCharCursor(int page, int ch, int col, unsigned int num)
 int BosSetColourPalette(int id, int val)
 {
     union REGS regsin;
-    
+
     regsin.h.ah = 0x0b;
     regsin.h.bh = id;
     regsin.h.bl = val;
@@ -251,13 +253,13 @@ int BosSetColourPalette(int id, int val)
 
 /* BosWriteGraphicsPixel - BIOS Int 10h Function 0Ch */
 
-int BosWriteGraphicsPixel(int page, 
-                          int colour, 
+int BosWriteGraphicsPixel(int page,
+                          int colour,
                           unsigned int row,
                           unsigned int column)
 {
     union REGS regsin;
-    
+
     regsin.h.ah = 0x0c;
     regsin.h.al = colour;
     regsin.h.bh = page;
@@ -270,14 +272,14 @@ int BosWriteGraphicsPixel(int page,
 
 /* BosReadGraphicsPixel - BIOS Int 10h Function 0Dh */
 
-int BosReadGraphicsPixel(int page, 
+int BosReadGraphicsPixel(int page,
                          unsigned int row,
                          unsigned int column,
                          int *colour)
 {
     union REGS regsin;
     union REGS regsout;
-    
+
     regsin.h.ah = 0x0d;
     regsin.h.bh = page;
     regsin.x.cx = (unsigned int)column;
@@ -293,7 +295,7 @@ int BosReadGraphicsPixel(int page,
 int BosWriteText(int page, int ch, int colour)
 {
     union REGS regsin;
-    
+
     regsin.h.ah = 0x0e;
     regsin.h.al = ch;
     regsin.h.bh = page;
@@ -309,7 +311,7 @@ int BosGetVideoMode(int *columns, int *mode, int *page)
 {
     union REGS regsin;
     union REGS regsout;
-    
+
     regsin.h.ah = 0x0f;
     int86(0x10, &regsin, &regsout);
     *columns = regsout.h.ah;
@@ -325,7 +327,7 @@ int BosDiskReset(unsigned int drive)
     union REGS regsout;
 
     regsin.h.ah = 0x00;
-    regsin.h.dl = (unsigned char)drive;    
+    regsin.h.dl = (unsigned char)drive;
     int86(0x13, &regsin, &regsout);
     return (regsout.x.cflag);
 }
@@ -334,9 +336,9 @@ int BosDiskStatus(unsigned int drive, unsigned int *status)
 {
     union REGS regsin;
     union REGS regsout;
-    
+
     regsin.h.ah = 0x01;
-    regsin.h.dl = drive;    
+    regsin.h.dl = drive;
     int86(0x13, &regsin, &regsout);
     *status = regsout.h.ah;
     return (0);
@@ -355,7 +357,7 @@ int BosDiskSectorRead(void         *buffer,
     union REGS regsin;
     union REGS regsout;
     struct SREGS sregs;
-    
+
     regsin.h.ah = 0x02;
     regsin.h.al = (unsigned char)sectors;
     regsin.h.ch = (unsigned char)(track & 0xff);
@@ -384,7 +386,7 @@ int BosDiskSectorWrite(void         *buffer,
     union REGS regsin;
     union REGS regsout;
     struct SREGS sregs;
-    
+
     regsin.h.ah = 0x03;
     regsin.h.al = (unsigned char)sectors;
     regsin.h.ch = (unsigned char)(track & 0xff);
@@ -414,10 +416,10 @@ int BosDriveParms(unsigned int drive,
     union REGS regsin;
     union REGS regsout;
     struct SREGS sregs;
-    
+
     regsin.h.ah = 0x08;
     regsin.h.dl = (unsigned char)drive;
-    
+
     int86x(0x13, &regsin, &regsout, &sregs);
     *tracks = (((regsout.h.cl & 0xC0U) << 2) | regsout.h.ch) + 1;
     *sectors = (regsout.h.cl & 0x3F);
@@ -439,7 +441,7 @@ int BosFixedDiskStatus(unsigned int drive)
 {
     union REGS regsin;
     union REGS regsout;
-    
+
     regsin.h.ah = 0x10;
     regsin.h.dl = (unsigned char)drive;
     int86(0x13, &regsin, &regsout);
@@ -465,7 +467,7 @@ int BosDiskSectorRLBA(void         *buffer,
     struct SREGS sregs;
     unsigned char lpacket[16];
     unsigned char *packet;
-    
+
     regsin.h.ah = 0x42;
     regsin.h.dl = (unsigned char)drive;
     packet = lpacket;
@@ -501,15 +503,15 @@ int BosDiskSectorRLBA(void         *buffer,
     packet[5] = (regsin.x.si >> 8) & 0xff;
     packet[6] = sregs.ds & 0xff;
     packet[7] = (sregs.ds >> 8) & 0xff;
-    
+
     /* now we set the packet address */
     sregs.ds = ((unsigned long)ADDR2ABS(packet) >> 4) & 0xffffU;
     regsin.x.si = (unsigned long)ADDR2ABS(packet) & 0xf;
-    
+
     /* and ds gets stored in upper edx for real mode */
     regsin.d.edx = (sregs.ds << 16) | regsin.x.dx;
-#endif        
-    
+#endif
+
     int86x(0x13, &regsin, &regsout, &sregs);
     return (regsout.h.ah);
 }
@@ -528,7 +530,7 @@ int BosDiskSectorWLBA(void         *buffer,
     struct SREGS sregs;
     unsigned char lpacket[16];
     unsigned char *packet;
-    
+
     regsin.h.ah = 0x43;
     regsin.h.dl = (unsigned char)drive;
     packet = lpacket;
@@ -564,15 +566,15 @@ int BosDiskSectorWLBA(void         *buffer,
     packet[5] = (regsin.x.si >> 8) & 0xff;
     packet[6] = sregs.ds & 0xff;
     packet[7] = (sregs.ds >> 8) & 0xff;
-    
+
     /* now we set the packet address */
     sregs.ds = ((unsigned long)ADDR2ABS(packet) >> 4) & 0xffffU;
     regsin.x.si = (unsigned long)ADDR2ABS(packet) & 0xf;
-    
+
     /* and ds gets stored in upper edx for real mode */
     regsin.d.edx = (sregs.ds << 16) | regsin.x.dx;
-#endif        
-    
+#endif
+
     int86x(0x13, &regsin, &regsout, &sregs);
     return (regsout.h.ah);
 }
@@ -581,10 +583,10 @@ long BosExtendedMemorySize(void)
 {
     union REGS regsin;
     union REGS regsout;
-    
+
     regsin.h.ah = 0x88;
     int86(0x15, &regsin, &regsout);
-    
+
     /* unfortunately it appears as if the carry flag is normally
        not changed by this interrupt, so what we want is to clear
        it before doing the interrupt and check it more thoroughly
@@ -606,7 +608,7 @@ int BosReadKeyboardCharacter(int *scancode, int *ascii)
 {
     union REGS regsin;
     union REGS regsout;
-    
+
     regsin.h.ah = 0x00;
     int86(0x16, &regsin, &regsout);
     *scancode = regsout.h.ah;
@@ -628,10 +630,10 @@ static void int86n(unsigned int intno)
 {
     union REGS regsin;
     union REGS regsout;
-    
+
     int86(intno, &regsin, &regsout);
     return;
-}    
+}
 
 
 /* int86i - do an interrupt with input registers only */
@@ -639,8 +641,8 @@ static void int86n(unsigned int intno)
 static void int86i(unsigned int intno, union REGS *regsin)
 {
     union REGS regsout;
-    
+
     int86(intno, regsin, &regsout);
     return;
-}    
+}
 

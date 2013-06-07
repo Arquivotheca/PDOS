@@ -25,9 +25,6 @@ unsigned long BosGetSystemTime(void)
 
     regsin.h.ah=0x00;
     int86(0x1A,&regsin,&regsout);
-#ifdef __32BIT__
-    return((unsigned long)regsout.d.edx);
-#endif
     return((unsigned long)regsout.x.cx << 16 | regsout.x.dx);
 }
 

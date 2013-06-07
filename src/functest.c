@@ -289,7 +289,7 @@ static int testBosGetSystemTime(void)
     unsigned long ticks;
 
     ticks=BosGetSystemTime();
-    printf("Number of ticks is %lu \n",ticks):
+    printf("Number of ticks is %lu \n",ticks);
     return (0);
 }
 

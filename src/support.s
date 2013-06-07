@@ -32,7 +32,7 @@ _int86:
         mov     12(%esi), %edx
         mov     20(%esi), %edi
         mov     16(%esi), %esi
-        
+              
         cmp     $0x10, 8(%ebp)
         jne     not10
         int     $0x10
@@ -56,6 +56,12 @@ not15:
         int     $0x16
         jmp     fintry
 not16:
+
+        cmp     $0x1A, 8(%ebp)
+        jne     not1A
+        int     $0x1A
+        jmp     fintry  
+not1A:
 
         cmp     $0x20, 8(%ebp)
         jne     not20

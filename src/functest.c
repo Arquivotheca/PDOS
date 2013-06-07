@@ -286,10 +286,10 @@ static int testAbsoluteDiskRead(void)
 
 static int testBosGetSystemTime(void)
 {
-    union REGS regsout;
+    unsigned long ticks;
 
-    BosGetSystemTime();
-    printf("Time is %d "\n",regsout.x.dx):
+    ticks=BosGetSystemTime();
+    printf("Number of ticks is %lu \n",ticks):
     return (0);
 }
 
@@ -302,5 +302,6 @@ int main(void)
     /*testExtendedMemory()*/
     /*testGenericBlockDeviceRequest();*/
     /*testAbsoluteDiskRead();*/
+    testBosGetSystemTime();
     return (0);
 }

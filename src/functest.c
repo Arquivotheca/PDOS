@@ -287,9 +287,23 @@ static int testAbsoluteDiskRead(void)
 static int testBosGetSystemTime(void)
 {
     unsigned long ticks;
+    unsigned long t1,t2,t3,t4,t5,t6,t7;
+    
 
     ticks=BosGetSystemTime();
+    t1=(ticks*1000)/182;
+    t2=t1%100;
+    t3=t1/100;
+    t4=t3%60;
+    t5=t3/60;
+    t6=t5%60;
+    t7=t5/60;
     printf("Number of ticks is %lu \n",ticks);
+    printf("After conversion %lu \n",t1);
+    printf("Time in hundredth %lu \n",t2);
+    printf("Time in seconds %lu \n",t4);
+    printf("Time in minutes %lu \n",t6);
+    printf("Time in hours %lu \n",t7);
     return (0);
 }
 

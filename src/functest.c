@@ -284,6 +284,7 @@ static int testAbsoluteDiskRead(void)
 }
 /**/
 
+/*Test function for BosGetSystemTime*/
 static int testBosGetSystemTime(void)
 {
     unsigned long ticks;
@@ -307,7 +308,27 @@ static int testBosGetSystemTime(void)
     return (0);
 }
 
+/*Converting BCD to int*/
+int Bcd2Int(unsigned char bcd)
+{
+    return (bcd & 0x0f) + 10 * ((bcd >> 4) & 0x0f);
+}
+/**/
 
+/*Test Function for BosGetSystemDate*/
+static int testBosGetSystemDate(void)
+{
+    int c,y,m,d;
+    int ret;	
+    ret=BosGetSystemDate(&c,&y,&m,&d);
+    printf("Century %d \n",Bcd2Int(c));
+    printf("Year %d \n",Bcd2Int(y));
+    printf("Month %d \n",Bcd2Int(m));
+    printf("Day %d \n",Bcd2Int(d));
+    printf("Return Code is %d",ret);	
+
+}
+/**/
 int main(void)
 {
 /*    testDriveParms();

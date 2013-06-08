@@ -72,6 +72,7 @@ not16:
 
 cmp intnum, 1Ah
 jne not1A
+clc  ; interrupt doesn't set it it seems
 int 1Ah
 jmp fintry
 not1A:

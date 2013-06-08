@@ -16,20 +16,6 @@
 static void int86n(unsigned int intno);
 static void int86i(unsigned int intno, union REGS *regsin);
 
-/*BosGetSystemTime-BIOS Int 1Ah*/
-
-unsigned long BosGetSystemTime(void)
-{
-    union REGS regsin;
-    union REGS regsout;
-
-    regsin.h.ah=0x00;
-    int86(0x1A,&regsin,&regsout);
-    return((unsigned long)regsout.x.cx << 16 | regsout.x.dx);
-}
-
-/**/
-
 /* BosPrintScreen - BIOS Int 05h */
 
 int BosPrintScreen(void)
@@ -620,6 +606,46 @@ void BosSystemWarmBoot(void)
     int86n(0x19);
     return;
 }
+
+/*BosGetSystemTime-BIOS Int 1Ah/AH=00h*/
+
+unsigned long BosGetSystemTime(void)
+{
+    union REGS regsin;
+    union REGS regsout;
+
+    regsin.h.ah=0x00;
+    int86(0x1A,&regsin,&regsout);
+    return((unsigned long)regsout.x.cx << 16 | regsout.x.dx);
+}
+
+/**/
+
+/*BosGetSystemTime-BIOS Int 1Ah/AH=04h*/
+
+int BosGetSystemDate(int *century,int *year,int *month,int *day)
+{
+    union REGS regsin;
+    union REGS regsout;
+
+    regsin.h.ah=0x04;
+    int86(0x1A,&regsin,&regsout);
+    *century=regsout.h.ch
+    *year=regsout.h.cl
+    *month=regsout.h.dh
+    *day=regsout.h.dl
+
+    if(regsout.x.cflag)
+    {
+        return(-1);
+    }
+    else
+    {
+        return(0);
+    }
+}
+
+/**/
 
 /* int86n - do an interrupt with no registers */
 

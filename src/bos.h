@@ -9,7 +9,7 @@
 /*  bos.h - this is the interface to the BIOS for use by HLLs        */
 /*                                                                   */
 /*********************************************************************/
-unsigned long BosGetSystemTime(void);/*1A*/
+
 int BosPrintScreen(void); /* 5: */
 int BosSetVideoMode(unsigned int mode); /* 10:0 */
 int BosSetCursorType(int top, int bottom); /* 10:1 */
@@ -99,3 +99,7 @@ long BosExtendedMemorySize(void); /* 15:88 */
 int BosReadKeyboardCharacter(int *scancode, int *ascii); /* 16:0 */
 
 void BosSystemWarmBoot(void); /* 19: */
+
+unsigned long BosGetSystemTime(void);/*1A.0*/
+
+int BosGetSystemDate(int *century,int *year,int *month,int *day);/*1A.4*/

@@ -319,13 +319,13 @@ int Bcd2Int(unsigned char bcd)
 static int testBosGetSystemDate(void)
 {
     int c,y,m,d;
-    int ret;	
+    int ret;
     ret=BosGetSystemDate(&c,&y,&m,&d);
     printf("Century %d \n",Bcd2Int(c));
     printf("Year %d \n",Bcd2Int(y));
     printf("Month %d \n",Bcd2Int(m));
     printf("Day %d \n",Bcd2Int(d));
-    printf("Return Code is %d",ret);	
+    printf("Return Code is %d",ret);
 
 }
 /**/

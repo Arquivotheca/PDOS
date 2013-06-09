@@ -1351,7 +1351,8 @@ int PosWriteFile(int fh, const void *data, size_t len)
 
 /* unimplemented */
 int PosDeleteFile(const char *fname)
-{
+{   
+    printf("The Filename is x%sx \n ",fname);
     return (0);
 }
 
@@ -1561,6 +1562,8 @@ int PosFindNext(void)
 /* unimplemented */
 int PosRenameFile(const char *old, const char *new)
 {
+    printf("The old name is x%sx \n",old);
+    printf("The new name is x%sx \n",new);
     return (0);
 }
 

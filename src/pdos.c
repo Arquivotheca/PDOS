@@ -86,6 +86,7 @@ static int fileClose(int fno);
 static int fileRead(int fno, void *buf, size_t szbuf);
 static void accessDisk(int drive);
 static void upper_str(char *str);
+int bcd2int(unsigned int bcd);
 void dumplong(unsigned long x);
 void dumpbuf(unsigned char *buf, int len);
 static void readLogical(void *diskptr, long sector, void *buf);
@@ -1125,24 +1126,18 @@ int PosGetDefaultDrive(void)
 {
     return (currentDrive);
 }
+
 /*Function to Return the date using BIOS call*/
 void PosGetSystemDate(int *year, int *month, int *day, int *dw)
 {
     int c,y,m,d;
 
     BosGetSystemDate(&c,&y,&m,&d);
-    *year=Bcd2Int(c) * 100 + Bcd2Int(y);
-    *month=Bcd2Int(m);
-    *day=Bcd2Int(d);
+    *year=bcd2int(c) * 100 + bcd2int(y);
+    *month=bcd2int(m);
+    *day=bcd2int(d);
     *dw=dow(*year,*month,*day);
     return 0;
-}
-/**/
-
-/*Function Converting the Date recieved in BCD format to int format*/
-int Bcd2Int(unsigned char bcd)
-{
-    return (bcd & 0x0f) + 10 * ((bcd >> 4) & 0x0f);
 }
 /**/
 
@@ -1156,7 +1151,7 @@ void PosGetSystemTime(int *hour, int *minute, int *second, int *hundredths)
     *hundredths=(int)t%100;
     t/=100;
     *second=(int)t%60;
-    t/=60
+    t/=60;
     *minute=(int)t%60;
     t/=60;
     *hour=(int)t;
@@ -2484,6 +2479,13 @@ static void upper_str(char *str)
     }
     return;
 }
+
+/*Function Converting the Date received in BCD format to int format*/
+int bcd2int(unsigned int bcd)
+{
+    return (bcd & 0x0f) + 10 * ((bcd >> 4) & 0x0f);
+}
+/**/
 
 void dumplong(unsigned long x)
 {

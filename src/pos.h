@@ -50,7 +50,7 @@ void PosSetDTA(void *dta); /* func 1a */
 
 void PosSetInterruptVector(int intnum, void *handler); /* func 25 */
 
-void PosGetSystemDate(int *year, int *month, int *day, int *dow); /* func 2a */
+void PosGetSystemDate(int *year, int *month, int *day, int *dw); /* func 2a */
 
 void PosGetSystemTime(int *hour, /* func 2c */
                       int *min,

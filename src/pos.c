@@ -136,7 +136,7 @@ void PosSetInterruptVector(int intnum, void *handler)
     return;
 }
 
-void PosGetSystemDate(int *year, int *month, int *day, int *dow)
+void PosGetSystemDate(int *year, int *month, int *day, int *dw)
 {
     union REGS regsin;
     union REGS regsout;
@@ -146,7 +146,7 @@ void PosGetSystemDate(int *year, int *month, int *day, int *dow)
     *year = regsout.x.cx;
     *month = regsout.h.dh;
     *day = regsout.h.dl;
-    *dow = regsout.h.al;
+    *dw = regsout.h.al;
     return;
 }
 
@@ -238,7 +238,7 @@ int PosCreatFile(const char *name,
     union REGS regsin;
     union REGS regsout;
     struct SREGS sregs;
-
+    printf("POS function START \n");
     regsin.h.ah = 0x3c;
     regsin.x.cx = attrib;
 #ifdef __32BIT__
@@ -254,6 +254,7 @@ int PosCreatFile(const char *name,
     *handle = regsout.x.ax;
 #endif
     return (regsout.x.cflag);
+    printf("POS function END \n");
 }
 
 int PosOpenFile(const char *name,

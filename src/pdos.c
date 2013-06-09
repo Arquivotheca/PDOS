@@ -28,6 +28,7 @@
 #include "memmgr.h"
 #include "patmat.h"
 #include "unused.h"
+#include "dow.h"
 
 #define MAX_PATH 120
 
@@ -604,13 +605,13 @@ static void int21handler(union REGS *regsin,
 
         case 0x2a:
             {
-                int year, month, day, dow;
+                int year, month, day, dw;
 
-                PosGetSystemDate(&year, &month, &day, &dow);
+                PosGetSystemDate(&year, &month, &day, &dw);
                 regsout->x.cx = year;
                 regsout->h.dh = month;
                 regsout->h.dl = day;
-                regsout->h.al = dow;
+                regsout->h.al = dw;
             }
             break;
 
@@ -1124,11 +1125,25 @@ int PosGetDefaultDrive(void)
 {
     return (currentDrive);
 }
-
-void PosGetSystemDate(int *year, int *month, int *day, int *dow)
-{
-    return;
+/*Function to Return the date using BIOS call*/
+void PosGetSystemDate(int *year, int *month, int *day, int *dw)
+{   
+    int c,y,m,d;
+    BosGetSystemDate(&c,&y,&m,&d);
+    *year=Bcd2Int(c) * 100 + Bcd2Int(y);
+    *month=Bcd2Int(m);
+    *day=Bcd2Int(d);
+    *dw=dow(*year,*month,*day);
+    return 0;
 }
+/**/
+
+/*Function Converting the Date recieved in BCD format to int format*/
+int Bcd2Int(unsigned char bcd)
+{
+    return (bcd & 0x0f) + 10 * ((bcd >> 4) & 0x0f);
+}
+/**/
 
 void PosGetSystemTime(int *hour, int *minute, int *second, int *hundredths)
 {

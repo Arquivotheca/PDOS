@@ -329,6 +329,23 @@ static int testBosGetSystemDate(void)
 
 }
 /**/
+
+/*Testing function for PosGetSystemDate*/
+static int testPosGetSystemDate(void)
+{
+    int y,m,d,dw;
+    int ret=0;
+    PosGetSystemDate(&y,&m,&d,&dw);
+    printf("Year %d \n",y);
+    printf("Month %d \n",m);
+    printf("Day %d \n",d);
+    printf("Day of week %d \n",dw);
+    printf("Return Code is %d",ret);
+    return 0;
+
+}
+/**/
+
 int main(void)
 {
 /*    testDriveParms();
@@ -337,6 +354,6 @@ int main(void)
     /*testExtendedMemory()*/
     /*testGenericBlockDeviceRequest();*/
     /*testAbsoluteDiskRead();*/
-    testBosGetSystemTime();
+    testPosGetSystemDate();
     return (0);
 }

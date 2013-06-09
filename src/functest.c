@@ -289,7 +289,7 @@ static int testBosGetSystemTime(void)
 {
     unsigned long ticks;
     unsigned long t1,t2,t3,t4,t5,t6,t7;
-    
+
 
     ticks=BosGetSystemTime();
     t1=(ticks*1000)/182;
@@ -346,6 +346,21 @@ static int testPosGetSystemDate(void)
 }
 /**/
 
+/*Function to test PosGetSystemTime*/
+static int testPosGetSystemTime(void)
+{
+    int hr,min,sec,hund;
+    int ret=0;
+    PosGetSystemTime(&hr,&min,&sec,&hund);
+    printf("hour %d \n",hr);
+    printf("minute %d \n",min);
+    printf("seconds %d \n",sec);
+    printf("hundreth %d \n",hund);
+    printf("Return Code is %d",ret);
+    return 0;
+}
+/**/
+
 int main(void)
 {
 /*    testDriveParms();
@@ -354,6 +369,7 @@ int main(void)
     /*testExtendedMemory()*/
     /*testGenericBlockDeviceRequest();*/
     /*testAbsoluteDiskRead();*/
-    testPosGetSystemDate();
+    /*testPosGetSystemDate();*/
+    testPosGetSystemTime();
     return (0);
 }

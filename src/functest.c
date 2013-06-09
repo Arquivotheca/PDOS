@@ -361,6 +361,24 @@ static int testPosGetSystemTime(void)
 }
 /**/
 
+/*Test Delete a File*/
+static int testPosDeleteFile(void)
+{
+    int ret;
+    ret=PosDeleteFile("temp.txt");
+    printf("The Return code is %d \n",ret);
+}
+/**/
+
+/*Test Rename a file*/
+static int testPosRenameFile(void)
+{
+    int ret;
+    ret=PosRenameFile("temp.txt","temp2.txt");
+    printf("The Return code is %d \n",ret);
+}
+/**/
+
 int main(void)
 {
 /*    testDriveParms();
@@ -370,6 +388,8 @@ int main(void)
     /*testGenericBlockDeviceRequest();*/
     /*testAbsoluteDiskRead();*/
     /*testPosGetSystemDate();*/
-    testPosGetSystemTime();
+    /*testPosGetSystemTime();*/
+    /*testPosDeleteFile();*/
+    testPosRenameFile();
     return (0);
 }

@@ -1129,6 +1129,7 @@ int PosGetDefaultDrive(void)
 void PosGetSystemDate(int *year, int *month, int *day, int *dw)
 {
     int c,y,m,d;
+
     BosGetSystemDate(&c,&y,&m,&d);
     *year=Bcd2Int(c) * 100 + Bcd2Int(y);
     *month=Bcd2Int(m);
@@ -1149,6 +1150,7 @@ int Bcd2Int(unsigned char bcd)
 void PosGetSystemTime(int *hour, int *minute, int *second, int *hundredths)
 {
     unsigned long ticks,t;
+
     ticks=BosGetSystemTime();
     t=(ticks*1000)/182;
     *hundredths=(int)t%100;
@@ -1157,7 +1159,7 @@ void PosGetSystemTime(int *hour, int *minute, int *second, int *hundredths)
     t/=60
     *minute=(int)t%60;
     t/=60;
-    *hour=(int)t%60;
+    *hour=(int)t;
     return 0;
 }
 /**/

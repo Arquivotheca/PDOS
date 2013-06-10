@@ -10,15 +10,8 @@ void dumpbuf(void *, int);
 
 typedef int FILE;
 
-#define DBL_MANT_DIG 14
-
 static int examine(const char **formt, FILE *fq, char *s, va_list *arg, 
                    int chcount);
-static int vvprintf(const char *format, va_list arg, FILE *fq, char *s);
-static void dblcvt(double num, char cnvtype, size_t nwidth,
-                   int nprecision, char *result);
-
-
                    
 static void outch(int ch)
 {
@@ -33,6 +26,8 @@ static void outch(int ch)
     dumpbuf(buf, 1);
     return;
 }
+
+static int vvprintf(const char *format, va_list arg, FILE *fq, char *s);
 
 int printf(const char *format, ...)
 {
@@ -50,14 +45,11 @@ static int vvprintf(const char *format, va_list arg, FILE *fq, char *s)
 {
     int fin = 0;
     int vint;
-    double vdbl;
-    unsigned int uvint;
-    const char *vcptr;
+    char *vcptr;
     int chcount = 0;
     size_t len;
     char numbuf[50];
     char *nptr;
-    int *viptr;
 
     while (!fin)
     {
@@ -70,22 +62,21 @@ static int vvprintf(const char *format, va_list arg, FILE *fq, char *s)
             format++;
             if (*format == 'd')
             {
+                int neg = 0;
+                
                 vint = va_arg(arg, int);
                 if (vint < 0)
                 {
-                    uvint = -vint;
-                }
-                else
-                {
-                    uvint = vint;
+                    neg = 1;
+                    vint = -vint;
                 }
                 nptr = numbuf;
-                do
+                do 
                 {
-                    *nptr++ = (char)('0' + uvint % 10);
-                    uvint /= 10;
-                } while (uvint > 0);
-                if (vint < 0)
+                    *nptr++ = (char)('0' + vint % 10);
+                    vint /= 10;
+                } while (vint > 0);
+                if (neg)
                 {
                     *nptr++ = '-';
                 }
@@ -96,33 +87,14 @@ static int vvprintf(const char *format, va_list arg, FILE *fq, char *s)
                     chcount++;
                 } while (nptr != numbuf);
             }
-            else if (strchr("eEgGfF", *format) != NULL && *format != 0)
-            {
-                vdbl = va_arg(arg, double);
-                dblcvt(vdbl, *format, 0, 6, numbuf);   /* 'e','f' etc. */
-                len = strlen(numbuf);
-                if (fq == NULL)
-                {
-                    memcpy(s, numbuf, len);
-                    s += len;
-                }
-                else
-                {
-                    fputs(numbuf, fq);
-                }
-                chcount += len;
-            }
             else if (*format == 's')
             {
-                vcptr = va_arg(arg, const char *);
-                if (vcptr == NULL)
-                {
-                    vcptr = "(null)";
-                }
+                vcptr = va_arg(arg, char *);
                 if (fq == NULL)
                 {
                     len = strlen(vcptr);
-                    memcpy(s, vcptr, len);
+                    dumpbuf(vcptr, len);
+/*                    memcpy(s, vcptr, len); */
                     s += len;
                     chcount += len;
                 }
@@ -138,11 +110,6 @@ static int vvprintf(const char *format, va_list arg, FILE *fq, char *s)
                 outch(vint);
                 chcount++;
             }
-            else if (*format == 'n')
-            {
-                viptr = va_arg(arg, int *);
-                *viptr = chcount;
-            }
             else if (*format == '%')
             {
                 outch('%');
@@ -151,7 +118,7 @@ static int vvprintf(const char *format, va_list arg, FILE *fq, char *s)
             else
             {
                 int extraCh;
-
+                
                 extraCh = examine(&format, fq, s, &arg, chcount);
                 chcount += extraCh;
                 if (s != NULL)
@@ -160,7 +127,7 @@ static int vvprintf(const char *format, va_list arg, FILE *fq, char *s)
                 }
             }
         }
-        else
+        else 
         {
             outch(*format);
             chcount++;
@@ -170,7 +137,7 @@ static int vvprintf(const char *format, va_list arg, FILE *fq, char *s)
     return (chcount);
 }
 
-static int examine(const char **formt, FILE *fq, char *s, va_list *arg,
+static int examine(const char **formt, FILE *fq, char *s, va_list *arg, 
                    int chcount)
 {
     int extraCh = 0;
@@ -186,10 +153,7 @@ static int examine(const char **formt, FILE *fq, char *s, va_list *arg,
     int specifier = 0;
     int fin;
     long lvalue;
-    short int hvalue;
-    int ivalue;
     unsigned long ulvalue;
-    double vdbl;
     char *svalue;
     char work[50];
     int x;
@@ -200,9 +164,8 @@ static int examine(const char **formt, FILE *fq, char *s, va_list *arg,
     int fillCh;
     int neg;
     int length;
-    size_t slen;
 
-    unused(chcount);
+    unused(chcount);    
     format = *formt;
     /* processing flags */
     fin = 0;
@@ -220,13 +183,6 @@ static int examine(const char **formt, FILE *fq, char *s, va_list *arg,
                       break;
             case '0': flagZero = 1;
                       break;
-            case '*': width = va_arg(*arg, int);
-                      if (width < 0)
-                      {
-                          flagMinus = 1;
-                          width = -width;
-                      }
-                      break;
             default:  fin = 1;
                       break;
         }
@@ -237,7 +193,7 @@ static int examine(const char **formt, FILE *fq, char *s, va_list *arg,
         else
         {
             if (flagSpace && flagPlus)
-            {
+            {  
                 flagSpace = 0;
             }
             if (flagMinus)
@@ -246,7 +202,7 @@ static int examine(const char **formt, FILE *fq, char *s, va_list *arg,
             }
         }
     }
-
+    
     /* processing width */
     if (isdigit((unsigned char)*format))
     {
@@ -256,34 +212,23 @@ static int examine(const char **formt, FILE *fq, char *s, va_list *arg,
             format++;
         }
     }
-
+    
     /* processing precision */
     if (*format == '.')
     {
         format++;
-        if (*format == '*')
+        precision = 0;
+        while (isdigit((unsigned char)*format))
         {
-            precision = va_arg(*arg, int);
+            precision = precision * 10 + (*format - '0');
             format++;
         }
-        else
-        {
-            precision = 0;
-            while (isdigit((unsigned char)*format))
-            {
-                precision = precision * 10 + (*format - '0');
-                format++;
-            }
-        }
     }
-
+    
     /* processing h/l/L */
     if (*format == 'h')
     {
-        /* all environments should promote shorts to ints,
-           so we should be able to ignore the 'h' specifier.
-           It will create problems otherwise. */
-        /* half = 1; */
+        half = 1;
     }
     else if (*format == 'l')
     {
@@ -299,39 +244,32 @@ static int examine(const char **formt, FILE *fq, char *s, va_list *arg,
     }
     format++;
 
+    if (precision < 0)
+    {
+        precision = 1;
+    }    
     /* processing specifier */
     specifier = *format;
-
-    if (strchr("dxXuiop", specifier) != NULL && specifier != 0)
+    
+    if (strchr("dxXuiop", specifier) != NULL)
     {
-        if (precision < 0)
-        {
-            precision = 1;
-        }
-#if defined(__MSDOS__) && \
-    !(defined(__PDOS__) && !defined(__MVS__)) && \
-    !defined(__gnu_linux__)
+#ifdef __MSDOS__
         if (specifier == 'p')
         {
             lng = 1;
         }
-#endif
+#endif            
         if (lng)
         {
             lvalue = va_arg(*arg, long);
         }
         else if (half)
         {
-            /* short is promoted to int, so use int */
-            hvalue = va_arg(*arg, int);
-            if (specifier == 'u') lvalue = (unsigned short)hvalue;
-            else lvalue = hvalue;
+            lvalue = va_arg(*arg, short);
         }
         else
         {
-            ivalue = va_arg(*arg, int);
-            if (specifier == 'u') lvalue = (unsigned int)ivalue;
-            else lvalue = ivalue;
+            lvalue = va_arg(*arg, int);
         }
         ulvalue = (unsigned long)lvalue;
         if ((lvalue < 0) && ((specifier == 'd') || (specifier == 'i')))
@@ -343,14 +281,6 @@ static int examine(const char **formt, FILE *fq, char *s, va_list *arg,
         {
             neg = 0;
         }
-#if defined(__MSDOS__) && \
-    !(defined(__PDOS__) && !defined(__MVS__)) && \
-    !defined(__gnu_linux__)
-        if (!lng)
-        {
-            ulvalue &= 0xffff;
-        }
-#endif
         if ((specifier == 'X') || (specifier == 'x') || (specifier == 'p'))
         {
             base = 16;
@@ -365,12 +295,11 @@ static int examine(const char **formt, FILE *fq, char *s, va_list *arg,
         }
         if (specifier == 'p')
         {
-#if defined(__MSDOS__) && \
-    !(defined(__PDOS__) && !defined(__MVS__)) && \
-    !defined(__gnu_linux__)
-            precision = 9;
-#else
+#ifdef __OS2__                    
             precision = 8;
+#endif            
+#ifdef __MSDOS__
+            precision = 9;
 #endif
         }
         x = 0;
@@ -393,20 +322,16 @@ static int examine(const char **formt, FILE *fq, char *s, va_list *arg,
                 }
             }
             x++;
-#if defined(__MSDOS__) && \
-    !(defined(__PDOS__) && !defined(__MVS__)) && \
-    !defined(__gnu_linux__)
+#ifdef __MSDOS__
             if ((x == 4) && (specifier == 'p'))
             {
                 work[x] = ':';
                 x++;
             }
-#endif
+#endif                        
             ulvalue = ulvalue / base;
         }
-#if defined(__MSDOS__) && \
-    !(defined(__PDOS__) && !defined(__MVS__)) && \
-    !defined(__gnu_linux__)
+#ifdef __MSDOS__
         if (specifier == 'p')
         {
             while (x < 5)
@@ -415,7 +340,7 @@ static int examine(const char **formt, FILE *fq, char *s, va_list *arg,
                 x++;
             }
         }
-#endif
+#endif                        
         while (x < precision)
         {
             work[x] = '0';
@@ -424,10 +349,6 @@ static int examine(const char **formt, FILE *fq, char *s, va_list *arg,
         if (neg)
         {
             work[x++] = '-';
-        }
-        else if (flagPlus)
-        {
-            work[x++] = '+';
         }
         if (flagZero)
         {
@@ -447,7 +368,7 @@ static int examine(const char **formt, FILE *fq, char *s, va_list *arg,
                 y++;
             }
         }
-        if (flagHash && (toupper((unsigned char)specifier) == 'X'))
+        if (flagHash && (toupper(specifier) == 'X'))
         {
             outch('0');
             outch('x');
@@ -470,34 +391,14 @@ static int examine(const char **formt, FILE *fq, char *s, va_list *arg,
             }
         }
     }
-    else if (strchr("eEgGfF", specifier) != NULL && specifier != 0)
-    {
-        if (precision < 0)
-        {
-            precision = 6;
-        }
-        vdbl = va_arg(*arg, double);
-        dblcvt(vdbl, specifier, width, precision, work);   /* 'e','f' etc. */
-        slen = strlen(work);
-        if (fq == NULL)
-        {
-            memcpy(s, work, slen);
-            s += slen;
-        }
-        else
-        {
-            fputs(work, fq);
-        }
-        extraCh += slen;
-    }
     else if (specifier == 's')
     {
         svalue = va_arg(*arg, char *);
         fillCh = ' ';
-        if (precision > 0)
+        if (precision > 1)
         {
             char *p;
-
+            
             p = memchr(svalue, '\0', precision);
             if (p != NULL)
             {
@@ -508,13 +409,9 @@ static int examine(const char **formt, FILE *fq, char *s, va_list *arg,
                 length = precision;
             }
         }
-        else if (precision < 0)
-        {
-            length = strlen(svalue);
-        }
         else
         {
-            length = 0;
+            length = strlen(svalue);
         }
         if (!flagMinus)
         {
@@ -548,360 +445,10 @@ static int examine(const char **formt, FILE *fq, char *s, va_list *arg,
     return (extraCh);
 }
 
-
 int vsprintf(char *s, const char *format, va_list arg)
 {
     int ret;
     
     ret = vvprintf(format, arg, NULL, s);
     return (ret);
-}
-
-
-/*
-
- The truely cludged piece of code was concocted by Dave Wade
-
- His erstwhile tutors are probably turning in their graves.
-
- It is however placed in the Public Domain so that any one
- who wishes to improve is free to do so
-
-*/
-
-static void dblcvt(double num, char cnvtype, size_t nwidth,
-            int nprecision, char *result)
-{
-    double b,round;
-    int i,j,exp,pdigits,format;
-    char sign, work[45];
-
-    /* save original data & set sign */
-
-    if ( num < 0 )
-    {
-        b = -num;
-        sign = '-';
-    }
-    else
-    {
-        b = num;
-        sign = ' ';
-    }
-
-    /*
-      Now scale to get exponent
-    */
-
-    exp = 0;
-    if( b > 1.0 )
-    {
-        while ((b >= 10.0) && (exp < 35))
-        {
-            ++exp;
-            b=b / 10.0;
-        }
-    }
-    else if ( b == 0.0 )
-    {
-        exp=0;
-    }
-    /* 1.0 will get exp = 0 */
-    else if ( b < 1.0 )
-    {
-        while ((b < 1.0) && (exp > -35))
-        {
-            --exp;
-            b=b*10.0;
-        }
-    }
-    if ((exp <= -35) || (exp >= 35))
-    {
-        exp = 0;
-        b = 0.0;
-    }
-
-    /*
-      now decide how to print and save in FORMAT.
-         -1 => we need leading digits
-          0 => print in exp
-         +1 => we have digits before dp.
-    */
-
-    switch (cnvtype)
-    {
-        case 'E':
-        case 'e':
-            format = 0;
-            break;
-        case 'f':
-        case 'F':
-            if ( exp >= 0 )
-            {
-                format = 1;
-            }
-            else
-            {
-                format = -1;
-            }
-            break;
-        default:
-            /* Style e is used if the exponent from its
-               conversion is less than -4 or greater than
-               or equal to the precision.
-            */
-            if ( exp >= 0 )
-            {
-                if ( nprecision > exp )
-                {
-                    format=1;
-                }
-                else
-                {
-                    format=0;
-                }
-            }
-            else
-            {
-                /*  if ( nprecision > (-(exp+1) ) ) { */
-                if ( exp >= -4)
-                {
-                    format=-1;
-                }
-                else
-                {
-                    format=0;
-                }
-            }
-            break;
-    }
-    /*
-    Now round
-    */
-    switch (format)
-    {
-        case 0:    /* we are printing in standard form */
-            if (nprecision < DBL_MANT_DIG) /* we need to round */
-            {
-                j = nprecision;
-            }
-            else
-            {
-                j=DBL_MANT_DIG;
-            }
-            round = 1.0/2.0;
-            i = 0;
-            while (++i <= j)
-            {
-                round = round/10.0;
-            }
-            b = b + round;
-            if (b >= 10.0)
-            {
-                b = b/10.0;
-                exp = exp + 1;
-            }
-            break;
-
-        case 1:      /* we have a number > 1  */
-                         /* need to round at the exp + nprecisionth digit */
-                if (exp + nprecision < DBL_MANT_DIG) /* we need to round */
-                {
-                    j = exp + nprecision;
-                }
-                else
-                {
-                    j = DBL_MANT_DIG;
-                }
-                round = 0.5;
-                i = 0;
-                while (i++ < j)
-                {
-                    round = round/10;
-                }
-                b = b + round;
-                if (b >= 10.0)
-                {
-                    b = b/10.0;
-                    exp = exp + 1;
-                }
-                break;
-
-        case -1:   /* we have a number that starts 0.xxxx */
-            if (nprecision < DBL_MANT_DIG) /* we need to round */
-            {
-                j = nprecision + exp + 1;
-            }
-            else
-            {
-                j = DBL_MANT_DIG;
-            }
-            round = 5.0;
-            i = 0;
-            while (i++ < j)
-            {
-                round = round/10;
-            }
-            if (j >= 0)
-            {
-                b = b + round;
-            }
-            if (b >= 10.0)
-            {
-                b = b/10.0;
-                exp = exp + 1;
-            }
-            if (exp >= 0)
-            {
-                format = 1;
-            }
-            break;
-    }
-    /*
-       Now extract the requisite number of digits
-    */
-
-    if (format==-1)
-    {
-        /*
-             Number < 1.0 so we need to print the "0."
-             and the leading zeros...
-        */
-        result[0]=sign;
-        result[1]='0';
-        result[2]='.';
-        result[3]=0x00;
-        while (++exp)
-        {
-            --nprecision;
-            strcat(result,"0");
-        }
-        i=b;
-        --nprecision;
-        work[0] = (char)('0' + i % 10);
-        work[1] = 0x00;
-        strcat(result,work);
-
-        pdigits = nprecision;
-
-        while (pdigits-- > 0)
-        {
-            b = b - i;
-            b = b * 10.0;
-            i = b;
-            work[0] = (char)('0' + i % 10);
-            work[1] = 0x00;
-            strcat(result,work);
-        }
-    }
-    /*
-       Number >= 1.0 just print the first digit
-    */
-    else if (format==+1)
-    {
-        i = b;
-        result[0] = sign;
-        result[1] = '\0';
-        work[0] = (char)('0' + i % 10);
-        work[1] = 0x00;
-        strcat(result,work);
-        nprecision = nprecision + exp;
-        pdigits = nprecision ;
-
-        while (pdigits-- > 0)
-        {
-            if ( ((nprecision-pdigits-1)==exp)  )
-            {
-                strcat(result,".");
-            }
-            b = b - i;
-            b = b * 10.0;
-            i = b;
-            work[0] = (char)('0' + i % 10);
-            work[1] = 0x00;
-            strcat(result,work);
-        }
-    }
-    /*
-       printing in standard form
-    */
-    else
-    {
-        i = b;
-        result[0] = sign;
-        result[1] = '\0';
-        work[0] = (char)('0' + i % 10);
-        work[1] = 0x00;
-        strcat(result,work);
-        strcat(result,".");
-
-        pdigits = nprecision;
-
-        while (pdigits-- > 0)
-        {
-            b = b - i;
-            b = b * 10.0;
-            i = b;
-            work[0] = (char)('0' + i % 10);
-            work[1] = 0x00;
-            strcat(result,work);
-        }
-    }
-
-    if (format==0)
-    { /* exp format - put exp on end */
-        work[0] = 'E';
-        if ( exp < 0 )
-        {
-            exp = -exp;
-            work[1]= '-';
-        }
-        else
-        {
-            work[1]= '+';
-        }
-        work[2] = (char)('0' + (exp/10) % 10);
-        work[3] = (char)('0' + exp % 10);
-        work[4] = 0x00;
-        strcat(result, work);
-    }
-    else
-    {
-        /* get rid of trailing zeros for g specifier */
-        if (cnvtype == 'G' || cnvtype == 'g')
-        {
-            char *p;
-
-            p = strchr(result, '.');
-            if (p != NULL)
-            {
-                p++;
-                p = p + strlen(p) - 1;
-                while (*p != '.' && *p == '0')
-                {
-                    *p = '\0';
-                    p--;
-                }
-                if (*p == '.')
-                {
-                    *p = '\0';
-                }
-            }
-        }
-     }
-    /* printf(" Final Answer = <%s> fprintf gives=%g\n",
-                result,num); */
-    /*
-     do we need to pad
-    */
-    if(result[0] == ' ')strcpy(work,result+1); else strcpy(work,result);
-    pdigits=nwidth-strlen(work);
-    result[0]= 0x00;
-    while(pdigits>0)
-    {
-        strcat(result," ");
-        pdigits--;
-    }
-    strcat(result,work);
-    return;
 }

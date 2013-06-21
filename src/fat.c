@@ -14,16 +14,17 @@
 /*********************************************************************/
 
 #include <string.h>
-
 #include "fat.h"
 #include "bos.h"
 #include "unused.h"
 
+#define FAT_DELETE 1
+
 static int fatEndCluster(FAT *fat, unsigned int cluster);
-static void fatGetStartCluster(FAT *fat, const char *fnm, FATFILE *fatfile);
+static void fatGetStartCluster(FAT *fat, const char *fnm);
 static void fatNextSearch(FAT *fat, char *search, const char **upto, int *last);
-static void fatRootSearch(FAT *fat, char *search, FATFILE *fatfile);
-static void fatDirSearch(FAT *fat, char *search, FATFILE *fatfile);
+static void fatRootSearch(FAT *fat, char *search);
+static void fatDirSearch(FAT *fat, char *search);
 static void fatRootUpdate(FAT *fat, char *search, FATFILE *fatfile);
 static void fatClusterAnalyse(FAT *fat,
                               unsigned int cluster,
@@ -31,7 +32,6 @@ static void fatClusterAnalyse(FAT *fat,
                               unsigned int *nextCluster);
 static void fatDirSectorSearch(FAT *fat,
                                char *search,
-                               FATFILE *fatfile,
                                unsigned long startSector,
                                int numsectors);
 static void fatDirSectorUpdate(FAT *fat,
@@ -50,7 +50,7 @@ static void fatNuke(FAT *fat, unsigned int cluster);
 /*
  * fatDefaults - initial call which cannot fail
  */
- 
+
 void fatDefaults(FAT *fat)
 {
     fat->sectors_per_cylinder = 1;
@@ -59,6 +59,7 @@ void fatDefaults(FAT *fat)
     fat->bootstart = 0;
     fat->fatstart = 1;
     fat->buf = fat->pbuf;
+    fat->operation=0;
     return;
 }
 
@@ -66,8 +67,8 @@ void fatDefaults(FAT *fat)
 /*
  * fatInit - initialize the FAT handler.
  */
- 
-void fatInit(FAT *fat, 
+
+void fatInit(FAT *fat,
              unsigned char *bpb,
              void (*readLogical)(void *diskptr, long sector, void *buf),
              void (*writeLogical)(void *diskptr, long sector, void *buf),
@@ -90,7 +91,7 @@ void fatInit(FAT *fat,
     fat->num_heads = bpb[15];
     if (fat->sectors_per_disk == 0)
     {
-        fat->sectors_per_disk = 
+        fat->sectors_per_disk =
             bpb[21]
             | ((unsigned int)bpb[22] << 8)
             | ((unsigned long)bpb[23] << 16)
@@ -126,7 +127,7 @@ void fatInit(FAT *fat,
 /*
  * fatTerm - terminate the FAT handler.
  */
- 
+
 void fatTerm(FAT *fat)
 {
     unused(fat);
@@ -175,12 +176,12 @@ int fatCreatFile(FAT *fat, const char *fnm, FATFILE *fatfile, int attrib)
         fnm++;
     }
     upto = fnm;
-    fatfile->cluster = 0;
+    fat->currcluster = 0;
     fatNextSearch(fat, search, &upto, &last);
     if (fat->notfound) return (-3);
     if (!last)
     {
-        fatRootSearch(fat, search, fatfile);
+        fatRootSearch(fat, search);
         if (fat->notfound) return (-3);
     }
     else
@@ -193,7 +194,7 @@ int fatCreatFile(FAT *fat, const char *fnm, FATFILE *fatfile, int attrib)
         if (fat->notfound) return (-3);
         if (!last)
         {
-            fatDirSearch(fat, search, fatfile);
+            fatDirSearch(fat, search);
             if (fat->notfound) return (-3);
         }
     }
@@ -215,6 +216,7 @@ int fatCreatFile(FAT *fat, const char *fnm, FATFILE *fatfile, int attrib)
 int fatOpenFile(FAT *fat, const char *fnm, FATFILE *fatfile)
 {
     fat->notfound = 0;
+    fat->currfatfile=fatfile;
     if ((fnm[0] == '\\') || (fnm[0] == '/'))
     {
         fnm++;
@@ -227,33 +229,33 @@ int fatOpenFile(FAT *fat, const char *fnm, FATFILE *fatfile)
         fatfile->sectorStart = fat->rootstart;
         fatfile->lastBytes = 0;
         fatfile->lastSectors = fat->rootsize;
-        fatfile->cluster = 0;
+        fat->currcluster = 0;
         fatfile->dir = 1;
     }
     else
     {
         fatfile->root = 0;
-        fatGetStartCluster(fat, fnm, fatfile);
+        fatGetStartCluster(fat, fnm);
         if (fat->notfound) return (-1);
         fatfile->lastBytes = (unsigned int)
-                             (fatfile->fileSize 
+                             (fatfile->fileSize
                               % (fat->sectors_per_cluster
                                  * fat->sector_size));
         fatfile->lastSectors = fatfile->lastBytes / fat->sector_size;
         fatfile->lastBytes = fatfile->lastBytes % fat->sector_size;
         fatfile->dir = (fatfile->fileSize == 0);
-        fatClusterAnalyse(fat, 
-                          fatfile->cluster,
+        fatClusterAnalyse(fat,
+                          fat->currcluster,
                           &fatfile->sectorStart,
                           &fatfile->nextCluster);
         fatfile->sectorCount = fat->sectors_per_cluster;
     }
-    fatfile->currentCluster = fatfile->cluster;
+    fatfile->currentCluster = fat->currcluster;
     fatfile->sectorUpto = 0;
     fatfile->byteUpto = 0;
     if (fat->notfound)
     {
-        return (-1);    
+        return (-1);
     }
     return (0);
 }
@@ -262,20 +264,20 @@ int fatOpenFile(FAT *fat, const char *fnm, FATFILE *fatfile)
 /*
  * fatReadFile - read from an already-open file.
  */
- 
+
 size_t fatReadFile(FAT *fat, FATFILE *fatfile, void *buf, size_t szbuf)
 {
     size_t bytesRead = 0;
     static unsigned char bbuf[MAXSECTSZ];
     int bytesAvail;
     int sectorsAvail;
-    
+
     /* until we reach the end of the chain */
     while (!fatEndCluster(fat, fatfile->currentCluster))
     {
         /* assume all sectors in cluster are available */
         sectorsAvail = fatfile->sectorCount;
-        
+
         if (fatEndCluster(fat, fatfile->nextCluster) && !fatfile->dir)
         {
             /* exception - a full cluster has 0 last sectors */
@@ -289,13 +291,13 @@ size_t fatReadFile(FAT *fat, FATFILE *fatfile, void *buf, size_t szbuf)
                 sectorsAvail = fatfile->lastSectors + 1;
             }
         }
-        
+
         /* cycle through the sectors */
         while (fatfile->sectorUpto != sectorsAvail)
         {
             /* assume whole sector is available */
             bytesAvail = fat->sector_size;
-            
+
             /* but if this is the last cluster, we need special processing */
             if (fatEndCluster(fat, fatfile->nextCluster) && !fatfile->dir)
             {
@@ -319,13 +321,13 @@ size_t fatReadFile(FAT *fat, FATFILE *fatfile, void *buf, size_t szbuf)
             {
                 /* read data */
                 fatReadLogical(fat,
-                               fatfile->sectorStart + fatfile->sectorUpto, 
+                               fatfile->sectorStart + fatfile->sectorUpto,
                                bbuf);
                 /* copy data to supplied buffer */
                 if ((bytesAvail - fatfile->byteUpto)
                     > (szbuf - bytesRead))
                 {
-                    memcpy((char *)buf + bytesRead, 
+                    memcpy((char *)buf + bytesRead,
                            bbuf + fatfile->byteUpto,
                            szbuf - bytesRead);
                     fatfile->byteUpto += (szbuf - bytesRead);
@@ -345,8 +347,8 @@ size_t fatReadFile(FAT *fat, FATFILE *fatfile, void *buf, size_t szbuf)
             fatfile->byteUpto = 0;
         }
         fatfile->currentCluster = fatfile->nextCluster;
-        fatClusterAnalyse(fat, 
-                          fatfile->currentCluster, 
+        fatClusterAnalyse(fat,
+                          fatfile->currentCluster,
                           &fatfile->sectorStart,
                           &fatfile->nextCluster);
         fatfile->sectorUpto = 0;
@@ -358,7 +360,7 @@ size_t fatReadFile(FAT *fat, FATFILE *fatfile, void *buf, size_t szbuf)
 /*
  * fatWriteFile - write to an already-open file.
  */
- 
+
 size_t fatWriteFile(FAT *fat, FATFILE *fatfile, void *buf, size_t szbuf)
 {
     static unsigned char bbuf[MAXSECTSZ];
@@ -370,19 +372,19 @@ size_t fatWriteFile(FAT *fat, FATFILE *fatfile, void *buf, size_t szbuf)
        we will not break into a new sector or cluster */
 
     if (szbuf == 0) return (0);
-    
+
     /* get remainder of bytes in current sector */
     rem = fat->sector_size - fatfile->lastBytes;
-    
+
     /* If the last written bytes were 0, or the remainder 0, we
        don't need to update (and thus read) this sector */
     if ((fatfile->lastBytes != 0) && (rem != 0))
     {
         fatReadLogical(fat,
-                       fatfile->sectorStart + fatfile->sectorUpto, 
+                       fatfile->sectorStart + fatfile->sectorUpto,
                        bbuf);
     }
-    
+
     /* if the size of data to be written fits in to the remaining
        space, then update the just-read buffer */
     if (szbuf <= rem)
@@ -391,7 +393,7 @@ size_t fatWriteFile(FAT *fat, FATFILE *fatfile, void *buf, size_t szbuf)
                buf,
                szbuf);
         fatWriteLogical(fat,
-                        fatfile->sectorStart + fatfile->sectorUpto, 
+                        fatfile->sectorStart + fatfile->sectorUpto,
                         bbuf);
         fatfile->lastBytes += szbuf;
         fatfile->totbytes += szbuf;
@@ -406,7 +408,7 @@ size_t fatWriteFile(FAT *fat, FATFILE *fatfile, void *buf, size_t szbuf)
                    buf,
                    rem);
             fatWriteLogical(fat,
-                            fatfile->sectorStart + fatfile->sectorUpto, 
+                            fatfile->sectorStart + fatfile->sectorUpto,
                             bbuf);
         }
         done = rem; /* advance position in user-provided buffer */
@@ -423,10 +425,10 @@ size_t fatWriteFile(FAT *fat, FATFILE *fatfile, void *buf, size_t szbuf)
         {
             memcpy(bbuf, (char *)buf + done, fat->sector_size);
             fatWriteLogical(fat,
-                            fatfile->sectorStart + fatfile->sectorUpto, 
+                            fatfile->sectorStart + fatfile->sectorUpto,
                             bbuf);
             fatfile->sectorUpto++;
-            
+
             /* break into a new cluster when full */
             if (fatfile->sectorUpto == fat->sectors_per_cluster)
             {
@@ -437,12 +439,12 @@ size_t fatWriteFile(FAT *fat, FATFILE *fatfile, void *buf, size_t szbuf)
         }
         memcpy(bbuf, (char *)buf + done, tsz);
         fatWriteLogical(fat,
-                        fatfile->sectorStart + fatfile->sectorUpto, 
+                        fatfile->sectorStart + fatfile->sectorUpto,
                         bbuf);
         /* lastBytes records the amount of data written to the
            last sector */
         fatfile->lastBytes = tsz;
-        
+
         /* totbytes contains the size of the entire file */
         fatfile->totbytes += szbuf;
     }
@@ -460,31 +462,33 @@ size_t fatWriteFile(FAT *fat, FATFILE *fatfile, void *buf, size_t szbuf)
         = (fatfile->totbytes >> 24) & 0xff;
     fatWriteLogical(fat,
                     fatfile->dirSect,
-                    bbuf);        
+                    bbuf);
     return (szbuf);
 }
 
-    
+
 /*
  * fatGetStartCluster - given a filename, retrieve the starting
  * cluster, or set notfound flag if not found.
  */
 
-static void fatGetStartCluster(FAT *fat, const char *fnm, FATFILE *fatfile)
+static void fatGetStartCluster(FAT *fat, const char *fnm)
 {
     char search[11];
     const char *upto = fnm;
     int last;
-
-    fatfile->cluster = 0;
+#if 0
+    printf("fatGetStartCluster: x %s x \n",fnm);
+#endif
+    fat->currcluster = 0;
     fatNextSearch(fat, search, &upto, &last);
     if (fat->notfound) return;
-    fatRootSearch(fat, search, fatfile);
+    fatRootSearch(fat, search);
     while (!last)
     {
         fatNextSearch(fat, search, &upto, &last);
         if (fat->notfound) return;
-        fatDirSearch(fat, search, fatfile);
+        fatDirSearch(fat, search);
     }
     return;
 }
@@ -497,7 +501,7 @@ static void fatGetStartCluster(FAT *fat, const char *fnm, FATFILE *fatfile)
  * Inputs:
  * fat - pointer to the current FAT object, unused.
  * *upto - the bit of the filename we are ready to search
- * 
+ *
  * Outputs:
  * *upto - the bit of the filename to search next time
  * search - set to the portion of the filename we should look
@@ -515,7 +519,7 @@ static void fatNextSearch(FAT *fat, char *search, const char **upto, int *last)
     const char *p;
     const char *q;
 
-    unused(fat);    
+    unused(fat);
     p = strchr(*upto, '\\');
     q = strchr(*upto, '/');
     if (p == NULL)
@@ -569,10 +573,16 @@ static void fatNextSearch(FAT *fat, char *search, const char **upto, int *last)
     if (*last)
     {
         *upto = p;
+#if 0
+        printf("fatNextSearch(if): x %s x \n", *upto);
+#endif
     }
     else
     {
         *upto = p + 1;
+#if 0
+        printf("fatNextSearch(else): x %s x \n", *upto);
+#endif
     }
     return;
 }
@@ -584,10 +594,10 @@ static void fatNextSearch(FAT *fat, char *search, const char **upto, int *last)
  * starting sector number and the previously determined size
  * (number of sectors).
  */
- 
-static void fatRootSearch(FAT *fat, char *search, FATFILE *fatfile)
+
+static void fatRootSearch(FAT *fat, char *search)
 {
-    fatDirSectorSearch(fat, search, fatfile, fat->rootstart, fat->rootsize);
+    fatDirSectorSearch(fat, search,fat->rootstart, fat->rootsize);
     return;
 }
 
@@ -596,30 +606,28 @@ static void fatRootSearch(FAT *fat, char *search, FATFILE *fatfile)
  * fatDirSearch - search a directory chain looking for the
  * search string.
  */
- 
-static void fatDirSearch(FAT *fat, char *search, FATFILE *fatfile)
+
+static void fatDirSearch(FAT *fat, char *search)
 {
     unsigned long startSector;
     unsigned int nextCluster;
-    
-    fatClusterAnalyse(fat, fatfile->cluster, &startSector, &nextCluster);
-    fatDirSectorSearch(fat, 
-                       search, 
-                       fatfile, 
-                       startSector, 
+
+    fatClusterAnalyse(fat, fat->currcluster, &startSector, &nextCluster);
+    fatDirSectorSearch(fat,
+                       search,
+                       startSector,
                        fat->sectors_per_cluster);
-    while (fatfile->cluster == 0)    /* not found but not end */
+    while (fat->currcluster == 0)    /* not found but not end */
     {
         if (fatEndCluster(fat, nextCluster))
         {
             fat->notfound = 1;
             return;
         }
-        fatfile->cluster = nextCluster;
-        fatClusterAnalyse(fat, fatfile->cluster, &startSector, &nextCluster);
-        fatDirSectorSearch(fat, 
-                           search, 
-                           fatfile,
+        fat->currcluster = nextCluster;
+        fatClusterAnalyse(fat, fat->currcluster, &startSector, &nextCluster);
+        fatDirSectorSearch(fat,
+                           search,
                            startSector,
                            fat->sectors_per_cluster);
     }
@@ -633,7 +641,7 @@ static void fatDirSearch(FAT *fat, char *search, FATFILE *fatfile)
  * starting sector number and the previously determined size
  * (number of sectors).
  */
- 
+
 static void fatRootUpdate(FAT *fat, char *search, FATFILE *fatfile)
 {
     fatDirSectorUpdate(fat, search, fatfile, fat->rootstart, fat->rootsize);
@@ -646,7 +654,7 @@ static void fatRootUpdate(FAT *fat, char *search, FATFILE *fatfile)
  * determines the sector that the cluster starts and also the
  * next cluster number in the chain.
  */
- 
+
 static void fatClusterAnalyse(FAT *fat,
                               unsigned int cluster,
                               unsigned long *startSector,
@@ -655,7 +663,7 @@ static void fatClusterAnalyse(FAT *fat,
     unsigned int fatSector;
     static unsigned char buf[MAXSECTSZ];
     int offset;
-    
+
     *startSector = (cluster - 2) * (long)fat->sectors_per_cluster
                    + fat->filestart;
     if (fat->fat16)
@@ -687,7 +695,7 @@ static void fatClusterAnalyse(FAT *fat,
         }
     }
     return;
-}                   
+}
 
 
 /*
@@ -700,32 +708,47 @@ static void fatClusterAnalyse(FAT *fat,
  * if we reach the end of this block of sectors without reaching the
  * end of directory marker, we set the cluster to 0.
  */
-
+/*Updated with fatnuke depending upon the operation  the file is deleted*/
 static void fatDirSectorSearch(FAT *fat,
                                char *search,
-                               FATFILE *fatfile,
                                unsigned long startSector,
                                int numsectors)
 {
     int x;
     unsigned char buf[MAXSECTSZ];
     unsigned char *p;
-    
+    FATFILE *fatfile = fat->currfatfile;
+
+#if 0
+    printf("fatDirSectorSearch: x %s x \n",search);
+#endif
+
     for (x = 0; x < numsectors; x++)
     {
         fatReadLogical(fat, startSector + x, buf);
         for (p = buf; p < buf + fat->sector_size; p += 32)
-        {            
+        {
             if (memcmp(p, search, 11) == 0)
             {
-                fatfile->cluster = p[0x1a] | (p[0x1a + 1] << 8);
-                fatfile->fileSize = p[0x1c]
+                fat->currcluster = p[0x1a] | (p[0x1a + 1] << 8);
+                if(fat->operation==FAT_DELETE)
+                {
+                    fatNuke(fat,fat->currcluster);
+                    *p=0xe5;
+                    fatWriteLogical(fat, startSector + x, buf);
+                    return;
+                }
+                else
+                {
+                    fatfile->cluster = fat->currcluster;
+                    fatfile->fileSize = p[0x1c]
                                     | ((unsigned int)p[0x1c + 1] << 8)
                                     | ((unsigned long)p[0x1c + 2] << 16)
                                     | ((unsigned long)p[0x1c + 3] << 24);
-                fatfile->attr = p[0x0b];
-                memcpy(fatfile->datetime, &p[0x16], 4);
-                return;
+                    fatfile->attr = p[0x0b];
+                    memcpy(fatfile->datetime, &p[0x16], 4);
+                    return;
+                }
             }
             else if (*p == '\0')
             {
@@ -734,7 +757,7 @@ static void fatDirSectorSearch(FAT *fat,
             }
         }
     }
-    fatfile->cluster = 0;
+    fat->currcluster = 0;
     return;
 }
 
@@ -742,7 +765,7 @@ static void fatDirSectorSearch(FAT *fat,
 /*
  * fatDirSectorUpdate - go through a block of sectors (as specified
  * by startSector and numsectors) which consist entirely of directory
- * entries, looking for a place to put the "search" string.  When 
+ * entries, looking for a place to put the "search" string.  When
  * spare spot is found, update the directory with a starting cluster.
  * retrieve some
  * information about the file, including the starting cluster and the
@@ -763,7 +786,7 @@ static void fatDirSectorUpdate(FAT *fat,
     unsigned char *p;
     char dirent[32];
     int found = 0; /* if filename already exists, or we've hit end of dir */
-    
+
     for (x = 0; x < numsectors && !found; x++)
     {
         fatReadLogical(fat, startSector + x, buf);
@@ -771,26 +794,26 @@ static void fatDirSectorUpdate(FAT *fat,
         {
             if (memcmp(p, search, 11) == 0)
             {
-                fatfile->cluster = p[0x1a + 1] << 8 | p[0x1a];
-                fatNuke(fat, fatfile->cluster);
+                fat->currcluster = p[0x1a + 1] << 8 | p[0x1a];
+                fatNuke(fat, fat->currcluster);
                 found = 1;
             }
             if (found || (*p == '\0'))
             {
-                fatfile->cluster = fatFindFreeCluster(fat);
+                fat->currcluster = fatFindFreeCluster(fat);
 #if 0
-                printf("got cluster %x\n", fatfile->cluster);
-#endif            
-                fatMarkCluster(fat, fatfile->cluster);
-                fatfile->sectorStart = (fatfile->cluster - 2)
+                printf("got cluster %x\n", fat->currcluster);
+#endif
+                fatMarkCluster(fat, fat->currcluster);
+                fatfile->sectorStart = (fat->currcluster - 2)
                     * (long)fat->sectors_per_cluster
-                    + fat->filestart;                    
-                    
+                    + fat->filestart;
+
                 fatfile->sectorUpto = 0;
                 memset(p, '\0', 32);
                 memcpy(p, search, 11);
-                p[0x1a + 1] = (fatfile->cluster >> 8) & 0xff;
-                p[0x1a] = fatfile->cluster & 0xff;
+                p[0x1a + 1] = (fat->currcluster >> 8) & 0xff;
+                p[0x1a] = fat->currcluster & 0xff;
                 /* p[0x0b] = attrib; */ /* +++ */
                 /* p[0x16], len 4 = datetime */ /* +++ */
                 fatfile->totbytes = 0;
@@ -827,7 +850,7 @@ static void fatDirSectorUpdate(FAT *fat,
     }
     if (!found)
     {
-        fatfile->cluster = 0;
+        fat->currcluster = 0;
     }
     return;
 }
@@ -837,7 +860,7 @@ static void fatDirSectorUpdate(FAT *fat,
  * fatReadLogical - read a logical disk sector by calling the
  * function provided at initialization.
  */
- 
+
 static void fatReadLogical(FAT *fat, long sector, void *buf)
 {
     fat->readLogical(fat->parm, sector, buf);
@@ -849,7 +872,7 @@ static void fatReadLogical(FAT *fat, long sector, void *buf)
  * fatWriteLogical - write a logical disk sector by calling the
  * function provided at initialization.
  */
- 
+
 static void fatWriteLogical(FAT *fat, long sector, void *buf)
 {
     fat->writeLogical(fat->parm, sector, buf);
@@ -864,7 +887,7 @@ static void fatMarkCluster(FAT *fat, unsigned int cluster)
     unsigned long fatSector;
     static unsigned char buf[MAXSECTSZ];
     int offset;
-    
+
     /* +++ need fat12 logic too */
     if (fat->fat16)
     {
@@ -890,7 +913,7 @@ static unsigned int fatFindFreeCluster(FAT *fat)
     int x;
     unsigned int ret;
 
-    /* +++ need fat12 logic too */    
+    /* +++ need fat12 logic too */
     if (fat->fat16)
     {
         for (fatSector = fat->fatstart;
@@ -927,8 +950,8 @@ static void fatChain(FAT *fat, FATFILE *fatfile)
     int offset;
     unsigned int newcluster;
     unsigned int oldcluster;
-    
-    oldcluster = fatfile->cluster;
+
+    oldcluster = fat->currcluster;
     newcluster = fatFindFreeCluster(fat);
     /* +++ need fat12 logic too */
     if (fat->fat16)
@@ -942,23 +965,51 @@ static void fatChain(FAT *fat, FATFILE *fatfile)
         buf[offset] = newcluster & 0xff;
         buf[offset + 1] = newcluster >> 8;
         fatWriteLogical(fat, fatSector, buf);
-        
+
         /* mark the new cluster as last */
         fatMarkCluster(fat, newcluster);
-        
+
         /* update to new cluster */
-        fatfile->cluster = newcluster;
-        
+        fat->currcluster = newcluster;
+
         /* update to new set of sectors */
-        fatfile->sectorStart = (fatfile->cluster - 2)
+        fatfile->sectorStart = (fat->currcluster - 2)
                     * (long)fat->sectors_per_cluster
-                    + fat->filestart;                    
+                    + fat->filestart;
         fatfile->sectorUpto = 0;
     }
 
     return;
 }
 
+/*fatDeleteFile*/
+/*Delete a file by searching for its start sector and setting all the clusters to point to zero,
+by calling the fatnuke function
+*/
+int fatDeleteFile(FAT *fat,const char *fnm)
+{
+    fat->operation=FAT_DELETE;
+    fat->notfound = 0;
+
+#if 0
+    printf("fatDeleteFile: x %s x \n",fnm);
+#endif
+
+    if ((fnm[0] == '\\') || (fnm[0] == '/'))
+    {
+        fnm++;
+    }
+    fatGetStartCluster(fat,fnm);
+    fat->operation=0;
+    if(fat->notfound)
+    {
+        return(-1);
+    }
+    else
+    {
+        return(0);
+    }
+}
 
 /* delete a file by setting cluster chain to zeros */
 

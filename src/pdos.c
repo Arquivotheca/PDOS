@@ -82,6 +82,7 @@ static int fixexe32(unsigned char *psp, unsigned long entry, unsigned int sp);
 static int bios2driv(int bios);
 static int fileCreat(const char *fnm, int attrib);
 static int fileOpen(const char *fnm);
+static int fileDelete(const char *fnm);
 static int fileClose(int fno);
 static int fileRead(int fno, void *buf, size_t szbuf);
 static void accessDisk(int drive);
@@ -738,6 +739,10 @@ static void int21handler(union REGS *regsin,
 #else
             p = MK_FP(sregs->ds, regsin->x.dx);
 #endif
+
+#if 0
+            printf("function call x41: x %s x \n",p);
+#endif
             regsout->x.ax = PosDeleteFile(p);
             if (regsout->x.ax != 0)
             {
@@ -1349,12 +1354,34 @@ int PosWriteFile(int fh, const void *data, size_t len)
     return (len);
 }
 
-/* unimplemented */
-int PosDeleteFile(const char *fname)
-{   
-    printf("The Filename is x%sx \n ",fname);
-    return (0);
+/* To delete a given file with fname as its filename */
+int PosDeleteFile(const char *name)
+{
+    char filename[MAX_PATH];
+    int ret;
+
+    if (name[1] == ':')
+    {
+        name += 2;
+    }
+    if ((name[0] == '\\') || (name[0] == '/'))
+    {
+        ret = fileDelete(name);
+    }
+    else
+    {
+        strcpy(filename, cwd);
+        strcat(filename, "\\");
+        strcat(filename, name);
+        ret = fileDelete(filename);
+    }
+    if (ret < 0)
+    {
+        return(ret);
+    }
+    return (ret);
 }
+/**/
 
 /* unimplemented */
 long PosMoveFilePointer(int handle, long offset, int whence)
@@ -2438,6 +2465,45 @@ static int fileWrite(int fno, void *buf, size_t szbuf)
     return (ret);
 }
 
+/*Fatdelete function to delete a file when fnm is given as filename*/
+static int fileDelete(const char *fnm)
+{
+    int x;
+    const char *p;
+    int drive;
+    int rc;
+    char tempf[FILENAME_MAX];
+    
+#if 0
+    printf("fileDelete1: x %s x \n",fnm);
+#endif
+
+    strcpy(tempf, fnm);
+    upper_str(tempf);
+    fnm = tempf;
+    p = strchr(fnm, ':');
+    if (p == NULL)
+    {
+        p = fnm;
+        drive = currentDrive;
+    }
+    else
+    {
+        drive = *(p - 1);
+        drive = toupper(drive) - 'A';
+        p++;
+    }
+    
+#if 0
+    printf("fileDelete: x %s x \n",p);
+#endif
+
+    rc = fatDeleteFile(&disks[drive].fat, p);
+    if (rc != 0) return (-1);
+    return (rc);
+}
+/**/
+
 static void accessDisk(int drive)
 {
     unsigned char buf[512];
@@ -2861,7 +2927,11 @@ unsigned int PosAbsoluteDiskRead(int drive, unsigned long start_sector,
     {
      readLogical(&disks[drive],x,(char *)buf+x*512);
     }
+    
+#if 0
     printf("Test Absolute Disk Read \n");
+#endif
+
     return(0);
 }
 /**/

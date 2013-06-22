@@ -63,6 +63,7 @@ typedef struct {
     void (*readLogical)(void *diskptr, long sector, void *buf);
     void (*writeLogical)(void *diskptr, long sector, void *buf);
     void *parm;
+    char new_file[12]; /*new filename for fatRename*/
 } FAT;
 
 void fatDefaults(FAT *fat);
@@ -77,4 +78,5 @@ int fatOpenFile(FAT *fat, const char *fnm, FATFILE *fatfile);
 size_t fatReadFile(FAT *fat, FATFILE *fatfile, void *buf, size_t szbuf);
 size_t fatWriteFile(FAT *fat, FATFILE *fatfile, void *buf, size_t szbuf);
 int fatDeleteFile(FAT *fat,const char *fnm); /*To delete a file from a given directory*/
+int fatRenameFile(FAT *fat,const char *old,const char *new);/*To rename a given file*/
 #endif

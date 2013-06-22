@@ -365,7 +365,7 @@ static int testPosGetSystemTime(void)
 static int testPosDeleteFile(void)
 {
     int ret;
-    ret=PosDeleteFile("C:\temp.txt");
+    ret=PosDeleteFile("c:\\temp.txt");
     printf("The Return code is %d \n",ret);
 }
 /**/

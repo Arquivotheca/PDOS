@@ -83,6 +83,7 @@ static int bios2driv(int bios);
 static int fileCreat(const char *fnm, int attrib);
 static int fileOpen(const char *fnm);
 static int fileDelete(const char *fnm);
+static int fileRename(const char *old,const char *new);
 static int fileClose(int fno);
 static int fileRead(int fno, void *buf, size_t szbuf);
 static void accessDisk(int drive);
@@ -1359,11 +1360,14 @@ int PosDeleteFile(const char *name)
 {
     char filename[MAX_PATH];
     int ret;
-
-    if (name[1] == ':')
+ 
+    if(name[1] == ':')
     {
         name += 2;
     }
+#if 0    
+    printf("PosDeleteFile: x %s x \n",name);
+#endif    
     if ((name[0] == '\\') || (name[0] == '/'))
     {
         ret = fileDelete(name);
@@ -1589,8 +1593,39 @@ int PosFindNext(void)
 /* unimplemented */
 int PosRenameFile(const char *old, const char *new)
 {
-    printf("The old name is x%sx \n",old);
-    printf("The new name is x%sx \n",new);
+    char filename[MAX_PATH];
+    int ret;
+ 
+    if(old[1] == ':')
+    {
+        old += 2;
+    }
+    if(new[1] == ':')
+    {
+        new += 2;
+    }
+#if 0    
+    printf("PosRenameFile1: x %s x x %s x \n",old,new);
+#endif    
+    if ((old[0] == '\\') || (old[0] == '/') || (new[0] == '\\') || (new[0] == '/'))
+    {
+        ret = fileRename(old,new);
+    }
+    else
+    {
+        strcpy(filename, cwd);
+        strcat(filename, "\\");
+        strcat(filename, old);
+        ret = fileRename(filename,new);
+    }
+#if 0    
+    printf("PosRenameFile2: x %s x x %s x \n",old,new);
+#endif        
+    if (ret < 0)
+    {
+        return(ret);
+    }
+    return (ret);
     return (0);
 }
 
@@ -2504,6 +2539,50 @@ static int fileDelete(const char *fnm)
 }
 /**/
 
+/*Function to rename a file*/
+static int fileRename(const char *old,const char *new)
+{
+    int x;
+    const char *p;
+    const char *q;
+    int drive;
+    int rc;
+    char tempf1[FILENAME_MAX];
+    char tempf2[FILENAME_MAX];
+    
+#if 0
+    printf("fileRename1: x %s x x %s x \n",old,new);
+#endif
+
+    strcpy(tempf1, old);
+    strcpy(tempf2, new);
+    upper_str(tempf1);
+    upper_str(tempf2);
+    old = tempf1;
+    new = tempf2;
+    p = strchr(old, ':');
+    if (p == NULL)
+    {
+        p = old;
+        drive = currentDrive;
+    }
+    else
+    {
+        drive = *(p - 1);
+        drive = toupper(drive) - 'A';
+        p++;
+    }
+    
+#if 0
+    printf("fileRename3: x %s x x %s x \n",p,new);
+#endif
+
+    rc = fatRenameFile(&disks[drive].fat, p,new);
+    if (rc != 0) return (-1);
+    return (rc);
+}
+
+/**/
 static void accessDisk(int drive)
 {
     unsigned char buf[512];

@@ -14,11 +14,13 @@
 /*********************************************************************/
 
 #include <string.h>
+#include <stdio.h>
 #include "fat.h"
 #include "bos.h"
 #include "unused.h"
 
 #define FAT_DELETE 1
+#define FAT_RENAME 2
 
 static int fatEndCluster(FAT *fat, unsigned int cluster);
 static void fatGetStartCluster(FAT *fat, const char *fnm);
@@ -738,6 +740,12 @@ static void fatDirSectorSearch(FAT *fat,
                     fatWriteLogical(fat, startSector + x, buf);
                     return;
                 }
+                else if(fat->operation==FAT_RENAME)
+                {
+                    memcpy(p, fat->new_file, 11);
+                    fatWriteLogical(fat, startSector + x, buf);
+                    return;
+                }
                 else
                 {
                     fatfile->cluster = fat->currcluster;
@@ -1010,9 +1018,91 @@ int fatDeleteFile(FAT *fat,const char *fnm)
         return(0);
     }
 }
+/**/
 
-/* delete a file by setting cluster chain to zeros */
+/*fatRenameFile
+To rename a given file from old to new*/
+int fatRenameFile(FAT *fat,const char *old,const char *new)
+{
+    FATFILE fatfile;
+    int ret;
+    char fnm[FILENAME_MAX];
+    const char *p;
+    
+    if ((old[0] == '\\') || (old[0] == '/'))
+    {
+        old++;
+    }
+#if 0
+    printf("fatRenameFile1: x %s x x %s x \n",old,new);
+#endif
+    fat->currfatfile = &fatfile;
+    fat->notfound=0;
+    strcpy(fnm,old);
+    p=strchr(fnm,'\\');
+    if (p == NULL)
+    {
+        strcpy(fnm, new);
+    }
+    else
+    {
+        strcpy(p+1,new);
+    }
+#if 0
+    printf("fatRenameFile2: x %s x \n",fnm);
+#endif
 
+    fatGetStartCluster(fat,fnm);
+    if(!fat->notfound)
+    {
+        printf("File not Found \n");
+        return(-2);
+    }
+    else
+    {
+        fat->notfound=0;
+        memset(fat->new_file, ' ', 11);
+        p = strchr(new, '.');
+        if (p != NULL)
+        {
+            if ((p - new) > 8)
+            {
+                return(-8);
+            }
+            else
+            {
+                memcpy(fat->new_file, new, p - new);
+            }
+            if (strlen(p+1) > 3)
+            {
+                return(-4);
+            }
+            else
+            {
+                memcpy(fat->new_file + 8, p+1, strlen(p+1));
+            }
+        }
+        else if((strlen(new))<=8)
+        {
+            memcpy(fat->new_file,new,strlen(new));
+        }
+        
+        fat->operation=FAT_RENAME;
+        fatGetStartCluster(fat, old);
+        fat->operation=0;
+        if(fat->notfound)
+        {
+            return (-1);
+        }
+        else
+        {
+            return (0);
+        }
+    }
+}
+/**/
+
+/* Delete a file by setting cluster chain to zeros */
 static void fatNuke(FAT *fat, unsigned int cluster)
 {
     unsigned long fatSector;

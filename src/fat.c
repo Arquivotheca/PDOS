@@ -1055,7 +1055,6 @@ int fatRenameFile(FAT *fat,const char *old,const char *new)
     fatGetStartCluster(fat,fnm);
     if(!fat->notfound)
     {
-        printf("File not Found \n");
         return(-2);
     }
     else

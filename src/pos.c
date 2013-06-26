@@ -429,6 +429,30 @@ long PosMoveFilePointer(int handle, long offset, int whence)
 #endif
 }
 
+/*Function to get all the file attributes from the filename*/
+int PosGetFileAttributes(const char *fnm);
+{
+    union REGS regsin;
+    union REGS regsout;
+    struct SREGS sregs;
+
+    regsin.h.ah = 0x43;
+	regsin.h.al=0x00;
+#ifdef __32BIT__
+    regsin.d.edx = (int)fnm;
+#else
+    sregs.ds = FP_SEG(fnm);
+    regsin.x.dx = FP_OFF(fnm);
+#endif
+    int86x(0x21, &regsin, &regsout, &sregs);
+    if (!regsout.x.cflag)
+    {
+        regsout.x.ax = 0;
+    }
+    return (regsout.x.ax);
+}
+
+/**/
 int PosGetDeviceInformation(int handle, unsigned int *devinfo)
 {
     union REGS regsin;

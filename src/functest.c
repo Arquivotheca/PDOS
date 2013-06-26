@@ -379,6 +379,15 @@ static int testPosRenameFile(void)
 }
 /**/
 
+/*Test Rename a file*/
+static int testPosGetFileAttributes(void)
+{
+    int ret;
+    ret=PosGetFileAttributes("temp2.txt");
+    printf("The Return code is %d \n",ret);
+}
+/**/
+
 int main(void)
 {
 /*    testDriveParms();
@@ -390,6 +399,7 @@ int main(void)
     /*testPosGetSystemDate();*/
     /*testPosGetSystemTime();*/
     /*testPosDeleteFile();*/
-    testPosRenameFile();
+   /* testPosRenameFile();*/
+   testPosGetFileAttributes();
     return (0);
 }

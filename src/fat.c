@@ -239,10 +239,9 @@ int fatOpenFile(FAT *fat, const char *fnm, FATFILE *fatfile)
     }
     else
     {
-	
 #if 1
         printf("fatOpenFile(else): x %s x \n",fnm);        
-#endif	
+#endif
         fatfile->root = 0;
         fatGetStartCluster(fat, fnm);
         if (fat->notfound) return (-1);

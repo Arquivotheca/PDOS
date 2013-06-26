@@ -2615,7 +2615,7 @@ static int fileRename(const char *old,const char *new)
 static int fileGetAttrib(const char *fnm)
 {
     int x;
-	int attr;
+    int attr;
     const char *p;
     int drive;
     int rc;

@@ -79,4 +79,5 @@ size_t fatReadFile(FAT *fat, FATFILE *fatfile, void *buf, size_t szbuf);
 size_t fatWriteFile(FAT *fat, FATFILE *fatfile, void *buf, size_t szbuf);
 int fatDeleteFile(FAT *fat,const char *fnm); /*To delete a file from a given directory*/
 int fatRenameFile(FAT *fat,const char *old,const char *new);/*To rename a given file*/
+int fatGetFileAttributes(FAT *fat,const char *fnm,int *attr);/*To Get the file attributes from the filename specified by fnm*/
 #endif

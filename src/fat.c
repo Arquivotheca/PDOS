@@ -48,7 +48,6 @@ static unsigned int fatFindFreeCluster(FAT *fat);
 static void fatChain(FAT *fat, FATFILE *fatfile);
 static void fatNuke(FAT *fat, unsigned int cluster);
 
-
 /*
  * fatDefaults - initial call which cannot fail
  */
@@ -225,6 +224,10 @@ int fatOpenFile(FAT *fat, const char *fnm, FATFILE *fatfile)
     }
     if (strcmp(fnm, "") == 0)
     {
+
+#if 1
+        printf("fatOpenFile(if): x %s x \n",fnm);        
+#endif
         fatfile->root = 1;
         fatfile->nextCluster = 0xffff;
         fatfile->sectorCount = fat->rootsize;
@@ -236,6 +239,10 @@ int fatOpenFile(FAT *fat, const char *fnm, FATFILE *fatfile)
     }
     else
     {
+	
+#if 1
+        printf("fatOpenFile(else): x %s x \n",fnm);        
+#endif	
         fatfile->root = 0;
         fatGetStartCluster(fat, fnm);
         if (fat->notfound) return (-1);
@@ -1100,6 +1107,30 @@ int fatRenameFile(FAT *fat,const char *old,const char *new)
     }
 }
 /**/
+
+/*To get the attributes of the file given by filename fnm*/
+int fatGetFileAttributes(FAT *fat,const char *fnm,int *attr)
+{
+    int ret;
+    FATFILE fatfile;
+    fat->notfound = 0;
+
+#if 0
+    printf("fatGetFileAttributes: x %s x \n",fnm);
+#endif
+
+    ret=fatOpenFile(fat,fnm,&fatfile);
+    if(ret<0)
+    {
+        return(-1);
+    }
+    else
+    {    
+        *attr=fatfile.attr;
+        return(0);
+    }
+}   
+/**/ 
 
 /* Delete a file by setting cluster chain to zeros */
 static void fatNuke(FAT *fat, unsigned int cluster)

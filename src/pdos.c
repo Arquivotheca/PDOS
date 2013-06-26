@@ -84,6 +84,7 @@ static int fileCreat(const char *fnm, int attrib);
 static int fileOpen(const char *fnm);
 static int fileDelete(const char *fnm);
 static int fileRename(const char *old,const char *new);
+static int fileGetAttrib(const char *fnm);
 static int fileClose(int fno);
 static int fileRead(int fno, void *buf, size_t szbuf);
 static void accessDisk(int drive);
@@ -767,7 +768,21 @@ static void int21handler(union REGS *regsin,
             break;
 
         case 0x43:
-            regsout->x.cflag = 1;
+#ifdef __32BIT__
+            p = SUBADDRFIX(regsin->d.edx);
+#else
+            p = MK_FP(sregs->ds, regsin->x.dx);
+#endif
+
+#if 0
+            printf("function call x43: x %s x \n",p);
+#endif
+            regsout->x.ax = PosGetFileAttributes(p);
+            if (regsout->x.ax != 0)
+            {
+                regsout->x.cflag = 1;
+            }
+
             break;
 
         case 0x44:
@@ -1360,14 +1375,14 @@ int PosDeleteFile(const char *name)
 {
     char filename[MAX_PATH];
     int ret;
- 
+
     if(name[1] == ':')
     {
         name += 2;
     }
-#if 0    
+#if 0
     printf("PosDeleteFile: x %s x \n",name);
-#endif    
+#endif
     if ((name[0] == '\\') || (name[0] == '/'))
     {
         ret = fileDelete(name);
@@ -1392,6 +1407,20 @@ long PosMoveFilePointer(int handle, long offset, int whence)
 {
     return (0);
 }
+
+/*To get the attributes of a given file*/
+int PosGetFileAttributes(const char *fnm)
+{
+    int ret;
+    
+    ret=fileGetAttrib(fnm);
+    if (ret < 0)
+    {
+        return(ret);
+    }
+    return (ret);
+}
+/**/
 
 int PosGetDeviceInformation(int handle, unsigned int *devinfo)
 {
@@ -1590,12 +1619,12 @@ int PosFindNext(void)
     return (ff_search());
 }
 
-/* unimplemented */
+/* To rename a given file */
 int PosRenameFile(const char *old, const char *new)
 {
     char filename[MAX_PATH];
     int ret;
- 
+
     if(old[1] == ':')
     {
         old += 2;
@@ -1604,9 +1633,9 @@ int PosRenameFile(const char *old, const char *new)
     {
         new += 2;
     }
-#if 0    
+#if 0
     printf("PosRenameFile1: x %s x x %s x \n",old,new);
-#endif    
+#endif
     if ((old[0] == '\\') || (old[0] == '/') || (new[0] == '\\') || (new[0] == '/'))
     {
         ret = fileRename(old,new);
@@ -1618,9 +1647,9 @@ int PosRenameFile(const char *old, const char *new)
         strcat(filename, old);
         ret = fileRename(filename,new);
     }
-#if 0    
+#if 0
     printf("PosRenameFile2: x %s x x %s x \n",old,new);
-#endif        
+#endif
     if (ret < 0)
     {
         return(ret);
@@ -2508,7 +2537,7 @@ static int fileDelete(const char *fnm)
     int drive;
     int rc;
     char tempf[FILENAME_MAX];
-    
+
 #if 0
     printf("fileDelete1: x %s x \n",fnm);
 #endif
@@ -2528,7 +2557,7 @@ static int fileDelete(const char *fnm)
         drive = toupper(drive) - 'A';
         p++;
     }
-    
+
 #if 0
     printf("fileDelete: x %s x \n",p);
 #endif
@@ -2549,7 +2578,7 @@ static int fileRename(const char *old,const char *new)
     int rc;
     char tempf1[FILENAME_MAX];
     char tempf2[FILENAME_MAX];
-    
+
 #if 0
     printf("fileRename1: x %s x x %s x \n",old,new);
 #endif
@@ -2572,7 +2601,7 @@ static int fileRename(const char *old,const char *new)
         drive = toupper(drive) - 'A';
         p++;
     }
-    
+
 #if 0
     printf("fileRename3: x %s x x %s x \n",p,new);
 #endif
@@ -2581,6 +2610,52 @@ static int fileRename(const char *old,const char *new)
     if (rc != 0) return (-1);
     return (rc);
 }
+
+/**/
+static int fileGetAttrib(const char *fnm)
+{
+    int x;
+	int attr;
+    const char *p;
+    int drive;
+    int rc;
+    char tempf[FILENAME_MAX];
+
+    if(fnm[1] == ':')
+    {
+        fnm += 2;
+    }
+
+#if 0
+    printf("fileGetAttrib1: x %s x \n",fnm);
+#endif
+
+    strcpy(tempf, fnm);
+    upper_str(tempf);
+    fnm = tempf;
+    p = strchr(fnm, ':');
+    if (p == NULL)
+    {
+        p = fnm;
+        drive = currentDrive;
+    }
+    else
+    {
+        drive = *(p - 1);
+        drive = toupper(drive) - 'A';
+        p++;
+    }
+
+#if 0
+    printf("fileGetAttrib: x %s x \n",p);
+#endif
+
+    rc = fatGetFileAttributes(&disks[drive].fat, p,&attr);
+    if (rc != 0) return (-1);
+    return (rc);
+}
+
+/**/
 
 /**/
 static void accessDisk(int drive)
@@ -3006,7 +3081,7 @@ unsigned int PosAbsoluteDiskRead(int drive, unsigned long start_sector,
     {
      readLogical(&disks[drive],x,(char *)buf+x*512);
     }
-    
+
 #if 0
     printf("Test Absolute Disk Read \n");
 #endif

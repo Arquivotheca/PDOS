@@ -430,7 +430,7 @@ long PosMoveFilePointer(int handle, long offset, int whence)
 }
 
 /*Function to get all the file attributes from the filename*/
-int PosGetFileAttributes(const char *fnm);
+int PosGetFileAttributes(const char *fnm)
 {
     union REGS regsin;
     union REGS regsout;

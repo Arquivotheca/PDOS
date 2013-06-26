@@ -1412,7 +1412,7 @@ long PosMoveFilePointer(int handle, long offset, int whence)
 int PosGetFileAttributes(const char *fnm)
 {
     int ret;
-    
+
     ret=fileGetAttrib(fnm);
     if (ret < 0)
     {
@@ -3089,3 +3089,4 @@ unsigned int PosAbsoluteDiskRead(int drive, unsigned long start_sector,
     return(0);
 }
 /**/
+

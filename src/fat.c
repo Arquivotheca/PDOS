@@ -225,8 +225,8 @@ int fatOpenFile(FAT *fat, const char *fnm, FATFILE *fatfile)
     if (strcmp(fnm, "") == 0)
     {
 
-#if 1
-        printf("fatOpenFile(if): x %s x \n",fnm);        
+#if 0
+        printf("fatOpenFile(if): x %s x \n",fnm);
 #endif
         fatfile->root = 1;
         fatfile->nextCluster = 0xffff;
@@ -239,8 +239,9 @@ int fatOpenFile(FAT *fat, const char *fnm, FATFILE *fatfile)
     }
     else
     {
-#if 1
-        printf("fatOpenFile(else): x %s x \n",fnm);        
+
+#if 0
+        printf("fatOpenFile(else): x %s x \n",fnm);
 #endif
         fatfile->root = 0;
         fatGetStartCluster(fat, fnm);
@@ -1034,7 +1035,7 @@ int fatRenameFile(FAT *fat,const char *old,const char *new)
     int ret;
     char fnm[FILENAME_MAX];
     const char *p;
-    
+
     if ((old[0] == '\\') || (old[0] == '/'))
     {
         old++;
@@ -1091,7 +1092,7 @@ int fatRenameFile(FAT *fat,const char *old,const char *new)
         {
             memcpy(fat->new_file,new,strlen(new));
         }
-        
+
         fat->operation=FAT_RENAME;
         fatGetStartCluster(fat, old);
         fat->operation=0;
@@ -1124,12 +1125,12 @@ int fatGetFileAttributes(FAT *fat,const char *fnm,int *attr)
         return(-1);
     }
     else
-    {    
+    {
         *attr=fatfile.attr;
         return(0);
     }
-}   
-/**/ 
+}
+/**/
 
 /* Delete a file by setting cluster chain to zeros */
 static void fatNuke(FAT *fat, unsigned int cluster)

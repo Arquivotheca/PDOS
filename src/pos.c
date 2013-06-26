@@ -437,7 +437,7 @@ int PosGetFileAttributes(const char *fnm);
     struct SREGS sregs;
 
     regsin.h.ah = 0x43;
-	regsin.h.al=0x00;
+    regsin.h.al=0x00;
 #ifdef __32BIT__
     regsin.d.edx = (int)fnm;
 #else

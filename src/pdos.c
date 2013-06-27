@@ -84,7 +84,7 @@ static int fileCreat(const char *fnm, int attrib);
 static int fileOpen(const char *fnm);
 static int fileDelete(const char *fnm);
 static int fileRename(const char *old,const char *new);
-static int fileGetAttrib(const char *fnm);
+static int fileGetAttrib(const char *fnm,int *attr);
 static int fileClose(int fno);
 static int fileRead(int fno, void *buf, size_t szbuf);
 static void accessDisk(int drive);
@@ -552,6 +552,7 @@ static void int21handler(union REGS *regsin,
     void *q;
     long readbytes;
     int ret;
+    int attr;
     void *tempdta;
     PARMBLOCK *pb;
 
@@ -768,21 +769,28 @@ static void int21handler(union REGS *regsin,
             break;
 
         case 0x43:
+            if (regsin->h.al == 0x00)
+            {            
 #ifdef __32BIT__
-            p = SUBADDRFIX(regsin->d.edx);
+                p = SUBADDRFIX(regsin->d.edx);
 #else
-            p = MK_FP(sregs->ds, regsin->x.dx);
+                p = MK_FP(sregs->ds, regsin->x.dx);
 #endif
 
 #if 0
-            printf("function call x43: x %s x \n",p);
+                printf("function call x43: x %s x \n",p);
 #endif
-            regsout->x.ax = PosGetFileAttributes(p);
-            if (regsout->x.ax != 0)
-            {
-                regsout->x.cflag = 1;
+                regsout->x.ax = PosGetFileAttributes(p,&attr);
+                regsout->x.cx=attr;
+                if (regsout->x.ax != 0)
+                {
+                    regsout->x.cflag = 1;
+                }
+                else
+                {
+                    regsout->x.cflag=0;
+                }
             }
-
             break;
 
         case 0x44:
@@ -1409,11 +1417,11 @@ long PosMoveFilePointer(int handle, long offset, int whence)
 }
 
 /*To get the attributes of a given file*/
-int PosGetFileAttributes(const char *fnm)
+int PosGetFileAttributes(const char *fnm,int *attr)
 {
     int ret;
 
-    ret=fileGetAttrib(fnm);
+    ret=fileGetAttrib(fnm,attr);
     if (ret < 0)
     {
         return(ret);
@@ -2612,10 +2620,9 @@ static int fileRename(const char *old,const char *new)
 }
 
 /**/
-static int fileGetAttrib(const char *fnm)
+static int fileGetAttrib(const char *fnm,int *attr)
 {
     int x;
-    int attr;
     const char *p;
     int drive;
     int rc;

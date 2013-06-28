@@ -556,7 +556,7 @@ static void int21handler(union REGS *regsin,
     void *tempdta;
     PARMBLOCK *pb;
 
-#if 0
+#if 1
     if (debugcnt < 200)
     {
         printf("ZZZ %d %04x YYY\n",debugcnt, regsin->x.ax);
@@ -777,7 +777,7 @@ static void int21handler(union REGS *regsin,
                 p = MK_FP(sregs->ds, regsin->x.dx);
 #endif
 
-#if 0
+#if 1
                 printf("function call x43: x %s x \n",p);
 #endif
                 regsout->x.ax = PosGetFileAttributes(p,&attr);
@@ -1373,6 +1373,7 @@ int PosWriteFile(int fh, const void *data, size_t len)
     }
     else
     {
+        printf("About to call fopen \n");
         len = fileWrite(fh, data, len);
     }
     return (len);
@@ -1421,11 +1422,13 @@ int PosGetFileAttributes(const char *fnm,int *attr)
 {
     int ret;
 
+#if 1
+    printf("PosGetFileAttributes: x %s x : x %d x \n",fnm,attr);
+#endif
     ret=fileGetAttrib(fnm,attr);
-    if (ret < 0)
-    {
-        return(ret);
-    }
+#if 1
+    printf("Return code is x %d x \n",ret);
+#endif    
     return (ret);
 }
 /**/
@@ -1662,8 +1665,8 @@ int PosRenameFile(const char *old, const char *new)
     {
         return(ret);
     }
+    printf("The return code for fileRename is x %d x \n",ret);
     return (ret);
-    return (0);
 }
 
 int PosTruename(char *prename,char *postname)
@@ -2534,6 +2537,7 @@ static int fileWrite(int fno, void *buf, size_t szbuf)
     size_t ret;
 
     ret = fatWriteFile(fhandle[fno].fatptr, &fhandle[fno].fatfile, buf, szbuf);
+    printf("The Return code for fatwritefile is %p \n",ret);
     return (ret);
 }
 
@@ -2658,7 +2662,6 @@ static int fileGetAttrib(const char *fnm,int *attr)
 #endif
 
     rc = fatGetFileAttributes(&disks[drive].fat, p,&attr);
-    if (rc != 0) return (-1);
     return (rc);
 }
 

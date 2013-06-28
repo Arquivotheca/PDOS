@@ -264,7 +264,7 @@ int fatOpenFile(FAT *fat, const char *fnm, FATFILE *fatfile)
     fatfile->byteUpto = 0;
     if (fat->notfound)
     {
-        return (-1);
+        return (2);
     }
     return (0);
 }
@@ -1032,7 +1032,6 @@ To rename a given file from old to new*/
 int fatRenameFile(FAT *fat,const char *old,const char *new)
 {
     FATFILE fatfile;
-    int ret;
     char fnm[FILENAME_MAX];
     const char *p;
 
@@ -1113,22 +1112,20 @@ int fatGetFileAttributes(FAT *fat,const char *fnm,int *attr)
 {
     int ret;
     FATFILE fatfile;
-    fat->notfound = 0;
-
 #if 0
     printf("fatGetFileAttributes: x %s x \n",fnm);
 #endif
 
     ret=fatOpenFile(fat,fnm,&fatfile);
-    if(ret<0)
+    if(ret==0)
     {
-        return(-1);
+       *attr=fatfile.attr;
     }
     else
     {
-        *attr=fatfile.attr;
-        return(0);
+       *attr=0;
     }
+    return(ret);
 }
 /**/
 

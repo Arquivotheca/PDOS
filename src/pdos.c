@@ -777,9 +777,6 @@ static void int21handler(union REGS *regsin,
                 p = MK_FP(sregs->ds, regsin->x.dx);
 #endif
 
-#if 1
-                printf("function call x43: x %s x \n",p);
-#endif
                 regsout->x.ax = PosGetFileAttributes(p,&attr);
                 regsout->x.cx=attr;
                 if (regsout->x.ax != 0)
@@ -1422,13 +1419,7 @@ int PosGetFileAttributes(const char *fnm,int *attr)
 {
     int ret;
 
-#if 1
-    printf("PosGetFileAttributes: x %s x : x %d x \n",fnm,attr);
-#endif
     ret=fileGetAttrib(fnm,attr);
-#if 1
-    printf("Return code is x %d x \n",ret);
-#endif    
     return (ret);
 }
 /**/

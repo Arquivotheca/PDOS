@@ -224,10 +224,6 @@ int fatOpenFile(FAT *fat, const char *fnm, FATFILE *fatfile)
     }
     if (strcmp(fnm, "") == 0)
     {
-
-#if 0
-        printf("fatOpenFile(if): x %s x \n",fnm);
-#endif
         fatfile->root = 1;
         fatfile->nextCluster = 0xffff;
         fatfile->sectorCount = fat->rootsize;
@@ -239,13 +235,9 @@ int fatOpenFile(FAT *fat, const char *fnm, FATFILE *fatfile)
     }
     else
     {
-
-#if 0
-        printf("fatOpenFile(else): x %s x \n",fnm);
-#endif
         fatfile->root = 0;
         fatGetStartCluster(fat, fnm);
-        if (fat->notfound) return (-1);
+        if (fat->notfound) return (2);
         fatfile->lastBytes = (unsigned int)
                              (fatfile->fileSize
                               % (fat->sectors_per_cluster
@@ -486,9 +478,7 @@ static void fatGetStartCluster(FAT *fat, const char *fnm)
     char search[11];
     const char *upto = fnm;
     int last;
-#if 0
-    printf("fatGetStartCluster: x %s x \n",fnm);
-#endif
+
     fat->currcluster = 0;
     fatNextSearch(fat, search, &upto, &last);
     if (fat->notfound) return;
@@ -582,16 +572,10 @@ static void fatNextSearch(FAT *fat, char *search, const char **upto, int *last)
     if (*last)
     {
         *upto = p;
-#if 0
-        printf("fatNextSearch(if): x %s x \n", *upto);
-#endif
     }
     else
     {
         *upto = p + 1;
-#if 0
-        printf("fatNextSearch(else): x %s x \n", *upto);
-#endif
     }
     return;
 }
@@ -728,10 +712,6 @@ static void fatDirSectorSearch(FAT *fat,
     unsigned char *p;
     FATFILE *fatfile = fat->currfatfile;
 
-#if 0
-    printf("fatDirSectorSearch: x %s x \n",search);
-#endif
-
     for (x = 0; x < numsectors; x++)
     {
         fatReadLogical(fat, startSector + x, buf);
@@ -816,9 +796,6 @@ static void fatDirSectorUpdate(FAT *fat,
             if (found || (*p == '\0'))
             {
                 fat->currcluster = fatFindFreeCluster(fat);
-#if 0
-                printf("got cluster %x\n", fat->currcluster);
-#endif
                 fatMarkCluster(fat, fat->currcluster);
                 fatfile->sectorStart = (fat->currcluster - 2)
                     * (long)fat->sectors_per_cluster
@@ -1006,10 +983,6 @@ int fatDeleteFile(FAT *fat,const char *fnm)
     fat->operation=FAT_DELETE;
     fat->notfound = 0;
 
-#if 0
-    printf("fatDeleteFile: x %s x \n",fnm);
-#endif
-
     if ((fnm[0] == '\\') || (fnm[0] == '/'))
     {
         fnm++;
@@ -1039,9 +1012,6 @@ int fatRenameFile(FAT *fat,const char *old,const char *new)
     {
         old++;
     }
-#if 0
-    printf("fatRenameFile1: x %s x x %s x \n",old,new);
-#endif
     fat->currfatfile = &fatfile;
     fat->notfound=0;
     strcpy(fnm,old);
@@ -1054,9 +1024,6 @@ int fatRenameFile(FAT *fat,const char *old,const char *new)
     {
         strcpy(p+1,new);
     }
-#if 0
-    printf("fatRenameFile2: x %s x \n",fnm);
-#endif
 
     fatGetStartCluster(fat,fnm);
     if(!fat->notfound)
@@ -1112,9 +1079,6 @@ int fatGetFileAttributes(FAT *fat,const char *fnm,int *attr)
 {
     int ret;
     FATFILE fatfile;
-#if 0
-    printf("fatGetFileAttributes: x %s x \n",fnm);
-#endif
 
     ret=fatOpenFile(fat,fnm,&fatfile);
     if(ret==0)

@@ -692,7 +692,6 @@ static void int21handler(union REGS *regsin,
             if (ret < 0)
             {
                 regsout->x.cflag = 1;
-                regsout->x.ax = 0x02;
             }
             break;
 

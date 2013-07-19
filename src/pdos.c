@@ -61,8 +61,8 @@ static void processExtended(int drive, unsigned char *prm);
 static void initfiles(void);
 
 static void int21handler(union REGS *regsin,
-                         union REGS *regsout,
-                         struct SREGS *sregs);
+                        union REGS *regsout,
+                        struct SREGS *sregs);
 
 static void make_ff(char *pat);
 static void scrunchf(char *dest, char *new);
@@ -95,15 +95,15 @@ void dumpbuf(unsigned char *buf, int len);
 static void readLogical(void *diskptr, long sector, void *buf);
 static void writeLogical(void *diskptr, long sector, void *buf);
 static int readAbs(void *buf,
-                   int sectors,
-                   int drive,
-                   int track,
-                   int head,
-                   int sect);
+                int sectors,
+                int drive,
+                int track,
+                int head,
+                int sect);
 static int readLBA(void *buf,
-                   int sectors,
-                   int drive,
-                   unsigned long sector);
+                int sectors,
+                int drive,
+                unsigned long sector);
 static int writeAbs(void *buf,
                     int sectors,
                     int drive,
@@ -172,7 +172,7 @@ static int exec_subcor;
 #ifdef __32BIT__
 char *__vidptr;
 /* SUBADDRFIX - given a pointer from the subprogram, convert
-   it into an address usable by us */
+it into an address usable by us */
 #define SUBADDRFIX(x) ((void *)((char *)(x) + subcor - __abscor))
 #define ADDRFIXSUB(x) ((void *)((char *)(x) - subcor + __abscor))
 #define SUB2ABS(x) ((void *)((char *)(x) + subcor))
@@ -217,11 +217,11 @@ void pdosRun(void)
 #endif
     printf("welcome to PDOS-"
 #ifdef __32BIT__
-           "32"
+        "32"
 #else
-           "16"
+        "16"
 #endif
-           "\n");
+        "\n");
 
 #ifndef __32BIT__
     bootBPB = (unsigned char *)ABSADDR(0x7c00 + 11);
@@ -273,10 +273,10 @@ void pdosRun(void)
     }
 #elif defined(__32BIT__)
     /* We don't want to use the region 0x100000 to 0x110000 in case
-       someone else wants to use it for 16-bit device drivers etc.
-       And while we're at it, we'll skip 0x110000 to 0x200000 in case
-       the A20 line is disabled, so this way they get at least 1 meg
-       they can use. */
+    someone else wants to use it for 16-bit device drivers etc.
+    And while we're at it, we'll skip 0x110000 to 0x200000 in case
+    the A20 line is disabled, so this way they get at least 1 meg
+    they can use. */
     memavail = BosExtendedMemorySize();
     if (memavail < 3000000)
     {
@@ -291,20 +291,20 @@ void pdosRun(void)
 #endif
 #else
     /* Ok, time for some heavy hacking.  Because we want to
-       be able to supply a full 64k to DOS apps, we can't
-       have the normal control buffers polluting the space.
-       So we redefine everything by dividing by 16.  So in
-       order to supply 0x30000 to 0x90000, ie a size of
-       0x60000, we divide by 16 and only supply 0x6000.
-       We then waste the full 0x30000 to 0x40000 for use
-       by this dummy memory block.  So we tell memmgr
-       that we are supplying 0x30000 for a length of 0x6000,
-       and it will happily manage the control blocks within
-       that, but then before returning to the app, we multiply
-       the offset by 16 and add 0x10000.  When freeing
-       memory, we do the reverse, ie substract 0x10000 and
-       then divide by 16.  Oh, and because we took away so
-       much memory, we only end up supplying 0x5000U. */
+    be able to supply a full 64k to DOS apps, we can't
+    have the normal control buffers polluting the space.
+    So we redefine everything by dividing by 16.  So in
+    order to supply 0x30000 to 0x90000, ie a size of
+    0x60000, we divide by 16 and only supply 0x6000.
+    We then waste the full 0x30000 to 0x40000 for use
+    by this dummy memory block.  So we tell memmgr
+    that we are supplying 0x30000 for a length of 0x6000,
+    and it will happily manage the control blocks within
+    that, but then before returning to the app, we multiply
+    the offset by 16 and add 0x10000.  When freeing
+    memory, we do the reverse, ie substract 0x10000 and
+    then divide by 16.  Oh, and because we took away so
+    much memory, we only end up supplying 0x5000U. */
     memmgrSupply(&memmgr, (char *)MK_FP(PDOS16_MEMSTART,0x0000), 0x5000U);
 #endif
 #ifndef USING_EXE
@@ -315,9 +315,9 @@ void pdosRun(void)
 }
 
 /* for each physical disk,
-   for each partition
-   for each extended partion
-   gather bpb info, plus (real) drive number */
+for each partition
+for each extended partion
+gather bpb info, plus (real) drive number */
 
 static void initdisks(void)
 {
@@ -410,25 +410,25 @@ static void processPartition(int drive, unsigned char *prm)
     sect = prm[2] & 0x1f;
     track = (((unsigned int)prm[2] & 0xc0) << 2) | prm[3];
     sector = prm[8]
-             | ((unsigned long)prm[9] << 8)
-             | ((unsigned long)prm[10] << 16)
-             | ((unsigned long)prm[11] << 24);
+            | ((unsigned long)prm[9] << 8)
+            | ((unsigned long)prm[10] << 16)
+            | ((unsigned long)prm[11] << 24);
     sector += psector;
     if (lba)
     {
         rc = readLBA(buf,
-                     sectors,
-                     drive,
-                     sector);
+                    sectors,
+                    drive,
+                    sector);
     }
     else
     {
         rc = readAbs(buf,
-                     sectors,
-                     drive,
-                     track,
-                     head,
-                     sect);
+                    sectors,
+                    drive,
+                    track,
+                    head,
+                    sect);
     }
     if (rc != 0)
     {
@@ -441,8 +441,8 @@ static void processPartition(int drive, unsigned char *prm)
     disks[lastDrive].lba = lba;
 
     /* the number of hidden sectors doesn't appear to be properly
-       filled in for extended partitions when formatted with MSDOS,
-       so we just use the value computed already */
+    filled in for extended partitions when formatted with MSDOS,
+    so we just use the value computed already */
     disks[lastDrive].hidden = sector;
 
     /* if physical disks and hidden sectors match, this is the boot drive */
@@ -482,9 +482,9 @@ static void processExtended(int drive, unsigned char *prm)
     sect = prm[2] & 0x1f;
     track = (((unsigned int)prm[2] & 0xc0) << 2) | prm[3];
     sector = prm[8]
-             | ((unsigned long)prm[9] << 8)
-             | ((unsigned long)prm[10] << 16)
-             | ((unsigned long)prm[11] << 24);
+            | ((unsigned long)prm[9] << 8)
+            | ((unsigned long)prm[10] << 16)
+            | ((unsigned long)prm[11] << 24);
     extsector = sector;
     while (sect != 0)
     {
@@ -518,9 +518,9 @@ static void processExtended(int drive, unsigned char *prm)
                 & 0xc0) << 2)
                 | buf[PT_OFFSET + 1 * PT_LEN + 3];
         sector = buf[PT_OFFSET + 1 * PT_LEN + 8]
-                 | ((unsigned long)buf[PT_OFFSET + 1 * PT_LEN + 9] << 8)
-                 | ((unsigned long)buf[PT_OFFSET + 1 * PT_LEN + 10] << 16)
-                 | ((unsigned long)buf[PT_OFFSET + 1 * PT_LEN + 11] << 24);
+                | ((unsigned long)buf[PT_OFFSET + 1 * PT_LEN + 9] << 8)
+                | ((unsigned long)buf[PT_OFFSET + 1 * PT_LEN + 10] << 16)
+                | ((unsigned long)buf[PT_OFFSET + 1 * PT_LEN + 11] << 24);
         sector += extsector;
     }
     return;
@@ -545,8 +545,8 @@ static void initfiles(void)
 }
 
 static void int21handler(union REGS *regsin,
-                         union REGS *regsout,
-                         struct SREGS *sregs)
+                        union REGS *regsout,
+                        struct SREGS *sregs)
 {
     void *p;
     void *q;
@@ -725,13 +725,13 @@ static void int21handler(union REGS *regsin,
 #ifdef __32BIT__
             p = SUBADDRFIX(regsin->d.edx);
             regsout->d.eax = PosWriteFile(regsin->d.ebx,
-                                          p,
-                                          regsin->d.ecx);
+                                        p,
+                                        regsin->d.ecx);
 #else
             p = MK_FP(sregs->ds, regsin->x.dx);
             regsout->x.ax = PosWriteFile(regsin->x.bx,
-                                         p,
-                                         regsin->x.cx);
+                                        p,
+                                        regsin->x.cx);
 #endif
             break;
 
@@ -740,10 +740,6 @@ static void int21handler(union REGS *regsin,
             p = SUBADDRFIX(regsin->d.edx);
 #else
             p = MK_FP(sregs->ds, regsin->x.dx);
-#endif
-
-#if 0
-            printf("function call x41: x %s x \n",p);
 #endif
             regsout->x.ax = PosDeleteFile(p);
             if (regsout->x.ax != 0)
@@ -760,8 +756,8 @@ static void int21handler(union REGS *regsin,
 #else
             readbytes = ((unsigned long)regsin->x.cx << 16) | regsin->x.dx;
             readbytes = PosMoveFilePointer(regsin->x.bx,
-                                           readbytes,
-                                           regsin->h.al);
+                                        readbytes,
+                                        regsin->h.al);
             regsout->x.cx = readbytes >> 16;
             regsout->x.dx = readbytes & 0xffff;
 #endif
@@ -769,13 +765,13 @@ static void int21handler(union REGS *regsin,
 
         case 0x43:
             if (regsin->h.al == 0x00)
-            {            
+            {
 #ifdef __32BIT__
                 p = SUBADDRFIX(regsin->d.edx);
 #else
                 p = MK_FP(sregs->ds, regsin->x.dx);
 #endif
-
+                /*printf("The filename in case 0x43 is x %s x \n",p);*/
                 regsout->x.ax = PosGetFileAttributes(p,&attr);
                 regsout->x.cx=attr;
                 if (regsout->x.ax != 0)
@@ -829,7 +825,7 @@ static void int21handler(union REGS *regsin,
             {
 #ifdef __32BIT__
                 regsout->d.eax = PosBlockDeviceRemote(regsin->h.bl,
-                                                      &regsout->d.edx);
+                                                    &regsout->d.edx);
                 if ((int)regsout->d.eax < 0)
                 {
                     regsout->x.cflag = 1;
@@ -837,7 +833,7 @@ static void int21handler(union REGS *regsin,
                 }
 #else
                 regsout->x.ax = PosBlockDeviceRemote(regsin->h.bl,
-                                                     &regsout->x.dx);
+                                                    &regsout->x.dx);
                 if ((int)regsout->x.ax < 0)
                 {
                     regsout->x.cflag = 1;
@@ -846,15 +842,15 @@ static void int21handler(union REGS *regsin,
 #endif
             }
 
-   /**/
-   /*Function to dump the contents of DS,DX register*/
+/**/
+/*Function to dump the contents of DS,DX register*/
             else if (regsin->h.al == 0x0D)
             {
 #ifdef __32BIT__
                 p=SUBADDRFIX(regsin->d.edx);
                 regsout->d.eax =PosGenericBlockDeviceRequest(regsin->h.bl,
-                                                             regsin->h.ch,
-                                                             regsin->h.cl,p);
+                                                            regsin->h.ch,
+                                                            regsin->h.cl,p);
 #else
                 p = MK_FP(sregs->ds, regsin->x.dx);
                 regsout->x.ax =PosGenericBlockDeviceRequest(regsin->h.bl,
@@ -880,8 +876,8 @@ static void int21handler(union REGS *regsin,
             regsout->d.eax = (int)ADDRFIXSUB(regsout->d.eax);
 #else
             /* for some bizarre reason, MSC allocates 32 bytes,
-               then attempts to turn it into 16k - do this in
-               advance! */
+            then attempts to turn it into 16k - do this in
+            advance! */
             if (regsin->x.bx == 2)
             {
                 regsin->x.bx = 0x400;
@@ -914,8 +910,8 @@ static void int21handler(union REGS *regsin,
         case 0x4a:
 #ifdef __32BIT__
             regsout->d.eax = PosReallocPages(SUBADDRFIX(regsin->d.ecx),
-                                             regsin->d.ebx,
-                                             &regsout->d.ebx);
+                                            regsin->d.ebx,
+                                            &regsout->d.ebx);
 #else
             regsout->x.ax = PosReallocPages(MK_FP(sregs->es, 0),
                                             regsin->x.bx,
@@ -934,53 +930,53 @@ static void int21handler(union REGS *regsin,
 
         case 0x4b:
 #ifdef __32BIT__
-             pb = SUBADDRFIX(regsin->d.ebx);
-             if (pb != NULL)
-             {
-                 pb->cmdtail = SUBADDRFIX(pb->cmdtail);
-             }
-             PosExec(SUBADDRFIX(regsin->d.edx), pb);
+            pb = SUBADDRFIX(regsin->d.ebx);
+            if (pb != NULL)
+            {
+                pb->cmdtail = SUBADDRFIX(pb->cmdtail);
+            }
+            PosExec(SUBADDRFIX(regsin->d.edx), pb);
 #else
-             PosExec(MK_FP(sregs->ds, regsin->x.dx),
-                     MK_FP(sregs->es, regsin->x.bx));
+            PosExec(MK_FP(sregs->ds, regsin->x.dx),
+                    MK_FP(sregs->es, regsin->x.bx));
 #endif
-             break;
+            break;
 
         case 0x4c:
 #if (!defined(USING_EXE))
-             PosTerminate(regsin->h.al);
+            PosTerminate(regsin->h.al);
 #endif
-             break;
+            break;
 
         case 0x4d:
-             regsout->x.ax = PosGetReturnCode();
-             break;
+            regsout->x.ax = PosGetReturnCode();
+            break;
 
         case 0x4e:
 #ifdef __32BIT__
-             regsout->d.eax = PosFindFirst(SUBADDRFIX(regsin->d.edx),
-                                           regsin->x.cx);
-             if (regsout->d.eax != 0)
-             {
-                 regsout->x.cflag = 1;
-             }
+            regsout->d.eax = PosFindFirst(SUBADDRFIX(regsin->d.edx),
+                                        regsin->x.cx);
+            if (regsout->d.eax != 0)
+            {
+                regsout->x.cflag = 1;
+            }
 #else
-             regsout->x.ax = PosFindFirst(MK_FP(sregs->ds, regsin->x.dx),
-                                          regsin->x.cx);
-             if (regsout->x.ax != 0)
-             {
-                 regsout->x.cflag = 1;
-             }
+            regsout->x.ax = PosFindFirst(MK_FP(sregs->ds, regsin->x.dx),
+                                        regsin->x.cx);
+            if (regsout->x.ax != 0)
+            {
+                regsout->x.cflag = 1;
+            }
 #endif
-             break;
+            break;
 
         case 0x4f:
-             regsout->x.ax = PosFindNext();
-             if (regsout->x.ax != 0)
-             {
-                 regsout->x.cflag = 1;
-             }
-             break;
+            regsout->x.ax = PosFindNext();
+            if (regsout->x.ax != 0)
+            {
+                regsout->x.cflag = 1;
+            }
+            break;
 
         case 0x56:
 #ifdef __32BIT__
@@ -1007,15 +1003,15 @@ static void int21handler(union REGS *regsin,
             ret=PosTruename(p,q);
 
             if(ret < 0)
-             {
+            {
                 regsout->x.cflag=1;
 #ifdef __32BIT__
                 regsout->d.eax=-ret;
 #else
                 regsout->x.ax=-ret;
 #endif
-             }
-             break;
+            }
+            break;
         /*Function call AX=7303h*/
         case 0x73:
             if(regsin->h.al==0x03)
@@ -1028,7 +1024,7 @@ static void int21handler(union REGS *regsin,
 #endif
             }
             break;
-         /**/
+        /**/
         /* emx calls are 0x7f */
 #ifdef __32BIT__
         case 0x7f:
@@ -1068,14 +1064,14 @@ static void int21handler(union REGS *regsin,
             {
 #ifdef __32BIT__
                 PosSetRunTime(SUBADDRFIX(regsin->d.ebx),
-                              SUBADDRFIX(regsin->d.ecx));
+                            SUBADDRFIX(regsin->d.ecx));
 #endif
             }
             break;
 
         default:
-             /*printf("unimplemented dos call %x\n", regsin->x.ax);*/
-             break;
+            /*printf("unimplemented dos call %x\n", regsin->x.ax);*/
+            break;
 
     }
     return;
@@ -1338,7 +1334,7 @@ void PosReadFile(int fh, void *data, size_t bytes, size_t *readbytes)
             {
                 BosWriteText(0, '\n', 0);
                 /* NB: this will need to be fixed, potential
-                   buffer overflow - bummer! */
+                buffer overflow - bummer! */
                 x++;
                 p[x] = '\n';
                 x++;
@@ -1369,7 +1365,7 @@ int PosWriteFile(int fh, const void *data, size_t len)
     }
     else
     {
-        printf("About to call fopen \n");
+        printf("About to call fileWrite \n");
         len = fileWrite(fh, data, len);
     }
     return (len);
@@ -1385,9 +1381,6 @@ int PosDeleteFile(const char *name)
     {
         name += 2;
     }
-#if 0
-    printf("PosDeleteFile: x %s x \n",name);
-#endif
     if ((name[0] == '\\') || (name[0] == '/'))
     {
         ret = fileDelete(name);
@@ -1466,7 +1459,7 @@ int PosBlockDeviceRemote(int drive,int *da)
 
 /*Implementation of the function call 440D*/
 int PosGenericBlockDeviceRequest(int drive,int catcode,int function,
-                                 void *parm_block)
+                                void *parm_block)
 {
     PB_1560 *pb;
 
@@ -1634,9 +1627,7 @@ int PosRenameFile(const char *old, const char *new)
     {
         new += 2;
     }
-#if 0
-    printf("PosRenameFile1: x %s x x %s x \n",old,new);
-#endif
+
     if ((old[0] == '\\') || (old[0] == '/') || (new[0] == '\\') || (new[0] == '/'))
     {
         ret = fileRename(old,new);
@@ -1648,14 +1639,10 @@ int PosRenameFile(const char *old, const char *new)
         strcat(filename, old);
         ret = fileRename(filename,new);
     }
-#if 0
-    printf("PosRenameFile2: x %s x x %s x \n",old,new);
-#endif
     if (ret < 0)
     {
         return(ret);
     }
-    printf("The return code for fileRename is x %d x \n",ret);
     return (ret);
 }
 
@@ -1829,16 +1816,16 @@ static int ff_search(void)
             if (patmat(file, ff_pat)
 
                 /* if it is not a directory, or they asked for
-                   directories, then that is OK */
+                directories, then that is OK */
                 && (((buf[0x0b] & 0x10) == 0)
                     || ((attr & 0x10) != 0))
 
                 /* if it is not a volume label, or they asked
-                   for volume labels, then that is OK */
+                for volume labels, then that is OK */
                 && (((buf[0x0b] & 0x08) == 0)
                     || ((attr & 0x08) != 0))
 
-               )
+            )
             {
                 if ((p != NULL) && (*p == '.')) *p = '\0';
                 dta[0x15] = buf[0x0b]; /* attribute */
@@ -1942,15 +1929,15 @@ int int25(unsigned int *regs)
 /**/
 #else
 void int20(unsigned int *regptrs,
-           unsigned int es,
-           unsigned int ds,
-           unsigned int di,
-           unsigned int si,
-           unsigned int dx,
-           unsigned int cx,
-           unsigned int bx,
-           unsigned int cflag,
-           unsigned int ax)
+        unsigned int es,
+        unsigned int ds,
+        unsigned int di,
+        unsigned int si,
+        unsigned int dx,
+        unsigned int cx,
+        unsigned int bx,
+        unsigned int cflag,
+        unsigned int ax)
 {
     static union REGS regsin;
     static union REGS regsout;
@@ -1980,15 +1967,15 @@ void int20(unsigned int *regptrs,
 }
 
 void int21(unsigned int *regptrs,
-           unsigned int es,
-           unsigned int ds,
-           unsigned int di,
-           unsigned int si,
-           unsigned int dx,
-           unsigned int cx,
-           unsigned int bx,
-           unsigned int cflag,
-           unsigned int ax)
+        unsigned int es,
+        unsigned int ds,
+        unsigned int di,
+        unsigned int si,
+        unsigned int dx,
+        unsigned int cx,
+        unsigned int bx,
+        unsigned int cflag,
+        unsigned int ax)
 {
     static union REGS regsin;
     static union REGS regsout;
@@ -2019,15 +2006,15 @@ void int21(unsigned int *regptrs,
 
 /*Interuppt 25*/
 void int25(unsigned int *regptrs,
-           unsigned int es,
-           unsigned int ds,
-           unsigned int di,
-           unsigned int si,
-           unsigned int dx,
-           unsigned int cx,
-           unsigned int bx,
-           unsigned int cflag,
-           unsigned int ax)
+        unsigned int es,
+        unsigned int ds,
+        unsigned int di,
+        unsigned int si,
+        unsigned int dx,
+        unsigned int cx,
+        unsigned int bx,
+        unsigned int cflag,
+        unsigned int ax)
 {
     static union REGS regsin;
     static union REGS regsout;
@@ -2213,7 +2200,7 @@ static void loadExe(char *prog, PARMBLOCK *parmblock)
     {
         printf("insufficient memory to load program\n");
         printf("required %ld, available %ld\n",
-               exeLen, (long)maxPages * 16);
+            exeLen, (long)maxPages * 16);
         memmgrFree(&memmgr, header);
         memmgrFree(&memmgr, envptr);
         return;
@@ -2252,8 +2239,8 @@ static void loadExe(char *prog, PARMBLOCK *parmblock)
 #ifdef __32BIT__
     fileRead(fno, exeStart, firstbit.a_text);
     fileRead(fno,
-             exeStart + N_DATADDR(firstbit) - N_TXTADDR(firstbit),
-             firstbit.a_data);
+            exeStart + N_DATADDR(firstbit) - N_TXTADDR(firstbit),
+            firstbit.a_data);
 #else
     if (isexe)
     {
@@ -2291,9 +2278,9 @@ static void loadExe(char *prog, PARMBLOCK *parmblock)
         for (relocI = 0; relocI < numReloc; relocI++)
         {
             /* This 16:16 arithmetic will work because the exeStart
-               offset is 0. */
+            offset is 0. */
             fixSeg = (unsigned int *)
-                     ((unsigned long)exeStart + relocStart[relocI]);
+                    ((unsigned long)exeStart + relocStart[relocI]);
             *fixSeg = *fixSeg + addSeg;
         }
 
@@ -2302,9 +2289,9 @@ static void loadExe(char *prog, PARMBLOCK *parmblock)
         sp = *(unsigned int *)&header[0x10];
 
         /* This 16:16 arithmetic will work because the exeStart
-           offset is 0 */
+        offset is 0 */
         exeEntry = (unsigned char *)((unsigned long)exeStart
-                                     + *(unsigned long *)&header[0x14]);
+                                    + *(unsigned long *)&header[0x14]);
     }
     else
     {
@@ -2315,7 +2302,7 @@ static void loadExe(char *prog, PARMBLOCK *parmblock)
     }
 
     /* printf("exeEntry: %lx, psp: %lx, ss: %x, sp: %x\n",
-           exeEntry, psp, ss, sp); */
+        exeEntry, psp, ss, sp); */
 #else
     /* initialise BSS */
     bss = exeStart + N_BSSADDR(firstbit);
@@ -2527,7 +2514,6 @@ static int fileWrite(int fno, void *buf, size_t szbuf)
     size_t ret;
 
     ret = fatWriteFile(fhandle[fno].fatptr, &fhandle[fno].fatfile, buf, szbuf);
-    printf("The Return code for fatwritefile is %p \n",ret);
     return (ret);
 }
 
@@ -2539,10 +2525,6 @@ static int fileDelete(const char *fnm)
     int drive;
     int rc;
     char tempf[FILENAME_MAX];
-
-#if 0
-    printf("fileDelete1: x %s x \n",fnm);
-#endif
 
     strcpy(tempf, fnm);
     upper_str(tempf);
@@ -2560,10 +2542,6 @@ static int fileDelete(const char *fnm)
         p++;
     }
 
-#if 0
-    printf("fileDelete: x %s x \n",p);
-#endif
-
     rc = fatDeleteFile(&disks[drive].fat, p);
     if (rc != 0) return (-1);
     return (rc);
@@ -2580,10 +2558,6 @@ static int fileRename(const char *old,const char *new)
     int rc;
     char tempf1[FILENAME_MAX];
     char tempf2[FILENAME_MAX];
-
-#if 0
-    printf("fileRename1: x %s x x %s x \n",old,new);
-#endif
 
     strcpy(tempf1, old);
     strcpy(tempf2, new);
@@ -2604,10 +2578,6 @@ static int fileRename(const char *old,const char *new)
         p++;
     }
 
-#if 0
-    printf("fileRename3: x %s x x %s x \n",p,new);
-#endif
-
     rc = fatRenameFile(&disks[drive].fat, p,new);
     if (rc != 0) return (-1);
     return (rc);
@@ -2627,10 +2597,6 @@ static int fileGetAttrib(const char *fnm,int *attr)
         fnm += 2;
     }
 
-#if 0
-    printf("fileGetAttrib1: x %s x \n",fnm);
-#endif
-
     strcpy(tempf, fnm);
     upper_str(tempf);
     fnm = tempf;
@@ -2647,11 +2613,7 @@ static int fileGetAttrib(const char *fnm,int *attr)
         p++;
     }
 
-#if 0
-    printf("fileGetAttrib: x %s x \n",p);
-#endif
-
-    rc = fatGetFileAttributes(&disks[drive].fat, p,&attr);
+    rc = fatGetFileAttributes(&disks[drive].fat, p,attr);
     return (rc);
 }
 
@@ -2669,11 +2631,11 @@ static void accessDisk(int drive)
     unsigned char *bpb;
 
     rc = readAbs(buf,
-                 sectors,
-                 drive,
-                 track,
-                 head,
-                 sector);
+                sectors,
+                drive,
+                track,
+                head,
+                sector);
     if (rc != 0)
     {
         return;
@@ -2798,11 +2760,11 @@ static void writeLogical(void *diskptr, long sector, void *buf)
 }
 
 static int readAbs(void *buf,
-                   int sectors,
-                   int drive,
-                   int track,
-                   int head,
-                   int sect)
+                int sectors,
+                int drive,
+                int track,
+                int head,
+                int sect)
 {
     int rc;
     int ret = -1;
@@ -2833,9 +2795,9 @@ static int readAbs(void *buf,
 }
 
 static int readLBA(void *buf,
-                   int sectors,
-                   int drive,
-                   unsigned long sector)
+                int sectors,
+                int drive,
+                unsigned long sector)
 {
     int rc;
     int ret = -1;
@@ -2938,12 +2900,12 @@ static void analyseBpb(DISKINFO *diskinfo, unsigned char *bpb)
     diskinfo->drive = bpb[25];
     diskinfo->num_heads = bpb[15];
     diskinfo->hidden = bpb[17]
-                       | ((unsigned long)bpb[18] << 8)
-                       | ((unsigned long)bpb[19] << 16)
-                       | ((unsigned long)bpb[20] << 24);
+                    | ((unsigned long)bpb[18] << 8)
+                    | ((unsigned long)bpb[19] << 16)
+                    | ((unsigned long)bpb[20] << 24);
     diskinfo->sectors_per_track = (bpb[13] | ((unsigned int)bpb[14] << 8));
     diskinfo->sectors_per_cylinder = diskinfo->sectors_per_track
-                                     * diskinfo->num_heads;
+                                    * diskinfo->num_heads;
     memcpy(&diskinfo->bpb, bpb, sizeof diskinfo->bpb);
     return;
 }
@@ -3021,7 +2983,7 @@ static void *pdos16MemmgrAllocPages(MEMMGR *memmgr, size_t pages, int id)
     unsigned long abs;
 
     /* I don't know why some apps request 0 pages, but we'd better
-       give them a decent pointer. */
+    give them a decent pointer. */
     if (pages == 0)
     {
         pages = 1;
@@ -3034,7 +2996,7 @@ static void *pdos16MemmgrAllocPages(MEMMGR *memmgr, size_t pages, int id)
     abs = ADDR2ABS(ptr);
 
     /* and because we wasted 0x10000 for control blocks, we
-       skip that, and the bit above 3000 we multiply by 16. */
+    skip that, and the bit above 3000 we multiply by 16. */
     abs -= (unsigned long)PDOS16_MEMSTART * 16;
     abs *= 16;
     abs += (unsigned long)PDOS16_MEMSTART * 16;
@@ -3074,12 +3036,12 @@ static int pdos16MemmgrReallocPages(MEMMGR *memmgr,
 
 /*int 25 function call*/
 unsigned int PosAbsoluteDiskRead(int drive, unsigned long start_sector,
-                                 unsigned int sectors, void *buf)
+                                unsigned int sectors, void *buf)
 {
     long x;
     for(x=0;x<sectors;x++)
     {
-     readLogical(&disks[drive],x,(char *)buf+x*512);
+    readLogical(&disks[drive],x,(char *)buf+x*512);
     }
 
 #if 0

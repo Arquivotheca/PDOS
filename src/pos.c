@@ -238,7 +238,7 @@ int PosCreatFile(const char *name,
     union REGS regsin;
     union REGS regsout;
     struct SREGS sregs;
-	
+
     regsin.h.ah = 0x3c;
     regsin.x.cx = attrib;
 #ifdef __32BIT__

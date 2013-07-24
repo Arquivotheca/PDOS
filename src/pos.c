@@ -207,6 +207,24 @@ void *PosGetInterruptVector(int intnum)
 #endif
 }
 
+void PosGetFreeSpace(int drive,unsigned int *secperclu,
+                    unsigned int *numfreeclu,
+                    unsigned int *bytpersec,
+                    unsigned int *totclus)
+{
+    union REGS regsin;
+    union REGS regsout;
+ 
+    regsin.h.ah=0x36;
+    regsin.h.dl=drive;
+    int86(0x21, &regsin, &regsout);
+    *secperclu = regsout.x.ax;
+    *numfreeclu = regsout.x.bx;
+    *bytpersec = regsout.x.cx;
+    *totclus = regsout.x.dx;
+    return;
+}
+
 int PosChangeDir(char *to)
 {
     union REGS regsin;
@@ -445,6 +463,7 @@ int PosGetFileAttributes(const char *fnm,int *attr)
 #endif
     int86x(0x21, &regsin, &regsout, &sregs);
     *attr = regsout.x.cx;
+
     if (!regsout.x.cflag)
     {
         regsout.x.ax = 0;

@@ -657,7 +657,23 @@ static void int21handler(union REGS *regsin,
             sregs->es = FP_SEG(p);
 #endif
             break;
-
+            
+        case 0x36:
+#ifdef __32BIT__
+            PosGetFreeSpace(regsin->h.dl,
+                            &regsout->d.eax,
+                            &regsout->d.ebx,
+                            &regsout->d.ecx,
+                            &regsout->d.edx);
+#else
+            PosGetFreeSpace(regsin->h.dl,
+                            &regsout->x.ax,
+                            &regsout->x.bx,
+                            &regsout->x.cx,
+                            &regsout->x.dx);
+#endif
+            break;
+            
         case 0x3b:
 #ifdef __32BIT__
             regsout->d.eax = PosChangeDir(SUBADDRFIX(regsin->d.edx));
@@ -771,7 +787,6 @@ static void int21handler(union REGS *regsin,
 #else
                 p = MK_FP(sregs->ds, regsin->x.dx);
 #endif
-                /*printf("The filename in case 0x43 is x %s x \n",p);*/
                 regsout->x.ax = PosGetFileAttributes(p,&attr);
                 regsout->x.cx=attr;
                 if (regsout->x.ax != 0)
@@ -1100,7 +1115,7 @@ int PosDirectCharInputNoEcho(void)
     int scan;
     int ascii;
 
-
+    
     BosReadKeyboardCharacter(&scan, &ascii);
 
     return ascii;
@@ -1211,6 +1226,36 @@ void *PosGetInterruptVector(int intnum)
 {
     return *((void **)0 + intnum);
 }
+
+/*To find out the free space in hard disk given by drive*/
+void PosGetFreeSpace(int drive,
+                     unsigned int *secperclu,
+                     unsigned int *numfreeclu,
+                     unsigned int *bytpersec,
+                     unsigned int *totclus)
+{   
+    if (drive==0)
+    {
+        drive=currentDrive;   
+    }
+    else
+    {
+        drive--;
+    }
+    if ((drive >= 0) && (drive < lastDrive))
+    {
+        *secperclu=4;
+        *numfreeclu=25335;
+        *bytpersec=512;
+        *totclus=25378;
+    }
+    else if (drive >=lastDrive)
+    {
+        *secperclu=0xFFFF;
+    }
+    return(0);
+}
+/**/
 
 int PosChangeDir(char *to)
 {
@@ -1365,7 +1410,6 @@ int PosWriteFile(int fh, const void *data, size_t len)
     }
     else
     {
-        printf("About to call fileWrite \n");
         len = fileWrite(fh, data, len);
     }
     return (len);
@@ -3043,11 +3087,6 @@ unsigned int PosAbsoluteDiskRead(int drive, unsigned long start_sector,
     {
     readLogical(&disks[drive],x,(char *)buf+x*512);
     }
-
-#if 0
-    printf("Test Absolute Disk Read \n");
-#endif
-
     return(0);
 }
 /**/

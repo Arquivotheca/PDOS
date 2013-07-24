@@ -63,6 +63,12 @@ unsigned int PosGetDosVersion(void); /* func 30 */
 
 void *PosGetInterruptVector(int intnum); /* func 35 */
 
+void PosGetFreeSpace(int drive,
+                     unsigned int *secperclu,
+                     unsigned int *numfreeclu,
+                     unsigned int *bytpersec,
+                     unsigned int *totclus); /* func 36 */
+
 int PosChangeDir(char *to); /* func 3b */
 
 int PosCreatFile(const char *name, /* func 3c */

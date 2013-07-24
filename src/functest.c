@@ -110,10 +110,10 @@ static int testBosReadCursorPosition(void)
     int cursorStart, cursorEnd, row, column;
 
     BosReadCursorPosition(0,
-                          &cursorStart,
-                          &cursorEnd,
-                          &row,
-                          &column);
+    &cursorStart,
+    &cursorEnd,
+    &row,
+    &column);
     printf("cursorStart is %d\n", cursorStart);
     printf("cursorEnd is %d\n", cursorEnd);
     printf("row is %d\n", row);
@@ -205,12 +205,12 @@ static int testDriveParms(void)
     for (x = 0x80; x < 0x84; x++)
     {
         rc = BosDriveParms(x,
-                           &tracks,
-                           &sectors,
-                           &heads,
-                           &attached,
-                           &parmtable,
-                           &drivetype);
+        &tracks,
+        &sectors,
+        &heads,
+        &attached,
+        &parmtable,
+        &drivetype);
         printf("rc is %d\n", rc);
         printf("tracks is %lu\n", tracks);
         printf("sectors is %lu\n", sectors);
@@ -284,12 +284,11 @@ static int testAbsoluteDiskRead(void)
 }
 /**/
 
-/*Test function for BosGetSystemTime*/
+/*Test function- to get the system time using BIOS call*/
 static int testBosGetSystemTime(void)
 {
     unsigned long ticks;
     unsigned long t1,t2,t3,t4,t5,t6,t7;
-
 
     ticks=BosGetSystemTime();
     t1=(ticks*1000)/182;
@@ -315,26 +314,27 @@ int Bcd2Int(unsigned char bcd)
 }
 /**/
 
-/*Test Function for BosGetSystemDate*/
+/*Test Function- to get the system date using BIOS call*/
 static int testBosGetSystemDate(void)
 {
     int c,y,m,d;
     int ret;
+
     ret=BosGetSystemDate(&c,&y,&m,&d);
     printf("Century %d \n",Bcd2Int(c));
     printf("Year %d \n",Bcd2Int(y));
     printf("Month %d \n",Bcd2Int(m));
     printf("Day %d \n",Bcd2Int(d));
     printf("Return Code is %d",ret);
-
 }
 /**/
 
-/*Testing function for PosGetSystemDate*/
+/*Testing function - to get the Date using PDOS call*/
 static int testPosGetSystemDate(void)
 {
     int y,m,d,dw;
     int ret=0;
+
     PosGetSystemDate(&y,&m,&d,&dw);
     printf("Year %d \n",y);
     printf("Month %d \n",m);
@@ -346,60 +346,81 @@ static int testPosGetSystemDate(void)
 }
 /**/
 
-/*Function to test PosGetSystemTime*/
+/*Test function - to get the time using PDOS call*/
 static int testPosGetSystemTime(void)
 {
     int hr,min,sec,hund;
     int ret=0;
+
     PosGetSystemTime(&hr,&min,&sec,&hund);
     printf("hour %d \n",hr);
     printf("minute %d \n",min);
     printf("seconds %d \n",sec);
     printf("hundreth %d \n",hund);
     printf("Return Code is %d",ret);
-    return 0;
 }
 /**/
 
-/*Test Delete a File*/
+/*Test function- Delete a File*/
 static int testPosDeleteFile(void)
 {
     int ret;
+
     ret=PosDeleteFile("c:\\temp.txt");
     printf("The Return code is %d \n",ret);
 }
 /**/
 
-/*Test Rename a file*/
+/*Test function- Rename a file*/
 static int testPosRenameFile(void)
 {
     int ret;
+
     ret=PosRenameFile("temp.txt","temp2.txt");
     printf("The Return code is %d \n",ret);
 }
 /**/
 
-/*Test Rename a file*/
+/*Test function - To get the attributes of a given file*/
 static int testPosGetFileAttributes(void)
 {
     int ret;
-    ret=PosGetFileAttributes("temp2.txt");
+    int attr;
+
+    ret=PosGetFileAttributes("refer.txt",&attr);
+    printf("The attribute of the file is x %d x \n",attr);
     printf("The Return code is %d \n",ret);
+}
+/**/
+
+/*Test function - To get the free space of a given hard disk*/
+static int testPosGetFreeSpace(void)
+{
+    unsigned int secperclu;
+    unsigned int numfreeclu;
+    unsigned int bytpersec;
+    unsigned int totclus;
+
+    PosGetFreeSpace(4,&secperclu,&numfreeclu,&bytpersec,&totclus);
+    printf("Sectors per cluster x %d x \n",secperclu);
+    printf("Number of free clusters x %d x \n",numfreeclu);
+    printf("Bytes per sector x %d x \n",bytpersec);
+    printf("Total Clusters x %d x \n",totclus);
 }
 /**/
 
 int main(void)
 {
-/*    testDriveParms();
-    testDisk(); */
-
-    /*testExtendedMemory()*/
+    /*testDriveParms();*/
+    /*testDisk();*/
+    /*testExtendedMemory();*/
     /*testGenericBlockDeviceRequest();*/
     /*testAbsoluteDiskRead();*/
     /*testPosGetSystemDate();*/
     /*testPosGetSystemTime();*/
     /*testPosDeleteFile();*/
-   /* testPosRenameFile();*/
-   testPosGetFileAttributes();
+    /*testPosRenameFile();*/
+    /*testPosGetFileAttributes();*/
+    testPosGetFreeSpace();
     return (0);
 }

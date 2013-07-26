@@ -1253,7 +1253,7 @@ void PosGetFreeSpace(int drive,
     {
         *secperclu=0xFFFF;
     }
-    return(0);
+    return;
 }
 /**/
 

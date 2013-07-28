@@ -1293,14 +1293,16 @@ int PosCreatFile(const char *name, int attrib, int *handle)
 {
     char filename[MAX_PATH];
     int fno;
+    char *orig;
 
+    orig = name;
     if (name[1] == ':')
     {
         name += 2;
     }
     if ((name[0] == '\\') || (name[0] == '/'))
     {
-        fno = fileCreat(name, attrib);
+        fno = fileCreat(orig, attrib);
     }
     else
     {

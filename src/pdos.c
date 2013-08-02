@@ -1326,14 +1326,23 @@ int PosOpenFile(const char *name, int mode, int *handle)
 {
     char filename[MAX_PATH];
     int fno;
+    int ret;
+    char *orig;
 
+    orig = name;
+
+    if(mode==1)
+    {
+        ret=PosCreatFile(name,0,handle);
+        return(ret);
+    }
     if (name[1] == ':')
     {
         name += 2;
     }
     if ((name[0] == '\\') || (name[0] == '/'))
     {
-        fno = fileOpen(name);
+        fno = fileOpen(orig);
     }
     else
     {
@@ -1422,6 +1431,9 @@ int PosDeleteFile(const char *name)
 {
     char filename[MAX_PATH];
     int ret;
+    char *orig;
+
+    orig = name;
 
     if(name[1] == ':')
     {
@@ -1429,7 +1441,7 @@ int PosDeleteFile(const char *name)
     }
     if ((name[0] == '\\') || (name[0] == '/'))
     {
-        ret = fileDelete(name);
+        ret = fileDelete(orig);
     }
     else
     {

@@ -1177,7 +1177,8 @@ void PosGetSystemDate(int *year, int *month, int *day, int *dw)
 }
 /**/
 
-/*Function to display time by converting ticks retrieved from BIOS call into timeformat*/
+/*Function to display time by converting ticks retrieved from BIOS 
+  call into timeformat*/
 void PosGetSystemTime(int *hour, int *minute, int *second, int *hundredths)
 {
     unsigned long ticks,t;
@@ -1702,7 +1703,8 @@ int PosRenameFile(const char *old, const char *new)
         new += 2;
     }
 
-    if ((old[0] == '\\') || (old[0] == '/') || (new[0] == '\\') || (new[0] == '/'))
+    if ((old[0] == '\\') || (old[0] == '/') || (new[0] == '\\') 
+        || (new[0] == '/'))
     {
         ret = fileRename(old,new);
     }

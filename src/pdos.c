@@ -1649,7 +1649,8 @@ int PosGetReturnCode(void)
 int PosFindFirst(char *pat, int attrib)
 {
     int ret;
-
+    FFBLK *ffblk;
+    
     attr = attrib;
     memset(dta, '\0', 0x15); /* clear out reserved area */
     make_ff(pat);
@@ -1663,11 +1664,26 @@ int PosFindFirst(char *pat, int attrib)
     {
         ret = 2;
     }
+
+    /*On multiple FindFirst calls the contents in the DTA are erased,
+      to avoid this the ff_pat formed by the current FindFirst call
+      is stored in a temporary buffer and set in DTA so that proper
+      data gets populated DTA*/
+    ffblk = dta;
+    ffblk->handle = ff_handle;
+    strcpy(ffblk->pat, ff_pat);
+
     return (ret);
 }
 
 int PosFindNext(void)
 {
+    FFBLK *ffblk;
+
+    ffblk = dta;
+    ff_handle = ffblk->handle;
+    strcpy(ff_pat, ffblk->pat);
+
     return (ff_search());
 }
 
@@ -1897,6 +1913,7 @@ static int ff_search(void)
                 return (0);
             }
         }
+
         ret = fileRead(ff_handle, buf, sizeof buf);
     }
     fileClose(ff_handle);
@@ -2561,7 +2578,6 @@ static int fileClose(int fno)
 static int fileRead(int fno, void *buf, size_t szbuf)
 {
     size_t ret;
-
     ret = fatReadFile(fhandle[fno].fatptr, &fhandle[fno].fatfile, buf, szbuf);
     return (ret);
 }

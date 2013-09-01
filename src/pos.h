@@ -207,3 +207,10 @@ typedef struct{
     void *transferaddress;
 }DP;
 /**/
+
+/*Structure for tempDTA in case of multiple PosFindFirst Calls*/
+typedef struct { 
+    int handle; 
+    char pat[20]; 
+}FFBLK;
+/**/

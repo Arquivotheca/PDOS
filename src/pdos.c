@@ -2668,11 +2668,6 @@ static int fileGetAttrib(const char *fnm,int *attr)
     int rc;
     char tempf[FILENAME_MAX];
 
-    if(fnm[1] == ':')
-    {
-        fnm += 2;
-    }
-
     strcpy(tempf, fnm);
     upper_str(tempf);
     fnm = tempf;

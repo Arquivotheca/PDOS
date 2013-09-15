@@ -974,9 +974,10 @@ static void fatChain(FAT *fat, FATFILE *fatfile)
     return;
 }
 
-/*fatDeleteFile*/
-/*Delete a file by searching for its start sector and setting all the clusters to point to zero,
-by calling the fatnuke function
+
+/*
+  Delete a file by searching for its start sector and setting all the 
+  clusters to point to zero,by calling the fatnuke function
 */
 int fatDeleteFile(FAT *fat,const char *fnm)
 {
@@ -1000,8 +1001,9 @@ int fatDeleteFile(FAT *fat,const char *fnm)
 }
 /**/
 
-/*fatRenameFile
-To rename a given file from old to new*/
+/*
+  To rename a given file from old to new
+*/
 int fatRenameFile(FAT *fat,const char *old,const char *new)
 {
     FATFILE fatfile;

@@ -232,6 +232,7 @@ int fatOpenFile(FAT *fat, const char *fnm, FATFILE *fatfile)
         fatfile->lastSectors = fat->rootsize;
         fat->currcluster = 0;
         fatfile->dir = 1;
+        fatfile->attr=0x10;
     }
     else
     {

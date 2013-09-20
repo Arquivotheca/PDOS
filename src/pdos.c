@@ -1724,7 +1724,50 @@ int PosRenameFile(const char *old, const char *new)
 
 int PosTruename(char *prename,char *postname)
 {
-    strcpy(postname,prename);
+    if (prename[0] == '\\')
+    {
+        postname[0] = 'A' + currentDrive;
+        strcpy(postname + 1,":");
+        strcat(postname,prename);
+        upper_str(postname);     
+    }
+    
+    else if((strlen(prename) >= 3) 
+            && (memcmp(prename + 1, ":\\", 2) == 0)
+           )
+    { 
+        strcpy(postname,prename);
+        upper_str(postname); 
+    }    
+    
+    else if (strlen(prename) >= 3 && prename[1] == ':' 
+             && prename[2] != '\\')
+    {
+        memcpy(postname, prename, 2);
+        memcpy(postname + 2, "\\", 2);
+        strcat(postname,cwd);
+        if(strcmp(cwd,"")!= 0)
+        {
+            strcat(postname,"\\");
+        }
+        strcat(postname,prename);
+        upper_str(postname);  
+    }
+    
+    else
+    {
+        postname[0] = 'A' + currentDrive;
+        strcpy(postname + 1,":");
+        strcat(postname,"\\");
+        strcat(postname,cwd);
+        if(strcmp(cwd,"")!= 0)
+        {
+            strcat(postname,"\\");
+        }
+        strcat(postname,prename);
+        upper_str(postname);     
+    }
+   
     return(0);
 }
 

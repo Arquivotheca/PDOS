@@ -1731,11 +1731,9 @@ int PosRenameFile(const char *old, const char *new)
 */
 int PosTruename(char *prename,char *postname)
 {
-    char *cwd; 
-
     /*
      The user only provides the <folder-name>
-     e.g. from\1.txt the function corrects it to
+     e.g. \from\1.txt the function corrects it to
      e.g. c:\from\1.txt.
      */
     if (prename[0] == '\\')
@@ -1747,8 +1745,8 @@ int PosTruename(char *prename,char *postname)
     }
 
     /*
-     The user provides only <volume-name>
-     e.g. c:\.
+     The user provides the file name in full format
+     e.g. c:\from\1.txt
      */
     else if((strlen(prename) >= 3) 
             && (memcmp(prename + 1, ":\\", 2) == 0)
@@ -1764,6 +1762,8 @@ int PosTruename(char *prename,char *postname)
     else if (strlen(prename) >= 3 && prename[1] == ':' 
              && prename[2] != '\\')
     {
+        char *cwd;
+
         memcpy(postname, prename, 2);
         memcpy(postname + 2, "\\", 2);
         /*
@@ -1785,14 +1785,13 @@ int PosTruename(char *prename,char *postname)
      The user provides only the <file-name>
      e.g. 1.txt in that case the drive name,'\' 
      and currect working directory needs to be
-     appended e.g. c:\from\1.txt.
+     prepended e.g. c:\from\1.txt.
      */
     else
     {
         postname[0] = 'A' + currentDrive;
         strcpy(postname + 1,":");
         strcat(postname,"\\");
-        cwd = disks[toupper(prename[0])-'A'].cwd;
         strcat(postname,cwd);
         if(strcmp(cwd,"")!= 0)
         {

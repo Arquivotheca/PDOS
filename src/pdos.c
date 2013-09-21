@@ -1722,8 +1722,22 @@ int PosRenameFile(const char *old, const char *new)
     return (ret);
 }
 
+/*
+ Different cases for PosTrueName The user can input
+ directory name,file name in a format convinent to 
+ user in each the PosTrueName must prepend or append the 
+ appropriate directory name,drive name and current working 
+ directory. 
+*/
 int PosTruename(char *prename,char *postname)
 {
+    char *cwd; 
+
+    /*
+     The user only provides the <folder-name>
+     e.g. from\1.txt the function corrects it to
+     e.g. c:\from\1.txt.
+     */
     if (prename[0] == '\\')
     {
         postname[0] = 'A' + currentDrive;
@@ -1731,20 +1745,33 @@ int PosTruename(char *prename,char *postname)
         strcat(postname,prename);
         upper_str(postname);     
     }
-    
+
+    /*
+     The user provides only <volume-name>
+     e.g. c:\.
+     */
     else if((strlen(prename) >= 3) 
             && (memcmp(prename + 1, ":\\", 2) == 0)
            )
     { 
         strcpy(postname,prename);
         upper_str(postname); 
-    }    
+    }
     
+    /*
+     The user misses the '\' e.g. c:1.txt.
+     */
     else if (strlen(prename) >= 3 && prename[1] == ':' 
              && prename[2] != '\\')
     {
         memcpy(postname, prename, 2);
         memcpy(postname + 2, "\\", 2);
+        /*
+         The current working directory must be fetched from
+         the disk array so that the working directory does
+         not change on drive switch.
+         */
+        cwd = disks[toupper(prename[0])-'A'].cwd;
         strcat(postname,cwd);
         if(strcmp(cwd,"")!= 0)
         {
@@ -1754,11 +1781,18 @@ int PosTruename(char *prename,char *postname)
         upper_str(postname);  
     }
     
+    /*
+     The user provides only the <file-name>
+     e.g. 1.txt in that case the drive name,'\' 
+     and currect working directory needs to be
+     appended e.g. c:\from\1.txt.
+     */
     else
     {
         postname[0] = 'A' + currentDrive;
         strcpy(postname + 1,":");
         strcat(postname,"\\");
+        cwd = disks[toupper(prename[0])-'A'].cwd;
         strcat(postname,cwd);
         if(strcmp(cwd,"")!= 0)
         {

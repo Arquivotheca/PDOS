@@ -1750,7 +1750,7 @@ int PosTruename(char *prename,char *postname)
         {
             strcat(postname,"\\");
         }
-        strcat(postname,prename);
+        strcat(postname,prename+2);
         upper_str(postname);  
     }
     

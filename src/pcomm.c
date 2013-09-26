@@ -53,6 +53,7 @@ static void dodir(char *pattern);
 static void dover(void);
 static void changedir(char *to);
 static void changedisk(int drive);
+static void dodel(char *fnm);
 static int ins_strcmp(char *one, char *two);
 static int ins_strncmp(char *one, char *two, size_t len);
 static void readAutoExec(void);
@@ -188,6 +189,10 @@ static void processInput(void)
     {
         PosReboot();
     }
+    else if(ins_strcmp(buf, "del")==0)
+    {
+        dodel(p);
+    }
     else if ((strlen(buf) == 2) && (buf[1] == ':'))
     {
         changedisk(buf[0]);
@@ -238,6 +243,36 @@ static void dotype(char *file)
     }
     return;
 }
+
+/*Delete Command*/
+static void dodel(char *fnm)
+{
+    int ret;
+    int attr;
+   
+    ret=PosGetFileAttributes(fnm,&attr);
+    if(ret==2)
+    {   
+        printf("File Not found \n");
+        printf("No files removed \n");
+    }
+    else
+    {
+        printf("Do you want to delete the file ? (YES/NO) ");
+        fgets(buf,5,stdin);
+        if(toupper(buf[0])=='Y')
+        {
+            PosDeleteFile(fnm);
+        }
+        else
+        {
+            printf("No Files removed \n");
+        }
+    }
+    
+    return;
+}
+/**/
 
 static void dodir(char *pattern)
 {

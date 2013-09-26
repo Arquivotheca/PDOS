@@ -1725,7 +1725,7 @@ int PosRenameFile(const char *old, const char *new)
 /*
  Different cases for PosTrueName The user can input
  directory name,file name in a format convinent to 
- user in each the PosTrueName must prepend or append the 
+ user in each case the PosTrueName must prepend or append the 
  appropriate directory name,drive name and current working 
  directory. 
 */
@@ -2744,8 +2744,57 @@ static int fileGetAttrib(const char *fnm,int *attr)
     int rc;
     char tempf[FILENAME_MAX];
 
-    strcpy(tempf, fnm);
-    upper_str(tempf);
+    if (fnm[0] == '\\')
+    {
+        tempf[0] = 'A' + currentDrive;
+        strcpy(tempf + 1,":");
+        strcat(tempf,fnm);
+        upper_str(tempf);     
+    }
+
+    else if((strlen(fnm) >= 3) 
+       && (memcmp(fnm + 1, ":\\", 2) == 0))
+    {
+        strcpy(tempf, fnm);
+        upper_str(tempf);
+    }
+
+    else if (strlen(fnm) >= 3 && fnm[1] == ':' 
+             && fnm[2] != '\\')
+    {
+        char *cwd;
+
+        memcpy(tempf, fnm, 2);
+        memcpy(tempf + 2, "\\", 2);
+        /*
+         The current working directory must be fetched from
+         the disk array so that the working directory does
+         not change on drive switch.
+         */
+        cwd = disks[toupper(fnm[0])-'A'].cwd;
+        strcat(tempf,cwd);
+        if(strcmp(cwd,"")!= 0)
+        {
+            strcat(tempf,"\\");
+        }
+        strcat(tempf,fnm + 2);
+        upper_str(tempf);  
+    }
+
+    else
+    {
+        tempf[0] = 'A' + currentDrive;
+        strcpy(tempf + 1,":");
+        strcat(tempf,"\\");
+        strcat(tempf,cwd);
+        if(strcmp(cwd,"")!= 0)
+        {
+            strcat(tempf,"\\");
+        }
+        strcat(tempf,fnm);
+        upper_str(tempf);     
+    }
+
     fnm = tempf;
     p = strchr(fnm, ':');
     if (p == NULL)
@@ -2759,7 +2808,7 @@ static int fileGetAttrib(const char *fnm,int *attr)
         drive = toupper(drive) - 'A';
         p++;
     }
-
+    
     rc = fatGetFileAttributes(&disks[drive].fat, p,attr);
     return (rc);
 }

@@ -24,7 +24,7 @@
 
 static int fatEndCluster(FAT *fat, unsigned int cluster);
 static void fatGetStartCluster(FAT *fat, const char *fnm);
-static void fatNextSearch(FAT *fat, char *search, const char **upto, int *last);
+static void fatNextSearch(FAT *fat, char *search, const char **upto);
 static void fatRootSearch(FAT *fat, char *search);
 static void fatDirSearch(FAT *fat, char *search);
 static void fatRootUpdate(FAT *fat, char *search, FATFILE *fatfile);
@@ -168,7 +168,6 @@ int fatCreatFile(FAT *fat, const char *fnm, FATFILE *fatfile, int attrib)
 {
     char search[11];
     const char *upto;
-    int last;
     int root = 0;
 
     fat->notfound = 0;
@@ -178,9 +177,9 @@ int fatCreatFile(FAT *fat, const char *fnm, FATFILE *fatfile, int attrib)
     }
     upto = fnm;
     fat->currcluster = 0;
-    fatNextSearch(fat, search, &upto, &last);
+    fatNextSearch(fat, search, &upto);
     if (fat->notfound) return (-3);
-    if (!last)
+    if (!fat->last)
     {
         fatRootSearch(fat, search);
         if (fat->notfound) return (-3);
@@ -189,11 +188,11 @@ int fatCreatFile(FAT *fat, const char *fnm, FATFILE *fatfile, int attrib)
     {
         root = 1;
     }
-    while (!last)
+    while (!fat->last)
     {
-        fatNextSearch(fat, search, &upto, &last);
+        fatNextSearch(fat, search, &upto);
         if (fat->notfound) return (-3);
-        if (!last)
+        if (!fat->last)
         {
             fatDirSearch(fat, search);
             if (fat->notfound) return (-3);
@@ -478,15 +477,14 @@ static void fatGetStartCluster(FAT *fat, const char *fnm)
 {
     char search[11];
     const char *upto = fnm;
-    int last;
 
     fat->currcluster = 0;
-    fatNextSearch(fat, search, &upto, &last);
+    fatNextSearch(fat, search, &upto);
     if (fat->notfound) return;
     fatRootSearch(fat, search);
-    while (!last)
+    while (!fat->last)
     {
-        fatNextSearch(fat, search, &upto, &last);
+        fatNextSearch(fat, search, &upto);
         if (fat->notfound) return;
         fatDirSearch(fat, search);
     }
@@ -506,15 +504,15 @@ static void fatGetStartCluster(FAT *fat, const char *fnm)
  * *upto - the bit of the filename to search next time
  * search - set to the portion of the filename we should look
  *          for in the current directory
- * *last - set to 1 or 0 depending on whether this was the last
- *         portion of the filename.
+ * fat->last - set to 1 or 0 depending on whether this was the last
+ *         portion of the filename.(int last defined in struct FAT)
  *
  * e.g. if the original filename was \FRED\MARY\JOHN.TXT and
  * *upto was pointing to MARY... on input, search will get
  * "MARY            " in it, and *upto will point to "JOHN...".
  */
 
-static void fatNextSearch(FAT *fat, char *search, const char **upto, int *last)
+static void fatNextSearch(FAT *fat, char *search, const char **upto)
 {
     const char *p;
     const char *q;
@@ -536,11 +534,11 @@ static void fatNextSearch(FAT *fat, char *search, const char **upto, int *last)
     if (p == NULL)
     {
         p = *upto + strlen(*upto);
-        *last = 1;
+        fat->last = 1;
     }
     else
     {
-        *last = 0;
+        fat->last = 0;
     }
     if ((p - *upto) > 12)
     {
@@ -570,7 +568,7 @@ static void fatNextSearch(FAT *fat, char *search, const char **upto, int *last)
         memcpy(search, *upto, p - *upto);
         memset(search + (p - *upto), ' ', 11 - (p - *upto));
     }
-    if (*last)
+    if (fat->last)
     {
         *upto = p;
     }
@@ -721,7 +719,8 @@ static void fatDirSectorSearch(FAT *fat,
             if (memcmp(p, search, 11) == 0)
             {
                 fat->currcluster = p[0x1a] | (p[0x1a + 1] << 8);
-                if(fat->operation==FAT_DELETE)
+               
+                if(fat->operation==FAT_DELETE && fat->last)
                 {
                     fatNuke(fat,fat->currcluster);
                     *p=0xe5;

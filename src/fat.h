@@ -64,6 +64,7 @@ typedef struct {
     void (*writeLogical)(void *diskptr, long sector, void *buf);
     void *parm;
     char new_file[12]; /*new filename for rename*/
+    int last;
 } FAT;
 
 void fatDefaults(FAT *fat);

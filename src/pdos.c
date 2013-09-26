@@ -138,6 +138,7 @@ static int pdos16MemmgrReallocPages(MEMMGR *memmgr,
 static DISKINFO disks[MAXDISKS];
 static DISKINFO bootinfo;
 static int currentDrive;
+static int tempDrive;
 static int bootDrivePhysical;
 static int bootDriveLogical;
 static int lastDrive;
@@ -2665,27 +2666,13 @@ static int fileRename(const char *old,const char *new)
 static int fileGetAttrib(const char *fnm,int *attr)
 {
     int x;
-    const char *p;
     int drive;
     int rc;
     char tempf[FILENAME_MAX];
 
     formatcwd(fnm,tempf);
     fnm = tempf;
-    p = strchr(fnm, ':');
-    if (p == NULL)
-    {
-        p = fnm;
-        drive = currentDrive;
-    }
-    else
-    {
-        drive = *(p - 1);
-        drive = toupper(drive) - 'A';
-        p++;
-    }
-    
-    rc = fatGetFileAttributes(&disks[drive].fat, p,attr);
+    rc = fatGetFileAttributes(&disks[tempDrive].fat,tempf + 2,attr);
     return (rc);
 }
 
@@ -3137,8 +3124,7 @@ static void formatcwd(char *input,char *output)
     {
         output[0] = 'A' + currentDrive;
         strcpy(output + 1,":");
-        strcat(output,input);
-        upper_str(input);     
+        strcat(output,input);   
     }
 
     /*
@@ -3150,7 +3136,6 @@ static void formatcwd(char *input,char *output)
            )
     { 
         strcpy(output,input);
-        upper_str(output); 
     }
     
     /*
@@ -3175,7 +3160,6 @@ static void formatcwd(char *input,char *output)
             strcat(output,"\\");
         }
         strcat(output,input+2);
-        upper_str(output);  
     }
     
     /*
@@ -3195,8 +3179,9 @@ static void formatcwd(char *input,char *output)
             strcat(output,"\\");
         }
         strcat(output,input);
-        upper_str(output);     
     }
+    tempDrive=toupper(output[0]) - 'A';
+    upper_str(output);  
     return;
 }   
 /**/

@@ -116,6 +116,7 @@ static int writeLBA(void *buf,
                     unsigned long sector);
 static void analyseBpb(DISKINFO *diskinfo, unsigned char *bpb);
 int pdosstrt(void);
+static void formatcwd(char *input,char *output);
 
 static MEMMGR memmgr;
 
@@ -1722,85 +1723,10 @@ int PosRenameFile(const char *old, const char *new)
     return (ret);
 }
 
-/*
- Different cases for PosTrueName The user can input
- directory name,file name in a format convinent to 
- user in each case the PosTrueName must prepend or append the 
- appropriate directory name,drive name and current working 
- directory. 
-*/
+
 int PosTruename(char *prename,char *postname)
 {
-    /*
-     The user only provides the <folder-name>
-     e.g. \from\1.txt the function corrects it to
-     e.g. c:\from\1.txt.
-     */
-    if (prename[0] == '\\')
-    {
-        postname[0] = 'A' + currentDrive;
-        strcpy(postname + 1,":");
-        strcat(postname,prename);
-        upper_str(postname);     
-    }
-
-    /*
-     The user provides the file name in full format
-     e.g. c:\from\1.txt
-     */
-    else if((strlen(prename) >= 3) 
-            && (memcmp(prename + 1, ":\\", 2) == 0)
-           )
-    { 
-        strcpy(postname,prename);
-        upper_str(postname); 
-    }
-    
-    /*
-     The user misses the '\' e.g. c:1.txt.
-     */
-    else if (strlen(prename) >= 3 && prename[1] == ':' 
-             && prename[2] != '\\')
-    {
-        char *cwd;
-
-        memcpy(postname, prename, 2);
-        memcpy(postname + 2, "\\", 2);
-        /*
-         The current working directory must be fetched from
-         the disk array so that the working directory does
-         not change on drive switch.
-         */
-        cwd = disks[toupper(prename[0])-'A'].cwd;
-        strcat(postname,cwd);
-        if(strcmp(cwd,"")!= 0)
-        {
-            strcat(postname,"\\");
-        }
-        strcat(postname,prename+2);
-        upper_str(postname);  
-    }
-    
-    /*
-     The user provides only the <file-name>
-     e.g. 1.txt in that case the drive name,'\' 
-     and currect working directory needs to be
-     prepended e.g. c:\from\1.txt.
-     */
-    else
-    {
-        postname[0] = 'A' + currentDrive;
-        strcpy(postname + 1,":");
-        strcat(postname,"\\");
-        strcat(postname,cwd);
-        if(strcmp(cwd,"")!= 0)
-        {
-            strcat(postname,"\\");
-        }
-        strcat(postname,prename);
-        upper_str(postname);     
-    }
-   
+    formatcwd(prename,postname);
     return(0);
 }
 
@@ -2744,57 +2670,7 @@ static int fileGetAttrib(const char *fnm,int *attr)
     int rc;
     char tempf[FILENAME_MAX];
 
-    if (fnm[0] == '\\')
-    {
-        tempf[0] = 'A' + currentDrive;
-        strcpy(tempf + 1,":");
-        strcat(tempf,fnm);
-        upper_str(tempf);     
-    }
-
-    else if((strlen(fnm) >= 3) 
-       && (memcmp(fnm + 1, ":\\", 2) == 0))
-    {
-        strcpy(tempf, fnm);
-        upper_str(tempf);
-    }
-
-    else if (strlen(fnm) >= 3 && fnm[1] == ':' 
-             && fnm[2] != '\\')
-    {
-        char *cwd;
-
-        memcpy(tempf, fnm, 2);
-        memcpy(tempf + 2, "\\", 2);
-        /*
-         The current working directory must be fetched from
-         the disk array so that the working directory does
-         not change on drive switch.
-         */
-        cwd = disks[toupper(fnm[0])-'A'].cwd;
-        strcat(tempf,cwd);
-        if(strcmp(cwd,"")!= 0)
-        {
-            strcat(tempf,"\\");
-        }
-        strcat(tempf,fnm + 2);
-        upper_str(tempf);  
-    }
-
-    else
-    {
-        tempf[0] = 'A' + currentDrive;
-        strcpy(tempf + 1,":");
-        strcat(tempf,"\\");
-        strcat(tempf,cwd);
-        if(strcmp(cwd,"")!= 0)
-        {
-            strcat(tempf,"\\");
-        }
-        strcat(tempf,fnm);
-        upper_str(tempf);     
-    }
-
+    formatcwd(fnm,tempf);
     fnm = tempf;
     p = strchr(fnm, ':');
     if (p == NULL)
@@ -3243,3 +3119,84 @@ unsigned int PosAbsoluteDiskRead(int drive, unsigned long start_sector,
 }
 /**/
 
+/*
+ Different cases for cwd The user can input
+ directory name,file name in a format convinent to 
+ user in each case the cwd must prepended or appended 
+ with the appropriate directory name,drive name and current 
+ working directory. 
+*/
+static void formatcwd(char *input,char *output)
+{
+   /*
+     The user only provides the <folder-name>
+     e.g. \from\1.txt the function corrects it to
+     e.g. c:\from\1.txt.
+     */
+    if (input[0] == '\\')
+    {
+        output[0] = 'A' + currentDrive;
+        strcpy(output + 1,":");
+        strcat(output,input);
+        upper_str(input);     
+    }
+
+    /*
+     The user provides the file name in full format
+     e.g. c:\from\1.txt
+     */
+    else if((strlen(input) >= 3) 
+            && (memcmp(input + 1, ":\\", 2) == 0)
+           )
+    { 
+        strcpy(output,input);
+        upper_str(output); 
+    }
+    
+    /*
+     The user misses the '\' e.g. c:1.txt.
+     */
+    else if (strlen(input) >= 3 && input[1] == ':' 
+             && input[2] != '\\')
+    {
+        char *cwd;
+
+        memcpy(output, input, 2);
+        memcpy(output + 2, "\\", 2);
+        /*
+         The current working directory must be fetched from
+         the disk array so that the working directory does
+         not change on drive switch.
+         */
+        cwd = disks[toupper(input[0])-'A'].cwd;
+        strcat(output,cwd);
+        if(strcmp(cwd,"")!= 0)
+        {
+            strcat(output,"\\");
+        }
+        strcat(output,input+2);
+        upper_str(output);  
+    }
+    
+    /*
+     The user provides only the <file-name>
+     e.g. 1.txt in that case the drive name,'\' 
+     and currect working directory needs to be
+     prepended e.g. c:\from\1.txt.
+     */
+    else
+    {
+        output[0] = 'A' + currentDrive;
+        strcpy(output + 1,":");
+        strcat(output,"\\");
+        strcat(output,cwd);
+        if(strcmp(cwd,"")!= 0)
+        {
+            strcat(output,"\\");
+        }
+        strcat(output,input);
+        upper_str(output);     
+    }
+    return;
+}   
+/**/

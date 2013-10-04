@@ -51,9 +51,9 @@ static void putPrompt(void);
 static void dotype(char *file);
 static void dodir(char *pattern);
 static void dover(void);
+static void dodel(char *fnm);
 static void changedir(char *to);
 static void changedisk(int drive);
-static void dodel(char *fnm);
 static int ins_strcmp(char *one, char *two);
 static int ins_strncmp(char *one, char *two, size_t len);
 static void readAutoExec(void);
@@ -244,36 +244,31 @@ static void dotype(char *file)
     return;
 }
 
-/*Delete Command*/
 static void dodel(char *fnm)
-{
+{    
     int ret;
-    int attr;
-   
-    ret=PosGetFileAttributes(fnm,&attr);
-    if(ret==2)
-    {   
-        printf("File Not found \n");
-        printf("No files removed \n");
-    }
-    else
+    char *dta;
+
+    dta=PosGetDTA();
+    if(*fnm=='\0')
     {
-        printf("Do you want to delete the file ? (YES/NO) ");
-        fgets(buf,5,stdin);
-        if(toupper(buf[0])=='Y')
-        {
-            PosDeleteFile(fnm);
-        }
-        else
-        {
-            printf("No Files removed \n");
-        }
+        printf("Please Specify the filename \n");
+        return;
     }
-    
+    ret=PosFindFirst(fnm,0x10);
+    if(ret==2)
+    {
+        printf("File not found \n");
+        printf("No Files Deleted \n");
+        return;
+    }
+    while(ret==0)
+    {           
+        PosDeleteFile(dta+0x1e);  
+        ret=PosFindNext();
+    }
     return;
 }
-/**/
-
 static void dodir(char *pattern)
 {
     char *dta;

@@ -9,6 +9,7 @@
 #define DIRENT_AVA 0x00         /**/
 #define DIRENT_IC 0x05          /**/ 
 #define DIRENT_DOT 0x2E         /**/
+#define DIRENT_DEL 0xE5         /**/
 /**/
 
 /**/
@@ -61,7 +62,8 @@ typedef struct {
         written in the last sector. */
     unsigned int currentCluster; /* cluster currently up to for
         reading. */
-    unsigned char datetime[4];
+    unsigned int time;
+    unsigned int date;
     unsigned int attr;
     unsigned int sectorCount; /* how many sectors in the current cluster */
     unsigned long sectorStart; /* starting sector for this cluster */
@@ -109,7 +111,7 @@ typedef struct {
     int last;
 } FAT;
 
-/*Structure for directory entry */
+/*Structure for Directory Entry */
 typedef struct {
     unsigned char file_name[8];          /**/
     unsigned char file_ext[3];           /**/ 
@@ -120,8 +122,8 @@ typedef struct {
     unsigned char create_date[2];        /**/
     unsigned char last_access[2];        /**/
     unsigned char access_rights[2];      /**/
-    unsigned char last_modifiedtime[2];  /**/
-    unsigned char last_modifieddate[2];  /**/
+    unsigned char last_modtime[2];  /**/
+    unsigned char last_moddate[2];  /**/
     unsigned char start_cluster[2];      /**/
     unsigned char file_size[4];          /**/
 }DIRENT;

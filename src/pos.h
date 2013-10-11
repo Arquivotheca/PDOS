@@ -233,8 +233,10 @@ typedef struct {
     int file_time;         /*file time(0x16)*/
     int file_date;         /*file date(0x18)*/
     long file_size;        /*file size(0x1A)*/
-    char file_name[13];    /*ASCIIZ filename and extension in
+    char file_name[13];    /*ASCIIZ file name and extension in
                              form NAME.EXT with blanks stripped
-                             (0x1E)*/
+                             0x1E)*/
+
 }DTA;
 /**/
+

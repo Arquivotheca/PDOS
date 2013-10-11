@@ -457,10 +457,10 @@ size_t fatWriteFile(FAT *fat, FATFILE *fatfile, void *buf, size_t szbuf)
                    bbuf);
 
     d = (DIRENT *) (bbuf + fatfile->dirOffset);    
-    d->file_size[0]=fatfile->totbytes & 0xfff;
-    d->file_size[1]=(fatfile->totbytes >> 8) & 0xfff;
-    d->file_size[2]=(fatfile->totbytes >> 16) & 0xfff;
-    d->file_size[3]=(fatfile->totbytes >> 24)  & 0xfff;    
+    d->file_size[0]=fatfile->totbytes & 0xff;
+    d->file_size[1]=(fatfile->totbytes >> 8) & 0xff;
+    d->file_size[2]=(fatfile->totbytes >> 16) & 0xff;
+    d->file_size[3]=(fatfile->totbytes >> 24)  & 0xff;    
 
     fatWriteLogical(fat,
                     fatfile->dirSect,
@@ -719,7 +719,7 @@ static void fatDirSectorSearch(FAT *fat,
         {
             if (memcmp(p, search, 11) == 0)
             {
-                fat->currcluster = p->start_cluster[0] | (p->start_cluster[1] << 8);
+                fat->currcluster = p->start_cluster[0] | ((unsigned int) p->start_cluster[1] << 8);
                
                 if(fat->operation==FAT_DELETE && fat->last)
                 {
@@ -743,11 +743,11 @@ static void fatDirSectorSearch(FAT *fat,
                                     | ((unsigned long)p->file_size[3] << 24);
                     fatfile->attr = p->file_attr;
                        
-                    fatfile->time= p->last_modifiedtime[0] 
-                    | ((unsigned int) p->last_modifiedtime[1] << 8);
+                    fatfile->time= p->last_modtime[0] 
+                    | ((unsigned int) p->last_modtime[1] << 8);
                     
-                    fatfile->date= p->last_modifieddate[0] 
-                    | ((unsigned int) p->last_modifieddate[1] << 8);
+                    fatfile->date= p->last_moddate[0] 
+                    | ((unsigned int) p->last_moddate[1] << 8);
                   
                     return;
                 }
@@ -815,13 +815,11 @@ static void fatDirSectorUpdate(FAT *fat,
                       (sizeof(p->file_name)+sizeof(p->file_ext)));
                 p->start_cluster[1] = (fat->currcluster >> 8) & 0xff;
                 p->start_cluster[0] = fat->currcluster & 0xff;
-                /* p[0x0b] = attrib; */ /* +++ */
-                /* p[0x16], len 4 = datetime */ /* +++ */
                 fatfile->totbytes = 0;
                 p->file_size[0] = fatfile->totbytes;
-                p->file_size[1] = 0;
-                p->file_size[2] = 0;
-                p->file_size[3] = 0;
+                p->file_size[1] = (fatfile->totbytes >> 8) & 0xff ;
+                p->file_size[2] = (fatfile->totbytes >> 16) & 0xff ;
+                p->file_size[3] = (fatfile->totbytes >> 24) & 0xff ;
                 fatfile->dirSect = startSector + x;
                 
                 fatfile->dirOffset = ((char*)p - buf);

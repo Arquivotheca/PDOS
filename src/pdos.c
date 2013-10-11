@@ -1914,17 +1914,16 @@ static int ff_search(void)
             {
                 if ((p != NULL) && (*p == '.')) *p = '\0';
                 dta->attrib = dirent->fileattr; /* attribute */
-                dta->file_time = dirent->last_modifiedtime[0]
-                | ((unsigned int)dirent->last_modifiedtime[1] << 8);
-                 dta->file_date = dirent->last_modifieddate[0]
-                | ((unsigned int)dirent->last_modifieddate[1] << 8);
+                dta->file_time = dirent->last_modtime[0]
+                | ((unsigned int)dirent->last_modtime[1] << 8);
+                 dta->file_date = dirent->last_moddate[0]
+                | ((unsigned int)dirent->last_moddate[1] << 8);
                 dta->file_size = dirent->file_size[0]
                 | ((unsigned long)dirent->file_size[1] << 8)
                 | ((unsigned long)dirent->file_size[2] << 16)
                 | ((unsigned long)dirent->file_size[3] << 24);
                               
-                /*memcpy(dta + 0x1e, buf, 11);
-                dta[0x1e + 11] = '\0';*/
+        
                 memset(dta->filename, '\0', sizeof(dta->filename));
                 strcpy(dta->filename, file);
                 return (0);

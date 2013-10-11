@@ -31,6 +31,7 @@
 #include "dow.h"
 
 #define MAX_PATH 120
+#define DOS_VERSION 0x04
 
 typedef struct {
     int env;
@@ -162,8 +163,12 @@ static char ff_pat[FILENAME_MAX];
 
 static char shell[100] = "";
 static int ff_handle;
+static DTA origdta;
+/*
 static char origdta[128];
 static char *dta = origdta;
+*/
+static DTA *dta =&origdta;
 static int debugcnt = 0;
 static void *exec_pstart;
 static void *exec_c_api;
@@ -1221,7 +1226,7 @@ unsigned int PosGetDosVersion(void)
     int version;
 
     /* set to 4.00 */
-    version = (0x00 << 8) | 0x04;
+    version = (0x00 << 8) | DOS_VERSION;
     return (version);
 }
 
@@ -1856,7 +1861,7 @@ static void scrunchf(char *dest, char *new)
             new += 3;
         }
         strcat(dest, "\\");
-        strcat(dest, new);
+        strcat(dest, new);  
     }
     return;
 }
@@ -1867,14 +1872,15 @@ static int ff_search(void)
     unsigned char buf[32];
     char file[13];
     char *p;
+    DIRENT dirent;
 
-    ret = fileRead(ff_handle, buf, sizeof buf);
-    while ((ret == sizeof buf) && (buf[0] != '\0'))
+    ret = fileRead(ff_handle,&dirent, sizeof dirent);
+    while ((ret == sizeof dirent) && (dirent->file_name[0] != '\0'))
     {
-        if (buf[0] != 0xe5)
+        if (dirent->file_name[0] != DIRENT_DEL)
         {
-            memcpy(file, buf, 8);
-            file[8] = '\0';
+            memcpy(file, dirent->file_name, sizeof(dirent->file_name));
+            file[sizeof(dirent->file_name)] = '\0';
             p = strchr(file, ' ');
             if (p != NULL)
             {
@@ -1885,8 +1891,8 @@ static int ff_search(void)
                 p = file + strlen(file);
             }
             *p++ = '.';
-            memcpy(p, buf + 8, 3);
-            p[3] = '\0';
+            memcpy(p, dirent->file_name,sizeof(dirent->file_ext));
+            p[sizeof(dirent->file_ext)] = '\0';
             p = strchr(file, ' ');
             if (p != NULL)
             {
@@ -1896,30 +1902,36 @@ static int ff_search(void)
 
                 /* if it is not a directory, or they asked for
                 directories, then that is OK */
-                && (((buf[0x0b] & 0x10) == 0)
-                    || ((attr & 0x10) != 0))
+                && (((dirent->file_attr & DIRENT_SUBDIR) == 0)
+                    || ((attr & DIRENT_SUBDIR) != 0))
 
                 /* if it is not a volume label, or they asked
                 for volume labels, then that is OK */
-                && (((buf[0x0b] & 0x08) == 0)
-                    || ((attr & 0x08) != 0))
+                && (((dirent->file_attr & DIRENT_EXTRAB3) == 0)
+                    || ((attr & DIRENT_EXTRAB3) != 0))
 
             )
             {
                 if ((p != NULL) && (*p == '.')) *p = '\0';
-                dta[0x15] = buf[0x0b]; /* attribute */
-                memcpy(dta + 0x16, buf + 0x16, 2); /* time */
-                memcpy(dta + 0x18, buf + 0x18, 2); /* time */
-                memcpy(dta + 0x1a, buf + 0x1c, 4); /* file size */
+                dta->attrib = dirent->fileattr; /* attribute */
+                dta->file_time = dirent->last_modifiedtime[0]
+                | ((unsigned int)dirent->last_modifiedtime[1] << 8);
+                 dta->file_date = dirent->last_modifieddate[0]
+                | ((unsigned int)dirent->last_modifieddate[1] << 8);
+                dta->file_size = dirent->file_size[0]
+                | ((unsigned long)dirent->file_size[1] << 8)
+                | ((unsigned long)dirent->file_size[2] << 16)
+                | ((unsigned long)dirent->file_size[3] << 24);
+                              
                 /*memcpy(dta + 0x1e, buf, 11);
                 dta[0x1e + 11] = '\0';*/
-                memset(dta + 0x1e, '\0', 13);
-                strcpy(dta + 0x1e, file);
+                memset(dta->filename, '\0', sizeof(dta->filename));
+                strcpy(dta->filename, file);
                 return (0);
             }
         }
 
-        ret = fileRead(ff_handle, buf, sizeof buf);
+        ret = fileRead(ff_handle, &dirent , sizeof dirent);
     }
     fileClose(ff_handle);
     return (0x12);

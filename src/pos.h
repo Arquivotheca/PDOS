@@ -214,3 +214,27 @@ typedef struct {
     char pat[20]; 
 }FFBLK;
 /**/
+
+/*Structure to define variables used in DTA*/
+typedef struct {
+    char attr;             /*attribute of the search(0x00)*/
+    char drive;            /*drive used in search(0x01)*/
+    char search[11];       /*search name used(0x02)*/
+    int direntno;          /*directory entry number(0x0D)*/
+    int startcluster;      /*starting cluster number for 
+                             current directory zero for 
+                             root directory(0x0F)*/
+    int reserved;          /*reserved(0x11)*/
+    int startcluster2;     /*starting cluster number for
+                             current directory zero for
+                             root directory(0x13)*/
+    unsigned char attrib;  /*attribute of the matching file
+                             (0x15)*/
+    int file_time;         /*file time(0x16)*/
+    int file_date;         /*file date(0x18)*/
+    long file_size;        /*file size(0x1A)*/
+    char file_name[13];    /*ASCIIZ filename and extension in
+                             form NAME.EXT with blanks stripped
+                             (0x1E)*/
+}DTA;
+/**/

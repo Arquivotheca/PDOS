@@ -231,7 +231,7 @@ int fatOpenFile(FAT *fat, const char *fnm, FATFILE *fatfile)
         fatfile->lastSectors = fat->rootsize;
         fat->currcluster = 0;
         fatfile->dir = 1;
-        fatfile->attr=0x10;
+        fatfile->attr=DIRENT_SUBDIR;
     }
     else
     {
@@ -368,6 +368,7 @@ size_t fatWriteFile(FAT *fat, FATFILE *fatfile, void *buf, size_t szbuf)
     size_t rem; /* remaining bytes in sector */
     size_t tsz; /* temporary size */
     size_t done; /* written bytes */
+    DIRENT *d;
 
     /* Regardless of whether szbuf is 0 or remaining bytes is 0,
        we will not break into a new sector or cluster */
@@ -454,13 +455,13 @@ size_t fatWriteFile(FAT *fat, FATFILE *fatfile, void *buf, size_t szbuf)
     fatReadLogical(fat,
                    fatfile->dirSect,
                    bbuf);
-    bbuf[fatfile->dirOffset + 0x1c] = fatfile->totbytes & 0xff;
-    bbuf[fatfile->dirOffset + 0x1c + 1]
-        = (fatfile->totbytes >> 8) & 0xff;
-    bbuf[fatfile->dirOffset + 0x1c + 2]
-        = (fatfile->totbytes >> 16) & 0xff;
-    bbuf[fatfile->dirOffset + 0x1c + 3]
-        = (fatfile->totbytes >> 24) & 0xff;
+
+    d = (DIRENT *) (bbuf + fatfile->dirOffset);    
+    d->file_size[0]=fatfile->totbytes & 0xfff;
+    d->file_size[1]=(fatfile->totbytes >> 8) & 0xfff;
+    d->file_size[2]=(fatfile->totbytes >> 16) & 0xfff;
+    d->file_size[3]=(fatfile->totbytes >> 24)  & 0xfff;    
+
     fatWriteLogical(fat,
                     fatfile->dirSect,
                     bbuf);
@@ -708,22 +709,22 @@ static void fatDirSectorSearch(FAT *fat,
 {
     int x;
     unsigned char buf[MAXSECTSZ];
-    unsigned char *p;
+    DIRENT *p;
     FATFILE *fatfile = fat->currfatfile;
 
     for (x = 0; x < numsectors; x++)
     {
         fatReadLogical(fat, startSector + x, buf);
-        for (p = buf; p < buf + fat->sector_size; p += 32)
+        for (p = buf; p < buf + fat->sector_size; p ++)
         {
             if (memcmp(p, search, 11) == 0)
             {
-                fat->currcluster = p[0x1a] | (p[0x1a + 1] << 8);
+                fat->currcluster = p->start_cluster[0] | (p->start_cluster[1] << 8);
                
                 if(fat->operation==FAT_DELETE && fat->last)
                 {
                     fatNuke(fat,fat->currcluster);
-                    *p=0xe5;
+                    p->file_name[0]=DIRENT_DEL;
                     fatWriteLogical(fat, startSector + x, buf);
                     return;
                 }
@@ -736,16 +737,22 @@ static void fatDirSectorSearch(FAT *fat,
                 else
                 {
                     fatfile->cluster = fat->currcluster;
-                    fatfile->fileSize = p[0x1c]
-                                    | ((unsigned int)p[0x1c + 1] << 8)
-                                    | ((unsigned long)p[0x1c + 2] << 16)
-                                    | ((unsigned long)p[0x1c + 3] << 24);
-                    fatfile->attr = p[0x0b];
-                    memcpy(fatfile->datetime, &p[0x16], 4);
+                    fatfile->fileSize = p->file_size[0]
+                                    | ((unsigned long)p->file_size[1] << 8)
+                                    | ((unsigned long)p->file_size[2] << 16)
+                                    | ((unsigned long)p->file_size[3] << 24);
+                    fatfile->attr = p->file_attr;
+                       
+                    fatfile->time= p->last_modifiedtime[0] 
+                    | ((unsigned int) p->last_modifiedtime[1] << 8);
+                    
+                    fatfile->date= p->last_modifieddate[0] 
+                    | ((unsigned int) p->last_modifieddate[1] << 8);
+                  
                     return;
                 }
             }
-            else if (*p == '\0')
+            else if (p->file_name[0] == '\0')
             {
                 fat->notfound = 1;
                 return;
@@ -778,22 +785,23 @@ static void fatDirSectorUpdate(FAT *fat,
 {
     int x;
     unsigned char buf[MAXSECTSZ];
-    unsigned char *p;
-    char dirent[32];
+    DIRENT *p;
     int found = 0; /* if filename already exists, or we've hit end of dir */
 
     for (x = 0; x < numsectors && !found; x++)
     {
         fatReadLogical(fat, startSector + x, buf);
-        for (p = buf; p < buf + fat->sector_size; p += 32)
+        for (p = buf; p < buf + fat->sector_size; p++)
         {
-            if (memcmp(p, search, 11) == 0)
+            if (memcmp(p->file_name, search, 
+                      (sizeof(p->file_name)+sizeof(p->file_ext))) == 0)
             {
-                fat->currcluster = p[0x1a + 1] << 8 | p[0x1a];
+                fat->currcluster = p->start_cluster[1] << 8 
+                                    | p->start_cluster[0];
                 fatNuke(fat, fat->currcluster);
                 found = 1;
             }
-            if (found || (*p == '\0'))
+            if (found || (p->file_name[0] == '\0'))
             {
                 fat->currcluster = fatFindFreeCluster(fat);
                 fatMarkCluster(fat, fat->currcluster);
@@ -802,26 +810,28 @@ static void fatDirSectorUpdate(FAT *fat,
                     + fat->filestart;
 
                 fatfile->sectorUpto = 0;
-                memset(p, '\0', 32);
-                memcpy(p, search, 11);
-                p[0x1a + 1] = (fat->currcluster >> 8) & 0xff;
-                p[0x1a] = fat->currcluster & 0xff;
+                memset(p, '\0', sizeof(DIRENT));
+                memcpy(p->file_name, search, 
+                      (sizeof(p->file_name)+sizeof(p->file_ext)));
+                p->start_cluster[1] = (fat->currcluster >> 8) & 0xff;
+                p->start_cluster[0] = fat->currcluster & 0xff;
                 /* p[0x0b] = attrib; */ /* +++ */
                 /* p[0x16], len 4 = datetime */ /* +++ */
                 fatfile->totbytes = 0;
-                p[0x1c] = fatfile->totbytes;
-                p[0x1c + 1] = 0;
-                p[0x1c + 2] = 0;
-                p[0x1c + 3] = 0;
+                p->file_size[0] = fatfile->totbytes;
+                p->file_size[1] = 0;
+                p->file_size[2] = 0;
+                p->file_size[3] = 0;
                 fatfile->dirSect = startSector + x;
-                fatfile->dirOffset = (p - buf);
+                
+                fatfile->dirOffset = ((char*)p - buf);
                 fatfile->lastBytes = 0;
-                p += 32;
+                p++;
                 if (!found)
                 {
                     if (p != (buf + fat->sector_size))
-                    {
-                        *p = '\0';
+                    {    
+                        p->file_name[0] = '\0';
                         fatWriteLogical(fat, startSector + x, buf);
                     }
                     else

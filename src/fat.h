@@ -5,6 +5,48 @@
 
 #define MAXSECTSZ 512
 
+/**/
+#define DIRENT_AVA 0x00         /**/
+#define DIRENT_IC 0x05          /**/ 
+#define DIRENT_DOT 0x2E         /**/
+/**/
+
+/**/
+#define DIRENT_READONLY 0x01    /**/
+#define DIRENT_HIDDEN 0x02      /**/ 
+#define DIRENT_SYSTEM 0x04      /**/
+#define DIRENT_SUBDIR 0x10      /**/ 
+#define DIRENT_ARCHIVE 0x20     /**/ 
+#define DIRENT_DEVICE 0X40      /**/
+#define DIRENT_RESERVED 0x80    /**/
+/**/
+
+/**/
+#define DIRENT_EXTRAB7  0x80    /**/
+#define DIRENT_EXTRAB6  0x40    /**/
+#define DIRENT_EXTRAB5  0x20    /**/
+#define DIRENT_EXTRAB4  0x10    /**/
+#define DIRENT_EXTRAB3  0x08    /**/
+#define DIRENT_EXTRAB2  0x04    /**/
+#define DIRENT_EXTRAB1  0x02    /**/
+#define DIRENT_EXTRAB0  0x01    /**/
+/**/
+
+/**/
+#define DIRENT_ACCESSB0 0x0001  /**/
+#define DIRENT_ACCESSB1 0x0002  /**/
+#define DIRENT_ACCESSB2 0x0004  /**/
+#define DIRENT_ACCESSB3 0x0008  /**/
+#define DIRENT_ACCESSB4 0x0010  /**/
+#define DIRENT_ACCESSB5 0x0020  /**/
+#define DIRENT_ACCESSB6 0x0040  /**/
+#define DIRENT_ACCESSB7 0x0080  /**/
+#define DIRENT_ACCESSB8 0x0100  /**/
+#define DIRENT_ACCESSB9 0x0200  /**/
+#define DIRENT_ACCESSB10 0x0400  /**/
+#define DIRENT_ACCESSB11 0x0800  /**/
+/**/
+
 typedef struct {
     int root;
     unsigned int cluster; /* start cluster for this file (for reading)
@@ -66,6 +108,25 @@ typedef struct {
     char new_file[12]; /*new filename for rename*/
     int last;
 } FAT;
+
+/*Structure for directory entry */
+typedef struct {
+    unsigned char file_name[8];          /**/
+    unsigned char file_ext[3];           /**/ 
+    unsigned char file_attr;             /**/
+    unsigned char extra_attributes;      /**/
+    unsigned char first_char;            /**/
+    unsigned char create_time[2];        /**/
+    unsigned char create_date[2];        /**/
+    unsigned char last_access[2];        /**/
+    unsigned char access_rights[2];      /**/
+    unsigned char last_modifiedtime[2];  /**/
+    unsigned char last_modifieddate[2];  /**/
+    unsigned char start_cluster[2];      /**/
+    unsigned char file_size[4];          /**/
+}DIRENT;
+/**/
+
 
 void fatDefaults(FAT *fat);
 void fatInit(FAT *fat,

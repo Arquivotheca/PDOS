@@ -3,5 +3,5 @@
 
 #include <time.h>
 
-void timet_to_dos(time_t now, void *dos);
-time_t dos_to_timet(void *dos);
+void timet_to_dos(time_t now,unsigned int *fdate,unsigned int *ftime);
+time_t dos_to_timet(unsigned int fdate,unsigned int ftime);

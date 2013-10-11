@@ -247,12 +247,12 @@ static void dotype(char *file)
 static void dodel(char *fnm)
 {    
     int ret;
-    char *dta;
+    DTA *dta;
 
     dta=PosGetDTA();
     if(*fnm=='\0')
     {
-        printf("Please Specify the filename \n");
+        printf("Please Specify the file name \n");
         return;
     }
     ret=PosFindFirst(fnm,0x10);
@@ -264,14 +264,14 @@ static void dodel(char *fnm)
     }
     while(ret==0)
     {           
-        PosDeleteFile(dta+0x1e);  
+        PosDeleteFile(dta->file_name);  
         ret=PosFindNext();
     }
     return;
 }
 static void dodir(char *pattern)
 {
-    char *dta;
+    DTA *dta;
     int ret;
     char *p;
     time_t tt;
@@ -289,12 +289,12 @@ static void dodir(char *pattern)
     ret = PosFindFirst(p, 0x10);
     while (ret == 0)
     {
-        tt = dos_to_timet(dta + 0x16);
+        tt = dos_to_timet(dta->file_date,dta->file_time);
         tms = localtime(&tt);
         printf("%-13s %9ld %02x %04d-%02d-%02d %02d:%02d:%02d\n", 
-               dta + 0x1e,
-               *(long *)(dta + 0x1a),
-               dta[0x15],
+               dta->file_name,
+               dta->file_size,
+               dta->attrib,
                tms->tm_year + 1900,
                tms->tm_mon + 1,
                tms->tm_mday,

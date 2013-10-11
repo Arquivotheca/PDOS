@@ -117,6 +117,7 @@ void disable(void);
                      | (((unsigned long)(x) & 0xffffU) % 16))
 
 int int86(int intno, union REGS *regsin, union REGS *regsout);
-int int86x(int intno, union REGS *regsin, union REGS *regsout, struct SREGS *sregs);
+int int86x(int intno, union REGS *regsin, 
+           union REGS *regsout, struct SREGS *sregs);
 
 #endif

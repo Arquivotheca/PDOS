@@ -1926,8 +1926,7 @@ static int ff_search(void)
                 | ((unsigned long)dirent.file_size[2] << 16)
                 | ((unsigned long)dirent.file_size[3] << 24);
                               
-        
-                memset(dta->file_name, '\0', sizeof(dirent.file_name));
+                memset(dta->file_name, '\0', sizeof(dta->file_name));
                 strcpy(dta->file_name, file);
                 return (0);
             }

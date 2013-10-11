@@ -31,7 +31,7 @@
 #include "dow.h"
 
 #define MAX_PATH 120
-#define DOS_VERSION 0x04
+#define DOS_VERSION 0x04 
 
 typedef struct {
     int env;
@@ -1875,12 +1875,12 @@ static int ff_search(void)
     DIRENT dirent;
 
     ret = fileRead(ff_handle,&dirent, sizeof dirent);
-    while ((ret == sizeof dirent) && (dirent->file_name[0] != '\0'))
+    while ((ret == sizeof dirent) && (dirent.file_name[0] != '\0'))
     {
-        if (dirent->file_name[0] != DIRENT_DEL)
+        if (dirent.file_name[0] != DIRENT_DEL)
         {
-            memcpy(file, dirent->file_name, sizeof(dirent->file_name));
-            file[sizeof(dirent->file_name)] = '\0';
+            memcpy(file, dirent.file_name, sizeof(dirent.file_name));
+            file[sizeof(dirent.file_name)] = '\0';
             p = strchr(file, ' ');
             if (p != NULL)
             {
@@ -1891,8 +1891,8 @@ static int ff_search(void)
                 p = file + strlen(file);
             }
             *p++ = '.';
-            memcpy(p, dirent->file_name,sizeof(dirent->file_ext));
-            p[sizeof(dirent->file_ext)] = '\0';
+            memcpy(p, dirent.file_ext,sizeof(dirent.file_ext));
+            p[3] = '\0';
             p = strchr(file, ' ');
             if (p != NULL)
             {
@@ -1902,34 +1902,36 @@ static int ff_search(void)
 
                 /* if it is not a directory, or they asked for
                 directories, then that is OK */
-                && (((dirent->file_attr & DIRENT_SUBDIR) == 0)
+                && (((dirent.file_attr & DIRENT_SUBDIR) == 0)
                     || ((attr & DIRENT_SUBDIR) != 0))
 
                 /* if it is not a volume label, or they asked
                 for volume labels, then that is OK */
-                && (((dirent->file_attr & DIRENT_EXTRAB3) == 0)
+                && (((dirent.file_attr & DIRENT_EXTRAB3) == 0)
                     || ((attr & DIRENT_EXTRAB3) != 0))
 
             )
             {
                 if ((p != NULL) && (*p == '.')) *p = '\0';
-                dta->attrib = dirent->fileattr; /* attribute */
-                dta->file_time = dirent->last_modtime[0]
-                | ((unsigned int)dirent->last_modtime[1] << 8);
-                 dta->file_date = dirent->last_moddate[0]
-                | ((unsigned int)dirent->last_moddate[1] << 8);
-                dta->file_size = dirent->file_size[0]
-                | ((unsigned long)dirent->file_size[1] << 8)
-                | ((unsigned long)dirent->file_size[2] << 16)
-                | ((unsigned long)dirent->file_size[3] << 24);
+                dta->attrib = dirent.file_attr; /* attribute */
+                
+                dta->file_time = dirent.last_modtime[0]   /*time*/
+                | ((unsigned int)dirent.last_modtime[1] << 8);
+                
+                dta->file_date = dirent.last_moddate[0]   /*date*/ 
+                | ((unsigned int)dirent.last_moddate[1] << 8);
+                
+                dta->file_size = dirent.file_size[0]      /*size*/
+                | ((unsigned long)dirent.file_size[1] << 8)
+                | ((unsigned long)dirent.file_size[2] << 16)
+                | ((unsigned long)dirent.file_size[3] << 24);
                               
         
-                memset(dta->filename, '\0', sizeof(dta->filename));
-                strcpy(dta->filename, file);
+                memset(dta->file_name, '\0', sizeof(dirent.file_name));
+                strcpy(dta->file_name, file);
                 return (0);
             }
         }
-
         ret = fileRead(ff_handle, &dirent , sizeof dirent);
     }
     fileClose(ff_handle);

@@ -719,7 +719,8 @@ static void fatDirSectorSearch(FAT *fat,
         {
             if (memcmp(p, search, 11) == 0)
             {
-                fat->currcluster = p->start_cluster[0] | ((unsigned int) p->start_cluster[1] << 8);
+                fat->currcluster = p->start_cluster[0] 
+                | ((unsigned int) p->start_cluster[1] << 8);
                
                 if(fat->operation==FAT_DELETE && fat->last)
                 {
@@ -743,10 +744,10 @@ static void fatDirSectorSearch(FAT *fat,
                                     | ((unsigned long)p->file_size[3] << 24);
                     fatfile->attr = p->file_attr;
                        
-                    fatfile->time= p->last_modtime[0] 
+                    fatfile->ftime= p->last_modtime[0] 
                     | ((unsigned int) p->last_modtime[1] << 8);
                     
-                    fatfile->date= p->last_moddate[0] 
+                    fatfile->fdate= p->last_moddate[0] 
                     | ((unsigned int) p->last_moddate[1] << 8);
                   
                     return;

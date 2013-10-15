@@ -823,7 +823,7 @@ static void fatDirSectorUpdate(FAT *fat,
                 p->file_size[3] = (fatfile->totbytes >> 24) & 0xff ;
                 fatfile->dirSect = startSector + x;
                 
-                fatfile->dirOffset = ((char*)p - buf);
+                fatfile->dirOffset = ((unsigned char*)p - buf);
                 fatfile->lastBytes = 0;
                 p++;
                 if (!found)

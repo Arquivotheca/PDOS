@@ -1017,18 +1017,14 @@ static void int21handler(union REGS *regsin,
         case 0x57:
             if (regsin->h.al == 0x00)
             {
-                unsigned int fdate,ftime;
-                int handle;
 #ifdef __32BIT__
-                handle=regsin->d.ebx;
-                regsout->d.eax=PosGetFileLastWrittenDateAndTime(handle,
-                                                                &fdate,
-                                                                &ftime
-                                                                
-                handle=regsin->x.bx;
-                regsout->x.ax=PosGetFileLastWrittenDateAndTime(handle,
-                                                               &fdate,
-                                                               &ftime);
+                regsout->d.eax=PosGetFileLastWrittenDateAndTime(regsin->d.ebx,
+                                                               &regsout->d.edx,
+                                                               &regsout->d.ecx);
+#else                                                               
+                regsout->x.ax=PosGetFileLastWrittenDateAndTime(regsin->x.bx,
+                                                              &regsout->x.dx,
+                                                              &regsout->x.cx);
 #endif
 
 #ifdef __32BIT__

@@ -407,6 +407,24 @@ static int testPosGetFreeSpace(void)
     printf("Bytes per sector x %d x \n",bytpersec);
     printf("Total Clusters x %d x \n",totclus);
 }
+
+/*Test function for fetching last written date and time*/
+static int testPosGetFileLastWrittenDateAndTime(void)
+{
+    int handle;
+    unsigned int fdate;
+    unsigned int ftime;
+    int ret;
+    
+    PosOpenFile("pdos.c",0,&handle);
+    ret=PosGetFileLastWrittenDateAndTime(handle,&fdate,&ftime);
+    PosCloseFile(handle);
+    printf("The date is %d \n",fdate);
+    printf("The time is %d \n",ftime);
+    printf("The return code is %d \n",ret);
+}
+/**/
+
 /**/
 
 int main(void)
@@ -421,6 +439,7 @@ int main(void)
     /*testPosDeleteFile();*/
     /*testPosRenameFile();*/
     /*testPosGetFileAttributes();*/
-    testPosGetFreeSpace();
+    /*testPosGetFreeSpace();*/
+    testPosGetFileLastWrittenDateAndTime();
     return (0);
 }

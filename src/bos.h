@@ -40,7 +40,10 @@ int BosScrollWindowDown(int numLines, /* 10:7 */
                         int endRow,
                         int endCol);
 int BosReadCharAttrib(int page, int *ch, int *attrib); /* 10:8 */
-int BosWriteCharAttrib(int page, int ch, int attrib, unsigned int num); /* 10:9 */
+int BosWriteCharAttrib(int page, 
+                       int ch, 
+                       int attrib, 
+                       unsigned int num); /* 10:9 */
 int BosWriteCharCursor(int page, int ch, int col, unsigned int num); /* 10:A */
 int BosSetColourPalette(int id, int val); /* 10:B */
 int BosWriteGraphicsPixel(int page, /* 10:C */

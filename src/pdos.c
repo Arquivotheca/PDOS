@@ -1014,6 +1014,46 @@ static void int21handler(union REGS *regsin,
                 regsout->x.cflag = 1;
             }
             break;
+        case 0x57:
+            if (regsin->h.al == 0x00)
+            {
+                unsigned int fdate,ftime;
+                int handle;
+#ifdef __32BIT__
+                handle=regsin->d.ebx;
+                regsout->d.eax=PosGetFileLastWrittenDateAndTime(handle,
+                                                                &fdate,
+                                                                &ftime
+                                                                
+                handle=regsin->x.bx;
+                regsout->x.ax=PosGetFileLastWrittenDateAndTime(handle,
+                                                               &fdate,
+                                                               &ftime);
+#endif
+
+#ifdef __32BIT__
+
+                if (regsout->d.eax != 0)
+                {
+                    regsout->x.cflag = 1;
+                }
+                else
+                {
+                    regsout->x.cflag=0; 
+                }
+#else
+                if (regsout->x.ax != 0)
+                {
+                    regsout->x.cflag = 1;
+                }
+                else
+                {
+                    regsout->x.cflag=0; 
+                }                
+#endif
+            }
+            break;
+            
         case 0x60:
 #ifdef __32BIT__
             p = SUBADDRFIX(regsin->d.esi);
@@ -1729,6 +1769,19 @@ int PosRenameFile(const char *old, const char *new)
     return (ret);
 }
 
+/*Get last written date and time*/
+int PosGetFileLastWrittenDateAndTime(int handle,
+                                     unsigned int *fdate,
+                                     unsigned int *ftime)
+{
+    FATFILE *fatfile;
+
+    fatfile=&fhandle[handle].fatfile;
+    *fdate=fatfile->fdate;
+    *ftime=fatfile->ftime;
+    return 0;
+}
+/**/
 
 int PosTruename(char *prename,char *postname)
 {

@@ -133,6 +133,10 @@ int PosFindNext(void); /* func 4f */
 
 int PosRenameFile(const char *old, const char *new); /* func 56 */
 
+int PosGetFileLastWrittenDateAndTime(int handle,
+                                     unsigned int *fdate,
+                                     unsigned int *ftime); /*func 57*/
+
 int PosTruename(char *prename,char *postname); /*func 60*/
 
 

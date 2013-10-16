@@ -864,6 +864,39 @@ int PosRenameFile(const char *old, const char *new)
     return (regsout.x.ax);
 }
 
+/**/
+int PosGetFileLastWrittenDateAndTime(int handle,
+                                     unsigned int *fdate,
+                                     unsigned int *ftime)
+{
+    union REGS regsin;
+    union REGS regsout;
+
+    regsin.x.ax=0x5700;
+    regsin.x.bx=handle;
+
+    int86(0x21, &regsin, &regsout);  
+
+    if (!regsout.x.cflag)
+    {
+#ifdef __32BIT__
+        *fdate=regsout.d.edx;
+        *ftime=regsout.d.ecx;
+        regsout.x.eax=0;
+#else
+        *fdate=regsout.x.dx;
+        *ftime=regsout.x.cx;
+        regsout.x.ax = 0;
+#endif
+    }
+#ifdef __32BIT__
+    return (regsout.d.eax);
+#else
+    return (regsout.x.ax);
+#endif
+}
+/**/
+
 /*Determine the canonical name of the specified filename or path*/
 int PosTruename(char *prename,char *postname)
 {

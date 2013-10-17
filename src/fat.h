@@ -148,4 +148,6 @@ int fatRenameFile(FAT *fat,const char *old,const char *new);
 /*To rename a given file*/
 int fatGetFileAttributes(FAT *fat,const char *fnm,int *attr);
 /*To Get the file attributes from the file name specified by fnm*/
+int fatUpdateDateAndTime(FAT *fat,FATFILE *fatfile);
+/*To update the date and time of the given file*/
 #endif

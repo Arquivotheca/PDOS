@@ -1045,9 +1045,43 @@ static void int21handler(union REGS *regsin,
                 else
                 {
                     regsout->x.cflag=0; 
-                }                
+                }
 #endif
             }
+            else if(regsin->h.al==0x01)
+            {
+#ifdef __32BIT__
+                regsout->d.eax=PosSetFileLastWrittenDateAndTime(regsin->d.ebx,
+                                                               regsout->d.edx,
+                                                               regsout->d.ecx);
+#else
+                regsout->x.ax=PosSetFileLastWrittenDateAndTime(regsin->x.bx,
+                                                              regsout->x.dx,
+                                                              regsout->x.cx);
+#endif
+
+#ifdef __32BIT__
+
+                if (regsout->d.eax != 0)
+                {
+                    regsout->x.cflag = 1;
+                }
+                else
+                {
+                    regsout->x.cflag=0; 
+                }
+#else
+                if (regsout->x.ax != 0)
+                {
+                    regsout->x.cflag = 1;
+                }
+                else
+                {
+                    regsout->x.cflag=0; 
+                }
+#endif
+            }
+            
             break;
             
         case 0x60:
@@ -1775,6 +1809,23 @@ int PosGetFileLastWrittenDateAndTime(int handle,
     fatfile=&fhandle[handle].fatfile;
     *fdate=fatfile->fdate;
     *ftime=fatfile->ftime;
+    return 0;
+}
+/**/
+
+/*Set the last written date and time for a given file*/
+int PosSetFileLastWrittenDateAndTime(int handle,
+                                     unsigned int fdate,
+                                     unsigned int ftime)
+{
+    FATFILE *fatfile;
+    FAT *fat;
+
+    fatfile=&fhandle[handle].fatfile;
+    fat=fhandle[handle].fatptr;
+    fatfile->fdate=fdate;
+    fatfile->ftime=ftime;
+    fatUpdateDateAndTime(fat,fatfile);
     return 0;
 }
 /**/

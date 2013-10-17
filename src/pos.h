@@ -137,6 +137,10 @@ int PosGetFileLastWrittenDateAndTime(int handle,
                                      unsigned int *fdate,
                                      unsigned int *ftime); /*func 57*/
 
+int PosSetFileLastWrittenDateAndTime(int handle,
+                                     unsigned int fdate,
+                                     unsigned int ftime);/*func 57 subfunc 1*/
+                         
 int PosTruename(char *prename,char *postname); /*func 60*/
 
 

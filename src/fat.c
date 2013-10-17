@@ -1104,6 +1104,28 @@ int fatGetFileAttributes(FAT *fat,const char *fnm,int *attr)
 }
 /**/
 
+/**/
+int fatUpdateDateAndTime(FAT *fat,FATFILE *fatfile)
+{
+    static unsigned char bbuf[MAXSECTSZ];
+    DIRENT *d;
+
+    fatReadLogical(fat,
+                   fatfile->dirSect,
+                   bbuf);
+
+    d = (DIRENT *) (bbuf + fatfile->dirOffset);
+    d->last_moddate[0]= fatfile->fdate & 0xff;
+    d->last_moddate[1]= (fatfile->fdate >> 8) & 0xff;
+    d->last_modtime[0]= fatfile->ftime & 0xff;
+    d->last_modtime[1]= (fatfile->ftime >> 8) & 0xff;
+
+    fatWriteLogical(fat,
+                    fatfile->dirSect,
+                    bbuf);
+    return 0;
+}
+/**/
 /* Delete a file by setting cluster chain to zeros */
 static void fatNuke(FAT *fat, unsigned int cluster)
 {

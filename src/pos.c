@@ -864,7 +864,7 @@ int PosRenameFile(const char *old, const char *new)
     return (regsout.x.ax);
 }
 
-/**/
+/*Get the last written date and time of the file*/
 int PosGetFileLastWrittenDateAndTime(int handle,
                                      unsigned int *fdate,
                                      unsigned int *ftime)
@@ -897,6 +897,42 @@ int PosGetFileLastWrittenDateAndTime(int handle,
 }
 /**/
 
+/**/
+int PosSetFileLastWrittenDateAndTime(int handle,
+                                     unsigned int fdate,
+                                     unsigned int ftime)
+{
+    union REGS regsin;
+    union REGS regsout;
+
+    regsin.x.ax=0x5701;
+    regsin.x.bx=handle;
+#ifdef __32BIT__ 
+    regsin.d.edx=fdate;
+    regsin.d.ecx=ftime;
+#else
+    regsin.x.dx=fdate;
+    regsin.x.cx=ftime;
+#endif
+
+    int86(0x21, &regsin, &regsout);
+
+    if (!regsout.x.cflag)
+    {
+#ifdef __32BIT__
+        regsout.x.eax=0;
+#else
+        regsout.x.ax = 0;
+#endif
+    }
+#ifdef __32BIT__
+    return (regsout.d.eax);
+#else
+    return (regsout.x.ax);
+#endif
+}
+
+/**/
 /*Determine the canonical name of the specified filename or path*/
 int PosTruename(char *prename,char *postname)
 {

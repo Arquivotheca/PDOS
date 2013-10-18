@@ -109,6 +109,7 @@ typedef struct {
     void *parm;
     char new_file[12]; /*new filename for rename*/
     int last;
+	int new_attr;
 } FAT;
 
 /*Structure for Directory Entry */
@@ -148,6 +149,8 @@ int fatRenameFile(FAT *fat,const char *old,const char *new);
 /*To rename a given file*/
 int fatGetFileAttributes(FAT *fat,const char *fnm,int *attr);
 /*To Get the file attributes from the file name specified by fnm*/
+int fatSetFileAttributes(FAT *fat,const char *fnm,int attr);
+/*To Set the attributes of the given file*/
 int fatUpdateDateAndTime(FAT *fat,FATFILE *fatfile);
 /*To update the date and time of the given file*/
 #endif

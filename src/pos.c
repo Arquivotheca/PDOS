@@ -471,6 +471,33 @@ int PosGetFileAttributes(const char *fnm,int *attr)
     return (regsout.x.ax);
 }
 
+/*Set the attributes of the given file*/
+int PosSetFileAttributes(const char *fnm,int attr)
+{
+    union REGS regsin;
+    union REGS regsout;
+    struct SREGS sregs;
+
+    regsin.h.ah = 0x43;
+    regsin.h.al = 0x01;
+#ifdef __32BIT__
+    regsin.d.edx = (int)fnm;
+    regsin.d.ecx=attr;
+#else
+    sregs.ds = FP_SEG(fnm);
+    regsin.x.dx = FP_OFF(fnm);
+    regsin.x.cx=attr;
+#endif
+    int86x(0x21, &regsin, &regsout, &sregs);
+
+    if (!regsout.x.cflag)
+    {
+        regsout.x.ax = 0;
+    }
+    return (regsout.x.ax);
+}
+/**/
+
 /**/
 int PosGetDeviceInformation(int handle, unsigned int *devinfo)
 {

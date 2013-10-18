@@ -426,7 +426,14 @@ static int testPosGetFileLastWrittenDateAndTime(void)
 /**/
 
 /**/
-
+static int testPosSetFileAttributes(void)
+{
+    int ret;
+    
+    ret=PosSetFileAttributes("",0x20);
+    printf("The return code is x %d x \n",ret);
+}
+/**/
 int main(void)
 {
     /*testDriveParms();*/
@@ -440,6 +447,7 @@ int main(void)
     /*testPosRenameFile();*/
     /*testPosGetFileAttributes();*/
     /*testPosGetFreeSpace();*/
-    testPosGetFileLastWrittenDateAndTime();
+    /*testPosGetFileLastWrittenDateAndTime();*/ 
+    testPosSetFileAttributes();
     return (0);
 }

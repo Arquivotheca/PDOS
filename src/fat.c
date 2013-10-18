@@ -21,6 +21,7 @@
 
 #define FAT_DELETE 1
 #define FAT_RENAME 2
+#define FAT_CHMOD  3
 
 static int fatEndCluster(FAT *fat, unsigned int cluster);
 static void fatGetStartCluster(FAT *fat, const char *fnm);
@@ -471,7 +472,7 @@ size_t fatWriteFile(FAT *fat, FATFILE *fatfile, void *buf, size_t szbuf)
 
 /*
  * fatGetStartCluster - given a filename, retrieve the starting
- * cluster, or set notfound flag if not found.
+ * cluster, or set not found flag if not found.
  */
 
 static void fatGetStartCluster(FAT *fat, const char *fnm)
@@ -732,6 +733,12 @@ static void fatDirSectorSearch(FAT *fat,
                 else if(fat->operation==FAT_RENAME)
                 {
                     memcpy(p, fat->new_file, 11);
+                    fatWriteLogical(fat, startSector + x, buf);
+                    return;
+                }
+                else if(fat->operation==FAT_CHMOD)
+                {
+                    p->file_attr=fat->new_attr;
                     fatWriteLogical(fat, startSector + x, buf);
                     return;
                 }
@@ -1101,6 +1108,31 @@ int fatGetFileAttributes(FAT *fat,const char *fnm,int *attr)
        *attr=0;
     }
     return(ret);
+}
+/**/
+
+
+/*To set the attributes of the file given by file name fnm*/
+int fatSetFileAttributes(FAT *fat,const char *fnm,int attr)
+{
+    fat->operation=FAT_CHMOD;
+    fat->notfound = 0;
+
+    if ((fnm[0] == '\\') || (fnm[0] == '/'))
+    {
+        fnm++;
+    }
+    fat->new_attr=attr;
+    fatGetStartCluster(fat,fnm);
+    fat->operation=0;
+    if(fat->notfound)
+    {
+        return(-1);
+    }
+    else
+    {
+        return(0);
+    }
 }
 /**/
 

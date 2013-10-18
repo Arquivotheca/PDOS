@@ -86,6 +86,7 @@ static int fileOpen(const char *fnm);
 static int fileDelete(const char *fnm);
 static int fileRename(const char *old,const char *new);
 static int fileGetAttrib(const char *fnm,int *attr);
+static int fileSetAttrib(const char *fnm,int attr);
 static int fileClose(int fno);
 static int fileRead(int fno, void *buf, size_t szbuf);
 static void accessDisk(int drive);
@@ -794,8 +795,25 @@ static void int21handler(union REGS *regsin,
 #else
                 p = MK_FP(sregs->ds, regsin->x.dx);
 #endif
+
+#ifdef __32BIT__
+                regsout->d.eax = PosGetFileAttributes(p,&attr);
+                regsout->d.ecx=attr;
+#else
                 regsout->x.ax = PosGetFileAttributes(p,&attr);
                 regsout->x.cx=attr;
+#endif
+
+#ifdef __32BIT__
+                if (regsout->d.eax != 0)
+                {
+                    regsout->x.cflag = 1;
+                }
+                else
+                {
+                    regsout->x.cflag=0;
+                }
+#else
                 if (regsout->x.ax != 0)
                 {
                     regsout->x.cflag = 1;
@@ -804,6 +822,44 @@ static void int21handler(union REGS *regsin,
                 {
                     regsout->x.cflag=0;
                 }
+#endif
+            }
+            
+            else if (regsin->h.al == 0x01)
+            {
+#ifdef __32BIT__
+                p = SUBADDRFIX(regsin->d.edx);
+#else
+                p = MK_FP(sregs->ds, regsin->x.dx);
+#endif
+
+#ifdef __32BIT__
+                regsout->d.eax = PosSetFileAttributes(p,regsin->d.ecx);
+#else
+                regsout->x.ax = PosSetFileAttributes(p,regsin->x.cx);
+#endif
+
+#ifdef __32BIT__
+                if (regsout->d.eax != 0)
+                {
+                    regsout->x.cflag = 1;
+                }
+                else
+                {
+                    regsout->x.cflag=0;
+                }
+
+#else
+                if (regsout->x.ax != 0)
+                {
+                    regsout->x.cflag = 1;
+                }
+                else
+                {
+                    regsout->x.cflag=0;
+                }
+#endif
+
             }
             break;
 
@@ -1548,6 +1604,16 @@ int PosGetFileAttributes(const char *fnm,int *attr)
     int ret;
 
     ret=fileGetAttrib(fnm,attr);
+    return (ret);
+}
+/**/
+
+/*To set the attributes of a given file*/
+int PosSetFileAttributes(const char *fnm,int attr)
+{
+    int ret;
+
+    ret=fileSetAttrib(fnm,attr);
     return (ret);
 }
 /**/
@@ -2787,9 +2853,22 @@ static int fileGetAttrib(const char *fnm,int *attr)
     rc = fatGetFileAttributes(&disks[tempDrive].fat,tempf + 2,attr);
     return (rc);
 }
-
 /**/
 
+/**/
+static int fileSetAttrib(const char *fnm,int attr)
+{
+    int x;
+    int drive;
+    int rc;
+    char tempf[FILENAME_MAX];
+
+    formatcwd(fnm,tempf);
+    fnm = tempf;
+    rc = fatSetFileAttributes(&disks[tempDrive].fat,tempf + 2,attr);
+    return (rc);
+}
+/**/
 /**/
 static void accessDisk(int drive)
 {

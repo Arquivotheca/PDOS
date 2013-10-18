@@ -96,6 +96,8 @@ long PosMoveFilePointer(int handle, long offset, int whence); /* func 42 */
 
 int PosGetFileAttributes(const char *fnm,int *attr);/*func 43*/
 
+int PosSetFileAttributes(const char *fnm,int attr);/*func 43 subfunc 01*/
+
 int PosGetDeviceInformation(int handle, unsigned int *devinfo);
       /* func 44 subfunc 0 */
 

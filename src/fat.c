@@ -24,7 +24,7 @@
 #define FAT_CHMOD  3
 
 static int fatEndCluster(FAT *fat, unsigned int cluster);
-static void fatGetStartCluster(FAT *fat, const char *fnm);
+static void fatPosition(FAT *fat, const char *fnm);
 static void fatNextSearch(FAT *fat, char *search, const char **upto);
 static void fatRootSearch(FAT *fat, char *search);
 static void fatDirSearch(FAT *fat, char *search);
@@ -237,7 +237,7 @@ int fatOpenFile(FAT *fat, const char *fnm, FATFILE *fatfile)
     else
     {
         fatfile->root = 0;
-        fatGetStartCluster(fat, fnm);
+        fatPosition(fat, fnm);
         if (fat->notfound) return (2);
         fatfile->lastBytes = (unsigned int)
                              (fatfile->fileSize
@@ -471,11 +471,11 @@ size_t fatWriteFile(FAT *fat, FATFILE *fatfile, void *buf, size_t szbuf)
 
 
 /*
- * fatGetStartCluster - given a filename, retrieve the starting
+ * fatPosition - given a filename, retrieve the starting
  * cluster, or set not found flag if not found.
  */
 
-static void fatGetStartCluster(FAT *fat, const char *fnm)
+static void fatPosition(FAT *fat, const char *fnm)
 {
     char search[11];
     const char *upto = fnm;
@@ -1004,7 +1004,7 @@ int fatDeleteFile(FAT *fat,const char *fnm)
     {
         fnm++;
     }
-    fatGetStartCluster(fat,fnm);
+    fatPosition(fat,fnm);
     fat->operation=0;
     if(fat->notfound)
     {
@@ -1043,7 +1043,7 @@ int fatRenameFile(FAT *fat,const char *old,const char *new)
         strcpy(p+1,new);
     }
 
-    fatGetStartCluster(fat,fnm);
+    fatPosition(fat,fnm);
     if(!fat->notfound)
     {
         return(-2);
@@ -1078,7 +1078,7 @@ int fatRenameFile(FAT *fat,const char *old,const char *new)
         }
 
         fat->operation=FAT_RENAME;
-        fatGetStartCluster(fat, old);
+        fatPosition(fat, old);
         fat->operation=0;
         if(fat->notfound)
         {
@@ -1123,7 +1123,7 @@ int fatSetFileAttributes(FAT *fat,const char *fnm,int attr)
         fnm++;
     }
     fat->new_attr=attr;
-    fatGetStartCluster(fat,fnm);
+    fatPosition(fat,fnm);
     fat->operation=0;
     if(fat->notfound)
     {

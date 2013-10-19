@@ -737,6 +737,8 @@ static void fatDirSectorSearch(FAT *fat,
             }
             else if (p->file_name[0] == '\0')
             {
+                fat->de = p;
+                fat->dirSect = startSector + x;
                 fat->notfound = 1;
                 return;
             }

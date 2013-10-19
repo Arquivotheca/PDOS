@@ -250,6 +250,8 @@ int fatOpenFile(FAT *fat, const char *fnm, FATFILE *fatfile)
         fatPosition(fat, fnm);
         if (fat->notfound) return (2);
         p = fat->de;
+        fatfile->dirSect = fat->dirSect;
+        fatfile->dirOffset = ((unsigned char*)p - fat->dbuf);
         fatfile->cluster = fat->currcluster;
         fatfile->fileSize = p->file_size[0]
                             | ((unsigned long)p->file_size[1] << 8)

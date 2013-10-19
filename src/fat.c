@@ -24,18 +24,12 @@ static void fatPosition(FAT *fat, const char *fnm);
 static void fatNextSearch(FAT *fat, char *search, const char **upto);
 static void fatRootSearch(FAT *fat, char *search);
 static void fatDirSearch(FAT *fat, char *search);
-static void fatRootUpdate(FAT *fat, char *search, FATFILE *fatfile);
 static void fatClusterAnalyse(FAT *fat,
                               unsigned int cluster,
                               unsigned long *startSector,
                               unsigned int *nextCluster);
 static void fatDirSectorSearch(FAT *fat,
                                char *search,
-                               unsigned long startSector,
-                               int numsectors);
-static void fatDirSectorUpdate(FAT *fat,
-                               char *search,
-                               FATFILE *fatfile,
                                unsigned long startSector,
                                int numsectors);
 static void fatReadLogical(FAT *fat, long sector, void *buf);
@@ -162,45 +156,64 @@ static int fatEndCluster(FAT *fat, unsigned int cluster)
 
 int fatCreatFile(FAT *fat, const char *fnm, FATFILE *fatfile, int attrib)
 {
-    char search[11];
-    const char *upto;
-    int root = 0;
+    DIRENT *p;
+    int found = 0;
+    unsigned char lbuf[MAXSECTSZ];
 
     fat->notfound = 0;
+
     if ((fnm[0] == '\\') || (fnm[0] == '/'))
     {
         fnm++;
     }
-    upto = fnm;
-    fat->currcluster = 0;
-    fatNextSearch(fat, search, &upto);
-    if (fat->notfound) return (-3);
-    if (!fat->last)
+    fatPosition(fat,fnm);
+    p = fat->de;
+
+    if (!fat->notfound)
     {
-        fatRootSearch(fat, search);
-        if (fat->notfound) return (-3);
+        fat->currcluster = p->start_cluster[1] << 8 
+                           | p->start_cluster[0];
+        fatNuke(fat, fat->currcluster);
+        found = 1;
     }
-    else
+    if (found || (p->file_name[0] == '\0'))
     {
-        root = 1;
-    }
-    while (!fat->last)
-    {
-        fatNextSearch(fat, search, &upto);
-        if (fat->notfound) return (-3);
-        if (!fat->last)
-        {
-            fatDirSearch(fat, search);
-            if (fat->notfound) return (-3);
+        fat->currcluster = fatFindFreeCluster(fat);
+        fatMarkCluster(fat, fat->currcluster);
+        fatfile->sectorStart = (fat->currcluster - 2)
+            * (long)fat->sectors_per_cluster
+            + fat->filestart;
+
+        fatfile->sectorUpto = 0;
+        memset(p, '\0', sizeof(DIRENT));
+        memcpy(p->file_name, fat->search, 
+              (sizeof(p->file_name)+sizeof(p->file_ext)));
+        p->start_cluster[1] = (fat->currcluster >> 8) & 0xff;
+        p->start_cluster[0] = fat->currcluster & 0xff;
+        fatfile->totbytes = 0;
+        p->file_size[0] = fatfile->totbytes;
+        p->file_size[1] = (fatfile->totbytes >> 8) & 0xff ;
+        p->file_size[2] = (fatfile->totbytes >> 16) & 0xff ;
+        p->file_size[3] = (fatfile->totbytes >> 24) & 0xff ;
+                
+        fatfile->dirOffset = ((unsigned char*)p - fat->dbuf);
+        fatfile->lastBytes = 0;
+        p++;
+        if (p != (fat->dbuf + fat->sector_size))
+        {    
+            p->file_name[0] = '\0';
+            fatWriteLogical(fat, fat->dirSect, fat->dbuf);
         }
-    }
-    if (root)
-    {
-        fatRootUpdate(fat, search, fatfile);
-    }
-    else
-    {
-        /* fatDirUpdate */
+        else
+        {
+            fatWriteLogical(fat, fat->dirSect, fat->buf);
+            
+            /* +++ need to detect end of directory sectors and
+               expand if possible */
+            fatReadLogical(fat, fat->dirSect + 1, lbuf);
+            lbuf[0] = '\0';
+            fatWriteLogical(fat, fat->dirSect + 1, lbuf);
+        }
     }
     return (0);
 }
@@ -639,20 +652,6 @@ static void fatDirSearch(FAT *fat, char *search)
 
 
 /*
- * fatRootUpdate - update the root directory with entry
- * (given by "search").  The root directory is defined by a
- * starting sector number and the previously determined size
- * (number of sectors).
- */
-
-static void fatRootUpdate(FAT *fat, char *search, FATFILE *fatfile)
-{
-    fatDirSectorUpdate(fat, search, fatfile, fat->rootstart, fat->rootsize);
-    return;
-}
-
-
-/*
  * fatClusterAnalyse - given a cluster number, this function
  * determines the sector that the cluster starts and also the
  * next cluster number in the chain.
@@ -745,98 +744,6 @@ static void fatDirSectorSearch(FAT *fat,
         }
     }
     fat->currcluster = 0;
-    return;
-}
-
-
-/*
- * fatDirSectorUpdate - go through a block of sectors (as specified
- * by startSector and numsectors) which consist entirely of directory
- * entries, looking for a place to put the "search" string.  When
- * spare spot is found, update the directory with a starting cluster.
- * retrieve some
- * information about the file, including the starting cluster and the
- * file size.  If we get to the end of the directory (NUL in first
- * character of directory entry), append new entry to end. If we
- * reach the end of this block of sectors without reaching the
- * end of directory marker or finding a spare spot, we set the cluster to 0.
- */
-
-static void fatDirSectorUpdate(FAT *fat,
-                               char *search,
-                               FATFILE *fatfile,
-                               unsigned long startSector,
-                               int numsectors)
-{
-    int x;
-    unsigned char buf[MAXSECTSZ];
-    DIRENT *p;
-    int found = 0; /* if filename already exists, or we've hit end of dir */
-
-    for (x = 0; x < numsectors && !found; x++)
-    {
-        fatReadLogical(fat, startSector + x, buf);
-        for (p = buf; p < buf + fat->sector_size; p++)
-        {
-            if (memcmp(p->file_name, search, 
-                      (sizeof(p->file_name)+sizeof(p->file_ext))) == 0)
-            {
-                fat->currcluster = p->start_cluster[1] << 8 
-                                    | p->start_cluster[0];
-                fatNuke(fat, fat->currcluster);
-                found = 1;
-            }
-            if (found || (p->file_name[0] == '\0'))
-            {
-                fat->currcluster = fatFindFreeCluster(fat);
-                fatMarkCluster(fat, fat->currcluster);
-                fatfile->sectorStart = (fat->currcluster - 2)
-                    * (long)fat->sectors_per_cluster
-                    + fat->filestart;
-
-                fatfile->sectorUpto = 0;
-                memset(p, '\0', sizeof(DIRENT));
-                memcpy(p->file_name, search, 
-                      (sizeof(p->file_name)+sizeof(p->file_ext)));
-                p->start_cluster[1] = (fat->currcluster >> 8) & 0xff;
-                p->start_cluster[0] = fat->currcluster & 0xff;
-                fatfile->totbytes = 0;
-                p->file_size[0] = fatfile->totbytes;
-                p->file_size[1] = (fatfile->totbytes >> 8) & 0xff ;
-                p->file_size[2] = (fatfile->totbytes >> 16) & 0xff ;
-                p->file_size[3] = (fatfile->totbytes >> 24) & 0xff ;
-                fatfile->dirSect = startSector + x;
-                
-                fatfile->dirOffset = ((unsigned char*)p - buf);
-                fatfile->lastBytes = 0;
-                p++;
-                if (!found)
-                {
-                    if (p != (buf + fat->sector_size))
-                    {    
-                        p->file_name[0] = '\0';
-                        fatWriteLogical(fat, startSector + x, buf);
-                    }
-                    else
-                    {
-                        fatWriteLogical(fat, startSector + x, buf);
-                        if ((x + 1) != numsectors)
-                        {
-                            fatReadLogical(fat, startSector + x + 1, buf);
-                            buf[0] = '\0';
-                            fatWriteLogical(fat, startSector + x + 1, buf);
-                        }
-                    }
-                }
-                found = 1;
-                break;
-            }
-        }
-    }
-    if (!found)
-    {
-        fat->currcluster = 0;
-    }
     return;
 }
 

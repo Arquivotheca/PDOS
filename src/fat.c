@@ -198,21 +198,30 @@ int fatCreatFile(FAT *fat, const char *fnm, FATFILE *fatfile, int attrib)
         fatfile->dirSect = fat->dirSect;
         fatfile->dirOffset = ((unsigned char*)p - fat->dbuf);
         fatfile->lastBytes = 0;
-        p++;
-        if (p != (fat->dbuf + fat->sector_size))
-        {    
-            p->file_name[0] = '\0';
+        
+        /* if file was found, don't mark next entry as null */
+        if (found)
+        {
             fatWriteLogical(fat, fat->dirSect, fat->dbuf);
         }
         else
         {
-            fatWriteLogical(fat, fat->dirSect, fat->dbuf);
+            p++;
+            if (p != (fat->dbuf + fat->sector_size))
+            {    
+                p->file_name[0] = '\0';
+                fatWriteLogical(fat, fat->dirSect, fat->dbuf);
+            }
+            else
+            {
+                fatWriteLogical(fat, fat->dirSect, fat->dbuf);
             
-            /* +++ need to detect end of directory sectors and
-               expand if possible */
-            fatReadLogical(fat, fat->dirSect + 1, lbuf);
-            lbuf[0] = '\0';
-            fatWriteLogical(fat, fat->dirSect + 1, lbuf);
+                /* +++ need to detect end of directory sectors and
+                   expand if possible */
+                fatReadLogical(fat, fat->dirSect + 1, lbuf);
+                lbuf[0] = '\0';
+                fatWriteLogical(fat, fat->dirSect + 1, lbuf);
+            }
         }
     }
     return (0);

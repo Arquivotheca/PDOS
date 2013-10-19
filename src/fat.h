@@ -112,8 +112,6 @@ typedef struct {
     unsigned int rootstart;
     unsigned int filestart;
     unsigned int drive;
-    unsigned char pbuf[MAXSECTSZ];
-    unsigned char *buf;
     unsigned int rootentries;
     unsigned int rootsize;
     unsigned int fatsize;

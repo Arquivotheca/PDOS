@@ -50,7 +50,6 @@ void fatDefaults(FAT *fat)
     fat->sectors_per_track = 1;
     fat->bootstart = 0;
     fat->fatstart = 1;
-    fat->buf = fat->pbuf;
     return;
 }
 
@@ -206,7 +205,7 @@ int fatCreatFile(FAT *fat, const char *fnm, FATFILE *fatfile, int attrib)
         }
         else
         {
-            fatWriteLogical(fat, fat->dirSect, fat->buf);
+            fatWriteLogical(fat, fat->dirSect, fat->dbuf);
             
             /* +++ need to detect end of directory sectors and
                expand if possible */

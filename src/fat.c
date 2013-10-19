@@ -194,7 +194,8 @@ int fatCreatFile(FAT *fat, const char *fnm, FATFILE *fatfile, int attrib)
         p->file_size[1] = (fatfile->totbytes >> 8) & 0xff ;
         p->file_size[2] = (fatfile->totbytes >> 16) & 0xff ;
         p->file_size[3] = (fatfile->totbytes >> 24) & 0xff ;
-                
+
+        fatfile->dirSect = fat->dirSect;
         fatfile->dirOffset = ((unsigned char*)p - fat->dbuf);
         fatfile->lastBytes = 0;
         p++;

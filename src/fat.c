@@ -6,7 +6,7 @@
 /*********************************************************************/
 /*********************************************************************/
 /*                                                                   */
-/*  fat - file allocation table routinesm                            */
+/*  fat - file allocation table routines                             */
 /*                                                                   */
 /*  layout is boot sector, then FAT (clusters) then root directory   */
 /*  then file storage area                                           */

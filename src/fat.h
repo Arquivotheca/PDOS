@@ -48,6 +48,25 @@
 #define DIRENT_ACCESSB11 0x0800 
 /**/
 
+/*Structure for Directory Entry */
+typedef struct {
+    unsigned char file_name[8]; /*Short file name (0x00)*/       
+    unsigned char file_ext[3];  /*Short file extension (0x08)*/ 
+    unsigned char file_attr;    /*file attributes (0x0B)*/
+    unsigned char extra_attributes;  /*extra attributes (0x0C)*/
+    unsigned char first_char;        /*first character of deleted file
+                                       (0x0D)*/
+    unsigned char create_time[2];    /*create time(0x0E)*/
+    unsigned char create_date[2];    /*create date(0x10)*/
+    unsigned char last_access[2];    /*last access (0x12)*/
+    unsigned char access_rights[2];  /*file access rights (0x14)*/
+    unsigned char last_modtime[2];   /*last modified time (0x16)*/
+    unsigned char last_moddate[2];   /*last modified date (0x18)*/
+    unsigned char start_cluster[2];  /*Size of file in clusters (0x1A)*/
+    unsigned char file_size[4];      /*Size of file in bytes (0x1C) */
+}DIRENT;
+/**/
+
 typedef struct {
     int root;
     unsigned int cluster; /* start cluster for this file (for reading)
@@ -101,7 +120,6 @@ typedef struct {
     int fat16;
     unsigned long hidden;
     int notfound;
-    int operation; /*Defines the fat operation to be performed*/
     int currcluster;
     FATFILE *currfatfile;
     void (*readLogical)(void *diskptr, long sector, void *buf);
@@ -109,27 +127,13 @@ typedef struct {
     void *parm;
     char new_file[12]; /*new filename for rename*/
     int last;
-	int new_attr;
+    int new_attr;
+    char search[11];
+    const char *upto;
+    unsigned char dbuf[MAXSECTSZ];
+    DIRENT *de;
+    unsigned long dirSect; /* sector which contains directory entry */
 } FAT;
-
-/*Structure for Directory Entry */
-typedef struct {
-    unsigned char file_name[8]; /*Short file name (0x00)*/       
-    unsigned char file_ext[3];  /*Short file extension (0x08)*/ 
-    unsigned char file_attr;    /*file attributes (0x0B)*/
-    unsigned char extra_attributes;  /*extra attributes (0x0C)*/
-    unsigned char first_char;        /*first character of deleted file
-                                       (0x0D)*/
-    unsigned char create_time[2];    /*create time(0x0E)*/
-    unsigned char create_date[2];    /*create date(0x10)*/
-    unsigned char last_access[2];    /*last access (0x12)*/
-    unsigned char access_rights[2];  /*file access rights (0x14)*/
-    unsigned char last_modtime[2];   /*last modified time (0x16)*/
-    unsigned char last_moddate[2];   /*last modified date (0x18)*/
-    unsigned char start_cluster[2];  /*Size of file in clusters (0x1A)*/
-    unsigned char file_size[4];      /*Size of file in bytes (0x1C) */
-}DIRENT;
-/**/
 
 
 void fatDefaults(FAT *fat);

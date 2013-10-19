@@ -19,10 +19,6 @@
 #include "bos.h"
 #include "unused.h"
 
-#define FAT_DELETE 1
-#define FAT_RENAME 2
-#define FAT_CHMOD  3
-
 static int fatEndCluster(FAT *fat, unsigned int cluster);
 static void fatPosition(FAT *fat, const char *fnm);
 static void fatNextSearch(FAT *fat, char *search, const char **upto);
@@ -61,7 +57,6 @@ void fatDefaults(FAT *fat)
     fat->bootstart = 0;
     fat->fatstart = 1;
     fat->buf = fat->pbuf;
-    fat->operation=0;
     return;
 }
 
@@ -216,6 +211,8 @@ int fatCreatFile(FAT *fat, const char *fnm, FATFILE *fatfile, int attrib)
 
 int fatOpenFile(FAT *fat, const char *fnm, FATFILE *fatfile)
 {
+    DIRENT *p;
+
     fat->notfound = 0;
     fat->currfatfile=fatfile;
     if ((fnm[0] == '\\') || (fnm[0] == '/'))
@@ -239,6 +236,20 @@ int fatOpenFile(FAT *fat, const char *fnm, FATFILE *fatfile)
         fatfile->root = 0;
         fatPosition(fat, fnm);
         if (fat->notfound) return (2);
+        p = fat->de;
+        fatfile->cluster = fat->currcluster;
+        fatfile->fileSize = p->file_size[0]
+                            | ((unsigned long)p->file_size[1] << 8)
+                            | ((unsigned long)p->file_size[2] << 16)
+                            | ((unsigned long)p->file_size[3] << 24);
+        fatfile->attr = p->file_attr;
+                       
+        fatfile->ftime= p->last_modtime[0] 
+                    | ((unsigned int) p->last_modtime[1] << 8);
+                    
+        fatfile->fdate= p->last_moddate[0] 
+                    | ((unsigned int) p->last_moddate[1] << 8);
+                  
         fatfile->lastBytes = (unsigned int)
                              (fatfile->fileSize
                               % (fat->sectors_per_cluster
@@ -477,18 +488,16 @@ size_t fatWriteFile(FAT *fat, FATFILE *fatfile, void *buf, size_t szbuf)
 
 static void fatPosition(FAT *fat, const char *fnm)
 {
-    char search[11];
-    const char *upto = fnm;
-
+    fat->upto = fnm;
     fat->currcluster = 0;
-    fatNextSearch(fat, search, &upto);
+    fatNextSearch(fat, fat->search, &fat->upto);
     if (fat->notfound) return;
-    fatRootSearch(fat, search);
+    fatRootSearch(fat, fat->search);
     while (!fat->last)
     {
-        fatNextSearch(fat, search, &upto);
+        fatNextSearch(fat, fat->search, &fat->upto);
         if (fat->notfound) return;
-        fatDirSearch(fat, search);
+        fatDirSearch(fat, fat->search);
     }
     return;
 }
@@ -702,63 +711,31 @@ static void fatClusterAnalyse(FAT *fat,
  * if we reach the end of this block of sectors without reaching the
  * end of directory marker, we set the cluster to 0.
  */
-/*Updated with fatnuke depending upon the operation  the file is deleted*/
+
 static void fatDirSectorSearch(FAT *fat,
                                char *search,
                                unsigned long startSector,
                                int numsectors)
 {
     int x;
-    unsigned char buf[MAXSECTSZ];
-    DIRENT *p;
+    unsigned char *buf;
     FATFILE *fatfile = fat->currfatfile;
+    DIRENT *p;
 
+    buf = fat->dbuf;
     for (x = 0; x < numsectors; x++)
     {
         fatReadLogical(fat, startSector + x, buf);
-        for (p = buf; p < buf + fat->sector_size; p ++)
+        for (p = buf; p < buf + fat->sector_size; p++)
         {
-            if (memcmp(p, search, 11) == 0)
+            if (memcmp(p->file_name, search, 11) == 0)
             {
                 fat->currcluster = p->start_cluster[0] 
-                | ((unsigned int) p->start_cluster[1] << 8);
-               
-                if(fat->operation==FAT_DELETE && fat->last)
-                {
-                    fatNuke(fat,fat->currcluster);
-                    p->file_name[0]=DIRENT_DEL;
-                    fatWriteLogical(fat, startSector + x, buf);
-                    return;
-                }
-                else if(fat->operation==FAT_RENAME)
-                {
-                    memcpy(p, fat->new_file, 11);
-                    fatWriteLogical(fat, startSector + x, buf);
-                    return;
-                }
-                else if(fat->operation==FAT_CHMOD)
-                {
-                    p->file_attr=fat->new_attr;
-                    fatWriteLogical(fat, startSector + x, buf);
-                    return;
-                }
-                else
-                {
-                    fatfile->cluster = fat->currcluster;
-                    fatfile->fileSize = p->file_size[0]
-                                    | ((unsigned long)p->file_size[1] << 8)
-                                    | ((unsigned long)p->file_size[2] << 16)
-                                    | ((unsigned long)p->file_size[3] << 24);
-                    fatfile->attr = p->file_attr;
-                       
-                    fatfile->ftime= p->last_modtime[0] 
-                    | ((unsigned int) p->last_modtime[1] << 8);
+                    | ((unsigned int) p->start_cluster[1] << 8);
                     
-                    fatfile->fdate= p->last_moddate[0] 
-                    | ((unsigned int) p->last_moddate[1] << 8);
-                  
-                    return;
-                }
+                fat->de = p;
+                fat->dirSect = startSector + x;
+                return;
             }
             else if (p->file_name[0] == '\0')
             {
@@ -997,7 +974,6 @@ static void fatChain(FAT *fat, FATFILE *fatfile)
 */
 int fatDeleteFile(FAT *fat,const char *fnm)
 {
-    fat->operation=FAT_DELETE;
     fat->notfound = 0;
 
     if ((fnm[0] == '\\') || (fnm[0] == '/'))
@@ -1005,13 +981,16 @@ int fatDeleteFile(FAT *fat,const char *fnm)
         fnm++;
     }
     fatPosition(fat,fnm);
-    fat->operation=0;
+
     if(fat->notfound)
     {
         return(-1);
     }
     else
     {
+        fatNuke(fat,fat->currcluster);
+        fat->de->file_name[0]=DIRENT_DEL;
+        fatWriteLogical(fat, fat->dirSect, fat->dbuf);
         return(0);
     }
 }
@@ -1050,7 +1029,6 @@ int fatRenameFile(FAT *fat,const char *old,const char *new)
     }
     else
     {
-        fat->notfound=0;
         memset(fat->new_file, ' ', 11);
         p = strchr(new, '.');
         if (p != NULL)
@@ -1077,15 +1055,16 @@ int fatRenameFile(FAT *fat,const char *old,const char *new)
             memcpy(fat->new_file,new,strlen(new));
         }
 
-        fat->operation=FAT_RENAME;
         fatPosition(fat, old);
-        fat->operation=0;
+
         if(fat->notfound)
         {
             return (-1);
         }
         else
         {
+            memcpy(fat->de->file_name, fat->new_file, 11);
+            fatWriteLogical(fat, fat->dirSect, fat->dbuf);
             return (0);
         }
     }
@@ -1115,7 +1094,6 @@ int fatGetFileAttributes(FAT *fat,const char *fnm,int *attr)
 /*To set the attributes of the file given by file name fnm*/
 int fatSetFileAttributes(FAT *fat,const char *fnm,int attr)
 {
-    fat->operation=FAT_CHMOD;
     fat->notfound = 0;
 
     if ((fnm[0] == '\\') || (fnm[0] == '/'))
@@ -1124,13 +1102,15 @@ int fatSetFileAttributes(FAT *fat,const char *fnm,int attr)
     }
     fat->new_attr=attr;
     fatPosition(fat,fnm);
-    fat->operation=0;
+
     if(fat->notfound)
     {
         return(-1);
     }
     else
     {
+        fat->de->file_attr=fat->new_attr;
+        fatWriteLogical(fat, fat->dirSect, fat->dbuf);
         return(0);
     }
 }

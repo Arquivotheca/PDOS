@@ -125,7 +125,6 @@ typedef struct {
     void *parm;
     char new_file[12]; /*new filename for rename*/
     int last;
-    int new_attr;
     char search[11];
     const char *upto;
     unsigned char *dbuf;

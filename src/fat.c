@@ -1024,7 +1024,6 @@ int fatSetFileAttributes(FAT *fat,const char *fnm,int attr)
     {
         fnm++;
     }
-    fat->new_attr=attr;
     fatPosition(fat,fnm);
 
     if(fat->notfound)
@@ -1033,7 +1032,7 @@ int fatSetFileAttributes(FAT *fat,const char *fnm,int attr)
     }
     else
     {
-        fat->de->file_attr=fat->new_attr;
+        fat->de->file_attr = attr;
         fatWriteLogical(fat, fat->dirSect, fat->dbuf);
         return(0);
     }

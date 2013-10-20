@@ -39,6 +39,9 @@ static unsigned int fatFindFreeCluster(FAT *fat);
 static void fatChain(FAT *fat, FATFILE *fatfile);
 static void fatNuke(FAT *fat, unsigned int cluster);
 
+static unsigned char dir_buf[MAXSECTSZ];
+
+
 /*
  * fatDefaults - initial call which cannot fail
  */
@@ -50,6 +53,7 @@ void fatDefaults(FAT *fat)
     fat->sectors_per_track = 1;
     fat->bootstart = 0;
     fat->fatstart = 1;
+    fat->dbuf = dir_buf;
     return;
 }
 

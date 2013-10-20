@@ -128,7 +128,7 @@ typedef struct {
     int new_attr;
     char search[11];
     const char *upto;
-    unsigned char dbuf[MAXSECTSZ];
+    unsigned char *dbuf;
     DIRENT *de;
     unsigned long dirSect; /* sector which contains directory entry */
 } FAT;

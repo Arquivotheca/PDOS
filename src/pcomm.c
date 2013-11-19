@@ -256,6 +256,7 @@ static void dodel(char *fnm)
         return;
     }
     ret=PosFindFirst(fnm,0x10);
+    
     if(ret==2)
     {
         printf("File not found \n");

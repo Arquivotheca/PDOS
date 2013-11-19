@@ -180,19 +180,11 @@ int fatCreatFile(FAT *fat, const char *fnm, FATFILE *fatfile, int attrib)
         found = 1;
     }
     if (found || (p->file_name[0] == '\0'))
-    {
-        fat->currcluster = fatFindFreeCluster(fat);
-        fatMarkCluster(fat, fat->currcluster);
-        fatfile->sectorStart = (fat->currcluster - 2)
-            * (long)fat->sectors_per_cluster
-            + fat->filestart;
-
-        fatfile->sectorUpto = 0;
+    { 
+        fatfile->startcluster=0;
         memset(p, '\0', sizeof(DIRENT));
         memcpy(p->file_name, fat->search, 
               (sizeof(p->file_name)+sizeof(p->file_ext)));
-        p->start_cluster[1] = (fat->currcluster >> 8) & 0xff;
-        p->start_cluster[0] = fat->currcluster & 0xff;
         fatfile->totbytes = 0;
         p->file_size[0] = fatfile->totbytes;
         p->file_size[1] = (fatfile->totbytes >> 8) & 0xff ;
@@ -265,7 +257,7 @@ int fatOpenFile(FAT *fat, const char *fnm, FATFILE *fatfile)
         p = fat->de;
         fatfile->dirSect = fat->dirSect;
         fatfile->dirOffset = ((unsigned char*)p - fat->dbuf);
-        fatfile->cluster = fat->currcluster;
+        fatfile->startcluster = fat->currcluster;
         fatfile->fileSize = p->file_size[0]
                             | ((unsigned long)p->file_size[1] << 8)
                             | ((unsigned long)p->file_size[2] << 16)
@@ -410,11 +402,34 @@ size_t fatWriteFile(FAT *fat, FATFILE *fatfile, void *buf, size_t szbuf)
     size_t done; /* written bytes */
     DIRENT *d;
 
+
     /* Regardless of whether szbuf is 0 or remaining bytes is 0,
        we will not break into a new sector or cluster */
-
     if (szbuf == 0) return (0);
 
+    if(fatfile->startcluster==0)
+    {
+        fat->currcluster = fatFindFreeCluster(fat);
+        fatfile->startcluster = fat->currcluster;
+        fatMarkCluster(fat, fat->currcluster);
+        fatfile->sectorStart = (fat->currcluster - 2)
+                * (long)fat->sectors_per_cluster
+                + fat->filestart;
+        fatfile->sectorUpto = 0;
+                
+        fatReadLogical(fat,
+                       fatfile->dirSect,
+                       bbuf);
+        
+        d = (DIRENT *) (bbuf + fatfile->dirOffset);        
+        
+        d->start_cluster[1] = (fat->currcluster >> 8) & 0xff;
+        d->start_cluster[0] = fat->currcluster & 0xff;
+                     
+        fatWriteLogical(fat,
+                        fatfile->dirSect,
+                        bbuf);
+    }
     /* get remainder of bytes in current sector */
     rem = fat->sector_size - fatfile->lastBytes;
 
@@ -642,13 +657,14 @@ static void fatDirSearch(FAT *fat, char *search)
 {
     unsigned long startSector;
     unsigned int nextCluster;
+    fat->fnd=0;
 
     fatClusterAnalyse(fat, fat->currcluster, &startSector, &nextCluster);
     fatDirSectorSearch(fat,
                        search,
                        startSector,
                        fat->sectors_per_cluster);
-    while (fat->currcluster == 0)    /* not found but not end */
+    while (fat->fnd == 0)    /* not found but not end */
     {
         if (fatEndCluster(fat, nextCluster))
         {
@@ -742,11 +758,11 @@ static void fatDirSectorSearch(FAT *fat,
         fatReadLogical(fat, startSector + x, buf);
         for (p = buf; p < buf + fat->sector_size; p++)
         {
+            fat->fnd=1;
             if (memcmp(p->file_name, search, 11) == 0)
             {
                 fat->currcluster = p->start_cluster[0] 
                     | ((unsigned int) p->start_cluster[1] << 8);
-                    
                 fat->de = p;
                 fat->dirSect = startSector + x;
                 return;
@@ -1061,6 +1077,7 @@ int fatUpdateDateAndTime(FAT *fat,FATFILE *fatfile)
     return 0;
 }
 /**/
+
 /* Delete a file by setting cluster chain to zeros */
 static void fatNuke(FAT *fat, unsigned int cluster)
 {
@@ -1069,6 +1086,7 @@ static void fatNuke(FAT *fat, unsigned int cluster)
     int offset;
     int buffered = 0;
 
+    if (cluster == 0) return;
     while (!fatEndCluster(fat, cluster))
     {
         /* +++ need fat12 logic too */
@@ -1096,3 +1114,4 @@ static void fatNuke(FAT *fat, unsigned int cluster)
     }
     return;
 }
+/**/

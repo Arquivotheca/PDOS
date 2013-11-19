@@ -425,7 +425,7 @@ static int testPosGetFileLastWrittenDateAndTime(void)
 }
 /**/
 
-/**/
+/*Test to Set the attributes of a file*/
 static int testPosSetFileAttributes(void)
 {
     int ret;
@@ -434,6 +434,19 @@ static int testPosSetFileAttributes(void)
     printf("The return code is x %d x \n",ret);
 }
 /**/
+
+/*Test for empty file creation*/
+static int testPosCreatFile(void)
+{
+    int ret;
+    int handle;
+    
+    ret=PosCreatFile("temp1.txt",0x20,&handle);
+    printf("The handle of the file is x %d x \n",handle);
+    printf("The return code is x %d x \n",ret);
+}
+/**/
+
 int main(void)
 {
     /*testDriveParms();*/
@@ -448,6 +461,7 @@ int main(void)
     /*testPosGetFileAttributes();*/
     /*testPosGetFreeSpace();*/
     /*testPosGetFileLastWrittenDateAndTime();*/ 
-    testPosSetFileAttributes();
+    /*testPosSetFileAttributes();*/
+    testPosCreatFile();
     return (0);
 }

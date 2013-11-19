@@ -2091,7 +2091,10 @@ static int ff_search(void)
                 | ((unsigned long)dirent.file_size[1] << 8)
                 | ((unsigned long)dirent.file_size[2] << 16)
                 | ((unsigned long)dirent.file_size[3] << 24);
-                              
+                
+                dta->startcluster=dirent.start_cluster[0]
+                |(dirent.start_cluster[1]<<8);      
+                
                 memset(dta->file_name, '\0', sizeof(dta->file_name));
                 strcpy(dta->file_name, file);
                 return (0);

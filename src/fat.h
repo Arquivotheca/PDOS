@@ -69,7 +69,7 @@ typedef struct {
 
 typedef struct {
     int root;
-    unsigned int cluster; /* start cluster for this file (for reading)
+    unsigned int startcluster; /* start cluster for this file (for reading)
         or current cluster (for writing) */
     unsigned long fileSize;
     unsigned int lastSectors; /* when opening a file for read, this
@@ -130,6 +130,7 @@ typedef struct {
     unsigned char *dbuf;
     DIRENT *de;
     unsigned long dirSect; /* sector which contains directory entry */
+    int fnd;
 } FAT;
 
 

@@ -84,11 +84,6 @@ static int bios2driv(int bios);
 static int fileCreat(const char *fnm, int attrib);
 static int fileOpen(const char *fnm);
 static int fileDelete(const char *fnm);
-/*
-static int fileRename(const char *old,const char *new);
-static int fileGetAttrib(const char *fnm,int *attr);
-static int fileSetAttrib(const char *fnm,int attr);
-*/
 static int fileClose(int fno);
 static int fileRead(int fno, void *buf, size_t szbuf);
 static void accessDisk(int drive);
@@ -167,10 +162,6 @@ static char ff_pat[FILENAME_MAX];
 static char shell[100] = "";
 static int ff_handle;
 static DTA origdta;
-/*
-static char origdta[128];
-static char *dta = origdta;
-*/
 static DTA *dta =&origdta;
 static int debugcnt = 0;
 static void *exec_pstart;
@@ -2802,59 +2793,6 @@ static int fileDelete(const char *fnm)
     return (rc);
 }
 /**/
-
-/*
-static int fileRename(const char *old,const char *new)
-{
-    int x;
-    const char *p;
-    const char *q;
-    int drive;
-    int rc;
-    char tempf1[FILENAME_MAX];
-    char tempf2[FILENAME_MAX];
-
-    formatcwd(old,tempf1);
-    strcpy(tempf2, new);
-    upper_str(tempf2);
-    
-    old = tempf1;
-    new = tempf2;
-    
-    rc = fatRenameFile(&disks[tempDrive].fat, tempf1 + 2,new);
-    if (rc != 0) return (-1);
-    return (rc);
-}
-*/
-/*
-static int fileGetAttrib(const char *fnm,int *attr)
-{
-    int x;
-    int drive;
-    int rc;
-    char tempf[FILENAME_MAX];
-
-    formatcwd(fnm,tempf);
-    fnm = tempf;
-    rc = fatGetFileAttributes(&disks[tempDrive].fat,tempf + 2,attr);
-    return (rc);
-}
-*/
-
-/*
-static int fileSetAttrib(const char *fnm,int attr)
-{
-    int x;
-    int drive;
-    int rc;
-    char tempf[FILENAME_MAX];
-
-    formatcwd(fnm,tempf);
-    fnm = tempf;
-    rc = fatSetFileAttributes(&disks[tempDrive].fat,tempf + 2,attr);
-    return (rc);
-}
-*/
 
 /**/
 static void accessDisk(int drive)

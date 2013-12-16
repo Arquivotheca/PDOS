@@ -139,6 +139,7 @@ static int fatEndCluster(FAT *fat, unsigned int cluster)
 {
     if (fat->fat16)
     {
+        if(cluster==0) return (1);
         if (cluster >= 0xfff8U)
         {
             return (1);
@@ -952,7 +953,7 @@ int fatRenameFile(FAT *fat,const char *old,const char *new)
     fat->currfatfile = &fatfile;
     fat->notfound=0;
     strcpy(fnm,old);
-    p=strchr(fnm,'\\');
+    p=strrchr(fnm,'\\');
     if (p == NULL)
     {
         strcpy(fnm, new);
@@ -994,7 +995,8 @@ int fatRenameFile(FAT *fat,const char *old,const char *new)
         {
             memcpy(fat->new_file,new,strlen(new));
         }
-
+        
+        fat->notfound=0;
         fatPosition(fat, old);
 
         if(fat->notfound)

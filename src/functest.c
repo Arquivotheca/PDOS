@@ -366,7 +366,7 @@ static int testPosDeleteFile(void)
 {
     int ret;
 
-    ret=PosDeleteFile("c:\\temp.txt");
+    ret=PosDeleteFile("3.c");
     printf("The Return code is %d \n",ret);
 }
 /**/
@@ -376,7 +376,7 @@ static int testPosRenameFile(void)
 {
     int ret;
 
-    ret=PosRenameFile("temp.txt","temp2.txt");
+    ret=PosRenameFile("temp1.txt","temp2324.txt");
     printf("The Return code is %d \n",ret);
 }
 /**/
@@ -456,12 +456,12 @@ int main(void)
     /*testAbsoluteDiskRead();*/
     /*testPosGetSystemDate();*/
     /*testPosGetSystemTime();*/
-    /*testPosDeleteFile();*/
-    /*testPosRenameFile();*/
+    testPosRenameFile();
+   /* testPosDeleteFile();*/
     /*testPosGetFileAttributes();*/
     /*testPosGetFreeSpace();*/
     /*testPosGetFileLastWrittenDateAndTime();*/ 
     /*testPosSetFileAttributes();*/
-    testPosCreatFile();
+    /*testPosCreatFile();*/
     return (0);
 }

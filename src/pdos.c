@@ -1837,27 +1837,7 @@ int PosRenameFile(const char *old, const char *new)
     char filename[MAX_PATH];
     int ret;
 
-    if(old[1] == ':')
-    {
-        old += 2;
-    }
-    if(new[1] == ':')
-    {
-        new += 2;
-    }
-
-    if ((old[0] == '\\') || (old[0] == '/') || (new[0] == '\\') 
-        || (new[0] == '/'))
-    {
-        ret = fileRename(old,new);
-    }
-    else
-    {
-        strcpy(filename, cwd);
-        strcat(filename, "\\");
-        strcat(filename, old);
-        ret = fileRename(filename,new);
-    }
+    ret = fileRename(old,new);
     if (ret < 0)
     {
         return(ret);
@@ -2819,26 +2799,14 @@ static int fileRename(const char *old,const char *new)
     char tempf1[FILENAME_MAX];
     char tempf2[FILENAME_MAX];
 
-    strcpy(tempf1, old);
+    formatcwd(old,tempf1);
     strcpy(tempf2, new);
-    upper_str(tempf1);
     upper_str(tempf2);
+    
     old = tempf1;
     new = tempf2;
-    p = strchr(old, ':');
-    if (p == NULL)
-    {
-        p = old;
-        drive = currentDrive;
-    }
-    else
-    {
-        drive = *(p - 1);
-        drive = toupper(drive) - 'A';
-        p++;
-    }
-
-    rc = fatRenameFile(&disks[drive].fat, p,new);
+    
+    rc = fatRenameFile(&disks[tempDrive].fat, tempf1 + 2,new);
     if (rc != 0) return (-1);
     return (rc);
 }

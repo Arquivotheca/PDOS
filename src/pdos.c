@@ -84,9 +84,11 @@ static int bios2driv(int bios);
 static int fileCreat(const char *fnm, int attrib);
 static int fileOpen(const char *fnm);
 static int fileDelete(const char *fnm);
+/*
 static int fileRename(const char *old,const char *new);
 static int fileGetAttrib(const char *fnm,int *attr);
 static int fileSetAttrib(const char *fnm,int attr);
+*/
 static int fileClose(int fno);
 static int fileRead(int fno, void *buf, size_t szbuf);
 static void accessDisk(int drive);
@@ -1601,20 +1603,26 @@ long PosMoveFilePointer(int handle, long offset, int whence)
 /*To get the attributes of a given file*/
 int PosGetFileAttributes(const char *fnm,int *attr)
 {
-    int ret;
+    int rc;
+    char tempf[FILENAME_MAX];
 
-    ret=fileGetAttrib(fnm,attr);
-    return (ret);
+    formatcwd(fnm,tempf);
+    fnm = tempf;
+    rc = fatGetFileAttributes(&disks[tempDrive].fat,tempf + 2,attr);
+    return (rc);
 }
 /**/
 
 /*To set the attributes of a given file*/
 int PosSetFileAttributes(const char *fnm,int attr)
 {
-    int ret;
+    int rc;
+    char tempf[FILENAME_MAX];
 
-    ret=fileSetAttrib(fnm,attr);
-    return (ret);
+    formatcwd(fnm,tempf);
+    fnm = tempf;
+    rc = fatSetFileAttributes(&disks[tempDrive].fat,tempf + 2,attr);
+    return (rc);
 }
 /**/
 
@@ -1834,16 +1842,23 @@ int PosFindNext(void)
 /* To rename a given file */
 int PosRenameFile(const char *old, const char *new)
 {
-    char filename[MAX_PATH];
-    int ret;
+    int rc;
+    char tempf1[FILENAME_MAX];
+    char tempf2[FILENAME_MAX];
 
-    ret = fileRename(old,new);
-    if (ret < 0)
-    {
-        return(ret);
-    }
-    return (ret);
+    
+    formatcwd(old,tempf1);
+    strcpy(tempf2, new);
+    upper_str(tempf2);
+    
+    old = tempf1;
+    new = tempf2;
+
+    rc = fatRenameFile(&disks[tempDrive].fat, tempf1 + 2,new);
+    if (rc != 0) return (-1);
+    return (rc);
 }
+/**/
 
 /*Get last written date and time*/
 int PosGetFileLastWrittenDateAndTime(int handle,
@@ -2788,7 +2803,7 @@ static int fileDelete(const char *fnm)
 }
 /**/
 
-/*Function to rename a file*/
+/*
 static int fileRename(const char *old,const char *new)
 {
     int x;
@@ -2810,8 +2825,8 @@ static int fileRename(const char *old,const char *new)
     if (rc != 0) return (-1);
     return (rc);
 }
-
-/**/
+*/
+/*
 static int fileGetAttrib(const char *fnm,int *attr)
 {
     int x;
@@ -2824,9 +2839,9 @@ static int fileGetAttrib(const char *fnm,int *attr)
     rc = fatGetFileAttributes(&disks[tempDrive].fat,tempf + 2,attr);
     return (rc);
 }
-/**/
+*/
 
-/**/
+/*
 static int fileSetAttrib(const char *fnm,int attr)
 {
     int x;
@@ -2839,7 +2854,8 @@ static int fileSetAttrib(const char *fnm,int attr)
     rc = fatSetFileAttributes(&disks[tempDrive].fat,tempf + 2,attr);
     return (rc);
 }
-/**/
+*/
+
 /**/
 static void accessDisk(int drive)
 {

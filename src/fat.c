@@ -159,7 +159,8 @@ static int fatEndCluster(FAT *fat, unsigned int cluster)
 
 /* Return codes should be Positive */
 
-unsigned int fatCreatFile(FAT *fat, const char *fnm, FATFILE *fatfile, int attrib)
+unsigned int fatCreatFile(FAT *fat, const char *fnm, FATFILE *fatfile, 
+                          int attrib)
 {
     DIRENT *p;
     int found = 0;

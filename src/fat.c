@@ -18,6 +18,7 @@
 #include "fat.h"
 #include "bos.h"
 #include "unused.h"
+#include "pos.h"
 
 static int fatEndCluster(FAT *fat, unsigned int cluster);
 static void fatPosition(FAT *fat, const char *fnm);
@@ -156,9 +157,9 @@ static int fatEndCluster(FAT *fat, unsigned int cluster)
 }
 
 
-/* Return codes should be negative */
+/* Return codes should be Positive */
 
-int fatCreatFile(FAT *fat, const char *fnm, FATFILE *fatfile, int attrib)
+unsigned int fatCreatFile(FAT *fat, const char *fnm, FATFILE *fatfile, int attrib)
 {
     DIRENT *p;
     int found = 0;
@@ -228,7 +229,7 @@ int fatCreatFile(FAT *fat, const char *fnm, FATFILE *fatfile, int attrib)
 /* If opening root directory, abide by rootentries.  If opening
    subdirectory or file, follow clusters */
 
-int fatOpenFile(FAT *fat, const char *fnm, FATFILE *fatfile)
+unsigned int fatOpenFile(FAT *fat, const char *fnm, FATFILE *fatfile)
 {
     DIRENT *p;
 
@@ -254,7 +255,7 @@ int fatOpenFile(FAT *fat, const char *fnm, FATFILE *fatfile)
     {
         fatfile->root = 0;
         fatPosition(fat, fnm);
-        if (fat->notfound) return (2);
+        if (fat->notfound) return (POS_ERR_FILE_NOT_FOUND);
         p = fat->de;
         fatfile->dirSect = fat->dirSect;
         fatfile->dirOffset = ((unsigned char*)p - fat->dbuf);
@@ -289,7 +290,7 @@ int fatOpenFile(FAT *fat, const char *fnm, FATFILE *fatfile)
     fatfile->byteUpto = 0;
     if (fat->notfound)
     {
-        return (2);
+        return (POS_ERR_FILE_NOT_FOUND);
     }
     return (0);
 }
@@ -913,7 +914,7 @@ static void fatChain(FAT *fat, FATFILE *fatfile)
   Delete a file by searching for its start sector and setting all the 
   clusters to point to zero,by calling the fatnuke function
 */
-int fatDeleteFile(FAT *fat,const char *fnm)
+unsigned int fatDeleteFile(FAT *fat,const char *fnm)
 {
     fat->notfound = 0;
 
@@ -925,7 +926,7 @@ int fatDeleteFile(FAT *fat,const char *fnm)
 
     if(fat->notfound)
     {
-        return(-1);
+        return(POS_ERR_FILE_NOT_FOUND);
     }
     else
     {
@@ -940,11 +941,13 @@ int fatDeleteFile(FAT *fat,const char *fnm)
 /*
   To rename a given file from old to new
 */
-int fatRenameFile(FAT *fat,const char *old,const char *new)
+unsigned int fatRenameFile(FAT *fat,const char *old,const char *new)
 {
     FATFILE fatfile;
     char fnm[FILENAME_MAX];
     const char *p;
+    int len;
+    int lenext;
 
     if ((old[0] == '\\') || (old[0] == '/'))
     {
@@ -966,7 +969,7 @@ int fatRenameFile(FAT *fat,const char *old,const char *new)
     fatPosition(fat,fnm);
     if(!fat->notfound)
     {
-        return(-2);
+        return(POS_ERR_FILE_NOT_FOUND);
     }
     else
     {
@@ -974,26 +977,29 @@ int fatRenameFile(FAT *fat,const char *old,const char *new)
         p = strchr(new, '.');
         if (p != NULL)
         {
-            if ((p - new) > 8)
-            {
-                return(-8);
+            len=(p-new);
+            lenext=strlen(p+1);
+            if (len > 8)
+            {   
+                len=8;
             }
-            else
+            memcpy(fat->new_file, new, len);
+
+            if (lenext > 3)
             {
-                memcpy(fat->new_file, new, p - new);
+                lenext=3;
             }
-            if (strlen(p+1) > 3)
-            {
-                return(-4);
-            }
-            else
-            {
-                memcpy(fat->new_file + 8, p+1, strlen(p+1));
-            }
+            memcpy(fat->new_file + 8, p+1, lenext);
+            
         }
-        else if((strlen(new))<=8)
-        {
-            memcpy(fat->new_file,new,strlen(new));
+        else
+        {   
+            len=strlen(new);
+            if (len > 8)
+            {   
+                len=8;
+            }            
+            memcpy(fat->new_file,new,len);
         }
         
         fat->notfound=0;
@@ -1001,7 +1007,7 @@ int fatRenameFile(FAT *fat,const char *old,const char *new)
 
         if(fat->notfound)
         {
-            return (-1);
+            return (POS_ERR_FILE_NOT_FOUND);
         }
         else
         {
@@ -1014,9 +1020,9 @@ int fatRenameFile(FAT *fat,const char *old,const char *new)
 /**/
 
 /*To get the attributes of the file given by filename fnm*/
-int fatGetFileAttributes(FAT *fat,const char *fnm,int *attr)
+unsigned int fatGetFileAttributes(FAT *fat,const char *fnm,int *attr)
 {
-    int ret;
+    unsigned int ret;
     FATFILE fatfile;
 
     ret=fatOpenFile(fat,fnm,&fatfile);
@@ -1034,7 +1040,7 @@ int fatGetFileAttributes(FAT *fat,const char *fnm,int *attr)
 
 
 /*To set the attributes of the file given by file name fnm*/
-int fatSetFileAttributes(FAT *fat,const char *fnm,int attr)
+unsigned int fatSetFileAttributes(FAT *fat,const char *fnm,int attr)
 {
     fat->notfound = 0;
 
@@ -1046,7 +1052,7 @@ int fatSetFileAttributes(FAT *fat,const char *fnm,int attr)
 
     if(fat->notfound)
     {
-        return(-1);
+        return(POS_ERR_FILE_NOT_FOUND);
     }
     else
     {
@@ -1058,7 +1064,7 @@ int fatSetFileAttributes(FAT *fat,const char *fnm,int attr)
 /**/
 
 /**/
-int fatUpdateDateAndTime(FAT *fat,FATFILE *fatfile)
+unsigned int fatUpdateDateAndTime(FAT *fat,FATFILE *fatfile)
 {
     static unsigned char bbuf[MAXSECTSZ];
     DIRENT *d;

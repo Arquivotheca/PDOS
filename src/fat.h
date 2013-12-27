@@ -141,18 +141,18 @@ void fatInit(FAT *fat,
              void (*writeLogical)(void *diskptr, long sector, void *buf),
              void *parm);
 void fatTerm(FAT *fat);
-int fatCreatFile(FAT *fat, const char *fnm, FATFILE *fatfile, int attrib);
-int fatOpenFile(FAT *fat, const char *fnm, FATFILE *fatfile);
+unsigned int fatCreatFile(FAT *fat, const char *fnm, FATFILE *fatfile, int attrib);
+unsigned int fatOpenFile(FAT *fat, const char *fnm, FATFILE *fatfile);
 size_t fatReadFile(FAT *fat, FATFILE *fatfile, void *buf, size_t szbuf);
 size_t fatWriteFile(FAT *fat, FATFILE *fatfile, void *buf, size_t szbuf);
-int fatDeleteFile(FAT *fat,const char *fnm); 
+unsigned int fatDeleteFile(FAT *fat,const char *fnm); 
 /*To delete a file from a given directory*/
-int fatRenameFile(FAT *fat,const char *old,const char *new);
+unsigned int fatRenameFile(FAT *fat,const char *old,const char *new);
 /*To rename a given file*/
-int fatGetFileAttributes(FAT *fat,const char *fnm,int *attr);
+unsigned int fatGetFileAttributes(FAT *fat,const char *fnm,int *attr);
 /*To Get the file attributes from the file name specified by fnm*/
-int fatSetFileAttributes(FAT *fat,const char *fnm,int attr);
+unsigned int fatSetFileAttributes(FAT *fat,const char *fnm,int attr);
 /*To Set the attributes of the given file*/
-int fatUpdateDateAndTime(FAT *fat,FATFILE *fatfile);
+unsigned int fatUpdateDateAndTime(FAT *fat,FATFILE *fatfile);
 /*To update the date and time of the given file*/
 #endif

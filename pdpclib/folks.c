@@ -43,11 +43,11 @@ quit
 */
 
 
-/* Here is a hexdump of the transferred file on arrival at the PC */
+/* Here is an EBCDIC hexdump of the transferred file on arrival at the PC */
 
 /*
-000000  000F0000 C8859393 9640A388 85998500  .........@......
-000010  090000C6 969392A2                    ........
+000000  000F0000 C8859393 9640A388 85998500  ....Hello there.
+000010  090000C6 969392A2                    ...Folks
 */
 
 #include <stdio.h>

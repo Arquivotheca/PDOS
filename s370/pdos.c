@@ -84,7 +84,9 @@
 
 #define PSA_ORIGIN 0 /* the PSA starts at literally address 0 */
 
-#define CR13_DUMMY 0x00001000 /* disable ATL memory access */
+#define CR13_DUMMY 0x00001000 /* disable ATL memory access. This
+  doesn't serve any practical purpose and should not be used. CR13
+  is ignored when CR0.10 = 1 (XA mode) */
 
 /*
 
@@ -270,17 +272,17 @@ old virtual memory map:
    
    First, here is a description of S/380.
    
-   If CR13 = 0, then ATL memory accesses are done to real storage,
-   ignoring storage keys (for ATL accesses only), even though (S/370)
-   DAT is switched on. This provides instant access to ATL memory for
-   applications, before having to make any OS changes at all. This
-   is not designed for serious use though, due to the lack of
-   integrity in ATL memory for multiple running programs. It does
-   provide very quick proof-of-concept though.
+   If CR0.10 (XA) is off and CR13 = 0, then ATL memory accesses are 
+   done to real storage, ignoring storage keys (for ATL accesses only),
+   even though (S/370) DAT is switched on. This provides instant 
+   access to ATL memory for applications, before having to make 
+   any OS changes at all. This is not designed for serious use 
+   though, due to the lack of integrity in ATL memory for multiple 
+   running programs. It does provide very quick proof-of-concept though.
    
-   If CR13 is non-zero, e.g. even setting a dummy value of
-   0x00001000, then ATL memory accesses are done via a DAT
-   mechanism instead of using real memory.
+   If in S/370 mode (CR0.10 off), and CR13 is non-zero, e.g. even 
+   setting a dummy value of 0x00001000, then ATL memory accesses 
+   are done via a DAT mechanism instead of using real memory.
    
    With the above dummy value, the size of the table is only
    sufficient to address BTL memory (ie 16 MB), so that value of 

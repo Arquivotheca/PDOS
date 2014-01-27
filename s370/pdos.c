@@ -504,6 +504,13 @@ typedef unsigned int UINT4;
 /* for CR0: */
 /* bits 8-9 = 10 (4K pages), bits 11-12 = 10 (1 MB segments) */
 /* for S/370XA, bit 10 also needs to be 1 */
+/* 
+              0123 4567 89AB CDEF
+   00800000 = 0000 0000 1000 0000  4k pages
+   00900000 = 0000 0000 1001 0000  1M segments
+   00A00000 = 0000 0000 1010 0000  XA dat (CR0.10 = 1)
+   00B00000 = 0000 0000 1011 0000  4k, 1M and XA
+*/
 
 #if defined(S390)
 static int cr0 = 0x00B00000;

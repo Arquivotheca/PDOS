@@ -10,6 +10,10 @@
 /*                                                                   */
 /*********************************************************************/
 
+//**** Error Codes for Bos API Calls ****
+
+#define BOS_ERROR 1 
+
 int BosPrintScreen(void); /* 5: */
 int BosSetVideoMode(unsigned int mode); /* 10:0 */
 int BosSetCursorType(int top, int bottom); /* 10:1 */
@@ -105,4 +109,5 @@ void BosSystemWarmBoot(void); /* 19: */
 
 void BosGetSystemTime(unsigned long *ticks, unsigned int *midnight);/*1A.0*/
 
-int BosGetSystemDate(int *century,int *year,int *month,int *day);/*1A.4*/
+unsigned int BosGetSystemDate(int *century,int *year,int *month,
+                              int *day);/*1A.4*/

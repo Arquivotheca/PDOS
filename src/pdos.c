@@ -1305,11 +1305,18 @@ void PosGetSystemDate(int *year, int *month, int *day, int *dw)
 
 /*Function to display time by converting ticks retrieved from BIOS 
   call into timeformat*/
+/* 
+   Input: Nuber of ticks returned by BosGetSystemTime().
+   Output: Time in hours,minutes,seconds and hunderths. 
+   Notes: Converts the number of ticks to time format.
+*/
 void PosGetSystemTime(int *hour, int *minute, int *second, int *hundredths)
 {
     unsigned long ticks,t;
+    unsigned int midnight;
 
-    ticks=BosGetSystemTime();
+    BosGetSystemTime(&ticks,&midnight);
+    
     t=(ticks*1000)/182;
     *hundredths=(int)t%100;
     t/=100;
@@ -1318,9 +1325,8 @@ void PosGetSystemTime(int *hour, int *minute, int *second, int *hundredths)
     *minute=(int)t%60;
     t/=60;
     *hour=(int)t;
-    return 0;
+    return;
 }
-/**/
 
 void *PosGetDTA(void)
 {

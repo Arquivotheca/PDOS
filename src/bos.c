@@ -17,18 +17,25 @@ static void int86n(unsigned int intno);
 static void int86i(unsigned int intno, union REGS *regsin);
 
 /*BosGetSystemTime-BIOS Int 1Ah/AH=00h*/
-
-unsigned long BosGetSystemTime(void)
+/* 
+   Input: Pointers to variable Ticks(long) and midnight(int).
+   Output: Returns ticks and midnight flag.
+   Notes: None.
+*/
+void BosGetSystemTime(unsigned long *ticks, unsigned int *midnight)
 {
     union REGS regsin;
     union REGS regsout;
 
     regsin.h.ah=0x00;
+    
     int86(0x1A,&regsin,&regsout);
-    return((unsigned long)regsout.x.cx << 16 | regsout.x.dx);
+    
+    *ticks = ((unsigned long)regsout.x.cx << 16 | regsout.x.dx);
+    *midnight = regsout.h.al;
+    
+    return;
 }
-
-/**/
 
 /*BosGetSystemTime-BIOS Int 1Ah/AH=04h*/
 

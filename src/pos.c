@@ -157,6 +157,7 @@ void PosGetSystemTime(int *hour, int *min, int *sec, int *hundredths)
 
     regsin.h.ah = 0x2c;
     int86(0x21, &regsin, &regsout);
+    
     *hour = regsout.h.ch;
     *min = regsout.h.cl;
     *sec = regsout.h.dh;

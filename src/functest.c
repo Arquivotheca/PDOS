@@ -284,13 +284,15 @@ static int testAbsoluteDiskRead(void)
 }
 /**/
 
-/*Test function- to get the system time using BIOS call*/
+/*Test function to test BIOS Call Int 1A/AH=00H*/
 static int testBosGetSystemTime(void)
 {
     unsigned long ticks;
+    unsigned int midnight;
     unsigned long t1,t2,t3,t4,t5,t6,t7;
 
-    ticks=BosGetSystemTime();
+    BosGetSystemTime(&ticks,&midnight);
+    
     t1=(ticks*1000)/182;
     t2=t1%100;
     t3=t1/100;
@@ -304,7 +306,8 @@ static int testBosGetSystemTime(void)
     printf("Time in seconds %lu \n",t4);
     printf("Time in minutes %lu \n",t6);
     printf("Time in hours %lu \n",t7);
-    return (0);
+    printf("Midnight Flag %d \n",midnight);
+    return 0;
 }
 
 /*Converting BCD to int*/
@@ -456,7 +459,8 @@ int main(void)
     /*testAbsoluteDiskRead();*/
     /*testPosGetSystemDate();*/
     /*testPosGetSystemTime();*/
-    testPosRenameFile();
+    testBosGetSystemTime();
+    /*testPosRenameFile();*/
    /* testPosDeleteFile();*/
     /*testPosGetFileAttributes();*/
     /*testPosGetFreeSpace();*/

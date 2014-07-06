@@ -103,6 +103,6 @@ int BosReadKeyboardCharacter(int *scancode, int *ascii); /* 16:0 */
 
 void BosSystemWarmBoot(void); /* 19: */
 
-unsigned long BosGetSystemTime(void);/*1A.0*/
+void BosGetSystemTime(unsigned long *ticks, unsigned int *midnight);/*1A.0*/
 
 int BosGetSystemDate(int *century,int *year,int *month,int *day);/*1A.4*/

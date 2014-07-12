@@ -32,16 +32,18 @@ static int testBosWriteText(void)
     return (0);
 }
 
+
 static int testBosReadGraphics(void)
 {
     int colour;
-
+    
     BosSetVideoMode(0x12);
     BosReadGraphicsPixel(0, 20, 40, &colour);
     BosSetVideoMode(0x02);
     printf("colour is %x\n", colour);
     return (0);
 }
+
 
 static int testBosWriteGraphicsPixel(void)
 {
@@ -133,9 +135,14 @@ static int testBosSetCursorType(void)
     return (0);
 }
 
+/* Test function to test BIOS call Int 10/AH=00h */
 static int testBosSetVideoMode(void)
 {
-    BosSetVideoMode(0x00);
+    int retval;
+    
+    retval = BosSetVideoMode(0x00);
+    printf("Return Value is %d",retval);
+    
     return (0);
 }
 
@@ -450,8 +457,9 @@ int main(void)
     /* Successful Tests*/
     /*testBosGetSystemTime();*/    
     /*testBosGetSystemDate();*/
+    /*testBosPrintScreen();*/
     
-    testBosPrintScreen();
+    testBosSetVideoMode();
     
     /*testDriveParms();*/
     /*testDisk();*/

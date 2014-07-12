@@ -90,15 +90,23 @@ void BosPrintScreen(void)
 /* BosSetVideoMode - BIOS Int 10h Function 00h */
 /* Mode 03h = text mode */
 /*      13h = 320*200 graphics mode, location 0xa0000 */
+/*
+    Input: Mode of video
+    Returns: AL video mode flag
+    Notes: 
+*/
 
-int BosSetVideoMode(unsigned int mode)
+unsigned int BosSetVideoMode(unsigned int mode)
 {
     union REGS regsin;
+    union REGS regsout;
 
     regsin.h.ah = 0x00;
     regsin.h.al = (unsigned char)mode;
-    int86i(0x10, &regsin);
-    return (0);
+    
+    int86(0x10,&regsin,&regsout);
+    
+    return (regsout.h.al);
 }
 
 

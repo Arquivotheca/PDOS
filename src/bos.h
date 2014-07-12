@@ -13,7 +13,7 @@
 #define BOS_ERROR 1 
 
 void BosPrintScreen(void); /* 5: */
-int BosSetVideoMode(unsigned int mode); /* 10:0 */
+unsigned int BosSetVideoMode(unsigned int mode); /* 10:0 */
 int BosSetCursorType(int top, int bottom); /* 10:1 */
 int BosSetCursorPosition(int page, int row, int column); /* 10:2 */
 int BosReadCursorPosition(int page, /* 10:3 */

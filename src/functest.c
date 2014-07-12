@@ -129,6 +129,7 @@ static int testBosSetCursorPosition(void)
     return (0);
 }
 
+/* Test function to test BIOS call Int 10/AH=01h*/
 static int testBosSetCursorType(void)
 {
     BosSetCursorType(0x0b, 0x0c);
@@ -458,8 +459,10 @@ int main(void)
     /*testBosGetSystemTime();*/    
     /*testBosGetSystemDate();*/
     /*testBosPrintScreen();*/
+    /*testBosSetVideoMode();*/
     
-    testBosSetVideoMode();
+    testBosSetCursorType();
+    
     
     /*testDriveParms();*/
     /*testDisk();*/

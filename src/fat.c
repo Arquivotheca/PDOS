@@ -140,7 +140,7 @@ static int fatEndCluster(FAT *fat, unsigned int cluster)
 {
     if (fat->fat16)
     {
-        if(cluster==0) return (1);
+        /* if(cluster==0) return (1); */
         if (cluster >= 0xfff8U)
         {
             return (1);

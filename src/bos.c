@@ -13,7 +13,9 @@
 #include "bos.h"
 #include "support.h"
 
+/* x86 interrupt call with no input registers */
 static void int86n(unsigned int intno);
+/* x86 interrupt call with registers */
 static void int86i(unsigned int intno, union REGS *regsin);
 
 /* BosGetSystemTime-BIOS Int 1Ah/AH=00h */
@@ -70,12 +72,18 @@ unsigned int BosGetSystemDate(int *century,int *year,int *month,int *day)
     }
 }
 
-/* BosPrintScreen - BIOS Int 05h */
+/* BosPrintScreen-BIOS Int 05h */
+/*
+    Input: None.
+    Returns: 0 
+    Notes: Some old BIOSes/applications appear to 
+           destroy BP on return.
+*/
 
-int BosPrintScreen(void)
+void BosPrintScreen(void)
 {
     int86n(0x05);
-    return (0);
+    return;
 }
 
 

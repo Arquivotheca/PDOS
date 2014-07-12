@@ -139,6 +139,7 @@ static int testBosSetVideoMode(void)
     return (0);
 }
 
+/* Test function to test BIOS call Int 05 */
 static int testBosPrintScreen(void)
 {
     BosPrintScreen();
@@ -449,6 +450,8 @@ int main(void)
     /* Successful Tests*/
     /*testBosGetSystemTime();*/    
     /*testBosGetSystemDate();*/
+    
+    testBosPrintScreen();
     
     /*testDriveParms();*/
     /*testDisk();*/

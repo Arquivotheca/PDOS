@@ -10,11 +10,9 @@
 /*                                                                   */
 /*********************************************************************/
 
-//**** Error Codes for Bos API Calls ****
-
 #define BOS_ERROR 1 
 
-int BosPrintScreen(void); /* 5: */
+void BosPrintScreen(void); /* 5: */
 int BosSetVideoMode(unsigned int mode); /* 10:0 */
 int BosSetCursorType(int top, int bottom); /* 10:1 */
 int BosSetCursorPosition(int page, int row, int column); /* 10:2 */

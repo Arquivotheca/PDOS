@@ -15,7 +15,8 @@
 void BosPrintScreen(void); /* 5: */
 unsigned int BosSetVideoMode(unsigned int mode); /* 10:0 */
 void BosSetCursorType(unsigned int top, unsigned int bottom); /* 10:1 */
-int BosSetCursorPosition(int page, int row, int column); /* 10:2 */
+void BosSetCursorPosition(unsigned int page, unsigned int row, 
+                          unsigned int column); /* 10:2 */
 int BosReadCursorPosition(int page, /* 10:3 */
                           int *cursorStart,
                           int *cursorEnd,

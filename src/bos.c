@@ -134,8 +134,14 @@ void BosSetCursorType(unsigned int top, unsigned int bottom)
 
 
 /* BosSetCursorPosition - BIOS Int 10h Function 02h */
+/*
+   Input: page number, row and column
+   Returns: None.
+   Notes: None.
+*/
 
-int BosSetCursorPosition(int page, int row, int column)
+void BosSetCursorPosition(unsigned int page, unsigned int row, 
+                          unsigned int column)
 {
     union REGS regsin;
 
@@ -143,8 +149,10 @@ int BosSetCursorPosition(int page, int row, int column)
     regsin.h.bh = page;
     regsin.h.dh = row;
     regsin.h.dl = column;
+    
     int86i(0x10, &regsin);
-    return (0);
+    
+    return;
 }
 
 

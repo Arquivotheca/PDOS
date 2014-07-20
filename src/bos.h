@@ -17,11 +17,11 @@ unsigned int BosSetVideoMode(unsigned int mode); /* 10:0 */
 void BosSetCursorType(unsigned int top, unsigned int bottom); /* 10:1 */
 void BosSetCursorPosition(unsigned int page, unsigned int row, 
                           unsigned int column); /* 10:2 */
-int BosReadCursorPosition(int page, /* 10:3 */
-                          int *cursorStart,
-                          int *cursorEnd,
-                          int *row,
-                          int *column);
+void BosReadCursorPosition(unsigned int page, /* 10:3 */
+                           unsigned int *cursorStart,
+                           unsigned int *cursorEnd,
+                           unsigned int *row,
+                           unsigned int *column);
 int BosReadLightPen(int *trigger, /* 10:4 */
                     unsigned int *pcolumn,
                     unsigned int *prow1,

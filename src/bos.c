@@ -157,23 +157,34 @@ void BosSetCursorPosition(unsigned int page, unsigned int row,
 
 
 /* BosReadCursorPositon - BIOS Int 10h Function 03h */
+/*
+    Input: page, retrives values into pointers cursorstart
+           cursorend, row and column to point out exact position
+           of the cursor.
+    Returns: None.
+    Notes: None.
 
-int BosReadCursorPosition(int page,
-                          int *cursorStart,
-                          int *cursorEnd,
-                          int *row,
-                          int *column)
+*/
+
+void BosReadCursorPosition(unsigned int page,
+                           unsigned int *cursorStart,
+                           unsigned int *cursorEnd,
+                           unsigned int *row,
+                           unsigned int *column)
 {
     union REGS regs;
 
     regs.h.ah = 0x03;
     regs.h.bh = page;
+    
     int86(0x10, &regs, &regs);
+    
     *cursorStart = regs.h.ch;
     *cursorEnd = regs.h.cl;
     *row = regs.h.dh;
     *column = regs.h.dl;
-    return (0);
+    
+    return;
 }
 
 

@@ -107,15 +107,17 @@ static int testBosReadLightPen(void)
     return (0);
 }
 
+/* Test function to test BIOS call Int 10/AH=03h*/
 static int testBosReadCursorPosition(void)
 {
     int cursorStart, cursorEnd, row, column;
 
     BosReadCursorPosition(0,
-    &cursorStart,
-    &cursorEnd,
-    &row,
-    &column);
+                          &cursorStart,
+                          &cursorEnd,
+                          &row,
+                          &column);
+                          
     printf("cursorStart is %d\n", cursorStart);
     printf("cursorEnd is %d\n", cursorEnd);
     printf("row is %d\n", row);
@@ -461,9 +463,10 @@ int main(void)
     /*testBosGetSystemDate();*/
     /*testBosPrintScreen();*/
     /*testBosSetVideoMode();*/    
-    /*testBosSetCursorType();*/
+    /*testBosSetCursorType();*/    
+    /*testBosSetCursorPosition();*/
     
-    testBosSetCursorPosition();
+    testBosReadCursorPosition();
     
     /*testDriveParms();*/
     /*testDisk();*/

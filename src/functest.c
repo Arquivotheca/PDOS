@@ -96,6 +96,7 @@ static int testBosScroll(void)
     return (0);
 }
 
+/* Test function to test BIOS call Int 10/AH=04h*/
 static int testBosReadLightPen(void)
 {
     int trigger;
@@ -465,8 +466,9 @@ int main(void)
     /*testBosSetVideoMode();*/    
     /*testBosSetCursorType();*/    
     /*testBosSetCursorPosition();*/
+    /*testBosReadCursorPosition();*/
     
-    testBosReadCursorPosition();
+    testBosReadLightPen();
     
     /*testDriveParms();*/
     /*testDisk();*/

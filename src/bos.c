@@ -189,25 +189,35 @@ void BosReadCursorPosition(unsigned int page,
 
 
 /* BosReadLightPen - BIOS Int 10h Function 04h */
+/*
+    Input: Light Pen trigger,pixel row and pixel column
+    Returns : None.
+    Notes: On a CGA, returned column numbers are always 
+           multiples of 2 (320- column modes) or 4 (640-column modes). 
+           Returned row numbers are only accurate to two lines 
+*/
 
-int BosReadLightPen(int *trigger,
-                    unsigned int *pcolumn,
-                    unsigned int *prow1,
-                    unsigned int *prow2,
-                    int *crow,
-                    int *ccol)
+void BosReadLightPen(int *trigger,
+                     unsigned int *pcolumn,
+                     unsigned int *prow1,
+                     unsigned int *prow2,
+                     int *crow,
+                     int *ccol)
 {
     union REGS regs;
 
     regs.h.ah = 0x04;
+    
     int86(0x10, &regs, &regs);
+    
     *trigger = regs.h.ah;
     *pcolumn = regs.x.bx;
     *prow1 = regs.h.ch;
     *prow2 = regs.x.cx;
     *crow = regs.h.dh;
     *ccol = regs.h.dl;
-    return (0);
+    
+    return;
 }
 
 

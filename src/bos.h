@@ -22,7 +22,7 @@ void BosReadCursorPosition(unsigned int page, /* 10:3 */
                            unsigned int *cursorEnd,
                            unsigned int *row,
                            unsigned int *column);
-int BosReadLightPen(int *trigger, /* 10:4 */
+void BosReadLightPen(int *trigger, /* 10:4 */
                     unsigned int *pcolumn,
                     unsigned int *prow1,
                     unsigned int *prow2,

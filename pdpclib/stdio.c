@@ -996,6 +996,8 @@ static void osfopen(void)
     myfile->line_buf = ((mode & 0x40) != 0);    
     mode &= ~0x40;
 
+    mode &= 0x07; /* only interested in the simple mode now */
+
     /* errors from MVS __aopen are negative numbers */
     if ((int)myfile->hfile <= 0)
     {

@@ -57,7 +57,7 @@
 void PosTermNoRC(void); /* int 20h */
 
 /* int 21h */
-void PosDisplayOutput(int ch); /* func 2 */
+unsigned int PosDisplayOutput(unsigned int ch); /* func 2 */
 
 int PosDirectCharInputNoEcho(void); /*func 7*/
 

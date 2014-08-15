@@ -568,7 +568,7 @@ static void int21handler(union REGS *regsin,
     switch (regsin->h.ah)
     {
         case 0x02:
-            PosDisplayOutput(regsin->h.dl);
+            regsout->h.al = PosDisplayOutput(regsin->h.dl);
             break;
 
         case 0x07:
@@ -1221,18 +1221,21 @@ static void int21handler(union REGS *regsin,
 
 /* !!! START OF POS FUNCTIONS !!! */
 
+/* INT 20 */
 void PosTermNoRC(void)
 {
     PosTerminate(0);
 }
 
-void PosDisplayOutput(int ch)
+/* INT 21/AH=02h */
+unsigned int PosDisplayOutput(unsigned int ch)
 {
     unsigned char buf[1];
 
     buf[0] = ch;
     PosWriteFile(1, buf, 1);
-    return;
+    
+    return ch;
 }
 
 /*Get Character Input from DOS*/

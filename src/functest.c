@@ -457,6 +457,16 @@ static int testPosCreatFile(void)
 }
 /**/
 
+/* Test function to test POS Call Int 21/AH=02h  */
+static int testPosDisplayOutput(void)
+{
+    int ret;
+    
+    ret = PosDisplayOutput(63);
+    printf("\n");
+    printf("The return value is x %d x \n" , ret);
+}
+
 int main(void)
 {
     /* Successful Tests*/
@@ -466,9 +476,10 @@ int main(void)
     /*testBosSetVideoMode();*/    
     /*testBosSetCursorType();*/    
     /*testBosSetCursorPosition();*/
-    /*testBosReadCursorPosition();*/
-    
-    testBosReadLightPen();
+    /*testBosReadCursorPosition();*/ 
+    /*testBosReadLightPen();*/
+     
+    testPosDisplayOutput();
     
     /*testDriveParms();*/
     /*testDisk();*/

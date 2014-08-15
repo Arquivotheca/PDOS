@@ -15,9 +15,30 @@
 #include "pos.h"
 #include "support.h"
 
+/* Calls an interuppt without input or output registers */
+/*
+    Input: Interuppt number
+    Returns: None
+    Notes: None.
+*/
+
 static void int86n(unsigned int intno);
+
+/* Calls an interuppt with input or output registers specified */
+/*
+    Input: Interuppt number and set of input or output registers.
+    Returns: None.
+    Notes: Set the output registers according to the interuppt called.
+*/
+
 static void int86i(unsigned int intno, union REGS *regsin);
 
+/* PosTermNoRC-INT 20 */
+/*
+    Input: None
+    Returns: None.
+    Notes: Used to Terminate DOS Programs.
+*/
 
 void PosTermNoRC(void)
 {
@@ -25,14 +46,25 @@ void PosTermNoRC(void)
     return;
 }
 
-void PosDisplayOutput(int ch)
+/* PosDisplayOutput-INT 21/AH=02h */
+/*
+    Input: Character to write.
+    Returns: Last character output.
+    Notes: If standard output is redirected to file no erroer checks
+           are performed.
+*/
+
+unsigned int PosDisplayOutput(unsigned int ch)
 {
     union REGS regsin;
-
+    union REGS regsout;
+    
     regsin.h.ah = 0x02;
     regsin.h.dl = ch;
-    int86i(0x21, &regsin);
-    return;
+    
+    int86(0x21, &regsin, &regsout);
+    
+    return (regsout.h.al);
 }
 
 /*Direct Character input Int21/AH=07h*/

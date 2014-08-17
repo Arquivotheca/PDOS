@@ -4740,10 +4740,9 @@ __PDPCLIB_API__ char *fgets(char *s, int n, FILE *stream)
         cnt++;
     }
     if ((cnt == 0) && (c == EOF)) return (NULL);
-    if (cnt < n) s[cnt++] = '\n';
-    if (stream->noNl && (cnt > 0) && (s[cnt - 1] == '\n'))
+    if ((cnt < n) && !stream->noNl)
     {
-        cnt--;
+        s[cnt++] = '\n';
     }
     s[cnt] = '\0';
     return (s);

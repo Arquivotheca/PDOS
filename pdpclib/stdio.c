@@ -4671,7 +4671,14 @@ __PDPCLIB_API__ char *fgets(char *s, int n, FILE *stream)
         if (n > (len + 1))
         {
             memcpy(s, dptr + 4, len);
-            memcpy(s + len, "\n", 2);
+            if (stream->noNl)
+            {
+                s[len] = '\0';
+            }
+            else
+            {
+                memcpy(s + len, "\n", 2);
+            }
             stream->bufStartR += len + 1;
             return (s);
         }
@@ -4680,7 +4687,10 @@ __PDPCLIB_API__ char *fgets(char *s, int n, FILE *stream)
             memcpy(stream->fbuf, dptr + 4, len);
             stream->upto = stream->fbuf;
             stream->endbuf = stream->fbuf + len;
-            *(stream->endbuf++) = '\n';
+            if (!stream->noNl)
+            {
+                *(stream->endbuf++) = '\n';
+            }
             stream->quickText = 0;
         }
     }
@@ -4708,7 +4718,14 @@ __PDPCLIB_API__ char *fgets(char *s, int n, FILE *stream)
                 }
                 eptr++;
                 memcpy(s, dptr, eptr - dptr);
-                memcpy(s + (eptr - dptr), "\n", 2);
+                if (stream->noNl)
+                {
+                    s[eptr - dptr] = '\0';
+                }
+                else
+                {
+                    memcpy(s + (eptr - dptr), "\n", 2);
+                }
                 stream->bufStartR += (eptr - dptr) + 1;
                 return (s);
             }
@@ -4734,6 +4751,10 @@ __PDPCLIB_API__ char *fgets(char *s, int n, FILE *stream)
     }
     if ((cnt == 0) && (c == EOF)) return (NULL);
     if (cnt < n) s[cnt++] = '\n';
+    if ((cnt > 0) && (s[cnt - 1] == '\n'))
+    {
+        cnt--;
+    }
     s[cnt] = '\0';
     return (s);
 }
@@ -5306,7 +5327,10 @@ __PDPCLIB_API__ size_t fread(void *ptr, size_t size, size_t nmemb, FILE *stream)
                     read -= extra;
                     memcpy(stream->fbuf, dptr + read, extra);
                     stream->endbuf = stream->fbuf + extra;
-                    *stream->endbuf++ = '\n';
+                    if (!stream->noNl)
+                    {
+                        *stream->endbuf++ = '\n';
+                    }
                 }
 
                 memcpy((char *)ptr + totalread, dptr, read);
@@ -5314,8 +5338,11 @@ __PDPCLIB_API__ size_t fread(void *ptr, size_t size, size_t nmemb, FILE *stream)
                 stream->bufStartR += read;
                 if (totalread < bytes)
                 {
-                    *((char *)ptr + totalread) = '\n';
-                    totalread++;
+                    if (!stream->noNl)
+                    {
+                        *((char *)ptr + totalread) = '\n';
+                        totalread++;
+                    }
                     stream->bufStartR++;
                 }
             }
@@ -5403,7 +5430,10 @@ __PDPCLIB_API__ size_t fread(void *ptr, size_t size, size_t nmemb, FILE *stream)
                     read -= extra;
                     memcpy(stream->fbuf, dptr + read, extra);
                     stream->endbuf = stream->fbuf + extra;
-                    *stream->endbuf++ = '\n';
+                    if (!stream->noNl)
+                    {
+                        *stream->endbuf++ = '\n';
+                    }
                 }
 
                 memcpy((char *)ptr + totalread, dptr, read);
@@ -5411,8 +5441,11 @@ __PDPCLIB_API__ size_t fread(void *ptr, size_t size, size_t nmemb, FILE *stream)
                 stream->bufStartR += read;
                 if (totalread < bytes)
                 {
-                    *((char *)ptr + totalread) = '\n';
-                    totalread++;
+                    if (!stream->noNl)
+                    {
+                        *((char *)ptr + totalread) = '\n';
+                        totalread++;
+                    }
                     stream->bufStartR++;
                 }
             }

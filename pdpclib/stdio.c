@@ -4671,14 +4671,7 @@ __PDPCLIB_API__ char *fgets(char *s, int n, FILE *stream)
         if (n > (len + 1))
         {
             memcpy(s, dptr + 4, len);
-            if (stream->noNl)
-            {
-                s[len] = '\0';
-            }
-            else
-            {
-                memcpy(s + len, "\n", 2);
-            }
+            memcpy(s + len, "\n", 2);
             stream->bufStartR += len + 1;
             return (s);
         }
@@ -4687,10 +4680,7 @@ __PDPCLIB_API__ char *fgets(char *s, int n, FILE *stream)
             memcpy(stream->fbuf, dptr + 4, len);
             stream->upto = stream->fbuf;
             stream->endbuf = stream->fbuf + len;
-            if (!stream->noNl)
-            {
-                *(stream->endbuf++) = '\n';
-            }
+            *(stream->endbuf++) = '\n';
             stream->quickText = 0;
         }
     }

@@ -67,19 +67,25 @@ unsigned int PosDisplayOutput(unsigned int ch)
     return (regsout.h.al);
 }
 
-/*Direct Character input Int21/AH=07h*/
+/* PosDirectCharInputNoEcho-INT 21/AH=07h */
+/*
+    Input: None.
+    Returns: Character read from standard input.
+    Notes: Does not check ^C/^Break.
+*/
 
-int PosDirectCharInputNoEcho(void)
+unsigned int PosDirectCharInputNoEcho(void)
 {
     union REGS regsin;
     union REGS regsout;
 
     regsin.h.ah = 0x07;
+    
     int86(0x21, &regsin, &regsout);
 
     return (regsout.h.al);
 }
-/**/
+
 
 /* Written By NECDET COKYAZICI, Public Domain */
 

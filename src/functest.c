@@ -467,6 +467,28 @@ static int testPosDisplayOutput(void)
     printf("The return value is x %d x \n" , ret);
 }
 
+/* Test function to test POS Call Int 21/AH=07h  */
+static int testPosDirectCharInputNoEcho(void)
+{
+    int ret;
+    
+    ret = PosDirectCharInputNoEcho();
+    printf("\n");
+    printf("The return value is x %d x \n" , ret);
+}
+
+/* Test function to test BIOS Call Int 16/AH=00h */
+static int testBosReadKeyboardCharacter(void)
+{
+    int ret;
+    int scancode,ascii;
+    
+    ret = BosReadKeyboardCharacter(&scancode,&ascii);
+    printf("\n The return value is x %d x \n", ret);
+    printf("\n The value of scancode is x %d x \n", scancode);
+    printf("\n The value of ascii is x %d x \n", ascii);
+}
+
 int main(void)
 {
     /* Successful Tests*/
@@ -477,9 +499,11 @@ int main(void)
     /*testBosSetCursorType();*/    
     /*testBosSetCursorPosition();*/
     /*testBosReadCursorPosition();*/ 
-    /*testBosReadLightPen();*/
-     
-    testPosDisplayOutput();
+    /*testBosReadLightPen();*/    
+    /*testPosDisplayOutput();*/
+    
+    testPosDirectCharInputNoEcho();
+    /*testBosReadKeyboardCharacter();*/
     
     /*testDriveParms();*/
     /*testDisk();*/

@@ -4751,7 +4751,7 @@ __PDPCLIB_API__ char *fgets(char *s, int n, FILE *stream)
     }
     if ((cnt == 0) && (c == EOF)) return (NULL);
     if (cnt < n) s[cnt++] = '\n';
-    if ((cnt > 0) && (s[cnt - 1] == '\n'))
+    if (stream->noNl && (cnt > 0) && (s[cnt - 1] == '\n'))
     {
         cnt--;
     }
@@ -5327,10 +5327,7 @@ __PDPCLIB_API__ size_t fread(void *ptr, size_t size, size_t nmemb, FILE *stream)
                     read -= extra;
                     memcpy(stream->fbuf, dptr + read, extra);
                     stream->endbuf = stream->fbuf + extra;
-                    if (!stream->noNl)
-                    {
-                        *stream->endbuf++ = '\n';
-                    }
+                    *stream->endbuf++ = '\n';
                 }
 
                 memcpy((char *)ptr + totalread, dptr, read);
@@ -5338,11 +5335,8 @@ __PDPCLIB_API__ size_t fread(void *ptr, size_t size, size_t nmemb, FILE *stream)
                 stream->bufStartR += read;
                 if (totalread < bytes)
                 {
-                    if (!stream->noNl)
-                    {
-                        *((char *)ptr + totalread) = '\n';
-                        totalread++;
-                    }
+                    *((char *)ptr + totalread) = '\n';
+                    totalread++;
                     stream->bufStartR++;
                 }
             }
@@ -5430,10 +5424,7 @@ __PDPCLIB_API__ size_t fread(void *ptr, size_t size, size_t nmemb, FILE *stream)
                     read -= extra;
                     memcpy(stream->fbuf, dptr + read, extra);
                     stream->endbuf = stream->fbuf + extra;
-                    if (!stream->noNl)
-                    {
-                        *stream->endbuf++ = '\n';
-                    }
+                    *stream->endbuf++ = '\n';
                 }
 
                 memcpy((char *)ptr + totalread, dptr, read);
@@ -5441,11 +5432,8 @@ __PDPCLIB_API__ size_t fread(void *ptr, size_t size, size_t nmemb, FILE *stream)
                 stream->bufStartR += read;
                 if (totalread < bytes)
                 {
-                    if (!stream->noNl)
-                    {
-                        *((char *)ptr + totalread) = '\n';
-                        totalread++;
-                    }
+                    *((char *)ptr + totalread) = '\n';
+                    totalread++;
                     stream->bufStartR++;
                 }
             }

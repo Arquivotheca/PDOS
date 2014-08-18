@@ -711,6 +711,10 @@ OPENIN   OPEN  MF=(E,OPENCLOS),TYPE=J  Open the data set
 *#TRAP (BLDLLIST,4+12+2+31*2),FILEMODE,ID=BLDL
          LTR   R15,R15            See if member found           \
          BNZ   OPNOMEM            Not found; return error       \
+*
+         TM    DDWFLAGS,CWFSEQ+CWFPDQ  SEQUENTIAL ACCESS ?
+         BNZ   SETMTTR              YES; LEAVE DCB INTACT
+*
 *  SET DCB PARAMETERS FOR MEMBER'S PDS                          \
          SR    R15,R15                                          \
          IC    R15,PDS2CNCT-PDS2+BLDLNAME                       \
@@ -735,7 +739,7 @@ OPENIN   OPEN  MF=(E,OPENCLOS),TYPE=J  Open the data set
          MVI   DCBRECFM,X'C0'     FORCE xSAM TO IGNORE          \
          DROP  R15                                              \
          SPACE 1
-         FIND  (R10),ZMEM,D       Point to the requested member \
+SETMTTR  FIND  (R10),ZMEM,D       Point to the requested member \
          LTR   R15,R15            See if member found
          BZ    GETBUFF              Yes, done; get buffer
 * If FIND return code not zero, process return and reason codes and

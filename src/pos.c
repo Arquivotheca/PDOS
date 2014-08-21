@@ -88,13 +88,20 @@ unsigned int PosDirectCharInputNoEcho(void)
 
 
 /* Written By NECDET COKYAZICI, Public Domain */
+/* PosGetCharInputNoEcho-INT 21/AH=08h */
+/*
+    Input: None.
+    Returns: Character read from standard input.
+    Notes: ^C/^Break are checked.
+*/
 
-int PosGetCharInputNoEcho(void)
+unsigned int PosGetCharInputNoEcho(void)
 {
     union REGS regsin;
     union REGS regsout;
 
     regsin.h.ah = 0x08;
+    
     int86(0x21, &regsin, &regsout);
 
     return (regsout.h.al);

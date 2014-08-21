@@ -61,7 +61,7 @@ unsigned int PosDisplayOutput(unsigned int ch); /* func 2 */
 
 unsigned int PosDirectCharInputNoEcho(void); /*func 7*/
 
-int PosGetCharInputNoEcho(void); /* func 8 */
+unsigned int PosGetCharInputNoEcho(void); /* func 8 */
 
 void PosDisplayString(const char *buf); /* func 9 */
 

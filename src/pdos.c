@@ -1253,11 +1253,11 @@ unsigned int PosDirectCharInputNoEcho(void)
 
 /* Written By NECDET COKYAZICI, Public Domain */
 
-int PosGetCharInputNoEcho(void)
+/* INT 21/AH=08h */
+unsigned int PosGetCharInputNoEcho(void)
 {
     int scan;
     int ascii;
-
 
     BosReadKeyboardCharacter(&scan, &ascii);
 

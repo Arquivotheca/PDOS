@@ -489,9 +489,20 @@ static int testBosReadKeyboardCharacter(void)
     printf("\n The value of ascii is x %d x \n", ascii);
 }
 
+/* Test function to test POS Call Int 21/AH=08h  */
+static int testPosGetCharInputNoEcho(void)
+{
+    int ret;
+    
+    ret = PosGetCharInputNoEcho();
+    printf("\n");
+    printf("The return value is x %d x \n" , ret);
+}
+
 int main(void)
 {
     /* Successful Tests*/
+    /*Bos Tests*/
     /*testBosGetSystemTime();*/    
     /*testBosGetSystemDate();*/
     /*testBosPrintScreen();*/
@@ -499,11 +510,13 @@ int main(void)
     /*testBosSetCursorType();*/    
     /*testBosSetCursorPosition();*/
     /*testBosReadCursorPosition();*/ 
-    /*testBosReadLightPen();*/    
-    /*testPosDisplayOutput();*/
-    
-    testPosDirectCharInputNoEcho();
+    /*testBosReadLightPen();*/
     /*testBosReadKeyboardCharacter();*/
+    /*Pos Tests*/    
+    /*testPosDisplayOutput();*/
+    /*testPosDirectCharInputNoEcho();*/
+    
+    testPosGetCharInputNoEcho();
     
     /*testDriveParms();*/
     /*testDisk();*/

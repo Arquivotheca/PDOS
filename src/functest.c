@@ -502,10 +502,12 @@ static int testPosGetCharInputNoEcho(void)
 /* Test function to test POS Call Int 21/AH=09h  */
 static int testPosDisplayString(void)
 {
+    int ret;
     char test[10] = "AB$CDEF";
     
-    PosDisplayString(test);
+    ret = PosDisplayString(test);
     printf("\n");
+    printf("The return value is x %d x \n",ret);
     return 0;
 }
 

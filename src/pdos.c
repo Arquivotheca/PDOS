@@ -580,7 +580,7 @@ static void int21handler(union REGS *regsin,
             break;
 
         case 0x09:
-            PosDisplayString(MK_FP(sregs->ds, regsin->x.dx));
+            regsout->h.al = PosDisplayString(MK_FP(sregs->ds, regsin->x.dx));
             break;
 
         case 0x0e:
@@ -1264,14 +1264,15 @@ unsigned int PosGetCharInputNoEcho(void)
     return ascii;
 }
 
-void PosDisplayString(const char *buf)
+/* INT 21/AH=09h */
+unsigned int PosDisplayString(const char *buf)
 {
     const char *p;
 
     p = memchr(buf, '$', (size_t)-1);
     if (p == NULL) p = buf;
     PosWriteFile(1, buf, p - buf);
-    return;
+    return ('$');
 }
 
 

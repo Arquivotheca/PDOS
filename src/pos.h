@@ -63,7 +63,7 @@ unsigned int PosDirectCharInputNoEcho(void); /*func 7*/
 
 unsigned int PosGetCharInputNoEcho(void); /* func 8 */
 
-void PosDisplayString(const char *buf); /* func 9 */
+unsigned int PosDisplayString(const char *buf); /* func 9 */
 
 int PosSelectDisk(int drive); /* func e */
 

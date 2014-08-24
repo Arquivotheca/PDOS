@@ -499,6 +499,16 @@ static int testPosGetCharInputNoEcho(void)
     printf("The return value is x %d x \n" , ret);
 }
 
+/* Test function to test POS Call Int 21/AH=09h  */
+static int testPosDisplayString(void)
+{
+    char test[10] = "AB$CDEF";
+    
+    PosDisplayString(test);
+    printf("\n");
+    return 0;
+}
+
 int main(void)
 {
     /* Successful Tests*/
@@ -515,8 +525,9 @@ int main(void)
     /*Pos Tests*/    
     /*testPosDisplayOutput();*/
     /*testPosDirectCharInputNoEcho();*/
+    /*testPosGetCharInputNoEcho();*/
     
-    testPosGetCharInputNoEcho();
+    testPosDisplayString();
     
     /*testDriveParms();*/
     /*testDisk();*/

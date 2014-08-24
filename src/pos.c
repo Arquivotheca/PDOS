@@ -107,13 +107,21 @@ unsigned int PosGetCharInputNoEcho(void)
     return (regsout.h.al);
 }
 
-void PosDisplayString(const char *buf)
+/* PosDisplayString-INT 21/AH=09h */
+/*
+    Input: Character buffer.
+    Returns: '$'.
+    Notes: ^C/^Break are checked.
+*/
+
+unsigned int PosDisplayString(const char *buf)
 {
     union REGS regsin;
     union REGS regsout;
     struct SREGS sregs;
 
     regsin.h.ah = 0x09;
+    
 #ifdef __32BIT__
     regsin.d.edx = (int)buf;
 #else
@@ -121,7 +129,8 @@ void PosDisplayString(const char *buf)
     sregs.ds = FP_SEG(buf);
 #endif
     int86x(0x21, &regsin, &regsout, &sregs);
-    return;
+    
+    return (regsout.h.al);
 }
 
 

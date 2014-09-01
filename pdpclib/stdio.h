@@ -107,7 +107,7 @@ typedef struct
     int bufTech;    /* buffering technique, _IOFBF etc */
     char *intBuffer; /* internal buffer */
     int noNl;       /* When doing gets, we don't copy NL */
-    int mode;       /* __WRITE_MODE or __READ_MODE */
+    int mode;       /* __READ_MODE or __WRITE_MODE */
     int update;     /* Is file update (read + write)? */
     int theirBuffer; /* Is the buffer supplied by them? */
     int permfile;   /* Is this stdin/stdout/stderr? */
@@ -148,8 +148,8 @@ typedef unsigned long fpos_t;
 #define SEEK_CUR 1
 #define SEEK_END 2
 #define __NFILE (FOPEN_MAX - 3)
+#define __READ_MODE 0
 #define __WRITE_MODE 1
-#define __READ_MODE 2
 
 #define __RECFM_F 0
 #define __RECFM_V 1

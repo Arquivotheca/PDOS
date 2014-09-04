@@ -160,12 +160,17 @@ MVSSUPA  CSECT ,
 SUBPOOL  EQU   0                                                      *
 *---------------------------------------------------------------------*
          SPACE 1
-*
-*
-*
-* Start of functions
-*
-*
+*                                                                     *
+*   Note: Variable @@BUGF controls various debugging options, and is  *
+*   externally accessible. Low order 1 bit requests SNAPs of failed   *
+*   OPEN information and bad records.                                 *
+         ENTRY @@BUGF                                           \
+*                                                                     *
+*---------------------------------------------------------------------*
+*                                                                     *
+* Start of functions                                                  *
+*                                                                     *
+*                                                                     *
 ***********************************************************************
 *                                                                     *
 *  AOPEN - Open a data set                                            *
@@ -176,11 +181,11 @@ SUBPOOL  EQU   0                                                      *
 *1 DDNAME - space-padded, 8 character DDNAME to be opened             *
 *                                                                     *
 *2 MODE =  0 INPUT  1 OUTPUT  2 UPDAT   3 APPEND      Record mode     *
-*  MODE =  4 INOUT  5 OUTIN                                           *
+*  MODE =  4 INOUT  5 OUTIN     (6-7 reserved)                        *
 *  MODE = 8/9 Use EXCP for tape, BSAM otherwise (or 32<=JFCPNCP<=65)  *
 *  MODE + 10 = Use BLOCK mode (valid hex 10-15)                       *
 *  MODE = 80 = GETLINE, 81 = PUTLINE (other bits ignored)             *
-*    N.B.: see comments under Return value
+*    N.B.: see comments under Return value                            *
 *                                                                     *
 *3 RECFM - 0 = F, 1 = V, 2 = U. Default/preference set by caller;     *
 *                               actual value returned from open.      *
@@ -204,15 +209,20 @@ SUBPOOL  EQU   0                                                      *
 *    an error.                                                        *
 *                                                                     *
 *                                                                     *
-*  Return value:                                                      *
+*  Return value: In R15                                               *
 *  An internal "handle" that allows the assembler routines to         *
 *  keep track of what's what, when READ etc are subsequently          *
 *  called.                                                            *
 *                                                                     *
+*                                                                     *
+*  Return value: PARM2 MODE:                                          *
+*    Byte 0 - major device type (defined by UCBTBYT3; JES sets 01)    *
+*    Byte 1 - true RECFM as used in the DCB                           *
+*    Byte 2 - processing mode (see IOSFLAGS)                          *
+*    Byte 3 - modified user's MODE                                    *
+*                                                                     *
 *  All passed parameters are subject to overrides based on device     *
 *  capabilities and capacities, e.g., blocking may be turned off.     *
-*  In particular, the MODE flag will have x'40' ORed in for a         *
-*  unit record device.                                                *
 *                                                                     *
 *                                                                     *
 *  Note - more documentation for this and other I/O functions can     *
@@ -220,15 +230,16 @@ SUBPOOL  EQU   0                                                      *
 *                                                                     *
 * Here are some of the errors reported:                               *
 *                                                                     *
-*  OPEN input failed return code is: -37                              *
-*  OPEN output failed return code is: -39                             *
+*  Input  OPEN (SVC) failed; return code is: -37                      *
+*  Output OPEN (SVC) failed; return code is: -39                      *
+*    Also used for VSAM failure in OPEN, SHOWCB, or TESTCB            *
 *                                                                     *
 * FIND input member return codes are:                                 *
 * Original, before the return and reason codes had                    *
 * negative translations added refer to copyrighted:                   *
 * DFSMS Macro Instructions for Data Sets.                             *
-*                                                                     *
 * RC = 0 Member was found.                                            *
+*                                                                     *
 *     The 1nnn group has not been implemented.                        *
 * RC = -1024 Member not found. (replaced by 2068)                     *
 * RC = -1028 RACF allows PDSE EXECUTE, not PDSE READ.                 *
@@ -238,7 +249,7 @@ SUBPOOL  EQU   0                                                      *
 *   New OPEN validity checking added; return codes are:               *
 * RC = -2004 DDname starts with blank or null                         *
 * RC = -2008 DDname not found                                         *
-* RC = -2012 Error reading JFCB, or address is null, or SWAREQ bad    *
+* RC = -2012 Error in system control block (JFCB, JSCB, PSCB)         *
 * RC = -2016 Error reading DSCB1                                      *
 * RC = -2020 Invalid TIOT entry                                       *
 * RC = -2024 Invalid or unsupported DSORG                             *
@@ -262,7 +273,7 @@ SUBPOOL  EQU   0                                                      *
          SR    R10,R10            Indicate no ZDCB area gotten  GP14205
          LR    R11,R1             KEEP R11 FOR PARAMETERS
          USING PARMSECT,R11       MAKE IT EASIER TO READ
-         L     R3,PARM1           R3 POINTS TO DDNAME
+         LDADD R3,PARM1           R3 POINTS TO DDNAME           \
          PUSH  USING                                            GP14205
 ***********************************************************************
 **                                                                   **
@@ -356,6 +367,10 @@ DDCNRPS  TM    UCBTBYT3,255-(UCB3DACC+UCB3TAPE+UCB3UREC)        GP14205
          BNE   DDCSEQ               NO; NOT PDS                 GP14205
          CLC   =C'FORMAT4.DSCB ',JFCBDSNM   VTOC READ?          GP14213
          BNE   NOTVTOC                                          GP14213
+         LA    R0,ORFBDMOD        PRESET FOR BAD MODE           \
+         LDVAL R14,PARM2          GET THE MODE                  \
+         TM    3(R14),X'07'       ANYTHING OTHER THAN INPUT?    \
+         BNZ   OPRERR             VTOC WRITE NOT SUPPORTED      \
          MVI   JFCBDSNM,X'04'     MAKE VTOC 'NAME'              GP14213
          MVC   JFCBDSNM+1(L'JFCBDSNM-1),JFCBDSNM   44X'04'      GP14213
          MVI   DDADSORG,X'40'     SEQUENTIAL                    GP14213
@@ -429,7 +444,7 @@ DDCUJBLK TM    DS1DSORG+1,DS1ACBM VSAM ?                        GP14233
          BNZ   DDCVSAM              YES; HOP FOR THE BEST       GP14233
          CLI   DS1DSORG+1,0       ANYTHING UNPROCESSABLE?       GP14205
          BNE   BADDSORG                                         GP14205
-         TM    DS1DSORG,254-DS1DSGPS-DS1DSGPO   UNSUPPORTED?    GP14205
+         TM    DS1DSORG,255-DS1DSGPS-DS1DSGPO-DS1DSGU NOT GOOD  \
          BNZ   BADDSORG             YES; TOO BAD                GP14205
          TM    DS1DSORG,DS1DSGPO                                GP14205
          BZ    DDCSEQ             (CHECK JFCB OVERRIDE DSORG?)  GP14205
@@ -486,7 +501,7 @@ BADDSORG LA    R0,ORFBADSO        BAD DSORG                     GP14205
          POP   USING                                            GP14205
          SPACE 1                                                GP14205
 DDCTDONE MVC   DDWFLAGS,DDWFLAG1  COPY FIRST DD'S FLAGS         GP14205
-         NI    DDWFLAGS,255-CWFDD BUT RESET DD PRESENT          GP14205
+         NI    DDWFLAGS,255-CWFDD BUT RESET FIRST DD PRESENT    GP14205
          OC    DDWFLAGS,DDWFLAG2  OR TOGETHER                   GP14205
          AMUSE ,                  RESTORE AMODE FROM ENTRY      GP14205
 * Note that R5 is used as a scratch register
@@ -494,10 +509,7 @@ DDCTDONE MVC   DDWFLAGS,DDWFLAG1  COPY FIRST DD'S FLAGS         GP14205
 * PARM5    has BLKSIZE
 * PARM6    has ZBUFF2 pointer
          SPACE 1
-         L     R4,PARM2           R4 is the MODE.  0=input 1=output
-         CH    R4,=H'256'         Call with value?
-         BL    *+8                Yes; else pointer
-         L     R4,0(,R4)          Load C/370 MODE.  0=input 1=output
+         LDVAL R4,PARM2           MODE.  0=input 1=output, etc. \
          SPACE 1
 *   Conditional forms of storage acquisition are reentrant unless
 *     they pass values that vary between uses, which ours don't,
@@ -521,7 +533,7 @@ DDCTDONE MVC   DDWFLAGS,DDWFLAG1  COPY FIRST DD'S FLAGS         GP14205
          MVCL  R0,R14             Clear DCB area to binary zeroes
          MVC   ZDDN,0(R3)         DDN for debugging             GP14205
          XC    ZMEM,ZMEM          Preset for no member          GP14205
-         L     R14,PARM7          R14 POINTS TO MEMBER NAME (OF PDS)
+         LDADD R14,PARM7          R14 POINTS TO MEMBER NAME (OF PDS)
          LA    R14,0(,R14)        Strip off high-order bit or byte
          LTR   R14,R14            Zero address passed ?         GP14205
          BZ    OPENMPRM             Yes; skip                   GP14205
@@ -553,7 +565,9 @@ OPCURSE  STC   R4,WWORK           Save to storage
 ***> Consider forcing terminal mode if DD is a terminal?
          MVC   DWDDNAM,0(R3)      Move below the line
          DEVTYPE DWDDNAM,DWORK    Check device type
-         BXH   R15,R15,FAILDCB    DD missing
+         MVC   ZDVTYPE,DWORK+2    return device type            \
+         LA    R0,ORFNODD         Missing DD                    \
+         BXH   R15,R15,OPRERR     DD missing                    \
          ICM   R0,15,DWORK+4      Any device size ?
          BNZ   OPHVMAXS
          MVC   DWORK+6(2),=H'32760'    Set default max
@@ -567,13 +581,15 @@ OPHVMAXS CLI   WWORK+1,3          Append (AKA Extend) requested ?
          SPACE 1
 OPNOTAP  CLI   WWORK+1,2          UPDAT request?
          BNE   OPNOTUP              No
+         LA    R0,ORFBDMOD        Preset for bad mode           \
          CLI   DWORK+2,UCB3DACC   DASD ?
-         BNE   FAILDCB              No, not supported
+         BNE   OPRERR               No, not supported           \
          SPACE 1
 OPNOTUP  CLI   WWORK+1,4          INOUT or OUTIN ?
          BL    OPNOTIO              No
          TM    DWORK+2,UCB3TAPE+UCB3DACC    TAPE or DISK ?
-         BNM   FAILDCB              No; not supported
+         LA    R0,ORFBDMOD        Preset for bad mode           \
+         BNM   OPRERR               No; not supported           \
          SPACE 1
 OPNOTIO  TM    WWORK,IOFEXCP      EXCP requested ?
          BZ    OPFIXMD2             No
@@ -602,7 +618,8 @@ OPFIXMOD STC   R4,WWORK           Save to storage
 *                  OPEN mode: IN OU UP AP IO OI
          TR    OPENCLOS(1),=X'80,8F,84,8E,83,86,0,0'
          CLI   OPENCLOS,0         Unsupported ?
-         BE    FAILDCB              Yes; fail
+         LA    R0,ORFBDMOD        Preset bad mode               \
+         BE    OPRERR               Yes; fail                   \
          SPACE 1
          TM    WWORK,IOFEXCP      (TAPE) EXCP mode ?
          BZ    OPQRYBSM             No
@@ -660,8 +677,9 @@ OPREPBSQ MVC   ZDCBAREA(BSAMDCBL),BSAMDCB  Move DCB template to work
 OPREPQSM MVC   ZDCBAREA(QSAMDCBL),QSAMDCB   *> UNUSED <*
 OPREPCOM MVC   DCBDDNAM,ZDDN              0(R3)
          MVC   DEVINFO(8),DWORK   Check device type
-         ICM   R0,15,DEVINFO+4    Any ?
-         BZ    FAILDCB            No DD card or ?
+         ICM   R14,15,DEVINFO+4   Any ?                         \
+         LA    R0,ORFNODD         Set for no DD                 \
+         BZ    OPRERR             No DD card or ?               \
          N     R4,=X'000000EF'    Reset block mode
          TM    DDWFLAGS,CWFVSM    VSAM ACCESS ?                 GP14233
          BNZ   OPDOVSAM                                         GP14233
@@ -772,7 +790,7 @@ OPDOVSAM OPENCALL OPENVSAM        Transfer to the extension     GP14233
 *     have been replaced by ZARECFM, ZPLRECL, and ZPBLKSZ for EXCP use.
 *---------------------------------------------------------------------*
 OPNODSCB TM    WWORK,1            See if OPEN input or output
-         BNZ   WRITING
+         BNZ   OPENWRIT
          MVI   OPERF,ORFBACON     Preset invalid concatenation  GP14205
          TM    DDWFLAGS,CWFDD     Concatenation ?               GP14205
          BZ    READNCON             No                          GP14205
@@ -800,11 +818,15 @@ READNCON OI    JFCBTSDM,JFCNWRIT  Don't mess with control block
 OPENITST TM    DDWFLAGS,CWFSEQ    Single DD non-PDS?            GP14205
          BNZ   OPENVSEQ             Yes; skip PDS stuff         GP14205
          TM    DDWFLAGS,CWFPDQ    PDS with member ?             GP14205
-         BO    OPENBINP             Yes; check input mode       GP14205
+         BZ    OPENBCOM             No                          \
+         TM    WWORK,X'01'        Output?                       \
+         BNZ   OPENVSEQ             Yes; skip PDS stuff         GP14205
+         B     OPENBINP             Yes; check input mode       GP14205
 OPENBCOM TM    DS1DSORG,DS1DSGPO  See if DSORG=PO
          BZ    OPENVSEQ           Not PDS, don't read PDS directory
 OPENBINP TM    WWORK,X'07'   ANY NON-READ OPTION ?
-         BNZ   FAILDCB            NOT ALLOWED FOR PDS
+         LA    R0,ORFBDMOD          Yes; not supported          \
+         BNZ   OPRERR               No, fail                    \
          TM    ZMEM,255-X'40'     See if a member name          GP14205
          BNZ   ZEROMEM            User member - reset JFCB      GP14205
          TM    JFCBIND1,JFCPDS    See if a member name in JCL
@@ -818,7 +840,8 @@ ZEROMEM  NI    JFCBIND1,255-JFCPDS    Reset it
 * Request must be to read the PDS directory
 *---------------------------------------------------------------------*
 OPENDIR  TM    OPENCLOS,X'0F'     Other than plain OPEN ?
-         BNZ   BADOPIN            No, fail (allow UPDAT later?)
+         LA    R0,ORFBDMOD          Yes; not supported          \
+         BNZ   OPRERR               No, fail (allow UPDAT later?)
          LA    R0,256             Set size for Directory BLock
          STH   R0,DCBBLKSI        Set DCB BLKSIZE to 256
          STH   R0,DCBLRECL        Set DCB LRECL to 256
@@ -835,7 +858,8 @@ OPENBPAM OI    JFCBTSDM,JFCVSL    Force OPEN analysis of JFCB
          B     OPENIN
          SPACE 1
 OPENVSEQ TM    ZMEM,255-X'40'     Member name for sequential?   GP14205
-         BNZ   BADOPIN            Yes, fail
+         LA    R0,ORFBDMEM        Member not allowed            \
+         BNZ   OPRERR             Yes, fail                     \
          TM    DDWFLAGS,CWFSEQ+CWFPDQ  SEQUENTIAL ACCESS ?   *TEST
          BZ    OPENIN               NO; SKIP CONCAT          *TEST
          MVI   DCBMACR+1,0        Remove Write                  GP14205
@@ -843,7 +867,7 @@ OPENVSEQ TM    ZMEM,255-X'40'     Member name for sequential?   GP14205
 OPENIN   OPEN  MF=(E,OPENCLOS),TYPE=J  Open the data set
 
          TM    DCBOFLGS,DCBOFOPN  Did OPEN work?
-         BZ    BADOPIN            OPEN failed, go return error code -37
+         BZ    FAILDCB            OPEN failed, go return error code -37
          TM    ZMEM,255-X'40'     Member name?                  GP14205
          BZ    GETBUFF            No member name, no find       GP14205
 *  N.B. BLDL provides the concatenation number.                 GP14205
@@ -891,13 +915,12 @@ OPNOMEM  LR    R2,R15             Save error code               GP14205
          LA    R7,2064            Set for error                 GP14205
          B     FREEDCB
          SPACE 1
-BADOPIN  DS    0H
-BADOPOUT DS    0H
-FAILDCB  N     R4,=F'1'           Mask other option bits
+FAILDCB  LDVAL R4,PARM2           Reload mode                   \
+         N     R4,=F'1'           Mask other option bits
          LA    R7,37(R4,R4)       Preset OPEN error code
 FREEDCB  L     R3,PARM1           R3 POINTS TO DDNAME           GP14213
          LR    R14,R13            COPY WORK AREA ADDRESS        GP14244
-         LA    R15,WORKLEN-1(,R14)    LAST BYTE                 GP14244
+         LA    R15,OPENLEN-1(,R14)    LAST BYTE                 \
          STM   R14,R15,OSNLIST                                  GP14244
          OI    OSNLIST+4,X'80'    SET END OF LIST               GP14244
          LTR   R14,R10            HAVE A ZDCBAREA ?             GP14244
@@ -924,10 +947,12 @@ OSNHEAD2 DC    AL1(OSNHEAD3-*-1),C'ZDCBAREA:'                   GP14244
 OSNHEAD3 EQU   *                  END OF HEADERS                GP14244
 OSNAP    SNAP  PDATA=(PSW,REGS),LIST=OSNLIST,STRHDR=OSNHEAD,MF=L
          SPACE 1
+@@BUGF   DC    F'0'          DEBUGGING FLAG                     \
+         SPACE 1
 *---------------------------------------------------------------------*
 *   Process for OUTPUT mode
 *---------------------------------------------------------------------*
-WRITING  MVI   OPERF,ORFBACON     Preset for invalid concatenation
+OPENWRIT MVI   OPERF,ORFBACON     Preset for invalid concatenation
          TM    DDWFLAG2,CWFDD     Concatenation other than input?
          BNZ   OPSERR               Yes, fail
          TM    ZMEM,255-X'40'     Member requested?             GP14205
@@ -960,7 +985,7 @@ BADMEMDD EQU   *-6-8,8,C'C'       Insert bad DD                 GP14205
          SPACE 1
 WNOMEM2  OPEN  MF=(E,OPENCLOS),TYPE=J
          TM    DCBOFLGS,DCBOFOPN  Did OPEN work?
-         BZ    BADOPOUT           OPEN failed, go return error code -39
+         BZ    FAILDCB            OPEN failed, go return error code -39
          SPACE 1
 *---------------------------------------------------------------------*
 *   Acquire one BLKSIZE buffer for our I/O; and one LRECL buffer
@@ -1003,15 +1028,17 @@ TERMOPEN MVC   IOMFLAGS,WWORK     Save for duration
          NI    IOMFLAGS,IOFTERM+IOFOUT      IGNORE ALL OTHERS
          MVC   ZDCBAREA(TERMDCBL),TERMDCB  Move DCB/IOB/CCW
          MVC   ZIODDNM,0(R3)      DDNAME FOR DEBUGGING, ETC.
-         LTR   R9,R9              See if an address for the member name
-         BNZ   FAILDCB            Yes; fail
+         TM    ZMEM,255-C' '      See if a member name          \
+         LA    R0,ORFBDMEM
+         BNZ   OPRERR             Yes; fail                     \
          L     R14,PSATOLD-PSA    GET MY TCB
          USING TCB,R14
          ICM   R15,15,TCBJSCB  LOOK FOR THE JSCB
-         BZ    FAILDCB       HUH ?
+         LA    R0,ORFNOJFC        Bad/missing system area       \
+         BZ    OPRERR        HUH ?                              \
          USING IEZJSCB,R15
          ICM   R15,15,JSCBPSCB  PSCB PRESENT ?
-         BZ    FAILDCB       NO; NOT TSO
+         BZ    OPRERR        HUH ?                              \
          L     R1,TCBFSA     GET FIRST SAVE AREA
          N     R1,=X'00FFFFFF'    IN CASE AM31
          L     R1,24(,R1)         LOAD INVOCATION R1
@@ -1064,11 +1091,7 @@ SETINDEX STC   R0,RECFMIX         Save for the duration
          L     R0,ZPBLKSZ         Load RECFM U maximum record length
          ST    R0,0(,R5)          Pass new BLKSIZE
          L     R5,PARM2           POINT TO MODE
-         MVC   3(1,R5),IOMFLAGS   Pass (updated) file mode back
-         CLI   DEVINFO+2,UCB3UREC                               GP14213
-         BNE   NOTUNREC           Not unit-record               GP14213
-         OI    3(R5),IOFUREC      flag unit-record              GP14213
-NOTUNREC MVC   2(1,R5),ZRECFM     Prepend record format         GP14205
+         MVC   0(4,R5),ZDVTYPE    DevTyp,RecFm,IOS+IOM flags    \
 *
 * Finished with R5 now
 *
@@ -1373,11 +1396,11 @@ OPENVTOC OSUBHEAD ,          Define extended entry              GP14233
 ***********************************************************************
 OPENVSAM OSUBHEAD ,          Define extended entry              GP14233
          LA    R0,ORFBDMOD        Preset for bad mode           GP14233
-         TM    WWORK,255-1        Plain input or output?        GP14233
-         OBRAN OPRERR,OP=BNZ        No; fail                    GP14233
+         TM    WWORK,X'07'        Plain input or output?        GP14233
+         OBRAN OPRERR,OP=BNZ        No; fail for now            GP14233
          MVI   ZRECFM,X'C0'       Set RECFM=U                   GP14233
          MVI   RECFMIX,X'C0'        and access code             GP14233
-         OI    IOMFLAGS,IOFVSAM   Use VSAM logic                GP14233
+         OI    IOSFLAGS,IOFVSAM   Use VSAM logic                \
          MVI   IOIX,IXVSM         Set for VSAM I/O              GP14233
          LA    R0,ORFBACON        Preset invalid concatenation  GP14233
          TM    DDWFLAG2,CWFDD     Concatenation ?               GP14233
@@ -1557,14 +1580,21 @@ READBSAM SR    R6,R6              Reset EOF flag
 *   and treat as an end-file.                                         *
 *                                                                     *
 *---------------------------------------------------------------------*
+         TM    ZDDFLAGS,CWFSEQ+CWFPDQ  Sequential access ?      GP14244
+         BNZ   READCHEK                  Yes; handle normally   GP14244
          WAIT  ECB=DECB                                         GP14244
          CLI   DECB,X'41'         Unit exception?               GP14244
          BNE   READCHEK             No; handle normally         GP14244
-         TM    ZDDFLAGS,CWFSEQ+CWFPDQ  Sequential access ?      GP14244
-         BNZ   READCHEK                  Yes; handle normally   GP14244
+         L     R14,DECB+16    DECIOBPT
+         USING IOBSTDRD,R14       Give assembler IOB base       \
+         CLI   IOBCSW+3,X'0D'     Unit exception?               \
+         BNE   READWACK           No; something else            \
+*TEST*   BE    READCHEK           Yes; let BPAM recover         \
+         DROP  R14                Don't need IOB address base anymore
          B     READEOD            Treat as EOF
 *                                 If EOF, R6 will be set to F'-1'
 READCHEK CHECK DECB               Wait for READ to complete
+READWACK DS    0H                 *TEST*
          TM    IOPFLAGS,IOFCONCT  Did we hit concatenation?
          BZ    READUSAM           No; restore user's AM
          NI    IOPFLAGS,255-IOFCONCT   Reset for next time
@@ -1992,7 +2022,25 @@ WRITEVAS LR    R7,R5              IN LENGTH = MOVE LENGTH
 WRITEVNU OI    IOPFLAGS,IOFCURSE  SET RECURSION REQUEST
          B     WRITPREP           SET ADDRESS/LENGTH TO WRITE
          SPACE 1
-WRITEBAD ABEND 002,DUMP           INVALID REQUEST
+WRITEBAD LM    R14,R15,WSNLIST    GET START/SIZE OF BLOCK       \
+         AR    R15,R14            END + 1                       \
+         BCTR  R15,0              END                           \
+         ST    R15,WSNLIST+4      UPDATE END                    \
+         OI    WSNLIST+4,X'80'    SET END OF LIST               \
+         L     R15,=A(@@SNAP)                                   \
+         LA    R1,WSNAP                                         \
+         BALR  R14,R15            CALL SNAPPER                  \
+         WTO   'MVSSUPA - @@AWRITE - invalid RECFM=Vxx request',       *
+               ROUTCDE=11       Send to programmer and listing  \
+         MVC   BADBLOW+8+13(8),ZDDN    Identify file            \
+BADBLOW  WTO   'MVSSUPA - DD xxxxxxxx',                                *
+               ROUTCDE=11         add more useful info          \
+         ABEND 002,DUMP           INVALID REQUEST
+WSNLIST  DC    A(0,0)             Snap list: Bad block          \
+WSNHEAD  DC    A(WSNHEAD1+X'80000000')  LABEL                   \
+WSNHEAD1 DC    AL1(RSNHEAD2-*-1),C'RECFM=Vxx bad record'        \
+WSNHEAD2 EQU   *                  END OF HEADERS                \
+WSNAP    SNAP  PDATA=(PSW,REGS),LIST=WSNLIST,STRHDR=WSNHEAD,MF=L
          SPACE 1
 WRITEFIX ICM   R6,15,BUFFCURR     Get next available record
          BNZ   WRITEFAP           Not first
@@ -2108,10 +2156,7 @@ POINCOM  AMUSE ,
          L     R4,8(,R1)   R3 points to where to store record format
          L     R5,12(,R1)  R4 points to where to store record length
          L     R6,16(,R1)  R5 points to where to store block size
-         SR    R0,R0                                            GP14233
-         IC    R0,IOMFLAGS                                      GP14233
-         ICM   R0,2,ZRECFM                                      GP14233
-         ST    R0,0(,R3)          Return IOMODE                 GP14205
+         MVC   0(4,R3),ZDVTYPE    DevTyp,RecFm,IOS+IOM flags    \
          SR    R0,R0                                            GP14205
          IC    R0,RECFMIX                                       GP14233
          SRL   R0,2               Change to flag                GP14233
@@ -2244,7 +2289,7 @@ TRUNCOEX L     R13,4(,R13)
 ***********************************************************************
 @@GETM   FUNHEAD ,
 *
-         LDINT R3,0(,R1)          LOAD REQUESTED STORAGE SIZE
+         LDADD R3,0(,R1)          LOAD REQUESTED STORAGE SIZE
          SLR   R1,R1              PRESET IN CASE OF ERROR
          LTR   R4,R3              CHECK REQUEST
          BNP   GETMEX             QUIT IF INVALID
@@ -2375,10 +2420,10 @@ RETURNGC FUNEXIT RC=(R5)
          LR    R9,R1              SAVE PARAMETER LIST ADDRESS
          SPACE 1
          MVC   0(4,R11),=X'14000002'  PRESET FOR PARM ERROR
-         LDINT R4,0(,R9)          REQUEST TYPE
-         LDINT R5,4(,R9)          LENGTH OF PROGRAM NAME
+         LDADD R4,0(,R9)          REQUEST TYPE
+         LDADD R5,4(,R9)          LENGTH OF PROGRAM NAME
          L     R6,8(,R9)          -> PROGRAM NAME
-         LDINT R7,12(,R9)         LENGTH OF PARM
+         LDADD R7,12(,R9)         LENGTH OF PARM
          L     R8,16(,R9)         -> PARM TEXT
          SPACE 1
 *   NOTE THAT THE CALLER IS EITHER COMPILER CODE, OR A COMPILER
@@ -2563,7 +2608,7 @@ XIDCAMS  STM   R14,R12,12(R13)
 XIDCGET  TM    EXFLAGS,EXFGET            X'01' = PRIOR GET ISSUED ?
          BNZ   XIDCGET4                  YES, SET RET CODE = 04
          L     R1,IDC@REQ         GET REQUEST ADDRESS
-         LDINT R3,0(,R1)          LOAD LENGTH
+         LDADD R3,0(,R1)          LOAD LENGTH
          L     R2,4(,R1)          LOAD TEXT POINTER
          LA    R2,0(,R2)          CLEAR HIGH
          STM   R2,R3,0(R5)        PLACE INTO IDCAMS LIST
@@ -2684,9 +2729,9 @@ DYNALHAV ST    R1,8(,R13)         LINK OURS TO CALLER'S SAVE AREA
          USING DYNALWRK,R13
          MVC   0(4,R11),=X'14000001'  PRESET FOR PARM LIST ERROR
          MVC   DYNLIST(ALLDYNLN),PATLIST  INITIALIZE EVERYTHING
-         LDINT R4,0(,R9)          DD NAME LENGTH
+         LDADD R4,0(,R9)          DD NAME LENGTH
          L     R5,4(,R9)          -> DD NAME
-         LDINT R6,8(,R9)          DSN LENGTH
+         LDADD R6,8(,R9)          DSN LENGTH
          L     R7,12(,R9)         -> DATA SET NAME
 *   NOTE THAT THE CALLER IS EITHER COMPILER CODE, OR A COMPILER
 *   LIBRARY ROUTINE, SO WE DO MINIMAL VALIDITY CHECKING
@@ -2833,8 +2878,6 @@ RETURN99 DS    0H
 *    Dump data are written to the SYSTERM DD, with predetermined      *
 *        DCB values (required by SVC 51).                             *
 *                                                                     *
-*    The function may be invoked using the #SNAP macro, or directly.  *
-*                                                                     *
 *    according to my macro manual, SNAP will operate correctly with   *
 *        addresses above the line, and only the DCB must be in 24-bit *
 *        storage. If the MVS version doesn't work that way, code must *
@@ -2864,7 +2907,6 @@ RETURN99 DS    0H
          PUSH  PRINT                                            GP14244
          PRINT NOGEN         DON'T NEED TWO COPIES              GP14244
          DROP  ,                                                GP14244
-         EXTRN @@BUGF        EXTERNAL, OPTIONAL DEBUG FLAG      GP14244
 @@SNAP   FUNHEAD SAVE=(SNAPAREA,SNAPALEN,SUBPOOL)               GP14244
          L     R15,4(,R13)        GET CALLER'S SAVE AREA
          LA    R11,16(,R15)       REMEMBER RETURN CODE ADDRESS  GP14244
@@ -2874,9 +2916,7 @@ RETURN99 DS    0H
          LTR   R9,R9         REQUEST TO CLOSE/FREE?             GP14244
          BZ    SNAPCLOS        YES                              GP14244
          SPACE 1                                                GP14244
-         L     R6,=A(@@BUGF)      GET DEBUGGING FLAG            GP14244
-         LTR   R6,R6              LINKED IN ?                   GP14244
-         BZ    SNAPRET              NO; RETURN                  GP14244
+         L     R6,=A(@@BUGF)      GET DEBUGGING FLAG            \
          TM    3(R6),X'01'        SNAP REQUESTED?               GP14244
          BZ    SNAPRET              NO; RETURN                  GP14244
          ICM   R10,15,@SNAPDCB    PREVIOUSLY GOTTEN?            GP14244
@@ -2894,10 +2934,9 @@ SNAPGET  LA    R0,SNAPSLEN   GET LENGTH OF SAVE AND WORK AREA   GP14244
          SPACE 1                                                GP14244
          LTR   R9,R9         ANY ADDRESS ?                      GP14244
          BZ    SNAPCLOS        NO; CLOSE REQUEST                GP14244
-SNAPGOT  LA    R0,1
-         A     R0,SNAPCTR
-         ST    R0,SNAPCTR
-         IC    R7,SNAPCTR+L'SNAPCTR-1                           GP14244
+SNAPGOT  LA    R7,1          INCREMENT DUMP COUNTER             GP14244
+         AL    R7,SNAPCTR    INCREMENT DUMP COUNTER             GP14244
+         ST    R7,SNAPCTR    INCREMENT DUMP COUNTER             GP14244
          SNAP  DCB=SNAPDCB,ID=(R7),MF=(E,(R9))                  GP14244
          ST    R15,0(,R11)   PROPAGATE RETUNR CODE              GP14244
          B     SNAPRET                                          GP14244
@@ -3235,10 +3274,6 @@ ZBUFF2   DS    A,F                Address, length of 2nd buffer
 KEPTREC  DS    A,F                Address & length of saved rcd
 *
          MAPSUPRM DSECT=NO,PFX=ZP      MAP MODE WORK AREA       GP14233
-*LKSIZE  DS    F                  Save area for input DCB BLKSIZE
-*EYLEN   DS    F       1/3 (vsam) Key length                    GP14233
-*RECL    DS    F       2/3        Save area for input DCB LRECL
-*KP      DS    F       3/3        Relative key position (VSAM)  GP14233
 BUFFADDR DS    A     1/3          Location of the BLOCK Buffer
 BUFFCURR DS    A     2/3          Current record in the buffer
 BUFFEND  DS    A     3/3          Address after end of current block
@@ -3249,6 +3284,7 @@ ZWORK    DS    D             Below the line work storage
 ZDDN     DS    CL8           DD NAME                            GP14205
 ZMEM     DS    CL8           MEMBER NAME or nulls               GP14205
 DEVINFO  DS    2F                 UCB Type / Max block size
+         SPACE 1
 RECFMIX  DS    X             Record format index: 0-F 4-V 8-U
 IXFIX    EQU   0               Recfm = F                        GP14213
 IXVAR    EQU   4               Recfm = V                        GP14213
@@ -3258,28 +3294,35 @@ IXSAM    EQU   0               BSAM/BPAM - default              GP14213
 IXVSM    EQU   4               VSAM data set                    GP14213
 IXVTC    EQU   8               VTOC reader                      GP14213
 IXTRM    EQU   12              TSO terminal                     GP14213
-IOMFLAGS DS    X             Remember open MODE
-IOFOUT   EQU   X'01'           Output mode
+         SPACE 1
+ZDVTYPE  DS    X      1/4    Device type of first/only DD       \
+         SPACE 1
+ZRECFM   DS    X      2/4    Equivalent RECFM bits
+         SPACE 1
+IOSFLAGS DS    X      3/4    Additional MODE related flags      \
 IOFVSAM  EQU   X'04'           Use VSAM                         GP14233
-IOFEXCP  EQU   X'08'           Use EXCP for TAPE
-IOFBLOCK EQU   X'10'           Using BSAM READ/WRITE mode
-IOFBPAM  EQU   X'20'           Unlike BPAM concat - special handling
-IOFUREC  EQU   X'40'           DEVICE IS UNIT RECORD
+         SPACE 1
+IOMFLAGS DS    X      4/4    Remember open MODE
 IOFTERM  EQU   X'80'           Using GETLINE/PUTLINE
+IOFBPAM  EQU   X'20'           Unlike BPAM concat - special handling
+IOFBLOCK EQU   X'10'           Using BSAM READ/WRITE mode
+IOFEXCP  EQU   X'08'           Use EXCP for TAPE
+IOFOUT   EQU   X'01'           Output mode
+         SPACE 1
 IOPFLAGS DS    X             Remember prior events
-IOFKEPT  EQU   X'01'           Record info kept
-IOFCONCT EQU   X'02'           Reread - unlike concatenation
-IOFDCBEX EQU   X'04'           DCB exit entered
-IOFCURSE EQU   X'08'           Write buffer recursion
-IOFLIOWR EQU   X'10'           Last I/O was Write type
-IOFLDATA EQU   X'20'           Output buffer has data
-IOFLSDW  EQU   X'40'           Spanned record incomplete
 IOFLEOF  EQU   X'80'           Encountered an End-of-File
+IOFLSDW  EQU   X'40'           Spanned record incomplete
+IOFLDATA EQU   X'20'           Output buffer has data
+IOFLIOWR EQU   X'10'           Last I/O was Write type
+IOFCURSE EQU   X'08'           Write buffer recursion
+IOFDCBEX EQU   X'04'           DCB exit entered
+IOFCONCT EQU   X'02'           Reread - unlike concatenation
+IOFKEPT  EQU   X'01'           Record info kept
+         SPACE 1
 FILEMODE DS    X             AOPEN requested record format default
 FMFIX    EQU   0               Fixed RECFM (blocked)
 FMVAR    EQU   1               Variable (blocked)
 FMUND    EQU   2               Undefined
-ZRECFM   DS    X             Equivalent RECFM bits
 ZDDFLAGS DS    X             RESULT FLAGS FOR ALL               GP14244
 ZIOSAVE2 DS    18F           Save area for physical write
 SAVEADCB DS    18F                Register save area for PUT

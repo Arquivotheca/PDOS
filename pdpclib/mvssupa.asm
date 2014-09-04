@@ -2864,7 +2864,7 @@ RETURN99 DS    0H
          PUSH  PRINT                                            GP14244
          PRINT NOGEN         DON'T NEED TWO COPIES              GP14244
          DROP  ,                                                GP14244
-         EXTRN BUGFLAG       EXTERNAL, OPTIONAL DEBUG FLAG      GP14244
+         EXTRN @@BUGF        EXTERNAL, OPTIONAL DEBUG FLAG      GP14244
 @@SNAP   FUNHEAD SAVE=(SNAPAREA,SNAPALEN,SUBPOOL)               GP14244
          L     R15,4(,R13)        GET CALLER'S SAVE AREA
          LA    R11,16(,R15)       REMEMBER RETURN CODE ADDRESS  GP14244
@@ -2874,7 +2874,7 @@ RETURN99 DS    0H
          LTR   R9,R9         REQUEST TO CLOSE/FREE?             GP14244
          BZ    SNAPCLOS        YES                              GP14244
          SPACE 1                                                GP14244
-         L     R6,=A(BUGFLAG)     GET DEBUGGING FLAG            GP14244
+         L     R6,=A(@@BUGF)      GET DEBUGGING FLAG            GP14244
          LTR   R6,R6              LINKED IN ?                   GP14244
          BZ    SNAPRET              NO; RETURN                  GP14244
          TM    3(R6),X'01'        SNAP REQUESTED?               GP14244

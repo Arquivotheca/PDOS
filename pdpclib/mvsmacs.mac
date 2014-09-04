@@ -198,6 +198,29 @@
          L     &R,0(,&R)     LOAD INTEGER VALUE
 .MEND    MEND  ,
 *
+*    Macro LDVAL loads value of passed parameter
+*
+         MACRO ,             COMPILER DEPENDENT LOAD INTEGER
+&NM      LDVAL &R,&A         LOAD VALUE FROM PARM LIST
+         GBLC  &COMP         COMPILER GCC OR C/370
+&NM      L     &R,&A         LOAD PARM VALUE
+         AIF ('&COMP' EQ 'GCC').LVAL
+         L     &R,0(,&R)     LOAD ADDRESS
+.* THIS LINE IS FOR ANYTHING NOT GCC: C/370
+.LVAL    L     &R,0(,&R)     LOAD VALUE
+.MEND    MEND  ,
+*
+*    Macro LDADD loads address of passed parameter (for return value)
+*
+         MACRO ,             COMPILER DEPENDENT LOAD INTEGER
+&NM      LDADD &R,&A         GET ADDRESS FROM PARM LIST
+         GBLC  &COMP         COMPILER GCC OR C/370
+&NM      L     &R,&A         LOAD PARM ADDRESS
+         AIF ('&COMP' EQ 'GCC').MEND
+.* THIS LINE IS FOR ANYTHING NOT GCC: C/370
+         L     &R,0(,&R)     LOAD ADDRESS
+.MEND    MEND  ,
+*
 *
 *
          MACRO ,

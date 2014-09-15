@@ -339,7 +339,7 @@ static int testBosGetSystemDate(void)
     return 0;
 }
 
-/*Testing function - to get the Date using PDOS call*/
+/* Test function to test POS Call Int 21/AH=2Ah */
 static int testPosGetSystemDate(void)
 {
     int y,m,d,dw;
@@ -354,9 +354,8 @@ static int testPosGetSystemDate(void)
     return 0;
 
 }
-/**/
 
-/*Test function - to get the time using PDOS call*/
+/* Test function to test POS Call Int 21/AH=2Ch */
 static int testPosGetSystemTime(void)
 {
     int hr,min,sec,hund;
@@ -553,16 +552,15 @@ int main(void)
     /*testPosGetCharInputNoEcho();*/    
     /*testPosDisplayString();*/    
     /*testPosSelectDisk();*/  
-    
-    testPosGetDefaultDrive();
+    /*testPosGetDefaultDrive();*/
+    /*testPosGetSystemDate();*/
+    /*testPosGetSystemTime();*/ 
     
     /*testDriveParms();*/
     /*testDisk();*/
     /*testExtendedMemory();*/
     /*testGenericBlockDeviceRequest();*/
     /*testAbsoluteDiskRead();*/
-    /*testPosGetSystemDate();*/
-    /*testPosGetSystemTime();*/    
     /*testPosRenameFile();*/
     /*testPosDeleteFile();*/
     /*testPosGetFileAttributes();*/

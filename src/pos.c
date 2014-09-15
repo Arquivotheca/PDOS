@@ -170,6 +170,13 @@ unsigned int PosGetDefaultDrive(void)
     return (regsout.h.al);
 }
 
+/* PosSetDTA-INT 21/AH=1Ah */
+/*
+    Input: None.
+    Returns: Set Disk Transfer Area Address
+    Notes: None.
+*/
+
 void PosSetDTA(void *dta)
 {
     union REGS regsin;
@@ -186,6 +193,13 @@ void PosSetDTA(void *dta)
     int86x(0x21, &regsin, &regsout, &sregs);
     return;
 }
+
+/* PosSetInterruptVector-INT 21/AH=25h */
+/*
+    Input: None.
+    Returns: Set Interrupt Vector
+    Notes: None.
+*/
 
 void PosSetInterruptVector(int intnum, void *handler)
 {
@@ -205,6 +219,13 @@ void PosSetInterruptVector(int intnum, void *handler)
     return;
 }
 
+/* PosGetSystemDate-INT 21/AH=2Ah */
+/*
+    Input: None.
+    Returns: Get System Date
+    Notes: None.
+*/
+
 void PosGetSystemDate(int *year, int *month, int *day, int *dw)
 {
     union REGS regsin;
@@ -218,6 +239,15 @@ void PosGetSystemDate(int *year, int *month, int *day, int *dw)
     *dw = regsout.h.al;
     return;
 }
+
+/* PosGetSystemTime-INT 21/AH=2Ch */
+/*
+    Input: None.
+    Returns: Get System Time.
+    Notes:  On most systems, the resolution of the system clock
+            is about 5/100sec,so returned times generally do not 
+            increment by 1. On some systems, DL may always return 00h. 
+*/
 
 void PosGetSystemTime(int *hour, int *min, int *sec, int *hundredths)
 {

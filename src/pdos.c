@@ -1275,7 +1275,7 @@ unsigned int PosDisplayString(const char *buf)
     return ('$');
 }
 
-/*INT 21/AH=0Eh */
+/* INT 21/AH=0Eh */
 unsigned int PosSelectDisk(unsigned int drive)
 {
     currentDrive = drive;
@@ -1289,18 +1289,28 @@ unsigned int PosSelectDisk(unsigned int drive)
     return (lastDrive);
 }
 
-/*INT 21/AH=19h*/
+/* INT 21/AH=19h */
 unsigned int PosGetDefaultDrive(void)
 {
     return (currentDrive);
 }
 
-/* Function to Return the date using BIOS call */
-/*
-   Input: Pointers to BosGetSystemDate().
-   Output: None.
-   Notes: None.
-*/
+/* INT 21/AH=1Ah */
+void PosSetDTA(void *p)
+{
+    dta = p;
+    return;
+}
+
+/* INT 21/AH=25h */
+void PosSetInterruptVector(int intnum, void *handler)
+{
+    disable();
+    *((void **)0 + intnum) = handler;
+    enable();
+}
+
+/* INT 21/AH=2Ah */
 void PosGetSystemDate(int *year, int *month, int *day, int *dw)
 {
     int c,y,m,d;
@@ -1319,13 +1329,7 @@ void PosGetSystemDate(int *year, int *month, int *day, int *dw)
     return;
 }
 
-/* Function to display time by converting ticks retrieved from BIOS 
-   call into timeformat */
-/* 
-   Input: Number of ticks returned by BosGetSystemTime().
-   Output: None. 
-   Notes: Converts the number of ticks to time format.
-*/
+/* INT 21/AH=2Ch */
 void PosGetSystemTime(int *hour, int *minute, int *second, int *hundredths)
 {
     unsigned long ticks,t;
@@ -1347,19 +1351,6 @@ void PosGetSystemTime(int *hour, int *minute, int *second, int *hundredths)
 void *PosGetDTA(void)
 {
     return (dta);
-}
-
-void PosSetDTA(void *p)
-{
-    dta = p;
-    return;
-}
-
-void PosSetInterruptVector(int intnum, void *handler)
-{
-    disable();
-    *((void **)0 + intnum) = handler;
-    enable();
 }
 
 unsigned int PosGetDosVersion(void)

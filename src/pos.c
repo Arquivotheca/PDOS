@@ -133,14 +133,21 @@ unsigned int PosDisplayString(const char *buf)
     return (regsout.h.al);
 }
 
+/* PosSelectDisk-INT 21/AH=0Eh */
+/*
+    Input: Default drive number(00h = A:, 01h = B:, etc).
+    Returns: Number of potentially valid drive letters.
+    Notes:
+*/
 
-int PosSelectDisk(int drive)
+unsigned int PosSelectDisk(unsigned int drive)
 {
     union REGS regsin;
     union REGS regsout;
 
     regsin.h.ah = 0x0e;
     regsin.h.dl = drive;
+    
     int86(0x21, &regsin, &regsout);
     return (regsout.h.al);
 }

@@ -511,6 +511,17 @@ static int testPosDisplayString(void)
     return 0;
 }
 
+static int testPosSelectDisk(void)
+{
+    unsigned int ret;
+    unsigned int test = 2;
+        
+    ret = PosSelectDisk(test);
+    printf("\n");
+    printf("The return value is x %d x \n",ret);
+    return 0;
+}
+
 int main(void)
 {
     /* Successful Tests*/
@@ -527,9 +538,10 @@ int main(void)
     /*Pos Tests*/    
     /*testPosDisplayOutput();*/
     /*testPosDirectCharInputNoEcho();*/
-    /*testPosGetCharInputNoEcho();*/
+    /*testPosGetCharInputNoEcho();*/    
+    /*testPosDisplayString();*/
     
-    testPosDisplayString();
+    testPosSelectDisk();  
     
     /*testDriveParms();*/
     /*testDisk();*/

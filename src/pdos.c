@@ -136,11 +136,11 @@ static int pdos16MemmgrReallocPages(MEMMGR *memmgr,
 #define MAXDISKS 20
 static DISKINFO disks[MAXDISKS];
 static DISKINFO bootinfo;
-static int currentDrive;
-static int tempDrive;
-static int bootDrivePhysical;
-static int bootDriveLogical;
-static int lastDrive;
+static unsigned int currentDrive;
+static unsigned int tempDrive;
+static unsigned int bootDrivePhysical;
+static unsigned int bootDriveLogical;
+static unsigned int lastDrive;
 static unsigned char *bootBPB;
 static char *cwd;
 static int lastrc;
@@ -1275,14 +1275,16 @@ unsigned int PosDisplayString(const char *buf)
     return ('$');
 }
 
-
-int PosSelectDisk(int drive)
+/*INT 21/AH=0Eh */
+unsigned int PosSelectDisk(unsigned int drive)
 {
     currentDrive = drive;
+    
     if (drive < 2)
     {
         accessDisk(drive);
     }
+    
     cwd = disks[drive].cwd;
     return (lastDrive);
 }

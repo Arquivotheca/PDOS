@@ -511,12 +511,24 @@ static int testPosDisplayString(void)
     return 0;
 }
 
+/* Test function to test POS call Int 21/AH=0Eh */
 static int testPosSelectDisk(void)
 {
     unsigned int ret;
     unsigned int test = 2;
         
     ret = PosSelectDisk(test);
+    printf("\n");
+    printf("The return value is x %d x \n",ret);
+    return 0;
+}
+
+
+static int testPosGetDefaultDrive(void)
+{
+    unsigned int ret;
+        
+    ret = PosGetDefaultDrive();
     printf("\n");
     printf("The return value is x %d x \n",ret);
     return 0;
@@ -539,9 +551,10 @@ int main(void)
     /*testPosDisplayOutput();*/
     /*testPosDirectCharInputNoEcho();*/
     /*testPosGetCharInputNoEcho();*/    
-    /*testPosDisplayString();*/
+    /*testPosDisplayString();*/    
+    /*testPosSelectDisk();*/  
     
-    testPosSelectDisk();  
+    testPosGetDefaultDrive();
     
     /*testDriveParms();*/
     /*testDisk();*/

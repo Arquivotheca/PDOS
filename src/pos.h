@@ -67,7 +67,7 @@ unsigned int PosDisplayString(const char *buf); /* func 9 */
 
 unsigned int PosSelectDisk(unsigned int drive); /* func e */
 
-int PosGetDefaultDrive(void); /* func 19 */
+unsigned int PosGetDefaultDrive(void); /* func 19 */
 
 void PosSetDTA(void *dta); /* func 1a */
 

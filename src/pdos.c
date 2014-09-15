@@ -1289,7 +1289,8 @@ unsigned int PosSelectDisk(unsigned int drive)
     return (lastDrive);
 }
 
-int PosGetDefaultDrive(void)
+/*INT 21/AH=19h*/
+unsigned int PosGetDefaultDrive(void)
 {
     return (currentDrive);
 }

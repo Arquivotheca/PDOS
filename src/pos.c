@@ -173,8 +173,8 @@ unsigned int PosGetDefaultDrive(void)
 /* PosSetDTA-INT 21/AH=1Ah */
 /*
     Input: None.
-    Returns: Set Disk Transfer Area Address
-    Notes: None.
+    Returns: None.
+    Notes: Sets Disk Transfer Area Address.
 */
 
 void PosSetDTA(void *dta)
@@ -197,8 +197,8 @@ void PosSetDTA(void *dta)
 /* PosSetInterruptVector-INT 21/AH=25h */
 /*
     Input: None.
-    Returns: Set Interrupt Vector
-    Notes: None.
+    Returns: None.
+    Notes: Sets the Interrupt Vector.
 */
 
 void PosSetInterruptVector(int intnum, void *handler)
@@ -222,8 +222,9 @@ void PosSetInterruptVector(int intnum, void *handler)
 /* PosGetSystemDate-INT 21/AH=2Ah */
 /*
     Input: None.
-    Returns: Get System Date
-    Notes: None.
+    Returns: None.
+    Notes: Used to get the System date calls
+           BIOS INT 1A/AH=04h.(BosGetSystemDate())
 */
 
 void PosGetSystemDate(int *year, int *month, int *day, int *dw)
@@ -233,17 +234,43 @@ void PosGetSystemDate(int *year, int *month, int *day, int *dw)
 
     regsin.h.ah = 0x2a;
     int86(0x21, &regsin, &regsout);
+    
     *year = regsout.x.cx;
     *month = regsout.h.dh;
     *day = regsout.h.dl;
     *dw = regsout.h.al;
+    
     return;
+}
+
+
+/* PosSetSystemDate-INT 21/AH=2Bh */
+/*
+    Input: None.
+    Returns: None.
+    Notes: Used to Set the system date calls
+           BIOS INT 1A/AH=05h(BosSetSystemDate())
+*/
+
+unsigned int PosSetSystemDate(int year, int month, int day)
+{
+    union REGS regsin;
+    union REGS regsout;
+    
+    regsin.h.ah = 0x2b;
+    regsin.x.cx = year;
+    regsin.h.dh = month;
+    regsin.h.dl = day;
+    
+    int86(0x21, &regsin, &regsout);
+    
+    return (regsout.h.al);
 }
 
 /* PosGetSystemTime-INT 21/AH=2Ch */
 /*
     Input: None.
-    Returns: Get System Time.
+    Returns: 
     Notes:  On most systems, the resolution of the system clock
             is about 5/100sec,so returned times generally do not 
             increment by 1. On some systems, DL may always return 00h. 
@@ -261,6 +288,7 @@ void PosGetSystemTime(int *hour, int *min, int *sec, int *hundredths)
     *min = regsout.h.cl;
     *sec = regsout.h.dh;
     *hundredths = regsout.h.dl;
+    
     return;
 }
 

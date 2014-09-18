@@ -330,10 +330,10 @@ static int testBosGetSystemDate(void)
     int ret;
 
     ret = BosGetSystemDate(&c,&y,&m,&d);
-    printf("Century %x \n",c);
-    printf("Year %x \n",y);
-    printf("Month %x \n",m);
-    printf("Day %x \n",d);
+    printf("Century %d \n",c);
+    printf("Year %d \n",y);
+    printf("Month %d \n",m);
+    printf("Day %d \n",d);
     printf("Return Code is %d",ret);
     
     return 0;
@@ -522,7 +522,7 @@ static int testPosSelectDisk(void)
     return 0;
 }
 
-
+/* Test function to test POS call Int 21/AH=19h */
 static int testPosGetDefaultDrive(void)
 {
     unsigned int ret;
@@ -532,6 +532,39 @@ static int testPosGetDefaultDrive(void)
     printf("The return value is x %d x \n",ret);
     return 0;
 }
+
+/* Test function to test BIOS call Int 1A/AH=05h */
+static int testBosSetSystemDate(void)
+{
+    int ret;
+    int c,y,m,d;
+
+    c = 20;
+    y = 14;
+    m = 9;
+    d = 20;
+
+    BosSetSystemDate(c,y,m,d);
+    
+    return 0;
+}
+
+/* Test function to test POS call Int 21/AH=2Bh */
+static int testPosSetSystemDate(void)
+{
+    int ret;
+    int c,y,m,d;
+
+    y = 2014;
+    m = 9;
+    d = 20;
+
+    ret = PosSetSystemDate(y,m,d);
+    printf("The return value is x %d x \n",ret);
+    
+    return 0;
+}
+
 
 int main(void)
 {
@@ -545,7 +578,9 @@ int main(void)
     /*testBosSetCursorPosition();*/
     /*testBosReadCursorPosition();*/ 
     /*testBosReadLightPen();*/
-    /*testBosReadKeyboardCharacter();*/
+    /*testBosReadKeyboardCharacter();*/   
+    /*testBosSetSystemDate();*/
+    
     /*Pos Tests*/    
     /*testPosDisplayOutput();*/
     /*testPosDirectCharInputNoEcho();*/
@@ -556,6 +591,8 @@ int main(void)
     /*testPosGetSystemDate();*/
     /*testPosGetSystemTime();*/ 
     
+    testPosSetSystemDate();
+       
     /*testDriveParms();*/
     /*testDisk();*/
     /*testExtendedMemory();*/

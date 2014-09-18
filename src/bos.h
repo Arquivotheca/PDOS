@@ -110,3 +110,6 @@ void BosGetSystemTime(unsigned long *ticks, unsigned int *midnight);/*1A.0*/
 
 unsigned int BosGetSystemDate(int *century,int *year,int *month,
                               int *day);/*1A.4*/
+
+void BosSetSystemDate(int century,int year,int month,
+                              int day);/*1A.5*/

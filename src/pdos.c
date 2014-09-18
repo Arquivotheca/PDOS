@@ -620,6 +620,12 @@ static void int21handler(union REGS *regsin,
                 regsout->h.al = dw;
             }
             break;
+            
+        case 0x2b:
+            regsout->h.al = PosSetSystemDate(regsin->x.cx,
+                                             regsin->h.dh,
+                                             regsin->h.dl);
+            break;
 
         case 0x2c:
             {
@@ -1327,6 +1333,14 @@ void PosGetSystemDate(int *year, int *month, int *day, int *dw)
     }
     
     return;
+}
+
+/* INT 21/AH=2Bh */
+unsigned int PosSetSystemDate(int year, int month, int day)
+{
+    BosSetSystemDate(year / 100,year % 100,month,day);
+    
+    return 0;
 }
 
 /* INT 21/AH=2Ch */

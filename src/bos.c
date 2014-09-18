@@ -73,6 +73,29 @@ unsigned int BosGetSystemDate(int *century,int *year,int *month,int *day)
     }
 }
 
+/* BosSetSystemDate-BIOS Int 1Ah/AH=05h */
+/*
+   Input: Values to century(int),year(int),month(int),day(int).
+   Returns: None.
+   Notes: Used to set the Date.
+*/
+
+void BosSetSystemDate(int century,int year,int month,int day)
+{
+    union REGS regsin;
+
+    regsin.h.ah = 0x05;
+    
+    regsin.h.ch = century;
+    regsin.h.cl = year;
+    regsin.h.dh = month;
+    regsin.h.dl = day;
+    
+    int86i(0x1A,&regsin);
+    
+    return;
+}
+
 /* BosPrintScreen-BIOS Int 05h */
 /*
     Input: None.
@@ -545,7 +568,7 @@ int BosFixedDiskStatus(unsigned int drive)
 
 
 /* BosDiskSectorRLBA - read using LBA Int 13h Function 42h */
-/* returns 0 if successful, otherwise error code */
+/* Returns 0 if successful, otherwise error code */
 
 int BosDiskSectorRLBA(void         *buffer,
                       unsigned int sectors,
@@ -608,7 +631,7 @@ int BosDiskSectorRLBA(void         *buffer,
 }
 
 /* BosDiskSectorWLBA - write using LBA Int 13h Function 43h */
-/* returns 0 if successful, otherwise error code */
+/* Returns 0 if successful, otherwise error code */
 
 int BosDiskSectorWLBA(void         *buffer,
                       unsigned int sectors,
@@ -699,6 +722,7 @@ long BosExtendedMemorySize(void)
     Returns: Scan Code and ASCII character.
     Notes: None.
 */
+
 unsigned int BosReadKeyboardCharacter(int *scancode, int *ascii)
 {
     union REGS regsin;

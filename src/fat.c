@@ -265,6 +265,20 @@ unsigned int fatOpenFile(FAT *fat, const char *fnm, FATFILE *fatfile)
                             | ((unsigned long)p->file_size[1] << 8)
                             | ((unsigned long)p->file_size[2] << 16)
                             | ((unsigned long)p->file_size[3] << 24);
+        /* empty files have a start cluster of 0 */
+        if ((fatfile->fileSize == 0)
+            && (fatfile->startcluster == 0))
+        {
+            if (fat->fat16)
+            {
+                fat->currcluster = fatfile->startcluster = 0xfff8;
+            }
+            else
+            {
+                fat->currcluster = fatfile->startcluster = 0xff8;
+            }
+        }
+        
         fatfile->attr = p->file_attr;
                        
         fatfile->ftime= p->last_modtime[0] 

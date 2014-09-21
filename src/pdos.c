@@ -1284,6 +1284,8 @@ unsigned int PosDisplayString(const char *buf)
 /* INT 21/AH=0Eh */
 unsigned int PosSelectDisk(unsigned int drive)
 {
+    unsigned int ret;
+    
     currentDrive = drive;
     
     if (drive < 2)
@@ -1292,7 +1294,15 @@ unsigned int PosSelectDisk(unsigned int drive)
     }
     
     cwd = disks[drive].cwd;
-    return (lastDrive);
+
+    ret = lastDrive;
+    
+    if (ret < 5)
+    {
+        ret = 5;
+    }
+
+    return (ret);
 }
 
 /* INT 21/AH=19h */

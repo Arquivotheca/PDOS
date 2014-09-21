@@ -586,12 +586,13 @@ int main(void)
     /*testPosDirectCharInputNoEcho();*/
     /*testPosGetCharInputNoEcho();*/    
     /*testPosDisplayString();*/    
-    /*testPosSelectDisk();*/  
+    
+    testPosSelectDisk();  
+    
     /*testPosGetDefaultDrive();*/
     /*testPosGetSystemDate();*/
-    /*testPosGetSystemTime();*/ 
-    
-    testPosSetSystemDate();
+    /*testPosGetSystemTime();*/     
+    /*testPosSetSystemDate();*/
        
     /*testDriveParms();*/
     /*testDisk();*/

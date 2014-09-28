@@ -424,7 +424,10 @@ size_t fatWriteFile(FAT *fat, FATFILE *fatfile, void *buf, size_t szbuf)
        we will not break into a new sector or cluster */
     if (szbuf == 0) return (0);
 
-    if(fatfile->startcluster==0)
+    if ((fatfile->startcluster==0)
+        || (fat->fat16 && (fatfile->startcluster = 0xfff8))
+        || (!fat->fat16 && (fatfile->startcluster = 0xff8))
+       )
     {
         fat->currcluster = fatFindFreeCluster(fat);
         fatfile->startcluster = fat->currcluster;

@@ -32,7 +32,7 @@
 
 #define MAX_PATH 120
 #define DOS_VERSION 0x04 
-#define NUM_SPECIAL_FILES 3
+#define NUM_SPECIAL_FILES 5
 
 typedef struct {
     int env;

@@ -2770,7 +2770,11 @@ static int fileOpen(const char *fnm)
     }
     if (x == MAXFILES) return (-1);
     rc = fatOpenFile(&disks[drive].fat, p, &fhandle[x].fatfile);
-    if (rc != 0) return (-1);
+    if (rc != 0)
+    {
+        fhandle[x].inuse = 0;
+        return (-1);
+    }
     fhandle[x].fatptr = &disks[drive].fat;
     return (x);
 }

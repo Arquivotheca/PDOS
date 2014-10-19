@@ -236,6 +236,7 @@ static void dotype(char *file)
         {
             fputs(buf, stdout);
         }
+        fclose(fp);
     }
     else
     {

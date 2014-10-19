@@ -32,6 +32,7 @@
 
 #define MAX_PATH 120
 #define DOS_VERSION 0x04 
+#define NUM_SPECIAL_FILES 3
 
 typedef struct {
     int env;
@@ -531,13 +532,12 @@ static void initfiles(void)
 {
     int x;
 
-    fhandle[0].inuse = 1;
-    fhandle[1].inuse = 1;
-    fhandle[2].inuse = 1;
-    fhandle[0].special = 1;
-    fhandle[1].special = 1;
-    fhandle[2].special = 1;
-    for (x = 3; x < MAXFILES; x++)
+    for (x = 0; x < NUM_SPECIAL_FILES; x++)
+    {
+        fhandle[x].inuse = 1;
+        fhandle[x].special = 1;
+    }
+    for (x = NUM_SPECIAL_FILES; x < MAXFILES; x++)
     {
         fhandle[x].inuse = 0;
         fhandle[x].special = 0;
@@ -1539,7 +1539,7 @@ void PosReadFile(int fh, void *data, size_t bytes, size_t *readbytes)
     unsigned char *p;
     size_t x = 0;
 
-    if (fh < 3)
+    if (fh < NUM_SPECIAL_FILES)
     {
         p = (unsigned char *)data;
         for (; x < bytes; x++)
@@ -1575,7 +1575,7 @@ int PosWriteFile(int fh, const void *data, size_t len)
     unsigned char *p;
     size_t x;
 
-    if (fh < 3)
+    if (fh < NUM_SPECIAL_FILES)
     {
         p = (unsigned char *)data;
         for (x = 0; x < len; x++)
@@ -1657,7 +1657,7 @@ int PosSetFileAttributes(const char *fnm,int attr)
 int PosGetDeviceInformation(int handle, unsigned int *devinfo)
 {
     *devinfo = 0;
-    if (handle < 3)
+    if (handle < NUM_SPECIAL_FILES)
     {
         if (handle == 0)
         {
@@ -2720,7 +2720,7 @@ static int fileCreat(const char *fnm, int attrib)
         drive = toupper(drive) - 'A';
         p++;
     }
-    for (x = 0; x < MAXFILES; x++)
+    for (x = NUM_SPECIAL_FILES; x < MAXFILES; x++)
     {
         if (!fhandle[x].inuse)
         {

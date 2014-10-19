@@ -2731,7 +2731,11 @@ static int fileCreat(const char *fnm, int attrib)
     }
     if (x == MAXFILES) return (-4); /* 4 = too many open files */
     rc = fatCreatFile(&disks[drive].fat, p, &fhandle[x].fatfile, attrib);
-    if (rc < 0) return (rc);
+    if (rc < 0)
+    {
+        fhandle[x].inuse = 0;
+        return (rc);
+    }
     fhandle[x].fatptr = &disks[drive].fat;
     return (x);
 }

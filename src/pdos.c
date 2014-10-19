@@ -33,6 +33,7 @@
 #define MAX_PATH 120
 #define DOS_VERSION 0x04 
 #define NUM_SPECIAL_FILES 5
+    /* stdin, stdout, stderr, stdaux, stdprn */
 
 typedef struct {
     int env;

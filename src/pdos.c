@@ -2763,7 +2763,7 @@ static int fileOpen(const char *fnm)
         drive = toupper(drive) - 'A';
         p++;
     }
-    for (x = 0; x < MAXFILES; x++)
+    for (x = NUM_SPECIAL_FILES; x < MAXFILES; x++)
     {
         if (!fhandle[x].inuse)
         {

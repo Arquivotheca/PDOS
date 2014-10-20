@@ -2725,8 +2725,6 @@ static int fileCreat(const char *fnm, int attrib)
     {
         if (!fhandle[x].inuse)
         {
-            fhandle[x].inuse = 1;
-            fhandle[x].special = 0;
             break;
         }
     }
@@ -2734,9 +2732,9 @@ static int fileCreat(const char *fnm, int attrib)
     rc = fatCreatFile(&disks[drive].fat, p, &fhandle[x].fatfile, attrib);
     if (rc < 0)
     {
-        fhandle[x].inuse = 0;
         return (rc);
     }
+    fhandle[x].inuse = 1;
     fhandle[x].fatptr = &disks[drive].fat;
     return (x);
 }
@@ -2768,8 +2766,6 @@ static int fileOpen(const char *fnm)
     {
         if (!fhandle[x].inuse)
         {
-            fhandle[x].inuse = 1;
-            fhandle[x].special = 0;
             break;
         }
     }
@@ -2777,9 +2773,9 @@ static int fileOpen(const char *fnm)
     rc = fatOpenFile(&disks[drive].fat, p, &fhandle[x].fatfile);
     if (rc != 0)
     {
-        fhandle[x].inuse = 0;
         return (-1);
     }
+    fhandle[x].inuse = 1;
     fhandle[x].fatptr = &disks[drive].fat;
     return (x);
 }

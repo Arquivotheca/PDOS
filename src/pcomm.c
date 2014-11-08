@@ -229,7 +229,14 @@ static void dotype(char *file)
 {
     FILE *fp;
     
+    if (strcmp(file,"") == 0)
+    {
+        printf("Required Parameter Missing\n");
+        return;
+    }
+        
     fp = fopen(file, "r");
+    
     if (fp != NULL)
     {
         while (fgets(buf, sizeof buf, fp) != NULL)
@@ -238,10 +245,12 @@ static void dotype(char *file)
         }
         fclose(fp);
     }
+    
     else
     {
        printf("file not found: %s\n", file);
     }
+    
     return;
 }
 

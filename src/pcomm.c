@@ -31,6 +31,7 @@ void safegets(char *buffer, int size);
 
 static char buf[200];
 static unsigned char cmdt[140];
+static char path[500] = ";" ; /* Used to store path */
 static struct {
     int env;
     unsigned char *cmdtail;
@@ -52,6 +53,7 @@ static void dotype(char *file);
 static void dodir(char *pattern);
 static void dover(void);
 static void dodel(char *fnm);
+static void dopath(char *s);
 static void changedir(char *to);
 static void changedisk(int drive);
 static int ins_strcmp(char *one, char *two);
@@ -157,6 +159,10 @@ static void processInput(void)
             term = 1;
         }
     }
+    else if (ins_strcmp(buf, "path") == 0)
+    {
+        dopath(p);
+    }
     else if (ins_strcmp(buf, "type") == 0)
     {
         dotype(p);
@@ -259,27 +265,28 @@ static void dodel(char *fnm)
     int ret;
     DTA *dta;
 
-    dta=PosGetDTA();
-    if(*fnm=='\0')
+    dta = PosGetDTA();
+    if(*fnm == '\0')
     {
         printf("Please Specify the file name \n");
         return;
     }
-    ret=PosFindFirst(fnm,0x10);
+    ret = PosFindFirst(fnm,0x10);
     
-    if(ret==2)
+    if(ret == 2)
     {
         printf("File not found \n");
         printf("No Files Deleted \n");
         return;
     }
-    while(ret==0)
+    while(ret == 0)
     {           
         PosDeleteFile(dta->file_name);  
-        ret=PosFindNext();
+        ret = PosFindNext();
     }
     return;
 }
+
 static void dodir(char *pattern)
 {
     DTA *dta;
@@ -322,6 +329,43 @@ static void dover(void)
     printf("%s %s\n", __DATE__, __TIME__);
     return;
 }
+
+static void dopath(char *s)
+{    
+     if (strcmp(s, "") == 0)
+     {
+        char *t;
+
+        t = path;
+        
+        if (*t == ';')
+        {
+            t++;
+        } 
+        
+        if (*t == '\0')
+        {
+            printf("No Path defined\n");
+        }
+        
+        else
+        {
+            printf("%s\n", t);
+        }
+     }
+     
+     else if (*s == ';')
+     {
+        strcpy(path, s);
+     }
+     
+     else
+     {
+        strcpy(path, ";");
+        strcat(path, s);
+     }
+     return;
+} 
 
 static void changedir(char *to)
 {

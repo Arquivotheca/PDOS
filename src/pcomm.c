@@ -18,10 +18,6 @@
 #include "pos.h"
 #include "dostime.h"
 
-void __exec(char *cmd, void *env);
-
-
-
 /* Written By NECDET COKYAZICI, Public Domain */
 void putch(int a);
 void bell(void);
@@ -49,6 +45,7 @@ static int term = 0;
 static void parseArgs(int argc, char **argv);
 static void processInput(void);
 static void putPrompt(void);
+static void doExec(char *b,char *p);
 static void dotype(char *file);
 static void dodir(char *pattern);
 static void dover(void);
@@ -58,7 +55,8 @@ static void changedir(char *to);
 static void changedisk(int drive);
 static int ins_strcmp(char *one, char *two);
 static int ins_strncmp(char *one, char *two, size_t len);
-static void readAutoExec(void);
+static void readBat(char *fnm);
+static int exists(char *fnm);
 
 int main(int argc, char **argv)
 {
@@ -77,7 +75,7 @@ int main(int argc, char **argv)
     if (primary)
     {
         printf("welcome to pcomm\n");
-        readAutoExec();
+        readBat("AUTOEXEC.BAT");
     }
     else
     {
@@ -205,16 +203,7 @@ static void processInput(void)
     }
     else
     {
-        char *tt;
-        
-        cmdt[0] = (unsigned char)len;
-        memcpy(cmdt + 1, p, len);
-        memcpy(cmdt + len + 1, "\r", 2);
-        tt = buf + strlen(buf);
-        strcpy(tt, ".com");
-        __exec(buf, &parmblock);        
-        strcpy(tt, ".exe");
-        __exec(buf, &parmblock);
+        doExec(buf,p);
     }
     return;
 }
@@ -367,6 +356,94 @@ static void dopath(char *s)
      return;
 } 
 
+static void doExec(char *b,char *p)
+{
+    char *r;
+    char *s;
+    char *t;
+    size_t ln;
+    size_t ln2;
+    char tempbuf[FILENAME_MAX];
+    
+    s = path;    
+    ln = strlen(p);
+    cmdt[0] = ln;
+    memcpy(cmdt + 1, p, ln);
+    memcpy(cmdt + ln + 1, "\r", 2);
+    
+    /*    
+    strcpy(tt, ".com");
+    PosExec(buf, &parmblock);        
+    strcpy(tt, ".exe");
+    PosExec(buf, &parmblock);
+    */
+    
+    while(*s != '\0')
+    {    
+        t = strchr(s, ';');
+        
+        if (t == NULL)
+        {
+            t = s + strlen(s);
+        }
+        
+        printf("The original path is %s \n",s);
+        printf("The file path is %s \n",t);
+        ln2 = t - s;
+        memcpy(tempbuf, s ,ln2);
+        
+        if (ln2 != 0)
+        {
+            tempbuf[ln2++] = '\\';
+        }
+        
+        strcpy(tempbuf + ln2, b);
+        ln2 += strlen(b);
+        strcpy(tempbuf + ln2, ".com");
+        
+        printf("The buffer is %s \n",tempbuf);
+        
+        if (exists(tempbuf))
+        {
+            printf("Inside fileopen for com \n");
+            PosExec(tempbuf, &parmblock);
+            break;
+        }
+        
+        strcpy(tempbuf + ln2 ,".exe");
+        
+        if (exists(tempbuf))
+        {
+            printf("Inside fileopen for exe \n");
+            PosExec(tempbuf, &parmblock);
+            break;
+        }
+        
+        strcpy(tempbuf + ln2 ,".bat");
+        
+        if (exists(tempbuf))
+        {
+            printf("Inside fileopen for bat \n");
+            readBat(tempbuf);
+            break;
+        }
+        
+        s = t;
+        
+        if (*s == ';')
+        {
+            s++;
+        }
+    }
+    
+    if (*s == '\0')
+    {
+        printf("command not found\n");
+    }
+    
+    return;
+}
+
 static void changedir(char *to)
 {
     PosChangeDir(to);
@@ -416,11 +493,11 @@ static int ins_strncmp(char *one, char *two, size_t len)
     return (toupper(*one) - toupper(*two));
 }
 
-static void readAutoExec(void)
+static void readBat(char *fnm)
 {
     FILE *fp;
     
-    fp = fopen("AUTOEXEC.BAT", "r");
+    fp = fopen(fnm, "r");
     if (fp != NULL)
     {        
         while (fgets(buf, sizeof buf, fp) != NULL)
@@ -432,6 +509,20 @@ static void readAutoExec(void)
     return;
 }
 
+static int exists(char *fnm)
+{
+    FILE *fp;
+    
+    fp = fopen(fnm,"rb");
+    
+    if (fp != NULL)
+    {
+        fclose(fp);
+        return 1;
+    }
+    
+    return 0;
+}
 
 
 /* Written By NECDET COKYAZICI, Public Domain */

@@ -121,7 +121,8 @@ static void parseArgs(int argc, char **argv)
         len = strlen(buf);
         if (len > 0)
         {
-            buf[len - 1] = '\0';
+            len--;
+            buf[len] = '\0';
         }
     }
     return;

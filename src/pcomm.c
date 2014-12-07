@@ -372,13 +372,6 @@ static void doExec(char *b,char *p)
     memcpy(cmdt + 1, p, ln);
     memcpy(cmdt + ln + 1, "\r", 2);
     
-    /*    
-    strcpy(tt, ".com");
-    PosExec(buf, &parmblock);        
-    strcpy(tt, ".exe");
-    PosExec(buf, &parmblock);
-    */
-    
     while(*s != '\0')
     {    
         t = strchr(s, ';');
@@ -387,9 +380,7 @@ static void doExec(char *b,char *p)
         {
             t = s + strlen(s);
         }
-        
-        printf("The original path is %s \n",s);
-        printf("The file path is %s \n",t);
+
         ln2 = t - s;
         memcpy(tempbuf, s ,ln2);
         
@@ -401,12 +392,9 @@ static void doExec(char *b,char *p)
         strcpy(tempbuf + ln2, b);
         ln2 += strlen(b);
         strcpy(tempbuf + ln2, ".com");
-        
-        printf("The buffer is %s \n",tempbuf);
-        
+
         if (exists(tempbuf))
         {
-            printf("Inside fileopen for com \n");
             PosExec(tempbuf, &parmblock);
             break;
         }
@@ -415,7 +403,6 @@ static void doExec(char *b,char *p)
         
         if (exists(tempbuf))
         {
-            printf("Inside fileopen for exe \n");
             PosExec(tempbuf, &parmblock);
             break;
         }
@@ -424,7 +411,6 @@ static void doExec(char *b,char *p)
         
         if (exists(tempbuf))
         {
-            printf("Inside fileopen for bat \n");
             readBat(tempbuf);
             break;
         }

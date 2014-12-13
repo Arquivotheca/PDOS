@@ -1010,6 +1010,9 @@ static void osfopen(void)
     myfile->line_buf = ((mode & 0x40) != 0);    
     mode &= ~0x40;
 
+    myfile->true_recfm = (mode >> 16) & 0xff;
+    myfile->tflag = ((myfile->true_recfm & 0x20) != 0);
+
     mode &= 0x07; /* only interested in the simple mode now */
 
     /* errors from MVS __aopen are negative numbers */

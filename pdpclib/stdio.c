@@ -986,6 +986,20 @@ static void osfopen(void)
         mode |= 0x80; /* use PUTLINE/GETLINE if available */
     }
 #endif
+
+    /* The true RECFM is not the "recfm" variable. True
+       RECFM is as follows:
+
+       x'C0' U, x'80' F, x'40' V
+       x'20' T with F, V, or U; 
+           with top two bits off, x'20' is D (ANSI variable)
+           T is obsolete except MVS 3.8 - track overflow
+       x'10' B
+       x'08' S (standard with F; spanned with V)
+       x'04' A
+       x'02' M  (never both A and M)
+    */
+
     myfile->hfile =
         __aopen(myfile->ddname, &mode, &myfile->recfm, &myfile->lrecl,
                 &myfile->blksize, &myfile->asmbuf, p);

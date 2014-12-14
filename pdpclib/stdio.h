@@ -69,8 +69,8 @@ typedef struct
     void *hfile;
     void *asmbuf;
     int recfm;
-    int true_recfm;
-    int tflag;
+    /* int true_recfm;
+    int tflag; */
     int style;
     int lrecl;
     int blksize;

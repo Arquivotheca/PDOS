@@ -37,7 +37,7 @@ push ds
 mov dx,[bp+8]
 mov ds,dx
 mov dx,[bp+6]
-mov al,[bp+11]
+mov al,[bp+10]
 
 mov ah, 3dh
 int 21h

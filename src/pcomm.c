@@ -45,6 +45,7 @@ static int term = 0;
 static void parseArgs(int argc, char **argv);
 static void processInput(void);
 static void putPrompt(void);
+static void doCopy(char *b);
 static void doExec(char *b,char *p);
 static void dotype(char *file);
 static void dodir(char *pattern);
@@ -201,6 +202,10 @@ static void processInput(void)
     else if ((strlen(buf) == 2) && (buf[1] == ':'))
     {
         changedisk(buf[0]);
+    }
+    else if (ins_strcmp(buf, "copy") == 0)
+    {
+        doCopy(p);
     }
     else
     {
@@ -429,6 +434,62 @@ static void doExec(char *b,char *p)
     }
     
     return;
+}
+
+static void doCopy(char *b)
+{
+    char bbb[512];
+    char *src;
+    char *dest;
+    FILE *fsrc;
+    FILE *fdest;
+    int bytes_read = 0; 
+    
+    src = b;
+    dest = strchr(b,' ');
+     
+    if (dest == NULL)
+    {
+        printf("\n Two Filenames required");
+        return;
+    }
+    
+    *dest++ ='\0';
+        
+    printf("Source is %s \n",src);
+    printf("Dest is %s \n",dest);
+       
+    fsrc = fopen(src,"rb");
+    
+    if (fsrc != NULL)
+    {
+        fdest = fopen(dest,"wb");
+        
+        if (fdest != NULL)
+        {
+            while((bytes_read = fread(bbb,1,sizeof(bbb),fsrc)) != 0)
+            {
+                fwrite(bbb,1,bytes_read,fdest);
+            }
+            
+            fclose(fdest);   
+        }
+        
+        else
+        {
+            printf("Destination %s file not found \n",dest);
+        }
+        
+        fclose(fsrc);
+    }
+    
+    else
+    {
+        printf("Source file %s not found \n",src);
+    }
+      
+    return;
+    
 }
 
 static void changedir(char *to)

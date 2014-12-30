@@ -2586,7 +2586,7 @@ static int pdosLoadExe(PDOS *pdos, char *prog, char *parm)
         return (-1);
     }
 
-    /* assume 4 MB max */
+    /* assume 5 MB max */
     raw = memmgrAllocate(&pdos->aspaces[pdos->curr_aspace].o.btlmem,
                          5 * 1024 * 1024, 0);
     if (raw == NULL)

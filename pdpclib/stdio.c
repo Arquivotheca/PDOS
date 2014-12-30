@@ -89,6 +89,7 @@
 #else
 #define CTYP
 #endif
+extern int CTYP __creat(const char *filename, int mode, int *errind);
 extern int CTYP __open(const char *filename, int mode, int *errind);
 extern int CTYP __read(int handle, void *buf, size_t len, int *errind);
 extern int CTYP __write(int handle, const void *buf, size_t len, int *errind);
@@ -750,7 +751,14 @@ static void osfopen(void)
         errno = 2;
         return;
     }
-    myfile->hfile = __open(fnm, mode, &errind);
+    if (mode)
+    {
+        myfile->hfile = __creat(fnm, 0, &errind);
+    }
+    else
+    {
+        myfile->hfile = __open(fnm, 0, &errind);
+    }
     if (errind)
     {
         err = 1;

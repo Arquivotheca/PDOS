@@ -1496,11 +1496,6 @@ int PosOpenFile(const char *name, int mode, int *handle)
 
     orig = name;
 
-    if(mode==1)
-    {
-        ret=PosCreatFile(name,0,handle);
-        return(ret);
-    }
     if (name[1] == ':')
     {
         name += 2;

@@ -63,6 +63,44 @@ ret
 ___open endp
 
 
+public ___creat
+___creat proc
+push bp
+mov bp, sp
+
+push bx
+push dx
+push ds
+
+mov dx,[bp+8]
+mov ds,dx
+mov dx,[bp+6]
+mov cx,[bp+10]
+
+mov ah, 3ch
+int 21h
+
+jc ___creat1
+mov dx,[bp+14]
+mov ds,dx
+mov bx,[bp+12]
+mov word ptr [bx], 0
+jmp short ___creat2
+___creat1:
+mov dx,[bp+14]
+mov ds,dx
+mov bx,[bp+12]
+mov word ptr [bx], 1
+___creat2:
+pop ds
+pop dx
+pop bx
+
+pop bp
+ret
+___creat endp
+
+
 public ___read
 ___read proc
 push bp

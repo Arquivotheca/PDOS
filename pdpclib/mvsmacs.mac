@@ -241,3 +241,69 @@
 .BR      ANOP  ,
 &NM      BR    &F2
 .MEND    MEND  ,
+*
+*
+*
+         MACRO ,
+&NM      MAPSUPRM &PFX=ZP,&DSECT=                           NEW GP14220
+.*  THIS MACRO DESCRIBES/DEFINES THE OPEN I/O MODE AND ASSOCIATED WORK
+.*  AREA USED BY THE MVSSUPA SERVICE ROUTINE.
+.*  MODE IS INPUT AND RETURNED
+.*  ID IS INPUT AND UPDATED
+.*  REST ARE OUTPUT ONLY
+.*
+         LCLC  &P,&N
+&P       SETC  '&PFX'
+&N       SETC  '&NM'
+         AIF   ('&N' NE '').HAVSECT
+&N       SETC  'MAP'.'&P'
+.HAVSECT AIF   ('&DSECT' EQ 'NO').NOSEC
+&N       DSECT ,
+         AGO   .COMSEC
+.NOSEC   AIF   ('&NM' EQ '').COMSEC
+&NM      DS    0F
+.COMSEC  ANOP  ,
+&P.MODE  DC    F'0' I/O MODE (0-IN,1-OUT,2-UPD,3-APP,4-INOUT,5-OUTIN)
+.*                  +8-USE EXCP FOR TAPE
+.*                  +10-USE BLOCK MODE (BSAM RATHER THAN QSAM MODE)
+.*                  +80-TERMINAL GETLINEL +81-TERMINAL PUTLINE
+.*                  RETURNS 40-VSAM; 20-BPAM UNLIKE CONCAT
+&P.LEN   DC    AL2(&P.SIZE)  CONTROL BLOCK LENGTH
+&P.ID    DC    H'42'         BLOCK IDENTIFIER (0 ON RETURN)
+&P.FLAGS DC    X'0'          DD SCAN FLAG
+&P.FDD   EQU   X'80'           FOUND A DD - LATER CONCAT FLAG
+&P.FSEQ  EQU   X'40'           USE IS SEQUENTIAL
+&P.FPDQ  EQU   X'20'           DS IS PDS WITH MEMBER NAME
+&P.FPDS  EQU   X'10'           DS IS PDS (or PDS/E with S390)
+&P.FVSM  EQU   X'08'           DS IS VSAM (limited support)
+&P.FVTOC EQU   X'04'           DS IS VTOC (limited support)
+&P.FBLK  EQU   X'02'           DD HAS FORCED BLKSIZE
+.*
+&P.RECFM DC    X'0'          RECORD FORMAT (SAME AS DCBRECFM)
+&P.RFU   EQU   X'C0'           UNDEFINED
+&P.RFF   EQU   X'80'           FIXED
+&P.RFV   EQU   X'40'           VARIABLE (WITH BDW/RDW)
+&P.RFD   EQU   X'20'           ASCII VARIABLE (WITH BIT 0-1 OFF)
+&P.RFT   EQU   X'20'           TRACK OVERFLOW (WITH 0-1 NOT OFF)
+&P.RFB   EQU   X'10'           BLOCKED
+&P.RFS   EQU   X'08'           STANDARD(F), SPANNED(V)
+&P.RFA   EQU   X'04'           ANSI CONTROL CHARACTERS
+&P.RFM   EQU   X'02'           MACHINE CONTROL CHARACTERS (1403 CCW)
+.*
+&P.PIX   DC    H'0'          PROCESSING INDEX
+&P.IXSAM EQU   0               BSAM/BPAM - default
+&P.IXQSM EQU   4               QSAM - same as BSAM, with deblocking
+&P.IXVSM EQU   8               VSAM data set
+&P.IXVTC EQU   12              VTOC reader
+&P.IXTRM EQU   16              TSO terminal
+.*.IXVSK EQU   20              (RESERVED) VSAM KEYED I/O
+.*.IXVSU EQU   24              (RESERVED) VSAM UPDATE (GET/PUT/RELEASE)
+.*
+&P.DEVT  DC    XL2'0'        UCBTBYT3/4
+&P.ORG   DC    XL2'0'        DSORG
+&P.KEYL  DC    F'0'          KEY LENGTH
+&P.KEYP  DC    F'0'          KEY POSITION
+&P.LRECL DC    F'0'          RECORD LENGTH
+&P.BLKSZ DC    F'0'          BLOCK SIZE
+&P.SIZE  EQU   *-&P.MODE     SIZE TO CLEAR
+         MEND  ,

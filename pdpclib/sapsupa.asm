@@ -52,6 +52,17 @@
 SUBPOOL  EQU   0
          EXTRN @@CONSDN
 *
+*
+*
+         AIF ('&ZSYS' EQ 'S370').AMB24A
+AMBIT    EQU X'80000000'
+         AGO .AMB24B
+.AMB24A  ANOP
+AMBIT    EQU 0
+.AMB24B  ANOP
+*
+*
+*
 ***********************************************************************
 *
 *  AOPEN - Open a dataset
@@ -688,14 +699,9 @@ CCHAIN   CCW1  X'09',0,X'20',0    20 = ignore length issues
 CFINCHN  EQU   *
          DS    0D
 CWAITNER DC    X'060E0000'  I/O, machine check, EC, wait, DAT on
-         DC    X'00000000'  no error
+         DC    A(AMBIT)     no error
 CNEWIO   DC    X'000C0000'  machine check, EC, DAT off
-         AIF   ('&ZSYS' EQ 'S370').MOD24Q
-         DC    A(X'80000000'+CCONT)  continuation after I/O request
-         AGO   .MOD31Q
-.MOD24Q  ANOP
-         DC    A(CCONT)     continuation after I/O request
-.MOD31Q  ANOP
+         DC    A(AMBIT+CCONT)  continuation after I/O request
 *
          DROP  ,
 *
@@ -802,14 +808,9 @@ CRDCHN   CCW1  X'0A',0,X'20',0    20 = ignore length issues
 CRDFCHN  EQU   *
          DS    0D
 CRWTNER  DC    X'060E0000'  I/O, machine check, EC, wait, DAT on
-         DC    X'00000000'  no error
+         DC    A(AMBIT)     no error
 CRNEWIO  DC    X'000C0000'  machine check, EC, DAT off
-         AIF   ('&ZSYS' EQ 'S370').CRD24Q
-         DC    A(X'80000000'+CRCONT)  continuation after I/O request
-         AGO   .CRD31Q
-.CRD24Q  ANOP
-         DC    A(CRCONT)     continuation after I/O request
-.CRD31Q  ANOP
+         DC    A(AMBIT+CRCONT)  continuation after I/O request
 *
          DROP  ,
 *

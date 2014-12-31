@@ -37,6 +37,15 @@ ENTSTRT  EQU   2048         Create a predictable usable entry point
 *
 *
 *
+         AIF ('&ZSYS' EQ 'S370').AMB24A
+AMBIT    EQU X'80000000'
+         AGO .AMB24B
+.AMB24A  ANOP
+AMBIT    EQU 0
+.AMB24B  ANOP
+*
+*
+*
          CSECT
 *
 * This program will be loaded by the IPL sequence to location 0
@@ -46,12 +55,7 @@ ENTSTRT  EQU   2048         Create a predictable usable entry point
 *
 ORIGIN   DS    0D
          DC    X'000C0000'  EC mode + Machine Check enabled
-         AIF   ('&ZSYS' EQ 'S370').MOD24A
-         DC    A(X'80000000'+POSTIPL)
-         AGO   .MOD31A
-.MOD24A  ANOP
-         DC    A(POSTIPL)   First bit of "normal" memory
-.MOD31A  ANOP
+         DC    A(AMBIT+POSTIPL) First bit of "normal" memory
 *
 * Memory to be cleared.
 *
@@ -120,20 +124,15 @@ ORB      DS    0F
 *
          DS    0D
 WAITNOER DC    X'020E0000'  I/O, machine check, EC, wait
-         DC    X'00000000'  no error
+         DC    A(AMBIT)      no error
 NEWIO    DC    X'000C0000'  machine check enabled + EC
-         AIF   ('&ZSYS' EQ 'S370').MOD24B
-         DC    A(X'80000000'+STAGE2)
-         AGO   .MOD31B
-.MOD24B  ANOP
-         DC    A(STAGE2)
-.MOD31B  ANOP
+         DC    A(AMBIT+STAGE2)
 WAITER1  DC    X'000E0000'  machine check, EC, wait
-         DC    X'00000111'  error 111
+         DC    A(AMBIT+X'00000111')  error 111
 WAITER2  DC    X'000E0000'  machine check, EC, wait
-         DC    X'00000222'  error 222
+         DC    A(AMBIT+X'00000222')  error 222
 WAITER3  DC    X'000E0000'  machine check, EC, wait
-         DC    X'00000333'  error 333
+         DC    A(AMBIT+X'00000333')  error 333
          DS    0D
 SEEK     CCW   7,BBCCHH,X'40',6
 SEARCH   CCW   X'31',CCHHR,X'40',5
@@ -180,14 +179,9 @@ STAGE3   DS    0H
          LPSW  ST4PSW
          DS    0D
 ST4PSW   DC    X'000C0000'  EC mode + Machine Check enabled
-         AIF   ('&ZSYS' EQ 'S370').MOD24C
-         DC    A(X'80000000'+STAGE4)
-         AGO   .MOD31C
-.MOD24C  ANOP
-         DC    A(STAGE4)
-.MOD31C  ANOP
+         DC    A(AMBIT+STAGE4)
 WAITSERR DC    X'000E0000'  EC mode + Machine Check enabled + wait
-         DC    X'00000444'  Severe error
+         DC    A(AMBIT+X'00000444')  Severe error
 * At this point, we are in a "normal" post-IPL status,
 * with our bootloader loaded, and interrupts disabled,
 * and low memory should be considered to be in an

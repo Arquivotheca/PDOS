@@ -2383,6 +2383,7 @@ static int pdosDumpBlk(PDOS *pdos, char *parm)
     long i;
     long start = 0;
     int dev;
+    int n;
 
     tbuf[0] = '\0';
     i = *(short *)parm;
@@ -2392,7 +2393,13 @@ static int pdosDumpBlk(PDOS *pdos, char *parm)
         memcpy(tbuf, parm, i);
         tbuf[i] = '\0';
     }
-    sscanf(tbuf, "%x %d %d %d", &dev, &cyl, &head, &rec);
+    n = sscanf(tbuf, "%x %d %d %d", &dev, &cyl, &head, &rec);
+    if (n != 4)
+    {
+        printf("usage: dumpblk dev(x) cyl(d) head(d) rec(d)\n");
+        printf("dev of 0 will use IPL device\n");
+        return (0);
+    }
     if (dev == 0)
     {
         dev = pdos->ipldev;
@@ -2463,6 +2470,7 @@ static int pdosZapBlk(PDOS *pdos, char *parm)
     int off;
     int nval;
     int dev;
+    int n;
 
     tbuf[0] = '\0';
     i = *(short *)parm;
@@ -2472,7 +2480,13 @@ static int pdosZapBlk(PDOS *pdos, char *parm)
         memcpy(tbuf, parm, i);
         tbuf[i] = '\0';
     }
-    sscanf(tbuf, "%x %d %d %d %i %i", &dev, &cyl, &head, &rec, &off, &nval);
+    n = sscanf(tbuf, "%x %d %d %d %i %i", &dev, &cyl, &head, &rec, &off, &nval);
+    if (n != 6)
+    {
+        printf("usage: zapblk dev(x) cyl(d) head(d) rec(d) off(d) nval(d)\n");
+        printf("dev of 0 will use IPL device\n");
+        return (0);
+    }
     if (dev == 0)
     {
         dev = pdos->ipldev;

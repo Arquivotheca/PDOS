@@ -41,7 +41,7 @@ ENTSTRT  EQU   2048         Create a predictable usable entry point
 AMBIT    EQU X'80000000'
          AGO .AMB24B
 .AMB24A  ANOP
-AMBIT    EQU 0
+AMBIT    EQU X'00000000'
 .AMB24B  ANOP
 *
 *

@@ -544,7 +544,7 @@ DEXIT    DS    0H
          LR    R1,R3
          STM   R14,R12,12(R13)         
          BALR  R14,R15
-         LM    R14,R12,12(R13)
+         LM    R0,R12,20(R13)
 *
          AIF   ('&ZSYS' EQ 'S370').MOD24F
          CALL  @@SETM31

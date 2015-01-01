@@ -18,6 +18,18 @@ PDOSSUP TITLE 'P D O S S U P  ***  SUPPORT ROUTINE FOR PDOS'
          PRINT GEN
          YREGS
 SUBPOOL  EQU   0
+*
+*
+*
+         AIF ('&ZSYS' EQ 'S370').AMB24A
+AMBIT    EQU X'80000000'
+         AGO .AMB24B
+.AMB24A  ANOP
+AMBIT    EQU X'00000000'
+.AMB24B  ANOP
+*
+*
+*
          CSECT
 **********************************************************************
 *                                                                    *
@@ -73,20 +85,15 @@ ALLIOINT DC    X'FF000000'
 *
          DS    0D
 WAITER7  DC    X'000E0000'  machine check, EC, wait
-         DC    X'00000777'  error 777
+         DC    A(AMBIT+X'00000777')  error 777
 WAITER1  DC    X'000E0000'  machine check, EC, wait
-         DC    X'00000111'  error 111
+         DC    A(AMBIT+X'00000111')  error 111
 WAITER2  DC    X'000E0000'  machine check, EC, wait
-         DC    X'00000222'  error 222
+         DC    A(AMBIT+X'00000222')  error 222
 WAITER3  DC    X'040E0000'  machine check, EC, wait, dat on
-         DC    X'00000333'  error 333
+         DC    A(AMBIT+X'00000333')  error 333
 NEWSVC   DC    X'040C0000'  machine check, EC, DAT on
-         AIF   ('&ZSYS' EQ 'S370').MOD24B
-         DC    A(X'80000000'+GOTSVC)  SVC handler
-         AGO   .MOD31B
-.MOD24B  ANOP
-         DC    A(GOTSVC)    SVC handler
-.MOD31B  ANOP
+         DC    A(AMBIT+GOTSVC)  SVC handler
 *
 *
 *
@@ -221,14 +228,9 @@ HH2      DS    CL2
 R        DS    C
          DS    0D
 WAITNOER DC    X'060E0000'  I/O, machine check, EC, wait, DAT on
-         DC    X'00000000'  no error
+         DC    A(AMBIT)  no error
 NEWIO    DC    X'000C0000'  machine check, EC, DAT off
-         AIF   ('&ZSYS' EQ 'S370').MOD24
-         DC    A(X'80000000'+CONT)  continuation after I/O request
-         AGO   .MOD31
-.MOD24   ANOP
-         DC    A(CONT)      continuation after I/O request
-.MOD31   ANOP
+         DC    A(AMBIT+CONT)  continuation after I/O request
 *
          DROP  ,
 *
@@ -375,14 +377,9 @@ WRHH2    DS    CL2
 WRR      DS    C
          DS    0D
 WRWTNOER DC    X'060E0000'  I/O, machine check, EC, wait, DAT on
-         DC    X'00000000'  no error
+         DC    A(AMBIT)  no error
 WRNEWIO  DC    X'000C0000'  machine check, EC, DAT off
-         AIF   ('&ZSYS' EQ 'S370').WRMOD24
-         DC    A(X'80000000'+WRCONT)  continuation after I/O request
-         AGO   .WRMOD31
-.WRMOD24 ANOP
-         DC    A(WRCONT)    continuation after I/O request
-.WRMOD31 ANOP
+         DC    A(AMBIT+WRCONT)  continuation after I/O request
 *
          DROP  ,
 *

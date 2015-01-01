@@ -18,6 +18,18 @@ PLOADSUP TITLE 'P L O A D S U P  ***  SUPPORT ROUTINE FOR PLOAD'
          PRINT GEN
          YREGS
 SUBPOOL  EQU   0
+*
+*
+*
+         AIF ('&ZSYS' EQ 'S370').AMB24A
+AMBIT    EQU X'80000000'
+         AGO .AMB24B
+.AMB24A  ANOP
+AMBIT    EQU X'00000000'
+.AMB24B  ANOP
+*
+*
+*
          CSECT
 **********************************************************************
 *                                                                    *
@@ -72,13 +84,13 @@ ALLIOINT DC    X'FF000000'
 *
          DS    0D
 WAITER7  DC    X'000E0000'  machine check, EC, wait
-         DC    X'00000777'  error 777
+         DC    A(AMBIT+X'00000777')  error 777
 WAITER1  DC    X'000E0000'  machine check, EC, wait
-         DC    X'00000111'  error 111
+         DC    A(AMBIT+X'00000111')  error 111
 WAITER2  DC    X'000E0000'  machine check, EC, wait
-         DC    X'00000222'  error 222
+         DC    A(AMBIT+X'00000222')  error 222
 WAITER3  DC    X'000E0000'  machine check, EC, wait
-         DC    X'00000333'  error 333
+         DC    A(AMBIT+X'00000333')  error 333
 *
 *
 *
@@ -213,14 +225,9 @@ HH2      DS    CL2
 R        DS    C
          DS    0D
 WAITNOER DC    X'060E0000'  I/O, machine check, EC, wait, DAT on
-         DC    X'00000000'  no error
+         DC    A(AMBIT)  no error
 NEWIO    DC    X'000C0000'  machine check, EC, DAT off
-         AIF   ('&ZSYS' EQ 'S370').MOD24
-         DC    A(X'80000000'+CONT)  continuation after I/O request
-         AGO   .MOD31
-.MOD24   ANOP
-         DC    A(CONT)      continuation after I/O request
-.MOD31   ANOP
+         DC    A(AMBIT+CONT)  continuation after I/O request
 *
          DROP  ,
 *

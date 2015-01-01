@@ -542,9 +542,12 @@ DEXIT    DS    0H
          CALL  @@SETM24
 .MOD24E  ANOP
 *
+         STM   R0,R15,DEXITSAV
+         LA    R13,DEXITSAV
          LR    R15,R2
          LR    R1,R3
          BALR  R14,R15
+         LM    R0,R15,0(R13)
 *
          AIF   ('&ZSYS' EQ 'S370').MOD24F
          CALL  @@SETM31
@@ -554,7 +557,7 @@ DEXITRET DS    0H
          LA    R15,0
          RETURN (14,12),RC=(15)
          LTORG
-*DEXITSAV DS    19F
+DEXITSAV DC    16A(0)
 *
 *
 *

@@ -531,7 +531,8 @@ DEXIT    DS    0H
          USING DEXIT,R12
          USING PSA,R0
 *
-* Might need to switch save areas here
+         LR    R4,R13                 save old save area
+         LA    R13,76(R13)            new save area
 *
          L     R2,0(R1)               their exit
          L     R3,4(R1)               actual DCB for them
@@ -539,22 +540,21 @@ DEXIT    DS    0H
          CALL  @@SETM24
 .MOD24E  ANOP
 *
-         STM   R0,R15,DEXITSAV
-         LA    R13,DEXITSAV
          LR    R15,R2
          LR    R1,R3
+         STM   R14,R12,12(R13)         
          BALR  R14,R15
-         LM    R0,R15,0(R13)
+         LM    R14,R12,12(R13)
 *
          AIF   ('&ZSYS' EQ 'S370').MOD24F
          CALL  @@SETM31
 .MOD24F  ANOP
 *
 DEXITRET DS    0H
+         LR    R13,R4                 restore save area
          LA    R15,0
          RETURN (14,12),RC=(15)
          LTORG
-DEXITSAV DC    16A(0)
 *
 *
 *

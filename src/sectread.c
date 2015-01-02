@@ -17,6 +17,12 @@
 #include "unused.h"
 
 static void dodump(unsigned char *fp, long start, long count);
+static int readAbs(void *buf,
+                int sectors,
+                int drive,
+                int track,
+                int head,
+                int sect);
 static int readLBA(void *buf, 
                    int sectors, 
                    int drive, 
@@ -29,17 +35,30 @@ int main(int argc, char **argv)
     long sect;
     FILE *fq;
     int rc;
+    int trk;
+    int hd;
+    int sec;
+    int lba = 0;
     
     if (argc <= 3)
     {
         printf("usage: sectread <drive> <sect #> <outfile>\n");
         printf("example: sectread 81 63 boot.com\n");
+        printf("example: sectread 0 0/0/1 boot.com\n");
         printf("A drive = 0, D drive = 81, etc\n");
         return (EXIT_FAILURE);
     }
     
     drive = strtol(*(argv + 1), NULL, 16);
-    sect = atol(*(argv + 2));
+    if (strchr(*(argv + 2), '/') != NULL)
+    {
+        sscanf(*(argv +2), "%d/%d/%d", &trk, &hd, &sec);
+    }
+    else
+    {
+        sect = atol(*(argv + 2));
+        lba = 1;
+    }
     fq = fopen(*(argv + 3), "wb");
     if (fq == NULL)
     {
@@ -47,7 +66,14 @@ int main(int argc, char **argv)
         return (EXIT_FAILURE);
     }
     
-    rc = readLBA(buf, 1, drive, sect);
+    if (lba)
+    {
+        rc = readLBA(buf, 1, drive, sect);
+    }
+    else
+    {
+        rc = readAbs(buf, 1, drive, trk, hd, sec);
+    }
 
     if (rc != 0)
     {
@@ -57,6 +83,42 @@ int main(int argc, char **argv)
     fwrite(buf, 1, sizeof buf, fq);
     printf("sector dumped successfully\n");
     return (0);
+}
+
+
+static int readAbs(void *buf,
+                int sectors,
+                int drive,
+                int track,
+                int head,
+                int sect)
+{
+    int rc;
+    int ret = -1;
+    int tries;
+#ifdef __32BIT__
+    void *readbuf = transferbuf;
+#else
+    void *readbuf = buf;
+#endif
+
+    unused(sectors);
+    tries = 0;
+    while (tries < 5)
+    {
+        rc = BosDiskSectorRead(readbuf, 1, drive, track, head, sect);
+        if (rc == 0)
+        {
+#ifdef __32BIT__
+            memcpy(buf, transferbuf, 512);
+#endif
+            ret = 0;
+            break;
+        }
+        BosDiskReset(drive);
+        tries++;
+    }
+    return (ret);
 }
 
 

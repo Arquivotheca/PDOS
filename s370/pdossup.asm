@@ -529,7 +529,6 @@ DEXIT    DS    0H
          SAVE  (14,12),,DEXIT
          LR    R12,R15
          USING DEXIT,R12
-         USING PSA,R0
 *
          LR    R4,R13                 save old save area
          LA    R13,76(R13)            new save area
@@ -552,7 +551,6 @@ DEXIT    DS    0H
 *
 DEXITRET DS    0H
          LR    R13,R4                 restore save area
-         LA    R15,0
          RETURN (14,12),RC=(15)
          LTORG
 *

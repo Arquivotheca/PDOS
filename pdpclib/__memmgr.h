@@ -105,6 +105,21 @@ typedef struct {
 #define MEMMGR_CRASH 1
 #endif
 
+#ifdef NICEASM
+#define memmgrDefaults mmDef
+#define memmgrInit mmInit
+#define memmgrTerm mmTerm
+#define memmgrSupply mmSupply
+#define memmgrAllocate mmAlloc
+#define memmgrFree mmFree
+#define memmgrFreeId mmFreeId
+#define memmgrMaxSize mmMaxSiz
+#define memmgrTotSize mmTotSiz
+#define memmgrIntegrity mmInteg
+#define memmgrRealloc mmRealoc
+#define memmgrDebug mmDebug
+#define memmgrDebug2 mmDbg2
+#else
 #define memmgrDefaults __mmDef
 #define memmgrInit __mmInit
 #define memmgrTerm __mmTerm
@@ -118,6 +133,7 @@ typedef struct {
 #define memmgrRealloc __mmRealloc
 #define memmgrDebug __mmDebug
 #define memmgrDebug2 __mmDbg2
+#endif
 
 void memmgrDefaults(MEMMGR *memmgr);
 void memmgrInit(MEMMGR *memmgr);

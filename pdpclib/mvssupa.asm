@@ -46,6 +46,12 @@ MVSSUPA  TITLE 'M V S S U P A  ***  MVS VERSION OF PDP CLIB SUPPORT'
 *
 ***********************************************************************
 *
+*   To facilitate cross-assembly (S390 on S370/380 system), some
+*   OS/390 & zOS macros replaced. Affected old statements are flagged
+*   *COMP*                                               2015-01-06
+*
+***********************************************************************
+*
 *
 * Internal macros:
 *
@@ -321,20 +327,26 @@ DDCFDD1  AR    R9,R0              NEXT ENTRY                    GP14205
 *---------------------------------------------------------------------*
          SPACE 1                                                GP14205
 DDCHECK  MVI   OPERF,ORFNOJFC     PRESET FOR BAD JFCB           GP14205
-         AIF   ('&ZSYS' NE 'S390').MVSJFCB                      GP14205
-         XC    DDWSWA(DDWSWAL),DDWSWA  CLEAR SWA LIST FORM      GP14205
-         LA    R1,DDWSVA          ADDRESS OF JFCB TOKEN         GP14205
-         ST    R1,DDWEPA                                        GP14205
-         MVC   DDWSVA+4(3),TIOEJFCB    JFCB TOKEN               GP14205
-         SWAREQ FCODE=RL,EPA=DDWEPA,MF=(E,DDWSWA),UNAUTH=YES    GP14205
-         BXH   R15,R15,OPSERR                                   GP14205
-         ICM   R6,15,DDWSVA       LOAD JFCB ADDRESS             GP14205
-         BZ    OPSERR               NO; SERIOUS PROBLEM         GP14205
-         AGO   .COMJFCB                                         GP14205
-.MVSJFCB SR    R6,R6              FOR AM31                      GP14205
-         ICM   R6,7,TIOEJFCB      SHOULD NEVER BE ZERO          GP14205
-         BZ    OPSERR               NO; SERIOUS PROBLEM         GP14205
-         LA    R6,16(,R6)         SKIP QUEUE HEADER             GP14205
+         ICM   R1,7,TIOEJFCB      GET JFCB ADDRESS OR TOKEN     GP15006
+         BZ    OPSERR               NO JFCB ?                   GP15006
+         L     R15,=A(LOOKSWA)    GET TOKEN CONVERSION          GP15006
+         BALR  R14,R15            INVOKE IT                     GP15006
+         LTR   R6,R15             LOAD AND TEST ADDRESS         GP15006
+         BNP   OPSERR               NO JFCB ?                   GP15006
+*COMP*   AIF   ('&ZSYS' NE 'S390').MVSJFCB                      GP14205
+*COMP*   XC    DDWSWA(DDWSWAL),DDWSWA  CLEAR SWA LIST FORM      GP14205
+*COMP*   LA    R1,DDWSVA          ADDRESS OF JFCB TOKEN         GP14205
+*COMP*   ST    R1,DDWEPA                                        GP14205
+*COMP*   MVC   DDWSVA+4(3),TIOEJFCB    JFCB TOKEN               GP14205
+*COMP*   SWAREQ FCODE=RL,EPA=DDWEPA,MF=(E,DDWSWA),UNAUTH=YES    GP14205
+*COMP*   BXH   R15,R15,OPSERR                                   GP14205
+*COMP*   ICM   R6,15,DDWSVA       LOAD JFCB ADDRESS             GP14205
+*COMP*   BZ    OPSERR               NO; SERIOUS PROBLEM         GP14205
+*COMP*   AGO   .COMJFCB                                         GP14205
+*MVSJFCB SR    R6,R6              FOR AM31                      GP14205
+*COMP*   ICM   R6,7,TIOEJFCB      SHOULD NEVER BE ZERO          GP14205
+*COMP*   BZ    OPSERR               NO; SERIOUS PROBLEM         GP14205
+*COMP*   LA    R6,16(,R6)         SKIP QUEUE HEADER             GP14205
 .COMJFCB MVC   MYJFCB(JFCBLGTH),0(R6)   MOVE TO MY STORAGE      GP14205
          OI    DDWFLAG2,CWFDD     DD FOUND                      GP14205
          MVC   DDADSORG,JFCDSORG  SAVE                          GP14205
@@ -1205,11 +1217,13 @@ MVSSUPA  CSECT ,
 *    For FB, if LRECL > BLKSIZE, make LRECL=BLKSIZE                   *
 *    For VB, if LRECL+3 > BLKSIZE, set spanned                        *
 *                                                                     *
-*                                                                     *
 *    So, what this means is that if the DCBLRECL etc fields are set   *
 *    already by MVS (due to existing file, JCL statement etc),        *
 *    then these aren't changed. However, if they're not present,      *
 *    then start using the "LRECL" etc previously set up by C caller.  *
+*                                                                     *
+*    Note that the exit runs in the caller's AMODE, and does not      *
+*    switch modes (hence return is plain BR R14)                      *
 *                                                                     *
 ***********************************************************************
          PUSH  USING
@@ -1316,11 +1330,9 @@ OCDCBXX  STH   R3,DCBBLKSI   UPDATE POSSIBLY CHANGED BLOCK SIZE
          ST    R3,ZPBLKSZ    UPDATE POSSIBLY CHANGED BLOCK SIZE GP14233
          ST    R4,ZPLRECL      AND RECORD LENGTH                GP14233
          MVC   ZRECFM,DCBRECFM    DITTO
-         AIF   ('&ZSYS' EQ 'S370').NOOPSW
-         BSM   R0,R11                                           GP14205
-         AGO   .OPNRET
-.NOOPSW  BR    R11           RETURN TO OPEN                     GP14205
-.OPNRET  POP   USING
+         LR    R14,R11  ACCOMODATE PAUL'S SUPERSTITION RE R14   GP15004
+         BR    R14           RETURN TO OPEN                     GP15004
+         POP   USING
          SPACE 2
          AIF   ('&ZSYS' EQ 'S370').NODOP24
 ***********************************************************************
@@ -1450,6 +1462,69 @@ VSAMRPLL EQU   *-VSAMRPL                                        GP14233
 EXLSTACB EXLST AM=VSAM,EODAD=VSAMEOD,LERAD=VLERAD,SYNAD=VSYNAD  GP14244
          SPACE 1                                                GP14233
          POP   USING                                            GP14233
+         SPACE 2
+***********************************************************************
+*                                                                     *
+*   This routine provided to enable cross-assembly of OS/390 & zOS    *
+*   code under MVS 3.8. For a full featured system, use SWAREQ.       *
+*                                                                     *
+*                                                                     *
+*   SWA LOOK-UP SUBROUTINE  (in older systems, just skips Q header    *
+*    >> CALLER IN AMODE 31 FOR ATL access <<                          *
+*        R1  - REQUESTED SVA ADDRESS/TOKEN; 24-BIT, RIGHT-JUSTIFIED   *
+*        R15 - RETURNED SWA ADDRESS OR 0                              *
+*        R14 - RETURN                                                 *
+*                                                                     *
+***********************************************************************
+         PUSH  USING                                            GP15006
+         USING LOOKSWA,R15                                      GP15006
+LOOKSWA  DS    0H                                               GP15006
+         AIF   ('&ZSYS' NE 'S390').LOOKSWA                      GP15006
+         BSM   R14,0         Save callers AMODE                 GP15006
+.LOOKSWA STM   R0,R3,12(R13)      Save regs                     GP15006
+         N     R1,=X'00FFFFFF'    CLEAN IT                      GP15006
+         AIF   ('&ZSYS' EQ 'S370' OR '&ZSYS' EQ 'S380').NOQMAT  GP15006
+         SAM31 WORK=R2       Ensure 31-bit addressimg           GP15006
+         L     R2,PSATOLD-PSA     Get TCB                       GP15006
+         USING TCB,R2                                           GP15006
+         L     R2,TCBJSCB                                       GP15006
+*COMP*   USING IEZJSCB,R2                                       GP15006
+*COMP*   L     R2,JSCBQMPI   (not in S370/380)                  GP15006
+         L     R2,X'0F4'(,R2)     Get QMPI                      GP15006
+*COMP*   USING IOPARAMS,R2                                      GP15006
+         EX    R1,EXSWAODD   SEE WHETHER IT'S AN ODD ADDRESS    GP15006
+         BZ    LOOKSVA       NO; HAVE ADDRESS                   GP15006
+*COMP*   ICM   R2,15,QMAT    QMAT BASE                          GP15006
+         ICM   R2,15,X'018'(R2)   Get QMAT                      GP15006
+         BZ    LOOKSWA0      NO QMAT, SKIP IT                   GP15006
+         SPACE 1                                                GP15006
+*COMP*   USING QMAT,R2                                          GP15006
+         LR    R0,R1         COPY TOKEN                         GP15006
+         SRL   R0,16         MOVE EXTENT TO LAST BYTE           GP15006
+         N     R1,=XL4'FFFF'   ISOLATE SVA OFFSET               GP15006
+         LA    R3,X'FF'      MAX QMAT EXTENTS                   GP15006
+         NR    R0,R3         ISOLATE QMAT COUNTER               GP15006
+         BZ    LOOKSWAV      ZERO; CHECK QMAT VERSION           GP15006
+         SPACE 1                                                GP15006
+*COMP*AP ICM   R2,15,QMATNEXT  NEXT QMAT EXTENT                 GP15006
+LOOKSWAP ICM   R2,15,X'00C'(R2) NXT QMAT EXTENT                 GP15006
+         BZ    LOOKSWAX      NONE?                              GP15006
+         BCT   R0,LOOKSWAP   LOOP TO FIND THE EXTENT            GP15006
+         SPACE 1                                                GP15006
+*COMP*AV CLI   QMATVERS,2    IS IT AN ESA4 QMAT?                GP15006
+LOOKSWAV CLI   X'004'(R2),2  IS IT AN ESA4 QMAT?                GP15006
+         BL    LOOKSWAX      NO, USE AS IS                      GP15006
+         LA    R2,1(,R2)     ALIGN                              GP15006
+LOOKSWAX ALR   R1,R2         ADD QMAT BASE                      GP15006
+         L     R1,0(,R1)     GET HEADER ADDRESS                 GP15006
+.NOQMAT  ANOP  ,                                                GP15006
+LOOKSVA  LA    R15,16(,R1)   SKIP HEADER                        GP15006
+LOOKSWAT LM    R0,R3,12(R13)     RESTORE CALLER'S REGISTERS     GP15006
+         QBSM  0,R14         RETURN IN CALLER'S AMODE           GP15006
+LOOKSWA0 SR    R15,R15       NOTHING FOUND - RETURN 0           GP15006
+         B     LOOKSWAT      RETURN                             GP15006
+EXSWAODD TM    =X'01',*-*    ODD ADDRESS?                       GP15006
+         POP   USING                                            GP15006
          SPACE 2                                                GP14233
 *
 ***********************************************************************
@@ -3152,7 +3227,8 @@ FM1SCAL3 EQU   FM1SCAL1+1,3,C'X'  SEC ALLOC QUANTITY            GP14205
 DDWATTR  DS    16XL8         DS ATTRIBUTES (DSORG,RECFM,X,LRECL,BLKSI)
 BLDLLIST DS    Y(1,12+2+31*2)     BLDL LIST HEADER              GP14205
 BLDLNAME DS    CL8' ',XL(4+2+31*2)    MEMBER NAME AND DATA      GP14205
-         AIF   ('&ZSYS' NE 'S390').COMSWA                       GP14205
+         AGO   .COMSWA  replaced SWA for cross-assembly compatibility
+*COMP*   AIF   ('&ZSYS' NE 'S390').COMSWA                       GP14205
 DDWEPA   DS    A(DDWSVA)                                        GP14205
 DDWSWA   SWAREQ FCODE=RL,EPA=DDWEPA,MF=L                        GP14205
 DDWSVA   DS    7A                 (IBM LIES ABOUT 4A)           GP14205

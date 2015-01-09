@@ -271,7 +271,7 @@ SUBPOOL  EQU   0                                                      *
 * RC = -2064 Invalid FIND or BLDL.                                    *
 * RC = -2068 Member not found                                         *
 * RC = -2072 Member not allowed                                       *
-* RC = -30nn VSAM OPEN failed with ACBERF=nn                          *
+* RC = -3nnn VSAM OPEN failed with ACBERF=nn                          *
 *                                                                     *
 ***********************************************************************
          PUSH  USING
@@ -468,15 +468,15 @@ DDCVSAM  OI    DDWFLAG2,CWFVSM    SHOW VSAM MODE                GP14233
          B     DDCX1DD              NEXT DD                     GP14233
 DDCPMEM  OI    DDWFLAG2,CWFPDQ    SHOW SEQUENTIAL PDS USE       GP14205
 DDCKPDS  DS    0H                                               GP14205
-         AIF   ('&ZSYS' EQ 'S390').SMSOK                        GP14205
+*TEST*   AIF   ('&ZSYS' EQ 'S390').SMSOK                        GP14205
          TM    FM1SMSFG,FM1STRP+FM1PDSEX+FM1DSAE  Usable        GP14205
          BNZ   BADDSORG             No; too bad                 GP14205
          LA    R0,ORFBDPDS        Preset - not initialized      GP14205
          ICM   R15,7,DS1LSTAR     Any directory blocks?         GP14205
          BZ    OPRERR               No; fail                    GP14205
          AGO   .SMSCOM            Skip SMS tests                GP14205
-.SMSOK   TM    FM1SMSFG,FM1STRP+FM1PDSEX  HFS or Ext. format?   GP14205
-         BNZ   BADDSORG             Yes; can't handle           GP14205
+*SMSOK   TM    FM1SMSFG,FM1STRP+FM1PDSEX  HFS or Ext. format?   GP14205
+*TEST*   BNZ   BADDSORG             Yes; can't handle           GP14205
 .SMSCOM  B     DDCX1DD                                          GP14205
          SPACE 1
 *---------------------------------------------------------------------*
@@ -527,8 +527,7 @@ DDCTDONE MVC   DDWFLAGS,DDWFLAG1  COPY FIRST DD'S FLAGS         GP14205
 *     they pass values that vary between uses, which ours don't,
 *     or require storaage alteration (ditto).
          AIF   ('&ZSYS' NE 'S390').NOLOW
-*OLD*    GETMAIN R,LV=ZDCBLEN,SP=SUBPOOL,LOC=BELOW  no return code
-         STORAGE OBTAIN,LENGTH=ZDCBLEN,SP=SUBPOOL,LOC=BELOW,COND=YES
+         GETMAIN RC,LV=ZDCBLEN,SP=SUBPOOL,LOC=BELOW             GP15009
          AGO   .FINLOW
 *   USE ,BNDRY=PAGE FOR EASIER DEBUGGING
 .NOLOW   GETMAIN RC,LV=ZDCBLEN,SP=SUBPOOL BNDRY=PAGE            GP14244
@@ -1467,7 +1466,7 @@ EXLSTACB EXLST AM=VSAM,EODAD=VSAMEOD,LERAD=VLERAD,SYNAD=VSYNAD  GP14244
 *                                                                     *
 *   This routine provided to enable cross-assembly of OS/390 & zOS    *
 *   code under MVS 3.8. For a full featured system, use SWAREQ.       *
-*                                                                     *
+*   Caller must be in AMODE 31 under OS/390 or zOS system.            *
 *                                                                     *
 *   SWA LOOK-UP SUBROUTINE  (in older systems, just skips Q header    *
 *    >> CALLER IN AMODE 31 FOR ATL access <<                          *
@@ -1478,13 +1477,8 @@ EXLSTACB EXLST AM=VSAM,EODAD=VSAMEOD,LERAD=VLERAD,SYNAD=VSYNAD  GP14244
 ***********************************************************************
          PUSH  USING                                            GP15006
          USING LOOKSWA,R15                                      GP15006
-LOOKSWA  DS    0H                                               GP15006
-         AIF   ('&ZSYS' NE 'S390').LOOKSWA                      GP15006
-         BSM   R14,0         Save callers AMODE                 GP15006
-.LOOKSWA STM   R0,R3,12(R13)      Save regs                     GP15006
+LOOKSWA  STM   R0,R3,12(R13)      Save regs                     GP15009
          N     R1,=X'00FFFFFF'    CLEAN IT                      GP15006
-         AIF   ('&ZSYS' EQ 'S370' OR '&ZSYS' EQ 'S380').NOQMAT  GP15006
-         SAM31 WORK=R2       Ensure 31-bit addressimg           GP15006
          L     R2,PSATOLD-PSA     Get TCB                       GP15006
          USING TCB,R2                                           GP15006
          L     R2,TCBJSCB                                       GP15006
@@ -1520,7 +1514,7 @@ LOOKSWAX ALR   R1,R2         ADD QMAT BASE                      GP15006
 .NOQMAT  ANOP  ,                                                GP15006
 LOOKSVA  LA    R15,16(,R1)   SKIP HEADER                        GP15006
 LOOKSWAT LM    R0,R3,12(R13)     RESTORE CALLER'S REGISTERS     GP15006
-         QBSM  0,R14         RETURN IN CALLER'S AMODE           GP15006
+         BR    R14           RETURN IN CALLER'S AMODE           GP15009
 LOOKSWA0 SR    R15,R15       NOTHING FOUND - RETURN 0           GP15006
          B     LOOKSWAT      RETURN                             GP15006
 EXSWAODD TM    =X'01',*-*    ODD ADDRESS?                       GP15006
@@ -3443,6 +3437,5 @@ MYTIOT   DSECT ,
          IFGACB ,                                               GP14233
          SPACE 1
          IFGRPL ,                                               GP14233
-         AIF   ('&ZSYS' NE 'S390').MVSEND
          IEFJESCT ,
 .MVSEND  END   ,

@@ -149,7 +149,7 @@ MVSSUPA  TITLE 'M V S S U P A  ***  MVS VERSION OF PDP CLIB SUPPORT'
 *
 *
          SPACE 1
-*TEST*   COPY  MVSMACS
+         COPY  MVSMACS
          COPY  PDPTOP
          SPACE 1
 * For S/390 we need to deliberately request LOC=BELOW storage

@@ -149,7 +149,7 @@ MVSSUPA  TITLE 'M V S S U P A  ***  MVS VERSION OF PDP CLIB SUPPORT'
 *
 *
          SPACE 1
-         COPY  MVSMACS
+*TEST*   COPY  MVSMACS
          COPY  PDPTOP
          SPACE 1
 * For S/390 we need to deliberately request LOC=BELOW storage
@@ -297,7 +297,7 @@ SUBPOOL  EQU   0                                                      *
          BNH   OPSERR               NO; REJECT IT               GP14205
          MVI   OPERF,ORFNODD      PRESET FOR MISSING DD NAME    GP14205
          LR    R8,R3              COPY DDNAME POINTER TO SCRATCH REG.
-         SAM31 ,                                                GP14205
+         GAM31 ,                  AM31 FOR S380                 GP15015
          LA    R4,DDWATTR-DDASIZE POINTER TO DD ATTRIBUTES      GP14205
          USING DDATTRIB,R4        DECLARE TABLE                 GP14205
          L     R14,PSATOLD-PSA    GET MY TCB                    GP14205
@@ -468,16 +468,13 @@ DDCVSAM  OI    DDWFLAG2,CWFVSM    SHOW VSAM MODE                GP14233
          B     DDCX1DD              NEXT DD                     GP14233
 DDCPMEM  OI    DDWFLAG2,CWFPDQ    SHOW SEQUENTIAL PDS USE       GP14205
 DDCKPDS  DS    0H                                               GP14205
-*TEST*   AIF   ('&ZSYS' EQ 'S390').SMSOK                        GP14205
+*  Note that this test may fail for data sets written under DOS GP14205
          TM    FM1SMSFG,FM1STRP+FM1PDSEX+FM1DSAE  Usable        GP14205
          BNZ   BADDSORG             No; too bad                 GP14205
          LA    R0,ORFBDPDS        Preset - not initialized      GP14205
          ICM   R15,7,DS1LSTAR     Any directory blocks?         GP14205
          BZ    OPRERR               No; fail                    GP14205
-         AGO   .SMSCOM            Skip SMS tests                GP14205
-*SMSOK   TM    FM1SMSFG,FM1STRP+FM1PDSEX  HFS or Ext. format?   GP14205
-*TEST*   BNZ   BADDSORG             Yes; can't handle           GP14205
-.SMSCOM  B     DDCX1DD                                          GP14205
+         B     DDCX1DD                                          GP14205
          SPACE 1
 *---------------------------------------------------------------------*
 *   FOR A CONCATENATION, PROCESS THE NEXT DD                          *
@@ -708,19 +705,21 @@ OPREPJFC LA    R14,MYJFCB
 * EXIT TYPE 07 + 80 (END OF LIST INDICATOR)
          ICM   R14,B'1000',=X'87'
          ST    R14,DCBXLST+4
-         LA    R14,OCDCBEX        POINT TO DCB EXIT
-* S370 EODAD assembled in DCB; fix for others                   GP14205
-* Both S380 and S390 operate in 31-bit mode so need a stub
-         AIF   ('&ZSYS' EQ 'S370').NODP24
+* While the code is meant to be assembled in S370, it may also get
+* assembled in S390. Thus the EODAD must be below the line.
+* For end-file processing we place a small stub in the ZDCB work area.
          LA    R1,EOFR24
          STCM  R1,B'0111',DCBEODA
          MVC   EOFR24(EOFRLEN),ENDFILE   Put EOF code below the line
-         ST    R14,DOPE31         Address of 31-bit exit
-         OI    DOPE31,X'80'       Set high bit = AMODE 31
-         MVC   DOPE24,DOPEX24     Move in stub code
-         LA    R14,DOPE24         Switch to 24-bit stub
-.NODP24  ICM   R14,8,=X'05'       SPECIFY DCB EXIT ADDRESS
-         ST    R14,DCBXLST        AND SET IT BACK
+* The DCB exit (OCDCBEX) is coded to work in any AMODE, and only
+* needs a simple branch, UNLESS this module is loaded ATL.      GP15015
+         LA    R14,OCDCBEX        POINT TO DCB EXIT for BTL
+         TM    @OCDCBEX,X'7F'     Loaded above the line?        GP15015
+         BZ    EXBTL                No; invoke directly         GP15015
+         MVC   A24STUB,PATSTUB    Stub code for DCB exit        GP15015
+         LA    R14,A24STUB        Switch to 24-bit stub         GP15015
+EXBTL    ST    R14,DCBXLST        AND SET IT BACK
+         MVI   DCBXLST,X'05'      Identify Open exit address    GP15015
          LA    R14,DCBXLST
          STCM  R14,B'0111',DCBEXLSA
          RDJFCB ((R10)),MF=(E,OPENCLOS)  Read JOB File Control Blk
@@ -1029,6 +1028,7 @@ GETBUFF  L     R5,ZPBLKSZ         Load the input blocksize      GP14233
          ST    R14,0(,R5)         and return work address
          AR    R1,R6              Add size GETMAINed to find end
          ST    R1,VBSEND          Save address after VBS rec.build area
+         FIXWRITE ,               Initialize BDW prior to use   GP15015
          B     DONEOPEN           Go return to caller with DCB info
          SPACE 1
          PUSH  USING
@@ -1129,12 +1129,12 @@ EOFRLEN  EQU   *-ENDFILE
          SPACE 1
          DS    0D                                               GP14205
 BPAMDCB  DCB   MACRF=(R,W),DSORG=PO,DDNAME=BPAMDCB, input and output   *
-               EXLST=1-1,EODAD=READEOD     DCB exits added later
+               EXLST=1-1          DCB exits added later         GP15015
 BPAMDCBL EQU   *-BPAMDCB
          SPACE 1
          DS    0D                                               GP14205
 BSAMDCB  DCB   MACRF=(RP,WP),DSORG=PS,DDNAME=BSAMDCB, input and output *
-               EXLST=1-1,EODAD=READEOD     DCB exits added later
+               EXLST=1-1          DCB exits added later         GP15015
 BSAMDCBL EQU   *-BSAMDCB
 READDUM  READ  NONE,              Read record Data Event Control Block *
                SF,                Read record Sequential Forward       *
@@ -1161,7 +1161,7 @@ F65536   DC    F'65536'           Maximum VBS record GETMAIN length
 *
 * QSAMDCB changes depending on whether we are in LOCATE mode or
 * MOVE mode
-QSAMDCB  DCB   MACRF=P&OUTM.M,DSORG=PS,DDNAME=QSAMDCB,EODAD=READEOD
+QSAMDCB  DCB   MACRF=P&OUTM.M,DSORG=PS,DDNAME=QSAMDCB           GP15015
 QSAMDCBL EQU   *-QSAMDCB
 *
 *
@@ -1223,18 +1223,17 @@ MVSSUPA  CSECT ,
 *                                                                     *
 *    Note that the exit runs in the caller's AMODE, and does not      *
 *    switch modes (hence return is plain BR R14)                      *
+*    However, if the exit is loaded above the line, the caller must   *
+*    be in AM31. For S380, when the exit is below the line, any       *
+*    AMODE works.   R11 is used by the BTL stub and must be preserved *
 *                                                                     *
 ***********************************************************************
          PUSH  USING
          DROP  ,
          USING OCDCBEX,R15
-         USING IHADCB,R10    DECLARE OUR DCB WORK SPACE         GP14205
-OCDCBEX  LR    R12,R15       MAKE SAFE BASE                     GP14205
-         DROP  R15                                              GP14205
-         USING OCDCBEX,R12   NEW BASE                           GP14205
-         LR    R11,R14       SAVE RETURN                        GP14205
-         LR    R10,R1        SAVE DCB ADDRESS AND OPEN FLAGS    GP14205
+OCDCBEX  LR    R10,R1        SAVE DCB ADDRESS AND OPEN FLAGS    GP14205
          N     R10,=X'00FFFFFF'   NO 0C4 ON DCB ACCESS IF AM31  GP14205
+         USING IHADCB,R10    DECLARE OUR DCB WORK SPACE         GP14205
          TM    IOPFLAGS,IOFDCBEX  Been here before ?
          BZ    OCDCBX1            No; nothing on first entry
          TM    ZDDFLAGS,CWFSEQ+CWFPDQ  SEQUENTIAL ACCESS?       GP14244
@@ -1329,37 +1328,39 @@ OCDCBXX  STH   R3,DCBBLKSI   UPDATE POSSIBLY CHANGED BLOCK SIZE
          ST    R3,ZPBLKSZ    UPDATE POSSIBLY CHANGED BLOCK SIZE GP14233
          ST    R4,ZPLRECL      AND RECORD LENGTH                GP14233
          MVC   ZRECFM,DCBRECFM    DITTO
-         LR    R14,R11  ACCOMODATE PAUL'S SUPERSTITION RE R14   GP15004
-         BR    R14           RETURN TO OPEN                     GP15004
+         BR    R14           RETURN TO OPEN (or via caller)     GP15004
          POP   USING
          SPACE 2
-         AIF   ('&ZSYS' EQ 'S370').NODOP24
 ***********************************************************************
 *                                                                     *
 *    OPEN DCB EXIT - 24 bit stub                                      *
 *    This code is not directly executed. It is copied below the line  *
-*    It is only needed for AMODE 31 programs (both S380 and S390      *
-*    execute in this mode).                                           *
+*    It is only needed when the program resides above the line.       *
 *                                                                     *
 ***********************************************************************
          PUSH  USING
          DROP  ,
-         USING DOPEX24,R15
+* This code provides pattern code that is relocated to the 24-bit
+* ZDCB work area, where it can be invoked in AM24; when the exit
+* is above the line, this stub sets AM31 and transfer to the DCB
+* exit.
 *
-* This next line works because when we are actually executing,
-* we are executing inside that DSECT, so the address we want
-* follows the code. Also, it has already had the high bit set,
-* so it will switch to 31-bit mode.
-*
-DOPEX24  L     R15,DOPE31-DOPE24(,R15)  Load 31-bit routine address
+         USING PATSTUB,R15   DECLARE BASE                       GP15015
+PATSTUB  BSM   R14,0         MAKE IT BULLETPROOF                GP15015
+         SLL   R15,8         MAKE IT SAFE IN ANY AMODE 1/2      GP15015
+         SRL   R15,8         MAKE IT SAFE IN ANY AMODE 2/2      GP15015
+         L     R15,@OCDCBEX  Load 31-bit routine address        GP15015
 *
 * The following works because while the AMODE is saved in R14, the
 * rest of R14 isn't disturbed, so it is all set for a BSM to R15
 *
-         BSM   R14,R15                  Switch to 31-bit mode
-DOPELEN  EQU   *-DOPEX24
+         LR    R11,R14            Preserve OS return address    GP15015
+         BSM   R14,R15            Call the open exit in AM31    GP15015
+         LR    R14,R11            Restore OS return address     GP15015
+         BSM   0,R14              Return to OS in original mode GP15015
+@OCDCBEX DC    A(OCDCBEX+X'80000000')  AM31 exit address        GP15015
+PATSTUBL EQU   *-PATSTUB                                        GP15015
          POP   USING
-.NODOP24 ANOP  ,
          SPACE 2
 ***********************************************************************
 *                                                                     *
@@ -1479,6 +1480,8 @@ EXLSTACB EXLST AM=VSAM,EODAD=VSAMEOD,LERAD=VLERAD,SYNAD=VSYNAD  GP14244
          USING LOOKSWA,R15                                      GP15006
 LOOKSWA  STM   R0,R3,12(R13)      Save regs                     GP15009
          N     R1,=X'00FFFFFF'    CLEAN IT                      GP15006
+         EX    R1,EXSWAODD   SEE WHETHER IT'S AN ODD ADDRESS    GP15006
+         BZ    LOOKSVA       NO; HAVE ADDRESS                   GP15006
          L     R2,PSATOLD-PSA     Get TCB                       GP15006
          USING TCB,R2                                           GP15006
          L     R2,TCBJSCB                                       GP15006
@@ -1486,8 +1489,6 @@ LOOKSWA  STM   R0,R3,12(R13)      Save regs                     GP15009
 *COMP*   L     R2,JSCBQMPI   (not in S370/380)                  GP15006
          L     R2,X'0F4'(,R2)     Get QMPI                      GP15006
 *COMP*   USING IOPARAMS,R2                                      GP15006
-         EX    R1,EXSWAODD   SEE WHETHER IT'S AN ODD ADDRESS    GP15006
-         BZ    LOOKSVA       NO; HAVE ADDRESS                   GP15006
 *COMP*   ICM   R2,15,QMAT    QMAT BASE                          GP15006
          ICM   R2,15,X'018'(R2)   Get QMAT                      GP15006
          BZ    LOOKSWA0      NO QMAT, SKIP IT                   GP15006
@@ -1591,7 +1592,7 @@ REREAD   ICM   R8,B'1111',BUFFCURR  Load address of next record
          CLI   RECFMIX,IXVAR      RECFM=Vxx ?
          BE    READ               No, deblock
          LA    R8,4(,R8)          Room for fake RDW
-READ     SAM24 ,                  For old code
+READ     GAM24 ,                  For old code under S380       GP15015
          TM    IOMFLAGS,IOFEXCP   EXCP mode?
          BZ    READBSAM           No, use BSAM
 *---------------------------------------------------------------------*
@@ -1635,7 +1636,7 @@ EXRDOK   SR    R0,R0
 *   BSAM read   (also used for BPAM member read)                      *
 *---------------------------------------------------------------------*
 READBSAM SR    R6,R6              Reset EOF flag
-         SAM24 ,                  Get low
+         GAM24 ,                  Get low on S380               GP15015
          READ  DECB,              Read record Data Event Control Block C
                SF,                Read record Sequential Forward       C
                (R10),             Read record DCB address              C
@@ -1658,10 +1659,9 @@ READBSAM SR    R6,R6              Reset EOF flag
          L     R14,DECB+16    DECIOBPT
          USING IOBSTDRD,R14       Give assembler IOB base       GP14251
          CLI   IOBCSW+3,X'0D'     Unit exception?               GP14251
-         BNE   READWACK           No; something else            GP14251
-*TEST*   BE    READCHEK           Yes; let BPAM recover         GP14251
+*TEST*   BNE   READWACK           No; something else            GP14251
          DROP  R14                Don't need IOB address base anymore
-         B     READEOD            Treat as EOF
+         BE    READEOD            Treat as EOF
 *                                 If EOF, R6 will be set to F'-1'
 READCHEK CHECK DECB               Wait for READ to complete
 READWACK DS    0H                 *TEST*
@@ -1700,7 +1700,7 @@ READUSAM AMUSE ,                  Restore caller's mode
          ICM   R1,B'0011',IOBCSW+5  Load residual count
          DROP  R14                Don't need IOB address base anymore
          SR    R9,R1              Provisionally return blocklen
-         STM   R8,R9,RSNLIST      Save for SNAP                 GP14244
+         STM   R8,R9,RSNAREA      Save for SNAP                 GP14244
          SPACE 1
 POSTREAD TM    IOMFLAGS,IOFBLOCK  Block mode ?
          BNZ   POSTBLOK           Yes; process as such
@@ -1828,10 +1828,10 @@ SETCURS  ST    R7,BUFFCURR        Store the next record address
 TGETREAD L     R6,ZIOECT          RESTORE ECT ADDRESS
          L     R7,ZIOUPT          RESTORE UPT ADDRESS
          MVI   ZGETLINE+2,X'80'   EXPECTED FLAG
-         SAM24
+         GAM24                    S380 AM24                     GP15015
          GETLINE PARM=ZGETLINE,ECT=(R6),UPT=(R7),ECB=ZIOECB,           *
                MF=(E,ZIOPL)
-         SAM31
+         GAM31                    S380 SWITCH TO AM31           GP15015
          LR    R6,R15             COPY RETURN CODE
          CH    R6,=H'16'          HIT BARRIER ?
          BE    READEOD2           YES; EOF, BUT ALLOW READS
@@ -1954,11 +1954,11 @@ VTOCSET@ STH   R14,ZVUSCCHH                 New cylinder        GP14213
 PATSEEK  CAMLST SEEK,*-*,*-*,*-*                                GP14213
          ORG   PATSEEK+4                                        GP14213
          SPACE 1
-BADBLOCK LM    R14,R15,RSNLIST    GET START/SIZE OF BLOCK       GP14244
+BADBLOCK LM    R14,R15,RSNAREA    GET START/SIZE OF BLOCK       GP14244
          AR    R15,R14            END + 1                       GP14244
          BCTR  R15,0              END                           GP14244
-         ST    R15,RSNLIST+4      UPDATE END                    GP14244
-         OI    RSNLIST+4,X'80'    SET END OF LIST               GP14244
+         ST    R15,RSNAREA+4      UPDATE END                    GP14244
+         OI    RSNAREA+4,X'80'    SET END OF LIST               GP14244
          L     R15,=A(@@SNAP)                                   GP14244
          LA    R1,RSNAP                                         GP14244
          BALR  R14,R15            CALL SNAPPER                  GP14244
@@ -1972,7 +1972,8 @@ RSNDONE  WTO   'MVSSUPA - @@AREAD - problem processing RECFM=V(bs) file*
 BADBLOT  WTO   'MVSSUPA - DD xxxxxxxx - INVALID xDW',                  *
                ROUTCDE=11         add more useful info          GP14244
          ABEND 1234,DUMP          Abend U1234 and allow a dump
-RSNLIST  DC    A(0,0)             Snap list: Bad block          GP14244
+RSNLIST  DC    A(RSNAREA,RSNAREA+7)   1/2                       GP15015
+RSNAREA  DC    A(0,0)             Snap list: Bad block          GP14244
 RSNHEAD  DC    A(RSNHEAD1+X'80000000')  LABEL                   GP14244
 RSNHEAD1 DC    AL1(RSNHEAD2-*-1),C'RECFM=Vxx bad block'         GP14244
 RSNHEAD2 EQU   *                  END OF HEADERS                GP14244
@@ -2161,10 +2162,10 @@ TPUTWRIV STH   R5,0(,R4)          FILL RDW
          STCM  R5,12,2(R4)          ZERO REST
          L     R6,ZIOECT          RESTORE ECT ADDRESS
          L     R7,ZIOUPT          RESTORE UPT ADDRESS
-         SAM24
+         GAM24 ,                  SET AM24 ON S380              GP15015
          PUTLINE PARM=ZPUTLINE,ECT=(R6),UPT=(R7),ECB=ZIOECB,           *
                OUTPUT=((R4),DATA),TERMPUT=EDIT,MF=(E,ZIOPL)
-         SAM31
+         GAM31 ,                  S380 SWITCH TO AM31           GP15015
          SPACE 1
 WRITEEX  TM    IOPFLAGS,IOFCURSE  RECURSION REQUESTED?
          BNZ   WRITMORE           PROCESS REMAINING DATA        GP14363
@@ -2178,7 +2179,7 @@ WRITEEX  TM    IOPFLAGS,IOFCURSE  RECURSION REQUESTED?
 @@ANOTE  FUNHEAD IO=YES,AM=YES,SAVE=SAVEADCB,US=NO   NOTE position
          L     R3,4(,R1)          R3 points to the return value
          FIXWRITE ,
-         SAM24 ,                  For old code
+         GAM24 ,                  SET AM24 ON S380              GP15015
          TM    IOMFLAGS,IOFEXCP   EXCP mode?
          BZ    NOTEBSAM           No
          L     R4,DCBBLKCT        Return block count
@@ -2202,7 +2203,7 @@ NOTECOM  AMUSE ,
          L     R3,0(,R3)          Get the TTR
          ST    R3,ZWORK           Save below the line
          FIXWRITE ,
-         SAM24 ,                  For old code
+         GAM24 ,                  SET AM24 ON S380              GP15015
          TM    IOMFLAGS,IOFEXCP   EXCP mode ?
          BZ    POINBSAM           No
          L     R4,DCBBLKCT        Get current position
@@ -2299,7 +2300,7 @@ TRUNCOUT B     *+14-TRUNCOUT(,R15)   SKIP LABEL
          USING IHADCB,R10    COMMON I/O AREA SET BY CALLER
          TM    IOPFLAGS,IOFLDATA   PENDING WRITE ?
          BZ    TRUNCOEX      NO; JUST RETURN
-         SAM24 ,             GET LOW
+         GAM24 ,                  SET AM24 ON S380              GP15015
          LM    R4,R5,BUFFADDR  START/NEXT ADDRESS
          CLI   RECFMIX,IXVAR      RECFM=V?
          BNE   TRUNLEN5
@@ -3347,11 +3348,8 @@ ZVSEEK   CAMLST SEEK,1-1,2-2,3-3  CAMLST to SEEK by address     GP14213
 OPENCLOS DS    A                  OPEN/CLOSE parameter list
 DCBXLST  DS    2A                 07 JFCB / 85 DCB EXIT
 EOFR24   DS    CL(EOFRLEN)
-         AIF   ('&ZSYS' EQ 'S370').NOD24  If S/370, no 24-bit OPEN exit
-         DS    0H
-DOPE24   DS    CL(DOPELEN)        DCB open 24-bit code
-DOPE31   DS    A                  Address of DCB open exit
-.NOD24   ANOP  ,
+         DS    0F                 Ensure correct DC A alignment GP15015
+A24STUB  DS    CL(PATSTUBL)       DCB open exit 24-bit code     GP15015
 ZBUFF1   DS    A,F                Address, length of buffer
 ZBUFF2   DS    A,F                Address, length of 2nd buffer
 KEPTREC  DS    A,F                Address & length of saved rcd

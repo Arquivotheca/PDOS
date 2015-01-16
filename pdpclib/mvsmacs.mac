@@ -13,7 +13,7 @@
 .*         Expands nothing or label for S370 or S390
 .*         Required after SAM24 call to return data to caller
 .*
-         AIF   ('&ZSYS' EQ 'S370').OLDSYS
+         AIF   ('&ZSYS' NE 'S380').OTHSYS
 &NM      L     &WRK1,4(,R13)      Old save area
          L     &WRK1,12(,R14)     Caller's mode in high bit
          N     &WRK1,=X'80000000'   Kill address
@@ -21,7 +21,7 @@
          OR    &WRK1,&WRK2
          BSM   R0,&WRK1           CONTINUE IN USER MODE
          MEXIT ,
-.OLDSYS  AIF   ('&NM' EQ '').MEND
+.OTHSYS  AIF   ('&NM' EQ '').MEND
 &NM      DS    0H            DEFINE LABEL ONLY
 .MEND    MEND  ,
 *
@@ -149,12 +149,11 @@
 *
 *
          MACRO ,
-&NM      SAM24 &WORK=R15
+&NM      GAM24 &WORK=R15
          GBLC  &ZSYS
 .*
-.*   SAM24 sets addressing mode to 24 for S380
-.*         expands nothing or label for S370
-.*         Should not get invoked on S390 with proper assembler
+.*   GAM24 sets addressing mode to 24 for S380
+.*         expands nothing or label for S370 AND S390
 .*
          AIF   ('&ZSYS' EQ 'S370').OLDSYS
 &NM      LA    &WORK,*+6     GET PAST BSM WITH BIT 0 OFF
@@ -167,12 +166,11 @@
 *
 *
          MACRO ,
-&NM      SAM31 &WORK=R15
+&NM      GAM31 &WORK=R15
          GBLC  &ZSYS
 .*
-.*   SAM31 sets addressing mode to 31 for S380.
-.*         expands nothing or label for S370
-.*         Should not get invoked on S390 with proper assembler
+.*   GAM31 sets addressing mode to 31 for S380.
+.*         expands nothing or label for S370  AND S390
 .*
          AIF   ('&ZSYS' EQ 'S370').OLDSYS
 &NM      LA    &WORK,*+10    GET PAST BSM WITH BIT 0 ON
@@ -186,17 +184,6 @@
 *
 *
          MACRO ,             COMPILER DEPENDENT LOAD INTEGER
-&NM      LDINT &R,&A         LOAD INTEGER VALUE FROM PARM LIST
-         GBLC  &COMP         COMPILER GCC OR C/370
-&NM      L     &R,&A         LOAD PARM VALUE
-         AIF ('&COMP' EQ 'GCC').MEND
-.* THIS LINE IS FOR ANYTHING NOT GCC: C/370
-         L     &R,0(,&R)     LOAD INTEGER VALUE
-.MEND    MEND  ,
-*
-*    Macro LDVAL loads value of passed parameter
-*
-         MACRO ,             COMPILER DEPENDENT LOAD INTEGER
 &NM      LDVAL &R,&A         LOAD VALUE FROM PARM LIST
          GBLC  &COMP         COMPILER GCC OR C/370
 &NM      L     &R,&A         LOAD PARM VALUE
@@ -206,13 +193,13 @@
 .LVAL    L     &R,0(,&R)     LOAD VALUE
 .MEND    MEND  ,
 *
-*    Macro LDADD loads address of passed parameter (for return value)
+*
 *
          MACRO ,             COMPILER DEPENDENT LOAD INTEGER
 &NM      LDADD &R,&A         GET ADDRESS FROM PARM LIST
          GBLC  &COMP         COMPILER GCC OR C/370
 &NM      L     &R,&A         LOAD PARM ADDRESS
-         AIF ('&COMP' EQ 'GCC').MEND
+         AIF   ('&COMP' EQ 'GCC').MEND
 .* THIS LINE IS FOR ANYTHING NOT GCC: C/370
          L     &R,0(,&R)     LOAD ADDRESS
 .MEND    MEND  ,
@@ -228,10 +215,10 @@
 .*   Otherwise it expands as BALR r1,r2 (instead of BSM r1,r2)
 .*   Unless r1 = 0, in which case, a simple BR r2 is done instead
 .*
-         AIF   ('&ZSYS' NE 'S380').OLDSYS
+         AIF   ('&ZSYS' NE 'S380').OTHSYS
 &NM      BSM   &F1,&F2
          MEXIT ,
-.OLDSYS  AIF   ('&F1' EQ '0' OR '&F1' EQ 'R0').BR
+.OTHSYS  AIF   ('&F1' EQ '0' OR '&F1' EQ 'R0').BR
 &NM      BALR  &F1,&F2
          MEXIT ,
 .BR      ANOP  ,
@@ -303,3 +290,18 @@
 &P.BLKSZ DC    F'0'          BLOCK SIZE
 &P.SIZE  EQU   *-&P.MODE     SIZE TO CLEAR
          MEND  ,
+*
+*
+*
+         MACRO ,             COMPILER DEPENDENT LOAD INTEGER
+&NM      STVAL &R,&A,&S=R14  STORE VALUE FROM PARM LIST
+         GBLC  &COMP         COMPILER GCC OR C/370
+&NM      L     &S,&A         LOAD PARM VALUE
+         AIF   ('&COMP' EQ 'GCC').LVAL
+         L     &S,0(,&S)     LOAD ADDRESS
+.* THIS LINE IS FOR ANYTHING NOT GCC: C/370
+.LVAL    ST    &R,0(,&S)     RETURN VALUE
+.MEND    MEND  ,
+*
+*
+*

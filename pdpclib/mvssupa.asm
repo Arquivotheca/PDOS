@@ -523,11 +523,7 @@ DDCTDONE MVC   DDWFLAGS,DDWFLAG1  COPY FIRST DD'S FLAGS         GP14205
 *   Conditional forms of storage acquisition are reentrant unless
 *     they pass values that vary between uses, which ours don't,
 *     or require storaage alteration (ditto).
-         AIF   ('&ZSYS' NE 'S390').NOLOW
          GETMAIN RC,LV=ZDCBLEN,SP=SUBPOOL,LOC=BELOW             GP15009
-         AGO   .FINLOW
-*   USE ,BNDRY=PAGE FOR EASIER DEBUGGING
-.NOLOW   GETMAIN RC,LV=ZDCBLEN,SP=SUBPOOL BNDRY=PAGE            GP14244
 *   Note that PAGE alignment makes for easier dump reading
 *   but wastes storage - so we use it for debugging only.
 *   Using RC to get a return code if memory unavailable.
@@ -2382,7 +2378,7 @@ TRUNCOEX L     R13,4(,R13)
          A     R3,=A(8+(64-1))    OVERHEAD PLUS ROUNDING
          N     R3,=X'FFFFFFC0'    MULTIPLE OF 64
 *
-         AIF   ('&ZSYS' EQ 'S370').NOANY                        GP14233
+         AIF   ('&ZSYS' NE 'S380').NOANY                        GP14233
          GETMAIN RU,LV=(R3),SP=SUBPOOL,LOC=ANY
          AGO   .FINANY
 .NOANY   ANOP  ,
@@ -3006,11 +3002,8 @@ RETURN99 DS    0H
          BNZ   SNAPGOT                                          GP14244
          USING SNAPDCB,R10   DECLARE DYNAMIC WORK AREA          GP14244
 SNAPGET  LA    R0,SNAPSLEN   GET LENGTH OF SAVE AND WORK AREA   GP14244
-         AIF   ('&ZSYS' EQ 'S370').SNPDEF                       GP14244
          GETMAIN RU,LV=(0),SP=SUBPOOL,LOC=BELOW                 GP14244
-         AGO   .SNPCOM                                          GP14244
-.SNPDEF  GETMAIN RU,LV=(0),SP=SUBPOOL                           GP14244
-.SNPCOM  STM   R0,R1,#SNAPDCB     SAVE FOR RELEASE              GP14244
+         STM   R0,R1,#SNAPDCB     SAVE FOR RELEASE              GP14244
          LR    R10,R1                                           GP14244
          MVC   SNAPDCB(PATSNAPL),PATSNAP   INIT DCB, ETC.       GP14244
          OPEN  (SNAPDCB,OUTPUT),MF=(E,SNAPOCL)                  GP14244
@@ -3090,7 +3083,6 @@ MVSSUPA  CSECT ,             RESTORE CSECT                      GP14244
 * S/370 doesn't support switching modes so this code is useless,
 * and won't compile anyway because "BSM" is not known.
 *
-         AIF   ('&ZSYS' EQ 'S370').NOMODE If S/370 we can't switch mode
          PUSH  USING
          DROP  ,
 ***********************************************************************
@@ -3124,8 +3116,6 @@ MVSSUPA  CSECT ,             RESTORE CSECT                      GP14244
          BSM   0,R14              Return in amode 31
          LTORG ,
          POP   USING
-*
-.NOMODE  ANOP  ,                  S/370 doesn't support MODE switching
 *
 *
 *

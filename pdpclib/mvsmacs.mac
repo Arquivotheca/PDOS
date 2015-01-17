@@ -155,7 +155,7 @@
 .*   GAM24 sets addressing mode to 24 for S380
 .*         expands nothing or label for S370 AND S390
 .*
-         AIF   ('&ZSYS' EQ 'S370').OLDSYS
+         AIF   ('&ZSYS' NE 'S380').OLDSYS
 &NM      LA    &WORK,*+6     GET PAST BSM WITH BIT 0 OFF
          BSM   R0,&WORK      CONTINUE IN 24-BIT MODE
          MEXIT ,
@@ -172,7 +172,7 @@
 .*   GAM31 sets addressing mode to 31 for S380.
 .*         expands nothing or label for S370  AND S390
 .*
-         AIF   ('&ZSYS' EQ 'S370').OLDSYS
+         AIF   ('&ZSYS' NE 'S380').OLDSYS
 &NM      LA    &WORK,*+10    GET PAST BSM WITH BIT 0 ON
          O     &WORK,=X'80000000'  SET MODE BIT
          BSM   R0,&WORK            CONTINUE IN 31-BIT MODE

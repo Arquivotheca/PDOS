@@ -528,7 +528,7 @@ DDCTDONE MVC   DDWFLAGS,DDWFLAG1  COPY FIRST DD'S FLAGS         GP14205
 *   but wastes storage - so we use it for debugging only.
 *   Using RC to get a return code if memory unavailable.
 *
-.FINLOW  LA    R0,ORFNOSTO        Preset for no storage         GP14205
+         LA    R0,ORFNOSTO        Preset for no storage         GP14205
          BXH   R15,R15,OPRERR       Return error code           GP14205
          LR    R10,R1             Addr.of storage obtained to its base
          USING IHADCB,R10         Give assembler DCB area base register
@@ -1005,7 +1005,7 @@ GETBUFF  L     R5,ZPBLKSZ         Load the input blocksize      GP14233
          CR    R6,R0              Buffer size OK?               GP14205
          BNL   *+4+2                Yes                         GP14205
          LR    R6,R0              Use larger                    GP14205
-         GETMAIN R,LV=(R6),SP=SUBPOOL  Get input buffer storage
+         GETMAIN R,LV=(R6),SP=SUBPOOL,LOC=BELOW input buffer    GP15017
          ST    R1,ZBUFF1          Save for cleanup
          ST    R6,ZBUFF1+4           ditto
          ST    R1,BUFFADDR        Save the buffer address for READ
@@ -1015,7 +1015,7 @@ GETBUFF  L     R5,ZPBLKSZ         Load the input blocksize      GP14233
          SPACE 1
          L     R6,ZPLRECL         Get record length
          LA    R6,4(,R6)          Insurance
-         GETMAIN R,LV=(R6),SP=SUBPOOL  Get VBS build record area
+         GETMAIN R,LV=(R6),SP=SUBPOOL  ATL ALLOWED - not used by BSAM
          ST    R1,ZBUFF2          Save for cleanup
          ST    R6,ZBUFF2+4           ditto
          LA    R14,4(,R1)
@@ -1060,7 +1060,7 @@ TERMOPEN MVC   IOMFLAGS,WWORK     Save for duration
          ST    R6,ZPBLKSZ         Return it                     GP14233
          ST    R6,ZPLRECL         Return it
          LA    R6,4(,R6)          Add 4 in case RECFM=U buffer
-         GETMAIN R,LV=(R6),SP=SUBPOOL  Get input buffer storage
+         GETMAIN R,LV=(R6),SP=SUBPOOL,LOC=BELOW  input buffer   GP15017
          ST    R1,ZBUFF2          Save for cleanup
          ST    R6,ZBUFF2+4           ditto
          LA    R1,4(,R1)          Allow for RDW if not V
@@ -1342,18 +1342,16 @@ OCDCBXX  STH   R3,DCBBLKSI   UPDATE POSSIBLY CHANGED BLOCK SIZE
 * exit.
 *
          USING PATSTUB,R15   DECLARE BASE                       GP15015
-PATSTUB  BSM   R14,0         MAKE IT BULLETPROOF                GP15015
-         SLL   R15,8         MAKE IT SAFE IN ANY AMODE 1/2      GP15015
-         SRL   R15,8         MAKE IT SAFE IN ANY AMODE 2/2      GP15015
-         L     R15,@OCDCBEX  Load 31-bit routine address        GP15015
+         DS    0A            ENSURE MATCHING ALIGNMENT          GP15017
+PATSTUB  L     R15,@OCDCBEX  Load 31-bit routine address        GP15015
 *
 * The following works because while the AMODE is saved in R14, the
 * rest of R14 isn't disturbed, so it is all set for a BSM to R15
 *
          LR    R11,R14            Preserve OS return address    GP15015
-         BSM   R14,R15            Call the open exit in AM31    GP15015
+         BASSM R14,R15            Call the open exit in AM31    GP15015
          LR    R14,R11            Restore OS return address     GP15015
-         BSM   0,R14              Return to OS in original mode GP15015
+         BR    R14                Return to OS in original mode GP15017
 @OCDCBEX DC    A(OCDCBEX+X'80000000')  AM31 exit address        GP15015
 PATSTUBL EQU   *-PATSTUB                                        GP15015
          POP   USING
@@ -1677,7 +1675,7 @@ READWACK DS    0H                 *TEST*
          FREEMAIN R,LV=(R2),A=(R1),SP=SUBPOOL  and free it      GP14205
          L     R5,ZPBLKSZ         Load the input blocksize      GP14205
          LA    R6,4(,R5)          Add 4 in case RECFM=U buffer  GP14205
-         GETMAIN R,LV=(R6),SP=SUBPOOL  Get input buffer storage GP14205
+         GETMAIN R,LV=(R6),SP=SUBPOOL,LOC=BELOW   input buffer  GP15017
          ST    R1,ZBUFF1          Save for cleanup              GP14205
          ST    R6,ZBUFF1+4           ditto                      GP14205
          ST    R1,BUFFADDR        Save the buffer address for READ
@@ -2364,12 +2362,18 @@ TRUNCOEX L     R13,4(,R13)
 ***********************************************************************
 *                                                                     *
 *  GETM - GET MEMORY                                                  *
+*    Input:  0(R1) - Address of requested amount                      *
+*                                                                     *
+*    Output: R15 - address of user memory or 0 if failed/invalid      *
+*                 note that this is 8 higher to allow for saved       *
+*                 size prefix.                                        *
+*    Memory: 0(R15) - Amount obtained                                 *
+*            4(R15) - Amount requested                                *
 *                                                                     *
 ***********************************************************************
 @@GETM   FUNHEAD ,
-*
          LDADD R3,0(,R1)          LOAD REQUESTED STORAGE SIZE
-         SLR   R1,R1              PRESET IN CASE OF ERROR
+         SLR   R5,R5              PRESET IN CASE OF ERROR       GP15017
          LTR   R4,R3              CHECK REQUEST
          BNP   GETMEX             QUIT IF INVALID
 *
@@ -2377,23 +2381,17 @@ TRUNCOEX L     R13,4(,R13)
 *
          A     R3,=A(8+(64-1))    OVERHEAD PLUS ROUNDING
          N     R3,=X'FFFFFFC0'    MULTIPLE OF 64
+         GETMAIN RC,LV=(R3),SP=SUBPOOL,LOC=ANY                  GP15017
+         LTR   R15,R15            Successful?                   GP15017
+         BNZ   GETMEX               No; return 0                GP15017
 *
-         AIF   ('&ZSYS' NE 'S380').NOANY                        GP14233
-         GETMAIN RU,LV=(R3),SP=SUBPOOL,LOC=ANY
-         AGO   .FINANY
-.NOANY   ANOP  ,
-         GETMAIN RU,LV=(R3),SP=SUBPOOL
-.FINANY  ANOP  ,
+* We store the amount we requested from MVS into this address
+* and just below the value we return to the caller, we save
+* the amount requested.
 *
-* WE STORE THE AMOUNT WE REQUESTED FROM MVS INTO THIS ADDRESS
-         ST    R3,0(,R1)
-* AND JUST BELOW THE VALUE WE RETURN TO THE CALLER, WE SAVE
-* THE AMOUNT THEY REQUESTED
-         ST    R4,4(,R1)
-         A     R1,=F'8'
-*
-GETMEX   FUNEXIT RC=(R1)
-         LTORG ,
+         STM   R3,R4,0(R1)        Gotten and requested size     GP15017
+         LA    R5,8(,R1)          Skip prefix                   GP15017
+GETMEX   FUNEXIT RC=(R5)                                        GP15017
          SPACE 2
 ***********************************************************************
 *                                                                     *
@@ -2402,12 +2400,10 @@ GETMEX   FUNEXIT RC=(R1)
 ***********************************************************************
 @@FREEM  FUNHEAD ,
 *
-         L     R1,0(,R1)
-         S     R1,=F'8'
-         L     R0,0(,R1)
-*
+         L     R1,0(,R1)          Address of block to be freed
+         S     R1,=F'8'           Position to prefix
+         L     R0,0(,R1)          Get actual size obtained
          FREEMAIN RC,LV=(0),A=(1),SP=SUBPOOL
-*
          FUNEXIT RC=(15)
          LTORG ,
          SPACE 2
@@ -2982,7 +2978,6 @@ RETURN99 DS    0H
 ***********************************************************************
          SPACE 1
          PUSH  USING                                            GP14244
-         PUSH  USING                                            GP14244
          PUSH  PRINT                                            GP14244
          PRINT NOGEN         DON'T NEED TWO COPIES              GP14244
          DROP  ,                                                GP14244
@@ -3338,7 +3333,7 @@ ZVSEEK   CAMLST SEEK,1-1,2-2,3-3  CAMLST to SEEK by address     GP14213
 OPENCLOS DS    A                  OPEN/CLOSE parameter list
 DCBXLST  DS    2A                 07 JFCB / 85 DCB EXIT
 EOFR24   DS    CL(EOFRLEN)
-         DS    0F                 Ensure correct DC A alignment GP15015
+         DS    0A                 Ensure correct DC A alignment GP15015
 A24STUB  DS    CL(PATSTUBL)       DCB open exit 24-bit code     GP15015
 ZBUFF1   DS    A,F                Address, length of buffer
 ZBUFF2   DS    A,F                Address, length of 2nd buffer

@@ -1343,13 +1343,38 @@ OCDCBXX  STH   R3,DCBBLKSI   UPDATE POSSIBLY CHANGED BLOCK SIZE
 *
          USING PATSTUB,R15   DECLARE BASE                       GP15015
          DS    0A            ENSURE MATCHING ALIGNMENT          GP15017
-PATSTUB  L     R15,@OCDCBEX  Load 31-bit routine address        GP15015
+PATSTUB  DS    0H
 *
-* The following works because while the AMODE is saved in R14, the
-* rest of R14 isn't disturbed, so it is all set for a BSM to R15
+* Set R4 to true if we were called in 31-bit mode
 *
+         LA    R4,0
+         BSM   R4,R0
+         LTR   R4,R4
+         BZ    PAT24
+* We are already running AMODE 31. As such, simply
+* branch to OCDCBEX and let it return to R14 by itself
+*
+         L     R15,@OCDCBEX  Load 31-bit routine address        GP15015
+         LA    R15,0(,R15)
+         BR    R15
+*
+* We are currently running AMODE 24. As such, we need a
+* BSM to switch to AMODE 31. Then we need to run
+* OCDCBEX, and after that, switch back to AMODE 24
+*
+PAT24    DS    0H
          LR    R11,R14            Preserve OS return address    GP15015
-         BASSM R14,R15            Call the open exit in AM31    GP15015
+         LA    R14,PATRET1
+         L     R15,@OCDCBEX  Load 31-bit routine address        GP15015
+         BSM   R0,R15             Call the open exit in AM31    GP15015
+         POP   USING
+         PUSH  USING
+         DROP  ,
+         USING PATRET1,R14
+PATRET1  DS    0H
+         LA    R5,PATRET2
+         BSM   R0,R5
+PATRET2  DS    0H
          LR    R14,R11            Restore OS return address     GP15015
          BR    R14                Return to OS in original mode GP15017
 @OCDCBEX DC    A(OCDCBEX+X'80000000')  AM31 exit address        GP15015

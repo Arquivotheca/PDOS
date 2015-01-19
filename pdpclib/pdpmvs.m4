@@ -65,7 +65,7 @@ undivert(mvsmacs.mac)/*
 //MVSSTART EXEC PDPASM,MEMBER=MVSSTART
 //SYSIN  DD  *
 undivert(mvsstart.asm)/*
-//MVSSUPA  EXEC PDPASM,MEMBER=MVSSUPA
+//MVSSUPA  EXEC PDPASM,MEMBER=MVSSUPA,LIST='LIST'
 //SYSIN  DD  *
 undivert(mvssupa.asm)/*
 //START    EXEC PDPASM,MEMBER=START

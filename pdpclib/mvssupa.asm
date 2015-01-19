@@ -1344,9 +1344,9 @@ OCDCBXX  STH   R3,DCBBLKSI   UPDATE POSSIBLY CHANGED BLOCK SIZE
          USING PATSTUB,R15   DECLARE BASE                       GP15015
          DS    0A            ENSURE MATCHING ALIGNMENT          GP15017
 PATSTUB  BSM   R14,0         Save caller's AMODE                GP15019
-         L     R15,@OCDCBEX  Load 31-bit routine address        GP15015
          LR    R11,R14            Preserve OS return address    GP15015
          LA    R14,PATRET    Set return address                 GP15019
+         L     R15,@OCDCBEX  Load 31-bit routine address        GP15015
          BSM   0,R15              Call the open exit in AM31    GP15019
 PATRET   LR    R14,R11            Restore OS return address     GP15015
          BSM   0,R14              Return to OS in original mode GP15019

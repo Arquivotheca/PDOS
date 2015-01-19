@@ -153,14 +153,13 @@ MVSSUPA  TITLE 'M V S S U P A  ***  MVS VERSION OF PDP CLIB SUPPORT'
          COPY  PDPTOP
          SPACE 1
 * For S/390 we need to deliberately request LOC=BELOW storage
-* in some places.
+* in some places. This is accomplished by using GETMAIN R form.
 * For S/380 we need to deliberately request LOC=ANY storage.
 * For all other environments, just let it naturally default
 * to LOC=RES
 *
 MVSSUPA  CSECT ,
          PRINT GEN
-         YREGS ,
          SPACE 1
 *-----------------------ASSEMBLY OPTIONS------------------------------*
 SUBPOOL  EQU   0                                                      *
@@ -523,13 +522,14 @@ DDCTDONE MVC   DDWFLAGS,DDWFLAG1  COPY FIRST DD'S FLAGS         GP14205
 *   Conditional forms of storage acquisition are reentrant unless
 *     they pass values that vary between uses, which ours don't,
 *     or require storaage alteration (ditto).
-         GETMAIN RC,LV=ZDCBLEN,SP=SUBPOOL,LOC=BELOW             GP15009
+*OLD*    GETMAIN RC,LV=ZDCBLEN,SP=SUBPOOL,LOC=BELOW             GP15009
+         GETMAIN R,LV=ZDCBLEN,SP=SUBPOOL    I/O work area BTL
 *   Note that PAGE alignment makes for easier dump reading
 *   but wastes storage - so we use it for debugging only.
 *   Using RC to get a return code if memory unavailable.
 *
          LA    R0,ORFNOSTO        Preset for no storage         GP14205
-         BXH   R15,R15,OPRERR       Return error code           GP14205
+*not set BXH   R15,R15,OPRERR       Return error code           GP14205
          LR    R10,R1             Addr.of storage obtained to its base
          USING IHADCB,R10         Give assembler DCB area base register
          LR    R0,R10             Load output DCB area address
@@ -1005,7 +1005,7 @@ GETBUFF  L     R5,ZPBLKSZ         Load the input blocksize      GP14233
          CR    R6,R0              Buffer size OK?               GP14205
          BNL   *+4+2                Yes                         GP14205
          LR    R6,R0              Use larger                    GP14205
-         GETMAIN R,LV=(R6),SP=SUBPOOL,LOC=BELOW input buffer    GP15017
+         GETMAIN R,LV=(R6),SP=SUBPOOL  Get input buffer
          ST    R1,ZBUFF1          Save for cleanup
          ST    R6,ZBUFF1+4           ditto
          ST    R1,BUFFADDR        Save the buffer address for READ
@@ -1015,7 +1015,7 @@ GETBUFF  L     R5,ZPBLKSZ         Load the input blocksize      GP14233
          SPACE 1
          L     R6,ZPLRECL         Get record length
          LA    R6,4(,R6)          Insurance
-         GETMAIN R,LV=(R6),SP=SUBPOOL  ATL ALLOWED - not used by BSAM
+         GETMAIN R,LV=(R6),SP=SUBPOOL  Get VBS buffer
          ST    R1,ZBUFF2          Save for cleanup
          ST    R6,ZBUFF2+4           ditto
          LA    R14,4(,R1)
@@ -1060,7 +1060,7 @@ TERMOPEN MVC   IOMFLAGS,WWORK     Save for duration
          ST    R6,ZPBLKSZ         Return it                     GP14233
          ST    R6,ZPLRECL         Return it
          LA    R6,4(,R6)          Add 4 in case RECFM=U buffer
-         GETMAIN R,LV=(R6),SP=SUBPOOL,LOC=BELOW  input buffer   GP15017
+         GETMAIN R,LV=(R6),SP=SUBPOOL  Get input buffer
          ST    R1,ZBUFF2          Save for cleanup
          ST    R6,ZBUFF2+4           ditto
          LA    R1,4(,R1)          Allow for RDW if not V
@@ -1343,40 +1343,13 @@ OCDCBXX  STH   R3,DCBBLKSI   UPDATE POSSIBLY CHANGED BLOCK SIZE
 *
          USING PATSTUB,R15   DECLARE BASE                       GP15015
          DS    0A            ENSURE MATCHING ALIGNMENT          GP15017
-PATSTUB  DS    0H
-*
-* Set R4 to true if we were called in 31-bit mode
-*
-         LA    R4,0
-         BSM   R4,R0
-         LTR   R4,R4
-         BZ    PAT24
-* We are already running AMODE 31. As such, simply
-* branch to OCDCBEX and let it return to R14 by itself
-*
+PATSTUB  BSM   R14,0         Save caller's AMODE                GP15019
          L     R15,@OCDCBEX  Load 31-bit routine address        GP15015
-         LA    R15,0(,R15)
-         BR    R15
-*
-* We are currently running AMODE 24. As such, we need a
-* BSM to switch to AMODE 31. Then we need to run
-* OCDCBEX, and after that, switch back to AMODE 24
-*
-PAT24    DS    0H
          LR    R11,R14            Preserve OS return address    GP15015
-         LA    R14,PATRET1
-         L     R15,@OCDCBEX  Load 31-bit routine address        GP15015
-         BSM   R0,R15             Call the open exit in AM31    GP15015
-         POP   USING
-         PUSH  USING
-         DROP  ,
-         USING PATRET1,R14
-PATRET1  DS    0H
-         LA    R5,PATRET2
-         BSM   R0,R5
-PATRET2  DS    0H
-         LR    R14,R11            Restore OS return address     GP15015
-         BR    R14                Return to OS in original mode GP15017
+         LA    R14,PATRET    Set return address                 GP15019
+         BSM   0,R15              Call the open exit in AM31    GP15019
+PATRET   LR    R14,R11            Restore OS return address     GP15015
+         BSM   0,R14              Return to OS in original mode GP15019
 @OCDCBEX DC    A(OCDCBEX+X'80000000')  AM31 exit address        GP15015
 PATSTUBL EQU   *-PATSTUB                                        GP15015
          POP   USING
@@ -1700,7 +1673,7 @@ READWACK DS    0H                 *TEST*
          FREEMAIN R,LV=(R2),A=(R1),SP=SUBPOOL  and free it      GP14205
          L     R5,ZPBLKSZ         Load the input blocksize      GP14205
          LA    R6,4(,R5)          Add 4 in case RECFM=U buffer  GP14205
-         GETMAIN R,LV=(R6),SP=SUBPOOL,LOC=BELOW   input buffer  GP15017
+         GETMAIN R,LV=(R6),SP=SUBPOOL  Get input buffer
          ST    R1,ZBUFF1          Save for cleanup              GP14205
          ST    R6,ZBUFF1+4           ditto                      GP14205
          ST    R1,BUFFADDR        Save the buffer address for READ
@@ -2387,12 +2360,18 @@ TRUNCOEX L     R13,4(,R13)
 ***********************************************************************
 *                                                                     *
 *  GETM - GET MEMORY                                                  *
+*    Input:  0(R1) - Address of requested amount                      *
+*                                                                     *
+*    Output: R15 - address of user memory or 0 if failed/invalid      *
+*                 note that this is 8 higher to allow for saved       *
+*                 size prefix.                                        *
+*    Memory: 0(R15) - Amount obtained                                 *
+*            4(R15) - Amount requested                                *
 *                                                                     *
 ***********************************************************************
 @@GETM   FUNHEAD ,
-*
-         LDINT R3,0(,R1)          LOAD REQUESTED STORAGE SIZE
-         SLR   R1,R1              PRESET IN CASE OF ERROR
+         LDADD R3,0(,R1)          LOAD REQUESTED STORAGE SIZE
+         SLR   R5,R5              PRESET IN CASE OF ERROR       GP15017
          LTR   R4,R3              CHECK REQUEST
          BNP   GETMEX             QUIT IF INVALID
 *
@@ -2400,23 +2379,20 @@ TRUNCOEX L     R13,4(,R13)
 *
          A     R3,=A(8+(64-1))    OVERHEAD PLUS ROUNDING
          N     R3,=X'FFFFFFC0'    MULTIPLE OF 64
-*
          AIF   ('&ZSYS' NE 'S380').NOANY
-         GETMAIN RU,LV=(R3),SP=SUBPOOL,LOC=ANY
+         GETMAIN RC,LV=(R3),SP=SUBPOOL,LOC=ANY                  GP15019
          AGO   .FINANY
-.NOANY   ANOP  ,
-         GETMAIN RU,LV=(R3),SP=SUBPOOL
-.FINANY  ANOP  ,
+.NOANY   GETMAIN RC,LV=(R3),SP=SUBPOOL                          GP15019
+.FINANY  LTR   R15,R15            Sucessful?                    GP15017
+         BNZ   GETMEX               No; return 0                GP15017
 *
-* WE STORE THE AMOUNT WE REQUESTED FROM MVS INTO THIS ADDRESS
-         ST    R3,0(,R1)
-* AND JUST BELOW THE VALUE WE RETURN TO THE CALLER, WE SAVE
-* THE AMOUNT THEY REQUESTED
-         ST    R4,4(,R1)
-         A     R1,=F'8'
+* We store the amount we requested from MVS into this address
+* and just below the value we return to the caller, we save
+* the amount requested.
 *
-GETMEX   FUNEXIT RC=(R1)
-         LTORG ,
+         STM   R3,R4,0(R1)        Gotten and requested size     GP15017
+         LA    R5,8(,R1)          Skip prefix                   GP15017
+GETMEX   FUNEXIT RC=(R5)                                        GP15017
          SPACE 2
 ***********************************************************************
 *                                                                     *
@@ -2424,13 +2400,10 @@ GETMEX   FUNEXIT RC=(R1)
 *                                                                     *
 ***********************************************************************
 @@FREEM  FUNHEAD ,
-*
-         L     R1,0(,R1)
-         S     R1,=F'8'
-         L     R0,0(,R1)
-*
+         LDADD R1,0(,R1)          Address of block to be freed  GP15019
+         SL    R1,=F'8'           Position to prefix            GP15019
+         L     R0,0(,R1)          Get actual size obtained
          FREEMAIN RC,LV=(0),A=(1),SP=SUBPOOL
-*
          FUNEXIT RC=(15)
          LTORG ,
          SPACE 2
@@ -3024,7 +2997,7 @@ RETURN99 DS    0H
          BNZ   SNAPGOT                                          GP14244
          USING SNAPDCB,R10   DECLARE DYNAMIC WORK AREA          GP14244
 SNAPGET  LA    R0,SNAPSLEN   GET LENGTH OF SAVE AND WORK AREA   GP14244
-         GETMAIN RU,LV=(0),SP=SUBPOOL,LOC=BELOW                 GP14244
+         GETMAIN R,LV=(0)                                       GP15019
          STM   R0,R1,#SNAPDCB     SAVE FOR RELEASE              GP14244
          LR    R10,R1                                           GP14244
          MVC   SNAPDCB(PATSNAPL),PATSNAP   INIT DCB, ETC.       GP14244
@@ -3448,4 +3421,20 @@ MYTIOT   DSECT ,
          SPACE 1
          IFGRPL ,                                               GP14233
          IEFJESCT ,
-.MVSEND  END   ,
+R0       EQU   0             NO STANDARD REGEQU MACRO           GP15019
+R1       EQU   1             NO STANDARD REGEQU MACRO           GP15019
+R2       EQU   2             NO STANDARD REGEQU MACRO           GP15019
+R3       EQU   3             NO STANDARD REGEQU MACRO           GP15019
+R4       EQU   4             NO STANDARD REGEQU MACRO           GP15019
+R5       EQU   5             NO STANDARD REGEQU MACRO           GP15019
+R6       EQU   6             NO STANDARD REGEQU MACRO           GP15019
+R7       EQU   7             NO STANDARD REGEQU MACRO           GP15019
+R8       EQU   8             NO STANDARD REGEQU MACRO           GP15019
+R9       EQU   9             NO STANDARD REGEQU MACRO           GP15019
+R10      EQU   10            NO STANDARD REGEQU MACRO           GP15019
+R11      EQU   11            NO STANDARD REGEQU MACRO           GP15019
+R12      EQU   12            NO STANDARD REGEQU MACRO           GP15019
+R13      EQU   13            NO STANDARD REGEQU MACRO           GP15019
+R14      EQU   14            NO STANDARD REGEQU MACRO           GP15019
+R15      EQU   15            NO STANDARD REGEQU MACRO           GP15019
+         END   ,

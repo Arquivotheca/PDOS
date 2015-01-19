@@ -2387,18 +2387,12 @@ TRUNCOEX L     R13,4(,R13)
 ***********************************************************************
 *                                                                     *
 *  GETM - GET MEMORY                                                  *
-*    Input:  0(R1) - Address of requested amount                      *
-*                                                                     *
-*    Output: R15 - address of user memory or 0 if failed/invalid      *
-*                 note that this is 8 higher to allow for saved       *
-*                 size prefix.                                        *
-*    Memory: 0(R15) - Amount obtained                                 *
-*            4(R15) - Amount requested                                *
 *                                                                     *
 ***********************************************************************
 @@GETM   FUNHEAD ,
-         LDADD R3,0(,R1)          LOAD REQUESTED STORAGE SIZE
-         SLR   R5,R5              PRESET IN CASE OF ERROR       GP15017
+*
+         LDINT R3,0(,R1)          LOAD REQUESTED STORAGE SIZE
+         SLR   R1,R1              PRESET IN CASE OF ERROR
          LTR   R4,R3              CHECK REQUEST
          BNP   GETMEX             QUIT IF INVALID
 *
@@ -2406,17 +2400,23 @@ TRUNCOEX L     R13,4(,R13)
 *
          A     R3,=A(8+(64-1))    OVERHEAD PLUS ROUNDING
          N     R3,=X'FFFFFFC0'    MULTIPLE OF 64
-         GETMAIN RC,LV=(R3),SP=SUBPOOL,LOC=ANY                  GP15017
-         LTR   R15,R15            Successful?                   GP15017
-         BNZ   GETMEX               No; return 0                GP15017
 *
-* We store the amount we requested from MVS into this address
-* and just below the value we return to the caller, we save
-* the amount requested.
+         AIF   ('&ZSYS' NE 'S380').NOANY
+         GETMAIN RU,LV=(R3),SP=SUBPOOL,LOC=ANY
+         AGO   .FINANY
+.NOANY   ANOP  ,
+         GETMAIN RU,LV=(R3),SP=SUBPOOL
+.FINANY  ANOP  ,
 *
-         STM   R3,R4,0(R1)        Gotten and requested size     GP15017
-         LA    R5,8(,R1)          Skip prefix                   GP15017
-GETMEX   FUNEXIT RC=(R5)                                        GP15017
+* WE STORE THE AMOUNT WE REQUESTED FROM MVS INTO THIS ADDRESS
+         ST    R3,0(,R1)
+* AND JUST BELOW THE VALUE WE RETURN TO THE CALLER, WE SAVE
+* THE AMOUNT THEY REQUESTED
+         ST    R4,4(,R1)
+         A     R1,=F'8'
+*
+GETMEX   FUNEXIT RC=(R1)
+         LTORG ,
          SPACE 2
 ***********************************************************************
 *                                                                     *
@@ -2425,10 +2425,12 @@ GETMEX   FUNEXIT RC=(R5)                                        GP15017
 ***********************************************************************
 @@FREEM  FUNHEAD ,
 *
-         L     R1,0(,R1)          Address of block to be freed
-         S     R1,=F'8'           Position to prefix
-         L     R0,0(,R1)          Get actual size obtained
+         L     R1,0(,R1)
+         S     R1,=F'8'
+         L     R0,0(,R1)
+*
          FREEMAIN RC,LV=(0),A=(1),SP=SUBPOOL
+*
          FUNEXIT RC=(15)
          LTORG ,
          SPACE 2

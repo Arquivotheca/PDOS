@@ -136,7 +136,8 @@ undivert(pdptest.s)/*
  ENTRY @@MAIN
 /*
 //*
-//PDPTEST  EXEC PGM=PDPTEST,PARM='-tt dd:in dd:out'
+//PDPTEST  EXEC PGM=PDPTEST,PARM='-tt dd:in dd:out',
+//         COND=(0,LT,LKED)
 //STEPLIB  DD  DSN=&&LOADLIB,DISP=(OLD,PASS)
 //SYSPRINT DD  SYSOUT=*
 //SYSTERM  DD  SYSOUT=*

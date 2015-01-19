@@ -1,118 +1,126 @@
 /*********************************************************************/
 /*                                                                   */
-/*  This Program Written by Paul Edwards.                            */
-/*  Released to the Public Domain                                    */
+/*  This Program Written By Paul Edwards.                            */
+/*  Released to the public domain.                                   */
 /*                                                                   */
 /*********************************************************************/
 /*********************************************************************/
 /*                                                                   */
-/*  pdptest.c - Test of PDPCLIB                                      */
+/*  This program reads from an input file and writes to an output    */
+/*  file.                                                            */
 /*                                                                   */
 /*********************************************************************/
 
 #include <stdio.h>
-#include <time.h>
-#include <assert.h>
-#include <ctype.h>
 #include <stdlib.h>
 #include <string.h>
 
+static char buf[6144]; /* arbitrary buffer size */
+
 int main(int argc, char **argv)
 {
-#if 1
     FILE *fp;
     FILE *fq;
-    char buf[5000];
-    size_t x;
+    char *in_name;
+    char *out_name;
     int c;
-    time_t tt;
-#endif
-    int i;
+    int off = 0;
+    char *in = "r";
+    char *out = "w";
+    unsigned long total = 0;
+    char *m1;
+    char *m2;
+    char *z;
 
-#if 0
-    fq = fopen("dd:outfile", "w");
-    fgets(buf, sizeof buf, stdin);
-    fputs(buf, fq);
-    fgets(buf, sizeof buf, stdin);
-    fputs(buf, fq);
-    fgets(buf, sizeof buf, stdin);
-    fputs(buf, fq);
-    fclose(fq);
-#endif
-    printf("hello there\n");
-    printf("argc = %d\n" , argc);
-    for (i = 0; i < argc; i++)
+    printf("welcome to pdptest\n");
+    printf("main function is at %p\n", main);
+    z = (char *)main;
+    printf("first byte of main is %x\n", *z);
+    printf("allocating 10 bytes\n");
+    m1 = malloc(10);
+    printf("m1 is %p\n", m1);
+    strcpy(m1, "ABCDE");
+    printf("allocating 20 bytes\n");
+    m2 = malloc(20);
+    printf("m2 is %p\n", m2);
+    if (argc < 3)
     {
-        printf("arg %d is <%s>\n", i, argv[i]);
+        printf("usage: pdptest [-bb/-tt/-tb/-bt] <infile> <outfile>\n");
+        printf("default is text to text copy\n");        
+        printf("not looping now\n");
+        /*printf("looping now\n");*/
+        /*for (;;) ;*/
+        return (EXIT_FAILURE);
     }
-#ifdef LOOP
-    /* note - we use two newlines because of PDPCLIB's MVS
-       implementation (MACRF=PL) */
-    printf("deliberately looping!\n\n");
-    for (;;) ;
-#endif
-    return (0);
-#if 0
-    fp = fopen("pdptest.in", "r+b");
-    if (fp == NULL)
+
+    if (argc > 3)
     {
-        printf("couldn't open input file\n");
-        return (0);
-    }
-    x = fread(buf, 1, 5, fp);
-    buf[x] = '\0';
-    printf("x is %d\n", x);
-    printf("buf is %s\n", buf);
-    fwrite("test\ntest2\n", 1, 11, stdout);
-    printf("data is:\n");
-    printf("%s\n", buf);
-    printf("position is %ld\n", ftell(fp));
-    x = fseek(fp, 15, SEEK_SET);
-    fputc('Z', fp);
-    printf("x is %d\n", x);
-    x = fread(buf, 1, 5, fp);
-    printf("x is %d\n", x);
-    printf("%s\n", buf);
-    fclose(fp);
-    printf("This is a test of 342 %d!\n", 342);
-    printf("Please enter your name\n");
-/*    fgets(buf, sizeof buf, stdin);
-    printf("hello, %s", buf); */
-    printf("is 'C' uppercase? %d\n", isupper('C'));
-    printf("is 'C' lowercase? %d\n", islower('C'));
-    printf("what is lowercase 'C'? %d\n", tolower('C'));
-    tt = time(NULL);
-    printf("time is %lu\n", tt);
-    fp = fopen("pdptest.in", "r");
-    if (fp == NULL)
-    {
-        printf("failed to open file\n");
-        return (0);
-    }
-    c = getc(fp);
-    printf("c is %d\n", c);
-    while (fgets(buf, sizeof buf, fp) != NULL)
-    {
-        if (*buf != ',')
+        if (argv[1][0] == '-')
         {
-            printf(buf);
+            if ((argv[1][1] == 'b') || (argv[1][1] == 'B'))
+            {
+                in = "rb";
+            }
+            if ((argv[1][2] == 'b') || (argv[1][2] == 'B'))
+            {
+                out = "wb";
+            }
+            off++;
         }
     }
-    fclose(fp);
-    printf("argc is %d\n", argc);
-    for (x = 0; x < argc; x++)
+    in_name = *(argv + off + 1);
+    if (strcmp(in_name, "-") == 0)
     {
-        printf("argv[%d] is %s\n", x, argv[x]);
+        fp = stdin;
     }
-    sprintf(buf, "%.4d-%.2d-%.2d", 51, 41, 31);
-    printf("%s\n", buf);
-    printf("%-15s%s\n", "hello", "there");
-    printf("%-06dJJ\n", 37);
-    printf("%2d\n", 57);
-    printf("%2d\n", 7);
-    printf("%2d\n", -3);
-    printf("%d\n", -457);
-    printf("should be there %s\n", strstr("hello there", "there"));
-#endif
+    else
+    {
+        fp = fopen(in_name, in);
+    }
+    if (fp == NULL)
+    {
+        printf("failed to open %s for reading\n", in_name);
+        return (EXIT_FAILURE);
+    }
+
+    out_name = *(argv + off + 2);
+    if (strcmp(out_name, "-") == 0)
+    {
+        fq = stdout;
+    }
+    else
+    {
+        fq = fopen(out_name, out);
+    }
+    if (fq == NULL)
+    {
+        printf("failed to open %s for writing\n", out_name);
+        return (EXIT_FAILURE);
+    }
+
+    printf("copying from file %s, mode %s\n",
+           in_name,
+           (strlen(in) == 1) ? "text" : "binary");
+
+    printf("to file %s, mode %s\n",
+           out_name,
+           (strlen(out) == 1) ? "text" : "binary");
+
+    while ((c = fread(buf, 1, sizeof buf, fp)) > 0)
+    {
+        total += c;
+        fwrite(buf, 1, c, fq);
+        if (ferror(fq)) break;
+    }
+
+    if (ferror(fp) || ferror(fq))
+    {
+        printf("i/o error\n");
+        return (EXIT_FAILURE);
+    }
+    printf("%lu bytes copied\n", total);
+    
+    fclose(fq); /* keep last in case it is stdout */
+
     return (0);
 }

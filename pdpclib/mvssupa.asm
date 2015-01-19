@@ -1015,7 +1015,7 @@ GETBUFF  L     R5,ZPBLKSZ         Load the input blocksize      GP14233
          SPACE 1
          L     R6,ZPLRECL         Get record length
          LA    R6,4(,R6)          Insurance
-         GETMAIN R,LV=(R6),SP=SUBPOOL  Get VBS buffer
+         GETMAIN RU,LV=(R6),SP=SUBPOOL  Get VBS buffer
          ST    R1,ZBUFF2          Save for cleanup
          ST    R6,ZBUFF2+4           ditto
          LA    R14,4(,R1)

@@ -305,3 +305,14 @@
 *
 *
 *
+         MACRO ,             COMPILER DEPENDENT LOAD INTEGER
+&NM      LDINT &R,&A         LOAD INTEGER VALUE FROM PARM LIST
+         GBLC  &COMP         COMPILER GCC OR C/370
+&NM      L     &R,&A         LOAD PARM VALUE
+         AIF ('&COMP' EQ 'GCC').MEND
+.* THIS LINE IS FOR ANYTHING NOT GCC: C/370
+         L     &R,0(,&R)     LOAD INTEGER VALUE
+.MEND    MEND  ,
+*
+*
+*

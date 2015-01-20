@@ -971,7 +971,16 @@ static void osfopen(void)
     {
         myfile->recfm = __RECFM_V;
         myfile->lrecl = 255;
-        myfile->blksize = 6233;
+        if (__doperm)
+        {
+            /* don't block stdout/stderr so that output is not
+               delayed if the program crashes */
+            myfile->blksize = 259;
+        }
+        else
+        {
+            myfile->blksize = 6233;
+        }
     }
     else
     {

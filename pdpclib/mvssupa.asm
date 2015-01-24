@@ -461,7 +461,15 @@ DDCUJBLK TM    DS1DSORG+1,DS1ACBM VSAM ?                        GP14233
          BZ    DDCSEQ             (CHECK JFCB OVERRIDE DSORG?)  GP14205
          TM    JFCBIND1,JFCPDS    MEMBER NAME ON DD ?           GP14205
          BNZ   DDCPMEM              YES; SHOW                   GP14205
-         OI    DDWFLAG2,CWFPDS    SET PDS ONLY                  GP14205
+         LTR   R8,R8              First DD of possible concat?  GP15024
+         BZ    DDCPPDS              No; ignore member parameter GP15024
+         LDADD R14,PARM7          R14 POINTS TO MEMBER NAME (OF PDS)
+         LA    R14,0(,R14)        Strip off high-order bit or byte
+         LTR   R14,R14            Zero address passed ?         GP15024
+         BZ    DDCPPDS              Yes; not member name        GP15024
+         TM    0(R14),255-X'40'   Either blank or zero?         GP15024
+         BNZ   DDCPMEM              No; sequential              GP15024
+DDCPPDS  OI    DDWFLAG2,CWFPDS    SET PDS ONLY                  GP14205
          B     DDCKPDS              Test LSTAR & SMS            GP14205
 DDCVSAM  OI    DDWFLAG2,CWFVSM    SHOW VSAM MODE                GP14233
          B     DDCX1DD              NEXT DD                     GP14233
@@ -522,7 +530,7 @@ DDCTDONE MVC   DDWFLAGS,DDWFLAG1  COPY FIRST DD'S FLAGS         GP14205
 *   Conditional forms of storage acquisition are reentrant unless
 *     they pass values that vary between uses, which ours don't,
 *     or require storaage alteration (ditto).
-*OLD*    GETMAIN RC,LV=ZDCBLEN,SP=SUBPOOL,LOC=BELOW             GP15009
+*DEBUG*  GETMAIN RC,LV=ZDCBLEN,SP=SUBPOOL,LOC=BELOW,BNDRY=PAGE **DEBUG
          GETMAIN R,LV=ZDCBLEN,SP=SUBPOOL    I/O work area BTL
 *   Note that PAGE alignment makes for easier dump reading
 *   but wastes storage - so we use it for debugging only.
@@ -538,6 +546,7 @@ DDCTDONE MVC   DDWFLAGS,DDWFLAG1  COPY FIRST DD'S FLAGS         GP14205
          MVCL  R0,R14             Clear DCB area to binary zeroes
          MVC   ZDDN,0(R3)         DDN for debugging             GP14205
          XC    ZMEM,ZMEM          Preset for no member          GP14205
+         MVC   ZPFLAGS,DDWFLAGS   SAVE FLAGS                    GP15024
          LDADD R14,PARM7          R14 POINTS TO MEMBER NAME (OF PDS)
          LA    R14,0(,R14)        Strip off high-order bit or byte
          LTR   R14,R14            Zero address passed ?         GP14205
@@ -571,6 +580,7 @@ OPCURSE  STC   R4,WWORK           Save to storage
          MVC   DWDDNAM,0(R3)      Move below the line
          DEVTYPE DWDDNAM,DWORK    Check device type
          MVC   ZDVTYPE,DWORK+2    return device type            GP14251
+         MVC   ZPDEVT,DWORK+2     return device type            GP15024
          LA    R0,ORFNODD         Missing DD                    GP14251
          BXH   R15,R15,OPRERR     DD missing                    GP14251
          ICM   R0,15,DWORK+4      Any device size ?
@@ -699,8 +709,8 @@ OPREPCOM MVC   DCBDDNAM,ZDDN              0(R3)
          SPACE 1
 OPREPJFC LA    R14,MYJFCB
 * EXIT TYPE 07 + 80 (END OF LIST INDICATOR)
-         ICM   R14,B'1000',=X'87'
          ST    R14,DCBXLST+4
+         MVI   DCBXLST+4,X'87'    JFCB address; end of list     GP15024
 * While the code is meant to be assembled in S370, it may also get
 * assembled in S390. Thus the EODAD must be below the line.
 * For end-file processing we place a small stub in the ZDCB work area.
@@ -867,8 +877,8 @@ OPENBPAM OI    JFCBTSDM,JFCVSL    Force OPEN analysis of JFCB
 OPENVSEQ TM    ZMEM,255-X'40'     Member name for sequential?   GP14205
          LA    R0,ORFBDMEM        Member not allowed            GP14251
          BNZ   OPRERR             Yes, fail                     GP14251
-         TM    DDWFLAGS,CWFSEQ+CWFPDQ  SEQUENTIAL ACCESS ?   *TEST
-         BZ    OPENIN               NO; SKIP CONCAT          *TEST
+         TM    DDWFLAGS,CWFSEQ+CWFPDQ  SEQUENTIAL ACCESS ?      GP14205
+         BZ    OPENIN               NO; SKIP CONCAT             GP14205
          MVI   DCBMACR+1,0        Remove Write                  GP14205
          OI    DCBOFLGS,DCBOFPPC  Allow unlike concatenation
 OPENIN   OPEN  MF=(E,OPENCLOS),TYPE=J  Open the data set
@@ -1071,7 +1081,7 @@ TERMOPEN MVC   IOMFLAGS,WWORK     Save for duration
          MVC   ZRECFM,FILEMODE    Requested format 0-2
          NI    ZRECFM,3           Just in case
          TR    ZRECFM,=X'8040C0C0'    Change to F / V / U
-         MVI   IOIX,IXTRM         SET FOR TERMINMAL I/O         GP14213
+         MVI   ZPPIX,ZPIXTRM      SET FOR TERMINAL I/O          GP15024
          POP   USING
          SPACE 1
 *   Lots of code tests DCBRECFM twice, to distinguish among F, V, and
@@ -1100,6 +1110,9 @@ SETINDEX STC   R0,RECFMIX         Save for the duration
          ST    R0,0(,R5)          Pass new BLKSIZE
          L     R5,PARM2           POINT TO MODE
          MVC   0(4,R5),ZDVTYPE    DevTyp,RecFm,IOS+IOM flags    GP14251
+         MVC   ZPMODE,ZDVTYPE                                   GP15024
+         MVC   ZPORG,DDADSORG-DDATTRIB+DDWATTR  SAVE ORG        GP15024
+         MVC   ZPOPC,DCBOPTCD     RETURN OPTCD                  GP15024
 *
 * Finished with R5 now
 *
@@ -1392,7 +1405,7 @@ OPENVTOC OSUBHEAD ,          Define extended entry              GP14233
          ST    R0,ZPLRECL                                       GP14213
          STH   R0,DCBBLKSI                                      GP14213
          STH   R0,DCBLRECL                                      GP14213
-         MVI   IOIX,IXVTC         Set for VTOC I/O              GP14213
+         MVI   ZPPIX,ZPIXVTC      Set for VTOC I/O              GP15024
          MVC   ZVSER,UCBVOLI      Remember the serial           GP14213
          OSUBRET ROUTE=      Return from extended entry         GP14233
          SPACE 2
@@ -1406,7 +1419,7 @@ OPENVSAM OSUBHEAD ,          Define extended entry              GP14233
          MVI   ZRECFM,X'C0'       Set RECFM=U                   GP14233
          MVI   RECFMIX,X'C0'        and access code             GP14233
          OI    IOSFLAGS,IOFVSAM   Use VSAM logic                GP14251
-         MVI   IOIX,IXVSM         Set for VSAM I/O              GP14233
+         MVI   ZPPIX,ZPIXVSM      Set for VSAM I/O              GP15024
          LA    R0,ORFBACON        Preset invalid concatenation  GP14233
          TM    DDWFLAG2,CWFDD     Concatenation ?               GP14233
          OBRAN OPSERR,OP=BNZ        Yes, fail                   GP14233
@@ -1568,7 +1581,7 @@ ALINEX   FUNEXIT RC=(R15)
          B     READGOOD                                         GP14244
          SPACE 1
 READREAD SLR   R15,R15                                          GP14363
-         IC    R15,IOIX           Branch by read type           GP14213
+         IC    R15,ZPPIX          Branch by read type           GP15024
          B     *+4(R15)                                         GP14213
            B   REREAD               xSAM                        GP14213
            B   VSAMREAD             VSAM                        GP14213
@@ -1651,12 +1664,10 @@ READBSAM SR    R6,R6              Reset EOF flag
          L     R14,DECB+16    DECIOBPT
          USING IOBSTDRD,R14       Give assembler IOB base       GP14251
          CLI   IOBCSW+3,X'0D'     Unit exception?               GP14251
-*TEST*   BNE   READWACK           No; something else            GP14251
          DROP  R14                Don't need IOB address base anymore
          BE    READEOD            Treat as EOF
 *                                 If EOF, R6 will be set to F'-1'
 READCHEK CHECK DECB               Wait for READ to complete
-READWACK DS    0H                 *TEST*
          TM    IOPFLAGS,IOFCONCT  Did we hit concatenation?
          BZ    READUSAM           No; restore user's AM
          NI    IOPFLAGS,255-IOFCONCT   Reset for next time
@@ -1987,7 +1998,7 @@ WRITMORE NI    IOPFLAGS,255-IOFCURSE   RESET RECURSION
          L     R5,0(,R5)          Length of data to write
          SPACE 1
 WRITRITE SLR   R15,R15                                          GP14363
-         IC    R15,IOIX           Branch by read type           GP14233
+         IC    R15,ZPPIX          Branch by write type          GP15024
          B     *+4(R15)                                         GP14233
            B   WRITSAM              xSAM                        GP14233
            B   VSAMWRIT             VSAM                        GP14233
@@ -3355,11 +3366,6 @@ RECFMIX  DS    X             Record format index: 0-F 4-V 8-U
 IXFIX    EQU   0               Recfm = F                        GP14213
 IXVAR    EQU   4               Recfm = V                        GP14213
 IXUND    EQU   8               Recfm = U                        GP14213
-IOIX     DS    X               I/O routine index                GP14213
-IXSAM    EQU   0               BSAM/BPAM - default              GP14213
-IXVSM    EQU   4               VSAM data set                    GP14213
-IXVTC    EQU   8               VTOC reader                      GP14213
-IXTRM    EQU   12              TSO terminal                     GP14213
          SPACE 1
 ZDVTYPE  DS    X      1/4    Device type of first/only DD       GP14251
          SPACE 1

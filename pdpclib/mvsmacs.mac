@@ -273,14 +273,16 @@
 &P.RFA   EQU   X'04'           ANSI CONTROL CHARACTERS
 &P.RFM   EQU   X'02'           MACHINE CONTROL CHARACTERS (1403 CCW)
 .*
-&P.PIX   DC    H'0'          PROCESSING INDEX
-&P.IXSAM EQU   0               BSAM/BPAM - default
+&P.PIX   DC    X'0'          PROCESSING INDEX
+&P.IXSAM EQU   0               BSAM/BPAM - default              GP15024
 &P.IXQSM EQU   4               QSAM - same as BSAM, with deblocking
 &P.IXVSM EQU   8               VSAM data set
 &P.IXVTC EQU   12              VTOC reader
 &P.IXTRM EQU   16              TSO terminal
 .*.IXVSK EQU   20              (RESERVED) VSAM KEYED I/O
 .*.IXVSU EQU   24              (RESERVED) VSAM UPDATE (GET/PUT/RELEASE)
+.*
+&P.OPC   DC    X'0'          DCB OPTCD                          GP15024
 .*
 &P.DEVT  DC    XL2'0'        UCBTBYT3/4
 &P.ORG   DC    XL2'0'        DSORG

@@ -3945,7 +3945,7 @@ static int vvscanf(const char *format, va_list arg, FILE *fp, const char *s)
             }
             else if (*format == 'l')
             {
-                /* Type modifier: l  (e.g. %ld or %lf) */
+                /* Type modifier: l  (e.g. %ld) */
                 modlong=1;
                 informatitem=1;
             }

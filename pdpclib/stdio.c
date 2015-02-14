@@ -2831,8 +2831,8 @@ static int examine(const char **formt, FILE *fq, char *s, va_list *arg,
         slen = strlen(work);
         if (flagSpace && (work[0] != '-'))
         {
-            memmove(work + 1, work, slen + 1);
             slen++;
+            memmove(work + 1, work, slen);
             work[0] = ' ';
         }
         if (fq == NULL)

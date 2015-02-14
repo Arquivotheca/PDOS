@@ -2829,11 +2829,18 @@ static int examine(const char **formt, FILE *fq, char *s, va_list *arg,
         vdbl = va_arg(*arg, double);
         dblcvt(vdbl, specifier, width, precision, work);   /* 'e','f' etc. */
         slen = strlen(work);
-        if (flagSpace && (work[0] != '-'))
+        if ((flagSpace || flagPlus) && (work[0] != '-'))
         {
             slen++;
             memmove(work + 1, work, slen);
-            work[0] = ' ';
+            if (flagSpace)
+            {
+                work[0] = ' ';
+            }
+            else if (flagPlus)
+            {
+                work[0] = '+';
+            }
         }
         if (fq == NULL)
         {

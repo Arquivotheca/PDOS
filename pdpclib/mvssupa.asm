@@ -41,7 +41,7 @@ MVSSUPA  TITLE 'M V S S U P A  ***  MVS VERSION OF PDP CLIB SUPPORT'
 *     The program now supports reading the VTOC of a disk pack;
 *     use @@AOPEN, @@ACLOSE, @@AREAD normally for a sequential data
 *       set with record length 140 (44 key, 96 data). The DD card:
-*       //ddname DD DISP=OLD,DSN=FORMAT4.DSCB,UNIT=SYSDA,
+*       //ddname DD DISP=OLD,DSN=FORMAT4.DSCB,UNIT=SYSALLDA,
 *       //           VOL=SER=serial                      2014-08-01
 *
 ***********************************************************************
@@ -297,7 +297,7 @@ SUBPOOL  EQU   0                                                      *
          MVI   OPERF,ORFNODD      PRESET FOR MISSING DD NAME    GP14205
          LR    R8,R3              COPY DDNAME POINTER TO SCRATCH REG.
          GAM31 ,                  AM31 FOR S380                 GP15015
-         LA    R4,DDWATTR-DDASIZE POINTER TO DD ATTRIBUTES      GP14205
+         LA    R4,DDWATTR         POINTER TO DD ATTRIBUTES      GP15051
          USING DDATTRIB,R4        DECLARE TABLE                 GP14205
          L     R14,PSATOLD-PSA    GET MY TCB                    GP14205
          L     R9,TCBTIO-TCB(,R14) GET TIOT                     GP14205
@@ -429,10 +429,10 @@ TESTORGA TM    JFCDSRG2,JFCORGAM  VSAM?                         GP14233
 OBTGOOD  CLI   DS1FMTID,C'1'      SUCCESSFUL READ ?             GP14205
          BNE   OPSERR               NO; OOPS                    GP14205
          CLC   =C'IBM',FM1SMSFG   Old format ?                  GP14205
-         BNE   HAVESMS              No; keep intact             GP14205
+         BNE   *+4+6                No; keep intact             GP14205
          MVC   FM1SMSFG(2),ZEROES      Fake it out              GP14205
          SPACE 1                                                GP14205
-HAVESMS  CLC   DDADSORG,ZEROES                                  GP14205
+         CLC   DDADSORG,ZEROES                                  GP14205
          BNE   *+4+6                                            GP14205
          MVC   DDADSORG,DS1DSORG  SAVE                          GP14205
          CLI   DDARECFM,0                                       GP14205
@@ -461,6 +461,14 @@ DDCUJBLK TM    DS1DSORG+1,DS1ACBM VSAM ?                        GP14233
          BZ    DDCSEQ             (CHECK JFCB OVERRIDE DSORG?)  GP14205
          TM    JFCBIND1,JFCPDS    MEMBER NAME ON DD ?           GP14205
          BNZ   DDCPMEM              YES; SHOW                   GP14205
+*DEFER*  LTR   R8,R8              First DD of possible concat?  GP15024
+*DEFER*  BZ    DDCPPDS              No; ignore member parameter GP15024
+*DEFER*  LDADD R14,PARM7          R14 POINTS TO MEMBER NAME (OF PDS)
+*DEFER*  LA    R14,0(,R14)        Strip off high-order bit or byte
+*DEFER*  LTR   R14,R14            Zero address passed ?         GP15024
+*DEFER*  BZ    DDCPPDS              Yes; not member name        GP15024
+*DEFER*  TM    0(R14),255-X'40'   Either blank or zero?         GP15024
+*DEFER*  BNZ   DDCPMEM              No; sequential              GP15024
 DDCPPDS  OI    DDWFLAG2,CWFPDS    SET PDS ONLY                  GP14205
          B     DDCKPDS              Test LSTAR & SMS            GP14205
 DDCVSAM  OI    DDWFLAG2,CWFVSM    SHOW VSAM MODE                GP14233
@@ -470,8 +478,6 @@ DDCKPDS  DS    0H                                               GP14205
 *  Note that this test may fail for data sets written under DOS GP14205
          TM    FM1SMSFG,FM1STRP+FM1PDSEX+FM1DSAE  Usable        GP14205
          BNZ   BADDSORG             No; too bad                 GP14205
-         TM    FM1SMSFG,FM1PDSE   Is it PDS/E?                  GP15040
-         BNZ   DDCX1DD              Yes; LSTAR not set          GP15040
          LA    R0,ORFBDPDS        Preset - not initialized      GP14205
          ICM   R15,7,DS1LSTAR     Any directory blocks?         GP14205
          BZ    OPRERR               No; fail                    GP14205
@@ -845,8 +851,6 @@ OPENBINP TM    WWORK,X'07'   ANY NON-READ OPTION ?
          MVC   ZMEM,JFCBELNM      Save the member name          GP14205
 ZEROMEM  NI    JFCBIND1,255-JFCPDS    Reset it
          XC    JFCBELNM,JFCBELNM  Delete it in JFCB
-         NI    DDWFLAGS,255-CWFSEQ-CWFPDS   Reset others        GP15040
-         OI    DDWFLAGS,CWFPDQ    SHOW SEQUENTIAL PDS USE       GP15040
          B     OPENMEM            Change DCB to BPAM PO
 *---------------------------------------------------------------------*
 * At this point, we have a PDS but no member name requested.
@@ -891,28 +895,32 @@ OPENIN   OPEN  MF=(E,OPENCLOS),TYPE=J  Open the data set
          BXH   R15,R15,OPNOMEM    See if member found           GP14205
          TM    DDWFLAGS,CWFSEQ+CWFPDQ  SEQUENTIAL ACCESS ?      GP14229
          BNZ   SETMTTR              YES; LEAVE DCB INTACT       GP14229
-*  SET DCB PARAMETERS FOR MEMBER'S PDS                          GP14205
+*  SET USER'S DCB PARAMETERS FOR MEMBER'S PDS                   GP14205
+*    PHYSICAL DCB WILL BE SET TO RECFM=U, MAX BLKSIZE           GP15051
+*
          SR    R15,R15                                          GP14205
          IC    R15,PDS2CNCT-PDS2+BLDLNAME                       GP14205
          MH    R15,=AL2(DDASIZE)  Position to entry             GP14205
-         LA    R15,DDWATTR-DDASIZE(R15) Point to start of table GP14205
+         LA    R15,DDWATTR(R15)   Point to start of table       GP15051
          USING DDATTRIB,R15       Declare table entry           GP14205
-         MVC   DCBRECFM,DDARECFM  Update                        GP14205
          LH    R0,DDALRECL                                      GP14205
          STH   R0,DCBLRECL                                      GP14205
          ST    R0,ZPLRECL                                       GP14205
          LH    R0,DDABLKSI                                      GP14205
-         STH   R0,DCBBLKSI                                      GP14205
          ST    R0,ZPBLKSZ                                       GP14205
+         CH    R0,=H'256'         At least enough for a PDS/DIR GP15051
+         BNL   *+8                  OK                          GP15051
+         LH    R0,=H'256'         set to minimum                GP15051
+         STH   R0,DCBBLKSI                                      GP14205
          SLR   R0,R0                                            GP14205
-         IC    R0,DCBRECFM        Load RECFM                    GP14205
+         IC    R0,DDARECFM        Load RECFM                    GP15051
          STC   R0,ZRECFM                                        GP14205
          SRL   R0,6               Keep format only              GP14205
          STC   R0,FILEMODE        Store                         GP14205
          TR    FILEMODE,=AL1(1,1,0,2)  D,V,F,U                  GP14205
          MVC   RECFMIX,FILEMODE                                 GP14205
          TR    RECFMIX,=AL1(0,4,8,8)   F,V,U,U                  GP14205
-         MVI   DCBRECFM,X'C0'     FORCE xSAM TO IGNORE          GP14205
+         MVI   DCBRECFM,X'C0'     FORCE xSAM TO IGNORE REAL RCF GP14205
          DROP  R15                                              GP14205
          SPACE 1
 SETMTTR  FIND  (R10),ZMEM,D       Point to the requested member GP14205
@@ -1118,8 +1126,7 @@ RETURNOP FUNEXIT RC=(R7)          Return to caller
 *   RETURN ERROR CODE IN 2000 RANGE - SET IN CONCATENATION CHECK CODE *
 *---------------------------------------------------------------------*
 OPRERR   LR    R7,R0              CODE PASSED IN R0             GP14205
-         STC   R7,OPERF           SAVE FOR (POSSIBLE) SNAP      GP15040
-*PIPELIN B     OPSERR2                                          GP14205
+         B     OPSERR2                                          GP14205
 OPSERR   SR    R7,R7              CLEAR FOR IC                  GP14205
          IC    R7,OPERF           GET ERROR FLAG                GP14205
 OPSERR2  LA    R7,2000(,R7)       GET INTO RANGE                GP14205
@@ -1581,6 +1588,7 @@ READREAD SLR   R15,R15                                          GP14363
          IC    R15,ZPPIX          Branch by read type           GP15024
          B     *+4(R15)                                         GP14213
            B   REREAD               xSAM                        GP14213
+           B   REREAD               QSAM (reserved)             GP15051
            B   VSAMREAD             VSAM                        GP14213
            B   VTOCREAD             VTOC read                   GP14213
            B   TGETREAD             Terminal                    GP14213
@@ -1661,8 +1669,11 @@ READBSAM SR    R6,R6              Reset EOF flag
          L     R14,DECB+16    DECIOBPT
          USING IOBSTDRD,R14       Give assembler IOB base       GP14251
          CLI   IOBCSW+3,X'0D'     Unit exception?               GP14251
-         DROP  R14                Don't need IOB address base anymore
          BE    READEOD            Treat as EOF
+         CLC   =X'0C40',IOBCSW+3  Expected short?               GP15051
+         BNE   READCHEK             No                          GP15051
+         MVI   DECB,X'7F'    Fake good I/O                      GP15051
+         DROP  R14                Don't need IOB address base anymore
 *                                 If EOF, R6 will be set to F'-1'
 READCHEK CHECK DECB               Wait for READ to complete
          TM    IOPFLAGS,IOFCONCT  Did we hit concatenation?
@@ -1998,6 +2009,7 @@ WRITRITE SLR   R15,R15                                          GP14363
          IC    R15,ZPPIX          Branch by write type          GP15024
          B     *+4(R15)                                         GP14233
            B   WRITSAM              xSAM                        GP14233
+           B   WRITSAM              QSAM (reserved)             GP15051
            B   VSAMWRIT             VSAM                        GP14233
            B   6      ***VTOC write not supported***            GP14233
            B   TPUTWRIT             Terminal                    GP14233
@@ -3236,21 +3248,21 @@ CWFVSM   EQU   X'08'           DS IS VSAM (limited support)     GP14205
 CWFVTOC  EQU   X'04'           DS IS VTOC (limited support)     GP14205
 CWFBLK   EQU   X'02'           DD HAS FORCED BLKSIZE            GP14205
 OPERF    DS    X             ERROR CONDITIONS                   GP14205
-ORFBADNM EQU   04   04       DD name <= blank                   GP14205
-ORFNODD  EQU   08   08       DD name not found in TIOT          GP14205
-ORFNOJFC EQU   12   0C       Error getting JFCB                 GP14205
-ORFNODS1 EQU   16   10       Error getting DSCB 1               GP14205
-ORFBATIO EQU   20   14       Unusable TIOT entry                GP14205
-ORFBADSO EQU   24   18       Invalid or unsupported DSORG       GP14205
-ORFBADCB EQU   28   1C       Invalid DCB parameters             GP14205
-ORFBATY3 EQU   32   20       Unsupported unit type (Graf, Comm, etc.)
-ORFBACON EQU   36   24       Invalid concatenation              GP14205
-ORFBDMOD EQU   40   28       Invalid MODE for DD/function       GP14205
-ORFBDPDS EQU   44   2C       PDS not initialized                GP14205
-ORFBDDIR EQU   48   30       PDS not initialized                GP14205
-ORFNOSTO EQU   52   34       Out of memory                      GP14205
-ORFNOMEM EQU   68   44       Member not found (BLDL/FIND)       GP14205
-ORFBDMEM EQU   72   48       Member not permitted (seq.)        GP14205
+ORFBADNM EQU   04            DD name <= blank                   GP14205
+ORFNODD  EQU   08            DD name not found in TIOT          GP14205
+ORFNOJFC EQU   12            Error getting JFCB                 GP14205
+ORFNODS1 EQU   16            Error getting DSCB 1               GP14205
+ORFBATIO EQU   20            Unusable TIOT entry                GP14205
+ORFBADSO EQU   24            Invalid or unsupported DSORG       GP14205
+ORFBADCB EQU   28            Invalid DCB parameters             GP14205
+ORFBATY3 EQU   32            Unsupported unit type (Graf, Comm, etc.)
+ORFBACON EQU   36            Invalid concatenation              GP14205
+ORFBDMOD EQU   40            Invalid MODE for DD/function       GP14205
+ORFBDPDS EQU   44            PDS not initialized                GP14205
+ORFBDDIR EQU   48            PDS not initialized                GP14205
+ORFNOSTO EQU   52            Out of memory                      GP14205
+ORFNOMEM EQU   68            Member not found (BLDL/FIND)       GP14205
+ORFBDMEM EQU   72            Member not permitted (seq.)        GP14205
          SPACE 1
 TRUENAME DS    CL44               DS name for alias on DD       GP14233
 CATWORK  DS    ((265+7)/8)D'0'    LOCATE work area              GP14233

@@ -31,6 +31,7 @@ int main(int argc, char **argv)
     char *m1;
     char *m2;
     char *z;
+    int i;
 
     printf("welcome to pdptest\n");
     printf("main function is at %p\n", main);
@@ -43,11 +44,21 @@ int main(int argc, char **argv)
     printf("allocating 20 bytes\n");
     m2 = malloc(20);
     printf("m2 is %p\n", m2);
+    if ((argc > 1) && (argv[1][0] != '-'))
+    {
+        printf("printing arguments\n");
+        printf("argc = %d\n" , argc);
+        for (i = 0; i < argc; i++)
+        {
+            printf("arg %d is <%s>\n", i, argv[i]);
+        }
+        return (0);
+    }
     if (argc < 3)
     {
         printf("usage: pdptest [-bb/-tt/-tb/-bt] <infile> <outfile>\n");
         printf("default is text to text copy\n");        
-        printf("not looping now\n");
+        /*printf("not looping now\n");*/
         /*printf("looping now\n");*/
         /*for (;;) ;*/
         return (EXIT_FAILURE);

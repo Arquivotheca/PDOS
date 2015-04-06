@@ -1,18 +1,18 @@
 del pdpvse.zip
-gccvse -DUSE_MEMMGR -Os -S -I . start.c
-gccvse -DUSE_MEMMGR -Os -S -I . stdio.c
-gccvse -DUSE_MEMMGR -Os -S -I . stdlib.c
-gccvse -DUSE_MEMMGR -Os -S -I . ctype.c
-gccvse -DUSE_MEMMGR -Os -S -I . string.c
-gccvse -DUSE_MEMMGR -Os -S -I . time.c
-gccvse -DUSE_MEMMGR -Os -S -I . errno.c
-gccvse -DUSE_MEMMGR -Os -S -I . assert.c
-gccvse -DUSE_MEMMGR -Os -S -I . locale.c
-gccvse -DUSE_MEMMGR -Os -S -I . math.c
-gccvse -DUSE_MEMMGR -Os -S -I . setjmp.c
-gccvse -DUSE_MEMMGR -Os -S -I . signal.c
-gccvse -DUSE_MEMMGR -Os -S -I . __memmgr.c
-gccvse -DUSE_MEMMGR -Os -S -I . pdptest.c
+gccvse -Os -DXXX_MEMMGR -S -I . start.c
+gccvse -Os -DXXX_MEMMGR -S -I . stdio.c
+gccvse -Os -DXXX_MEMMGR -S -I . stdlib.c
+gccvse -Os -DXXX_MEMMGR -S -I . ctype.c
+gccvse -Os -DXXX_MEMMGR -S -I . string.c
+gccvse -Os -DXXX_MEMMGR -S -I . time.c
+gccvse -Os -DXXX_MEMMGR -S -I . errno.c
+gccvse -Os -DXXX_MEMMGR -S -I . assert.c
+gccvse -Os -DXXX_MEMMGR -S -I . locale.c
+gccvse -Os -DXXX_MEMMGR -S -I . math.c
+gccvse -Os -DXXX_MEMMGR -S -I . setjmp.c
+gccvse -Os -DXXX_MEMMGR -S -I . signal.c
+gccvse -Os -DXXX_MEMMGR -S -I . __memmgr.c
+gccvse -Os -DXXX_MEMMGR -S -I . pdptest.c
 rem zip -0X pdpvse *.s *.exec *.asm *.mac
 
 m4 -I . pdpvse.m4 >pdpvse.jcl

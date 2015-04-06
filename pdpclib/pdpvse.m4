@@ -93,7 +93,7 @@ undivert(vsesupa.asm)/*
 *
 * Now run the app
 *
-// EXEC PDPTEST,SIZE=AUTO,PARM='one two Three'
+// EXEC PDPTEST,SIZE=AUTO,PARM='PaulEdwards two Three'
 *
 *
 *

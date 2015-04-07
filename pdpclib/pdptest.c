@@ -35,8 +35,10 @@ int main(int argc, char **argv)
 
     printf("welcome to pdptest\n");
     printf("main function is at %p\n", main);
+#if defined(__MVS__) || defined(__CMS__) || defined(__VSE__)
     z = (char *)main;
     printf("first byte of main is %x\n", *z);
+#endif
     printf("allocating 10 bytes\n");
     m1 = malloc(10);
     printf("m1 is %p\n", m1);

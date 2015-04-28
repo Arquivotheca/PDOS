@@ -57,6 +57,17 @@
 /*  internal buffer.  The reason for the 2 junk characters at the    */
 /*  beginning is to align the buffer on a 4-byte boundary.           */
 /*                                                                   */
+/*  On MVS/CMS/VSE/MUSIC, bufStartR is done differently. It starts   */
+/*  as 0, and fbuf, endbuf and upto are all set to the same          */
+/*  location - the start of the buffer. With no more data            */
+/*  available, a read is done, and endbuf changes according to the   */
+/*  size of the data read. If the application does an fread for      */
+/*  say 60 bytes when reading an F80 dataset, then 60 characters     */
+/*  will go directly into the user buffer, then the remaining        */
+/*  20 bytes will go into the beginning of the internal buffer, so   */
+/*  the bufStartR will be adjusted to that fact, and upto and        */
+/*  fbuf will both point to the beginning, and endbuf will be an     */
+/*  additional 20 bytes ahead.                                       */
 /*                                                                   */
 /*********************************************************************/
 

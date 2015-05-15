@@ -228,6 +228,8 @@ int ferror(FILE *stream);
 #define putc(c, stream) \
   ( \
     ((stream)->tempch = (c)), \
+    ((stream)->quickBin = 0), \
+    ((stream)->quickText = 0), \
     (((stream)->tempch == '\n') \
         || (((stream)->upto + 1) >= (stream)->endbuf)) ? \
         (fputc((stream)->tempch, (stream))) : \

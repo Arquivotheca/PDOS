@@ -115,6 +115,7 @@ typedef struct
     int permfile;   /* Is this stdin/stdout/stderr? */
     int isopen;     /* Is this file open? */
     char modeStr[4]; /* 2nd parameter to fopen */
+    int tempch; /* work variable for putc */
 } FILE;
 
 typedef unsigned long fpos_t;
@@ -224,7 +225,15 @@ int ferror(FILE *stream);
 #define getchar() (getc(stdin))
 #define putchar(c) (putc((c), stdout))
 #define getc(stream) (fgetc((stream)))
-#define putc(c, stream) (fputc((c), (stream)))
+#define putc(c, stream) \
+  ( \
+    ((stream)->tempch = (c)), \
+    (((stream)->tempch == '\n') \
+        || (((stream)->upto + 1) >= (stream)->endbuf)) ? \
+        (fputc((stream)->tempch, (stream))) : \
+        (*(stream)->upto++ = (stream)->tempch) \
+  )
+
 #define feof(stream) ((stream)->eofInd)
 #define ferror(stream) ((stream)->errorInd)
 

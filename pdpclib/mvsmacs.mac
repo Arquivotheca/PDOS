@@ -13,7 +13,7 @@
 .*         Expands nothing or label for S370 or S390
 .*         Required after SAM24 call to return data to caller
 .*
-         AIF   ('&ZSYS' NE 'S380').OTHSYS
+         AIF   ('&ZSYS' NE 'X380').OTHSYS
 &NM      L     &WRK1,4(,R13)      Old save area
          L     &WRK1,12(,R14)     Caller's mode in high bit
          N     &WRK1,=X'80000000'   Kill address
@@ -98,7 +98,7 @@
 &I       SETA  ((&I)/2*2+1)       NEED ODD LENGTH FOR STM ALIGN
 &LBL     SETC  '&NM'
 &ZZSETAM SETB  ('&AM' NE 'NO')
-&ZZSETAM SETB  (&ZZSETAM AND '&ZSYS' EQ 'S380')
+&ZZSETAM SETB  (&ZZSETAM AND '&ZSYS' EQ 'X380')
 &ZZSETSA SETC  ''
 &ZZSETSL SETC  ''
 &ZZSETSP SETC  ''
@@ -152,10 +152,10 @@
 &NM      GAM24 &WORK=R15
          GBLC  &ZSYS
 .*
-.*   GAM24 sets addressing mode to 24 for S380
+.*   GAM24 sets addressing mode to 24 for X380
 .*         expands nothing or label for S370 AND S390
 .*
-         AIF   ('&ZSYS' NE 'S380').OLDSYS
+         AIF   ('&ZSYS' NE 'X380').OLDSYS
 &NM      LA    &WORK,*+6     GET PAST BSM WITH BIT 0 OFF
          BSM   R0,&WORK      CONTINUE IN 24-BIT MODE
          MEXIT ,
@@ -169,10 +169,10 @@
 &NM      GAM31 &WORK=R15
          GBLC  &ZSYS
 .*
-.*   GAM31 sets addressing mode to 31 for S380.
+.*   GAM31 sets addressing mode to 31 for X380.
 .*         expands nothing or label for S370  AND S390
 .*
-         AIF   ('&ZSYS' NE 'S380').OLDSYS
+         AIF   ('&ZSYS' NE 'X380').OLDSYS
 &NM      LA    &WORK,*+10    GET PAST BSM WITH BIT 0 ON
          O     &WORK,=X'80000000'  SET MODE BIT
          BSM   R0,&WORK            CONTINUE IN 31-BIT MODE
@@ -211,11 +211,11 @@
          GBLC  &ZSYS
 .*
 .*   QBSM expands as BSM on environments that require such
-.*   mode switch (S380-only)
+.*   mode switch (X380-only)
 .*   Otherwise it expands as BALR r1,r2 (instead of BSM r1,r2)
 .*   Unless r1 = 0, in which case, a simple BR r2 is done instead
 .*
-         AIF   ('&ZSYS' NE 'S380').OTHSYS
+         AIF   ('&ZSYS' NE 'X380').OTHSYS
 &NM      BSM   &F1,&F2
          MEXIT ,
 .OTHSYS  AIF   ('&F1' EQ '0' OR '&F1' EQ 'R0').BR

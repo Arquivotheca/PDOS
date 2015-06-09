@@ -1,8 +1,8 @@
           GOALS OF THE PUBLIC DOMAIN PROJECT
           ----------------------------------
             
-Version:  1.4
-Date:     2007-08-14
+Version:  1.5
+Date:     2015-06-09
 Author:   Paul Edwards
 Internet: fight.subjugation@gmail.com
 Status:   This document is released to the public domain
@@ -62,6 +62,12 @@ years after the death of the original author, when it becomes public
 domain!  That's a long time to have to wait.  Until then, unless your
 lawyer informs you that the 2756 license agreement conditions don't 
 affect you, the GPL work is only useful as reference material.
+
+Note that when a company makes a sovereign decision to not release
+source code for their product, that is their innate right. When you
+release source code that doesn't allow their company to exercise
+their innate desire, you are trying to force something on them,
+and have no respect for their sovereign choices.
 
 The default for any software written is for it to be copyright by the 
 author.  Please include an explicit "Released to the public domain" if 

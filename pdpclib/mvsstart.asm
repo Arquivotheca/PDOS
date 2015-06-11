@@ -115,7 +115,7 @@ IN31     DS    0H
 *
          CALL  @@START
 *
-         AIF   ('&ZSYS' NE 'S380').N380ST2
+         AIF   ('&ZSYS' NE 'X380').N380ST2
 * If we were called in AMODE 31, don't switch back to 24-bit
          LTR   R4,R4
          BNZ   IN31B
@@ -145,7 +145,7 @@ SAVER13  DS    F
          L     R13,=A(SAVER13)
          L     R13,0(R13)
 *
-         AIF   ('&ZSYS' NE 'S380').N380ST3
+         AIF   ('&ZSYS' NE 'X380').N380ST3
          L     R4,=A(SAVER4)
          L     R4,0(R4)
 * If we were called in AMODE 31, don't switch back to 24-bit

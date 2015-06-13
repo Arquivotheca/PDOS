@@ -99,7 +99,7 @@ CEESTART EQU   *
 *
          LA    R1,PARMLIST
 *
-         AIF   ('&ZSYS' NE 'S380').N380ST1
+         AIF   ('&ZSYS' NE 'X380').N380ST1
 *
 * Set R4 to true if we were called in 31-bit mode
 *

@@ -2302,7 +2302,7 @@ NOPOOL   DS    0H
 *---------------------------------------------------------------------*
 TRUNCOUT B     *+14-TRUNCOUT(,R15)   SKIP LABEL
          DC    AL1(9),CL(9)'TRUNCOUT' EXPAND LABEL
-         AIF   ('&ZSYS' NE 'X380').NOTRUBS
+         AIF   ('&ZSYS' NE 'S380').NOTRUBS
          BSM   R14,R0             PRESERVE AMODE
 .NOTRUBS STM   R14,R12,12(R13)    SAVE CALLER'S REGISTERS
          LR    R12,R15
@@ -2401,7 +2401,7 @@ TRUNCOEX L     R13,4(,R13)
 *
          A     R3,=A(8+(64-1))    OVERHEAD PLUS ROUNDING
          N     R3,=X'FFFFFFC0'    MULTIPLE OF 64
-         AIF   ('&ZSYS' NE 'X380').NOANY
+         AIF   ('&ZSYS' NE 'S380').NOANY
          GETMAIN RC,LV=(R3),SP=SUBPOOL,LOC=ANY                  GP15019
          AGO   .FINANY
 .NOANY   GETMAIN RC,LV=(R3),SP=SUBPOOL                          GP15019

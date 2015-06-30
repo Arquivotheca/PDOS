@@ -199,7 +199,7 @@ WNOMEM   DS    0H
 *
 * S/370 can't handle LOC=BELOW
 *
-         AIF   ('&ZSYS' NE 'S370').MVT8090  If not S/370 then 380 or 390
+         AIF   ('&ZSYS' NE 'S370').MVT8090 If not S/370 then 380 or 390
          GETMAIN R,LV=(R6),SP=SUBPOOL  No LOC= for S/370
          AGO   .GETOENE
 .MVT8090 ANOP  ,                  S/380 or S/390
@@ -747,7 +747,7 @@ RETURN99 DS    0H
 * S/370 doesn't support switching modes so this code is useless,
 * and won't compile anyway because "BSM" is not known.
 *
-         AIF   ('&ZSYS' EQ 'S370').NOMODE  If S/370 we can't switch mode
+         AIF   ('&ZSYS' EQ 'S370').NOMODE If S/370 we can't switch mode
 ***********************************************************************
 *
 *  SETM24 - Set AMODE to 24

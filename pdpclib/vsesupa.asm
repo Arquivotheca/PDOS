@@ -1225,7 +1225,7 @@ NOEOF    DS        0H
 * S/370 doesn't support switching modes so this code is useless,
 * and won't compile anyway because "BSM" is not known.
 *
-         AIF   ('&ZSYS' EQ 'S370').NOMODE  If S/370 we can't switch mode
+         AIF   ('&ZSYS' EQ 'S370').NOMODE If S/370 we can't switch mode
 ***********************************************************************
 *                                                                     *
 *  SETM24 - Set AMODE to 24                                           *

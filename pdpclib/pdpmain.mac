@@ -10,8 +10,6 @@
 *                                                                    *
 **********************************************************************
 *
-* Is the GCC or C/370 calling convention being used?
-*
          DS    0F
 *
 * Eyecatcher

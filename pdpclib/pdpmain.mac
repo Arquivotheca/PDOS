@@ -24,12 +24,12 @@
          USING *,15
          LA    15,0(15)
          ICM   15,B'1000',=X'80'
-         A     15,=F'32'
+         A     15,=F'256'
          BSM   0,15
          LTORG
          DROP  15
          ORG   @@S380PR
-         DS    32C
+         DS    256C
          ORG
 *
 * This is the normal entry point for the module regardless

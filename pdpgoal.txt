@@ -1,8 +1,8 @@
           GOALS OF THE PUBLIC DOMAIN PROJECT
           ----------------------------------
             
-Version:  1.5
-Date:     2015-06-09
+Version:  1.6
+Date:     2015-09-09
 Author:   Paul Edwards
 Internet: fight.subjugation@gmail.com
 Status:   This document is released to the public domain
@@ -67,7 +67,8 @@ Note that when a company makes a sovereign decision to not release
 source code for their product, that is their innate right. When you
 release source code that doesn't allow their company to exercise
 their innate desire, you are trying to force something on them,
-and have no respect for their sovereign choices.
+and have no respect for their sovereign choices. It is insisting
+that it is either your way or the highway.
 
 The default for any software written is for it to be copyright by the 
 author.  Please include an explicit "Released to the public domain" if 

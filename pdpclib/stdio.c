@@ -3926,7 +3926,8 @@ static int vvscanf(const char *format, va_list arg, FILE *fp, const char *s)
     }
     inch();
     informatitem = 0;   /* init */
-    if ((fp != NULL && ch == EOF) || (fp == NULL && ch == 0)) return EOF;
+    /* don't bail out at end of data as there may be a %n */
+    /*if ((fp != NULL && ch == EOF) || (fp == NULL && ch == 0)) return EOF; */
                                /* initially at EOF or end of string */
     while (!fin)
     {
@@ -4098,7 +4099,9 @@ static int vvscanf(const char *format, va_list arg, FILE *fp, const char *s)
                     }
                     else
                     {
-                        *uptr = (unsigned int)(startp - s);
+                        /* we need a -1 because s will point to
+                           the character after the NUL */
+                        *uptr = (unsigned int)(s - startp - 1);
                     }
                 }
                 else if (*format == 'd' || *format == 'u'
@@ -4389,7 +4392,8 @@ static int vvscanf(const char *format, va_list arg, FILE *fp, const char *s)
             inch();
         }
         format++;
-        if ((fp != NULL && ch == EOF) || (fp == NULL && ch == 0)) fin = 1;
+        /* don't bail out at end of string as there may be a %n */
+        /*if ((fp != NULL && ch == EOF) || (fp == NULL && ch == 0)) fin = 1;*/
             /* EOF */
     }
     if (fp != NULL) ungetc(ch, fp);

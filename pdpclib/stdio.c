@@ -3981,11 +3981,11 @@ static int vvscanf(const char *format, va_list arg, FILE *fp, const char *s)
                     if ((fp != NULL && ch == EOF) || (fp == NULL && ch == 0))
                                          /* at EOF or end of string */
                     {
-                        fin = 1;
                         if (!skipvar)
                         {
                             *cptr = 0;   /* give a null string */
                         }
+                        continue;
                     }
                     else
                     {
@@ -3995,7 +3995,6 @@ static int vvscanf(const char *format, va_list arg, FILE *fp, const char *s)
                             if ((fp != NULL && ch == EOF)
                                 || (fp == NULL && ch == 0))
                             {
-                                fin = 1;
                                 break;
                             }
                             if (!skipvar)
@@ -4078,8 +4077,10 @@ static int vvscanf(const char *format, va_list arg, FILE *fp, const char *s)
                         cptr = va_arg(arg, char *);
                     }
                     if ((fp != NULL && ch == EOF)
-                        || (fp == NULL && ch == 0)) fin = 1;
-                                          /* at EOF or end of string */
+                        || (fp == NULL && ch == 0))
+                    {
+                        /* do nothing */
+                    }
                     else
                     {
                         if (!skipvar)
@@ -4335,8 +4336,9 @@ static int vvscanf(const char *format, va_list arg, FILE *fp, const char *s)
                         else break;   /* bad char: end of input item */
                         inch();
                     }
-                    if ((fp != NULL && ch == EOF)
-                        || (fp == NULL && ch == 0)) fin=1;
+                    /* don't finish at end of input there may be a %n */
+                    /*if ((fp != NULL && ch == EOF)
+                        || (fp == NULL && ch == 0)) fin=1;*/
                     /* Check for a valid fl-pt value: */
                     if (ndigs1==0 || (expsw && ndigs2==0)) return(cnt);
                     /* Complete the fl-pt value: */

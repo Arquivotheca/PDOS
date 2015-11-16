@@ -1,10 +1,10 @@
           GOALS OF THE PUBLIC DOMAIN PROJECT
           ----------------------------------
             
-Version:  1.6
-Date:     2015-09-09
+Version:  1.7
+Date:     2015-11-16
 Author:   Paul Edwards
-Internet: fight.subjugation@gmail.com
+Internet: mutazilah@gmail.com
 Status:   This document is released to the public domain
 
 
@@ -68,7 +68,10 @@ source code for their product, that is their innate right. When you
 release source code that doesn't allow their company to exercise
 their innate desire, you are trying to force something on them,
 and have no respect for their sovereign choices. It is insisting
-that it is either your way or the highway.
+that it is either your way or the highway. This is not a sensible
+definition of freedom/free software any more than a communist
+dictator was considered to be the ultimate freedom (compared
+to capitalist slavery) by its advocates.
 
 The default for any software written is for it to be copyright by the 
 author.  Please include an explicit "Released to the public domain" if 

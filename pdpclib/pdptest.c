@@ -46,6 +46,7 @@ int main(int argc, char **argv)
     printf("allocating 20 bytes\n");
     m2 = malloc(20);
     printf("m2 is %p\n", m2);
+    printf("stack is around %p\n", &c);
     if ((argc > 1) && (argv[1][0] != '-'))
     {
         printf("printing arguments\n");

@@ -16,24 +16,8 @@
 *
          DC    C'GCCMVS!!'
 *
-* Start of prefix code only used by some versions of MVS/380
-* in some circumstances. Code can be ignored, or even deleted
-* if desired
-*
-@@S380PR DS    0H
-         USING *,15
-         LA    15,0(15)
-         ICM   15,B'1000',=X'80'
-         A     15,=F'256'
-         BSM   0,15
-         LTORG
-         DROP  15
-         ORG   @@S380PR
-         DS    256C
-         ORG
-*
 * This is the normal entry point for the module regardless
-* of whether running on z/OS or MVS 3.8kj
+* of whether running on z/OS or MVS 3.8j
 *
          EXTRN @@CRT0
          ENTRY @@MAIN

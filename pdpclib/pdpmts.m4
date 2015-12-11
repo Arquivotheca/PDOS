@@ -66,17 +66,3 @@ dobld
 
 $r mtsstart.r
 
-
-
-#$run *asmg scards={srcf} spunch={runf} sprint={listf} sercom={errf} par=test
-
-
-#$run *asmg scards=mtsstart.asm sercom=mtsstart.err
-
-#li mtsstart.err *print*
-
-# sprint=mtsstart.l 2=mtsmacs.mac
-# spunch=mtsstart.r sprint=mtsstart.l
-# sercom=mtsstart.err par=test
-#$run *asmg scards={srcf} spunch={runf} sprint={listf} sercom={errf} par=test
-

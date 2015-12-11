@@ -25,11 +25,58 @@ $cre mtsstart.err
 $copy *source* to mtsstart.asm
 undivert(mtsstart.asm)$ENDFILE
 
-$run *asmg scards=mtsstart.asm sprint=mtsstart.l 2=mtsmacs.mac
+$dest dobld.m ok
+$cre dobld.m
+*
+* need '>>' for copy to create single '>'
+*
+$copy *source* to dobld.m
+>>macro dobld
+>>define srcf="mtsstart.asm"
+>>define runf="mtsstart.r"
+>>define listf="mtsstart.l"
+>>define errf="mtsstart.e"
+>>define rest="2=mtsmacs.mac par=test"
 
-# spunch=mtsstart.r sprint=mtsstart.l
-# sercom=mtsstart.err par=test
+$dest {runf} ok
+$cre {runf}
 
-$li mtsstart.l
+>>* $em {rf} ok
+
+$dest {listf} ok
+$cr {listf}
+
+$dest {errf} ok
+$cr {errf}
+
+$dest {runf} ok
+$cre {runf}
+
+$run *asmg scards={srcf} spunch={runf} sprint={listf} sercom={errf} {rest}
+
+li {listf} *print*
+li {errf} *print*
+
+>>endmacro
+$ENDFILE
+
+$sou dobld.m
+
+dobld
 
 $r mtsstart.r
+
+
+
+#$run *asmg scards={srcf} spunch={runf} sprint={listf} sercom={errf} par=test
+
+
+#$run *asmg scards=mtsstart.asm sercom=mtsstart.err
+
+#li mtsstart.err *print*
+
+# sprint=mtsstart.l 2=mtsmacs.mac
+# spunch=mtsstart.r sprint=mtsstart.l
+# sercom=mtsstart.err par=test
+#$run *asmg scards={srcf} spunch={runf} sprint={listf} sercom={errf} par=test
+

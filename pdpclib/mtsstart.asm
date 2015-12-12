@@ -49,7 +49,7 @@ SUBPOOL  EQU   0
 *         LR    R8,R0             save R0 so we can get the EPLIST
 *         LR    R9,R13            save R13 so we can get flag byte
 *         GETMAIN R,LV=STACKLEN,SP=SUBPOOL
-         L     R1,=A(STACKLEN)
+         L      R1,=A(STACKLEN)
          GETSPACE
 *
          SPRINT 'Hello World from MTS'

@@ -43,6 +43,10 @@ SUBPOOL  EQU   0
          SAVE  (14,12),,@@CRT0
          LR    R10,R15
          USING @@CRT0,R10
+*
+         SPRINT 'Hello World from MTS'
+         SYSTEM , Exit program
+*
          LR    R11,R1            save R1 so we can get the PLIST
          LR    R8,R0             save R0 so we can get the EPLIST
          LR    R9,R13            save R13 so we can get flag byte

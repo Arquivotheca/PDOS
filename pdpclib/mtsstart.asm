@@ -35,8 +35,8 @@ SUBPOOL  EQU   0
 *
 * Put an eyecatcher here to ensure program has been linked
 * correctly.
-* MTS doesn't seem to be setting the entry point correctly,
-* so we have to comment this out:
+* We comment this out for now, while waiting for the
+* proper @@MAIN entry point to become active
 *         DC    C'PDPCLIB!'
          ENTRY @@CRT0
 @@CRT0   EQU   *

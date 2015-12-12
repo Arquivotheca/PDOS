@@ -1,5 +1,5 @@
 
-$dest mtsmacs.mac
+$dest mtsmacs.mac ok
 $cre mtsmacs.mac
 
 $copy *source* mtsmacs.mac(1)
@@ -21,7 +21,7 @@ undivert(pdpmain.mac)$endfile
 li mtsmacs.mac *print*
 
 
-$dest mtsstart.asm
+$dest mtsstart.asm ok
 $cre mtsstart.asm
 $copy *source* to mtsstart.asm
 undivert(mtsstart.asm)$endfile

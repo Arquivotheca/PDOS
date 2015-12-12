@@ -1,4 +1,5 @@
 
+$dest mtsmacs.mac
 $cre mtsmacs.mac
 
 $copy *source* mtsmacs.mac(1)
@@ -7,15 +8,18 @@ PDPPRLG   200
 PDPEPIL   300
 PDPMAIN   400
 00000000
-$ENDFILE
+$endfile
 $copy *source* mtsmacs.mac(100)
-undivert(pdptop.mac)$ENDFILE
+undivert(pdptop.mac)$endfile
 $copy *source* mtsmacs.mac(200)
-undivert(pdpprlg.mac)$ENDFILE
+undivert(pdpprlg.mac)$endfile
 $copy *source* mtsmacs.mac(300)
-undivert(pdpepil.mac)$ENDFILE
+undivert(pdpepil.mac)$endfile
 $copy *source* mtsmacs.mac(400)
-undivert(pdpmain.mac)$ENDFILE
+undivert(pdpmain.mac)$endfile
+
+li mtsmacs.mac *print*
+
 
 $cre mtsstart.asm
 $cre mtsstart.r
@@ -23,7 +27,7 @@ $cre mtsstart.l
 $cre mtsstart.err
 
 $copy *source* to mtsstart.asm
-undivert(mtsstart.asm)$ENDFILE
+undivert(mtsstart.asm)$endfile
 
 $dest dobld.m ok
 $cre dobld.m
@@ -58,7 +62,7 @@ li {listf} *print*
 li {errf} *print*
 
 >>endmacro
-$ENDFILE
+$endfile
 
 $sou dobld.m
 

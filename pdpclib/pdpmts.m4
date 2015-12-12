@@ -30,6 +30,11 @@ $cre mtsstart.asm
 $copy *source* to mtsstart.asm
 undivert(mtsstart.asm)$endfile
 
+$dest mtssupa.asm ok
+$cre mtssupa.asm
+$copy *source* to mtssupa.asm
+undivert(mtssupa.asm)$endfile
+
 
 *
 * define a macro for repeated assemblies
@@ -60,6 +65,7 @@ li {errf} *print*
 
 
 dobld mtsstart
+dobld mtssupa
 
 $r mtsstart.r
 

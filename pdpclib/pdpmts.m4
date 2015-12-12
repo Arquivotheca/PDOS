@@ -35,17 +35,12 @@ $cre dobld.m
 * need '>>' for copy to create single '>'
 *
 $copy *source* to dobld.m
->>macro dobld
->>define srcf="mtsstart.asm"
->>define runf="mtsstart.r"
->>define listf="mtsstart.l"
->>define errf="mtsstart.e"
+>>macro dobld n
+>>define srcf="{n}.asm"
+>>define runf="{n}.r"
+>>define listf="{n}.l"
+>>define errf="{n}.e"
 >>define rest="2=mtsmacs.mac par=test"
-
-$dest {runf} ok
-$cre {runf}
-
->>* $em {rf} ok
 
 $dest {listf} ok
 $cr {listf}
@@ -66,7 +61,7 @@ $endfile
 
 $sou dobld.m
 
-dobld
+dobld mtsstart
 
 $r mtsstart.r
 

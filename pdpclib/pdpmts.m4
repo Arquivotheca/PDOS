@@ -24,8 +24,6 @@ $copy *source*@-endfile mtsmacs.mac(400)
 undivert(pdpmain.mac)$ENDFILE
 $continue with *dummy*
 
-li mtsmacs.mac *print*
-
 
 $dest mtsstart.asm ok
 $cre mtsstart.asm

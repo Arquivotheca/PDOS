@@ -46,7 +46,7 @@ SUBPOOL  EQU   0
          LR    R11,R1            save R1 so we can get the PLIST
          LR    R8,R0             save R0 so we can get the EPLIST
          LR    R9,R13            save R13 so we can get flag byte
-         GETMAIN R,LV=STACKLEN,SP=SUBPOOL
+*         GETMAIN R,LV=STACKLEN,SP=SUBPOOL
          ST    R13,4(R1)
          ST    R1,8(R13)
          LR    R13,R1
@@ -64,8 +64,8 @@ SUBPOOL  EQU   0
          LA    R2,0
          ST    R2,116(R12)       ADDR OF MEMORY ALLOCATION ROUTINE
 * Now let's get the program name and parameter list.
-         USING NUCON,R0          why do this? to access cmndline!
-         MVC   PGMNAME,CMNDLINE  get the name of this program
+*         USING NUCON,R0          why do this? to access cmndline!
+*         MVC   PGMNAME,CMNDLINE  get the name of this program
          LA    R2,0(R11)         clean up PLIST
          ST    R2,ARGPTR         store first argument for C
 *
@@ -116,7 +116,7 @@ ONWARD   EQU   *
 IN31     DS    0H
 .N380ST1 ANOP
 *
-         CALL  @@START
+*         CALL  @@START
          LR    R9,R15
 *
          AIF   ('&ZSYS' NE 'S380').N380ST2
@@ -131,7 +131,7 @@ RETURNMS DS    0H
          LR    R1,R13
          L     R13,SAVEAREA+4
          LR    R14,R9
-         FREEMAIN R,LV=STACKLEN,A=(R1),SP=SUBPOOL
+*         FREEMAIN R,LV=STACKLEN,A=(R1),SP=SUBPOOL
          LR    R15,R14
          RETURN (14,12),RC=(15)
 SAVER4   DS    F
@@ -162,7 +162,7 @@ IN31C    DS    0H
          LR    R1,R13
          L     R13,4(R13)
          LR    R14,R9
-         FREEMAIN R,LV=STACKLEN,A=(R1),SP=SUBPOOL
+*         FREEMAIN R,LV=STACKLEN,A=(R1),SP=SUBPOOL
          LR    R15,R14
          RETURN (14,12),RC=(15)
          LTORG
@@ -184,7 +184,7 @@ EXITADDR DS    F
 MAINSTK  DS    65536F
 MAINLEN  EQU   *-MAINSTK
 STACKLEN EQU   *-STACK
-         NUCON
+*         NUCON
          AIF   ('&ZSYS' EQ 'S370').N380ST4
          USERSAVE
 .N380ST4 ANOP

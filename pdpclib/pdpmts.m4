@@ -21,26 +21,21 @@ undivert(pdpmain.mac)$endfile
 li mtsmacs.mac *print*
 
 
+$dest mtsstart.asm
 $cre mtsstart.asm
-$cre mtsstart.r
-$cre mtsstart.l
-$cre mtsstart.err
-
 $copy *source* to mtsstart.asm
 undivert(mtsstart.asm)$endfile
 
-$dest dobld.m ok
-$cre dobld.m
+
 *
-* need '>>' for copy to create single '>'
+* define a macro for repeated assemblies
 *
-$copy *source* to dobld.m
->>macro dobld n
->>define srcf="{n}.asm"
->>define runf="{n}.r"
->>define listf="{n}.l"
->>define errf="{n}.e"
->>define rest="2=mtsmacs.mac par=test"
+>macro dobld n
+>define srcf="{n}.asm"
+>define runf="{n}.r"
+>define listf="{n}.l"
+>define errf="{n}.e"
+>define rest="2=mtsmacs.mac par=test"
 
 $dest {listf} ok
 $cr {listf}
@@ -56,10 +51,9 @@ $run *asmg scards={srcf} spunch={runf} sprint={listf} sercom={errf} {rest}
 li {listf} *print*
 li {errf} *print*
 
->>endmacro
-$endfile
+>endmacro
 
-$sou dobld.m
+
 
 dobld mtsstart
 

@@ -3,20 +3,20 @@ $dest mtsmacs.mac ok
 $cre mtsmacs.mac
 
 $copy *source* mtsmacs.mac(1)
-PDPTOP    100
-PDPPRLG   200
-PDPEPIL   300
-PDPMAIN   400
+PDPPRLG   100
+PDPEPIL   200
+PDPMAIN   300
+PDPTOP    400
 00000000
 $endfile
 $copy *source* mtsmacs.mac(100)
-undivert(pdptop.mac)$endfile
-$copy *source* mtsmacs.mac(200)
 undivert(pdpprlg.mac)$endfile
-$copy *source* mtsmacs.mac(300)
+$copy *source* mtsmacs.mac(200)
 undivert(pdpepil.mac)$endfile
-$copy *source* mtsmacs.mac(400)
+$copy *source* mtsmacs.mac(300)
 undivert(pdpmain.mac)$endfile
+$copy *source* mtsmacs.mac(400)
+undivert(pdptop.mac)$endfile
 
 li mtsmacs.mac *print*
 

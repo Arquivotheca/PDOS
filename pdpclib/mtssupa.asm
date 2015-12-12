@@ -63,7 +63,9 @@ SUBPOOL  EQU   0
          LR    R12,R15
          USING @@AOPEN,R12
          LR    R11,R1
-         GETMAIN R,LV=WORKLEN,SP=SUBPOOL
+*         GETMAIN R,LV=WORKLEN,SP=SUBPOOL
+         L     R1,=A(WORKLEN)
+         GETSPACE
          ST    R13,4(R1)
          ST    R1,8(R13)
          LR    R13,R1
@@ -85,10 +87,14 @@ SUBPOOL  EQU   0
 *
          AIF   ('&ZSYS' EQ 'S390').BELOW
 * CAN'T USE "BELOW" ON MVS 3.8
-         GETMAIN R,LV=ZDCBLEN,SP=SUBPOOL
+*         GETMAIN R,LV=ZDCBLEN,SP=SUBPOOL
+         L     R1,=A(ZDCBLEN)
+         GETSPACE
          AGO   .CHKBLWE
 .BELOW   ANOP
-         GETMAIN R,LV=ZDCBLEN,SP=SUBPOOL,LOC=BELOW
+*         GETMAIN R,LV=ZDCBLEN,SP=SUBPOOL,LOC=BELOW
+         L     R1,=A(ZDCBLEN)
+         GETSPACE
 .CHKBLWE ANOP
          LR    R2,R1
          LR    R0,R2              Load output DCB area address
@@ -176,10 +182,12 @@ WNOMEM   DS    0H
 * S/370 can't handle LOC=BELOW
 *
          AIF   ('&ZSYS' NE 'S370').MVT8090 If not S/370 then 380 or 390
-         GETMAIN R,LV=(R6),SP=SUBPOOL  No LOC= for S/370
+*         GETMAIN R,LV=(R6),SP=SUBPOOL  No LOC= for S/370
+         GETSPACE (R6)
          AGO   .GETOENE
 .MVT8090 ANOP  ,                  S/380 or S/390
-         GETMAIN R,LV=(R6),SP=SUBPOOL,LOC=BELOW
+*         GETMAIN R,LV=(R6),SP=SUBPOOL,LOC=BELOW
+         GETSPACE (R6)
 .GETOENE ANOP
          ST    R1,ASMBUF
          L     R5,20(,R11)        R5 points to ASMBUF
@@ -216,7 +224,8 @@ DONESET  DS    0H
          LR    R15,R7
          B     RETURNOP
 BADOPEN  DS    0H
-         FREEMAIN R,LV=ZDCBLEN,A=(R2),SP=SUBPOOL  Free DCB area
+*         FREEMAIN R,LV=ZDCBLEN,A=(R2),SP=SUBPOOL  Free DCB area
+         FREESPAC (R2)
          L     R15,=F'-1'
          B     RETURNOP           Go return to caller with negative RC
 *
@@ -229,7 +238,8 @@ RETURNOP DS    0H
          LR    R1,R13
          L     R13,SAVEAREA+4
          LR    R7,R15
-         FREEMAIN R,LV=WORKLEN,A=(R1),SP=SUBPOOL
+*         FREEMAIN R,LV=WORKLEN,A=(R1),SP=SUBPOOL
+         FREESPAC (R1)
          LR    R15,R7
          RETURN (14,12),RC=(15)
          LTORG
@@ -380,10 +390,14 @@ RETURNAW DS    0H
          LR    R11,R1
          AIF   ('&ZSYS' EQ 'S390').BELOW3
 * CAN'T USE "BELOW" ON MVS 3.8
-         GETMAIN R,LV=WORKLEN,SP=SUBPOOL
+*         GETMAIN R,LV=WORKLEN,SP=SUBPOOL
+         L     R1,=A(WORKLEN)
+         GETSPACE
          AGO   .NOBEL3
 .BELOW3  ANOP
-         GETMAIN R,LV=WORKLEN,SP=SUBPOOL,LOC=BELOW
+*         GETMAIN R,LV=WORKLEN,SP=SUBPOOL,LOC=BELOW
+         L     R1,=A(ZDCBLEN)
+         GETSPACE
 .NOBEL3  ANOP
          ST    R13,4(R1)
          ST    R1,8(R13)
@@ -399,7 +413,8 @@ RETURNAW DS    0H
          LTR   R5,R5
          BZ    NFRCL
          L     R6,=F'32768'
-         FREEMAIN R,LV=(R6),A=(R5),SP=SUBPOOL
+*         FREEMAIN R,LV=(R6),A=(R5),SP=SUBPOOL
+         FREESPAC (R6)
 NFRCL    DS    0H
 .NMM6    ANOP
          MVC   CLOSEMB,CLOSEMAC
@@ -407,14 +422,16 @@ NFRCL    DS    0H
 * CAN'T USE MODE=31 WITH MVS 3.8
          CLOSE ((R2)),MF=(E,CLOSEMB)
          FREEPOOL ((R2))
-         FREEMAIN R,LV=ZDCBLEN,A=(R2),SP=SUBPOOL
+*         FREEMAIN R,LV=ZDCBLEN,A=(R2),SP=SUBPOOL
+         FREESPAC (R2)
          LA    R15,0
 *
 RETURNAC DS    0H
          LR    R1,R13
          L     R13,SAVEAREA+4
          LR    R7,R15
-         FREEMAIN R,LV=WORKLEN,A=(R1),SP=SUBPOOL
+*         FREEMAIN R,LV=WORKLEN,A=(R1),SP=SUBPOOL
+         FREESPAC (R1)
          LR    R15,R7
          RETURN (14,12),RC=(15)
          LTORG
@@ -452,10 +469,12 @@ CLOSEMLN EQU   *-CLOSEMAC
 *
          AIF   ('&ZSYS' NE 'S370').ANYCHKY
 * CAN'T USE "ANY" ON MVS 3.8
-         GETMAIN R,LV=(R3),SP=SUBPOOL
+*         GETMAIN R,LV=(R3),SP=SUBPOOL
+         GETSPACE (R3)
          AGO   .ANYCHKE
 .ANYCHKY ANOP
-         GETMAIN RU,LV=(R3),SP=SUBPOOL,LOC=ANY
+*         GETMAIN RU,LV=(R3),SP=SUBPOOL,LOC=ANY
+         GETSPACE (R3)
 .ANYCHKE ANOP
 *
 * WE STORE THE AMOUNT WE REQUESTED FROM MVS INTO THIS ADDRESS
@@ -487,11 +506,13 @@ RETURNGM DS    0H
          S     R2,=F'8'
          L     R3,0(R2)
          AIF   ('&ZSYS' EQ 'S370').F370
-         FREEMAIN RU,LV=(R3),A=(R2),SP=SUBPOOL
+*         FREEMAIN RU,LV=(R3),A=(R2),SP=SUBPOOL
+         FREESPAC (R2)
          AGO   .FINFREE
 .F370    ANOP
 * S/370
-         FREEMAIN R,LV=(R3),A=(R2),SP=SUBPOOL
+*         FREEMAIN R,LV=(R3),A=(R2),SP=SUBPOOL
+         FREESPAC (R2)
 .FINFREE ANOP
 *
 RETURNFM DS    0H

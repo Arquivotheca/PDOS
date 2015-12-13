@@ -45,9 +45,10 @@ SUBPOOL  EQU   0
          SAVE  (14,12),,@@CRT0
          LR    R10,R15
          USING @@CRT0,R10
-         LR    R11,R1            save R1 so we can get the PLIST
-*         LR    R8,R0             save R0 so we can get the EPLIST
-*         LR    R9,R13            save R13 so we can get flag byte
+         LR    R11,R1            save R1 which has the parameter
+*                                as a halfword length followed by
+*                                the text from the PAR= parameter
+*                                on the $RUN command
 *         GETMAIN R,LV=STACKLEN,SP=SUBPOOL
          L      R1,=A(STACKLEN)
          GETSPACE

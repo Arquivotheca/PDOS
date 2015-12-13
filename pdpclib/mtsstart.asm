@@ -60,7 +60,6 @@ SUBPOOL  EQU   0
          CALL  @@SSS
 *
          SPRINT 'Hello World from MTSSTART'
-*         SYSTEM , Exit program
 *
          LA    R2,0
          ST    R2,DUMMYPTR       WHO KNOWS WHAT THIS IS USED FOR
@@ -142,6 +141,7 @@ RETURNMS DS    0H
          L     R13,SAVEAREA+4
          LR    R14,R9
 *         FREEMAIN R,LV=STACKLEN,A=(R1),SP=SUBPOOL
+         FREESPAC
          LR    R15,R14
          RETURN (14,12),RC=(15)
 SAVER4   DS    F
@@ -173,6 +173,7 @@ IN31C    DS    0H
          L     R13,4(R13)
          LR    R14,R9
 *         FREEMAIN R,LV=STACKLEN,A=(R1),SP=SUBPOOL
+         FREESPAC
          LR    R15,R14
          RETURN (14,12),RC=(15)
          LTORG

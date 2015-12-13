@@ -60,7 +60,7 @@ SUBPOOL  EQU   0
          CALL  @@SSS
 *
          SPRINT 'Hello World from MTSSTART'
-         SYSTEM , Exit program
+*         SYSTEM , Exit program
 *
          LA    R2,0
          ST    R2,DUMMYPTR       WHO KNOWS WHAT THIS IS USED FOR

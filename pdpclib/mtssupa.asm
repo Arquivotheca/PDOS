@@ -111,20 +111,20 @@ SUBPOOL  EQU   0
          LTR   R6,R6
          BNZ   WRITING
 * READING
-         USING IHADCB,R2
-         MVC   ZDCBAREA(INDCBLN),INDCB
+*         USING IHADCB,R2
+*         MVC   ZDCBAREA(INDCBLN),INDCB
          LA    R10,JFCB
 * EXIT TYPE 07 + 80 (END OF LIST INDICATOR)
          ICM   R10,B'1000',=X'87'
          ST    R10,JFCBPTR
          LA    R10,JFCBPTR
          LA    R4,ENDFILE
-         ST    R4,DCBEODAD
-         ST    R10,DCBEXLST
-         MVC   DCBDDNAM,0(R3)
-         MVC   OPENMB,OPENMAC
+*         ST    R4,DCBEODAD
+*         ST    R10,DCBEXLST
+*         MVC   DCBDDNAM,0(R3)
+*         MVC   OPENMB,OPENMAC
 *
-         RDJFCB ((R2),INPUT)
+*         RDJFCB ((R2),INPUT)
 *        LTR   R9,R9
 * DW * DON'T SUPPORT MEMBER NAME FOR NOW
 *        BZ    NOMEM
@@ -136,25 +136,25 @@ SUBPOOL  EQU   0
 NOMEM    DS    0H
 *         OPEN  ((R2),INPUT),MF=(E,OPENMB),MODE=31,TYPE=J
 * CAN'T USE MODE=31 ON MVS 3.8, OR WITH TYPE=J
-         OPEN  ((R2),INPUT),MF=(E,OPENMB),TYPE=J
+*         OPEN  ((R2),INPUT),MF=(E,OPENMB),TYPE=J
 * CMS is missing this flag
 *         TM    DCBOFLGS,DCBOFOPN  Did OPEN work?
-         TM    DCBOFLGS,OFOPN     Did OPEN work?
+*         TM    DCBOFLGS,OFOPN     Did OPEN work?
          BZ    BADOPEN            OPEN failed
          B     DONEOPEN
 WRITING  DS    0H
          USING ZDCBAREA,R2
-         MVC   ZDCBAREA(OUTDCBLN),OUTDCB
+*         MVC   ZDCBAREA(OUTDCBLN),OUTDCB
          LA    R10,JFCB
 * EXIT TYPE 07 + 80 (END OF LIST INDICATOR)
          ICM   R10,B'1000',=X'87'
          ST    R10,JFCBPTR
          LA    R10,JFCBPTR
-         ST    R10,DCBEXLST
-         MVC   DCBDDNAM,0(R3)
-         MVC   WOPENMB,WOPENMAC
+*         ST    R10,DCBEXLST
+*         MVC   DCBDDNAM,0(R3)
+*         MVC   WOPENMB,WOPENMAC
 *
-         RDJFCB ((R2),OUTPUT)
+*         RDJFCB ((R2),OUTPUT)
 *        LTR   R9,R9
 * DW * NO MEMBER ON VM/370
 *        BZ    WNOMEM
@@ -166,10 +166,10 @@ WRITING  DS    0H
 WNOMEM   DS    0H
 *         OPEN  ((R2),OUTPUT),MF=(E,WOPENMB),MODE=31,TYPE=J
 * CAN'T USE MODE=31 ON MVS 3.8, OR WITH TYPE=J
-         OPEN  ((R2),OUTPUT),MF=(E,WOPENMB),TYPE=J
+*         OPEN  ((R2),OUTPUT),MF=(E,WOPENMB),TYPE=J
 * CMS is missing this flag
 *         TM    DCBOFLGS,DCBOFOPN  Did OPEN work?
-         TM    DCBOFLGS,OFOPN  Did OPEN work?
+*         TM    DCBOFLGS,OFOPN  Did OPEN work?
          BZ    BADOPEN            OPEN failed
 *
 * Handle will be returned in R7
@@ -198,17 +198,17 @@ WNOMEM   DS    0H
 DONEOPEN DS    0H
          LR    R7,R2
          SR    R6,R6
-         LH    R6,DCBLRECL
+*         LH    R6,DCBLRECL
          ST    R6,0(R8)
 * DW * VM/370 IS MISSING THESE DEFS
 *        TM    DCBRECFM,DCBRECF
-         TM    DCBRECFM,RECF
+*         TM    DCBRECFM,RECF
 * END
          BNO   VARIABLE
 * This looks really whacky, but is correct
 * We check for V, in order to split between F and U
 * Because U has both F and V
-         TM    DCBRECFM,RECV
+*         TM    DCBRECFM,RECV
          BNO   FIXED
          L     R6,=F'2'
          B     DONESET
@@ -245,27 +245,27 @@ RETURNOP DS    0H
          LTORG
 * OPENMAC  OPEN  (,INPUT),MF=L,MODE=31
 * CAN'T USE MODE=31 ON MVS 3.8
-OPENMAC  OPEN  (,INPUT),MF=L,TYPE=J
-OPENMLN  EQU   *-OPENMAC
+*OPENMAC  OPEN  (,INPUT),MF=L,TYPE=J
+*OPENMLN  EQU   *-OPENMAC
 * WOPENMAC OPEN  (,OUTPUT),MF=L,MODE=31
 * CAN'T USE MODE=31 ON MVS 3.8
-WOPENMAC OPEN  (,OUTPUT),MF=L
-WOPENMLN EQU   *-WOPENMAC
+*WOPENMAC OPEN  (,OUTPUT),MF=L
+*WOPENMLN EQU   *-WOPENMAC
 *INDCB    DCB   MACRF=GL,DSORG=PS,EODAD=ENDFILE,EXLST=JPTR
 * LEAVE OUT EODAD AND EXLST, FILLED IN LATER
-INDCB    DCB   MACRF=GL,DSORG=PS,EODAD=ENDFILE,EXLST=JPTR
-INDCBLN  EQU   *-INDCB
+*INDCB    DCB   MACRF=GL,DSORG=PS,EODAD=ENDFILE,EXLST=JPTR
+*INDCBLN  EQU   *-INDCB
 JPTR     DS    F
 *
 * OUTDCB changes depending on whether we are in LOCATE mode or
 * MOVE mode
          AIF   ('&OUTM' NE 'L').NLM1
-OUTDCB   DCB   MACRF=PL,DSORG=PS
+*OUTDCB   DCB   MACRF=PL,DSORG=PS
 .NLM1    ANOP
          AIF   ('&OUTM' NE 'M').NMM1
-OUTDCB   DCB   MACRF=PM,DSORG=PS
+*OUTDCB   DCB   MACRF=PM,DSORG=PS
 .NMM1    ANOP
-OUTDCBLN EQU   *-OUTDCB
+*OUTDCBLN EQU   *-OUTDCB
 *
 *
 *
@@ -304,9 +304,9 @@ OUTDCBLN EQU   *-OUTDCB
          L     R4,8(R1)         R4 point to a length
          LA    R6,0
          ST    R6,RDEOF
-         GET   (R2)
+*         GET   (R2)
          ST    R1,0(R3)
-         LH    R5,DCBLRECL
+*         LH    R5,DCBLRECL
          L     R15,RDEOF
 *
 RETURNAR DS    0H
@@ -338,7 +338,7 @@ RETURNAR DS    0H
          USING ZDCBAREA,R2
          L     R4,8(R1)         R4 points to length to write
          L     R4,0(R4)         R4 = length to write
-         STH   R4,DCBLRECL      store length to write
+*         STH   R4,DCBLRECL      store length to write
          L     R3,4(R1)         R3 POINTS TO BUF POINTER
 *
          AIF ('&ZSYS' EQ 'S370').NOMOD3
@@ -352,12 +352,12 @@ RETURNAR DS    0H
          USING WORKAREA,R13
 *
          AIF   ('&OUTM' NE 'L').NLM2
-         PUT   (R2)
+*         PUT   (R2)
 .NLM2    ANOP
          AIF   ('&OUTM' NE 'M').NMM2
 * In move mode, always use our internal buffer. Ignore passed parm.
          L     R3,ASMBUF
-         PUT   (R2),(R3)
+*         PUT   (R2),(R3)
 .NMM2    ANOP
          AIF   ('&OUTM' NE 'L').NLM3
          ST    R1,0(R3)
@@ -417,11 +417,11 @@ RETURNAW DS    0H
          FREESPAC (R6)
 NFRCL    DS    0H
 .NMM6    ANOP
-         MVC   CLOSEMB,CLOSEMAC
+*         MVC   CLOSEMB,CLOSEMAC
 *         CLOSE ((R2)),MF=(E,CLOSEMB),MODE=31
 * CAN'T USE MODE=31 WITH MVS 3.8
-         CLOSE ((R2)),MF=(E,CLOSEMB)
-         FREEPOOL ((R2))
+*         CLOSE ((R2)),MF=(E,CLOSEMB)
+*         FREEPOOL ((R2))
 *         FREEMAIN R,LV=ZDCBLEN,A=(R2),SP=SUBPOOL
          FREESPAC (R2)
          LA    R15,0
@@ -437,8 +437,8 @@ RETURNAC DS    0H
          LTORG
 * CLOSEMAC CLOSE (),MF=L,MODE=31
 * CAN'T USE MODE=31 WITH MVS 3.8
-CLOSEMAC CLOSE (),MF=L
-CLOSEMLN EQU   *-CLOSEMAC
+*CLOSEMAC CLOSE (),MF=L
+*CLOSEMLN EQU   *-CLOSEMAC
 *
 *
 *
@@ -642,10 +642,10 @@ ATTNAD   DC   AL3(ATTNAD)    ADDRESS OF LINE TO BE STACKED
          SAVE  (14,12),,@@STACKN
          LR    R12,R15
          USING @@STACKN,R12
-         USING NUCON,R0
+*         USING NUCON,R0
          LR    R11,R1           NEED TO RESTORE R1 FOR C
          L     R3,0(R1)         R3 POINTS TO COUNT
-         LH    R2,NUMFINRD      R2 HAS COUNT OF LINES ON STACK
+*         LH    R2,NUMFINRD      R2 HAS COUNT OF LINES ON STACK
          ST    R2,0(R3)         R2 TO COUNT
          LR    R1,R11
          RETURN (14,12),RC=(15)
@@ -750,12 +750,12 @@ RETURNGC DS    0H
 WORKAREA DSECT
 SAVEAREA DS    18F
 WORKLEN  EQU   *-WORKAREA
-         DCBD  DSORG=PS
-         ORG   IHADCB
+*         DCBD  DSORG=PS
+*         ORG   IHADCB
 ZDCBAREA DS    0H
-         DS    CL(INDCBLN)
-         ORG   IHADCB
-         DS    CL(OUTDCBLN)
+*         DS    CL(INDCBLN)
+*         ORG   IHADCB
+*         DS    CL(OUTDCBLN)
          DS    0H
 EOFR24   DS    CL(EOFRLEN)
 JFCBPTR  DS    F
@@ -765,11 +765,11 @@ JFCB     DS    0F
          DS    CL176
 SAVEADCB DS    18F                Register save area for PUT
          DS    0F
-CLOSEMB  DS    CL(CLOSEMLN)
+*CLOSEMB  DS    CL(CLOSEMLN)
          DS    0F
-OPENMB   DS    CL(OPENMLN)
+*OPENMB   DS    CL(OPENMLN)
          DS    0F
-WOPENMB  DS    CL(WOPENMLN)
+*WOPENMB  DS    CL(WOPENMLN)
 RDEOF    DS    1F
 ASMBUF   DS    A                  Pointer to an area for PUTting data
 *
@@ -780,5 +780,5 @@ RECU     EQU   X'C0'                   UNDEFINED RECORD FORMAT
 RECUV    EQU   X'40'                   U OR V RECORD FORMAT
 RECUF    EQU   X'80'                   U OR F RECORD FORMAT
 OFOPN    EQU   X'10'                   OPEN SUCCESSFUL
-         NUCON
+*         NUCON
          END

@@ -747,6 +747,42 @@ RETURNGC DS    0H
 *
 *
 *
+**********************************************************************
+*                                                                    *
+*  SSS - display debug                                               *
+*                                                                    *
+**********************************************************************
+         DS    0H
+         ENTRY @@SSS
+@@SSS    EQU   *
+         SAVE  (14,12),,@@SSS
+         LR    R12,R15
+         USING @@SSS,R12
+         LR    R11,R1
+*         GETMAIN R,LV=WORKLEN,SP=SUBPOOL
+         L     R1,=A(WORKLEN)
+         GETSPACE
+         ST    R13,4(R1)
+         ST    R1,8(R13)
+         LR    R13,R1
+         LR    R1,R11
+         USING WORKAREA,R13
+*
+         SPRINT 'Hello from MTSSUPA'
+         LA    R15,0
+*
+         LR    R1,R13
+         L     R13,SAVEAREA+4
+         LR    R7,R15
+*         FREEMAIN R,LV=WORKLEN,A=(R1),SP=SUBPOOL
+         FREESPAC (R1)
+         LR    R15,R7
+         RETURN (14,12),RC=(15)
+         LTORG
+*
+*
+*
+*
 WORKAREA DSECT
 SAVEAREA DS    18F
 WORKLEN  EQU   *-WORKAREA

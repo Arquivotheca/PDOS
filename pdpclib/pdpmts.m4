@@ -71,7 +71,7 @@ dobld mtssupa
 $dest pdptest.r
 $cre pdptest.r
 
-$copy mtsstart.o to pdptest.r
+$copy mtsstart.o pdptest.r
 $copy mtssupa.o pdptest.r(last+1)
 
 

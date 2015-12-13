@@ -28,7 +28,6 @@
 *
          GBLC &OUTM
 *
-         ACTR 300000
 *
 *
 &COMP    SETC 'GCC'               Indicate that this is for GCC

@@ -41,7 +41,7 @@ undivert(mtssupa.asm)$endfile
 *
 >macro dobld n
 >define srcf="{n}.asm"
->define runf="{n}.r"
+>define runf="{n}.o"
 >define listf="{n}.l"
 >define errf="{n}.e"
 >define rest="2=mtsmacs.mac par=test"
@@ -57,8 +57,8 @@ $cre {runf}
 
 $run *asmg scards={srcf} spunch={runf} sprint={listf} sercom={errf} {rest}
 
-li {listf} *print*
-li {errf} *print*
+*li {listf} *print*
+*li {errf} *print*
 
 >endmacro
 
@@ -67,5 +67,13 @@ li {errf} *print*
 dobld mtsstart
 dobld mtssupa
 
-$r mtsstart.r
+
+$dest pdptest.r
+$cre pdptest.r
+
+$copy mtsstart.o to pdptest.r
+$copy mtssupa.o pdptest.r(last+1)
+
+
+$r pdptest.r
 

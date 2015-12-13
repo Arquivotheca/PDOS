@@ -57,8 +57,9 @@ SUBPOOL  EQU   0
          LR    R13,R1
          USING STACK,R13
 *
+         CALL  @@SSS
 *
-         SPRINT 'Hello World from MTS'
+         SPRINT 'Hello World from MTSSTART'
          SYSTEM , Exit program
 *
          LA    R2,0

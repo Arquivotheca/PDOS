@@ -139,6 +139,20 @@ $run *asmg scards={srcf} spunch={runf} sprint={listf} sercom={errf} {rest}
 
 dobld mtsstart
 dobld mtssupa
+dobld start
+dobld stdio
+dobld stdlib
+dobld ctype
+dobld string
+dobld time
+dobld errno
+dobld assert
+dobld locale
+dobld math
+dobld setjmp
+dobld signal
+dobld __memmgr
+dobld pdptest
 
 
 $dest pdptest.r

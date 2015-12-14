@@ -37,7 +37,7 @@ SUBPOOL  EQU   0
 * correctly.
 * We comment this out for now, while waiting for the
 * proper @@MAIN entry point to become active
-*         DC    C'PDPCLIB!'
+         DC    C'PDPCLIB!'
          ENTRY @@CRT0
 @@CRT0   EQU   *
 *         ENTRY CEESTART

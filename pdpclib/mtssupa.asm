@@ -783,6 +783,29 @@ RETURNGC DS    0H
 *
 *
 *
+**********************************************************************
+*                                                                    *
+*  Dummy functions                                                   *
+*                                                                    *
+**********************************************************************
+         ENTRY @@GETTZ
+         USING @@GETTZ,R15
+@@GETTZ  BR    R14
+         ENTRY @@IDCAMS
+         USING @@IDCAMS,R15
+@@IDCAMS BR    R14
+         ENTRY @@SVC99
+         USING @@SVC99,R15
+@@SVC99  BR    R14
+         ENTRY @@DYNAL
+         USING @@DYNAL,R15
+@@DYNAL  BR    R14
+         ENTRY @@SYSTEM
+         USING @@SYSTEM,R15
+@@SYSTEM BR    R14
+*
+*
+*
 WORKAREA DSECT
 SAVEAREA DS    18F
 WORKLEN  EQU   *-WORKAREA

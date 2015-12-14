@@ -160,6 +160,20 @@ $cre pdptest.r
 
 $copy mtsstart.o pdptest.r
 $copy mtssupa.o pdptest.r(last+1)
+$copy start.o pdptest.r(last+1)
+$copy stdio.o pdptest.r(last+1)
+$copy stdlib.o pdptest.r(last+1)
+$copy ctype.o pdptest.r(last+1)
+$copy string.o pdptest.r(last+1)
+$copy time.o pdptest.r(last+1)
+$copy errno.o pdptest.r(last+1)
+$copy assert.o pdptest.r(last+1)
+$copy locale.o pdptest.r(last+1)
+$copy math.o pdptest.r(last+1)
+$copy setjmp.o pdptest.r(last+1)
+$copy signal.o pdptest.r(last+1)
+$copy __memmgr.o pdptest.r(last+1)
+$copy pdptest.o pdptest.r(last+1)
 
 
 $r pdptest.r

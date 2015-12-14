@@ -117,7 +117,7 @@ undivert(pdptest.s)$endfile
 >define runf="{n}.o"
 >define listf="{n}.l"
 >define errf="{n}.e"
->define rest="2=mtsmacs.mac par=size(20)"
+>define rest="2=mtsmacs.mac par=test,size(20)"
 
 $dest {listf} ok
 $cr {listf}

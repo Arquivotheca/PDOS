@@ -13,3 +13,8 @@ compile.cmd  - command to execute makefiles for OS/2
 compile.bat  - command to execute makefile for DOS
 pdptest.*    - demo program
 *.lib        - lib files for various compilers
+pdpcms.bat   - build example program for CMS
+pdpmts.bat   - build example program for MTS
+pdpmus.bat   - build example program for MUSIC/SP
+pdpmvs.bat   - build example program for MVS
+pdpvse.bat   - build example program for DOS/VSE

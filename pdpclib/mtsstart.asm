@@ -57,10 +57,6 @@ SUBPOOL  EQU   0
          LR    R13,R1
          USING STACK,R13
 *
-         CALL  @@SSS
-*
-         SPRINT 'Hello World from MTSSTART'
-*
          LA    R2,0
          ST    R2,DUMMYPTR       WHO KNOWS WHAT THIS IS USED FOR
          LA    R2,MAINSTK
@@ -75,7 +71,9 @@ SUBPOOL  EQU   0
 * Now let's get the program name and parameter list.
 *         USING NUCON,R0          why do this? to access cmndline!
 *         MVC   PGMNAME,CMNDLINE  get the name of this program
-         LA    R2,0(R11)         clean up PLIST
+         MVC   PGMNAME,=C'XXXXYYYY'
+         L     R2,0(R11)         point to parameter
+         LA    R2,0(R2)          clean up parameter pointer
          ST    R2,ARGPTR         store first argument for C
 *
 * Set R4 to true if we were called in 31-bit mode
@@ -125,7 +123,7 @@ ONWARD   EQU   *
 IN31     DS    0H
 .N380ST1 ANOP
 *
-*         CALL  @@START
+         CALL  @@START
          LR    R9,R15
 *
          AIF   ('&ZSYS' NE 'S380').N380ST2

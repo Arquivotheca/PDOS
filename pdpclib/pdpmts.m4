@@ -154,6 +154,7 @@ dobld signal
 dobld __memmgr
 dobld pdptest
 
+li mtssupa.l *print*
 
 $dest pdptest.r
 $cre pdptest.r

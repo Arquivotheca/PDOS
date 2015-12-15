@@ -803,8 +803,8 @@ RETURNGC DS    0H
          LR    R1,R11
          USING WORKAREA,R13
 *
-         MVC   HELLO,=CL80'TTT test!'         
-         LA    R1,PARAM1
+         MVC   TTTMSG,=CL80'TTT test2!'         
+         LA    R1,TTTPARM
          CALL  SPRINT
 *         SPRINT 'Hello from MTSSUPA2'
          LA    R15,0
@@ -816,11 +816,11 @@ RETURNGC DS    0H
          FREESPAC (R1)
          LR    R15,R7
          RETURN (14,12),RC=(15)
-PARAM1   DC     A(HELLO)
-         DC     A(LEN)
+TTTPARM  DC     A(TTTMSG)
+         DC     A(TTTLEN)
          DC     A(0)
-HELLO    DC     CL80'SIMPLE HELLO'
-LEN      DC     H'80'
+TTTMSG   DS     CL80
+TTTLEN   DC     H'80'
          LTORG
 *
 *

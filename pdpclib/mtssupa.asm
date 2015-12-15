@@ -199,6 +199,9 @@ DONEOPEN DS    0H
          LR    R7,R2
          SR    R6,R6
 *         LH    R6,DCBLRECL
+*** MTS hack +++
+         LA    R6,80
+*** end MTS hack +++
          ST    R6,0(R8)
 * DW * VM/370 IS MISSING THESE DEFS
 *        TM    DCBRECFM,DCBRECF
@@ -219,6 +222,9 @@ VARIABLE DS    0H
          L     R6,=F'1'
 DONESET  DS    0H
          L     R5,8(,R11)         Point to RECFM
+*** MTS hack +++
+         LA    R6,0
+*** end MTS hack +++
          ST    R6,0(R5)
 * Finished with R5 now
          LR    R15,R7
@@ -350,6 +356,11 @@ RETURNAR DS    0H
          LR    R13,R1
          LR    R1,R11
          USING WORKAREA,R13
+*
+* R3 already points to something the equivalent of a
+* parameter list, so we can use that directly
+         LR    R1,R3
+         CALL  @@TTT
 *
          AIF   ('&OUTM' NE 'L').NLM2
 *         PUT   (R2)

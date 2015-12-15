@@ -804,10 +804,8 @@ RETURNGC DS    0H
          USING WORKAREA,R13
 *
 *         MVC   HELLO,=CL80'TTT test!'         
-         SPRINT 'TTT1'
          LA    R1,PARAM1
          CALL  SPRINT
-         SPRINT 'TTT2'
 *         SPRINT 'Hello from MTSSUPA2'
          LA    R15,0
 *
@@ -822,7 +820,7 @@ PARAM1   DC     A(HELLO)
          DC     A(LEN)
          DC     A(0)
 HELLO    DC     CL80'SIMPLE HELLO'
-LEN      DC     H'18'
+LEN      DC     H'80'
          LTORG
 *
 *

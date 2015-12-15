@@ -803,7 +803,7 @@ RETURNGC DS    0H
          LR    R1,R11
          USING WORKAREA,R13
 *
-*         MVC   HELLO,=CL80'TTT test!'         
+         MVC   HELLO,=CL80'TTT test!'         
          LA    R1,PARAM1
          CALL  SPRINT
 *         SPRINT 'Hello from MTSSUPA2'

@@ -769,8 +769,7 @@ RETURNGC DS    0H
          USING WORKAREA,R13
 *
 *         SPRINT 'Hello from MTSSUPA'
-         LA    R1,SSSPARM
-         CALL  @@TTT
+         CALL  @@TTT,(MYMSG)
          LA    R15,0
 *
          LR    R1,R13
@@ -780,7 +779,6 @@ RETURNGC DS    0H
          FREESPAC (R1)
          LR    R15,R7
          RETURN (14,12),RC=(15)
-SSSPARM  DC    A(MYMSG)
 MYMSG    DC    CL80'GREETINGS FROM SSS'
          LTORG
 *

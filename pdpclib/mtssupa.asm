@@ -782,6 +782,51 @@ RETURNGC DS    0H
 *
 *
 *
+**********************************************************************
+*                                                                    *
+*  TTT - display debug                                               *
+*                                                                    *
+**********************************************************************
+         DS    0H
+         ENTRY @@TTT
+@@TTT    EQU   *
+         SAVE  (14,12),,@@TTT
+         LR    R12,R15
+         USING @@TTT,R12
+         LR    R11,R1
+*         GETMAIN R,LV=WORKLEN,SP=SUBPOOL
+         L     R1,=A(WORKLEN)
+         GETSPACE
+         ST    R13,4(R1)
+         ST    R1,8(R13)
+         LR    R13,R1
+         LR    R1,R11
+         USING WORKAREA,R13
+*
+*         MVC   HELLO,=CL80'TTT test!'         
+         SPRINT 'TTT1'
+         LA    R1,PARAM1
+         CALL  SPRINT
+         SPRINT 'TTT2'
+*         SPRINT 'Hello from MTSSUPA2'
+         LA    R15,0
+*
+         LR    R1,R13
+         L     R13,SAVEAREA+4
+         LR    R7,R15
+*         FREEMAIN R,LV=WORKLEN,A=(R1),SP=SUBPOOL
+         FREESPAC (R1)
+         LR    R15,R7
+         RETURN (14,12),RC=(15)
+PARAM1   DC     A(HELLO)
+         DC     A(LEN)
+         DC     A(0)
+HELLO    DC     CL80'SIMPLE HELLO'
+LEN      DC     H'18'
+         LTORG
+*
+*
+*
 *
 **********************************************************************
 *                                                                    *

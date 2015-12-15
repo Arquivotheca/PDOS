@@ -177,5 +177,5 @@ $copy __memmgr.o pdptest.r(last+1)
 $copy pdptest.o pdptest.r(last+1)
 
 
-$r pdptest.r
+$r pdptest.r par=ABD AbC
 

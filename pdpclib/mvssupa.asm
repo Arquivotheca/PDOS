@@ -720,10 +720,12 @@ OPREPJFC LA    R14,MYJFCB
 * The DCB exit (OCDCBEX) is coded to work in any AMODE, and only
 * needs a simple branch, UNLESS this module is loaded ATL.      GP15015
          LA    R14,OCDCBEX        POINT TO DCB EXIT for BTL
+         AIF   ('&ZSYS' NE 'S390').NOSTB        Only S/390 needs a stub
          TM    @OCDCBEX,X'7F'     Loaded above the line?        GP15015
          BZ    EXBTL                No; invoke directly         GP15015
          MVC   A24STUB,PATSTUB    Stub code for DCB exit        GP15015
          LA    R14,A24STUB        Switch to 24-bit stub         GP15015
+.NOSTB   ANOP  ,                  Only S/390 needs a stub
 EXBTL    ST    R14,DCBXLST        AND SET IT BACK
          MVI   DCBXLST,X'05'      Identify Open exit address    GP15015
          LA    R14,DCBXLST
@@ -1346,6 +1348,7 @@ OCDCBXX  STH   R3,DCBBLKSI   UPDATE POSSIBLY CHANGED BLOCK SIZE
          BR    R14           RETURN TO OPEN (or via caller)     GP15004
          POP   USING
          SPACE 2
+         AIF   ('&ZSYS' NE 'S390').NOSTUB       Only S/390 needs a stub
 ***********************************************************************
 *                                                                     *
 *    OPEN DCB EXIT - 24 bit stub                                      *
@@ -1373,6 +1376,7 @@ PATRET   LR    R14,R11            Restore OS return address     GP15015
 PATSTUBL EQU   *-PATSTUB                                        GP15015
          POP   USING
          SPACE 2
+.NOSTUB  ANOP  ,        Only S/390 needs a stub
 ***********************************************************************
 *                                                                     *
 *    AOPEN SUBROUTINES.                                               *
@@ -3100,6 +3104,7 @@ MVSSUPA  CSECT ,             RESTORE CSECT                      GP14244
 * S/370 doesn't support switching modes so this code is useless,
 * and won't compile anyway because "BSM" is not known.
 *
+         AIF   ('&ZSYS' EQ 'S370').NOMODE If S/370 we can't switch mode
          PUSH  USING
          DROP  ,
 ***********************************************************************
@@ -3133,6 +3138,8 @@ MVSSUPA  CSECT ,             RESTORE CSECT                      GP14244
          BSM   0,R14              Return in amode 31
          LTORG ,
          POP   USING
+*
+.NOMODE  ANOP  ,                  S/370 doesn't support MODE switching
 *
 *
 *
@@ -3356,7 +3363,9 @@ OPENCLOS DS    A                  OPEN/CLOSE parameter list
 DCBXLST  DS    2A                 07 JFCB / 85 DCB EXIT
 EOFR24   DS    CL(EOFRLEN)
          DS    0A                 Ensure correct DC A alignment GP15015
+         AIF   ('&ZSYS' NE 'S390').NOSB         Only S/390 needs a stub
 A24STUB  DS    CL(PATSTUBL)       DCB open exit 24-bit code     GP15015
+.NOSB    ANOP  ,                  Only S/390 needs a stub
 ZBUFF1   DS    A,F                Address, length of buffer
 ZBUFF2   DS    A,F                Address, length of 2nd buffer
 KEPTREC  DS    A,F                Address & length of saved rcd

@@ -15,7 +15,7 @@
 .*
          AIF   ('&ZSYS' NE 'S380').OTHSYS
 &NM      L     &WRK1,4(,R13)      Old save area
-         L     &WRK1,12(,R14)     Caller's mode in high bit
+         L     &WRK1,12(,&WRK1)     Caller's mode in high bit
          N     &WRK1,=X'80000000'   Kill address
          LA    &WRK2,*+4+2+2      Get new mode and address
          OR    &WRK1,&WRK2

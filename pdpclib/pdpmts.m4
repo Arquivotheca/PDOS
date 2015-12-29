@@ -11,100 +11,120 @@ PDPMAIN   400
 $endfile
 
 $copy *source*@-endfile mtsmacs.mac(100)
-undivert(pdptop.mac)$ENDFILE
+undivert(pdptop.mac)dnl
+$ENDFILE
 $continue with *dummy*
 
 $copy *source* mtsmacs.mac(200)
-undivert(pdpprlg.mac)$endfile
+undivert(pdpprlg.mac)dnl
+$endfile
 
 $copy *source* mtsmacs.mac(300)
-undivert(pdpepil.mac)$endfile
+undivert(pdpepil.mac)dnl
+$endfile
 
 $copy *source*@-endfile mtsmacs.mac(400)
-undivert(pdpmain.mac)$ENDFILE
+undivert(pdpmain.mac)dnl
+$ENDFILE
 $continue with *dummy*
 
 
 $dest mtsstart.asm ok
 $cre mtsstart.asm
 $copy *source* to mtsstart.asm
-undivert(mtsstart.asm)$endfile
+undivert(mtsstart.asm)dnl
+$endfile
 
 $dest mtssupa.asm ok
 $cre mtssupa.asm
 $copy *source* to mtssupa.asm
-undivert(mtssupa.asm)$endfile
+undivert(mtssupa.asm)dnl
+$endfile
 
 
 $dest start.asm ok
 $cre start.asm
 $copy *source* to start.asm
-undivert(start.s)$endfile
+undivert(start.s)dnl
+$endfile
 
 $dest stdio.asm ok
 $cre stdio.asm
 $copy *source* to stdio.asm
-undivert(stdio.s)$endfile
+undivert(stdio.s)dnl
+$endfile
 
 $dest stdlib.asm ok
 $cre stdlib.asm
 $copy *source* to stdlib.asm
-undivert(stdlib.s)$endfile
+undivert(stdlib.s)dnl
+$endfile
 
 $dest ctype.asm ok
 $cre ctype.asm
 $copy *source* to ctype.asm
-undivert(ctype.s)$endfile
+undivert(ctype.s)dnl
+$endfile
 
 $dest string.asm ok
 $cre string.asm
 $copy *source* to string.asm
-undivert(string.s)$endfile
+undivert(string.s)dnl
+$endfile
 
 $dest time.asm ok
 $cre time.asm
 $copy *source* to time.asm
-undivert(time.s)$endfile
+undivert(time.s)dnl
+$endfile
 
 $dest errno.asm ok
 $cre errno.asm
 $copy *source* to errno.asm
-undivert(errno.s)$endfile
+undivert(errno.s)dnl
+$endfile
 
 $dest assert.asm ok
 $cre assert.asm
 $copy *source* to assert.asm
-undivert(assert.s)$endfile
+undivert(assert.s)dnl
+$endfile
 
 $dest locale.asm ok
 $cre locale.asm
 $copy *source* to locale.asm
-undivert(locale.s)$endfile
+undivert(locale.s)dnl
+$endfile
 
 $dest math.asm ok
 $cre math.asm
 $copy *source* to math.asm
-undivert(math.s)$endfile
+undivert(math.s)dnl
+$endfile
 
 $dest setjmp.asm ok
 $cre setjmp.asm
 $copy *source* to setjmp.asm
-undivert(setjmp.s)$endfile
+undivert(setjmp.s)dnl
+$endfile
 
 $dest signal.asm ok
 $cre signal.asm
 $copy *source* to signal.asm
-undivert(signal.s)$endfile
+undivert(signal.s)dnl
+$endfile
 
 $dest __memmgr.asm ok
 $cre __memmgr.asm
 $copy *source* to __memmgr.asm
-undivert(__memmgr.s)$endfile
+undivert(__memmgr.s)dnl
+$endfile
 
 $dest pdptest.asm ok
 $cre pdptest.asm
 $copy *source* to pdptest.asm
-undivert(pdptest.s)$endfile
+undivert(pdptest.s)dnl
+$endfile
 
 
 

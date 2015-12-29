@@ -20,7 +20,9 @@
 // EXTENT SYSPCH,,,,10000,100
 ASSGN SYSPCH,SYS000
 // EXEC ASSEMBLY
-undivert(pdpprlg.mac)undivert(pdpepil.mac)         END
+undivert(pdpprlg.mac)dnl
+undivert(pdpepil.mac)dnl
+         END
 /*
 CLOSE SYSPCH,PUNCH
 // OPTION NOEDECK
@@ -41,7 +43,8 @@ CLOSE SYSIPT,READER
 // EXEC MAINT
  CATALS A.PDPTOP
  BKEND
-undivert(pdptop.mac) BKEND
+undivert(pdptop.mac)dnl
+ BKEND
 /*
 *
 *
@@ -50,40 +53,56 @@ undivert(pdptop.mac) BKEND
 // OPTION CATAL
  PHASE PDPTEST,S+80
 // EXEC ASSEMBLY
-undivert(vsestart.asm)/*
+undivert(vsestart.asm)dnl
+/*
 *
 * Now assemble the subroutines
 *
 // EXEC ASSEMBLY
-undivert(start.s)/*
+undivert(start.s)dnl
+/*
 // EXEC ASSEMBLY
-undivert(stdio.s)/*
+undivert(stdio.s)dnl
+/*
 // EXEC ASSEMBLY
-undivert(stdlib.s)/*
+undivert(stdlib.s)dnl
+/*
 // EXEC ASSEMBLY
-undivert(ctype.s)/*
+undivert(ctype.s)dnl
+/*
 // EXEC ASSEMBLY
-undivert(string.s)/*
+undivert(string.s)dnl
+/*
 // EXEC ASSEMBLY
-undivert(time.s)/*
+undivert(time.s)dnl
+/*
 // EXEC ASSEMBLY
-undivert(errno.s)/*
+undivert(errno.s)dnl
+/*
 // EXEC ASSEMBLY
-undivert(assert.s)/*
+undivert(assert.s)dnl
+/*
 // EXEC ASSEMBLY
-undivert(locale.s)/*
+undivert(locale.s)dnl
+/*
 // EXEC ASSEMBLY
-undivert(math.s)/*
+undivert(math.s)dnl
+/*
 // EXEC ASSEMBLY
-undivert(setjmp.s)/*
+undivert(setjmp.s)dnl
+/*
 // EXEC ASSEMBLY
-undivert(signal.s)/*
+undivert(signal.s)dnl
+/*
 // EXEC ASSEMBLY
-undivert(__memmgr.s)/*
+undivert(__memmgr.s)dnl
+/*
 // EXEC ASSEMBLY
-undivert(pdptest.s)/*
+undivert(pdptest.s)dnl
+/*
 // EXEC ASSEMBLY
-undivert(vsesupa.asm)/*
+undivert(vsesupa.asm)dnl
+/*
 *
 * Now link the whole app
 *

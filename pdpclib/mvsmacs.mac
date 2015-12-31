@@ -234,7 +234,6 @@
 .*  MODE IS INPUT AND RETURNED, POSSIBLY MODIFIED.
 .*  ID IS INPUT AND UPDATED.
 .*  REST ARE OUTPUT ONLY, AND MAY DIFFER FROM THE @@AOPEN REQUEST.
-.*
          LCLC  &P,&N
 &P       SETC  '&PFX'
 &N       SETC  '&NM'
@@ -252,9 +251,9 @@
 .*                  +80-TERMINAL GETLINE  +81-TERMINAL PUTLINE
 .*                  RETURNS 40-VSAM; 20-BPAM UNLIKE CONCAT
 .*
-&P.DVTYP EQU   &P.MODE,1     Device type of first/only DD       \
+&P.DVTYP EQU   &P.MODE,1     DEVICE TYPE OF FIRST/ONLY DD       GP15365
 .*
-&P.RECFM EQU   &P.MODE+1,1   Equivalent RECFM bits
+&P.RECFM EQU   &P.MODE+1,1   EQUIVALENT RECFM BITS
 &P.RFU   EQU   X'C0'           UNDEFINED
 &P.RFF   EQU   X'80'           FIXED
 &P.RFV   EQU   X'40'           VARIABLE (WITH BDW/RDW)
@@ -265,56 +264,60 @@
 &P.RFA   EQU   X'04'           ANSI CONTROL CHARACTERS
 &P.RFM   EQU   X'02'           MACHINE CONTROL CHARACTERS (1403 CCW)
 .*
-&P.SFLGS EQU   &P.MODE+2,1   Additional MODE related flags      \
-&P.FUPDT EQU   X'80'           Update mode (BSAM/VSAM)          \
-&P.FUPIN EQU   X'40'           Last was input (GET/READ)        \
-&P.FUPOU EQU   X'20'           Last was output (PUT/WRITE)      \
-&P.FVSAM EQU   X'08'           Use VSAM
+&P.SFLGS EQU   &P.MODE+2,1   ADDITIONAL MODE RELATED FLAGS      GP15365
+&P.FUPDT EQU   X'80'           UPDATE MODE (BSAM/VSAM)          GP15365
+&P.FUPIN EQU   X'40'           LAST WAS INPUT (GET/READ)        GP15365
+&P.FUPOU EQU   X'20'           LAST WAS OUTPUT (PUT/WRITE)      GP15365
+&P.FVSAM EQU   X'08'           USE VSAM
 &P.FVSRR EQU   X'04'           RRDS
 &P.FVSES EQU   X'02'           ESDS
 &P.FVSKS EQU   X'01'           KSDS
 .*
-&P.MFLGS EQU   &P.MODE+3,1   Remember open MODE
-&P.FTERM EQU   X'80'           Using GETLINE/PUTLINE
-&P.FBPAM EQU   X'20'           Unlike BPAM concat - special handl
-&P.FBLOCK EQU  X'10'           Using BSAM READ/WRITE mode
-&P.FEXCP EQU   X'08'           Use EXCP for TAPE
-.*.FUPD  EQU   X'06'           Update in place (xSAM, VSAM)
+&P.MFLGS EQU   &P.MODE+3,1   REMEMBER OPEN MODE
+&P.FTERM EQU   X'80'           USING GETLINE/PUTLINE
+&P.FBPAM EQU   X'20'           UNLIKE BPAM CONCAT - SPECIAL HANDL
+&P.FBLOCK EQU  X'10'           USING BSAM READ/WRITE MODE
+&P.FEXCP EQU   X'08'           USE EXCP FOR TAPE
+.*.FUPD  EQU   X'06'           UPDATE IN PLACE (XSAM, VSAM)
 .*.      EQU                   (RESERVED)
-&P.FOUT  EQU   X'01'           Output mode
+&P.FOUT  EQU   X'01'           OUTPUT MODE
+.*
 &P.LEN   DC    AL2(&P.SIZE)  CONTROL BLOCK LENGTH
 &P.ID    DC    H'42'         BLOCK IDENTIFIER (0 ON RETURN)
+&P.FLAGS DC    X'0'          DD SCAN FLAG
+&P.FDD   EQU   X'80'           FOUND A DD - LATER CONCAT FLAG
+&P.FSEQ  EQU   X'40'           USE IS SEQUENTIAL
+&P.FPDQ  EQU   X'20'           DS IS PDS WITH MEMBER NAME
+&P.FPDS  EQU   X'10'           DS IS PDS (OR PDS/E WITH S390)
+&P.FVSM  EQU   X'08'           DS IS VSAM (LIMITED SUPPORT)
+&P.FVTOC EQU   X'04'           DS IS VTOC (LIMITED SUPPORT)
+&P.FBLK  EQU   X'02'           DD HAS FORCED BLKSIZE
 .*
+&P.PIX   DC    X'0'          PROCESSING INDEX
+&P.IXSAM EQU   0               BSAM/BPAM - DEFAULT              GP15024
+&P.IXQSM EQU   4               QSAM - SAME AS BSAM, WITH DEBLOCKING
+&P.IXVSM EQU   8               VSAM DATA SET
+&P.IXVTC EQU   12              VTOC READER
+&P.IXTRM EQU   16              TSO TERMINAL
+.*.IXVSK EQU   20              (RESERVED) VSAM KEYED I/O
+.*.IXVSU EQU   24              (RESERVED) VSAM UPDATE (GET/PUT/RELEASE)
+.*
+&P.OPC   DC    X'0'          DCB OPTCD                          GP15024
+.*
+&P.DEVT  DC    XL2'0'        UCBTBYT3/4
+&P.ORG   DC    XL2'0'        DSORG
 &P.KEYL  DC    F'0'          KEY LENGTH
 &P.KEYP  DC    F'0'          KEY POSITION
 &P.LRECL DC    F'0'          RECORD LENGTH
 &P.BLKSZ DC    F'0'          BLOCK SIZE
 &P.MAXRC DC    F'0'          MAXIMUM RECORD NUMBER
 .*
-&P.ORG   DC    XL2'0'        DSORG
-.*
-&P.PIX   DC    H'0'          PROCESSING INDEX
-&P.IXSAM EQU   0               BSAM/BPAM - default
-&P.IXQSM EQU   4               QSAM - same as BSAM, with deblocking
-&P.IXVSM EQU   8               VSAM data set
-&P.IXVTC EQU   12              VTOC reader
-&P.IXTRM EQU   16              TSO terminal
-.*.IX    EQU   20              (RESERVED)
-.*.IX    EQU   24              (RESERVED)
 .*
 &P.FMOD  DC    X'00'         CALLER'S MODE: 0-F  1-V  2-U
-&P.FMFIX EQU   0               Fixed RECFM (blocked)
-&P.FMVAR EQU   1               Variable (blocked)
-&P.FMUND EQU   2               Undefined
+&P.FMFIX EQU   0               FIXED RECFM (BLOCKED)
+&P.FMVAR EQU   1               VARIABLE (BLOCKED)
+&P.FMUND EQU   2               UNDEFINED
 .*
-&P.DDFLG DC    X'0'          DD SCAN FLAG
-&P.FDD   EQU   X'80'           FOUND A DD - LATER CONCAT FLAG
-&P.FSEQ  EQU   X'40'           USE IS SEQUENTIAL
-&P.FPDQ  EQU   X'20'           DS IS PDS WITH MEMBER NAME
-&P.FPDS  EQU   X'10'           DS IS PDS (or PDS/E with S390)
-&P.FVSM  EQU   X'08'           DS IS VSAM (limited support)
-&P.FVTOC EQU   X'04'           DS IS VTOC (limited support)
-&P.FBLK  EQU   X'02'           DD HAS FORCED BLKSIZE
 &P.SIZE  EQU   *-&P.MODE     SIZE TO CLEAR
          MEND  ,
 *

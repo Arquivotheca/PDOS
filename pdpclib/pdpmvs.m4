@@ -66,14 +66,6 @@ undivert(pdpepil.mac)dnl
 //SYSPRINT DD  SYSOUT=*
 //SYSIN    DD  DUMMY
 //*
-//MVSMACS  EXEC PGM=IEBGENER
-//SYSUT2   DD  DSN=&&MACLIB(MVSMACS),DISP=(OLD,PASS)
-//SYSUT1   DD  *
-undivert(mvsmacs.mac)dnl
-/*
-//SYSPRINT DD  SYSOUT=*
-//SYSIN    DD  DUMMY
-//*
 //MVSSTART EXEC PDPASM,MEMBER=MVSSTART
 //SYSIN  DD  *
 undivert(mvsstart.asm)dnl

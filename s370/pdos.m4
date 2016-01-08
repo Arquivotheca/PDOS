@@ -40,103 +40,123 @@
 //PDPTOP   EXEC PGM=IEBGENER
 //SYSUT2   DD  DSN=&&MACLIB(PDPTOP),DISP=(OLD,PASS)
 //SYSUT1   DD  *
-undivert(pdptop.mac)/*
+undivert(pdptop.mac)dnl
+/*
 //SYSPRINT DD  SYSOUT=*
 //SYSIN    DD  DUMMY
 //*
 //PDPPRLG  EXEC PGM=IEBGENER
 //SYSUT2   DD  DSN=&&MACLIB(PDPPRLG),DISP=(OLD,PASS)
 //SYSUT1   DD  *
-undivert(pdpprlg.mac)/*
+undivert(pdpprlg.mac)dnl
+/*
 //SYSPRINT DD  SYSOUT=*
 //SYSIN    DD  DUMMY
 //*
 //PDPEPIL  EXEC PGM=IEBGENER
 //SYSUT2   DD  DSN=&&MACLIB(PDPEPIL),DISP=(OLD,PASS)
 //SYSUT1   DD  *
-undivert(pdpepil.mac)/*
-//SYSPRINT DD  SYSOUT=*
-//SYSIN    DD  DUMMY
-//*
-//MVSMACS  EXEC PGM=IEBGENER
-//SYSUT2   DD  DSN=&&MACLIB(MVSMACS),DISP=(OLD,PASS)
-//SYSUT1   DD  *
-undivert(mvsmacs.mac)/*
+undivert(pdpepil.mac)dnl
+/*
 //SYSPRINT DD  SYSOUT=*
 //SYSIN    DD  DUMMY
 //*
 //SAPSTART EXEC PDPASM,MEMBER=SAPSTART
 //SYSIN  DD  *
-undivert(sapstart.asm)/*
+undivert(sapstart.asm)dnl
+/*
 //SAPSUPA  EXEC PDPASM,MEMBER=SAPSUPA
 //SYSIN  DD  *
-undivert(sapsupa.asm)/*
+undivert(sapsupa.asm)dnl
+/*
 //MVSSTART EXEC PDPASM,MEMBER=MVSSTART
 //SYSIN  DD  *
-undivert(mvsstart.asm)/*
+undivert(mvsstart.asm)dnl
+/*
 //MVSSUPA  EXEC PDPASM,MEMBER=MVSSUPA
 //SYSIN  DD  *
-undivert(mvssupa.asm)/*
+undivert(mvssupa.asm)dnl
+/*
 //START    EXEC PDPASM,MEMBER=START
 //SYSIN  DD *
-undivert(start.s)/*
+undivert(start.s)dnl
+/*
 //STDIO    EXEC PDPASM,MEMBER=STDIO
 //SYSIN  DD *
-undivert(stdio.s)/*
+undivert(stdio.s)dnl
+/*
 //STDLIB   EXEC PDPASM,MEMBER=STDLIB
 //SYSIN  DD  *
-undivert(stdlib.s)/*
+undivert(stdlib.s)dnl
+/*
 //CTYPE    EXEC PDPASM,MEMBER=CTYPE
 //SYSIN  DD  *
-undivert(ctype.s)/*
+undivert(ctype.s)dnl
+/*
 //STRING   EXEC PDPASM,MEMBER=STRING
 //SYSIN  DD  *
-undivert(string.s)/*
+undivert(string.s)dnl
+/*
 //TIME     EXEC PDPASM,MEMBER=TIME
 //SYSIN  DD  *
-undivert(time.s)/*
+undivert(time.s)dnl
+/*
 //ERRNO    EXEC PDPASM,MEMBER=ERRNO
 //SYSIN  DD  *
-undivert(errno.s)/*
+undivert(errno.s)dnl
+/*
 //ASSERT   EXEC PDPASM,MEMBER=ASSERT
 //SYSIN  DD  *
-undivert(assert.s)/*
+undivert(assert.s)dnl
+/*
 //LOCALE   EXEC PDPASM,MEMBER=LOCALE
 //SYSIN  DD  *
-undivert(locale.s)/*
+undivert(locale.s)dnl
+/*
 //MATH     EXEC PDPASM,MEMBER=MATH
 //SYSIN  DD  *
-undivert(math.s)/*
+undivert(math.s)dnl
+/*
 //SETJMP   EXEC PDPASM,MEMBER=SETJMP
 //SYSIN  DD  *
-undivert(setjmp.s)/*
+undivert(setjmp.s)dnl
+/*
 //SIGNAL   EXEC PDPASM,MEMBER=SIGNAL
 //SYSIN  DD  *
-undivert(signal.s)/*
+undivert(signal.s)dnl
+/*
 //@@MEMMGR EXEC PDPASM,MEMBER=@@MEMMGR
 //SYSIN  DD  *
-undivert(__memmgr.s)/*
+undivert(__memmgr.s)dnl
+/*
 //PLOAD    EXEC PDPASM,MEMBER=PLOAD
 //SYSIN  DD  *
-undivert(pload.s)/*
+undivert(pload.s)dnl
+/*
 //PLOADSUP EXEC PDPASM,MEMBER=PLOADSUP
 //SYSIN  DD  *
-undivert(ploadsup.asm)/*
+undivert(ploadsup.asm)dnl
+/*
 //PDOS     EXEC PDPASM,MEMBER=PDOS
 //SYSIN  DD  *
-undivert(pdos.s)/*
+undivert(pdos.s)dnl
+/*
 //PDOSSUP  EXEC PDPASM,MEMBER=PDOSSUP
 //SYSIN  DD  *
-undivert(pdossup.asm)/*
+undivert(pdossup.asm)dnl
+/*
 //PDOSUTIL EXEC PDPASM,MEMBER=PDOSUTIL
 //SYSIN  DD  *
-undivert(pdosutil.s)/*
+undivert(pdosutil.s)dnl
+/*
 //PCOMM    EXEC PDPASM,MEMBER=PCOMM
 //SYSIN  DD  *
-undivert(pcomm.s)/*
+undivert(pcomm.s)dnl
+/*
 //WORLD    EXEC PDPASM,MEMBER=WORLD
 //SYSIN  DD  *
-undivert(world.s)/*
+undivert(world.s)dnl
+/*
 //WTOWORLD EXEC PDPASM,MEMBER=WTOWORLD
 //SYSIN  DD  *
          CSECT
@@ -436,7 +456,8 @@ int main(void)
 //SYSTERM  DD  SYSOUT=*
 //OUT      DD  DSN=&&HEX(PDOSIN),DISP=(OLD,PASS)
 //IN       DD  *
-undivert(pdos.cnf)/*
+undivert(pdos.cnf)dnl
+/*
 //*
 //ZIP      EXEC PGM=MINIZIP,PARM='-0 -x .txt -l -o dd:out dd:in'
 //STEPLIB  DD  DSN=MINIZIP.LINKLIB,DISP=SHR

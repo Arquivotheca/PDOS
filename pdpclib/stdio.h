@@ -69,8 +69,7 @@ typedef struct
     void *hfile;
     void *asmbuf;
     int recfm;
-    /* int true_recfm;
-    int tflag; */
+    int true_recfm;
     int style;
     int lrecl;
     int blksize;
@@ -79,7 +78,7 @@ typedef struct
     int reallyu;    /* 1 = this is really a RECFM=U file */
     int reallyt;    /* 1 = this is really a text file */
     int dynal;      /* 1 = this file was dynamically allocated */
-    int line_buf;   /* 1 = this file is unit record device */
+    int line_buf;   /* 1 = we are forcing line buffering */
 #endif
 #if defined(__VSE__)
     int vse_punch;  /* 1 = this is writing to a VSE library */

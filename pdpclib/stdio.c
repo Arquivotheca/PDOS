@@ -1015,6 +1015,10 @@ static void osfopen(void)
     }
 #endif
 
+    myfile->hfile =
+        __aopen(myfile->ddname, &mode, &myfile->recfm, &myfile->lrecl,
+                &myfile->blksize, &myfile->asmbuf, p);
+
     /* The true RECFM is not the "recfm" variable. True
        RECFM is as follows:
 
@@ -1028,20 +1032,9 @@ static void osfopen(void)
        x'02' M  (never both A and M)
     */
 
-    myfile->hfile =
-        __aopen(myfile->ddname, &mode, &myfile->recfm, &myfile->lrecl,
-                &myfile->blksize, &myfile->asmbuf, p);
-#if defined(__MVS__)
-    mode &= ~0x80; /* don't expose other logic to GETLINE/PUTLINE */
-#endif
-    /* if this is a unit record device, note that */
-    myfile->line_buf = ((mode & 0x40) != 0);    
-    mode &= ~0x40;
+    myfile->true_recfm = (mode >> 16) & 0xff;
 
-    /* myfile->true_recfm = (mode >> 16) & 0xff;
-    myfile->tflag = ((myfile->true_recfm & 0x20) != 0); */
-
-    mode &= 0x07; /* only interested in the simple mode now */
+    mode &= 0x03; /* only interested in the simple mode now */
 
     /* errors from MVS __aopen are negative numbers */
     if ((int)myfile->hfile <= 0)
@@ -1050,9 +1043,24 @@ static void osfopen(void)
         errno = -(int)myfile->hfile;
         return;
     }
+
+    /* recfm=f and v are effecively always line-buffered
+       because we currently do not support blocking. as
+       such, there is no need to switch this flag on at
+       the moment, as it is only relevant to recfm=u */
+    myfile->line_buf = 0;
     /* if we have a RECFM=U, do special processing */
     if (myfile->recfm == __RECFM_U)
     {
+        /* sysprint etc are expected to be line-buffered,
+           although we allow full buffering for RECFM=UB */  
+        if ((__doperm || myfile->permfile)
+            && ((myfile->true_recfm & 0x10) == 0)
+           )
+        {
+            myfile->line_buf = 1;
+        }
+
         myfile->reallyu = 1;
         myfile->quickBin = 0; /* switch off to be on the safe side */
 

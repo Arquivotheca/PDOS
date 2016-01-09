@@ -131,14 +131,14 @@ MVSSUPA  TITLE 'M V S S U P A  ***  MVS VERSION OF PDP CLIB SUPPORT'
 .*
 .*   MACRO TO BEGIN EACH FUNCTION
 .*     HANDLES STANDARD OS ENTRY CONVENTIONS
-.*   ID=  YES ¦ NO      YES GENERATES DC WITH FUNCTION NAME
-.*   IO=  YES ¦ NO      YES GENERATES LOAD / USING FOR ZDCBAREA
-.*   AM=  YES ¦ NO      YES USES BSM TO PRESERVE CALLER'S AMODE
+.*   ID=  YES | NO      YES GENERATES DC WITH FUNCTION NAME
+.*   IO=  YES | NO      YES GENERATES LOAD / USING FOR ZDCBAREA
+.*   AM=  YES | NO      YES USES BSM TO PRESERVE CALLER'S AMODE
 .*   SAVE=name          USES STATIC SAVE AREA OF THAT NAME,
 .*                           SETS R13, AND DECLARES ON USING
 .*   SAVE=(name,len{,subpool})   CREATES SAVE AREA WITH GETMAIN,
 .*                           SETS R13, AND DECLARES ON USING
-.*   US=  YES ¦ NO      YES - want a USING for R13
+.*   US=  YES | NO      YES - want a USING for R13
 .*   Options used here are remembered and handled properly by
 .*     subsequent FUNEXIT macros
 .*

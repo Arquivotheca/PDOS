@@ -5646,11 +5646,18 @@ static void filedef(char *fdddname, char *fnm, int mymode)
         if ( mymode )
         {
             tu[2].parm1[0] = 0x04; /* NEW */
-#if !defined(__PDOS__) /* PDOS uses RECFM=U by default */
+            /* Note that the operating system, e.g. PDOS,
+               may override the RECFM, e.g. to make everything
+               RECFM=U
+            */
+
             /* if binary */
             if (modeType == 5)
             {
                 /* F80, which is default */
+                /* That seems like a strange default. Regardless,
+                   we should be using RECFM=U, BLKSIZE=6233 for
+                   output binary files */
             }
             else
             {
@@ -5668,7 +5675,6 @@ static void filedef(char *fdddname, char *fnm, int mymode)
                 tu[4].parm1[0] = 0; /* LRECL = 255 */
                 tu[4].parm1[1] = 255;
             }
-#endif
         }
         errno = __svc99(&rb);
     }

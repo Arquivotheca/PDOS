@@ -1636,10 +1636,9 @@ static void pdosProcessSVC(PDOS *pdos)
     {
         /* hardcoded constants that fell off the back of a truck */
         memcpy((void *)pdos->context->regs[0], 
-               "\x30\x50\x08\x0B" /* 08 = unit record, but it does
-                 not appear to be taking effect in mvssupa.asm, but we
-                 don't care about that for now because we are
-                 not using it in PDPCLIB anymore */
+               "\x30\x50\x08\x0B" /* 08 = unit record, but note
+                 that the C part of PDPCLIB no longer relies on
+                 the unit record bit. */
                "\x00\x00\x7f\xff", /* device size = 32767 byte blocks */
                8);
         if (memcmp((void *)pdos->context->regs[1], "SYS", 3) != 0)

@@ -1054,7 +1054,7 @@ static void osfopen(void)
     {
         /* sysprint etc are expected to be line-buffered,
            although we allow full buffering for RECFM=UB */  
-        if ((__doperm || myfile->permfile)
+        if ((__doperm || (myfile->permfile && inreopen))
             && ((myfile->true_recfm & 0x10) == 0)
            )
         {

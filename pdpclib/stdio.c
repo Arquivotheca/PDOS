@@ -1008,7 +1008,7 @@ static void osfopen(void)
        non-TSO-command-processor */
     if (__tso
         && (__doperm
-            || (myfile->permfile && inreopen))
+            || (inreopen && myfile->permfile))
        )
     {
         mode |= 0x80; /* use PUTLINE/GETLINE if available */
@@ -1054,7 +1054,7 @@ static void osfopen(void)
     {
         /* sysprint etc are expected to be line-buffered,
            although we allow full buffering for RECFM=UB */  
-        if ((__doperm || (myfile->permfile && inreopen))
+        if ((__doperm || (inreopen && myfile->permfile))
             && ((myfile->true_recfm & 0x10) == 0)
            )
         {

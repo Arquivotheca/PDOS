@@ -57,6 +57,7 @@ copy world.txt world.exe
 copy sample.txt sample.c
 copy wtoworld.txt wtoworld.exe
 copy diff.txt diff.exe
+copy gcc.txt gcc.exe
 
 
 rem create dummy batch file

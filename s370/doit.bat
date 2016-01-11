@@ -70,6 +70,8 @@ echo echo nothing to run >hercauto.bat
 del hercauto.zip
 zip -0X hercauto hercauto.bat
 
+rem copy some header files so that we can do simple compiles
+zip -0X -j pdpi.zip ..\pdpclib\*.h
 
 
 rem build DASD. Put a copy into MVS/380 area for no particular reason

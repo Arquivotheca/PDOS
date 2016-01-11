@@ -58,6 +58,10 @@ copy sample.txt sample.c
 copy wtoworld.txt wtoworld.exe
 copy diff.txt diff.exe
 copy gcc.txt gcc.exe
+copy copyfile.txt copyfile.exe
+copy hexdump.txt hexdump.exe
+copy mvsendec.txt mvsendec.exe
+copy mvsunzip.txt mvsunzip.exe
 
 
 rem create dummy batch file
@@ -66,10 +70,6 @@ echo echo nothing to run >hercauto.bat
 del hercauto.zip
 zip -0X hercauto hercauto.bat
 
-
-rem get GCC/PDPCLIB utilities
-
-unzip -o \download\gccpdos
 
 
 rem build DASD. Put a copy into MVS/380 area for no particular reason

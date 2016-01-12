@@ -683,6 +683,7 @@ typedef struct {
 static DCB *gendcb = NULL; /* +++ need to eliminate this state info */
 static IOB geniob; /* +++ move this somewhere */
 static char lastds[FILENAME_MAX]; /* needs to be in TIOT */
+static int memid = 256; /* this really belongs in the address space */
 
 void gotret(void);
 int adisp(void);
@@ -1579,7 +1580,7 @@ static void pdosProcessSVC(PDOS *pdos)
                 getmain = (int)memmgrAllocate(
                     &pdos->aspaces[pdos->curr_aspace].o.btlmem,
                     len,
-                    0);
+                    memid);
 #if MEMDEBUG
                 printf("allocated %x for r0 %x, r1 %x, r15 %x\n", getmain,
                     len, pdos->context->regs[1],
@@ -1594,12 +1595,12 @@ static void pdosProcessSVC(PDOS *pdos)
                 getmain = (int)memmgrAllocate(
                     &pdos->aspaces[pdos->curr_aspace].o.btlmem,
                     PDOS_STORINC,
-                    0);
+                    memid);
 #else
                 getmain = (int)memmgrAllocate(
                     &pdos->aspaces[pdos->curr_aspace].o.atlmem,
                     len,
-                    0);
+                    memid);
 #endif
 #if MEMDEBUG
                 printf("allocated %x for r0 %x, r1 %x, r15 %x\n", getmain,
@@ -1772,6 +1773,7 @@ static void pdosProcessSVC(PDOS *pdos)
             int ecb;
         } *sysatlst;
         
+        memid += 256;
         sysatlst = (void *)pdos->context->regs[15];
         prog = (char *)sysatlst->eploc;
 #if 0
@@ -1832,7 +1834,14 @@ static void pdosProcessSVC(PDOS *pdos)
     }
     else if (svc == 62) /* detach */
     {
-        /* do nothing - but should free memory and switch back context */
+        /* should switch back context here */
+
+        /* we free any junk (memory leak) left behind by the program */
+        /* we should also set a flag to say if a subpool other than 0
+           was used by this program, and free all 256 possible memids
+           instead of just subpool 0 */
+        memmgrFreeId(&pdos->aspaces[pdos->curr_aspace].o.btlmem, memid);
+        memid -= 256;
     }
     else if (svc == 20) /* close */
     {

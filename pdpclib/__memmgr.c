@@ -459,7 +459,7 @@ void memmgrFreeId(MEMMGR *memmgr, int id)
         if ((p->id == id) && p->allocated)
         {
             /* skip past the MEMMGRN */
-            memmgrFree(memmgr, p + 1);
+            memmgrFree(memmgr, (char *)p + MEMMGRN_SZ);
 
             /* It is possible that the p node has been invalidated
                now, because of combination with the previous node.

@@ -86,8 +86,16 @@ void * _Builtin __memmove(void *s1, const void *s2, size_t n);
 #endif
 
 #if defined (__GNUC__) && __GNUC__ >= 3
-#define memcpy(a,b,c) (__builtin_memcpy((a),(b),(c)))
-#define memcmp(s1,s2,n) (__builtin_memcmp((s1),(s2),(n)))
+#define memcpy(s1,s2,n) ( \
+     (n >= 0x01000000) ? \
+     ((memcpy)((s1),(s2),(n))) : \
+     (__builtin_memcpy((s1),(s2),(n))) \
+    )
+#define memcmp(s1,s2,n) ( \
+     (n >= 0x01000000) ? \
+     ((memcmp)((s1),(s2),(n))) : \
+     (__builtin_memcmp((s1),(s2),(n))) \
+    )
 #endif
 
 /* We don't activate these GCC builtins, because they

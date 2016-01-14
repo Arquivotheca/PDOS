@@ -74,7 +74,7 @@ char * _Builtin __strncpy(char *s1, const char *s2, size_t n);
 char * _Builtin __strrchr(const char *s, int c);
 #define strrchr(s,c) (__strrchr((s),(c)))
 void * _Builtin __memcpy(void *s1, const void *s2, size_t n);
-#define memcpy(a,b,c) (__memcpy((a),(b),(c)))
+#define memcpy(s1,s2,n) (__memcpy((s1),(s2),(n)))
 void * _Builtin __memchr(const void *s, int c, size_t n);
 #define memchr(s,c,n) (__memchr((s),(c),(n)))
 int _Builtin __memcmp(const void *s1, const void *s2, size_t n);
@@ -123,7 +123,7 @@ void * _Builtin __memmove(void *s1, const void *s2, size_t n);
 #ifdef __BORLANDC__
 #ifdef __INLINE_FUNCTIONS__
 void *__memcpy__(void *s1, const void *s2, size_t n);
-#define memcpy(a,b,c) (__memcpy__((a),(b),(c)))
+#define memcpy(s1,s2,n) (__memcpy__((s1),(s2),(n)))
 void *__memchr__(const void *s, int c, size_t n);
 #define memchr(s,c,n) (__memchr__((s),(c),(n)))
 int __memcmp__(const void *s1, const void *s2, size_t n);

@@ -3253,6 +3253,17 @@ MVSSUPA  CSECT ,             RESTORE
 *                                                                    *
 *  This function returns 1 if we are running in AMODE 31, else 0     *
 *                                                                    *
+*  This code works because in 31-bit mode, a BALR will set the       *
+*  high bit of the first register to 1, with the remaining 31 bits   *
+*  used for the address. While in 24-bit mode, the entire top byte   *
+*  has information stored, with the remaining 3 bytes used for the   *
+*  address. The first 2 bits of that top byte are the ILC, which     *
+*  will be b'01' for a BALR, and b'10' for a BAL. We use BALR, so    *
+*  we get b'01', hence the top bit is always 0. Note that BASR       *
+*  could be used instead of BALR and we would still get the same     *
+*  result. Note that the b'01' in BALR means "1 halfword", ie        *
+*  the instruction (BALR) is 2 bytes long.                           *
+*                                                                    *
 **********************************************************************
          ENTRY @@TEST31
 @@TEST31 EQU   *

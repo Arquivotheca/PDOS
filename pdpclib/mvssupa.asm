@@ -3245,6 +3245,31 @@ DYNALDLN EQU   *-DYNALWRK     LENGTH OF DYNAMIC STORAGE
 MVSSUPA  CSECT ,             RESTORE
          SPACE 2
 *
+*
+*
+**********************************************************************
+*                                                                    *
+*  TEST31 - see if we are running in AMODE 31                        *
+*                                                                    *
+**********************************************************************
+         ENTRY @@TEST31
+@@TEST31 EQU   *
+         SAVE  (14,12),,@@TEST31
+         LR    R12,R15
+         USING @@TEST31,R12
+*
+         LA    R15,1
+         BALR  R1,R0
+         LTR   R1,R1
+         BM    RETURNTS
+         LA    R15,0
+*
+RETURNTS DS    0H
+         RETURN (14,12),RC=(15)
+         LTORG
+*
+*
+*
 ***********************************************************************
 *                                                                     *
 *  CALL @@SVC99,(rb)                                                  *

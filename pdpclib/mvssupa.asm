@@ -3251,6 +3251,8 @@ MVSSUPA  CSECT ,             RESTORE
 *                                                                    *
 *  TEST31 - see if we are running in AMODE 31                        *
 *                                                                    *
+*  This function returns 1 if we are running in AMODE 31, else 0     *
+*                                                                    *
 **********************************************************************
          ENTRY @@TEST31
 @@TEST31 EQU   *

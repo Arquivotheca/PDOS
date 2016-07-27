@@ -1037,7 +1037,7 @@ int PosGetFileLastWrittenDateAndTime(int handle,
 #ifdef __32BIT__
         *fdate=regsout.d.edx;
         *ftime=regsout.d.ecx;
-        regsout.x.eax=0;
+        regsout.d.eax=0;
 #else
         *fdate=regsout.x.dx;
         *ftime=regsout.x.cx;
@@ -1075,7 +1075,7 @@ int PosSetFileLastWrittenDateAndTime(int handle,
     if (!regsout.x.cflag)
     {
 #ifdef __32BIT__
-        regsout.x.eax=0;
+        regsout.d.eax=0;
 #else
         regsout.x.ax = 0;
 #endif

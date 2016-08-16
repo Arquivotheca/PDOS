@@ -3775,6 +3775,10 @@ __PDPCLIB_API__ int fflush(FILE *stream)
             finwrite(stream);
             stream->upto = stream->fbuf;
         }
+        else if ((stream == stdout) || (stream == stderr))
+        {
+            fputc('\n', stream);
+        }
     }
 #else
 #ifdef __OS2__

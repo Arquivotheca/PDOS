@@ -25,7 +25,7 @@ int __dynal(size_t ddn_len, char *ddn, size_t dsn_len, char *dsn);
 int __idcams(size_t len, char *data);
 
 #pragma linkage(__getpfx, OS)
-unsigned char *__getpfx(void);
+char *__getpfx(void);
 
 #pragma linkage(__system, OS)
 #ifdef MUSIC

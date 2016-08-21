@@ -874,12 +874,27 @@ static void osfopen(void)
         sprintf(newfnm, "PDP%03dHD", spareSpot);
         strcpy(tmpdd, newfnm);
 
+        strcpy(rawf, "");
         /* strip any single quote */
         if (fnm[0] == '\'')
         {
             fnm++;
         }
-        strcpy(rawf, fnm);
+#if defined(__MVS__) && !defined(__VSE__)
+        else
+        {
+            char pfx[8];
+
+            if (__tso)
+            {
+                memcpy(pfx, __getpfx(), sizeof pfx);
+                pfx[pfx[sizeof pfx - 1]] = '\0';
+                strcpy(rawf, pfx);
+                strcat(rawf, ".");
+            }
+        }
+#endif
+        strcat(rawf, fnm);
 
         /* If we have a file such as "'FRED.C(MARY)'" we need to
            convert this into PDP001HD(MARY) and do a dynamic

@@ -3258,15 +3258,20 @@ MVSSUPA  CSECT ,             RESTORE
          LR    R12,R15
          USING @@GETPFX,R12
 *
+         LA    R15,0
          LA    R0,0    Not really needed, just looks nice
          USING PSA,R0
-         L     R2,PSATOLD
+         ICM   R2,15,PSATOLD
+         BZ    RETURNGP
          USING TCB,R2
-         L     R3,TCBJSCB
+         ICM   R3,15,TCBJSCB
+         BZ    RETURNGP
          USING IEZJSCB,R3
-         L     R4,JSCBPSCB
+         ICM   R4,15,JSCBPSCB
+         BZ    RETURNGP
          USING PSCB,R4
-         L     R5,PSCBUPT
+         ICM   R5,15,PSCBUPT
+         BZ    RETURNGP
          USING UPT,R5
          LA    R6,UPTPREFX
          LR    R15,R6

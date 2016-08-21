@@ -891,10 +891,16 @@ static void osfopen(void)
                (than 7 characters) prefix instead. */
             if (__tso)
             {
-                memcpy(pfx, __getpfx(), sizeof pfx);
-                pfx[pfx[sizeof pfx - 1]] = '\0';
-                strcpy(rawf, pfx);
-                strcat(rawf, ".");
+                char *gp;
+
+                gp = __getpfx();
+                if (gp != NULL)
+                {
+                    memcpy(pfx, gp, sizeof pfx);
+                    pfx[pfx[sizeof pfx - 1]] = '\0';
+                    strcpy(rawf, pfx);
+                    strcat(rawf, ".");
+                }
             }
         }
 #endif

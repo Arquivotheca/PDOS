@@ -898,8 +898,11 @@ static void osfopen(void)
                 {
                     memcpy(pfx, gp, sizeof pfx);
                     pfx[pfx[sizeof pfx - 1]] = '\0';
-                    strcpy(rawf, pfx);
-                    strcat(rawf, ".");
+                    if (pfx[0] != '\0')
+                    {
+                        strcpy(rawf, pfx);
+                        strcat(rawf, ".");
+                    }
                 }
             }
         }

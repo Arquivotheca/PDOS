@@ -885,6 +885,10 @@ static void osfopen(void)
         {
             char pfx[8];
 
+            /* Currently we manually add a prefix, but in the
+               future we should call IKJPARS instead, so that
+               an operating system can provide a longer
+               (than 7 characters) prefix instead. */
             if (__tso)
             {
                 memcpy(pfx, __getpfx(), sizeof pfx);
@@ -898,8 +902,7 @@ static void osfopen(void)
 
         /* If we have a file such as "'FRED.C(MARY)'" we need to
            convert this into PDP001HD(MARY) and do a dynamic
-           allocation of PDP001HD to "FRED.C". We don't yet have
-           the ability to add a prefix. So this involves
+           allocation of PDP001HD to "FRED.C". This involves
            extracting the member name and then eliminating the member
            name and any single quotes */
         p = strchr(rawf, '(');

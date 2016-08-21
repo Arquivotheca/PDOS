@@ -3249,6 +3249,36 @@ MVSSUPA  CSECT ,             RESTORE
 *
 **********************************************************************
 *                                                                    *
+*  GETPFX - get TSO prefix                                           *
+*                                                                    *
+**********************************************************************
+         ENTRY @@GETPFX
+@@GETPFX EQU   *
+         SAVE  (14,12),,@@GETPFX
+         LR    R12,R15
+         USING @@GETPFX,R12
+*
+         LA    R0,0    Not really needed, just looks nice
+         USING PSA,R0
+         L     R2,PSATOLD
+         USING TCB,R2
+         L     R3,TCBJSCB
+         USING IEZJSCB,R3
+         L     R4,JSCBPSCB
+         USING PSCB,R4
+         L     R5,PSCBUPT
+         USING UPT,R5
+         LA    R6,UPTPREFX
+         LR    R15,R6
+*
+RETURNGP DS    0H
+         RETURN (14,12),RC=(15)
+         LTORG
+*
+*
+*
+**********************************************************************
+*                                                                    *
 *  TEST31 - see if we are running in AMODE 31                        *
 *                                                                    *
 *  This function returns 1 if we are running in AMODE 31, else 0     *
@@ -3815,6 +3845,7 @@ MYTIOT   DSECT ,
          SPACE 1
          IFGRPL ,                                               GP14233
          IEFJESCT ,
+         IKJUPT ,
 R0       EQU   0             NO STANDARD REGEQU MACRO           GP15019
 R1       EQU   1             NO STANDARD REGEQU MACRO           GP15019
 R2       EQU   2             NO STANDARD REGEQU MACRO           GP15019

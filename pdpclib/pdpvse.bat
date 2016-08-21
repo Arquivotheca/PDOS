@@ -1,4 +1,4 @@
-del pdpvse.zip
+rem del pdpvse.zip
 gccvse -Os -DXXX_MEMMGR -S -I . start.c
 gccvse -Os -DXXX_MEMMGR -S -I . stdio.c
 gccvse -Os -DXXX_MEMMGR -S -I . stdlib.c

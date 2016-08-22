@@ -146,7 +146,7 @@ R15      EQU   15
 *                                                                     *
 ***********************************************************************
          ENTRY @@AOPEN
-@@AOPEN  EQU   *
+@@AOPEN  DS    0H
          SAVE  (14,12),,@@AOPEN
          LR    R12,R15
          USING @@AOPEN,R12
@@ -494,7 +494,7 @@ RETURNOP DS    0H
 *                                                                     *
 ***********************************************************************
          ENTRY @@AREAD
-@@AREAD  EQU   *
+@@AREAD  DS    0H
          SAVE  (14,12),,@@AREAD
          LR    R12,R15
          USING @@AREAD,R12
@@ -607,7 +607,7 @@ RETURNAR DS    0H
 *                                                                     *
 ***********************************************************************
          ENTRY @@AWRITE
-@@AWRITE EQU   *
+@@AWRITE DS    0H
          SAVE  (14,12),,@@AWRITE
          LR    R12,R15
          USING @@AWRITE,R12
@@ -671,7 +671,7 @@ WRMOVE   MVC   IO1+1(0),0(R3)    +++ hardcode IO1
 *                                                                     *
 ***********************************************************************
          ENTRY @@ACLOSE
-@@ACLOSE EQU   *
+@@ACLOSE DS    0H
          SAVE  (14,12),,@@ACLOSE
          LR    R12,R15
          USING @@ACLOSE,R12
@@ -821,7 +821,7 @@ WORKO1   DS    CL32767
 *                                                                     *
 ***********************************************************************
          ENTRY @@GETM
-@@GETM   EQU   *
+@@GETM   DS    0H
          SAVE  (14,12),,@@GETM
          LR    R12,R15
          USING @@GETM,R12
@@ -871,7 +871,7 @@ RETURNGM DS    0H
 *                                                                     *
 ***********************************************************************
          ENTRY @@FREEM
-@@FREEM  EQU   *
+@@FREEM  DS    0H
          SAVE  (14,12),,@@FREEM
          LR    R12,R15
          USING @@FREEM,R12
@@ -899,7 +899,7 @@ RETURNFM DS    0H
 *                                                                     *
 ***********************************************************************
          ENTRY @@GETCLK
-@@GETCLK EQU   *
+@@GETCLK DS    0H
          SAVE  (14,12),,@@GETCLK
          LR    R12,R15
          USING @@GETCLK,R12
@@ -931,7 +931,7 @@ RETURNGC DS    0H
 *                                                                     *
 ***********************************************************************
          ENTRY @@LOAD
-@@LOAD   EQU   *
+@@LOAD   DS    0H
          SAVE  (14,12),,@@LOAD
          LR    R12,R15
          USING @@LOAD,R12
@@ -953,7 +953,7 @@ RETURNLD DS    0H
 *                                                                     *
 ***********************************************************************
          ENTRY @@SYSTEM
-@@SYSTEM EQU   *
+@@SYSTEM DS    0H
          SAVE  (14,12),,@@SYSTEM
          LR    R12,R15
          USING @@SYSTEM,R12
@@ -1006,7 +1006,7 @@ SYSTEMLN EQU   *-SYSTMWRK    LENGTH OF DYNAMIC STORAGE
 *                                                                     *
 ***********************************************************************
          ENTRY @@IDCAMS
-@@IDCAMS EQU   *
+@@IDCAMS DS    0H
          SAVE  (14,12),,@@IDCAMS
          LR    R12,R15
          USING @@IDCAMS,R12
@@ -1022,7 +1022,7 @@ SYSTEMLN EQU   *-SYSTMWRK    LENGTH OF DYNAMIC STORAGE
 *                                                                     *
 ***********************************************************************
          ENTRY @@DYNAL
-@@DYNAL EQU   *
+@@DYNAL  DS    0H
          SAVE  (14,12),,@@DYNAL
          LR    R12,R15
          USING @@DYNAL,R12
@@ -1039,7 +1039,7 @@ SYSTEMLN EQU   *-SYSTMWRK    LENGTH OF DYNAMIC STORAGE
 *                                                                     *
 ***********************************************************************
          ENTRY @@SVC99
-@@SVC99  EQU   *
+@@SVC99  DS    0H
          SAVE  (14,12),,@@SVC99
          LR    R12,R15
          USING @@SVC99,R12
@@ -1082,7 +1082,7 @@ TABLEN   EQU       *-TABDDN
 *                                                                     *
 ***********************************************************************
          ENTRY @@VSEFIL
-@@VSEFIL EQU   *
+@@VSEFIL DS    0H
          USING     *,R3
          SAVE      (14,12)
          LR        R3,R15

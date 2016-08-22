@@ -244,12 +244,12 @@ HPLOC    DC    A(HEAPLOC)        Heap location
          DS    0H
          AIF ('&COMP' NE 'C370').NOCEES
          ENTRY CEESTART
-CEESTART EQU   *
+CEESTART DS    0H
 .NOCEES  ANOP
 @@CRT0   PDPPRLG CINDEX=1,FRAME=120,BASER=12,ENTRY=YES
          B     FEN1
          LTORG
-FEN1     EQU   *
+FEN1     DS    0H
          DROP  12
          BALR  12,0
          USING *,12
@@ -321,9 +321,9 @@ SAVER13  DC    F'0'
          DROP  ,
          DS    0H
 *         ENTRY CEESG003
-*CEESG003 EQU   *
+*CEESG003 DS    0H
          ENTRY @@EXITA
-@@EXITA  EQU   *
+@@EXITA  DS    0H
 * SWITCH BACK TO OUR OLD SAVE AREA
          LR    R10,R15
          USING @@EXITA,R10

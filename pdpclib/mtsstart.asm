@@ -39,9 +39,9 @@ SUBPOOL  EQU   0
 * proper @@MAIN entry point to become active
          DC    C'PDPCLIB!'
          ENTRY @@CRT0
-@@CRT0   EQU   *
+@@CRT0   DS    0H
 *         ENTRY CEESTART
-*CEESTART EQU   *
+*CEESTART DS    0H
          SAVE  (14,12),,@@CRT0
          LR    R10,R15
          USING @@CRT0,R10
@@ -146,10 +146,10 @@ SAVER4   DS    F
 SAVER13  DS    F
          LTORG
 *         ENTRY CEESG003
-*CEESG003 EQU   *
+*CEESG003 DS    0H
          DS    0H
          ENTRY @@EXITA
-@@EXITA  EQU   *
+@@EXITA  DS    0H
 * SWITCH BACK TO OUR OLD SAVE AREA
          LR    R10,R15
          USING @@EXITA,R10

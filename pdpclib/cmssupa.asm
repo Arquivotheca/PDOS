@@ -74,7 +74,7 @@ SUBPOOL  EQU   0
 *                                                                    *
 **********************************************************************
          ENTRY @@AOPEN
-@@AOPEN  EQU   *
+@@AOPEN  DS    0H
          SAVE  (14,12),,@@AOPEN
          LR    R12,R15
          USING @@AOPEN,R12
@@ -281,7 +281,7 @@ OUTDCBLN EQU   *-OUTDCB
 *                                                                    *
 **********************************************************************
          ENTRY @@AREAD
-@@AREAD  EQU   *
+@@AREAD  DS    0H
          SAVE  (14,12),,@@AREAD
          LR    R12,R15
          USING @@AREAD,R12
@@ -335,7 +335,7 @@ RETURNAR DS    0H
 *                                                                    *
 **********************************************************************
          ENTRY @@AWRITE
-@@AWRITE EQU   *
+@@AWRITE DS    0H
          SAVE  (14,12),,@@AWRITE
          LR    R12,R15
          USING @@AWRITE,R12
@@ -389,7 +389,7 @@ RETURNAW DS    0H
 *                                                                    *
 **********************************************************************
          ENTRY @@ACLOSE
-@@ACLOSE EQU   *
+@@ACLOSE DS    0H
          SAVE  (14,12),,@@ACLOSE
          LR    R12,R15
          USING @@ACLOSE,R12
@@ -447,7 +447,7 @@ CLOSEMLN EQU   *-CLOSEMAC
 *                                                                    *
 **********************************************************************
          ENTRY @@GETM
-@@GETM   EQU   *
+@@GETM   DS    0H
          SAVE  (14,12),,@@GETM
          LR    R12,R15
          USING @@GETM,R12
@@ -494,7 +494,7 @@ RETURNGM DS    0H
 *                                                                    *
 **********************************************************************
          ENTRY @@FREEM
-@@FREEM  EQU   *
+@@FREEM  DS    0H
          SAVE  (14,12),,@@FREEM
          LR    R12,R15
          USING @@FREEM,R12
@@ -532,7 +532,7 @@ RETURNFM DS    0H
 *
 **********************************************************************
          ENTRY @@SVC202
-@@SVC202 EQU *
+@@SVC202 DS    0H
          SAVE  (14,12),,@@SVC202
          LR    R12,R15
          USING @@SVC202,R12
@@ -587,7 +587,7 @@ SV202ER  EQU   *
 *
 **********************************************************************
          ENTRY @@ATTN@@
-@@ATTN@@ EQU *
+@@ATTN@@ DS    0H
          SAVE  (14,12),,@@ATTN@@
          LR    R12,R15
          USING @@ATTN@@,R12
@@ -633,7 +633,7 @@ ATTNAD   DC   AL3(ATTNAD)    ADDRESS OF LINE TO BE STACKED
 *
 **********************************************************************
          ENTRY @@STACKN
-@@STACKN EQU *
+@@STACKN DS    0H
          SAVE  (14,12),,@@STACKN
          LR    R12,R15
          USING @@STACKN,R12
@@ -659,7 +659,7 @@ ATTNAD   DC   AL3(ATTNAD)    ADDRESS OF LINE TO BE STACKED
 *                                                                    *
 **********************************************************************
          ENTRY @@GETCLK
-@@GETCLK EQU   *
+@@GETCLK DS    0H
          SAVE  (14,12),,@@GETCLK
          LR    R12,R15
          USING @@GETCLK,R12

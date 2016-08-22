@@ -2504,8 +2504,14 @@ WRITBAD  ABEND 001,DUMP           Or set error code?            GP14233
          SPACE 1
 TPUTWRIT CLI   RECFMIX,IXVAR      RECFM=V ?
          BE    TPUTWRIV           YES
-         SH    R4,=H'4'           BACK UP TO RDW
-         LA    R5,4(,R5)          LENGTH WITH RDW
+         L     R1,BUFFADDR        GET MY (INPUT?) BUFFER        GP16234
+         LA    R2,4(,R5)          LENGTH WITH RDW               GP16234
+         LA    R14,4(,R1)         POINT PAST RDW                GP16234
+         LR    R15,R5             COPY LENGTH                   GP16234
+         MVCL  R14,R4             MOVE USER'S RECORD TO WORK    GP16234
+         LR    R4,R1              MOVE BUFFER ADDRESS           GP16234
+         LR    R5,R2              LENGTH WITH RDW               GP16234
+         STCM  R5,12,2(R4)        CLEAR RDW FLAGS FIELD         GP16234
 TPUTWRIV STH   R5,0(,R4)          FILL RDW
          STCM  R5,12,2(R4)          ZERO REST
          L     R6,ZIOECT          RESTORE ECT ADDRESS

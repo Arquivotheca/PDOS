@@ -3253,7 +3253,7 @@ MVSSUPA  CSECT ,             RESTORE
 *                                                                    *
 **********************************************************************
          ENTRY @@GETPFX
-@@GETPFX EQU   *
+@@GETPFX DS    0H
          SAVE  (14,12),,@@GETPFX
          LR    R12,R15
          USING @@GETPFX,R12
@@ -3301,7 +3301,7 @@ RETURNGP DS    0H
 *                                                                    *
 **********************************************************************
          ENTRY @@TEST31
-@@TEST31 EQU   *
+@@TEST31 DS    0H
          SAVE  (14,12),,@@TEST31
          LR    R12,R15
          USING @@TEST31,R12

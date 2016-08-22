@@ -93,7 +93,7 @@ SUBPOOL  EQU   0
 *                                                                    *
 **********************************************************************
          ENTRY @@AOPEN
-@@AOPEN  EQU   *
+@@AOPEN  DS    0H
          SAVE  (14,12),,@@AOPEN
          LR    R12,R15
          USING @@AOPEN,R12
@@ -286,7 +286,7 @@ OUTDCBLN EQU   *-OUTDCB
 *                                                                    *
 **********************************************************************
          ENTRY @@AREAD
-@@AREAD  EQU   *
+@@AREAD  DS    0H
          SAVE  (14,12),,@@AREAD
          LR    R12,R15
          USING @@AREAD,R12
@@ -340,7 +340,7 @@ RETURNAR DS    0H
 *
 ***********************************************************************
          ENTRY @@AWRITE
-@@AWRITE EQU   *
+@@AWRITE DS    0H
          SAVE  (14,12),,@@AWRITE
          LR    R12,R15
          USING @@AWRITE,R12
@@ -390,7 +390,7 @@ RETURNAR DS    0H
 *                                                                    *
 **********************************************************************
          ENTRY @@ACLOSE
-@@ACLOSE EQU   *
+@@ACLOSE DS    0H
          SAVE  (14,12),,@@ACLOSE
          LR    R12,R15
          USING @@ACLOSE,R12
@@ -448,7 +448,7 @@ CLOSEMLN EQU   *-CLOSEMAC
 *
 ***********************************************************************
          ENTRY @@GETM
-@@GETM   EQU   *
+@@GETM   DS    0H
          SAVE  (14,12),,@@GETM
          LR    R12,R15
          USING @@GETM,R12
@@ -499,7 +499,7 @@ RETURNGM DS    0H
 *
 ***********************************************************************
          ENTRY @@FREEM
-@@FREEM  EQU   *
+@@FREEM  DS    0H
          SAVE  (14,12),,@@FREEM
          LR    R12,R15
          USING @@FREEM,R12
@@ -532,7 +532,7 @@ RETURNFM DS    0H
 *
 ***********************************************************************
          ENTRY @@GETCLK
-@@GETCLK EQU   *
+@@GETCLK DS    0H
          SAVE  (14,12),,@@GETCLK
          LR    R12,R15
          USING @@GETCLK,R12
@@ -572,7 +572,7 @@ RETURNGC DS    0H
 *
 ***********************************************************************
          ENTRY @@SYSTEM
-@@SYSTEM EQU   *
+@@SYSTEM DS    0H
          SAVE  (14,12),,@@SYSTEM
          LR    R12,R15
          USING @@SYSTEM,R12
@@ -624,7 +624,7 @@ SYSTEMLN EQU   *-SYSTMWRK    LENGTH OF DYNAMIC STORAGE
 *
 ***********************************************************************
          ENTRY @@TEXTLC
-@@TEXTLC EQU   *
+@@TEXTLC DS    0H
          SAVE  (14,12),,@@TEXTLC  Save caller's regs.
          LR    R12,R15
          USING @@TEXTLC,R12
@@ -658,7 +658,7 @@ LCOPTS   DC    X'A0'              Constant
 *
 ***********************************************************************
          ENTRY @@IDCAMS
-@@IDCAMS EQU   *
+@@IDCAMS DS    0H
          SAVE  (14,12),,@@IDCAMS
          LR    R12,R15
          USING @@IDCAMS,R12
@@ -679,7 +679,7 @@ LCOPTS   DC    X'A0'              Constant
 *                                                                     *
 ***********************************************************************
          ENTRY @@SVC99
-@@SVC99  EQU   *
+@@SVC99  DS    0H
          SAVE  (14,12),,@@SVC99   Save caller's regs.
          LR    R12,R15
          USING @@SVC99,R12

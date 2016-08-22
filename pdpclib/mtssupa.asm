@@ -846,6 +846,9 @@ TTTLEN   DC     H'81'
 *  Dummy functions                                                   *
 *                                                                    *
 **********************************************************************
+         ENTRY @@GETPFX
+         USING @@GETPFX,R15
+@@GETPFX BR    R14
          ENTRY @@GETTZ
          USING @@GETTZ,R15
 @@GETTZ  BR    R14

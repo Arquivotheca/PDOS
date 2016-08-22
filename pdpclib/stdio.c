@@ -883,23 +883,24 @@ static void osfopen(void)
 #if defined(__MVS__) && !defined(__VSE__)
         else
         {
-            char pfx[8];
-
             /* Currently we manually add a prefix, but in the
                future we should call IKJPARS instead, so that
                an operating system can provide a longer
                (than 7 characters) prefix instead. */
             if (__tso)
             {
+                char pfx[8];
+                int l;
                 char *gp;
 
                 gp = __getpfx();
                 if (gp != NULL)
                 {
                     memcpy(pfx, gp, sizeof pfx);
-                    pfx[pfx[sizeof pfx - 1]] = '\0';
-                    if (pfx[0] != '\0')
+                    l = pfx[sizeof pfx - 1];
+                    if ((l > 0) && (l < sizeof pfx))
                     {
+                        pfx[l] = '\0';
                         strcpy(rawf, pfx);
                         strcat(rawf, ".");
                     }

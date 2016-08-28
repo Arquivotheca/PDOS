@@ -88,6 +88,40 @@
   doesn't serve any practical purpose and should not be used. CR13
   is ignored when CR0.10 = 1 (XA mode) */
 
+/* CR13_DUMMY is this:
+x address................ xxxx x length..
+0 000 0000 0000 0000 0001 0000 0 000 0000
+0 123 4567 8901 2345 6789 0123 4 567 8901
+
+ie a length of 0 (which is actually 16 MiB,
+and an address of binary 1 0000 0000 0000
+ie x'1000', pointing to nowhere special in
+low memory. Due to the fact that the length
+is given as 16 MiB, and the fact that CR13
+is only used for memory accesses above 16 MiB,
+it means that this dummy address that is
+pointed to is never inspected for a genuine
+segment table. The address is populated with
+a "1" so that CR13 is non-zero so that
+Hercules/380 will not activate the free-for-all
+option.
+
+Note that the 12 binary 0s mean that the
+segment table must begin on a 4k boundary,
+compared to 6 binary 0s for a page table
+origin requiring a 64 byte boundary. Note
+that the segment table always contains
+a multiple of 16 entries, which, at 4 bytes
+each, means that the end of the segment
+table is always on a 64-byte boundary
+suitable for a page table to follow
+immediately.
+*/
+
+
+*/
+
+
 /*
 
 MEMORY MAPS

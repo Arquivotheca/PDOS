@@ -5023,7 +5023,11 @@ __PDPCLIB_API__ size_t fwrite(const void *ptr,
             {
                 int fulllen;
 
-                if (stream->errorInd) break;
+                if (stream->errorInd)
+                {
+                    nmemb = 0;
+                    break;
+                }
                 sz = stream->upto - stream->fbuf;
                 if (sz < 4)
                 {
@@ -5044,6 +5048,7 @@ __PDPCLIB_API__ size_t fwrite(const void *ptr,
                         if (memcmp(stream->fbuf + 2, "\0\0", 2) != 0)
                         {
                             stream->errorInd = 1;
+                            nmemb = 0;
                             break;
                         }
                         fulllen = (stream->fbuf[0] << 8) | stream->fbuf[1];
@@ -5064,6 +5069,7 @@ __PDPCLIB_API__ size_t fwrite(const void *ptr,
                         else if (fulllen < 4)
                         {
                             stream->errorInd = 1;
+                            nmemb = 0;
                             break;
                         }
                     }

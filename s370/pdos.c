@@ -94,9 +94,10 @@ x address................ xxxx x length..
 0 123 4567 8901 2345 6789 0123 4 567 8901
 
 ie a length of 0 (which is actually 16 MiB,
-and an address of binary 1 0000 0000 0000
-ie x'1000', pointing to nowhere special in
-low memory. Due to the fact that the length
+and an address of "1", which actualy means
+binary 1 0000 0000 0000, ie x'1000',
+pointing to nowhere special (ie location 4096)
+in low memory. Due to the fact that the length
 is given as 16 MiB, and the fact that CR13
 is only used for memory accesses above 16 MiB,
 it means that this dummy address that is

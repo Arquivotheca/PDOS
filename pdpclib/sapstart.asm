@@ -54,7 +54,7 @@ AMBIT    EQU X'00000000'
 * bytes, where we need to specify the new PSW.
 *
 ORIGIN   DS    0D
-         DC    X'000C0000'  EC mode + Machine Check enabled
+         DC    X'000C0000' EC mode '08' + Machine Check '04' enabled
          DC    A(AMBIT+POSTIPL) First bit of "normal" memory
 *
 * Memory to be cleared.

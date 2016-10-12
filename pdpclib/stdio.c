@@ -5923,6 +5923,10 @@ static int cmsremove(const char *filename)
     p = strchr(filename, ' ');
     if (p == NULL)
     {
+        p = strchr(filename, '.');
+    }
+    if (p == NULL)
+    {
         memcpy( &s202parm[8] , filename, strlen(filename));
         memset( &s202parm[16], 0xff, 8);
     }
@@ -5930,6 +5934,10 @@ static int cmsremove(const char *filename)
     {
         memcpy( &s202parm[8] , filename, p - filename);
         q = strchr(p + 1, ' ');
+        if (q == NULL)
+        {
+            q = strchr(p + 1, '.');
+        }
         if (q == NULL)
         {
             memcpy( &s202parm[16] , p + 1, strlen(p + 1));

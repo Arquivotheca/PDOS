@@ -5881,12 +5881,16 @@ static int cmsrename(const char *old, const char *newnam)
 
     memset(s202parm, ' ', sizeof s202parm);
     p = strchr(old, ' ');
+    if (p == NULL) p = strchr(old, '.');
     if (p == NULL) return (-1);
     q = strchr(p + 1, ' ');
+    if (q == NULL) q = strchr(p + 1, '.');
     if (q == NULL) return (-1);
     r = strchr(newnam, ' ');
+    if (r == NULL) r = strchr(newnam, '.');
     if (r == NULL) return (-1);
     s = strchr(r + 1, ' ');
+    if (s == NULL) s = strchr(r + 1, '.');
     if (s == NULL) return (-1);
 
     /* build the SVC 202 string */

@@ -5918,6 +5918,18 @@ static int cmsremove(const char *filename)
     int parm;
     const char *p;
     const char *q;
+    char *f;
+    char fnm[FILENAME_MAX];
+
+    strncpy(fnm, filename, sizeof fnm);
+    fnm[sizeof fnm - 1] = '\0';
+    f = fnm;
+    while (*f != '\0')
+    {
+        *f = toupper((unsigned)*f);
+        f++;
+    }
+    filename = fnm;
 
     memset(s202parm, ' ', sizeof s202parm);
 

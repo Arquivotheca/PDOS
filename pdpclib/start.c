@@ -336,7 +336,6 @@ __PDPCLIB_API__ int CTYP __start(char *p)
     {
         __exita(EXIT_FAILURE);
     }
-    stdout->permfile = 1;
     stdout->dynal = dyna_sysprint;
 
     stderr = fopen("dd:SYSTERM", "w");
@@ -346,7 +345,6 @@ __PDPCLIB_API__ int CTYP __start(char *p)
         fclose(stdout);
         __exita(EXIT_FAILURE);
     }
-    stderr->permfile = 1;
     stderr->dynal = dyna_systerm;
 
     stdin = fopen("dd:SYSIN", "r");
@@ -357,7 +355,6 @@ __PDPCLIB_API__ int CTYP __start(char *p)
         fclose(stderr);
         __exita(EXIT_FAILURE);
     }
-    stdin->permfile = 1;
     stdin->dynal = dyna_sysin;
     __doperm = 0;
 #if defined(__CMS__)

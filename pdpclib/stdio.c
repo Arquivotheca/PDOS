@@ -381,21 +381,26 @@ __PDPCLIB_API__ FILE *fopen(const char *filename, const char *mode)
     fnm = filename;
     modus = mode;
     err = 0;
-    findSpareSpot();
-    if (!err)
+    myfile = malloc(sizeof(FILE));
+    if (myfile == NULL)
     {
-        myfile = malloc(sizeof(FILE));
-        if (myfile == NULL)
+        err = 1;
+    }
+    else
+    {
+        myfile->permfile = 0;
+        if (__doperm)
         {
-            err = 1;
+            myfile->permfile = 1;
         }
-        else
+        findSpareSpot();
+        if (!err)
         {
             fopen2();
-            if (err)
-            {
-                free(myfile);
-            }
+        }
+        if (err)
+        {
+            free(myfile);
         }
     }
     if (err)
@@ -420,8 +425,11 @@ static void fopen2(void)
         osfopen();
         if (!err)
         {
-            __userFiles[spareSpot] = myfile;
-            myfile->intFno = spareSpot;
+            if (!myfile->permfile)
+            {
+                __userFiles[spareSpot] = myfile;
+                myfile->intFno = spareSpot;
+            }
             fopen3();
         }
     }
@@ -464,10 +472,6 @@ static void fopen3(void)
         myfile->eofInd = 0;
         myfile->ungetCh = -1;
         myfile->update = 0;
-        if (!inreopen)
-        {
-            myfile->permfile = 0;
-        }
         myfile->isopen = 1;
 #if !defined(__MVS__) && !defined(__CMS__)
         if (!myfile->textMode)
@@ -831,7 +835,25 @@ static void osfopen(void)
             *p = toupper((unsigned char)*p);
             p++;
         }
-        sprintf(tmpdd, "PDP%03dHD", spareSpot);
+        if (!myfile->permfile)
+        {
+            sprintf(tmpdd, "PDP%03dHD", spareSpot);
+        }
+        else
+        {
+            if (myfile == stdout)
+            {
+                strcpy(tmpdd, "PDPOUTHD");
+            }
+            else if (myfile == stdin)
+            {
+                strcpy(tmpdd, "PDPINXHD");
+            }
+            else if (myfile == stderr)
+            {
+                strcpy(tmpdd, "PDPERRHD");
+            }
+        }
         filedef(tmpdd, newfnm, mode);
         myfile->dynal = 1;
         p = tmpdd;
@@ -853,7 +875,25 @@ static void osfopen(void)
             p++;
         }
         /* create a DD from the handle number */
-        sprintf(tmpdd, "PDP%03dHD", spareSpot);
+        if (!myfile->permfile)
+        {
+            sprintf(tmpdd, "PDP%03dHD", spareSpot);
+        }
+        else
+        {
+            if (myfile == stdout)
+            {
+                strcpy(tmpdd, "PDPOUTHD");
+            }
+            else if (myfile == stdin)
+            {
+                strcpy(tmpdd, "PDPINXHD");
+            }
+            else if (myfile == stderr)
+            {
+                strcpy(tmpdd, "PDPERRHD");
+            }
+        }
         fdclr(tmpdd); /* unconditionally clear */
         filedef(tmpdd, newfnm, mode);
         if (err) return;
@@ -871,7 +911,25 @@ static void osfopen(void)
         char rawf[FILENAME_MAX]; /* file name without member,
                                     suitable for dynamic allocation */
 
-        sprintf(newfnm, "PDP%03dHD", spareSpot);
+        if (!myfile->permfile)
+        {
+            sprintf(newfnm, "PDP%03dHD", spareSpot);
+        }
+        else
+        {
+            if (myfile == stdout)
+            {
+                strcpy(newfnm, "PDPOUTHD");
+            }
+            else if (myfile == stdin)
+            {
+                strcpy(newfnm, "PDPINXHD");
+            }
+            else if (myfile == stderr)
+            {
+                strcpy(newfnm, "PDPERRHD");
+            }
+        }
         strcpy(tmpdd, newfnm);
 
         strcpy(rawf, "");
@@ -1010,7 +1068,7 @@ static void osfopen(void)
     {
         myfile->recfm = __RECFM_V;
         myfile->lrecl = 255;
-        if (__doperm)
+        if (myfile->permfile)
         {
             /* don't block stdout/stderr so that output is not
                delayed if the program crashes */
@@ -1034,10 +1092,7 @@ static void osfopen(void)
        command, like LISTCAT. If people don't want that, they
        should do a "CALL" to invoke the program as a
        non-TSO-command-processor */
-    if (__tso
-        && (__doperm
-            || (inreopen && myfile->permfile))
-       )
+    if (__tso && myfile->permfile)
     {
         mode |= 0x80; /* use PUTLINE/GETLINE if available */
     }
@@ -1082,7 +1137,7 @@ static void osfopen(void)
     {
         /* sysprint etc are expected to be line-buffered,
            although we allow full buffering for RECFM=UB */  
-        if ((__doperm || (inreopen && myfile->permfile))
+        if (myfile->permfile
             && ((myfile->true_recfm & 0x10) == 0)
            )
         {
@@ -1370,7 +1425,10 @@ __PDPCLIB_API__ int fclose(FILE *stream)
     {
 #if defined(__MVS__) || defined(__CMS__)
         /* if we're not in the middle of freopen ... */
-        __userFiles[stream->intFno] = NULL;
+        if (!stream->permfile)
+        {
+            __userFiles[stream->intFno] = NULL;
+        }
         if (!inreopen)
         {
             free(stream);

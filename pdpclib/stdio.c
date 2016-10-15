@@ -5948,36 +5948,59 @@ static int cmsrename(const char *old, const char *newnam)
     char s202parm[8*8];
     int code;
     int parm;
-    const char *p;
-    const char *q;
-    const char *r;
-    const char *s;
+    char fnm[FILENAME_MAX];
+    char *p;
+    char *q;
 
     memset(s202parm, ' ', sizeof s202parm);
-    p = strchr(old, ' ');
-    if (p == NULL) p = strchr(old, '.');
+
+    memcpy(&s202parm[0], "RENAME  ", 8);
+
+    strncpy(fnm, old, sizeof fnm);
+    fnm[sizeof fnm - 1] = '\0';
+    p = fnm;
+    while (*p != '\0')
+    {
+        *p = toupper((unsigned)*p);
+        p++;
+    }
+    p = strchr(fnm, ' ');
+    if (p == NULL) p = strchr(fnm, '.');
     if (p == NULL) return (-1);
-    q = strchr(p + 1, ' ');
-    if (q == NULL) q = strchr(p + 1, '.');
-    if (q == NULL) return (-1);
-    r = strchr(newnam, ' ');
-    if (r == NULL) r = strchr(newnam, '.');
-    if (r == NULL) return (-1);
-    s = strchr(r + 1, ' ');
-    if (s == NULL) s = strchr(r + 1, '.');
-    if (s == NULL) return (-1);
+    *p++ = '\0';
+    q = strchr(p, ' ');
+    if (q == NULL) q = strchr(p, '.');
+    if (q == NULL) q = "A";
+    else *q++ = '\0';
 
-    /* build the SVC 202 string */
-    memcpy( &s202parm[0] , "RENAME  ", 8);
-    memcpy( &s202parm[8] , old, p - old);
-    memcpy( &s202parm[16] , p + 1, q - p - 1);
-    memcpy( &s202parm[24] , q + 1, strlen(q + 1));
-    memcpy( &s202parm[32] , newnam, r - newnam);
-    memcpy( &s202parm[40] , r + 1, s - r - 1);
-    memcpy( &s202parm[48] , s + 1, strlen(s + 1));
-    memset( &s202parm[56], 0xff, 8);
+    memcpy(&s202parm[8], fnm, (strlen(fnm) > 8 ? 8 : strlen(fnm)));
+    memcpy(&s202parm[16], p, (strlen(p) > 8 ? 8 : strlen(p)));
+    memcpy(&s202parm[24], q, (strlen(q) > 8 ? 8 : strlen(q)));
 
-    __SVC202 ( s202parm, &code, &parm );
+    strncpy(fnm, newnam, sizeof fnm);
+    fnm[sizeof fnm - 1] = '\0';
+    p = fnm;
+    while (*p != '\0')
+    {
+        *p = toupper((unsigned)*p);
+        p++;
+    }
+    p = strchr(fnm, ' ');
+    if (p == NULL) p = strchr(fnm, '.');
+    if (p == NULL) return (-1);
+    *p++ = '\0';
+    q = strchr(p, ' ');
+    if (q == NULL) q = strchr(p, '.');
+    if (q == NULL) q = "A";
+    else *q++ = '\0';
+
+    memcpy(&s202parm[32], fnm, (strlen(fnm) > 8 ? 8 : strlen(fnm)));
+    memcpy(&s202parm[40], p, (strlen(p) > 8 ? 8 : strlen(p)));
+    memcpy(&s202parm[48], q, (strlen(q) > 8 ? 8 : strlen(q)));
+
+    memset(&s202parm[56], 0xff, 8);
+
+    __SVC202(s202parm, &code, &parm);
     return (parm);
 }
 

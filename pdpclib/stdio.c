@@ -396,10 +396,12 @@ __PDPCLIB_API__ FILE *fopen(const char *filename, const char *mode)
         {
             myfile->permfile = 0;
         }
+#if defined(__MVS__) || defined(__CMS__)
         if (__doperm)
         {
             myfile->permfile = 1;
         }
+#endif
         if (inreopen)
         {
             spareSpot = myfile->intFno;

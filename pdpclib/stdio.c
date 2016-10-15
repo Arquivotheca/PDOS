@@ -378,32 +378,46 @@ __PDPCLIB_API__ FILE *fopen(const char *filename, const char *mode)
         return (__stdpch);
     }
 #endif
+
     fnm = filename;
     modus = mode;
     err = 0;
-    myfile = malloc(sizeof(FILE));
+    if (!inreopen)
+    {
+        myfile = malloc(sizeof(FILE));
+    }
     if (myfile == NULL)
     {
         err = 1;
     }
     else
     {
-        myfile->permfile = 0;
+        if (!inreopen)
+        {
+            myfile->permfile = 0;
+        }
         if (__doperm)
         {
             myfile->permfile = 1;
         }
-        findSpareSpot();
+        if (inreopen)
+        {
+            spareSpot = myfile->intFno;
+        }
+        else
+        {
+            findSpareSpot();
+        }
         if (!err)
         {
             fopen2();
         }
-        if (err)
+        if (err && !inreopen)
         {
             free(myfile);
         }
     }
-    if (err)
+    if (err && !inreopen)
     {
         myfile = NULL;
     }
@@ -3808,11 +3822,7 @@ __PDPCLIB_API__ FILE *freopen(const char *filename,
     fclose(stream);
 
     myfile = stream;
-    fnm = filename;
-    modus = mode;
-    err = 0;
-    spareSpot = stream->intFno;
-    fopen2();
+    fopen(filename, mode);
     if (err && !stream->permfile)
     {
         __userFiles[stream->intFno] = NULL;

@@ -406,7 +406,7 @@ __PDPCLIB_API__ FILE *fopen(const char *filename, const char *mode)
         {
             spareSpot = myfile->intFno;
         }
-        else
+        else if (!myfile->permfile)
         {
             findSpareSpot();
         }
@@ -441,7 +441,11 @@ static void fopen2(void)
         osfopen();
         if (!err)
         {
-            if (!myfile->permfile)
+            if (myfile->permfile)
+            {
+                myfile->intFno = 0;
+            }
+            else
             {
                 __userFiles[spareSpot] = myfile;
                 myfile->intFno = spareSpot;

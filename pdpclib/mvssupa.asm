@@ -3324,6 +3324,53 @@ RETURNTS DS    0H
 *
 *
 *
+**********************************************************************
+*                                                                    *
+*  GETAM - get the current AMODE                                     *
+*                                                                    *
+*  This function returns 24 if we are running in AMODE 24, 31 if we  *
+*  are running in AMODE 31, and 64 if we are running in AMODE 64     *
+*                                                                    *
+*  This code works because in 64-bit mode, a BALR will set the low   *
+*  bit to 1. In 31-bit mode, the BALR will set the high bit of the   *
+*  low 32 bits to 1, while in 24-bit mode the BALR will set the      *
+*  high bit of the low 32 bits to 0 (as well as store other junk).   *
+*  The reason AM24 will set the top bit to 0 is because the ILC is   *
+*  stored there, and is a 2-bit value, and will be b'01' in the      *
+*  case of a BALR instruction being executed. Note that the value    *
+*  of '1' means "one halfword".                                      *
+*                                                                    *
+*  Note - has not been tested on z/OS for AM64                       *
+*                                                                    *
+**********************************************************************
+         ENTRY @@GETAM
+@@GETAM  DS    0H
+         SAVE  (14,12),,@@GETAM
+         LR    R12,R15
+         USING @@GETAM,R12
+*
+         LA    R15,1
+         BALR  R1,R0
+         LR    R2,R1
+         N     R2,=X'00000001'
+         LTR   R2,R2
+         BZ    GANOT64
+         LA    R15,64
+         B     RETURNGA
+GANOT64  DS    0H
+         LTR   R1,R1
+         BM    GANOT24
+         LA    R15,24
+         B     RETURNGA
+GANOT24  DS    0H
+         LA    R15,31
+*
+RETURNGA DS    0H
+         RETURN (14,12),RC=(15)
+         LTORG
+*
+*
+*
 ***********************************************************************
 *                                                                     *
 *  CALL @@SVC99,(rb)                                                  *

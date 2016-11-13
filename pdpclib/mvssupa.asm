@@ -3331,8 +3331,6 @@ RETURNTS DS    0H
 *  This function returns 24 if we are running in AMODE 24, 31 if we  *
 *  are running in AMODE 31, and 64 if we are running in AMODE 64     *
 *                                                                    *
-*  Note - has not been tested on z/OS for AM64                       *
-*                                                                    *
 **********************************************************************
          ENTRY @@GETAM
 @@GETAM  DS    0H
@@ -3340,7 +3338,6 @@ RETURNTS DS    0H
          LR    R12,R15
          USING @@GETAM,R12
 *
-         SAM64
          L     R2,=X'C0000000'
          LA    R2,0(,R2)
          CLM   R2,8,=X'40'
@@ -3354,7 +3351,6 @@ GAIS24   DS    0H
 GAIS31   LA    R15,31
 *
 RETURNGA DS    0H
-         SAM24
          RETURN (14,12),RC=(15)
          LTORG
 *

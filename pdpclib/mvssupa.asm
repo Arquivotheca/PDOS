@@ -177,7 +177,7 @@ MVSSUPA  TITLE 'M V S S U P A  ***  MVS VERSION OF PDP CLIB SUPPORT'
 .DYNAM   ANOP  ,
 &ZZSETSL SETC  '&SAVE(2)'
 &ZZSETSA SETC  '&SAVE(1)'
-         GETMAIN R,LV=&ZZSETSL,SP=&ZZSETSP
+         GETMAIN RC,LV=&ZZSETSL,SP=&ZZSETSP,LOC=BELOW
          LR    R14,R1             START OF NEW AREA
          LA    R15,&ZZSETSL       LENGTH
          SR    R3,R3              ZERO FILL
@@ -861,7 +861,7 @@ DDCTDONE MVC   DDWFLAGS,DDWFLAG1  COPY FIRST DD'S FLAGS         GP14205
 *     they pass values that vary between uses, which ours don't,
 *     or require storaage alteration (ditto).
 *DEBUG*  GETMAIN RC,LV=ZDCBLEN,SP=SUBPOOL,LOC=BELOW,BNDRY=PAGE **DEBUG
-         GETMAIN R,LV=ZDCBLEN,SP=SUBPOOL    I/O work area BTL
+         GETMAIN RC,LV=ZDCBLEN,SP=SUBPOOL,LOC=BELOW  I/O work area BTL
 *   Note that PAGE alignment makes for easier dump reading
 *   but wastes storage - so we use it for debugging only.
 *   Using RC to get a return code if memory unavailable.
@@ -1351,7 +1351,7 @@ GETBUFF  L     R5,ZPBLKSZ         Load the input blocksize      GP14233
          CR    R6,R0              Buffer size OK?               GP14205
          BNL   *+4+2                Yes                         GP14205
          LR    R6,R0              Use larger                    GP14205
-         GETMAIN R,LV=(R6),SP=SUBPOOL  Get input buffer
+         GETMAIN RC,LV=(R6),SP=SUBPOOL,LOC=BELOW  Get input buffer
          ST    R1,ZBUFF1          Save for cleanup
          ST    R6,ZBUFF1+4           ditto
          ST    R1,BUFFADDR        Save the buffer address for READ
@@ -1406,7 +1406,7 @@ TERMOPEN MVC   IOMFLAGS,WWORK     Save for duration
          ST    R6,ZPBLKSZ         Return it                     GP14233
          ST    R6,ZPLRECL         Return it
          LA    R6,4(,R6)          Add 4 in case RECFM=U buffer
-         GETMAIN R,LV=(R6),SP=SUBPOOL  Get input buffer
+         GETMAIN RC,LV=(R6),SP=SUBPOOL,LOC=BELOW  Get input buffer
          ST    R1,ZBUFF2          Save for cleanup
          ST    R6,ZBUFF2+4           ditto
          LA    R1,4(,R1)          Allow for RDW if not V
@@ -2028,7 +2028,7 @@ READCHEK CHECK DECB               Wait for READ to complete
          FREEMAIN R,LV=(R2),A=(R1),SP=SUBPOOL  and free it      GP14205
          L     R5,ZPBLKSZ         Load the input blocksize      GP14205
          LA    R6,4(,R5)          Add 4 in case RECFM=U buffer  GP14205
-         GETMAIN R,LV=(R6),SP=SUBPOOL  Get input buffer
+         GETMAIN RC,LV=(R6),SP=SUBPOOL,LOC=BELOW  Get input buffer
          ST    R1,ZBUFF1          Save for cleanup              GP14205
          ST    R6,ZBUFF1+4           ditto                      GP14205
          ST    R1,BUFFADDR        Save the buffer address for READ
@@ -3464,7 +3464,7 @@ RETURN99 DS    0H
          BNZ   SNAPGOT                                          GP14244
          USING SNAPDCB,R10   DECLARE DYNAMIC WORK AREA          GP14244
 SNAPGET  LA    R0,SNAPSLEN   GET LENGTH OF SAVE AND WORK AREA   GP14244
-         GETMAIN R,LV=(0)                                       GP15019
+         GETMAIN RC,LV=(0),LOC=BELOW                            GP15019
          STM   R0,R1,#SNAPDCB     SAVE FOR RELEASE              GP14244
          LR    R10,R1                                           GP14244
          MVC   SNAPDCB(PATSNAPL),PATSNAP   INIT DCB, ETC.       GP14244

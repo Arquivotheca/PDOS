@@ -42,7 +42,7 @@ undivert(pdptop.mac)dnl
 //SYSPRINT DD  SYSOUT=*
 //SYSIN    DD  DUMMY
 //*
-//PDMAIN   EXEC PGM=IEBGENER
+//PDPMAIN  EXEC PGM=IEBGENER
 //SYSUT2   DD  DSN=&&MACLIB(PDPMAIN),DISP=(OLD,PASS)
 //SYSUT1   DD  *
 undivert(pdpmain.mac)dnl

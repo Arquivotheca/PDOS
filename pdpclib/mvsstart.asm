@@ -113,7 +113,6 @@ CEESTART DS    0H
 IN31     DS    0H
 .N380ST1 ANOP
 *
-         SAM64
          CALL  @@START
 *
          AIF   ('&ZSYS' NE 'S380').N380ST2
@@ -125,7 +124,6 @@ IN31B    DS    0H
 .N380ST2 ANOP
 *
 RETURNMS DS    0H
-         SAM24
          LR    R1,R13
          L     R13,SAVEAREA+4
          LR    R14,R15
@@ -157,7 +155,6 @@ SAVER13  DS    F
 IN31C    DS    0H
 .N380ST3 ANOP
 *
-         SAM24
          LR    R1,R13
          L     R13,4(R13)
          LR    R14,R9

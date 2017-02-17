@@ -347,7 +347,7 @@ NOTSYST  DS    0H
          BNE   NOTSYSPU
          LA    R6,80          lrecl = 80
          ST    R6,DCBLRECL
-         LA    R6,0           recfm = fixe
+         LA    R6,0           recfm = fixed
          ST    R6,DCBRECFM
          LA    R6,1
          ST    R6,ISDI   syspunch is device-independent

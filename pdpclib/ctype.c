@@ -868,7 +868,7 @@ static unsigned short __isbufR[257] = {
     0x0000U,
     0x0000U,
     0x0000U,
-    0x00D0U,
+    0x0090U, /* x'4a' is cent, not printable after conversion to ASCII */
     0x00D0U,
     0x00D0U,
     0x00D0U,

@@ -900,7 +900,7 @@ static unsigned short __isbufR[257] = {
     0x0000U,
     0x0000U,
     0x0000U,
-    0x00D0U,
+    0x0090U, /* x'6a' is secondary vertical bar, doesn't exist in ASCII */
     0x00D0U,
     0x00D0U,
     0x00D0U,

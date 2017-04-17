@@ -1,5 +1,6 @@
 MVSSUPA  TITLE 'M V S S U P A  ***  MVS VERSION OF PDP CLIB SUPPORT'
 ***********************************************************************
+*                                               Uppdated 2017-03-20   *
 *                                                                     *
 *  This program written by Paul Edwards.                              *
 *  Released to the public domain                                      *
@@ -302,6 +303,14 @@ MVSSUPA  TITLE 'M V S S U P A  ***  MVS VERSION OF PDP CLIB SUPPORT'
 .*                  +10-USE BLOCK MODE (BSAM RATHER THAN QSAM MODE)
 .*                  +80-TERMINAL GETLINE  +81-TERMINAL PUTLINE
 .*                  RETURNS 40-VSAM; 20-BPAM UNLIKE CONCAT
+&P.MIN   EQU   0    I/O MODE quick definitions                  GP17079
+&P.MOUT  EQU   1                                                GP17079
+&P.MUPD  EQU   2                                                GP17079
+&P.MAPP  EQU   3                                                GP17079
+&P.MINO  EQU   4                                                GP17079
+&P.MOIN  EQU   5                                                GP17079
+&P.MBLK  EQU   16                                               GP17079
+&P.MTRM  EQU   128                                              GP17079
 .*
 &P.DVTYP EQU   &P.MODE,1     DEVICE TYPE OF FIRST/ONLY DD       GP15365
 .*
@@ -328,14 +337,16 @@ MVSSUPA  TITLE 'M V S S U P A  ***  MVS VERSION OF PDP CLIB SUPPORT'
 &P.MFLGS EQU   &P.MODE+3,1   REMEMBER OPEN MODE
 &P.FTERM EQU   X'80'           USING GETLINE/PUTLINE
 &P.FBPAM EQU   X'20'           UNLIKE BPAM CONCAT - SPECIAL HANDL
-&P.FBLOCK EQU  X'10'           USING BSAM READ/WRITE MODE
+&P.FBLOK EQU   X'10'           USING BSAM READ/WRITE MODE
 &P.FEXCP EQU   X'08'           USE EXCP FOR TAPE
 .*.FUPD  EQU   X'06'           UPDATE IN PLACE (XSAM, VSAM)
 .*.      EQU                   (RESERVED)
 &P.FOUT  EQU   X'01'           OUTPUT MODE
 .*
+.*
 &P.LEN   DC    AL2(&P.SIZE)  CONTROL BLOCK LENGTH
 &P.ID    DC    H'42'         BLOCK IDENTIFIER (0 ON RETURN)
+.*
 &P.FLAGS DC    X'0'          DD SCAN FLAG
 &P.FDD   EQU   X'80'           FOUND A DD - LATER CONCAT FLAG
 &P.FSEQ  EQU   X'40'           USE IS SEQUENTIAL
@@ -354,6 +365,8 @@ MVSSUPA  TITLE 'M V S S U P A  ***  MVS VERSION OF PDP CLIB SUPPORT'
 .*.IXVSK EQU   20              (RESERVED) VSAM KEYED I/O
 .*.IXVSU EQU   24              (RESERVED) VSAM UPDATE (GET/PUT/RELEASE)
 .*
+&P.BLKPT DC    X'00'         BLOCKS PER TRACK (MAX BLKSI)       GP17079
+.*
 &P.OPC   DC    X'0'          DCB OPTCD                          GP15024
 .*
 &P.DEVT  DC    XL2'0'        UCBTBYT3/4
@@ -369,6 +382,8 @@ MVSSUPA  TITLE 'M V S S U P A  ***  MVS VERSION OF PDP CLIB SUPPORT'
 &P.FMFIX EQU   0               FIXED RECFM (BLOCKED)
 &P.FMVAR EQU   1               VARIABLE (BLOCKED)
 &P.FMUND EQU   2               UNDEFINED
+.*
+&P.TTR   DC    XL3'00'       (MISC. USE)  TTR                   GP17079
 .*
 &P.SIZE  EQU   *-&P.MODE     SIZE TO CLEAR
          MEND  ,
@@ -471,9 +486,9 @@ MVSSUPA  TITLE 'M V S S U P A  ***  MVS VERSION OF PDP CLIB SUPPORT'
          MEND  ,
          SPACE 1
          MACRO ,
-&NM      OBRAN &WHERE,&OP=B
+&NM      OBRAN &WHERE,&OP=B,&EXIT=VECTOR                        GP17079
 &NM      L     R14,=A(&WHERE)     Return point                  GP14233
-         &OP   VECTOR             Branch to alternate return    GP14233
+         &OP   &EXIT              Branch to alternate return    GP17079
          MEND  ,
          SPACE 1
 *
@@ -489,7 +504,7 @@ MVSSUPA  TITLE 'M V S S U P A  ***  MVS VERSION OF PDP CLIB SUPPORT'
 * to LOC=RES
 *
 MVSSUPA  CSECT ,
-         PRINT GEN
+         PRINT GEN,ON
          SPACE 1
 *-----------------------ASSEMBLY OPTIONS------------------------------*
 SUBPOOL  EQU   0                                                      *
@@ -600,6 +615,7 @@ SUBPOOL  EQU   0                                                      *
 * RC = -2064 Invalid FIND or BLDL.                                    *
 * RC = -2068 Member not found                                         *
 * RC = -2072 Member not allowed                                       *
+* RC = -2096 Unable to extend data (>64KiB tracks)                    *
 * RC = -3nnn VSAM OPEN failed with ACBERF=nn                          *
 *                                                                     *
 ***********************************************************************
@@ -1343,6 +1359,10 @@ WNOMEM2  OPEN  MF=(E,OPENCLOS),TYPE=J
 *---------------------------------------------------------------------*
 *   Acquire one BLKSIZE buffer for our I/O; and one LRECL buffer
 *   for use by caller for @@AWRITE, and us for @@AREAD.
+*
+*   Note that the GETMAIN allows for extra padeding of 4 bytes.
+*   In BLOCK mode, the "record" buffer uses the block size.
+*
 *---------------------------------------------------------------------*
 GETBUFF  L     R5,ZPBLKSZ         Load the input blocksize      GP14233
          LA    R6,4(,R5)          Add 4 in case RECFM=U buffer
@@ -1360,7 +1380,10 @@ GETBUFF  L     R5,ZPBLKSZ         Load the input blocksize      GP14233
          ST    R14,BUFFEND          for real
          SPACE 1
          L     R6,ZPLRECL         Get record length
-         LA    R6,4(,R6)          Insurance
+         TM    IOMFLAGS,IOFBLOCK  Running in block mode?        GP17064
+         BZ    GETBUFC              No                          GP17064
+         L     R6,ZPBLKSZ         Use block size instead        GP17064
+GETBUFC  LA    R6,4(,R6)          Insurance
          GETMAIN RU,LV=(R6),SP=SUBPOOL  Get VBS buffer
          ST    R1,ZBUFF2          Save for cleanup
          ST    R6,ZBUFF2+4           ditto
@@ -1418,7 +1441,7 @@ TERMOPEN MVC   IOMFLAGS,WWORK     Save for duration
          NI    ZRECFM,3           Just in case
          TR    ZRECFM,=X'8040C0C0'    Change to F / V / U
          MVI   ZPPIX,ZPIXTRM      SET FOR TERMINAL I/O          GP15024
-         POP   USING
+*DELETED POP   USING                                            GP17064
          SPACE 1
 *   Lots of code tests DCBRECFM twice, to distinguish among F, V, and
 *     U formats. We set the index byte to 0,4,8 to allow a single test
@@ -1446,17 +1469,56 @@ SETINDEX STC   R0,RECFMIX         Save for the duration
          ST    R0,0(,R5)          Pass new BLKSIZE
          L     R5,PARM2           POINT TO MODE
          MVC   0(4,R5),ZDVTYPE    DevTyp,RecFm,IOS+IOM flags    GP14251
+* Finished with all but R7 (handle) now
          MVC   ZPMODE,ZDVTYPE                                   GP15024
          MVC   ZPORG,DDADSORG-DDATTRIB+DDWATTR  SAVE ORG        GP15024
          MVC   ZPOPC,DCBOPTCD     RETURN OPTCD                  GP15024
-*
-* Finished with R5 now
-*
+         SPACE 1
+*---------------------------------------------------------------------*
+*   Request was made for member name to be all blanks when not used   *
+*     or supplied. Instaed of OR'ing blanks, we do a translate.       *
+*     This preserves funny characters in name (e.g., SMP data)        *
+*---------------------------------------------------------------------*
+         LA    R1,255             Number of TR bytes            GP17079
+         LA    R2,CATWORK         use 256-byte work area        GP17079
+OPUPPLUP STC   R1,0(R1,R2)        start at the end              GP17079
+         BCT   R1,OPUPPLUP          repeat until done           GP17079
+         MVI   CATWORK,C' '       replace x'00' by x'40'        GP17079
+         TR    ZMEM,CATWORK       fix it                        GP17079
+         SPACE 1
+*---------------------------------------------------------------------*
+*   Latest addition - calculate number of blocks (DCB error if none)  *
+*   For RECFM=FBS opened for EXTEND in record mode, position to next  *
+*     record to fill out short block.                                 *
+*---------------------------------------------------------------------*
+         CLI   ZPPIX,ZPIXSAM      BSAM ?                        GP17079
+         BNE   RETURNOP             No; just return             GP17079
+         NOTE  (R7)                                             GP17079
+         STCM  R1,14,ZPTTR        Save initial TTR or tape blk  GP17079
+         CLI   ZPDEVT,UCB3DACC    Working on DASD?              GP17079
+         BNE   RETURNOP             No; we're done              GP17079
+         L     R3,DCBDEBAD-IHADCB(,R7)   Get the DEB            GP17079
+         N     R3,=X'00FFFFFF'    Faster than AM change?        GP17079
+         L     R3,DEBBASND-DEBBASIC(,R3)  Get first UCB         GP17079
+         MVI   DWORK,1                                          GP17079
+         MVC   DWORK+1(1),ZPKEYL+L'ZPKEYL-1    Copy key length  GP17079
+         MVC   DWORK+2(2),ZPBLKSZ+L'ZPBLKSZ-2    and block size GP17079
+         TRKCALC FUNCTN=TRKCAP,UCB=(R3),BALANCE=0,RKDD=DWORK,          *
+               REGSAVE=YES,MF=(E,TRKLIST)  Get blocks per track GP17079
+         BXH   R15,R15,OPNOFIT    SIZE TOO LARGE FOR TRACK      GP17079
+         STC   R0,ZPBLKPT         Remeber blocks per track      GP17079
+         CLI   ZPRECFM,DCBRECF+DCBRECBR+DCBRECSB  RECFM=FBS?    GP17079
+         BNE   RETURNOP             No; done                    GP17079
+         OPENCALL OPFBS           Go to FBS extended code       GP17079
+*---------------------------------------------------------------------*
+*   Common return from OPEN - R7=+ handle  R7=- error in open         *
+*---------------------------------------------------------------------*
 RETURNOP FUNEXIT RC=(R7)          Return to caller
          SPACE 1
 *---------------------------------------------------------------------*
-*   RETURN ERROR CODE IN 2000 RANGE - SET IN CONCATENATION CHECK CODE *
+*   Return error code in 2000 range - set in concatenation check code *
 *---------------------------------------------------------------------*
+OPNOFIT  LA    R0,ORFBADCB        Error code for bad DCB(BLKSI) GP17079
 OPRERR   LR    R7,R0              CODE PASSED IN R0             GP14205
          B     OPSERR2                                          GP14205
 OPSERR   SR    R7,R7              CLEAR FOR IC                  GP14205
@@ -1576,7 +1638,10 @@ MVSSUPA  CSECT ,
          PUSH  USING
          DROP  ,
          USING OCDCBEX,R15
-OCDCBEX  LR    R10,R1        SAVE DCB ADDRESS AND OPEN FLAGS    GP14205
+OCDCBEX  LA    R12,0(,R15)        Load and clean base           GP17079
+         DROP  R15                                              GP17079
+         USING OCDCBEX,R12                                      GP17079
+         LR    R10,R1        SAVE DCB ADDRESS AND OPEN FLAGS    GP14205
          N     R10,=X'00FFFFFF'   NO 0C4 ON DCB ACCESS IF AM31  GP14205
          USING IHADCB,R10    DECLARE OUR DCB WORK SPACE         GP14205
          TM    IOPFLAGS,IOFDCBEX  Been here before ?
@@ -1675,7 +1740,7 @@ OCDCBXX  STH   R3,DCBBLKSI   UPDATE POSSIBLY CHANGED BLOCK SIZE
          ST    R3,ZPBLKSZ    UPDATE POSSIBLY CHANGED BLOCK SIZE GP14233
          ST    R4,ZPLRECL      AND RECORD LENGTH                GP14233
          MVC   ZRECFM,DCBRECFM    DITTO
-         BR    R14           RETURN TO OPEN (or via caller)     GP15004
+ODCBEXRT BR    R14           RETURN TO OPEN (or via caller)     GP15004
          POP   USING
          SPACE 2
          AIF   ('&ZSYS' NE 'S390').NOSTUB       Only S/390 needs a stub
@@ -1810,6 +1875,86 @@ EXLSTACB EXLST AM=VSAM,EODAD=VSAMEOD,LERAD=VLERAD,SYNAD=VSYNAD  GP14244
          SPACE 2
 ***********************************************************************
 *                                                                     *
+*   Support for RECFM=FBS EXTEND in record mode.                      *
+*   1) Point to the last record and read it in                        *
+*   2) When the last block is full, just do normal writes             *
+*   3) For a partial block, set the end address into BUFFCURR         *
+*      so that the last block will be filled.                         *
+*   Note that R7 = R10                                                *
+*                                                                     *
+*   Despite the fact that the DCB has (RP,WP), the support routines   *
+*     treat a READ request as a formatting WRITE.                     *
+*     To get around this, we issue an EXCP Read Count/Key/Data        *
+*     instead, by clobbering the Write CCW and restoring it after.    *
+*                                                                     *
+***********************************************************************
+         PUSH  USING                                            GP17079
+OPFBS    OSUBHEAD ,          Define extended entry              GP17079
+         CLI   ZPMODE+3,ZPMAPP    Record mode append?           GP17079
+         BNE   OPFBSEX              No; return                  GP17079
+         LA    R0,24              Preset for invalid DSORG      GP17079
+         TM    DDWFLAG1,CWFSEQ    True sequential è PDS(mem)    GP17079
+         OBRAN OPRERR,OP=BZ,EXIT=OPFBSER  Extend PDS member ?   GP17079
+         TM    DDWFLAG1,CWFPDQ+CWFPDS+CWFVSM+CWFVTOC  Other ?   GP17079
+         OBRAN OPRERR,OP=BNZ,EXIT=OPFBSER  non-sequential?      GP17079
+         SLR   R2,R2              Clear low byte                GP17079
+         ICM   R2,14,ZPTTR   Just in case - get last block TTR  GP17079
+         ST    R2,ZWORK           Remember for a while          GP17079
+         BZ    OPFBSEX              New/Old not append?         GP17079
+         POINT (R10),ZWORK                                      GP17079
+         GAM24 ,                  Get low on S380               GP17079
+         L     R5,DCBIOBA-IHADCB(,R10)  Get IOB prefix          GP17079
+         LA    R5,8(,R5)          Skip prfix                    GP17079
+         USING IOBSTDRD,R5        Give assembler IOB base       GP17079
+         L     R8,BUFFADDR                                      GP17079
+         L     R9,ZPBLKSZ                                       GP17079
+         LA    R4,48(,R5)                                       GP17079
+         LA    R0,8                                             GP17079
+OPFBSLP  CLI   0(R4),X'1D'        WRITE CKD?                    GP17079
+         BE    OPFBSBP
+         LA    R4,8(,R4)
+         BCT   R0,OPFBSLP
+         B     OPFBSEX              HUH?
+OPFBSBP  MVC   DWORK(16),0(R4)      MOVE WRITE CKD              GP17079
+         MVC   0(16,R4),=X'1E000000,80000008,00000000,20000000' GP17079
+         LA    R1,DWDDNAM
+         STCM  R1,7,1(R4)                                       GP17079
+         STCM  R8,7,9(R4)                                       GP17079
+         STCM  R9,3,8+6(R4)                                     GP17079
+         L     R2,IOBECBPT
+         EXCP  (R5)
+         L     R14,IOBCSW-1
+         SH    R14,=H'8'
+         MVC   0(16,R4),DWORK     MOVE WRITE CKD                GP17079
+         WAIT  ECB=(R2)           Wait for READ to complete     GP17079
+         AMUSE ,                  Restore caller's mode         GP17079
+         SLR   R1,R1              Clear residual amount work register
+         ICM   R1,B'0011',IOBCSW+5  Load residual count         GP17079
+         BZ    OPFBSFL                                          GP17079
+         SR    R9,R1              Get blocklen                  GP17079
+         A     R9,BUFFADDR                                      GP17079
+         ST    R9,BUFFCURR                                      GP17079
+         OI    IOPFLAGS,IOFLDATA  Write pending                 GP17079
+         B     OPFBSPT
+OPFBSFL  ICM   R1,15,ZWORK        Restore TTR for full block    GP17079
+         AL    R1,=X'00000100'    Add one to record number      GP17079
+         ST    R1,ZWORK           tentatively use               GP17079
+         CLM   R1,2,ZPBLKPT       Legal block?                  GP17079
+         BL    OPFBSPT              yes                         GP17079
+         AL    R1,=X'00010000'    Go to new track               GP17079
+         BO    OP2BIG               more than 65K tracks        GP17079
+         ICM   R1,2,=X'01'        Reset to record 1             GP17079
+         ST    R1,ZWORK           tentatively use               GP17079
+OPFBSPT  POINT (R10),ZWORK                                      GP17079
+OPFBSEX  OSUBRET ,                Finish OPEN return            GP17079
+OP2BIG   LA    R0,ORFTOBIG        Invalid TTR                   GP17079
+         OBRAN OPRERR,OP=B,EXIT=OPFBSER  No extensio possible   GP17079
+OPFBSER  OSUBRET ROUTE=(R14)      Take error return             GP17079
+         SPACE 1
+         POP   USING                                            GP17079
+         SPACE 2
+***********************************************************************
+*                                                                     *
 *   This routine provided to enable cross-assembly of OS/390 & zOS    *
 *   code under MVS 3.8. For a full featured system, use SWAREQ.       *
 *   Caller must be in AMODE 31 under OS/390 or zOS system.            *
@@ -1874,7 +2019,7 @@ EXSWAODD TM    =X'01',*-*    ODD ADDRESS?                       GP15006
 *                                                                     *
 ***********************************************************************
 @@ALINE  FUNHEAD IO=YES,AM=YES,SAVE=(WORKAREA,WORKLEN,SUBPOOL)
-         FIXWRITE ,
+*NO      FIXWRITE ,                                             GP17079
          TM    IOMFLAGS,IOFTERM   Terminal Input?
          BNZ   ALINEYES             Always one more?
          LR    R2,R10        PASS DCB                           GP14233
@@ -1907,7 +2052,6 @@ ALINEX   FUNEXIT RC=(R15)
          SR    R0,R0
          ST    R0,0(,R3)          Return null in case of EOF
          ST    R0,0(,R4)          Return null in case of EOF
-         FIXWRITE ,               For OUTIN request
          TM    IOPFLAGS,IOFLEOF   Prior EOF ?                   GP14213
          BNZ   READEOD            Yes; don't abend              GP14213
          SR    R6,R6              No EOF
@@ -1981,7 +2125,8 @@ EXRDOK   SR    R0,R0
 *---------------------------------------------------------------------*
 *   BSAM read   (also used for BPAM member read)                      *
 *---------------------------------------------------------------------*
-READBSAM SR    R6,R6              Reset EOF flag
+READBSAM FIXWRITE ,               For OUTIN request and UPDAT   GP17079
+         SR    R6,R6              Reset EOF flag
          GAM24 ,                  Get low on S380               GP15015
          READ  DECB,              Read record Data Event Control Block C
                SF,                Read record Sequential Forward       C
@@ -2012,6 +2157,8 @@ READBSAM SR    R6,R6              Reset EOF flag
          DROP  R14                Don't need IOB address base anymore
 *                                 If EOF, R6 will be set to F'-1'
 READCHEK CHECK DECB               Wait for READ to complete
+         NOTE  (R10)              Note current position         GP17079
+         ST    R1,ZTTR            Save TTR0                     GP17079
          TM    IOPFLAGS,IOFCONCT  Did we hit concatenation?
          BZ    READUSAM           No; restore user's AM
          NI    IOPFLAGS,255-IOFCONCT   Reset for next time
@@ -2470,6 +2617,9 @@ WSNAP    SNAP  PDATA=(PSW,REGS),LIST=WSNLIST,STRHDR=WSNHEAD,MF=L
 WRITEFIX ICM   R6,15,BUFFCURR     Get next available record
          BNZ   WRITEFAP           Not first
          L     R6,BUFFADDR        Get buffer start
+         L     R7,ZPBLKSZ         Get block size                GP17079
+         AR    R7,R6              Make end (fixp for RDW pad)   GP17079
+         ST    R7,BUFFEND         Set correct end (AREAD chg?)  GP17079
 WRITEFAP L     R7,ZPLRECL         Record length                 GP14233
          ICM   R5,8,=C' '         Request blank padding
          MVCL  R6,R4              Copy record to buffer
@@ -2487,7 +2637,7 @@ WRITPREP L     R4,BUFFADDR        Start write address
 WRITBLK  AR    R5,R4              Set start and end of write
          STM   R4,R5,BUFFADDR     Pass to physical writer
          OI    IOPFLAGS,IOFLDATA  SHOW DATA IN BUFFER
-         FIXWRITE ,               Write physical block
+         FIXWRITE ,               Write physical earlier block  GP17079
          TM    IOPFLAGS,IOFLSDW   Partial record ?              GP14363
          BZ    WRITEEX              No; just return             GP14363
          LM    R4,R5,KEPTREC      Residual text & length        GP14363
@@ -2527,20 +2677,18 @@ WRITEEX  TM    IOPFLAGS,IOFCURSE  RECURSION REQUESTED?
          SPACE 2
 ***********************************************************************
 *                                                                     *
-*  ANOTE  - Remember the position in the data set (BSAM/BPAM only)    *
+*  ANOTE  - Return position saved after READ/WRITE (BSAM/BPAM only)   *
 *                                                                     *
 ***********************************************************************
 @@ANOTE  FUNHEAD IO=YES,AM=YES,SAVE=SAVEADCB,US=NO   NOTE position
          L     R3,4(,R1)          R3 points to the return value
-         FIXWRITE ,
          GAM24 ,                  SET AM24 ON S380              GP15015
          TM    IOMFLAGS,IOFEXCP   EXCP mode?
          BZ    NOTEBSAM           No
          L     R4,DCBBLKCT        Return block count
          B     NOTECOM
          SPACE 1
-NOTEBSAM NOTE  (R10)              Note current position
-         LR    R4,R1              Save result
+NOTEBSAM L     R4,ZTTR            Get current position          GP17079
 NOTECOM  AMUSE ,
          ST    R4,0(,R3)          Return TTR0 to user
          FUNEXIT RC=0
@@ -2550,13 +2698,16 @@ NOTECOM  AMUSE ,
 *  APOINT - Restore the position in the data set (BSAM/BPAM only)     *
 *           Note that this does not fail; it just bombs on the        *
 *           next read or write if incorrect.                          *
+*           In particular, when POINT is used for unlike concatenated *
+*           data sets, a POINT into a different data set will cause   *
+*           errors.                                                   *
 *                                                                     *
 ***********************************************************************
 @@APOINT FUNHEAD IO=YES,AM=YES,SAVE=SAVEADCB,US=NO   NOTE position
          L     R3,4(,R1)          R3 points to the TTR value
          L     R3,0(,R3)          Get the TTR
          ST    R3,ZWORK           Save below the line
-         FIXWRITE ,
+         FIXWRITE ,                 Write pending data
          GAM24 ,                  SET AM24 ON S380              GP15015
          TM    IOMFLAGS,IOFEXCP   EXCP mode ?
          BZ    POINBSAM           No
@@ -2585,23 +2736,172 @@ POINCOM  AMUSE ,
 ***********************************************************************
 *                                                                     *
 *  ADCBA - Report the DCB parameters for an open file.                *
+*    Modified for more general information retrieval:         GP17075 *
+*    Call now has only two parameters -                               *
+*      Parm 1 is an integer (signed 32 bit) function code             *
+*      Parm 2 is the address of a user supplied return area           *
+*                                                                     *
+*    Function  1 - DCB parameters for current DCB (all signed 32 bit) *
+*                l=28(dvtp,RECFM,IOS,IOM flgs) RecFmIndex LRECL BLKSZ *
+*                  curr.buffer address next-available end-addr        *
+*              2 - position information                               *
+*                l=16 blocks/track first-TTR current-TTR max-tracks   *
+*              3 - DD information                                     *
+*                l=94 DDN concat#/totcc# DSN mem VOLSERs              *
+*                                                                     *
 *                                                                     *
 ***********************************************************************
 @@ADCBA  FUNHEAD IO=YES,AM=YES,SAVE=SAVEADCB,US=NO   READ / GET GP14205
-         L     R3,4(,R1)   R3 points to where to store the IOMODE
-         L     R4,8(,R1)   R3 points to where to store record format
-         L     R5,12(,R1)  R4 points to where to store record length
-         L     R6,16(,R1)  R5 points to where to store block size
-         MVC   0(4,R3),ZDVTYPE    DevTyp,RecFm,IOS+IOM flags    GP14251
-         SR    R0,R0                                            GP14205
+         LDVAL R3,4(,R1)   Get function code                    GP17079
+         L     R4,8(,R1)   R4 points to user's return area      GP17079
+         CH    R3,=H'1'    Valid function?                      GP17079
+         BL    ADCBERR       No                                 GP17079
+         BE    DCBF001       DCB attributes                     GP17079
+         CH    R3,=H'3'    Positioning, etc?                    GP17079
+         BL    DCBF002       Yes                                GP17079
+         BE    DCBF003     DD information                       GP17079
+ADCBERR  LA    R15,1                                            GP17079
+         LNR   R15,R15     Set -1 error code                    GP17079
+         B     ADCBEXIT    Return error                         GP17079
+         SPACE 1
+*---------------------------------------------------------------------*
+*  DCB parameters                                                     *
+*   0 (l=1) UCB3TBYT3  1 (1)  DCBRECFM  2 (1) IOM  3 (1) IOS flags    *
+*   4 (4) record index (0-F 4-V 8-U)                                  *
+*   8 (4) record length                                               *
+*  12 (4) block size                                                  *
+*  16 (4) block size                                                  *
+*  24 (4) block size                                                  *
+*  28 (4) block size                                                  *
+*---------------------------------------------------------------------*
+DCBF001  MVC   0(4,R4),ZDVTYPE    DevTyp,RecFm,IOS+IOM flags    GP17079
+         SLR   R0,R0                                            GP14205
          IC    R0,RECFMIX                                       GP14233
          SRL   R0,2               Change to flag                GP14233
-         ST    R0,0(,R4)          Return RECFM                  GP14205
-         L     R0,ZPLRECL                                       GP14205
-         ST    R0,0(,R5)          Return LRECL                  GP14205
-         L     R0,ZPBLKSZ                                       GP14205
-         ST    R0,0(,R6)          Return BLKSIZE                GP14205
-         FUNEXIT RC=0             Return to caller              GP14205
+         ST    R0,4(,R4)          Return RECFM                  GP17079
+         ICM   R0,3,DCBLRECL                                    GP17079
+         ST    R0,8(,R4)          Return LRECL                  GP17079
+         ICM   R0,3,DCBBLKSI                                    GP17079
+         ST    R0,12(,R4)         Return BLKSIZE                GP17079
+         MVC   16(3*4,R4),BUFFADDR                              GP17079
+         B     ADCBGOOD                                         GP17079
+         SPACE 1
+*---------------------------------------------------------------------*
+*  Positioning and capacity information                               *
+*   0 (4) blocks per track (current DD only if concatenated)          *
+*   4 (4) first TTR at OPEN or concatenation exit                     *
+*   8 (4) current TTR after last read or write                        *
+*  12 (4) total tracks in current DD (not total for concatenation)    *
+*---------------------------------------------------------------------*
+         PUSH  USING                                            GP17079
+DCBF002  SLR   R0,R0              for non-DASD or no fit        GP17079
+         CLI   ZPDEVT,UCB3DACC    Working on DASD?              GP17079
+         BNE   DCBF002B             No; we're done              GP17079
+         L     R3,DCBDEBAD        Get the DEB                   GP17079
+         N     R3,=X'00FFFFFF'    Faster than AM change?        GP17079
+         L     R3,DEBBASND-DEBBASIC(,R3)  Get first UCB         GP17079
+         MVI   ZWORK,1                                          GP17079
+         MVC   ZWORK+1(1),ZPKEYL+L'ZPKEYL-1    Copy key length  GP17079
+         MVC   ZWORK+2(2),ZPBLKSZ+L'ZPBLKSZ-2    and block size GP17079
+         TRKCALC FUNCTN=TRKCAP,UCB=(R3),BALANCE=0,RKDD=ZWORK,          *
+               REGSAVE=YES,MF=(E,TRKLIST)  Get blocks per track GP17079
+*NEXT*   BXH   R15,R15,DCBF002B   SIZE TOO LARGE FOR TRACK      GP17079
+DCBF002B STC   R0,ZPBLKPT         Remeber blocks per track      GP17079
+         IC    R0,ZPBLKPT                                       GP17079
+         ST    R0,0(,R4)          Return RECFM                  GP17079
+         SLR   R0,R0                                            GP17079
+         ICM   R0,14,ZPTTR        Get first TTR                 GP17079
+         ST    R0,4(,R4)          Beginning TTR                 GP17079
+         MVC   8(4,R4),ZTTR       Current TTR                   GP17079
+         SLR   R0,R0              Accumulator for tracks        GP17079
+         CLI   ZDVTYPE,UCB3DACC   DASD ?                        GP17079
+         BNE   DCBF#TRK             no; leave tracks at 0       GP17079
+         L     R3,DCBDEBAD        Get DEB                       GP17079
+         N     R3,=X'00FFFFFF'    faster tha nAM switches?      GP17079
+         USING DEBBASIC,R3        declare start of DEB proper   GP17079
+         SLR   R5,R5                                            GP17079
+         IC    R5,DEBNMEXT        Get extent count              GP17079
+         SLR   R6,R6                                            GP17079
+         IC    R6,DEBAMLNG        Get extent count              GP17079
+         SLR   R15,R15                                          GP17079
+         LA    R14,DEBBASND       Point to DASD data            GP17079
+         USING DEBDASD,R14        Declare the mapping           GP17079
+DCBFXLUP ICM   R15,3,DEBNMTRK     Get tracks in this extent     GP17079
+         AR    R0,R15             add them in                   GP17079
+         AR    R14,R6             Next extent                   GP17079
+         BCT   R5,DCBFXLUP          until done                  GP17079
+DCBF#TRK ST    R0,12(,R4)         Totaal tracks                 GP17079
+         B     ADCBGOOD                                         GP17079
+         POP   USING                                            GP17079
+         SPACE 1
+*---------------------------------------------------------------------*
+*  DD information                                                     *
+*   0 (8)  DD name (original name if concatenation, not blanks)       *
+*   8 (2)  current concatenation count (relative to zero)             *
+*  10 (2)  total DDs in concatenation (relative to 1)                 *
+*  12 (44) data set name                                              *
+*  56 (8)  member name (when none, could be 8X'00' or 8X' ')          *
+*  64 (30) 0-5 six byte volume serials                                *
+*---------------------------------------------------------------------*
+         PUSH  USING
+DCBF003  MVC   0(8,R4),ZDDN                                     GP17079
+         MVC   56(8,R4),ZMEM                                    GP17079
+         L     R7,PSATOLD-PSA     Get my TCB                    GP17079
+         L     R7,TCBTIO-TCB(,R7)   Need later                  GP17079
+         N     R7,=X'00FFFFFF'    clean it                      GP17079
+         USING TIOT1,R7                                         GP17079
+         SLR   R5,R5                                            GP17079
+         ICM   R5,3,DCBTIOT                                     GP17079
+         ALR   R5,R7              Get TIOT entry                GP17079
+         DROP  R7                                               GP17079
+         USING TIOENTRY,R5                                      GP17079
+         ICM   R1,7,TIOEJFCB      GET JFCB ADDRESS OR TOKEN     GP17079
+         BZ    ADCBERR              NO JFCB ?                   GP17079
+         L     R15,=A(LOOKSWA)    GET TOKEN CONVERSION          GP17079
+         BALR  R14,R15            INVOKE IT                     GP17079
+         LTR   R6,R15             LOAD AND TEST ADDRESS         GP17079
+         BNP   ADCBERR              Huh ???                     GP17079
+         USING INFMJFCB,R6                                      GP17079
+         MVC   12(44,R4),JFCBDSNM                               GP17079
+         MVC   64(5*6,R4),JFCBVOLS                              GP17079
+*                                                               GP17079
+         SLR   R9,R9                                            GP17079
+         LA    R0,TIOENTRY-TIOT1  INCREMENT TO FIRST ENTRY      GP17079
+         DROP  R5                                               GP17079
+         USING TIOENTRY,R7        DECLARE IT                    GP17079
+DCBF003L AR    R7,R0              NEXT ENTRY                    GP17079
+         ICM   R0,1,TIOELNGH      GET ENTRY LENGTH              GP17079
+         BZ    DCBF003F             TOO BAD                     GP17079
+         TM    TIOESTTA,TIOSLTYP  SCRATCHED ENTRY?              GP17079
+         BNZ   DCBF003L             YES; IGNORE                 GP17079
+         CLC   TIOEDDNM,ZDDN      matches current?              GP17079
+         BNE   DCBF003L             not yet                     GP17079
+DCBF003C CLR   R5,R7              Our active entry?             GP17079
+         BE    DCBF003T             yes; have concat number     GP17079
+         AL    R9,=X'00010001'    Up concatentation counts      GP17079
+         AR    R7,R0              space to next entry           GP17079
+         ICM   R0,1,TIOELNGH      GET ENTRY LENGTH              GP17079
+         BNZ   DCBF003C                                         GP17079
+         BZ    DCBF003F             TOO BAD                     GP17079
+*                                                               GP17079
+DCBF003N CLI   TIOEDDNM,C' '      Another concatenation?        GP17079
+         BNE   DCBF003F             no; done                    GP17079
+         TM    TIOESTTA,TIOSLTYP  SCRATCHED ENTRY?              GP17079
+         BNZ   DCBF003F             YES; IGNORE                 GP17079
+DCBF003T AL    R9,=X'00000001'    Up total count                GP17079
+         AR    R7,R0              space to next entry           GP17079
+         ICM   R0,1,TIOELNGH      GET ENTRY LENGTH              GP17079
+         BNZ   DCBF003N                                         GP17079
+*NEXT    BZ    DCBF003F             TOO BAD                     GP17079
+DCBF003F ST    R9,8(,R4)          Concatenation # (0-n/m)       GP17079
+         B     ADCBGOOD                                         GP17079
+         POP   USING                                            GP17079
+         SPACE 1
+*---------------------------------------------------------------------*
+*   Return; R15 =0 good exit   =-1 for error                          *
+*---------------------------------------------------------------------*
+ADCBGOOD SLR   R15,R15            Good exit                     GP17079
+ADCBEXIT FUNEXIT RC=(R15)         Return to caller              GP14205
          SPACE 2
 ***********************************************************************
 *                                                                     *
@@ -2676,6 +2976,8 @@ TRUNTMOD DS    0H
          B     TRUNCHK
 TRUNSHRT WRITE DECB,SF,MF=E       Rewrite block from READ
 TRUNCHK  CHECK DECB
+         NOTE  (R10)              Note current position         GP17079
+         ST    R1,ZTTR            Save TTR0                     GP17079
          B     TRUNPOST           Clean up
          SPACE 1
 EXCPWRIT STH   R5,TAPECCW+6
@@ -3239,7 +3541,7 @@ DYNALEXT LR    R1,R13        COPY STORAGE ADDRESS
 DYNALRET FUNEXIT ,           RESTORE REGS; SET RETURN CODES
          LTORG ,
          PUSH  PRINT
-         PRINT NOGEN         DON'T NEED TWO COPIES
+*DEBUG*  PRINT NOGEN         DON'T NEED TWO COPIES
 PATLIST  DYNPAT P=PAT        EXPAND ALLOCATION DATA
          POP   PRINT
 *    DYNAMICALLY ACQUIRED STORAGE
@@ -3446,7 +3748,7 @@ RETURN99 DS    0H
          SPACE 1
          PUSH  USING                                            GP14244
          PUSH  PRINT                                            GP14244
-         PRINT NOGEN         DON'T NEED TWO COPIES              GP14244
+*DEBUG*  PRINT NOGEN         DON'T NEED TWO COPIES              GP14244
          DROP  ,                                                GP14244
 @@SNAP   FUNHEAD SAVE=(SNAPAREA,SNAPALEN,SUBPOOL)               GP14244
          L     R15,4(,R13)        GET CALLER'S SAVE AREA
@@ -3713,6 +4015,7 @@ ORFBDDIR EQU   48            PDS not initialized                GP14205
 ORFNOSTO EQU   52            Out of memory                      GP14205
 ORFNOMEM EQU   68            Member not found (BLDL/FIND)       GP14205
 ORFBDMEM EQU   72            Member not permitted (seq.)        GP14205
+ORFTOBIG EQU   96            EXTEND to more than 64KIB tracks   GP17079
          SPACE 1
 TRUENAME DS    CL44               DS name for alias on DD       GP14233
 CATWORK  DS    ((265+7)/8)D'0'    LOCATE work area              GP14233
@@ -3822,6 +4125,7 @@ ZWORK    DS    D             Below the line work storage
 ZDDN     DS    CL8           DD NAME                            GP14205
 ZMEM     DS    CL8           MEMBER NAME or nulls               GP14205
 DEVINFO  DS    2F                 UCB Type / Max block size
+ZTTR     DS    A             Last TTR written (BSAM, EXCP)      GP17079
          SPACE 1
 RECFMIX  DS    X             Record format index: 0-F 4-V 8-U
 IXFIX    EQU   0               Recfm = F                        GP14213
@@ -3857,6 +4161,8 @@ FMFIX    EQU   0               Fixed RECFM (blocked)
 FMVAR    EQU   1               Variable (blocked)
 FMUND    EQU   2               Undefined
 ZDDFLAGS DS    X             RESULT FLAGS FOR ALL               GP14244
+TRKLIST  TRKCALC FUNCTN=TRKCAP,UCB=(R3),BALANCE=*,RKDD=TKRKDD,         *
+               REGSAVE=YES,MF=L            GET BLOCKS PER TRACK GP17079
 ZIOSAVE2 DS    18F           Save area for physical write
 SAVEADCB DS    18F                Register save area for PUT
 ZDCBLEN  EQU   *-ZDCBAREA
@@ -3882,6 +4188,7 @@ MYUCB    DSECT ,
          IEFUCBOB ,
 MYTIOT   DSECT ,
          IEFTIOT1 ,
+         IEZDEB ,                                               GP17079
          IHAPDS PDSBLDL=YES
          SPACE 1
          IFGACB ,                                               GP14233

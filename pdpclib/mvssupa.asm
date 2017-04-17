@@ -1423,11 +1423,39 @@ TERMOPEN MVC   IOMFLAGS,WWORK     Save for duration
          MVC   ZIOECT,CPPLECT
          MVC   ZIOUPT,CPPLUPT
          SPACE 1
-         ICM   R6,15,ZPBLKSZ      Load the input blocksize      GP14233
-         BP    *+12               Use it
-         LA    R6,1024            Arbitrary non-zero size
-         ST    R6,ZPBLKSZ         Return it                     GP14233
-         ST    R6,ZPLRECL         Return it
+*---------------------------------------------------------------------*
+*                                                                     *
+*   DCB parameter processng:                                          *
+*                                                                     *
+*   FILEMODE  0 and 2   when LRECL not 0, use for BLKSIZE, else 255   *
+*                                                                     *
+*             1         when LRECL not 0, use it +4 for BLKSIZE       *
+*                       when LRECL is 0, use BLKSIZE - 4              *
+*                       when both are 0, use 255/259                  *
+*                                                                     *
+*---------------------------------------------------------------------*
+         MVC   ZRECFM,FILEMODE    Requested format 0-2
+         NI    ZRECFM,3           Just in case
+         TR    ZRECFM,=X'8040C0C0'    Change to F / V / U
+         CLI   ZRECFM,X'40'       V ?                           GP17107
+         BE    TERMOVAR             YES                         GP17107
+         ICM   R1,15,ZPLRECL      Did user supply an LRECL?     GP17107
+         BNZ   *+8                  Yes; use it                 GP17107
+         LA    R1,255             Set reasonable (?) default    GP17107
+         B     TERMOSET             and stash the result        GP17107
+TERMOVAR ICM   R1,15,ZPLRECL      Get record length             GP17107
+         BZ    TERMOVBL             try block size              GP17107
+         LA    R6,4(,R1)          block is record length + 4    GP17107
+         B     TERMOSET             and stash the result        GP17107
+TERMOVBL ICM   R6,15,ZPBLKSZ      Load the input blocksize      GP14233
+         BZ    TERMOVFF             none; use both defaults     GP17107
+         LH    R1,=H'-4'          get subtrahend                GP17107
+         AR    R1,R6              record length = block - 4     GP17107
+         B     TERMOSET             and stash the result        GP17107
+TERMOVFF LA    R1,255             default LRECL                 GP17107
+         LA    R6,4(,R1)          Arbitrary non-zero size       GP17107
+TERMOSET ST    R6,ZPBLKSZ         Return it                     GP14233
+         ST    R1,ZPLRECL         Return it                     GP17107
          LA    R6,4(,R6)          Add 4 in case RECFM=U buffer
          GETMAIN RU,LV=(R6),SP=SUBPOOL,LOC=BELOW  Get input buffer
          ST    R1,ZBUFF2          Save for cleanup
@@ -1437,9 +1465,6 @@ TERMOPEN MVC   IOMFLAGS,WWORK     Save for duration
          L     R5,PARM6           R5 points to ZBUFF2
          ST    R1,0(,R5)          save the pointer
          XC    0(4,R1),0(R1)      Clear the RECFM=U Record Desc. Word
-         MVC   ZRECFM,FILEMODE    Requested format 0-2
-         NI    ZRECFM,3           Just in case
-         TR    ZRECFM,=X'8040C0C0'    Change to F / V / U
          MVI   ZPPIX,ZPIXTRM      SET FOR TERMINAL I/O          GP15024
 *DELETED POP   USING                                            GP17064
          SPACE 1
@@ -1893,7 +1918,7 @@ OPFBS    OSUBHEAD ,          Define extended entry              GP17079
          CLI   ZPMODE+3,ZPMAPP    Record mode append?           GP17079
          BNE   OPFBSEX              No; return                  GP17079
          LA    R0,24              Preset for invalid DSORG      GP17079
-         TM    DDWFLAG1,CWFSEQ    True sequential è PDS(mem)    GP17079
+         TM    DDWFLAG1,CWFSEQ    True sequential ¬ PDS(mem)    GP17079
          OBRAN OPRERR,OP=BZ,EXIT=OPFBSER  Extend PDS member ?   GP17079
          TM    DDWFLAG1,CWFPDQ+CWFPDS+CWFVSM+CWFVTOC  Other ?   GP17079
          OBRAN OPRERR,OP=BNZ,EXIT=OPFBSER  non-sequential?      GP17079
@@ -3560,6 +3585,7 @@ MVSSUPA  CSECT ,             RESTORE
 *  GETPFX - get TSO prefix                                           *
 *                                                                    *
 **********************************************************************
+         PUSH  USING                                            GP17107
          ENTRY @@GETPFX
 @@GETPFX DS    0H
          SAVE  (14,12),,@@GETPFX
@@ -3581,12 +3607,10 @@ MVSSUPA  CSECT ,             RESTORE
          ICM   R5,15,PSCBUPT
          BZ    RETURNGP
          USING UPT,R5
-         LA    R6,UPTPREFX
-         LR    R15,R6
+         LA    R15,UPTPREFX       RETURN ADDRESS (CL7/AL1)      GP17107
 *
-RETURNGP DS    0H
-         RETURN (14,12),RC=(15)
-         LTORG
+RETURNGP RETURN (14,12),RC=(15)                                 GP17107
+         POP   USING                                            GP17107
 *
 *
 *
@@ -3622,7 +3646,7 @@ RETURNGP DS    0H
 *
 RETURNTS DS    0H
          RETURN (14,12),RC=(15)
-         LTORG
+         LTORG ,
 *
 *
 *
@@ -3654,7 +3678,7 @@ GAIS31   LA    R15,31
 *
 RETURNGA DS    0H
          RETURN (14,12),RC=(15)
-         LTORG
+         LTORG ,
 *
 *
 *

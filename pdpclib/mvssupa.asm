@@ -1,6 +1,6 @@
 MVSSUPA  TITLE 'M V S S U P A  ***  MVS VERSION OF PDP CLIB SUPPORT'
 ***********************************************************************
-*                                               Uppdated 2017-03-20   *
+*                                               Uppdated 2017-04-18   *
 *                                                                     *
 *  This program written by Paul Edwards.                              *
 *  Released to the public domain                                      *
@@ -703,7 +703,7 @@ DDCHECK  MVI   OPERF,ORFNOJFC     PRESET FOR BAD JFCB           GP14205
          TM    JFCDSRG2,JFCORGAM  VSAM ?                        GP14233
          BNZ   DDCNOORG             YES; SPECIAL HANDLING       GP14233
          CLI   JFCDSRG2,0         ANYTHING UNWANTED?            GP14205
-         BNE   BADDSORG             YES; USE IT                 GP14205
+         BNE   BADDSORG             YES; CAN'T USE              GP14205
          TM    JFCDSRG1,254-JFCORGPS-JFCORGPO  UNSUPPORTED ?    GP14205
          BNZ   BADDSORG             YES; FAIL                   GP14205
 DDCNOORG SR    R5,R5                                            GP14205
@@ -722,7 +722,7 @@ DDCNRPS  TM    UCBTBYT3,255-(UCB3DACC+UCB3TAPE+UCB3UREC)        GP14205
          BNZ   OPSERR               UNSUPPORTED DEVICE TYPE     GP14205
          CLI   UCBTBYT3,UCB3DACC  DASD VOLUME ?                 GP14205
          BNE   DDCSEQ               NO; NOT PDS                 GP14205
-         CLC   =C'FORMAT4.DSCB ',JFCBDSNM   VTOC READ?          GP14213
+         CLC   =C'FORMAT4.DSCB ',JFCBDSNM    VTOC READ?         GP14213
          BNE   NOTVTOC                                          GP14213
          LA    R0,ORFBDMOD        PRESET FOR BAD MODE           GP14251
          LDVAL R14,PARM2          GET THE MODE                  GP14251
@@ -760,7 +760,7 @@ NOTVTOC  L     R14,CAMDUM         GET FLAGS IN FIRST WORD       GP14205
          LA    R0,0                 CVOL pointer                GP14233
          LA    R1,CATWORK         POINT TO RETURN               GP14233
          STM   R14,R1,CAMLST                                    GP14233
-         OBTAIN CAMLST       CHECK CATALOG ENTRY                GP14233
+         LOCATE CAMLST       CHECK CATALOG ENTRY                GP17108
          BXH   R15,R15,OPSERR                                   GP14233
          L     R14,CAMDUM         GET FLAGS IN FIRST WORD       GP14233
          LA    R15,TRUENAME       POINT TO DSN                  GP14233
@@ -882,7 +882,7 @@ DDCTDONE MVC   DDWFLAGS,DDWFLAG1  COPY FIRST DD'S FLAGS         GP14205
 *   but wastes storage - so we use it for debugging only.
 *   Using RC to get a return code if memory unavailable.
 *
-         LA    R0,ORFNOSTO        Preset for no storage         GP14205
+*not usd LA    R0,ORFNOSTO        Preset for no storage         GP14205
 *not set BXH   R15,R15,OPRERR       Return error code           GP14205
          LR    R10,R1             Addr.of storage obtained to its base
          USING IHADCB,R10         Give assembler DCB area base register
@@ -1035,7 +1035,7 @@ OPREPBSQ MVC   ZDCBAREA(BSAMDCBL),BSAMDCB  Move DCB template to work
          NC    DCBMACR(2),=AL1(DCBMRRD,DCBMRWRT) Strip Point
          B     OPREPCOM
          SPACE 1
-OPREPQSM MVC   ZDCBAREA(QSAMDCBL),QSAMDCB   *> UNUSED <*
+*PREPQSM MVC   ZDCBAREA(QSAMDCBL),QSAMDCB   *> UNUSED <*
 OPREPCOM MVC   DCBDDNAM,ZDDN              0(R3)
          MVC   DEVINFO(8),DWORK   Check device type
          ICM   R14,15,DEVINFO+4   Any ?                         GP14251
@@ -1152,7 +1152,7 @@ OPDOVSAM OPENCALL OPENVSAM        Transfer to the extension     GP14233
 *---------------------------------------------------------------------*
 *   Split READ and WRITE paths
 *     Note that all references to DCBRECFM, DCBLRECL, and DCBBLKSI
-*     have been replaced by ZARECFM, ZPLRECL, and ZPBLKSZ for EXCP use.
+*     have been replaced by ZPRECFM, ZPLRECL, and ZPBLKSZ for EXCP use.
 *---------------------------------------------------------------------*
 OPNODSCB TM    WWORK,1            See if OPEN input or output
          BNZ   OPENWRIT
@@ -1403,7 +1403,8 @@ GETBUFC  LA    R6,4(,R6)          Insurance
 *---------------------------------------------------------------------*
 TERMOPEN MVC   IOMFLAGS,WWORK     Save for duration
          NI    IOMFLAGS,IOFTERM+IOFOUT      IGNORE ALL OTHERS
-         MVC   ZDCBAREA(TERMDCBL),TERMDCB  Move DCB/IOB/CCW
+         L     R15,=A(TERMDCB)    Point to pattern              GP17108
+         MVC   ZDCBAREA(TERMDCBL),0(R15)   Move DCB/IOPL, etc.  GP17108
          MVC   ZIODDNM,0(R3)      DDNAME FOR DEBUGGING, ETC.
          TM    ZMEM,255-C' '      See if a member name          GP14251
          LA    R0,ORFBDMEM
@@ -1559,48 +1560,20 @@ EOFRLEN  EQU   *-ENDFILE
 *
          LTORG ,
          SPACE 1
-         DS    0D                                               GP14205
-BPAMDCB  DCB   MACRF=(R,W),DSORG=PO,DDNAME=BPAMDCB, input and output   *
-               EXLST=1-1          DCB exits added later         GP15015
-BPAMDCBL EQU   *-BPAMDCB
          SPACE 1
-         DS    0D                                               GP14205
-BSAMDCB  DCB   MACRF=(RP,WP),DSORG=PS,DDNAME=BSAMDCB, input and output *
-               EXLST=1-1          DCB exits added later         GP15015
-BSAMDCBL EQU   *-BSAMDCB
-READDUM  READ  NONE,              Read record Data Event Control Block *
-               SF,                Read record Sequential Forward       *
-               ,       (R10),     Read record DCB address              *
-               ,       (R8),      Read record input buffer             *
-               ,       (R9),      Read BLKSIZE or 256 for PDS.Directory*
-               MF=L               List type MACRO
-READDUML EQU   *-READDUM                                        GP14205
-         SPACE 1
-         DS    0D                                               GP14205
-EXCPDCB  DCB   DDNAME=EXCPDCB,MACRF=E,DSORG=PS,REPOS=Y,BLKSIZE=0,      *
-               DEVD=TA,EXLST=1-1,RECFM=U
-         DC    8XL4'0'         CLEAR UNUSED SPACE
-         ORG   EXCPDCB+84    LEAVE ROOM FOR DCBLRECL
-         DC    F'0'          VOLUME COUNT
-PATCCW   CCW   1,2-2,X'40',3-3
-         ORG   ,
-EXCPDCBL EQU   *-EXCPDCB     PATTERN TO MOVE
-         SPACE 1
-TERMDCB  PUTLINE MF=L        PATTERN FOR TERMINAL I/O
-TERMDCBL EQU   *-TERMDCB     SIZE OF IOPL
-         SPACE 1
-F65536   DC    F'65536'           Maximum VBS record GETMAIN length
-*
+*     QSAM support has been removed                             GP17108
 * QSAMDCB changes depending on whether we are in LOCATE mode or
 * MOVE mode
-QSAMDCB  DCB   MACRF=P&OUTM.M,DSORG=PS,DDNAME=QSAMDCB           GP15015
-QSAMDCBL EQU   *-QSAMDCB
+*   QSAM deleted to gain addressability                         GP17108
+*SAMDCB  DCB   MACRF=P&OUTM.M,DSORG=PS,DDNAME=QSAMDCB           GP15015
+*SAMDCBL EQU   *-QSAMDCB
 *
 *
 * CAMDUM CAMLST SEARCH,DSNAME,VOLSER,DSCB+44
 CAMDUM   CAMLST SEARCH,*-*,*-*,*-*
 CAMLEN   EQU   *-CAMDUM           Length of CAMLST Template
-CAMLOC   CAMLST NAME,*-*,*-*,*-*       look in catalog          GP14233
+         ORG   CAMDUM+4           Don't need rest               GP17108
+CAMLOC   CAMLST NAME,*-*,,*-*       look in catalog             GP17108
          SPACE 1
          ORG   CAMLOC+4           Don't need rest               GP14233
          POP   USING
@@ -1799,6 +1772,40 @@ PATSTUBL EQU   *-PATSTUB                                        GP15015
 .NOSTUB  ANOP  ,        Only S/390 needs a stub
 ***********************************************************************
 *                                                                     *
+*   Low access data areas - here for addressability                   *
+*                                                                     *
+***********************************************************************
+         DS    0D                                               GP14205
+BPAMDCB  DCB   MACRF=(R,W),DSORG=PO,DDNAME=BPAMDCB, input and output   *
+               EXLST=1-1          DCB exits added later         GP15015
+BPAMDCBL EQU   *-BPAMDCB
+         SPACE 1
+         DS    0D                                               GP14205
+BSAMDCB  DCB   MACRF=(RP,WP),DSORG=PS,DDNAME=BSAMDCB, input and output *
+               EXLST=1-1          DCB exits added later         GP15015
+BSAMDCBL EQU   *-BSAMDCB
+READDUM  READ  NONE,              Read record Data Event Control Block *
+               SF,                Read record Sequential Forward       *
+               ,       (R10),     Read record DCB address              *
+               ,       (R8),      Read record input buffer             *
+               ,       (R9),      Read BLKSIZE or 256 for PDS.Directory*
+               MF=L               List type MACRO
+READDUML EQU   *-READDUM                                        GP14205
+         SPACE 1
+         DS    0D                                               GP14205
+EXCPDCB  DCB   DDNAME=EXCPDCB,MACRF=E,DSORG=PS,REPOS=Y,BLKSIZE=0,      *
+               DEVD=TA,EXLST=1-1,RECFM=U
+         DC    8XL4'0'         CLEAR UNUSED SPACE
+         ORG   EXCPDCB+84    LEAVE ROOM FOR DCBLRECL
+         DC    F'0'          VOLUME COUNT
+PATCCW   CCW   1,2-2,X'40',3-3
+         ORG   ,
+EXCPDCBL EQU   *-EXCPDCB     PATTERN TO MOVE
+         SPACE 1
+TERMDCB  PUTLINE MF=L        PATTERN FOR TERMINAL I/O
+TERMDCBL EQU   *-TERMDCB     SIZE OF IOPL
+***********************************************************************
+*                                                                     *
 *    AOPEN SUBROUTINES.                                               *
 *    Code moved here to gain addressability.                          *
 *                                                                     *
@@ -1815,19 +1822,21 @@ OPENVTOC OSUBHEAD ,          Define extended entry              GP14233
          OBRAN OPSERR,OP=BNZ        Yes, fail                   GP14233
          USING UCBOB,R7                                         GP14213
          L     R14,=A(CAMDUM)     GET FLAGS IN FIRST WORD       GP14233
+         L     R14,0(,R14)                                      GP17108
          LA    R15,JFCBDSNM       POINT TO DSN                  GP14213
          LA    R0,UCBVOLI         POINT TO SERIAL               GP14213
          LA    R1,DS1FMTID        POINT TO RETURN               GP14213
          STM   R14,R1,CAMLST                                    GP14213
          MVI   OPERF,ORFNODS1     PRESET FOR BAD DSCB 1         GP14213
          OBTAIN CAMLST       READ DSCB1                         GP14213
-         N     R15,=X'FFFFFFF8'   Other than 0 or 8?            GP14213
+         N     R15,=X'000000F7'   Other than 0 or 8?            GP14213
          OBRAN OPSERR,OP=BNZ        Too bad                     GP14233
          MVC   ZVLOCCHH(L'ZVLOCCHH+L'ZVHICCHH),DS4VTOCE+2       GP14213
          MVC   ZVUSCCHH,ZVLOCCHH  Set for scan start            GP14213
          MVI   ZVUSCCHH+L'ZVUSCCHH-1,0 Start with fmt 4 again   GP14213
-         MVC   ZVHICCHH+L'ZVHICCHH-1,DS4DEVDT  Set end record   GP14213
+         MVC   ZVHICCHH+L'ZVHICCHH-1(1),DS4DEVDT   end record   GP17108
          MVC   ZVCPVOL(L'ZVCPVOL+L'ZVTPCYL),DS4DEVSZ  Sizes     GP14213
+         MVC   ZVHIREC,DS4DEVDT   DSCBS PER TRACK               GP17108
          MVI   ZRECFM,X'80'       Set RECFM=F                   GP14213
          MVI   DCBRECFM,X'80'     Set RECFM=F                   GP14213
          LA    R0,DS1END-DS1DSNAM  DSCB size (44 key + 96 data) GP14213
@@ -3566,7 +3575,7 @@ DYNALEXT LR    R1,R13        COPY STORAGE ADDRESS
 DYNALRET FUNEXIT ,           RESTORE REGS; SET RETURN CODES
          LTORG ,
          PUSH  PRINT
-*DEBUG*  PRINT NOGEN         DON'T NEED TWO COPIES
+         PRINT NOGEN         DON'T NEED TWO COPIES
 PATLIST  DYNPAT P=PAT        EXPAND ALLOCATION DATA
          POP   PRINT
 *    DYNAMICALLY ACQUIRED STORAGE
@@ -3772,7 +3781,7 @@ RETURN99 DS    0H
          SPACE 1
          PUSH  USING                                            GP14244
          PUSH  PRINT                                            GP14244
-*DEBUG*  PRINT NOGEN         DON'T NEED TWO COPIES              GP14244
+         PRINT NOGEN         DON'T NEED TWO COPIES              GP14244
          DROP  ,                                                GP14244
 @@SNAP   FUNHEAD SAVE=(SNAPAREA,SNAPALEN,SUBPOOL)               GP14244
          L     R15,4(,R13)        GET CALLER'S SAVE AREA
@@ -4070,8 +4079,8 @@ OPENLEN  EQU   *-WORKAREA         Length for @@AOPEN processing
 ZDCBAREA DS    0H
          DS    CL(BPAMDCBL)       Room for BPAM DCB             GP14205
          READ  DECB,SF,IHADCB,2-2,3-3,MF=L  READ/WRITE BSAM     GP14205
-         ORG   IHADCB             Only using one DCB
-         DS    CL(QSAMDCBL)         so overlay this one
+*DEFUNCT ORG   IHADCB             Only using one DCB
+*DEFUNCT DS    CL(QSAMDCBL)         so overlay this one
          ORG   IHADCB             Only using one DCB            GP14205
          DS    CL(BSAMDCBL)
          ORG   IHADCB             Only using one DCB            GP14233

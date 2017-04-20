@@ -1,6 +1,6 @@
 MVSSUPA  TITLE 'M V S S U P A  ***  MVS VERSION OF PDP CLIB SUPPORT'
 ***********************************************************************
-*                                               Uppdated 2017-04-18   *
+*                                                Updated 2017-04-20   *
 *                                                                     *
 *  This program written by Paul Edwards.                              *
 *  Released to the public domain                                      *
@@ -42,7 +42,7 @@ MVSSUPA  TITLE 'M V S S U P A  ***  MVS VERSION OF PDP CLIB SUPPORT'
 *     The program now supports reading the VTOC of a disk pack;
 *     use @@AOPEN, @@ACLOSE, @@AREAD normally for a sequential data
 *       set with record length 140 (44 key, 96 data). The DD card:
-*       //ddname DD DISP=OLD,DSN=FORMAT4.DSCB,UNIT=SYSALLDA,
+*       //ddname DD DISP=OLD,DSN=FORMAT4.DSCB,UNIT=SYSDA,
 *       //           VOL=SER=serial                      2014-08-01
 *
 ***********************************************************************
@@ -1519,6 +1519,8 @@ OPUPPLUP STC   R1,0(R1,R2)        start at the end              GP17079
 *---------------------------------------------------------------------*
          CLI   ZPPIX,ZPIXSAM      BSAM ?                        GP17079
          BNE   RETURNOP             No; just return             GP17079
+         TM    ZPDEVT,UCB3TAPE+UCB3DACC  Tape or disk?          GP17110
+         BNM   RETURNOP                    neither; skip rest   GP17110
          NOTE  (R7)                                             GP17079
          STCM  R1,14,ZPTTR        Save initial TTR or tape blk  GP17079
          CLI   ZPDEVT,UCB3DACC    Working on DASD?              GP17079
@@ -2191,9 +2193,11 @@ READBSAM FIXWRITE ,               For OUTIN request and UPDAT   GP17079
          DROP  R14                Don't need IOB address base anymore
 *                                 If EOF, R6 will be set to F'-1'
 READCHEK CHECK DECB               Wait for READ to complete
+         TM    ZPDEVT,UCB3TAPE+UCB3DACC  Tape or disk?          GP17110
+         BNM   READNNOT                    neither; skip rest   GP17110
          NOTE  (R10)              Note current position         GP17079
          ST    R1,ZTTR            Save TTR0                     GP17079
-         TM    IOPFLAGS,IOFCONCT  Did we hit concatenation?
+READNNOT TM    IOPFLAGS,IOFCONCT  Did we hit concatenation?
          BZ    READUSAM           No; restore user's AM
          NI    IOPFLAGS,255-IOFCONCT   Reset for next time
          L     R5,ZPBLKSZ         Get block size                GP14205
@@ -2716,6 +2720,8 @@ WRITEEX  TM    IOPFLAGS,IOFCURSE  RECURSION REQUESTED?
 ***********************************************************************
 @@ANOTE  FUNHEAD IO=YES,AM=YES,SAVE=SAVEADCB,US=NO   NOTE position
          L     R3,4(,R1)          R3 points to the return value
+         TM    ZPDEVT,UCB3TAPE+UCB3DACC  Tape or disk?          GP17110
+         BNM   NOTECOM                     neither; skip rest   GP17110
          GAM24 ,                  SET AM24 ON S380              GP15015
          TM    IOMFLAGS,IOFEXCP   EXCP mode?
          BZ    NOTEBSAM           No
@@ -2741,6 +2747,8 @@ NOTECOM  AMUSE ,
          L     R3,4(,R1)          R3 points to the TTR value
          L     R3,0(,R3)          Get the TTR
          ST    R3,ZWORK           Save below the line
+         TM    ZPDEVT,UCB3TAPE+UCB3DACC  Tape or disk?          GP17110
+         BNM   POINCOM                     neither; skip rest   GP17110
          FIXWRITE ,                 Write pending data
          GAM24 ,                  SET AM24 ON S380              GP15015
          TM    IOMFLAGS,IOFEXCP   EXCP mode ?
@@ -3010,6 +3018,8 @@ TRUNTMOD DS    0H
          B     TRUNCHK
 TRUNSHRT WRITE DECB,SF,MF=E       Rewrite block from READ
 TRUNCHK  CHECK DECB
+         TM    ZPDEVT,UCB3TAPE+UCB3DACC  Tape or disk?          GP17110
+         BNM   TRUNPOST                    neither; skip rest   GP17110
          NOTE  (R10)              Note current position         GP17079
          ST    R1,ZTTR            Save TTR0                     GP17079
          B     TRUNPOST           Clean up

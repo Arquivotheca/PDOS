@@ -1,6 +1,6 @@
 MVSSUPA  TITLE 'M V S S U P A  ***  MVS VERSION OF PDP CLIB SUPPORT'
 ***********************************************************************
-*                                                Updated 2017-04-20   *
+*                                                Updated 2017-04-26   *
 *                                                                     *
 *  This program written by Paul Edwards.                              *
 *  Released to the public domain                                      *
@@ -1393,7 +1393,13 @@ GETBUFC  LA    R6,4(,R6)          Insurance
          ST    R14,0(,R5)         and return work address
          AR    R1,R6              Add size GETMAINed to find end
          ST    R1,VBSEND          Save address after VBS rec.build area
-         FIXWRITE ,               Initialize BDW prior to use   GP15015
+         CLI   RECFMIX,IXVAR      RECFM=V                       GP17116
+         BL    DONEOPEN           F - JUST EXIT                 GP17116
+         LA    R4,4               BUILD BDW                     GP17116
+         L     R3,BUFFADDR        GET BUFFER                    GP17116
+         STH   R4,0(,R3)          UPDATE                        GP17116
+         AR    R4,R3              SEY FOR EMPTY BUFFER          GP17116
+         ST    R4,BUFFCURR        SET NEXT AVAILABLE            GP17116
          B     DONEOPEN           Go return to caller with DCB info
          SPACE 1
          PUSH  USING

@@ -4026,6 +4026,7 @@ static int vvscanf(const char *format, va_list arg, FILE *fp, const char *s)
     int skipvar; /* nonzero if we are skipping this variable */
     int modlong;   /* nonzero if "l" modifier found */
     int modshort;   /* nonzero if "h" modifier found */
+    int width; /* maximum chars to read */
     int informatitem;  /* nonzero if % format item started */
            /* informatitem is 1 if we have processed "%l" but not the
               type letter (s,d,e,f,g,...) yet. */
@@ -4057,6 +4058,7 @@ static int vvscanf(const char *format, va_list arg, FILE *fp, const char *s)
                 modlong=0;   /* init */
                 modshort=0;
                 skipvar = 0;
+                width = 0;
                 if (*format == '*')
                 {
                     skipvar = 1;
@@ -4080,6 +4082,11 @@ static int vvscanf(const char *format, va_list arg, FILE *fp, const char *s)
                 /* Type modifier: h (short int) */
                 modshort=1;
                 informatitem=1;
+            }
+            else if (isdigit((unsigned char)*format))
+            {
+                width = width * 10 + (*format - '0');
+                informatitem = 1;
             }
             else    /* process a type character: */
             {

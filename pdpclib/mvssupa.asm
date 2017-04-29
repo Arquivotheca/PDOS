@@ -1,6 +1,6 @@
 MVSSUPA  TITLE 'M V S S U P A  ***  MVS VERSION OF PDP CLIB SUPPORT'
 ***********************************************************************
-*                                                Updated 2017-04-26   *
+*                                                Updated 2017-04-29   *
 *                                                                     *
 *  This program written by Paul Edwards.                              *
 *  Released to the public domain                                      *
@@ -181,7 +181,7 @@ MVSSUPA  TITLE 'M V S S U P A  ***  MVS VERSION OF PDP CLIB SUPPORT'
          GETMAIN RU,LV=&ZZSETSL,SP=&ZZSETSP,LOC=BELOW
          LR    R14,R1             START OF NEW AREA
          LA    R15,&ZZSETSL       LENGTH
-         SR    R3,R3              ZERO FILL
+         SLR   R3,R3              ZERO FILL
          MVCL  R14,R2             CLEAR GOTTEN STORAGE
          ST    R1,8(,R13)         POINT DOWN
          ST    R13,4(,R1)         POINT UP
@@ -621,7 +621,7 @@ SUBPOOL  EQU   0                                                      *
 ***********************************************************************
          PUSH  USING
 @@AOPEN  FUNHEAD SAVE=(WORKAREA,OPENLEN,SUBPOOL)
-         SR    R10,R10            Indicate no ZDCB area gotten  GP14205
+         SLR   R10,R10            Indicate no ZDCB area gotten  GP14205
          LR    R11,R1             KEEP R11 FOR PARAMETERS
          USING PARMSECT,R11       MAKE IT EASIER TO READ
          LDADD R3,PARM1           R3 POINTS TO DDNAME           GP14251
@@ -661,7 +661,7 @@ DDCFDD1  AR    R9,R0              NEXT ENTRY                    GP14205
          BNZ   DDCFDD1              YES; IGNORE                 GP14205
          CLC   TIOEDDNM,0(R8)     MATCHES USER REQUEST?         GP14205
          BNE   DDCFDD1              NO; TRY AGAIN               GP14205
-         SR    R7,R7                                            GP14205
+         SLR   R7,R7                                            GP14205
          ICM   R7,7,TIOEFSRT      LOAD UCB ADDRESS (COULD BE ZERO)
          USING UCBOB,R7                                         GP14205
          MVI   OPERF,ORFBATIO     SET FOR INVALID TIOT          GP14205
@@ -688,7 +688,7 @@ DDCHECK  MVI   OPERF,ORFNOJFC     PRESET FOR BAD JFCB           GP14205
 *COMP*   ICM   R6,15,DDWSVA       LOAD JFCB ADDRESS             GP14205
 *COMP*   BZ    OPSERR               NO; SERIOUS PROBLEM         GP14205
 *COMP*   AGO   .COMJFCB                                         GP14205
-*MVSJFCB SR    R6,R6              FOR AM31                      GP14205
+*MVSJFCB SLR   R6,R6              FOR AM31                      GP14205
 *COMP*   ICM   R6,7,TIOEJFCB      SHOULD NEVER BE ZERO          GP14205
 *COMP*   BZ    OPSERR               NO; SERIOUS PROBLEM         GP14205
 *COMP*   LA    R6,16(,R6)         SKIP QUEUE HEADER             GP14205
@@ -706,7 +706,7 @@ DDCHECK  MVI   OPERF,ORFNOJFC     PRESET FOR BAD JFCB           GP14205
          BNE   BADDSORG             YES; CAN'T USE              GP14205
          TM    JFCDSRG1,254-JFCORGPS-JFCORGPO  UNSUPPORTED ?    GP14205
          BNZ   BADDSORG             YES; FAIL                   GP14205
-DDCNOORG SR    R5,R5                                            GP14205
+DDCNOORG SLR   R5,R5                                            GP14205
          ICM   R5,3,JFCBUFSI      ANY BLOCK/BUFFER SIZE ?       GP14205
          C     R5,DDWBLOCK        COMPARE TO PRIOR VALUE        GP14205
          BNH   DDCNJBLK             NOT LARGER                  GP14205
@@ -833,12 +833,12 @@ DDCKPDS  DS    0H                                               GP14205
 *   FOR A CONCATENATION, PROCESS THE NEXT DD                          *
 *---------------------------------------------------------------------*
 DDCSEQ   OI    DDWFLAG2,CWFSEQ    SET FOR SEQUENTIAL ACCESS     GP14205
-DDCX1DD  SR    R0,R0              RESET                         GP14205
+DDCX1DD  SLR   R0,R0              RESET                         GP14205
          LTR   R8,R8              FIRST TIME FOR DD ?           GP14205
          BZ    FIND1DD              NO                          GP14205
          MVC   DDWFLAG1,DDWFLAG2  SAVE FLAGS FOR FIRST DD       GP14205
          MVI   DDWFLAG2,0         RESET DD                      GP14205
-         SR    R8,R8              SIGNAL FIRST DD DONE          GP14205
+         SLR   R8,R8              SIGNAL FIRST DD DONE          GP14205
 FIND1DD  IC    R0,TIOELNGH        GET ENTRY LENGTH BACK         GP14205
          AR    R9,R0              NEXT ENTRY                    GP14205
          ICM   R0,1,TIOELNGH      GET NEW ENTRY LENGTH          GP14205
@@ -848,7 +848,7 @@ FIND1DD  IC    R0,TIOELNGH        GET ENTRY LENGTH BACK         GP14205
          CLI   TIOEDDNM,C' '      CONCATENATION?                GP14205
          BH    DDCTDONE             NO; DONE WITH DD            GP14205
          LA    R4,DDASIZE(,R4)    NEXT DD ATTRIBUTE ENTRY       GP14205
-         SR    R7,R7                                            GP14205
+         SLR   R7,R7                                            GP14205
          ICM   R7,7,TIOEFSRT      LOAD UCB ADDRESS (COULD BE ZERO)
          USING UCBOB,R7                                         GP14205
          MVI   OPERF,ORFBATIO     SET FOR INVALID TIOT          GP14205
@@ -876,8 +876,10 @@ DDCTDONE MVC   DDWFLAGS,DDWFLAG1  COPY FIRST DD'S FLAGS         GP14205
 *   Conditional forms of storage acquisition are reentrant unless
 *     they pass values that vary between uses, which ours don't,
 *     or require storaage alteration (ditto).
-*DEBUG*  GETMAIN RC,LV=ZDCBLEN,SP=SUBPOOL,LOC=BELOW,BNDRY=PAGE **DEBUG
-         GETMAIN RU,LV=ZDCBLEN,SP=SUBPOOL,LOC=BELOW  I/O work area BTL
+*   Switch the *DEBUG* labels if your storage space is tight.
+*
+         GETMAIN RC,LV=ZDCBLEN,SP=SUBPOOL,LOC=BELOW,BNDRY=PAGE **DEBUG
+*DEBUG*  GETMAIN RU,LV=ZDCBLEN,SP=SUBPOOL,LOC=BELOW  I/O work area BTL
 *   Note that PAGE alignment makes for easier dump reading
 *   but wastes storage - so we use it for debugging only.
 *   Using RC to get a return code if memory unavailable.
@@ -1101,7 +1103,7 @@ EXBTL    ST    R14,DCBXLST        AND SET IT BACK
          LA    R1,ZDCBLEN         Load output length
          LA    R15,0              Pad of X'00'
          MVCL  R0,R14             Clear DCB area to zeroes
-         SR    R0,R0
+         SLR   R0,R0
          ICM   R0,1,JFCNCP        NUMBER OF CHANNEL PROGRAMS
          SLL   R0,10              *1024
          C     R0,=F'65535'       LARGER THAN CCW SUPPORTS?
@@ -1114,7 +1116,7 @@ EXBTL    ST    R14,DCBXLST        AND SET IT BACK
          OR    R4,R0              ADD TO USER'S REQUEST
          B     OPCURSE            AND RESTART THE OPEN
          SPACE 1
-OPVOLCNT SR    R1,R1
+OPVOLCNT SLR   R1,R1
          ICM   R1,1,JFCBVLCT      GET VOLUME COUNT FROM DD
          BNZ   *+8                OK
          LA    R1,1               SET FOR ONE
@@ -1246,7 +1248,7 @@ OPENIN   OPEN  MF=(E,OPENCLOS),TYPE=J  OPEN THE DATA SET
 *  SET USER'S DCB PARAMETERS FOR MEMBER'S PDS                   GP14205
 *    PHYSICAL DCB WILL BE SET TO RECFM=U, MAX BLKSIZE           GP15051
 *
-         SR    R15,R15                                          GP14205
+         SLR   R15,R15                                          GP14205
          IC    R15,PDS2CNCT-PDS2+BLDLNAME                       GP14205
          MH    R15,=AL2(DDASIZE)  Position to entry             GP14205
          LA    R15,DDWATTR(R15)   Point to start of table       GP15051
@@ -1486,7 +1488,7 @@ DONEOPEN LR    R7,R10             Return DCB/file handle address
          TM    ZRECFM,DCBRECTO    RECFM=D
          BZ    SETINDEX           No; treat as U
          B     SETINDVD
-GETINDFV SR    R0,R0              Set for F
+GETINDFV SLR   R0,R0              Set for F
          TM    ZRECFM,DCBRECF     Fixed ?
          BNZ   SETINDEX           Yes
 SETINDVD LA    R0,4               Preset for V
@@ -1527,6 +1529,7 @@ OPUPPLUP STC   R1,0(R1,R2)        start at the end              GP17079
          BNE   RETURNOP             No; just return             GP17079
          TM    ZPDEVT,UCB3TAPE+UCB3DACC  Tape or disk?          GP17110
          BNM   RETURNOP                    neither; skip rest   GP17110
+         GAM24 ,                  Avoid 0C4                     GP17119
          NOTE  (R7)                                             GP17079
          STCM  R1,14,ZPTTR        Save initial TTR or tape blk  GP17079
          CLI   ZPDEVT,UCB3DACC    Working on DASD?              GP17079
@@ -1555,7 +1558,7 @@ RETURNOP FUNEXIT RC=(R7)          Return to caller
 OPNOFIT  LA    R0,ORFBADCB        Error code for bad DCB(BLKSI) GP17079
 OPRERR   LR    R7,R0              CODE PASSED IN R0             GP14205
          B     OPSERR2                                          GP14205
-OPSERR   SR    R7,R7              CLEAR FOR IC                  GP14205
+OPSERR   SLR   R7,R7              CLEAR FOR IC                  GP14205
          IC    R7,OPERF           GET ERROR FLAG                GP14205
 OPSERR2  LA    R7,2000(,R7)       GET INTO RANGE                GP14205
          B     FREEDCB              AND RETURN WITH ERROR       GP14205
@@ -1566,8 +1569,8 @@ ENDFILE  LA    R6,1               Indicate @@AREAD reached end-of-file
          BR    R14                Return to instruction after the GET
 EOFRLEN  EQU   *-ENDFILE
 *
-         LTORG ,
          SPACE 1
+         LTORG ,
          SPACE 1
 *     QSAM support has been removed                             GP17108
 * QSAMDCB changes depending on whether we are in LOCATE mode or
@@ -1668,10 +1671,10 @@ OCDCBEX  LA    R12,0(,R15)        Load and clean base           GP17079
          MVC   ZPLRECL+2(2),DCBLRECL                            GP14205
          MVC   ZPBLKSZ+2(2),DCBBLKSI                            GP14205
 OCDCBX1  OI    IOPFLAGS,IOFDCBEX  Show exit entered
-         SR    R2,R2         FOR POSSIBLE DIVIDE (FB)
-         SR    R3,R3
+         SLR   R2,R2         FOR POSSIBLE DIVIDE (FB)
+         SLR   R3,R3
          ICM   R3,3,DCBBLKSI   GET CURRENT BLOCK SIZE
-         SR    R4,R4         FOR POSSIBLE LRECL=X
+         SLR   R4,R4         FOR POSSIBLE LRECL=X
          ICM   R4,3,DCBLRECL GET CURRENT RECORD LENGTH
          NI    FILEMODE,3    MASK FILE MODE
          MVC   ZRECFM,FILEMODE   GET OPTION BITS
@@ -1698,7 +1701,7 @@ OCDCBFH  LTR   R4,R4
          N     R5,=X'000000C0'  RETAIN ONLY D,F,U,V
          SRL   R5,6          CHANGE TO 0-D 1-V 2-F 3-U
          MH    R5,=H'3'      PREPARE INDEX
-         SR    R6,R6
+         SLR   R6,R6
          IC    R6,FILEMODE   GET USER'S VALUE
          AR    R5,R6         DCB VS. DFLT ARRAY
 *     DCB RECFM:       --D--- --V--- --F--- --U---
@@ -1747,6 +1750,7 @@ OCDCBXX  STH   R3,DCBBLKSI   UPDATE POSSIBLY CHANGED BLOCK SIZE
          ST    R4,ZPLRECL      AND RECORD LENGTH                GP14233
          MVC   ZRECFM,DCBRECFM    DITTO
 ODCBEXRT BR    R14           RETURN TO OPEN (or via caller)     GP15004
+         LTORG ,                                                GP17119
          POP   USING
          SPACE 2
          AIF   ('&ZSYS' NE 'S390').NOSTUB       Only S/390 needs a stub
@@ -1874,7 +1878,7 @@ OPENVSAM OSUBHEAD ,          Define extended entry              GP14233
          MVC   ACBDDNM-IFGACB+ZAACB(L'ACBDDNM),ZDDN             GP14233
          MVC   ZARPL(VSAMRPLL),VSAMRPL BUILD ACB                GP14233
          OPEN  ((R10)),MF=(E,OPENCLOS)                          GP14233
-         SR    R7,R7                                            GP14233
+         SLR   R7,R7                                            GP14233
          IC    R7,ACBERFLG-IFGACB+ZAACB  LOAD ERROR FLAG        GP14233
          LA    R7,1000(,R7)       Get into the 3000 range       GP14233
          LTR   R15,R15            Did it open?                  GP14233
@@ -1943,8 +1947,8 @@ OPFBS    OSUBHEAD ,          Define extended entry              GP17079
          ICM   R2,14,ZPTTR   Just in case - get last block TTR  GP17079
          ST    R2,ZWORK           Remember for a while          GP17079
          BZ    OPFBSEX              New/Old not append?         GP17079
+*CALLER* GAM24 ,                  Get low on S380               GP17079
          POINT (R10),ZWORK                                      GP17079
-         GAM24 ,                  Get low on S380               GP17079
          L     R5,DCBIOBA-IHADCB(,R10)  Get IOB prefix          GP17079
          LA    R5,8(,R5)          Skip prfix                    GP17079
          USING IOBSTDRD,R5        Give assembler IOB base       GP17079
@@ -2048,7 +2052,7 @@ LOOKSWAX ALR   R1,R2         ADD QMAT BASE                      GP15006
 LOOKSVA  LA    R15,16(,R1)   SKIP HEADER                        GP15006
 LOOKSWAT LM    R0,R3,12(R13)     RESTORE CALLER'S REGISTERS     GP15006
          BR    R14           RETURN IN CALLER'S AMODE           GP15009
-LOOKSWA0 SR    R15,R15       NOTHING FOUND - RETURN 0           GP15006
+LOOKSWA0 SLR   R15,R15       NOTHING FOUND - RETURN 0           GP15006
          B     LOOKSWAT      RETURN                             GP15006
 EXSWAODD TM    =X'01',*-*    ODD ADDRESS?                       GP15006
          POP   USING                                            GP15006
@@ -2071,7 +2075,7 @@ EXSWAODD TM    =X'01',*-*    ODD ADDRESS?                       GP15006
          LA    R15,@@AREAD
          LA    R1,DWORK
          BALR  R14,R15       GET NEXT RECORD
-         SR    R15,R15       SET EOF FLAG
+         SLR   R15,R15       SET EOF FLAG
          LTR   R6,R6         HIT EOF ?
          BM    ALINEX        YES; RETURN ZERO
          OI    IOPFLAGS,IOFKEPT   SHOW WE'RE KEEPING A RECORD
@@ -2091,12 +2095,12 @@ ALINEX   FUNEXIT RC=(R15)
 @@AREAD  FUNHEAD IO=YES,AM=YES,SAVE=SAVEADCB,US=NO   READ / GET
          L     R3,4(,R1)  R3 points to where to store record pointer
          L     R4,8(,R1)  R4 points to where to store record length
-         SR    R0,R0
+         SLR   R0,R0
          ST    R0,0(,R3)          Return null in case of EOF
          ST    R0,0(,R4)          Return null in case of EOF
          TM    IOPFLAGS,IOFLEOF   Prior EOF ?                   GP14213
          BNZ   READEOD            Yes; don't abend              GP14213
-         SR    R6,R6              No EOF
+         SLR   R6,R6              No EOF
          TM    IOPFLAGS,IOFKEPT   Saved record ?
          BZ    READREAD           No; go to read                GP14213
          LM    R8,R9,KEPTREC      Get prior address & length
@@ -2155,7 +2159,7 @@ READEXCP STCM  R8,7,TAPECCW+1     Read buffer
          SPACE 1
 EXRDBAD  ABEND 001,DUMP           bad way to show error?
          SPACE 1
-EXRDOK   SR    R0,R0
+EXRDOK   SLR   R0,R0
          ICM   R0,3,IOBCSW+5-IOBSTDRD+TAPEIOB
          SR    R9,R0         LENGTH READ
          BNP   BADBLOCK      NONE ?
@@ -2168,7 +2172,7 @@ EXRDOK   SR    R0,R0
 *   BSAM read   (also used for BPAM member read)                      *
 *---------------------------------------------------------------------*
 READBSAM FIXWRITE ,               For OUTIN request and UPDAT   GP17079
-         SR    R6,R6              Reset EOF flag
+         SLR   R6,R6              Reset EOF flag
          GAM24 ,                  Get low on S380               GP15015
          READ  DECB,              Read record Data Event Control Block C
                SF,                Read record Sequential Forward       C
@@ -2303,7 +2307,7 @@ DEBLOCKV CLI   0(R8),X'80'   LOGICAL END OF BLOCK ?
          BL    DEBVCURR      LOW - LEAVE IT
          BH    BADBLOCK      NO; FAIL
          LA    R6,3          Preset for bad sdw                 GP14244
-         SR    R7,R7         Preset for block done
+         SLR   R7,R7         Preset for block done
 DEBVCURR ST    R7,BUFFCURR        for recursion
          TM    3(R8),X'FF'   CLEAN RDW ?
          BNZ   BADBLOCK
@@ -2325,11 +2329,11 @@ DEBVAPND CLI   2(R8),3            IS THIS A MIDDLE SEGMENT ?
          BNE   BADBLOCK           No; bad segment sequence
          NI    IOPFLAGS,255-IOFLSDW  INDICATE RECORD COMPLETE
 DEBVMOVE L     R2,VBSADDR         Get segment assembly area
-         SR    R1,R1              Never trust anyone
+         SLR   R1,R1              Never trust anyone
          ICM   R1,3,0(R8)         Length of addition
          SH    R1,=H'4'           Data length
          LA    R0,4(,R8)          Skip SDW
-         SR    R15,R15
+         SLR   R15,R15
          ICM   R15,3,0(R2)        Get amount used so far
          LA    R14,0(R15,R2)      Address for next segment
          LA    R8,0(R1,R15)       New length
@@ -2342,7 +2346,7 @@ DEBVMOVE L     R2,VBSADDR         Get segment assembly area
          TM    IOPFLAGS,IOFLSDW    Did last segment?
          BNZ   REREAD             No; get next one
          L     R8,VBSADDR         Give user the assembled record
-         SR    R0,R0
+         SLR   R0,R0
          ICM   R0,3,0(R8)         Provisional length if simple
          ST    R0,0(,R4)          Return length
          ST    R0,KEPTREC+4       Remember record info
@@ -2357,7 +2361,7 @@ DEBLOCKF L     R7,ZPLRECL         Load RECFM=F DCB LRECL        GP14233
 * If address=BUFFEND, zero BUFFCURR
 SETCURR  CL    R7,BUFFEND         Is it off end of block?
          BL    SETCURS            Is not off, go store it
-         SR    R7,R7              Clear the next record address
+         SLR   R7,R7              Clear the next record address
 SETCURS  ST    R7,BUFFCURR        Store the next record address
          ST    R8,0(,R3)          Store record address for caller
          ST    R8,KEPTREC         Remember record info
@@ -2403,11 +2407,11 @@ TGETHAVE ST    R6,0(,R3)          RETURN ADDRESS
          STM   R6,R7,KEPTREC      Remember record info
          ICM   R9,8,=C' '           BLANK FILL
          MVCL  R6,R8              PRESERVE IT FOR USER
-         SR    R6,R6              NO EOF
+         SLR   R6,R6              NO EOF
 TGETFREE LH    R0,0(,R1)          GET LENGTH
          ICM   R0,8,=AL1(1)       SUBPOOL 1
          FREEMAIN R,LV=(0),A=(1)  FREE SYSTEM BUFFER
-READGOOD SR    R6,R6              Set good return               GP14244
+READGOOD SLR   R6,R6              Set good return               GP14244
          B     READEXIT           TAKE NORMAL EXIT
          SPACE 1
 READEOD  OI    IOPFLAGS,IOFLEOF   Remember that we hit EOF
@@ -2464,11 +2468,11 @@ VTOCREAD CLC   ZVUSCCHH,ZVHICCHH  At or past VTOC end?          GP14213
          LA    R2,DS1END-DS1DSNAM Length                        GP14213
          ST    R2,0(,R4)                                        GP14213
          STM   R14,R1,ZVSEEK      Complete CAMLST               GP14213
-         SR    R14,R14            Clear for address increae     GP14213
+         SLR   R14,R14            Clear for address increae     GP14213
          ICM   R14,3,ZVUSCCHH     Load cylinder                 GP14213
-         SR    R15,R15                                          GP14213
+         SLR   R15,R15                                          GP14213
          ICM   R15,3,ZVUSCCHH+2   Load track                    GP14213
-         SR    R1,R1                                            GP14213
+         SLR   R1,R1                                            GP14213
          IC    R1,ZVUSCCHH+L'ZVUSCCHH-1     Get current record  GP14213
          LA    R1,1(,R1)          Increase                      GP14213
          CLM   R1,1,ZVHIREC       Valid?                        GP14213
@@ -2973,7 +2977,7 @@ FREEDBF2 TM    IOMFLAGS,IOFTERM   TERMINAL I/O MODE?
          CLOSE MF=(E,OPENCLOS)
          TM    DCBBUFCA+L'DCBBUFCA-1,1      BUFFER POOL?
          BNZ   NOPOOL             NO, INVALIDATED
-         SR    R15,R15
+         SLR   R15,R15
          ICM   R15,7,DCBBUFCA     DID WE GET A BUFFER?
          BZ    NOPOOL             0-NO
          FREEPOOL ((R10))
@@ -3385,7 +3389,7 @@ XIDCAMS  STM   R14,R12,12(R13)
          ST    R13,4(,R9)         MAKE BACK LINK
          ST    R9,8(,R13)         MAKE DOWN LINK
          LR    R13,R9             MAKE ACTIVE SAVE AREA
-         SR    R15,R15            PRESET FOR GOOD RETURN
+         SLR   R15,R15            PRESET FOR GOOD RETURN
          LM    R3,R5,0(R1)        LOAD PARM LIST ADDRESSES
          SLR   R14,R14
          IC    R14,0(,R4)         LOAD FUNCTION
@@ -3424,10 +3428,10 @@ XIDCPUT  TM    EXFLAGS,EXFSUPP+EXFSKIP  ANY FORM OF SUPPRESSION?
          BE    XIDCEXIT           YES; SKIP
 XIDCSHOW DS    0H            Consider how/whether to pass to user
 *later   WTO   MF=(E,AMSPRINT)
-XIDCPUTZ SR    R15,R15
+XIDCPUTZ SLR   R15,R15
          B     XIDCEXIT
 XIDCSKIP OI    EXFLAGS,EXFSKIP    SKIP THIS AND REMAINING MESSAGES
-         SR    R15,R15
+         SLR   R15,R15
 *---------------------------------------------------------------------*
 * IDCAMS ASYNC EXIT ROUTINE - EXIT, CONSTANTS & WORKAREAS
 *---------------------------------------------------------------------*
@@ -3551,7 +3555,7 @@ DYNALHAV ST    R1,8(,R13)         LINK OURS TO CALLER'S SAVE AREA
          CH    R4,=AL2(L'ALLADDN-1)   CORRECT SIZE FOR RETURN ?
          BE    DYNALNDD           AND LEAVE R5 NON-ZERO
          B     DYNALEXT           NO
-DYNALDDN SR    R5,R5              SIGNAL NO FEEDBACK
+DYNALDDN SLR   R5,R5              SIGNAL NO FEEDBACK
 *  WHEN USER SUPPLIES A DD NAME, DO AN UNCONDITIONAL UNALLOCATE ON IT
          LA    R0,ALLURB
          STCM  R0,7,ALLURBP+1     REQUEST POINTER

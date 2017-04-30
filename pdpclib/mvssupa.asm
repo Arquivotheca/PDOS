@@ -620,7 +620,7 @@ SUBPOOL  EQU   0                                                      *
 *                                                                     *
 ***********************************************************************
          PUSH  USING
-@@AOPEN  FUNHEAD SAVE=(WORKAREA,OPENLEN,SUBPOOL)
+@@AOPEN  FUNHEAD AM=YES,SAVE=(WORKAREA,OPENLEN,SUBPOOL)         GP17119
          SLR   R10,R10            Indicate no ZDCB area gotten  GP14205
          LR    R11,R1             KEEP R11 FOR PARAMETERS
          USING PARMSECT,R11       MAKE IT EASIER TO READ
@@ -2947,20 +2947,21 @@ DCBF003T AL    R9,=X'00000001'    Up total count                GP17079
 *NEXT    BZ    DCBF003F             TOO BAD                     GP17079
 DCBF003F ST    R9,8(,R4)          Concatenation # (0-n/m)       GP17079
          B     ADCBGOOD                                         GP17079
-         POP   USING                                            GP17079
          SPACE 1
 *---------------------------------------------------------------------*
 *   Return; R15 =0 good exit   =-1 for error                          *
 *---------------------------------------------------------------------*
 ADCBGOOD SLR   R15,R15            Good exit                     GP17079
 ADCBEXIT FUNEXIT RC=(R15)         Return to caller              GP14205
+         POP   USING                                            GP17079
          SPACE 2
 ***********************************************************************
 *                                                                     *
 *  ACLOSE - Close a data set                                          *
 *                                                                     *
 ***********************************************************************
-@@ACLOSE FUNHEAD IO=YES,SAVE=(WORKAREA,WORKLEN,SUBPOOL)  CLOSE
+         PUSH  USING                                            GP17119
+@@ACLOSE FUNHEAD IO=YES,AM=YES,SAVE=(WORKAREA,WORKLEN,SUBPOOL)  GP17119
          TM    IOMFLAGS,IOFTERM   TERMINAL I/O MODE?
          BNZ   FREEBUFF           YES; JUST FREE STUFF
          FIXWRITE ,          WRITE FINAL BUFFER, IF ONE
@@ -2984,6 +2985,21 @@ FREEDBF2 TM    IOMFLAGS,IOFTERM   TERMINAL I/O MODE?
 NOPOOL   DS    0H
          FREEMAIN R,LV=ZDCBLEN,A=(R10),SP=SUBPOOL
          FUNEXIT RC=0
+         POP   USING                                            GP17119
+         SPACE 2
+***********************************************************************
+*                                                                     *
+*  ATCLOS - Almost close a data set (e.g., prior to system()          *
+*                                                                     *
+***********************************************************************
+         PUSH  USING                                            GP17119
+@@ATCLOS FUNHEAD IO=YES,AM=YES,SAVE=(WORKAREA,WORKLEN,SUBPOOL)  GP17119
+         TM    IOMFLAGS,IOFTERM   TERMINAL I/O MODE?            GP17119
+         BNZ   ATCLOSEX             Yes; ignore                 GP17119
+         FIXWRITE ,          Write buffer as-is                 GP17119
+         CLOSE MF=(E,OPENCLOS),TYPE=T  Tentative non-close      GP17119
+ATCLOSEX FUNEXIT RC=0                                           GP17119
+         POP   USING                                            GP17119
          SPACE 2
          PUSH  USING
          DROP  ,
@@ -3804,7 +3820,7 @@ RETURN99 DS    0H
          PRINT NOGEN         DON'T NEED TWO COPIES              GP14244
          DROP  ,                                                GP14244
 @@SNAP   FUNHEAD SAVE=(SNAPAREA,SNAPALEN,SUBPOOL)               GP14244
-         L     R15,4(,R13)        GET CALLER'S SAVE AREA
+         L     R15,4(,R13)        GET CALLER'S SAVE AREA        GP14244
          LA    R11,16(,R15)       REMEMBER RETURN CODE ADDRESS  GP14244
          SLR   R0,R0                                            GP14244
          ST    R0,0(,R11)         PRESET                        GP14244

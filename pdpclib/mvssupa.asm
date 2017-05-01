@@ -1400,6 +1400,8 @@ GETBUFC  LA    R6,4(,R6)          Insurance
          LA    R4,4               BUILD BDW                     GP17116
          L     R3,BUFFADDR        GET BUFFER                    GP17116
          STH   R4,0(,R3)          UPDATE                        GP17116
+         TM    IOMFLAGS,IOFOUT    Input or output ?             GP17121
+         BZ    DONEOPEN             Input; leave BUFFCURR =0    GP17121
          AR    R4,R3              SEY FOR EMPTY BUFFER          GP17116
          ST    R4,BUFFCURR        SET NEXT AVAILABLE            GP17116
          B     DONEOPEN           Go return to caller with DCB info

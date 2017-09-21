@@ -1488,6 +1488,7 @@ SETINDEX STC   R0,RECFMIX         Save for the duration
          L     R5,PARM3           Point to RECFM
          SRL   R0,2               change to major record format
          ST    R0,0(,R5)          Pass either RECFM F or V to caller
+         L     R8,PARM4           R8 POINTS TO LRECL            GP17263
          L     R1,ZPLRECL         Load RECFM F or V max. record length
          ST    R1,0(,R8)          Return record length back to caller
          L     R5,PARM5           POINT TO BLKSIZE

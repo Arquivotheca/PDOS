@@ -1,6 +1,6 @@
 MVSSUPA  TITLE 'M V S S U P A  ***  MVS VERSION OF PDP CLIB SUPPORT'
 ***********************************************************************
-*                                                Updated 2017-09-19   *
+*                                                Updated 2017-09-20   *
 *                                                                     *
 *  This program written by Paul Edwards.                              *
 *  Released to the public domain                                      *
@@ -1502,7 +1502,7 @@ SETINDEX STC   R0,RECFMIX         Save for the duration
          SPACE 1
 *---------------------------------------------------------------------*
 *   Request was made for member name to be all blanks when not used   *
-*     or supplied. Instaed of OR'ing blanks, we do a translate.       *
+*     or supplied. Instead of OR'ing blanks, we do a translate.       *
 *     This preserves funny characters in name (e.g., SMP data)        *
 *---------------------------------------------------------------------*
          LA    R1,255             Number of TR bytes            GP17079
@@ -1523,6 +1523,7 @@ OPUPPLUP STC   R1,0(R1,R2)        start at the end              GP17079
          BNM   RETURNOP                    neither; skip rest   GP17110
          TM    DDWFLAG2,CWFDD     Concatenation ?               GP17262
          BNZ   RETURNOP             Yes, can't support FBS      GP17262
+         GAM24 ,                  (OLD note; TRKCALC)           GP17263
          NOTE  (R7)                                             GP17079
          STCM  R1,14,ZPTTR        Save initial TTR or tape blk  GP17079
          CLI   ZPDEVT,UCB3DACC    Working on DASD?              GP17079
@@ -2984,8 +2985,11 @@ NOPOOL   DS    0H
 *    mode, and whenever output buffer is full or needs to be emptied.
 *  Works for EXCP and BSAM. Special processing for UPDAT mode
 *---------------------------------------------------------------------*
-TRUNCOUT B     *+14-TRUNCOUT(,R15)   SKIP LABEL
+         USING IHADCB,R10    COMMON I/O AREA SET BY CALLER
+TRUNCOUT B     TRUNCBEG-TRUNCOUT(,R15)   SKIP LABEL             GP17263
          DC    AL1(9),CL(9)'TRUNCOUT' EXPAND LABEL
+TRUNCBEG TM    IOPFLAGS,IOFLDATA   PENDING WRITE ?              GP17263
+         BZR   R14           NO; JUST RETURN                    GP17263
          AIF   ('&ZSYS' NE 'S380').NOTRUBS
          BSM   R14,R0             PRESERVE AMODE
 .NOTRUBS STM   R14,R12,12(R13)    SAVE CALLER'S REGISTERS
@@ -2995,9 +2999,6 @@ TRUNCOUT B     *+14-TRUNCOUT(,R15)   SKIP LABEL
          ST    R15,8(,R13)
          ST    R13,4(,R15)
          LR    R13,R15
-         USING IHADCB,R10    COMMON I/O AREA SET BY CALLER
-         TM    IOPFLAGS,IOFLDATA   PENDING WRITE ?
-         BZ    TRUNCOEX      NO; JUST RETURN
          GAM24 ,                  SET AM24 ON S380              GP15015
          LM    R4,R5,BUFFADDR  START/NEXT ADDRESS
          CLI   RECFMIX,IXVAR      RECFM=V?

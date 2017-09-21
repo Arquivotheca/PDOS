@@ -1,6 +1,6 @@
 MVSSUPA  TITLE 'M V S S U P A  ***  MVS VERSION OF PDP CLIB SUPPORT'
 ***********************************************************************
-*                                                Updated 2017-09-20   *
+*                                                Updated 2017-09-21   *
 *                                                                     *
 *  This program written by Paul Edwards.                              *
 *  Released to the public domain                                      *
@@ -620,7 +620,7 @@ SUBPOOL  EQU   0                                                      *
 *                                                                     *
 ***********************************************************************
          PUSH  USING
-@@AOPEN  FUNHEAD SAVE=(WORKAREA,OPENLEN,SUBPOOL)
+@@AOPEN  FUNHEAD SAVE=(WORKAREA,OPENLEN,SUBPOOL),AM=YES
          SR    R10,R10            Indicate no ZDCB area gotten  GP14205
          LR    R11,R1             KEEP R11 FOR PARAMETERS
          USING PARMSECT,R11       MAKE IT EASIER TO READ

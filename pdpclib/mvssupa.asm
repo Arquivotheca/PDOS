@@ -1,6 +1,6 @@
 MVSSUPA  TITLE 'M V S S U P A  ***  MVS VERSION OF PDP CLIB SUPPORT'
 ***********************************************************************
-*                                                Updated 2017-09-21   *
+*                                                Updated 2017-10-01   *
 *                                                                     *
 *  This program written by Paul Edwards.                              *
 *  Released to the public domain                                      *
@@ -128,7 +128,7 @@ MVSSUPA  TITLE 'M V S S U P A  ***  MVS VERSION OF PDP CLIB SUPPORT'
 *
 *
          MACRO ,             UPDATED 2010.293
-&NM      FUNHEAD &ID=YES,&IO=NO,&AM=NO,&SAVE=,&US=YES
+&NM      FUNHEAD &ID=YES,&IO=NO,&AM=YES,&SAVE=,&US=YES          GP17274
 .*
 .*   MACRO TO BEGIN EACH FUNCTION
 .*     HANDLES STANDARD OS ENTRY CONVENTIONS
@@ -178,7 +178,8 @@ MVSSUPA  TITLE 'M V S S U P A  ***  MVS VERSION OF PDP CLIB SUPPORT'
 .DYNAM   ANOP  ,
 &ZZSETSL SETC  '&SAVE(2)'
 &ZZSETSA SETC  '&SAVE(1)'
-         GETMAIN RU,LV=&ZZSETSL,SP=&ZZSETSP,LOC=BELOW
+*OLD*    GETMAIN RU,LV=&ZZSETSL,SP=&ZZSETSP,LOC=BELOW
+         GETMAIN R,LV=&ZZSETSL,SP=&ZZSETSP  faster path         GP17274
          LR    R14,R1             START OF NEW AREA
          LA    R15,&ZZSETSL       LENGTH
          SR    R3,R3              ZERO FILL
@@ -620,7 +621,7 @@ SUBPOOL  EQU   0                                                      *
 *                                                                     *
 ***********************************************************************
          PUSH  USING
-@@AOPEN  FUNHEAD SAVE=(WORKAREA,OPENLEN,SUBPOOL),AM=YES
+@@AOPEN  FUNHEAD SAVE=(WORKAREA,OPENLEN,SUBPOOL)                GP17264
          SR    R10,R10            Indicate no ZDCB area gotten  GP14205
          LR    R11,R1             KEEP R11 FOR PARAMETERS
          USING PARMSECT,R11       MAKE IT EASIER TO READ
@@ -877,14 +878,14 @@ DDCTDONE MVC   DDWFLAGS,DDWFLAG1  COPY FIRST DD'S FLAGS         GP14205
 *   Conditional forms of storage acquisition are reentrant unless
 *     they pass values that vary between uses, which ours don't,
 *     or require storaage alteration (ditto).
-*DEBUG*  GETMAIN RC,LV=ZDCBLEN,SP=SUBPOOL,LOC=BELOW,BNDRY=PAGE **DEBUG
-         GETMAIN RU,LV=ZDCBLEN,SP=SUBPOOL,LOC=BELOW  I/O work area BTL
 *   Note that PAGE alignment makes for easier dump reading
 *   but wastes storage - so we use it for debugging only.
 *   Using RC to get a return code if memory unavailable.
-*
+*DEBUG*  GETMAIN RC,LV=ZDCBLEN,SP=SUBPOOL,LOC=BELOW,BNDRY=PAGE **DEBUG
 *not usd LA    R0,ORFNOSTO        Preset for no storage         GP14205
 *not set BXH   R15,R15,OPRERR       Return error code           GP14205
+         GETMAIN RU,LV=ZDCBLEN,SP=SUBPOOL,LOC=BELOW  I/O work area BTL
+*
          LR    R10,R1             Addr.of storage obtained to its base
          USING IHADCB,R10         Give assembler DCB area base register
          LR    R0,R10             Load output DCB area address
@@ -984,7 +985,8 @@ OPFIXMOD STC   R4,WWORK           Save to storage
          SPACE 1
          TM    WWORK,IOFEXCP      (TAPE) EXCP mode ?
          BZ    OPQRYBSM             No
-         MVC   ZDCBAREA(EXCPDCBL),EXCPDCB  Move DCB/IOB/CCW
+         L     R15,=A(EXCPDCB)    Point to DCB/IOB/CCW          GP17274
+         MVC   ZDCBAREA(EXCPDCBL),0(R15)   Move DCB/IOB/CCW     GP17274
          LA    R15,TAPEIOB   FOR EASIER SETTINGS
          USING IOBSTDRD,R15
          MVI   IOBFLAG1,IOBDATCH+IOBCMDCH   COMMAND CHAINING IN USE
@@ -1442,6 +1444,9 @@ TERMOPEN MVC   IOMFLAGS,WWORK     Save for duration
          ICM   R1,15,ZPLRECL      Did user supply an LRECL?     GP17107
          BNZ   *+8                  Yes; use it                 GP17107
          LA    R1,255             Set reasonable (?) default    GP17107
+         ICM   R6,15,ZPBLKSZ      AND GET BLOCK SIZE            GP17274
+         BNZ   TERMOSET             HOPE IT WORKS               GP17274
+         LR    R6,R1              ELSE DEFAULT TO RECORD LENGTH GP17274
          B     TERMOSET             and stash the result        GP17107
 TERMOVAR ICM   R1,15,ZPLRECL      Get record length             GP17107
          BZ    TERMOVBL             try block size              GP17107
@@ -1856,6 +1861,7 @@ OPENVTOC OSUBHEAD ,          Define extended entry              GP14233
          MVI   ZPPIX,ZPIXVTC      Set for VTOC I/O              GP15024
          MVC   ZVSER,UCBVOLI      Remember the serial           GP14213
          OSUBRET ROUTE=      Return from extended entry         GP14233
+         POP   USING                                            GP17274
          SPACE 2
 ***********************************************************************
 *   VSAM OPEN support                                                 *
@@ -2061,7 +2067,7 @@ EXSWAODD TM    =X'01',*-*    ODD ADDRESS?                       GP15006
 *     R15=0 EOF     R15=1 More data available                         *
 *                                                                     *
 ***********************************************************************
-@@ALINE  FUNHEAD IO=YES,AM=YES,SAVE=(WORKAREA,WORKLEN,SUBPOOL)
+@@ALINE  FUNHEAD IO=YES,SAVE=(WORKAREA,WORKLEN,SUBPOOL)
 *NO      FIXWRITE ,                                             GP17079
          TM    IOMFLAGS,IOFTERM   Terminal Input?
          BNZ   ALINEYES             Always one more?
@@ -2089,7 +2095,7 @@ ALINEX   FUNEXIT RC=(R15)
 *               returned. Next read will be from new DD.              *
 *                                                                     *
 ***********************************************************************
-@@AREAD  FUNHEAD IO=YES,AM=YES,SAVE=SAVEADCB,US=NO   READ / GET
+@@AREAD  FUNHEAD IO=YES,SAVE=SAVEADCB,US=NO          READ / GET
          L     R3,4(,R1)  R3 points to where to store record pointer
          L     R4,8(,R1)  R4 points to where to store record length
          SR    R0,R0
@@ -2525,7 +2531,7 @@ RSNAP    SNAP  PDATA=(PSW,REGS),LIST=RSNLIST,STRHDR=RSNHEAD,MF=L
 *  AWRITE - Write to an open data set                                 *
 *                                                                     *
 ***********************************************************************
-@@AWRITE FUNHEAD IO=YES,AM=YES,SAVE=SAVEADCB,US=NO   WRITE / PUT
+@@AWRITE FUNHEAD IO=YES,SAVE=SAVEADCB,US=NO          WRITE / PUT
          LR    R11,R1             SAVE PARM LIST
 WRITMORE NI    IOPFLAGS,255-IOFCURSE   RESET RECURSION
          L     R4,4(,R11)         R4 points to the record address
@@ -2725,7 +2731,7 @@ WRITEEX  TM    IOPFLAGS,IOFCURSE  RECURSION REQUESTED?
 *  ANOTE  - Return position saved after READ/WRITE (BSAM/BPAM only)   *
 *                                                                     *
 ***********************************************************************
-@@ANOTE  FUNHEAD IO=YES,AM=YES,SAVE=SAVEADCB,US=NO   NOTE position
+@@ANOTE  FUNHEAD IO=YES,SAVE=SAVEADCB,US=NO          NOTE position
          L     R3,4(,R1)          R3 points to the return value
          TM    ZPDEVT,UCB3TAPE+UCB3DACC  Tape or disk?          GP17110
          BNM   NOTECOM                     neither; skip rest   GP17110
@@ -2750,7 +2756,7 @@ NOTECOM  AMUSE ,
 *           errors.                                                   *
 *                                                                     *
 ***********************************************************************
-@@APOINT FUNHEAD IO=YES,AM=YES,SAVE=SAVEADCB,US=NO   NOTE position
+@@APOINT FUNHEAD IO=YES,SAVE=SAVEADCB,US=NO          NOTE position
          L     R3,4(,R1)          R3 points to the TTR value
          L     R3,0(,R3)          Get the TTR
          ST    R3,ZWORK           Save below the line
@@ -2800,7 +2806,7 @@ POINCOM  AMUSE ,
 *                                                                     *
 *                                                                     *
 ***********************************************************************
-@@ADCBA  FUNHEAD IO=YES,AM=YES,SAVE=SAVEADCB,US=NO   READ / GET GP14205
+@@ADCBA  FUNHEAD IO=YES,SAVE=SAVEADCB,US=NO          READ / GET GP14205
          LDVAL R3,4(,R1)   Get function code                    GP17079
          L     R4,8(,R1)   R4 points to user's return area      GP17079
          CH    R3,=H'1'    Valid function?                      GP17079
@@ -2982,6 +2988,48 @@ NOPOOL   DS    0H
          PUSH  USING
          DROP  ,
 *---------------------------------------------------------------------*
+* FIND THE ZDCBAREA FOR A PREVIOUSLY OPENED FILE (CURRENT OR HIGHER   *
+*   TCB, AND RETURN ITS ADDRESS OR ZERO IN R1                         *
+* THE ADDRESS OF THE DESIRED DDNAME IS POINTED TO BY R1               *
+*---------------------------------------------------------------------*
+         ENTRY @@AQZDCB                                         GP17274
+@@AQZDCB L     R1,0(,R1)          R1 POINTS TO THE DESIRED DD NAME
+AQZDCB   STM   R14,R12,12(R13)    SAVE A BIT                    GP17274
+         LR    R12,R15                                          GP17274
+         USING @@AQZDCB,R12                                     GP17274
+         SLR   R15,R15            PRESET FOR NO MATCH           GP17274
+         SLR   R4,R4              CLEAR HIGH BYTE FOR ICM       GP17274
+         L     R3,PSATOLD-PSA     GET CURRENT TCB               GP17274
+         USING TCB,R3                                           GP17274
+AQZTCBLK L     R2,TCBDEB          POINT TO FIRST DEB            GP17274
+         LTR   R2,R2              ANY?                          GP17274
+         BZ    AQZUPTCB             NO; CHECK HIGHER TCB        GP17274
+         B     AQZDEBL2           CHECK DEB                     GP17274
+         USING DEBBASIC,R2                                      GP17274
+AQZDEBLP ICM   R2,7,DEBDEBB       ANOTHER DEB TO CHECK?         GP17274
+         BZ    AQZUPTCB                                         GP17274
+AQZDEBL2 ICM   R4,7,DEBDCBB       GET DCB                       GP17274
+         USING IHADCB,R4                                        GP17274
+         SLR   R5,R5                                            GP17274
+         ICM   R5,3,DCBTIOT       GET TIOT OFFSET               GP17274
+         AL    R5,TCBTIO          POINT TO TIOT ENTRY           GP17274
+         USING TIOENTRY,R5                                      GP17274
+         CLC   TIOEDDNM,0(R1)     WANTED DD?                    GP17274
+         BNE   AQZDEBLP             NO; CHECK NEXT              GP17274
+         LR    R15,R4             RETURN DCB ADDRESS            GP17274
+         B     AQZDCBEX                                         GP17274
+AQZUPTCB CL    R3,TCBJSTCB        JOB STEP TCB?                 GP17274
+         BE    AQZDCBEX                YES; NO MORE RISING      GP17274
+         ICM   R3,15,TCBOTC       GET HIGHER TCB                GP17274
+         BNZ   AQZTCBLK             AND LOOK AT ITS DEBS        GP17274
+AQZDCBEX ST    R15,24(,R13)       RETURN ADDRESS OR 0 IN R1     GP17274
+         LM    R14,R12,12(R13)    RESTORE MOST                  GP17274
+         BR    R14                RETURN ZDCBAREA ADDRESS OR 0  GP17274
+         POP   USING                                            GP17274
+         SPACE 2
+         PUSH  USING
+         DROP  ,
+*---------------------------------------------------------------------*
 *  Physical Write - called by @@ACLOSE, switch from output to input
 *    mode, and whenever output buffer is full or needs to be emptied.
 *  Works for EXCP and BSAM. Special processing for UPDAT mode
@@ -3131,33 +3179,35 @@ GETMEX   FUNEXIT RC=(R5)                                        GP15017
 *  BY USING SOME EMPIRICALLY-DERIVED MAGIC NUMBERS                    *
 *                                                                     *
 ***********************************************************************
-@@GETCLK FUNHEAD ,                GET TOD CLOCK VALUE
 *
-         L     R2,0(,R1)
-         STCK  0(R2)
+         PUSH  USING                                            GP17274
+         DROP  ,                                                GP17274
+         ENTRY GETCLK                                           GP17274
+GETCLK   STM   R2,R5,12(R13)      save a little                 GP17274
+         USING GETCLK,R15                                       GP17274
+         LA    R3,32(,R13)        use user's save area          GP17274
+         N     R3,=X'FFFFFFF8'      on a double word boundary   GP17274
+         STCK  0(R3)              stash the clock               GP17274
+         L     R2,0(,R1)          address may be ATL            GP17274
+         MVC   0(8,R2),0(R3)      copy to BTL or ATL            GP17274
          L     R4,0(,R2)
          L     R5,4(,R2)
          SRDL  R4,12
          SL    R4,=X'0007D910'
          D     R4,=F'1000000'
          SL    R5,=F'1220'
+         LR    R15,R5             return resuolt                GP17274
+         LM    R2,R5,12(R13)      restore modified registers    GP17274
+         BR    R14                  return to caller            GP17274
 *
-RETURNGC FUNEXIT RC=(R5)
          LTORG ,
+         POP   USING                                            GP17274
          SPACE 2
 ***********************************************************************
 *                                                                     *
 *  GETTZ - Get the offset from GMT in 1.048576 seconds                *
 *                                                                     *
 ***********************************************************************
-* @@GETTZ FUNHEAD ,                 get timezone offset
-*
-*         L     R3,CVTPTR
-*         USING CVT,R3
-*         L     R4,CVTTZ
-*
-* RETURNGS FUNEXIT RC=(R4)
-*         LTORG ,
          ENTRY @@GETTZ
 @@GETTZ  L     R15,CVTPTR
          L     R15,CVTTZ-CVTMAP(,R15)  GET GMT TIME-ZONE OFFSET
@@ -3742,9 +3792,9 @@ RETURNGA DS    0H
 * the parameter in writable storage so that we can ensure that
 * we set that bit.
 *
-         L     R2,0(R1)
+         L     R2,0(,R1)
          O     R2,=X'80000000'
-         ST    R2,0(R1)
+         ST    R2,0(,R1)
          SVC   99
          LR    R2,R15
 *
@@ -3756,7 +3806,6 @@ RETURN99 DS    0H
          LR    R15,R2             Return success
          RETURN (14,12),RC=(15)   Return to caller
 *
-         DROP  R12
          POP   USING
          SPACE 2
 ***********************************************************************

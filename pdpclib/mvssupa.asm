@@ -3182,9 +3182,9 @@ GETMEX   FUNEXIT RC=(R5)                                        GP15017
 *
          PUSH  USING                                            GP17274
          DROP  ,                                                GP17274
-         ENTRY GETCLK                                           GP17274
-GETCLK   STM   R2,R5,12(R13)      save a little                 GP17274
-         USING GETCLK,R15                                       GP17274
+         ENTRY @@GETCLK                                         GP17274
+@@GETCLK STM   R2,R5,12(R13)      save a little                 GP17274
+         USING @@GETCLK,R15                                     GP17274
          LA    R3,32(,R13)        use user's save area          GP17274
          N     R3,=X'FFFFFFF8'      on a double word boundary   GP17274
          STCK  0(R3)              stash the clock               GP17274

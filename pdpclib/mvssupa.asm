@@ -1,6 +1,6 @@
 MVSSUPA  TITLE 'M V S S U P A  ***  MVS VERSION OF PDP CLIB SUPPORT'
 ***********************************************************************
-*                                                Updated 2017-10-01   *
+*                                                Updated 2017-10-07   *
 *                                                                     *
 *  This program written by Paul Edwards.                              *
 *  Released to the public domain                                      *
@@ -2413,6 +2413,7 @@ TGETHAVE ST    R6,0(,R3)          RETURN ADDRESS
 TGETFREE LH    R0,0(,R1)          GET LENGTH
          ICM   R0,8,=AL1(1)       SUBPOOL 1
          FREEMAIN R,LV=(0),A=(1)  FREE SYSTEM BUFFER
+         B     READEXIT                                         GP17280
 READGOOD SR    R6,R6              Set good return               GP14244
          B     READEXIT           TAKE NORMAL EXIT
          SPACE 1

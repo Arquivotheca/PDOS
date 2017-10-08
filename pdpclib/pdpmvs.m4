@@ -157,6 +157,9 @@ undivert(pdptest.s)dnl
  ENTRY @@MAIN
 /*
 //*
+//* Add this above when debugging MVSSUPA
+//* ORDER MVSSUPA(P)
+//*
 //PDPTEST  EXEC PGM=PDPTEST,PARM='-tt dd:in dd:out',
 //         COND=(0,LT,LKED)
 //STEPLIB  DD  DSN=&&LOADLIB,DISP=(OLD,PASS)

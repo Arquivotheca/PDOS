@@ -1,6 +1,6 @@
 MVSSUPA  TITLE 'M V S S U P A  ***  MVS VERSION OF PDP CLIB SUPPORT'
 ***********************************************************************
-*                                                Updated 2017-10-07   *
+*                                                Updated 2017-10-09   *
 *                                                                     *
 *  This program written by Paul Edwards.                              *
 *  Released to the public domain                                      *
@@ -2422,7 +2422,9 @@ READEOD2 XC    KEPTREC(8),KEPTREC Clear saved record info
          NI    IOPFLAGS,255-IOFKEPT   Reset flag                GP14213
          LA    R6,1
 READEXNG LNR   R6,R6              Signal EOF
-READEXIT FUNEXIT RC=(R6)          Return to caller (0, 4, or -1)
+READEXIT DS    0H
+         GAM31
+         FUNEXIT RC=(R6)          Return to caller (0, 4, or -1)
          SPACE 1
 *---------------------------------------------------------------------*
 *   VSAM read

@@ -38,6 +38,7 @@ int main(int argc, char **argv)
 #if defined(__MVS__) || defined(__CMS__) || defined(__VSE__)
     z = (char *)main;
     printf("first byte of main is %x\n", *z);
+    printf("running as amode %d\n", __getam());
 #endif
     printf("allocating 10 bytes\n");
     m1 = malloc(10);

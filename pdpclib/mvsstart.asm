@@ -51,7 +51,8 @@ CEESTART DS    0H
          LR    R10,R15
          USING @@CRT0,R10
          LR    R11,R1
-         GETMAIN RU,LV=STACKLEN,SP=SUBPOOL
+* Keep stack BTL so that the save area traceback works on MVS/380 2.0
+         GETMAIN RU,LV=STACKLEN,SP=SUBPOOL,LOC=BELOW
          ST    R13,4(R1)
          ST    R1,8(R13)
          LR    R13,R1

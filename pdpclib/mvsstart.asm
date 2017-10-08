@@ -100,11 +100,9 @@ CEESTART DS    0H
 *
          LA    R1,PARMLIST
 *
-         SAM64
          CALL  @@START
 *
 RETURNMS DS    0H
-         SAM24
          LR    R1,R13
          L     R13,SAVEAREA+4
          LR    R14,R15
@@ -125,7 +123,6 @@ SAVER13  DS    F
          L     R13,=A(SAVER13)
          L     R13,0(R13)
 *
-         SAM24
          LR    R1,R13
          L     R13,4(R13)
          LR    R14,R9

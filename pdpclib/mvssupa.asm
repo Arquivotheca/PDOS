@@ -1,6 +1,6 @@
 MVSSUPA  TITLE 'M V S S U P A  ***  MVS VERSION OF PDP CLIB SUPPORT'
 ***********************************************************************
-*                                                Updated 2017-10-09   *
+*                                                Updated 2017-11-10   *
 *                                                                     *
 *  This program written by Paul Edwards.                              *
 *  Released to the public domain                                      *
@@ -3754,6 +3754,217 @@ GAIS31   LA    R15,31
 RETURNGA DS    0H
          RETURN (14,12),RC=(15)
          LTORG ,
+*
+*
+*
+**********************************************************************
+*                                                                    *
+*  SETUP - do initialization. I used the word "setup" instead of     *
+*  "init" in case someone imagines that "init" is some sort of       *
+*  complicated compiler-generated function.                          *
+*                                                                    *
+*  This routine figures out the amode switching strategy given that  *
+*  the operating system may require a lower amode that the           *
+*  application, and this will be reflected in the fact that the      *
+*  rmode will be lower than the amode, to allow this switch to       *
+*  occur. It is left to the user to use a utility to set the RMODE   *
+*  to something that their current operating system supports. E.g.   *
+*  a future version of z/OS may allow execution of READ in AM64 in   *
+*  which case the z/OS user is free to change this module from RM31  *
+*  to RM64.                                                          *
+*                                                                    *
+*  Note that AMODE switching is not required, and thus doesn't even  *
+*  need time to be wasted, if you are targeting a "pure" environment *
+*  such as S370 where everything is in AM24 and the OS can handle    *
+*  that, or S390 where everything is in AM31 and the OS can handle   *
+*  that, and possibly in the future there will be such a thing as    *
+*  Z999 where the OS can handle being called in AM64, so there is    *
+*  no need to waste time checking to see if an amode switch is       *
+*  required. However, it is strongly advised that instead of coding  *
+*  for such pure environments, you instead select either S380,       *
+*  which will work optimally on all environments, ie AM24 in         *
+*  MVS 3.8j, switch between AM31 and AM24 on MVS/XA, and remain in   *
+*  AM31 on late MVS/ESA and above. OR if you are building a 64-bit   *
+*  capable module, which necessarily requires the z/Arch 1.0         *
+*  instruction set to be available, that you choose Z900, which will *
+*  switch between AM64 and AM31 normally on z/OS, but is also        *
+*  capable of switching from AM64 to AM24 if the code is loaded BTL, *
+*  which will be the case on an operating system like MVS/380.       *
+*  It will also handle the case where a future z/OS or a future      *
+*  MVS/380 or a future z/PDOS is able to handle an RM64 module       *
+*  such that the application is always executing in AM64 instead of  *
+*  dropping down to AM31 to execute OS routines.                     *
+*                                                                    *
+**********************************************************************
+         ENTRY @@SETUP
+@@SETUP  DS    0H
+         SAVE  (14,12),,@@SETUP
+         LR    R12,R15
+         USING @@SETUP,R12
+*
+* If we are running in a pure environment, where the
+* AMODE and RMODE are the same, there is no need to
+* ever do AMODE switching, so none of this AMODE
+* switching code is required at all
+*
+         AIF   (('&ZSYS' NE 'S380') AND ('&ZSYS' NE 'Z900')).NOBSW
+         L     R2,=X'C0000000'
+         LA    R2,0(,R2)
+         CLM   R2,B'1000',=X'40'
+* If we are currently in AM24, there is nothing
+* to ever do, as we will stay in that mode forever
+         BL    RETURNSU
+*
+* If we have done a S380 build, yet we find
+* ourselves in AM64, despite the fact that we
+* may not be able to assemble 64-bit instructions,
+* we can still gracefully handle that.
+         AIF   ('&ZSYS' NE 'S380').NO64A
+* First handle the case of us running AM64
+         BNE   S8SET64
+* Now we know we are running AM31. If we are,
+* and we are RM31, then no switching is required.
+         LR    R2,R12
+         N     R2,=X'7F000000'
+         LTR   R2,R2
+         BNZ   RETURNSU No amode switching possible
+* Now we know we need to switch to RM24, so no
+* OR is required.
+         B     COMM3164
+S8SET64  DS    0H
+* If we are AM64, but RM31, we need to set the AM31
+* bit
+         LR    R2,R12
+         N     R2,=X'7F000000'
+         LTR   R2,R2
+         BZ    COMM3164
+         OI    NEEDBOO,X'80'
+COMM3164 DS    0H
+* We have dealt with the appropriate bits to set
+* the OS mode, now we need to set the return to
+* application mode. That is easy, it is the current
+* amode, either AM64 or AM31
+         LA    R2,0
+         BSM   R2,0
+         ST    R2,NEEDBOA this will be suitable for ORing
+         OI    NEEDBF,NEEDBANY  set flag to say we need BSM switching
+         B     RETURNSU
+* End of S380 code
+* Start of Z900 code
+.NO64A
+         AIF   ('&ZSYS' NE 'Z900').NO64B
+         BNE   SET64
+* Ok, we are currently in AM31. We now need to
+* see if this code is ATL. Because if we are
+* ATL, it is not possible to switch down to
+* AM24, so we instead need to rely on the operating
+* system to be able to handle an AM31 caller, which
+* is the case in OS/390 but not MVS/XA.
+         LR    R2,R12
+         N     R2,=X'7F000000'
+         LTR   R2,R2
+         BNZ   RETURNSU No amode switching possible
+* Now we need to save the original AMODE settings,
+* ie AM31. We do this in a generic manner though.
+         LA    R2,0
+         BSM   R2,0
+         ST    R2,NEEDBOA this will be suitable for ORing
+* Now we need to set appropriate flags to let GAMOS
+* know what we need to drop down to. In the simple
+* case of AM31, we can only drop down to AM24
+         OI    NEEDBF,NEEDBANY  set flag to say we need BSM switching
+         OI    NEEDBF,NEEDB24  set flag to say we need SAM24
+         B     RETURNSU
+* Ok, we're in AM64, and that means the full raft of
+* z/Arch 1.0 instructions are available.
+SET64    DS    0H
+         LGR   R2,R12
+         NG    R2,=X'FFFFFFFF80000000'
+         LTGR  R2,R2
+         BNZ   RETURNSU No amode switching possible
+* Now we need to save the original AMODE settings,
+* ie AM64. We do this in a generic manner though.
+         LA    R2,0
+         BSM   R2,0
+         ST    R2,NEEDBOA low bit will be set indicating AM64
+         OI    NEEDBF,NEEDBANY
+* Now we need to check if we need to switch to
+* AM24 or AM31. This will be driven by the RMODE,
+* which at this stage we know is either 24 or 31
+         LR    R2,R12
+         N     R2,=X'7F000000'
+         LTR   R2,R2
+         BZ    AM64S24
+* We are RM31, meaning we need SAM31
+         OI    NEEDBF,NEEDB31
+         B     AM64SFIN
+AM64S24  DS    0H     we are RM24, so we need SAM24
+         OI    NEEDBF,NEEDB24
+AM64SFIN DS    0H     finished setting flags
+*
+.NO64B   ANOP  ,   end of Z900 processing
+.NOBSW   ANOP  ,   no BSM switching required
+RETURNSU DS    0H
+         LA    R15,0
+         RETURN (14,12),RC=(15)
+         LTORG ,
+NEEDBF   DC    X'00'   flag bits for whether BSM needed
+NEEDBANY EQU   X'01'   need any amode switching at all?
+NEEDB24  EQU   X'02'   OS requires AM24
+NEEDB31  EQU   X'04'   OS requires AM31
+NEEDBOA  DC    A(0)    amode bits to be ORed in to return APP to
+*                      original amode
+         AIF   ('&ZSYS' NE 'S380').NOBOO
+NEEDBOO  DC    A(0)    amode bits to be ORed in to set OS amode
+*                      (only used in S380 build)
+.NOBOO   ANOP  ,
+*
+*
+*
+         MACRO ,
+&NM      GAMOS
+.*
+.*   GAMOS sets addressing mode to 24 or 31 for Z900
+.*   and S380 ready for calling OS functions
+.*
+         AIF   ('&ZSYS' NE 'Z900').NOBSMA
+         TM    NEEDBF,NEEDB31   Need switch to AM31?
+         BZ    .NOSW31
+         SAM31
+         B     .FINSW
+.NOSW31  ANOP
+         TM    NEEDF,NEEB24    Need switch to AM24?
+         BZ    .FINSW     No switching required
+         SAM24
+.FINSW   ANOP
+.NOBSMA
+         AIF   ('&ZSYS' NE 'S380').NOBSMB
+         TM    NEEDBF,NEEDBANY   Need AM switching?
+         BZ    .NOSWANY
+         LA    R14,.CONTB1
+         O     R14,NEEDBOO whatever mode OS requires
+         BSM   0,R14
+.CONTB1
+.NOSWANY
+.NOBSMB
+.MEND    MEND  ,
+*
+*
+*
+         MACRO ,
+&NM      GAMAPP
+.*
+.*   GAMAPP sets addressing mode to 31 or 64 for Z900
+.*   or S380 - whatever the APP was running in before
+.*
+&NM      TM    NEEDBF,NEEDBANY   Did we previously need a switch?
+         BZ    .FINSW     No, no switching required
+.* We don't know whether we need to switch to 31 or 64
+         LA    R14,.FINSW
+         O     R14,NEEDBOA  This decides 31/64
+         BSM   R0,R14
+.FINSW   ANOP
+.MEND    MEND  ,
 *
 *
 *

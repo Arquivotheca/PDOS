@@ -1,6 +1,6 @@
 MVSSUPA  TITLE 'M V S S U P A  ***  MVS VERSION OF PDP CLIB SUPPORT'
 ***********************************************************************
-*                                                Updated 2017-11-10   *
+*                                                Updated 2017-11-11   *
 *                                                                     *
 *  This program written by Paul Edwards.                              *
 *  Released to the public domain                                      *
@@ -3771,7 +3771,8 @@ RETURNGA DS    0H
 *  to something that their current operating system supports. E.g.   *
 *  a future version of z/OS may allow execution of READ in AM64 in   *
 *  which case the z/OS user is free to change this module from RM31  *
-*  to RM64.                                                          *
+*  to RM64. Although that won't work until we make the READ etc      *
+*  macros trimodal (24/31/64) instead of the current bimodal (24/31) *
 *                                                                    *
 *  Note that AMODE switching is not required, and thus doesn't even  *
 *  need time to be wasted, if you are targeting a "pure" environment *

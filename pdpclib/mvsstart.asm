@@ -16,7 +16,7 @@ MVSSTART TITLE 'M V S S T A R T  ***  STARTUP ROUTINE FOR C'
          COPY  PDPTOP
 *
          PRINT GEN
-* YREGS IS NOT AVAILABLE WITH IFOX
+* YREGS is newer than MVS 3.8j so may not be available to some
 *         YREGS
 R0       EQU   0
 R1       EQU   1
@@ -53,8 +53,8 @@ CEESTART DS    0H
          LR    R11,R1
 * Keep stack BTL so that the save area traceback works on MVS/380 2.0
          GETMAIN RU,LV=STACKLEN,SP=SUBPOOL,LOC=BELOW
-         ST    R13,4(R1)
-         ST    R1,8(R13)
+         ST    R13,4(,R1)
+         ST    R1,8(,R13)
          LR    R13,R1
          LR    R1,R11
          USING STACK,R13
@@ -62,18 +62,23 @@ CEESTART DS    0H
          LA    R1,0(R1)          Clean up address (is this required?)
 *
          LA    R2,0
-         ST    R2,DUMMYPTR       WHO KNOWS WHAT THIS IS USED FOR
+         ST    R2,DUMMYPTR       We are not using a CRAB at this stage
+*                                but GCC reserves this spot for a CRAB
          LA    R2,MAINSTK
          ST    R2,THEIRSTK       NEXT AVAILABLE SPOT IN STACK
-         LA    R12,ANCHOR
-         ST    R14,EXITADDR
-         L     R3,=A(MAINLEN)
-         AR    R2,R3
-         ST    R2,12(R12)        TOP OF STACK POINTER
+*                                It seems that GCC and IBM C share this
+*                                convention.
+         LA    R12,ANCHOR        R12 is presumably reserved by IBM C
+*                                for its answer to the SAS/C CRAB
+*                                apparently called an "ANCHOR"
+         ST    R14,EXITADDR      possibly used by IBM C for early exit
+         L     R3,=A(MAINLEN)    get length of the main stack
+         AR    R2,R3             pointer to top of the stack
+         ST    R2,12(,R12)       IBM C needs to know stack end
+*                                (GCC not currently checking overflow)
          LA    R2,0
-         ST    R2,116(R12)       ADDR OF MEMORY ALLOCATION ROUTINE
-         ST    R2,ARGPTR
-*
+         ST    R2,116(,R12)      ADDR OF MEMORY ALLOCATION ROUTINE
+*                                (not used by GCC, but harmless)
          USING PSA,R0
          L     R2,PSATOLD
          USING TCB,R2
@@ -86,13 +91,14 @@ CEESTART DS    0H
 *
          L     R2,TCBJSCB
          USING IEZJSCB,R2
-         LH    R2,JSCBTJID
-         ST    R2,TYPE
-         L     R2,0(R1)
-         LA    R2,0(R2)
-         ST    R2,ARGPTR
-         LA    R2,PGMNAME
-         ST    R2,PGMNPTR
+         SLR   R3,R3
+         ICM   R3,B'0011',JSCBTJID
+         ST    R3,TYPE           non-zero means TSO, 3rd parm to START
+         L     R2,0(,R1)         get first program parameter
+         LA    R2,0(,R2)         clean address
+         ST    R2,ARGPTR         this will be first parm to START
+         LA    R2,PGMNAME        find program name
+         ST    R2,PGMNPTR        this will be second parm to START
 *
 * FOR GCC WE NEED TO BE ABLE TO RESTORE R13
          LA    R5,SAVEAREA
@@ -100,7 +106,7 @@ CEESTART DS    0H
 *
          LA    R1,PARMLIST
 *
-         CALL  @@START
+         CALL  @@START           C code can now do everything else
 *
 RETURNMS DS    0H
          LR    R1,R13
@@ -114,17 +120,19 @@ SAVER13  DS    F
          DS    0H
 *         ENTRY CEESG003
 *CEESG003 DS    0H
+* This function enables GCC programs to do an
+* early exit, ie callable from anywhere.
          ENTRY @@EXITA
 @@EXITA  DS    0H
 * SWITCH BACK TO OUR OLD SAVE AREA
          LR    R10,R15
          USING @@EXITA,R10
-         L     R9,0(R1)
+         L     R9,0(,R1)
          L     R13,=A(SAVER13)
-         L     R13,0(R13)
+         L     R13,0(,R13)
 *
          LR    R1,R13
-         L     R13,4(R13)
+         L     R13,4(,R13)
          LR    R14,R9
          FREEMAIN RU,LV=STACKLEN,A=(R1),SP=SUBPOOL
          LR    R15,R14
@@ -146,6 +154,8 @@ PGMNPTR  DS    F
 TYPE     DS    F
 PGMNAME  DS    CL8
 PGMNAMEN DS    C                 NUL BYTE FOR C
+* This ANCHOR convention is only used by IBM C I think
+* but is harmless to keep for GCC too
 ANCHOR   DS    0F
 EXITADDR DS    F
          DS    49F

@@ -41,14 +41,15 @@ SUBPOOL  EQU   0
 *
 * Put an eyecatcher here to ensure program has been linked
 * correctly. ie you need to specify the entry point
-* explicitly rather than letting it default to 0 and put
+* explicitly rather than letting it default to 0 and putting
 * this module first in the link. If you default to 0 you
 * will abend on this eyecatcher. The real entry point is
 * actually @@MAIN (auto generated at the same time as
-* just MAIN), but that simply does an immediate branch to
+* plain MAIN), but that simply does an immediate branch to
 * @@CRT0, so for all practical purposes, @@CRT0 is the
 * actual entry point. But don't code that in linkage
 * editor statements, code @@MAIN instead.
+*
          DC    C'PDPCLIB!'
 *
          ENTRY @@CRT0    make this globally visible
@@ -104,7 +105,7 @@ CEESTART DS    0H
 *                                PDPCLIB, unless IBM C generates prolog
 *                                code to call this in case of error
          L     R3,=A(MAINLEN)    get length of the main stack
-         AR    R2,R3             pointer to top of the stack
+         AR    R2,R3             point to top of the stack
          ST    R2,12(,R12)       IBM C needs to know stack end
 *                                (GCC not currently checking overflow)
          LA    R2,0
@@ -150,6 +151,12 @@ CEESTART DS    0H
 *                                ie all initialization, and then it
 *                                will call main() itself.
 *
+* At this point, main() has returned to start() and now to here,
+* and all we need to do is free the stack and return to MVS.
+* Well, that is one possible design. The other possible design
+* is that after main() returns to start(), it can do some
+* cleanup and then call exita() below, as a different way of
+* exiting. This startup code allows either way to work.
 RETURNMS DS    0H
          LR    R1,R13            R13 is restored to our save area,
 *                                which is also the start of our stack
@@ -159,28 +166,35 @@ RETURNMS DS    0H
          LR    R15,R14           Restore the return code
          RETURN (14,12),RC=(15)  Restore all registers, retaining
 *                                return code in R15
-SAVER13  DS    F
+SAVER13  DS    A      So that everyone can find the start of the stack
          LTORG
          DS    0H
+* Not sure if IBM C needs this entry point
 *         ENTRY CEESG003
 *CEESG003 DS    0H
-* This function enables GCC programs to do an
+* This function enables GCC and probably IBM C programs to do an
 * early exit, ie callable from anywhere.
          ENTRY @@EXITA
 @@EXITA  DS    0H
-* SWITCH BACK TO OUR OLD SAVE AREA
-         LR    R10,R15
+* Since this is actually called as a function, the return
+* code to give to MVS (in R15) will actually be a parameter,
+* and in addition we need to restore the original R13 that
+* points to our stack so that we can both free it as well
+* as get back MVS's save area to restore registers
+         LR    R10,R15       Use R10 as base register
          USING @@EXITA,R10
-         L     R9,0(,R1)
-         L     R13,=A(SAVER13)
-         L     R13,0(,R13)
+         L     R9,0(,R1)     Get return code into R9
+         L     R13,=A(SAVER13)  Switch R13 back to saved R13
+         L     R13,0(,R13)   Now R13 points to stack again
 *
-         LR    R1,R13
-         L     R13,4(,R13)
-         LR    R14,R9
+         LR    R1,R13        R1 also points to stack, to be freed
+         L     R13,4(,R13)   Go back to MVS's save area
+         LR    R14,R9        Keep return code in R14 instead of R9
+*                            I think we should change this to use
+*                            R9 instead
          FREEMAIN RU,LV=STACKLEN,A=(R1),SP=SUBPOOL
-         LR    R15,R14
-         RETURN (14,12),RC=(15)
+         LR    R15,R14       Restore the saved return code
+         RETURN (14,12),RC=(15)  Return to MVS with return code
          LTORG
 *
          IKJTCB
@@ -204,7 +218,9 @@ PGMNAMEN DS    C       NUL byte for C
 *                      here is reserve space.
 *
 * This ANCHOR convention is only used by IBM C I think
-* but is harmless to keep for GCC too
+* but is harmless to keep for GCC too, and even populate it
+* at runtime, even though it isn't used. We can reconsider
+* this at some point and have conditional code
 ANCHOR   DS    0F
 EXITADDR DS    F     This seems to be the address that a module built
 *                    by IBM C can call to immediately exit. In this
@@ -212,11 +228,18 @@ EXITADDR DS    F     This seems to be the address that a module built
 *                    received at entry, but it should probably instead
 *                    be EXITA instead, to do cleanup. But it is a moot
 *                    point anyway, because the PDPCLIB code completely
-*                    ignores the entire ANCHOR.
+*                    ignores the entire ANCHOR. Unless this offset is
+*                    automatically referenced in IBM C generated
+*                    assembler.
          DS    49F   Not sure how big ANCHOR should be, but
 *                    this is enough to cover what we actually
-*                    populate in this startup code
-MAINSTK  DS    65536F
+*                    populate in this startup code, which in turn is
+*                    probably determined by what I observed IBM C
+*                    generated assembler actually producing in the
+*                    prolog.
+MAINSTK  DS    65536F   Hardcoded stack size while we decide how a
+*                       flexible stack size should be designed. For
+*                       now it is good to be simple.
 MAINLEN  EQU   *-MAINSTK
 STACKLEN EQU   *-STACK
          END

@@ -16,7 +16,8 @@ MVSSTART TITLE 'M V S S T A R T  ***  STARTUP ROUTINE FOR C'
          COPY  PDPTOP
 *
          PRINT GEN
-* YREGS is newer than MVS 3.8j so may not be available to some
+* YREGS was not part of the SYS1.MACLIB shipped with MVS 3.8j
+* so may not be available, so do our own defines instead.
 *         YREGS
 R0       EQU   0
 R1       EQU   1

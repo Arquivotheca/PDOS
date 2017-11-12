@@ -124,11 +124,15 @@ CEESTART DS    0H
          USING CDENTRY,R8
          MVC   PGMNAME,CDNAME
 *
-         L     R2,TCBJSCB
-         USING IEZJSCB,R2
-         SLR   R3,R3
-         ICM   R3,B'0011',JSCBTJID
-         ST    R3,TYPE           non-zero means TSO, 3rd parm to START
+* Find out if this is TSO or not
+         L     R3,PSAAOLD-PSA    get address of my ASCB
+         USING ASCB,R3
+         ICM   R4,B'1111',ASCBASXB
+         BZ    FINTSO
+         USING ASXB,R4
+         ICM   R5,B'1111',ASXBLWA
+FINTSO   DS    0H
+         ST    R5,TYPE           non-zero means TSO, 3rd parm to START
          L     R2,0(,R1)         get first program parameter
          LA    R2,0(,R2)         clean address
          ST    R2,ARGPTR         this will be first parm to START
@@ -200,6 +204,8 @@ SAVER13  DS    A      So that everyone can find the start of the stack
          IKJTCB
          IEZJSCB
          IHAPSA
+         IHAASCB
+         IHAASXB
          IHARB
          IHACDE
 STACK    DSECT

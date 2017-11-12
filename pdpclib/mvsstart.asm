@@ -1,15 +1,16 @@
 MVSSTART TITLE 'M V S S T A R T  ***  STARTUP ROUTINE FOR C'
 ***********************************************************************
 *                                                                     *
-*  THIS PROGRAM WRITTEN BY PAUL EDWARDS.                              *
-*  RELEASED TO THE PUBLIC DOMAIN                                      *
+*  This program written by Paul Edwards.                              *
+*  Released to the public domain                                      *
 *                                                                     *
 ***********************************************************************
 ***********************************************************************
 *                                                                     *
-*  MVSSTART - startup routines for MVS.                               *
-*  It is currently coded to work with GCC. To activate the C/370      *
-*  version change the "&COMP" switch.                                 *
+*  MVSSTART - startup code for MVS.                                   *
+*  It is currently known to work with GCCMVS, but it also used to     *
+*  work with IBM C/370. To choose which compiler you are using,       *
+*  change the "&COMP" switch in PDPTOP                                *
 *                                                                     *
 ***********************************************************************
 *
@@ -39,47 +40,79 @@ SUBPOOL  EQU   0
          CSECT
 *
 * Put an eyecatcher here to ensure program has been linked
-* correctly.
+* correctly. ie you need to specify the entry point
+* explicitly rather than letting it default to 0 and put
+* this module first in the link. If you default to 0 you
+* will abend on this eyecatcher. The real entry point is
+* actually @@MAIN (auto generated at the same time as
+* just MAIN), but that simply does an immediate branch to
+* @@CRT0, so for all practical purposes, @@CRT0 is the
+* actual entry point. But don't code that in linkage
+* editor statements, code @@MAIN instead.
          DC    C'PDPCLIB!'
 *
-         ENTRY @@CRT0
-@@CRT0   DS    0H
+         ENTRY @@CRT0    make this globally visible
+@@CRT0   DS    0H        defacto entry point
          AIF ('&COMP' NE 'C370').NOCEES
-         ENTRY CEESTART
+         ENTRY CEESTART  I don't think IBM should be polluting
+*                        the namespace with this
 CEESTART DS    0H
 .NOCEES  ANOP
-         SAVE  (14,12),,@@CRT0
-         LR    R10,R15
+         SAVE  (14,12),,@@CRT0   Save caller's registers
+         LR    R10,R15           R15 points to @@CRT0 on entry, but
+*                                since R15 will be trashed when we
+*                                call other functions (it is used
+*                                as both the called function address
+*                                and for the return code), we need to
+*                                establish a different base register,
+*                                R10 in this case.
          USING @@CRT0,R10
-         LR    R11,R1
+         LR    R11,R1            R1 points to the parameters passed
+*                                by MVS to this program, but the
+*                                GETMAIN to allocate the stack will
+*                                trash R1, so we need to save that,
+*                                in R11 in this case.
 * Keep stack BTL so that the save area traceback works on MVS/380 2.0
          GETMAIN RU,LV=STACKLEN,SP=SUBPOOL,LOC=BELOW
-         ST    R13,4(,R1)
-         ST    R1,8(,R13)
-         LR    R13,R1
-         LR    R1,R11
+         ST    R13,4(,R1)        Remember the R13 that MVS gave us
+         ST    R1,8(,R13)        Let MVS know our new R13 (save area)
+         LR    R13,R1            Switch to using our new R13
+         LR    R1,R11            Restore R1 as MVS gave us
          USING STACK,R13
 *
-         LA    R1,0(R1)          Clean up address (is this required?)
+         LA    R1,0(R1)          Clean address, just for good measure
 *
-         LA    R2,0
+         LA    R2,0              Set R2 to 0
          ST    R2,DUMMYPTR       We are not using a CRAB at this stage
-*                                but GCC reserves this spot for a CRAB
-         LA    R2,MAINSTK
-         ST    R2,THEIRSTK       NEXT AVAILABLE SPOT IN STACK
+*                                but the PDPCLIB target of GCC
+*                                reserves this spot for a CRAB, so we
+*                                set it to 0 for now.
+         LA    R2,MAINSTK        This is where the next called function
+*                                can start writing their own data. We
+*                                don't touch that memory at all
+         ST    R2,THEIRSTK       When we give the caller our R13, they
+*                                know they can find a pointer to the
+*                                next free spot in the stack at a
+*                                predictable spot - offset 76 from R13
 *                                It seems that GCC and IBM C share this
 *                                convention.
          LA    R12,ANCHOR        R12 is presumably reserved by IBM C
 *                                for its answer to the SAS/C CRAB
 *                                apparently called an "ANCHOR"
-         ST    R14,EXITADDR      possibly used by IBM C for early exit
+         ST    R14,EXITADDR      possibly used by IBM C for early
+*                                exit, but not applicable when using
+*                                PDPCLIB, unless IBM C generates prolog
+*                                code to call this in case of error
          L     R3,=A(MAINLEN)    get length of the main stack
          AR    R2,R3             pointer to top of the stack
          ST    R2,12(,R12)       IBM C needs to know stack end
 *                                (GCC not currently checking overflow)
          LA    R2,0
-         ST    R2,116(,R12)      ADDR OF MEMORY ALLOCATION ROUTINE
-*                                (not used by GCC, but harmless)
+         ST    R2,116(,R12)      IBM C probably calls this offset when
+*                                it needs to obtain more memory. We
+*                                presumably crash instead. This offset
+*                                and the entire ANCHOR in fact, is not
+*                                used by GCC.
          USING PSA,R0
          L     R2,PSATOLD
          USING TCB,R2
@@ -101,21 +134,31 @@ CEESTART DS    0H
          LA    R2,PGMNAME        find program name
          ST    R2,PGMNPTR        this will be second parm to START
 *
-* FOR GCC WE NEED TO BE ABLE TO RESTORE R13
+* For GCC, and also presumably IBM C, in order to exit early, we
+* need to be able to get back to the position on the stack as
+* identified by the current value of R13
+* We could save R13 directly but for some reason I coded it to
+* reobtain the start of the stack. We should probably change that
+* to a simple ST R13,SAVER13
          LA    R5,SAVEAREA
          ST    R5,SAVER13
 *
-         LA    R1,PARMLIST
+         LA    R1,PARMLIST       Standard MVS convention parameters
+*                                for calling assembler, also used by C
 *
          CALL  @@START           C code can now do everything else
+*                                ie all initialization, and then it
+*                                will call main() itself.
 *
 RETURNMS DS    0H
-         LR    R1,R13
-         L     R13,SAVEAREA+4
-         LR    R14,R15
-         FREEMAIN RU,LV=STACKLEN,A=(R1),SP=SUBPOOL
-         LR    R15,R14
-         RETURN (14,12),RC=(15)
+         LR    R1,R13            R13 is restored to our save area,
+*                                which is also the start of our stack
+         L     R13,SAVEAREA+4    Offset 4 has backchain to OS save area
+         LR    R14,R15           Preserve the return code
+         FREEMAIN RU,LV=STACKLEN,A=(R1),SP=SUBPOOL   free entire stack
+         LR    R15,R14           Restore the return code
+         RETURN (14,12),RC=(15)  Restore all registers, retaining
+*                                return code in R15
 SAVER13  DS    F
          LTORG
          DS    0H
@@ -146,20 +189,33 @@ SAVER13  DS    F
          IHARB
          IHACDE
 STACK    DSECT
-SAVEAREA DS    18F
-DUMMYPTR DS    F
-THEIRSTK DS    F
-PARMLIST DS    0F
-ARGPTR   DS    F
-PGMNPTR  DS    F
-TYPE     DS    F
-PGMNAME  DS    CL8
-PGMNAMEN DS    C                 NUL BYTE FOR C
+SAVEAREA DS    18F     Standard save area for anyone we call
+DUMMYPTR DS    F       Reserved for future CRAB usage
+THEIRSTK DS    F       Called C function needs to know where they can
+*                      put their own save area and stack variables
+PARMLIST DS    0F      Standard parameter list to call start()
+ARGPTR   DS    F       Argument provided by MVS
+PGMNPTR  DS    F       Pointer to MVS program name
+TYPE     DS    F       Flag to indicate TSO, passed by value
+PGMNAME  DS    CL8     MVS program name itself
+PGMNAMEN DS    C       NUL byte for C
+*                      The start() function will do the
+*                      NUL-termination. All we need to do
+*                      here is reserve space.
+*
 * This ANCHOR convention is only used by IBM C I think
 * but is harmless to keep for GCC too
 ANCHOR   DS    0F
-EXITADDR DS    F
-         DS    49F
+EXITADDR DS    F     This seems to be the address that a module built
+*                    by IBM C can call to immediately exit. In this
+*                    startup code we just set it to the R14 that we
+*                    received at entry, but it should probably instead
+*                    be EXITA instead, to do cleanup. But it is a moot
+*                    point anyway, because the PDPCLIB code completely
+*                    ignores the entire ANCHOR.
+         DS    49F   Not sure how big ANCHOR should be, but
+*                    this is enough to cover what we actually
+*                    populate in this startup code
 MAINSTK  DS    65536F
 MAINLEN  EQU   *-MAINSTK
 STACKLEN EQU   *-STACK

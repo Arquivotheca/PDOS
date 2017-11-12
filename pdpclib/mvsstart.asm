@@ -81,7 +81,7 @@ CEESTART DS    0H
          LR    R1,R11            Restore R1 as MVS gave us
          USING STACK,R13
 *
-         LA    R1,0(R1)          Clean address, just for good measure
+         LA    R1,0(,R1)         Clean address, just for good measure
 *
          LA    R2,0              Set R2 to 0
          ST    R2,DUMMYPTR       We are not using a CRAB at this stage

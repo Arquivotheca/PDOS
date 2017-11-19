@@ -881,7 +881,11 @@ static void osfopen(void)
 #elif defined(__MVS__)
 
 #if !defined(MUSIC) /* for MUSIC, send everything through to SVC99 */
-    if ((strchr(fnm, '\'') == NULL) && (strchr(fnm, '(') == NULL))
+    if ((strchr(fnm, '\'') == NULL) && (strchr(fnm, '(') == NULL)
+#if defined(__MVS__)
+    && !__tso
+#endif
+    )
 #endif
     {
         strcpy(newfnm, fnm);

@@ -1,6 +1,6 @@
 MVSSUPA  TITLE 'M V S S U P A  ***  MVS VERSION OF PDP CLIB SUPPORT'
 ***********************************************************************
-*                                                Updated 2017-10-09   *
+*                                                Updated 2017-11-19   *
 *                                                                     *
 *  This program written by Paul Edwards.                              *
 *  Released to the public domain                                      *
@@ -3554,7 +3554,7 @@ EXFGLOB  EQU   EXFMALL+EXFSUPP+EXFRET  GLOBAL FLAGS
          MVC   0(4,R11),=X'04804000'  PRESET
          LR    R9,R1              SAVE PARAMETER LIST ADDRESS
          LA    R0,DYNALDLN        GET LENGTH OF SAVE AND WORK AREA
-         GETMAIN RC,LV=(0)        GET STORAGE
+         GETMAIN RC,LV=(0),LOC=BELOW        GET STORAGE
          LTR   R15,R15            SUCCESSFUL ?
          BZ    DYNALHAV           YES
          STC   R15,3(,R11)        SET RETURN VALUES
@@ -3776,7 +3776,7 @@ RETURNGA DS    0H
          USING @@SVC99,R12
          LR    R11,R1
 *
-         GETMAIN RU,LV=WORKLEN,SP=SUBPOOL
+         GETMAIN RU,LV=WORKLEN,SP=SUBPOOL,LOC=BELOW
          ST    R13,4(,R1)
          ST    R1,8(,R13)
          LR    R13,R1

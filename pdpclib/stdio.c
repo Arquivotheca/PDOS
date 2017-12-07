@@ -5168,28 +5168,32 @@ __PDPCLIB_API__ size_t fwrite(const void *ptr,
                 {
                     /* silently truncate long records to give
                        user more flexibility */
-                    if (fulllen > stream->lrecl)
+                    if (fulllen > (stream->lrecl + 4))
                     {
-                        stream->fbuf[0] = stream->lrecl >> 8;
-                        stream->fbuf[1] = stream->lrecl & 0xff;
+                        stream->fbuf[0] = (stream->lrecl + 4) >> 8;
+                        stream->fbuf[1] = (stream->lrecl + 4) & 0xff;
                         begwrite(stream, stream->lrecl + 4);
-                        if (sz >= stream->lrecl)
+                        if (sz >= (stream->lrecl + 4))
                         {
-                            memcpy(dptr, stream->fbuf, stream->lrecl);
+                            memcpy(dptr, stream->fbuf, stream->lrecl + 4);
                         }
                         else
                         {
                             memcpy(dptr, stream->fbuf, sz);
-                            memcpy(dptr + sz, ptr, stream->lrecl - sz);
+                            memcpy(dptr + sz, ptr, stream->lrecl + 4 - sz);
                         }
+                        
                     }
-                    else
+                    else if (fulllen != 0)
                     {
                         begwrite(stream, fulllen);
                         memcpy(dptr, stream->fbuf, sz);
                         memcpy(dptr + sz, ptr, fulllen - sz);
                     }
-                    finwrite(stream);
+                    if (fulllen != 0)
+                    {
+                        finwrite(stream);
+                    }
                     stream->bufStartR += fulllen;
                     stream->upto = stream->fbuf;
                     bytes -= (fulllen - sz);

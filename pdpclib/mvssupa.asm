@@ -3729,8 +3729,21 @@ RETURNTS DS    0H
 *                                                                    *
 *  GETAM - get the current AMODE                                     *
 *                                                                    *
-*  This function returns 24 if we are running in AMODE 24, 31 if we  *
-*  are running in AMODE 31, and 64 if we are running in AMODE 64     *
+*  This function returns 24 if we are running in AMODE 24 (or less), *
+*  31 if we are running anything between 25-31, and 64 for anything  *
+*  32 or above.                                                      *
+*                                                                    *
+*  Be aware that MVS 3.8j I/O routines require an AMODE of exactly   *
+*  24 - nothing more, nothing less - so applications are required    *
+*  to ensure they are in AM24 prior to executing any I/O routines,   *
+*  and then they are free to return to whichever AMODE they were in  *
+*  previously (ie anything from 17 to infinity), which is normally   *
+*  done using a BSM to x'01', although this instruction was not      *
+*  available in S/370-XA so much software does a BSM to x'80'        *
+*  instead of the user-configurable x'01', which is unfortunate.     *
+*                                                                    *
+*  For traditional reasons, people refer to 24, 31 and 64, when what *
+*  they should really be saying is 24, 31 and 32+.                   *
 *                                                                    *
 **********************************************************************
          ENTRY @@GETAM
@@ -3739,11 +3752,12 @@ RETURNTS DS    0H
          LR    R12,R15
          USING @@GETAM,R12
 *
-         L     R2,=X'C0000000'
+         L     R2,=X'FF000000'
          LA    R2,0(,R2)
-         CLM   R2,8,=X'40'
-         BL    GAIS24
-         BE    GAIS31
+         CLM   R2,B'1000',=X'00'
+         BE    GAIS24
+         LTR   R2,R2
+         BNM   GAIS31
          LA    R15,64
          B     RETURNGA
 GAIS24   DS    0H

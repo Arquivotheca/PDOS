@@ -59,6 +59,8 @@ SUBPOOL  EQU   0
 *                        the namespace with this
 CEESTART DS    0H
 .NOCEES  ANOP
+* For this next line to work there must be no intervening instructions
+* since it is based on reference to @@CRT0
          SAVE  (14,12),,@@CRT0   Save caller's registers
          LR    R10,R15           R15 points to @@CRT0 on entry, but
 *                                since R15 will be trashed when we
@@ -135,6 +137,7 @@ FINTSO   DS    0H
          ST    R5,TYPE           non-zero means TSO, 3rd parm to START
          L     R2,0(,R1)         get first program parameter
          LA    R2,0(,R2)         clean address
+         N     R2,=X'7FFFFFFF'   clean the top bit in AM32/64
          ST    R2,ARGPTR         this will be first parm to START
          LA    R2,PGMNAME        find program name
          ST    R2,PGMNPTR        this will be second parm to START
@@ -151,7 +154,6 @@ FINTSO   DS    0H
          LA    R1,PARMLIST       Standard MVS convention parameters
 *                                for calling assembler, also used by C
 *
-         SAM64
          CALL  @@START           C code can now do everything else
 *                                ie all initialization, and then it
 *                                will call main() itself.

@@ -165,7 +165,6 @@ FINTSO   DS    0H
 * cleanup and then call exita() below, as a different way of
 * exiting. This startup code allows either way to work.
 RETURNMS DS    0H
-         SAM24
          LR    R1,R13            R13 is restored to our save area,
 *                                which is also the start of our stack
          L     R13,SAVEAREA+4    Offset 4 has backchain to OS save area
@@ -195,7 +194,6 @@ SAVER13  DS    A      So that everyone can find the start of the stack
          L     R13,=A(SAVER13)  Switch R13 back to saved R13
          L     R13,0(,R13)   Now R13 points to stack again
 *
-         SAM24
          LR    R1,R13        R1 also points to stack, to be freed
          L     R13,4(,R13)   Go back to MVS's save area
          LR    R14,R9        Keep return code in R14 instead of R9

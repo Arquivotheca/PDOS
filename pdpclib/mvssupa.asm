@@ -3730,7 +3730,7 @@ RETURNTS DS    0H
 *  GETAM - get the current AMODE                                     *
 *                                                                    *
 *  This function returns 24 if we are running in AMODE 24 (or less), *
-*  31 if we are running anything between 25-31, and 64 for anything  *
+*  31 if we are running anything between 25-31, and 32 for anything  *
 *  32 or above.                                                      *
 *                                                                    *
 *  Be aware that MVS 3.8j I/O routines require an AMODE of exactly   *
@@ -3758,7 +3758,7 @@ RETURNTS DS    0H
          BE    GAIS24
          LTR   R2,R2
          BNM   GAIS31
-         LA    R15,64
+         LA    R15,32
          B     RETURNGA
 GAIS24   DS    0H
          LA    R15,24

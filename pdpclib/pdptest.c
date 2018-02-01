@@ -48,6 +48,13 @@ int main(int argc, char **argv)
     m2 = malloc(20);
     printf("m2 is %p\n", m2);
     printf("stack is around %p\n", &c);
+/*    printf("calling pdptst31\n");
+    system("pdptst31");
+    printf("done with pdptst31\n"); */
+    /* printf("adding 7+5 gives %d\n", __addnum(7,5)); */
+    /* __gosup(); */
+    /* printf("total memory is %d\n", __getmsz()); */
+    /* __goprob(); */
     if ((argc > 1) && (argv[1][0] != '-'))
     {
         printf("printing arguments\n");

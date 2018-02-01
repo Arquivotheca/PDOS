@@ -1906,7 +1906,7 @@ FREEDCB  LR    R14,R13            COPY WORK AREA ADDRESS        GP14244
          STM   R14,R15,OSNLIST+8                                GP14244
          OI    OSNLIST+12,X'80'   SET END OF LIST               GP14244
          NI    OSNLIST+4,X'7F'    RESET SHORT END               GP14244
-OSNDONE  AM24  ,                  SNAP IS OLD                   GP18031
+OSNDONE  MAM   24  ,              SNAP IS OLD                   GP18031
          L     R15,=A(@@SNAP)                                   GP14244
          LA    R1,OSNAP                                         GP14244
          BALR  R14,R15            CALL SNAPPER                  GP14244
@@ -5322,7 +5322,7 @@ ZDCBLEN  EQU   *-ZDCBAREA
          IEFZB4D0 ,          MAP SVC 99 PARAMETER LIST
          IEFZB4D2 ,          MAP SVC 99 PARAMETERS
          IKJPGPB ,
-         IKJEFLWA ,
+*         IKJEFLWA ,
          SPACE 2
 MYUCB    DSECT ,
          IEFUCBOB ,

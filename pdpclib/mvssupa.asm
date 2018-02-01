@@ -4735,7 +4735,7 @@ PFXRET   RETURN (14,12),RC=(15)                                 GP17107
 *  GETAM - get the current AMODE                                     *
 *                                                                    *
 *  This function returns 24 if we are running in AMODE 24 (or less), *
-*  31 if we are running anything between 25-31, and 64 for anything  *
+*  31 if we are running anything between 25-31, and 32 for anything  *
 *  32 or above.                                                      *
 *                                                                    *
 *  Be aware that MVS 3.8j I/O routines require an AMODE of exactly   *
@@ -4763,7 +4763,7 @@ PFXRET   RETURN (14,12),RC=(15)                                 GP17107
          BE    GAIS24
          LTR   R2,R2
          BNM   GAIS31
-         LA    R15,64
+         LA    R15,32
          B     RETURNGA
 GAIS24   DS    0H
          LA    R15,24
@@ -4773,6 +4773,120 @@ GAIS31   LA    R15,31
 RETURNGA DS    0H
          RETURN (14,12),RC=(15)
          LTORG ,
+*
+*
+*
+***********************************************************************
+*                                                                     *
+*  ADDNUM - Add two numbers using 80386                               *
+*                                                                     *
+***********************************************************************
+*
+         PUSH  USING
+         DROP  ,
+         ENTRY @@ADDNUM
+@@ADDNUM DS    0H
+         SAVE  (14,12),,@@ADDNUM
+         LR    R12,R15
+         USING @@ADDNUM,R12
+*         L     R2,0(R1)
+*         L     R3,4(R1)
+*         AR    R3,R2
+*         LR    R15,R3
+         LR    R2,R1  new register for parms
+         L     R0,=X'FFFFFFFD' API for execute 80386
+         LR    R1,R0
+         LA    R3,CODE386
+         LA    R14,ANRET
+         SVC   120
+ANRET    DS    0H
+         RETURN (14,12),RC=(15)
+*
+         LTORG ,
+CODE386  DS    0D
+         DC    X'55' push ebp
+         DC    X'8B' mov ebp,esp
+         DC    X'EC'
+         DC    X'8B' mov eax, ebp + 8
+         DC    X'45'
+         DC    X'08'
+         DC    X'03' add eas, ebp + 12
+         DC    X'45'
+         DC    X'0C'
+         DC    X'C9' leave
+         DC    X'C3' return near
+         DC    X'22' eyecatcher
+         DC    X'22'
+         DC    X'22'
+         POP   USING
+         SPACE 2
+***********************************************************************
+*                                                                     *
+*  GETMSZ - Get memory size via DIAG                                  *
+*                                                                     *
+***********************************************************************
+*
+         PUSH  USING
+         DROP  ,
+         ENTRY @@GETMSZ
+@@GETMSZ DS    0H
+         SAVE  (14,12),,@@GETMSZ
+         LR    R12,R15
+         USING @@GETMSZ,R12
+*         DIAGNOSE X'60'
+         DC    X'83',X'000060'
+         LR    R15,R0
+         RETURN (14,12),RC=(15)
+*
+         LTORG ,
+         POP   USING
+         SPACE 2
+*
+*
+*
+***********************************************************************
+*                                                                     *
+*  GOSUP - go into supervisor mode                                    *
+*                                                                     *
+***********************************************************************
+*
+         PUSH  USING
+         DROP  ,
+         ENTRY @@GOSUP
+@@GOSUP  DS    0H
+         SAVE  (14,12),,@@GOSUP
+         LR    R12,R15
+         USING @@GOSUP,R12
+         MODESET MODE=SUP
+         LA    R15,0
+         RETURN (14,12),RC=(15)
+*
+         LTORG ,
+         POP   USING
+         SPACE 2
+*
+*
+*
+***********************************************************************
+*                                                                     *
+*  GOPROB - go into problem mode                                      *
+*                                                                     *
+***********************************************************************
+*
+         PUSH  USING
+         DROP  ,
+         ENTRY @@GOPROB
+@@GOPROB DS    0H
+         SAVE  (14,12),,@@GOPROB
+         LR    R12,R15
+         USING @@GOPROB,R12
+         MODESET MODE=PROB
+         LA    R15,0
+         RETURN (14,12),RC=(15)
+*
+         LTORG ,
+         POP   USING
+         SPACE 2
 *
 *
 *

@@ -497,6 +497,241 @@ MVSSUPA  TITLE 'M V S S U P A  ***  MVS VERSION OF PDP CLIB SUPPORT'
 *---------------------------------------------------------------------*
          SPACE 2
          MACRO ,
+         IKJEFLWA ,
+LWA      DSECT ,
+LWAPPTR  DS  A                          ADDRESS OF THE LOGON WORK
+*                                       AREA
+LWALWA   DS  CL8                        EBCDIC '  LWA   '
+LWATEST  DS  A                          PTR FOR TEST     @ZA06226
+LWAPASCB DS  A                          ADDRESS OF ASCB
+*                                       FOR USER MEMORY
+LWAACCT  DS  A                          OFFSET TO ACCT FIELD IN
+*                                       UADS
+LWAPSCB  DS  A                          ADDRESS OF THE PROTECTED
+*                                       STEP CONTROL BLOCK
+LWAJSEL  DS  A                          ADDRESS OF THE JOB
+*                                       SCHEDULING ENTRANCE LIST
+LWAPECT  DS  A                          ADDRESS OF THE ECT
+LWAAECB  DS  A                          EVENT CONTROL BLOCK FOR
+*                                       THE LOGON/LOGOFF
+*                                       PROMPTING TASK
+*        BIT(24)                        NOT REFERENCED BY LOGON/
+         ORG LWAAECB+3                  LOGOFF CODE
+LWAABCE  DS  X                          COMPLETION CODE BYTE
+LWAPECB  DS  F                          COMMUNICATIONS ECB
+*                                       FOR COMMUNICATION FROM
+*                                       THE PROMPTING TASK TO
+*                                       THE SCHEDULING TASK
+*        BIT(24)                        NOT REFERENCED BY LOGON/
+         ORG LWAPECB+3                  LOGOFF CODE
+LWAPBCE  DS  X                          COMPLETION CODE BYTE
+LWASECB  DS  F                          COMMUNICATIONS ECB
+*                                       FOR COMMUNICATION FROM
+*                                       THE SCHEDULING TASK TO
+*                                       THE PROMPTING TASK
+*        BIT(24)                        NOT REFERENCED BY LOGON/
+         ORG LWASECB+3                  LOGOFF CODE
+LWASBCE  DS  X                          COMPLETION CODE BYTE
+LWALPCNT DS  F                          LOOP CONTROL FOR
+*                                       STAI EXIT RETRY.
+*                                       WHEN COUNTER REACHES
+*                                       GIVEN VALUE, SESSION
+*                                       IS TERMINATED.
+LWAPDCB  DS  A                          ADDRESS OF UADS
+*                                       DCB - USED BY STAI
+*                                       RETRY.
+LWAFLGS  DS 0F                          FLAGS FOR USE BY LOGON
+         DS  X
+LWALA    EQU X'80'                      IKJEFLA INDICATOR
+LWALB    EQU X'40'                      IKJEFLB INDICATOR
+LWALC    EQU X'20'                      IKJEFLC INDICATOR
+LWALE    EQU X'10'                      IKJEFLE INDICATOR
+LWALEA   EQU X'08'                      IKJEFLEA INDICATOR
+LWALI    EQU X'04'                      IKJEFLI INDICATOR
+LWALH    EQU X'02'                      IKJEFLH INDICATOR
+LWALL    EQU X'01'                      IKJEFLL INDICATOR
+         DS  X
+LWALGM   EQU X'80'                      IKJEFLGM INDICATOR
+LWALJ    EQU X'40'                      IKJEFLJ INDICATOR
+LWALK    EQU X'20'                      IKJEFLK INDICATOR
+LWALG    EQU X'10'                      IKJEFLG INDICATOR
+LWALGB   EQU X'08'                      IKJEFLGB INDICATOR
+LWALS    EQU X'04'                      IKJEFLS INDICATOR
+*        BIT(2)                         RESERVED
+         DS  X
+*        BIT(1)                         RESERVED
+LWARACF  EQU X'40'                      -> USER IS...      @Z40RQKC
+*                                       ...RACF DEFINED
+LWAVTAM  EQU X'20'                      -> VTAM/SNA        @Z40DQKC
+LWAPHASE EQU X'10'                      CONTROL SWITCH
+*                                       FOR STAI EXIT.
+*                                       IF 0 - PHASE I
+*                                       ACTIVE. IF 1 -
+*                                       PHASE II ACTIVE
+LWAPSW   EQU X'08'                      IF 1, LAST ABEND IN
+*                                        PROMPTER WAS PSW RESTART
+LWAPCK   EQU X'04'                      IF 1, LAST ABEND IN
+*                                       PROMPTER WAS PGM CHECK
+LWAMCK   EQU X'02'                      IF 1, LAST ABEND IN
+*                                       PROMPTER WAS MACH CHECK
+LWABND   EQU X'01'                      IF 1, LAST ABEND IN
+*                                       PROMPTER WAS OTHER THAN PROG
+*                                       CHK, PSW RESTART OR MACH CHK
+LWAFLGS4 DS  X
+*        BIT(1)
+LWANORDR EQU X'40'                      USER ON TERMINAL
+*                                       THAT DOES NOT
+*                                       SUPPORT OIDCARD
+*                                       READER      @G32OPKU
+LWAQTIP  EQU X'20'                      SET BY SIC SO LOGON
+*                                       WILL DO QTIP 24 IN
+*                                       IKJEFLK     @ZA02119
+LWASICSP EQU X'10'                      SET BY LOGON IN
+*                                       IKJEFLJ AND SET
+*                                       TO 0 IN IKJEFLK
+*                                       TELLS SICS NOT TO DO
+*                                       QTIP 24     @ZA02119
+LWALTBC  EQU X'08'                      LIST BC IN CONTROL
+LWATNBT  EQU X'04'                      USED TO INDICATE CANCEL
+*                                       BY THE ATTENTION EXIT
+*                                       ROUTINE.
+LWAINX1  EQU X'02'                      INSTALLATION EXIT
+*                                       ROUTINE IN CONTROL
+LWAILGN  EQU X'01'                      INITIAL LOGON INDICATOR
+LWAPTID  DS  A                          PROMPTING TASK IDENTIFIER
+*                                       RETURNED BY ATTACH
+LWACTLS  DS  0F                         CONTROL BIT STRING FOR
+         DS  X                          LOGON PROMPTING TASK
+*
+LWAUFAI  EQU X'80'                      INDICATES UNSUCCESSFUL ENQ
+*                                       ON THE RESOURCE ' SYSUADS
+*                                       USERID '
+LWAMOUNT EQU X'40'                      SET BY LD & PROPOGATED
+*                                       TO PSCB BY LI
+LWAFAIL  EQU X'20'                      INDICATES AN UNSUCCESSFUL
+*                                       ATTEMPT TO OBTAIN A SYSTEM
+*                                       RESOURCE.IDENTIFIED BY ANY
+*                                       OTHER BIT.
+LWADISC  EQU X'10'                      INDICATES THAT LOGON IS TO
+*                                       TERMINATE AND DISCONNECT
+*                                       THE TERMINAL.
+LWANOPR  EQU X'08'                     IF BIT IS ONE AN INSTALLATION
+*                                      EXIT ROUTINE HAS
+*                                      PROVIDED USERID,PASSWORD,
+*                                      ACCOUNT,PROCEDURE CHARACTER
+*                                      STRINGS, A REGION
+*                                      SIZE, AND A PERFORMANCE
+*                                      GROUP FOR USE IN
+*                                      SCHEDULING A TERMINAL JOB
+LWANUAD  EQU X'04'                     IF THIS BIT IS ONE AND THE
+*                                      BIT LWANOPR IS ALSO ONE NO
+*                                      ACCESS OF THE UADS SHOULD
+*                                      BE MADE FOR THIS TERMINAL JOB
+LWAJJCL  EQU X'02'                     JCL FOR TERMINAL JOB WAS
+*                                      SUPPLIED BY AN INSTALLATION
+*                                      EXIT ROUTINE.
+*        BIT(1)                        RESERVED
+         DS  X
+LWAATR1  EQU X'80'                     INFORMATION FOR THE ATR1
+*                                      FIELD OF THE PSCB WAS SUPPLIED
+*                                      BY AN INSTALLATION
+*                                      EXIT ROUTINE.
+LWAATR2  EQU X'40'                     INFORMATION FOR THE ATR2
+*                                      FIELD OF THE PSCB WAS SUPPLIED
+*                                      BY AN INSTALLATION
+*                                      EXIT ROUTINE.
+LWAUNIT  EQU X'20'                     INFORMATION FOR PSCBGPNM
+*                                      FIELD OF THE PSCB WAS SUPPLIED
+*                                      BY AN INSTALLATION
+*                                      EXIT ROUTINE.
+LWABUPT  EQU X'10'                     INFORMATION FOR USER PROFILE
+*                                      TABLE WAS SUPPLIED BY
+*                                      AN INSTALLATION EXIT RTN.
+LWANONQ  EQU X'08'                     LOGON WILL NOT MAINTAIN AN
+*                                      ENQ ON THE RESOURCE'SYSUAD
+*                                      USERID' DURING THE USER'S
+*                                      SESSION.
+LWADEST  EQU X'04'                     IF 1, INSTALLATION
+*                                      EXIT HAS SUPPLIED
+*                                      DEFAULT DEST.
+LWABEND  EQU X'02'                     IF 1, INSTALLATION
+*                                      EXIT IS GETTING
+*                                      CONTROL AFTER ABEND
+         DS  2X                        RESERVED FLAGS
+LWARTCD  DS  F                         RETURN CODE SET BY IKJEFLK
+LWANAME  DS  0F                        EPLOC FOR ATTACH/XCTL
+*                                      NAME
+LWARNML  DS  CL1                       USED FOR MINOR
+*                                      RESOURCE NAME
+*                                      LENGTH TO ENQ/DEQ
+LWARNM   DS  CL7                       USED FOR MINOR
+*                                      RESOURCE NAME
+*                                      IMAGE
+LWANQDQ  DS  CL12                      USED FOR ENQ/DEQ
+*                                      PARAMETER LIST
+LWAELST  DS  0F                        ECB LIST HEADER
+LWAAECBP DS  F                         PTR TO LWAAECB
+LWAPECBP DS  F                         PTR TO LWAPECB
+LWAEOEL  EQU X'80'                     END OF LIST BIT
+LWARCDE  DS  F                         RTN CODE SET BY IKJEFLJ
+LWATCPU  DS  F                         2 WORDS USED FOR
+LWATCPU1 DS  F                         TOTAL CPU TIME USED
+*                                      FOR THIS ACCOUNTING
+*                                      PERIOD.
+LWATSRU  DS  F                         2 WORDS USED FOR
+LWATSRU1 DS  F                         TOTAL SERVICE UNITS
+*                                      USED DURING THIS
+*                                      ACCT PERIOD.
+LWATCON  DS  F                         2 WORDS USED FOR
+LWATCON1 DS  F                         TOTAL CONNECT TIME
+*                                      USED DURING THIS
+*                                      ACCT PERIOD.
+LWASTCB  DS  A                         TCB ADDR IKJEFLA
+LWADEST2 DS  CL8                       USERID FOR SYSOUT
+*                                      TO REMOTE ENTRY-
+*                                      STATION.
+LWAGBWKA DS  A                         POINTER TO WORK
+*                                      AREA FOR IKJEFLGB
+LWASWKA  DS  A                         POINTER TO WORK
+*                                      AREA FOR IKJEFLS
+LWASPF   DS  A                         POINTER TO WORK         @ZA30872
+*                                      AREA FOR SPF SUPPORT    @ZA30872
+         DS  5F                        RESERVED
+LENLWA   EQU *-LWA                     LENGTH OF LWA
+**********************************************************************
+***                                                                  *
+***    I K J E F L J  R E T U R N  C O D E S                         *
+***                                                                  *
+**********************************************************************
+LWASWAR EQU 4                          SWA MANAGER ERROR
+LWAMSPE EQU 16                         MULTI-STEP PROC
+**********************************************************************
+***                                                                  *
+***    P O S T  C O D E S  F O R  P E C B  E C B                     *
+***                                                                  *
+**********************************************************************
+INITDONE EQU 4                         INIT PHASE DONE POST CODE
+NQUSERID EQU 8                         ENQ ON USERID POST CODE
+DQUSERID EQU 12                        DQ ON USERID
+SCHEDULE EQU 16                        PHASE ONE PROMPTING DONE POST
+BCDONE   EQU 20                        MSG BRODCASTING DONE POST CODE
+TERMINAT EQU 24                        TERMINATE THE JOB POST CODE
+**********************************************************************
+***                                                                  *
+***         P O S T  C O D E S  F O R  S E C B  E C B                *
+***                                                                  *
+**********************************************************************
+NQDQ0    EQU 0                         ENQ DEQUE RETURN CODES
+NQDQ4    EQU 4                         DITTO
+NQDQ8    EQU 8                         DITTO
+STARTP2  EQU 16                        START PHASE TWO PROMPTING
+INITRDY  EQU 20                        INIT READY TO POST
+ENDTASK  EQU 24                        TERMINATE PROMPTING TASK
+*
+         MEND ,
+*---------------------------------------------------------------------*
+         SPACE 2
+         MACRO ,
 &NM      MIN   &R,&A,&TYPE=
 .*
 .*   MIN sets the smaller value of register &R and location &A into
@@ -1906,7 +2141,7 @@ FREEDCB  LR    R14,R13            COPY WORK AREA ADDRESS        GP14244
          STM   R14,R15,OSNLIST+8                                GP14244
          OI    OSNLIST+12,X'80'   SET END OF LIST               GP14244
          NI    OSNLIST+4,X'7F'    RESET SHORT END               GP14244
-OSNDONE  MAM   24  ,              SNAP IS OLD                   GP18031
+OSNDONE  MAM   24                 SNAP IS OLD                   GP18031
          L     R15,=A(@@SNAP)                                   GP14244
          LA    R1,OSNAP                                         GP14244
          BALR  R14,R15            CALL SNAPPER                  GP14244
@@ -5322,7 +5557,7 @@ ZDCBLEN  EQU   *-ZDCBAREA
          IEFZB4D0 ,          MAP SVC 99 PARAMETER LIST
          IEFZB4D2 ,          MAP SVC 99 PARAMETERS
          IKJPGPB ,
-*         IKJEFLWA ,
+         IKJEFLWA ,
          SPACE 2
 MYUCB    DSECT ,
          IEFUCBOB ,

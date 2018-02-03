@@ -1,6 +1,6 @@
 MVSSUPA  TITLE 'M V S S U P A  ***  MVS VERSION OF PDP CLIB SUPPORT'
 ***********************************************************************
-*                                                Updated 2018-02-01   *
+*                                                Updated 2018-02-03   *
 *                                                                     *
 *  This program written by Paul Edwards.                              *
 *  Released to the public domain                                      *
@@ -494,241 +494,6 @@ MVSSUPA  TITLE 'M V S S U P A  ***  MVS VERSION OF PDP CLIB SUPPORT'
          MEXIT
 .ERRORF  IHBERMAC 1020,&BRANCH(2),&MODE
          MEND  ,
-*---------------------------------------------------------------------*
-         SPACE 2
-         MACRO ,
-         IKJEFLWA ,
-LWA      DSECT ,
-LWAPPTR  DS  A                          ADDRESS OF THE LOGON WORK
-*                                       AREA
-LWALWA   DS  CL8                        EBCDIC '  LWA   '
-LWATEST  DS  A                          PTR FOR TEST     @ZA06226
-LWAPASCB DS  A                          ADDRESS OF ASCB
-*                                       FOR USER MEMORY
-LWAACCT  DS  A                          OFFSET TO ACCT FIELD IN
-*                                       UADS
-LWAPSCB  DS  A                          ADDRESS OF THE PROTECTED
-*                                       STEP CONTROL BLOCK
-LWAJSEL  DS  A                          ADDRESS OF THE JOB
-*                                       SCHEDULING ENTRANCE LIST
-LWAPECT  DS  A                          ADDRESS OF THE ECT
-LWAAECB  DS  A                          EVENT CONTROL BLOCK FOR
-*                                       THE LOGON/LOGOFF
-*                                       PROMPTING TASK
-*        BIT(24)                        NOT REFERENCED BY LOGON/
-         ORG LWAAECB+3                  LOGOFF CODE
-LWAABCE  DS  X                          COMPLETION CODE BYTE
-LWAPECB  DS  F                          COMMUNICATIONS ECB
-*                                       FOR COMMUNICATION FROM
-*                                       THE PROMPTING TASK TO
-*                                       THE SCHEDULING TASK
-*        BIT(24)                        NOT REFERENCED BY LOGON/
-         ORG LWAPECB+3                  LOGOFF CODE
-LWAPBCE  DS  X                          COMPLETION CODE BYTE
-LWASECB  DS  F                          COMMUNICATIONS ECB
-*                                       FOR COMMUNICATION FROM
-*                                       THE SCHEDULING TASK TO
-*                                       THE PROMPTING TASK
-*        BIT(24)                        NOT REFERENCED BY LOGON/
-         ORG LWASECB+3                  LOGOFF CODE
-LWASBCE  DS  X                          COMPLETION CODE BYTE
-LWALPCNT DS  F                          LOOP CONTROL FOR
-*                                       STAI EXIT RETRY.
-*                                       WHEN COUNTER REACHES
-*                                       GIVEN VALUE, SESSION
-*                                       IS TERMINATED.
-LWAPDCB  DS  A                          ADDRESS OF UADS
-*                                       DCB - USED BY STAI
-*                                       RETRY.
-LWAFLGS  DS 0F                          FLAGS FOR USE BY LOGON
-         DS  X
-LWALA    EQU X'80'                      IKJEFLA INDICATOR
-LWALB    EQU X'40'                      IKJEFLB INDICATOR
-LWALC    EQU X'20'                      IKJEFLC INDICATOR
-LWALE    EQU X'10'                      IKJEFLE INDICATOR
-LWALEA   EQU X'08'                      IKJEFLEA INDICATOR
-LWALI    EQU X'04'                      IKJEFLI INDICATOR
-LWALH    EQU X'02'                      IKJEFLH INDICATOR
-LWALL    EQU X'01'                      IKJEFLL INDICATOR
-         DS  X
-LWALGM   EQU X'80'                      IKJEFLGM INDICATOR
-LWALJ    EQU X'40'                      IKJEFLJ INDICATOR
-LWALK    EQU X'20'                      IKJEFLK INDICATOR
-LWALG    EQU X'10'                      IKJEFLG INDICATOR
-LWALGB   EQU X'08'                      IKJEFLGB INDICATOR
-LWALS    EQU X'04'                      IKJEFLS INDICATOR
-*        BIT(2)                         RESERVED
-         DS  X
-*        BIT(1)                         RESERVED
-LWARACF  EQU X'40'                      -> USER IS...      @Z40RQKC
-*                                       ...RACF DEFINED
-LWAVTAM  EQU X'20'                      -> VTAM/SNA        @Z40DQKC
-LWAPHASE EQU X'10'                      CONTROL SWITCH
-*                                       FOR STAI EXIT.
-*                                       IF 0 - PHASE I
-*                                       ACTIVE. IF 1 -
-*                                       PHASE II ACTIVE
-LWAPSW   EQU X'08'                      IF 1, LAST ABEND IN
-*                                        PROMPTER WAS PSW RESTART
-LWAPCK   EQU X'04'                      IF 1, LAST ABEND IN
-*                                       PROMPTER WAS PGM CHECK
-LWAMCK   EQU X'02'                      IF 1, LAST ABEND IN
-*                                       PROMPTER WAS MACH CHECK
-LWABND   EQU X'01'                      IF 1, LAST ABEND IN
-*                                       PROMPTER WAS OTHER THAN PROG
-*                                       CHK, PSW RESTART OR MACH CHK
-LWAFLGS4 DS  X
-*        BIT(1)
-LWANORDR EQU X'40'                      USER ON TERMINAL
-*                                       THAT DOES NOT
-*                                       SUPPORT OIDCARD
-*                                       READER      @G32OPKU
-LWAQTIP  EQU X'20'                      SET BY SIC SO LOGON
-*                                       WILL DO QTIP 24 IN
-*                                       IKJEFLK     @ZA02119
-LWASICSP EQU X'10'                      SET BY LOGON IN
-*                                       IKJEFLJ AND SET
-*                                       TO 0 IN IKJEFLK
-*                                       TELLS SICS NOT TO DO
-*                                       QTIP 24     @ZA02119
-LWALTBC  EQU X'08'                      LIST BC IN CONTROL
-LWATNBT  EQU X'04'                      USED TO INDICATE CANCEL
-*                                       BY THE ATTENTION EXIT
-*                                       ROUTINE.
-LWAINX1  EQU X'02'                      INSTALLATION EXIT
-*                                       ROUTINE IN CONTROL
-LWAILGN  EQU X'01'                      INITIAL LOGON INDICATOR
-LWAPTID  DS  A                          PROMPTING TASK IDENTIFIER
-*                                       RETURNED BY ATTACH
-LWACTLS  DS  0F                         CONTROL BIT STRING FOR
-         DS  X                          LOGON PROMPTING TASK
-*
-LWAUFAI  EQU X'80'                      INDICATES UNSUCCESSFUL ENQ
-*                                       ON THE RESOURCE ' SYSUADS
-*                                       USERID '
-LWAMOUNT EQU X'40'                      SET BY LD & PROPOGATED
-*                                       TO PSCB BY LI
-LWAFAIL  EQU X'20'                      INDICATES AN UNSUCCESSFUL
-*                                       ATTEMPT TO OBTAIN A SYSTEM
-*                                       RESOURCE.IDENTIFIED BY ANY
-*                                       OTHER BIT.
-LWADISC  EQU X'10'                      INDICATES THAT LOGON IS TO
-*                                       TERMINATE AND DISCONNECT
-*                                       THE TERMINAL.
-LWANOPR  EQU X'08'                     IF BIT IS ONE AN INSTALLATION
-*                                      EXIT ROUTINE HAS
-*                                      PROVIDED USERID,PASSWORD,
-*                                      ACCOUNT,PROCEDURE CHARACTER
-*                                      STRINGS, A REGION
-*                                      SIZE, AND A PERFORMANCE
-*                                      GROUP FOR USE IN
-*                                      SCHEDULING A TERMINAL JOB
-LWANUAD  EQU X'04'                     IF THIS BIT IS ONE AND THE
-*                                      BIT LWANOPR IS ALSO ONE NO
-*                                      ACCESS OF THE UADS SHOULD
-*                                      BE MADE FOR THIS TERMINAL JOB
-LWAJJCL  EQU X'02'                     JCL FOR TERMINAL JOB WAS
-*                                      SUPPLIED BY AN INSTALLATION
-*                                      EXIT ROUTINE.
-*        BIT(1)                        RESERVED
-         DS  X
-LWAATR1  EQU X'80'                     INFORMATION FOR THE ATR1
-*                                      FIELD OF THE PSCB WAS SUPPLIED
-*                                      BY AN INSTALLATION
-*                                      EXIT ROUTINE.
-LWAATR2  EQU X'40'                     INFORMATION FOR THE ATR2
-*                                      FIELD OF THE PSCB WAS SUPPLIED
-*                                      BY AN INSTALLATION
-*                                      EXIT ROUTINE.
-LWAUNIT  EQU X'20'                     INFORMATION FOR PSCBGPNM
-*                                      FIELD OF THE PSCB WAS SUPPLIED
-*                                      BY AN INSTALLATION
-*                                      EXIT ROUTINE.
-LWABUPT  EQU X'10'                     INFORMATION FOR USER PROFILE
-*                                      TABLE WAS SUPPLIED BY
-*                                      AN INSTALLATION EXIT RTN.
-LWANONQ  EQU X'08'                     LOGON WILL NOT MAINTAIN AN
-*                                      ENQ ON THE RESOURCE'SYSUAD
-*                                      USERID' DURING THE USER'S
-*                                      SESSION.
-LWADEST  EQU X'04'                     IF 1, INSTALLATION
-*                                      EXIT HAS SUPPLIED
-*                                      DEFAULT DEST.
-LWABEND  EQU X'02'                     IF 1, INSTALLATION
-*                                      EXIT IS GETTING
-*                                      CONTROL AFTER ABEND
-         DS  2X                        RESERVED FLAGS
-LWARTCD  DS  F                         RETURN CODE SET BY IKJEFLK
-LWANAME  DS  0F                        EPLOC FOR ATTACH/XCTL
-*                                      NAME
-LWARNML  DS  CL1                       USED FOR MINOR
-*                                      RESOURCE NAME
-*                                      LENGTH TO ENQ/DEQ
-LWARNM   DS  CL7                       USED FOR MINOR
-*                                      RESOURCE NAME
-*                                      IMAGE
-LWANQDQ  DS  CL12                      USED FOR ENQ/DEQ
-*                                      PARAMETER LIST
-LWAELST  DS  0F                        ECB LIST HEADER
-LWAAECBP DS  F                         PTR TO LWAAECB
-LWAPECBP DS  F                         PTR TO LWAPECB
-LWAEOEL  EQU X'80'                     END OF LIST BIT
-LWARCDE  DS  F                         RTN CODE SET BY IKJEFLJ
-LWATCPU  DS  F                         2 WORDS USED FOR
-LWATCPU1 DS  F                         TOTAL CPU TIME USED
-*                                      FOR THIS ACCOUNTING
-*                                      PERIOD.
-LWATSRU  DS  F                         2 WORDS USED FOR
-LWATSRU1 DS  F                         TOTAL SERVICE UNITS
-*                                      USED DURING THIS
-*                                      ACCT PERIOD.
-LWATCON  DS  F                         2 WORDS USED FOR
-LWATCON1 DS  F                         TOTAL CONNECT TIME
-*                                      USED DURING THIS
-*                                      ACCT PERIOD.
-LWASTCB  DS  A                         TCB ADDR IKJEFLA
-LWADEST2 DS  CL8                       USERID FOR SYSOUT
-*                                      TO REMOTE ENTRY-
-*                                      STATION.
-LWAGBWKA DS  A                         POINTER TO WORK
-*                                      AREA FOR IKJEFLGB
-LWASWKA  DS  A                         POINTER TO WORK
-*                                      AREA FOR IKJEFLS
-LWASPF   DS  A                         POINTER TO WORK         @ZA30872
-*                                      AREA FOR SPF SUPPORT    @ZA30872
-         DS  5F                        RESERVED
-LENLWA   EQU *-LWA                     LENGTH OF LWA
-**********************************************************************
-***                                                                  *
-***    I K J E F L J  R E T U R N  C O D E S                         *
-***                                                                  *
-**********************************************************************
-LWASWAR EQU 4                          SWA MANAGER ERROR
-LWAMSPE EQU 16                         MULTI-STEP PROC
-**********************************************************************
-***                                                                  *
-***    P O S T  C O D E S  F O R  P E C B  E C B                     *
-***                                                                  *
-**********************************************************************
-INITDONE EQU 4                         INIT PHASE DONE POST CODE
-NQUSERID EQU 8                         ENQ ON USERID POST CODE
-DQUSERID EQU 12                        DQ ON USERID
-SCHEDULE EQU 16                        PHASE ONE PROMPTING DONE POST
-BCDONE   EQU 20                        MSG BRODCASTING DONE POST CODE
-TERMINAT EQU 24                        TERMINATE THE JOB POST CODE
-**********************************************************************
-***                                                                  *
-***         P O S T  C O D E S  F O R  S E C B  E C B                *
-***                                                                  *
-**********************************************************************
-NQDQ0    EQU 0                         ENQ DEQUE RETURN CODES
-NQDQ4    EQU 4                         DITTO
-NQDQ8    EQU 8                         DITTO
-STARTP2  EQU 16                        START PHASE TWO PROMPTING
-INITRDY  EQU 20                        INIT READY TO POST
-ENDTASK  EQU 24                        TERMINATE PROMPTING TASK
-*
-         MEND ,
 *---------------------------------------------------------------------*
          SPACE 2
          MACRO ,
@@ -1706,6 +1471,7 @@ FIND1DD  IC    R0,TIOELNGH        GET ENTRY LENGTH BACK         GP14205
          CLI   TIOELNGH,20        SINGLE UCB ?                  GP14205
          BL    OPSERR               NOT EVEN                    GP14205
          B     DDCHECK            AND PROCESS IT                GP14205
+         DROP  R4,R9              done with DDA, TIOE for now   GP18034
          SPACE 1                                                GP14205
 BADDSORG LA    R0,ORFBADSO        BAD DSORG                     GP14205
          B     OPRERR                                           GP14205
@@ -3350,7 +3116,8 @@ VTOCSET@ STH   R14,ZVUSCCHH                 New cylinder        GP14213
 PATSEEK  CAMLST SEEK,*-*,*-*,*-*                                GP14213
          ORG   PATSEEK+4                                        GP14213
          SPACE 1
-BADBLOCK LM    R14,R15,RSNAREA    GET START/SIZE OF BLOCK       GP14244
+BADBLOCK MAM   24                 SNAP IS OLD                   GP18034
+         LM    R14,R15,RSNAREA    GET START/SIZE OF BLOCK       GP14244
          AR    R15,R14            END + 1                       GP14244
          BCTR  R15,0              END                           GP14244
          ST    R15,RSNAREA+4      UPDATE END                    GP14244
@@ -3501,6 +3268,7 @@ WRITEBAD LA    R14,0(,R4)         Get current record address    GP14363
          BCTR  R15,0              END                           GP14251
          ST    R15,WSNLIST+4      UPDATE END                    GP14251
          OI    WSNLIST+4,X'80'    SET END OF LIST               GP14251
+         MAM   24                 SNAP IS OLD                   GP18034
          L     R15,=A(@@SNAP)                                   GP14251
          LA    R1,WSNAP                                         GP14251
          BALR  R14,R15            CALL SNAPPER                  GP14251
@@ -3987,7 +3755,9 @@ ATCLOSEX FUNEXIT RC=0                                           GP17119
 *   TCB, AND RETURN ITS ADDRESS OR ZERO IN R1                         *
 * THE ADDRESS OF THE DESIRED DDNAME IS POINTED TO BY R1               *
 ***********************************************************************
+         PUSH  USING                                            GP18034
          ENTRY @@AQZDCB                                         GP17274
+         DROP  R10
 @@AQZDCB L     R1,0(,R1)          R1 POINTS TO THE DESIRED DD NAME
 AQZDCB   STM   R14,R12,12(R13)    SAVE A BIT                    GP17274
          LR    R12,R15                                          GP17274
@@ -4431,11 +4201,18 @@ SYSATDLN EQU   *-SYSATWRK     LENGTH OF DYNAMIC STORAGE
 ***********************************************************************
          PUSH  USING
          DROP  ,
-@@IDCAMS FUNHEAD SAVE=IDCSAVE     EXECUTE IDCAMS REQUEST
+@@IDCAMS FUNHEAD SAVE=IDCSAVE,US=NO  EXECUTE IDCAMS REQUEST     GP18034
          LA    R1,0(,R1)          ADDRESS OF IDCAMS REQUEST (V-CON)
          ST    R1,IDC@REQ         SAVE REQUEST ADDRESS
          MVI   EXFLAGS,0          INITIALIZE FLAGS
-         LA    R1,AMSPARM         PASS PARAMETER LIST
+         L     R2,=A(ENVFG)       get environment               GP18034
+         TM    0(R2),FGE8         S/380 MODE?                   GP18034
+         BZ    IDCLINK              NO; NO FINAGLING            GP18034
+         L     R2,4(,R13)         GET CALLER'S SAVE AREA        GP18034
+         TM    12+3(R2),X'01'     AM32/64 ?                     GP18034
+         BZ    IDCLINK              NO                          GP18034
+         MAM   24                 TEMPORARY(?) BYPASS FOR ABEND GP18034
+IDCLINK  LA    R1,AMSPARM         PASS PARAMETER LIST
          LINK  EP=IDCAMS          INVOKE UTILITY
          FUNEXIT RC=(15)          RESTORE CALLER'S REGS
          POP   USING
@@ -4773,52 +4550,50 @@ GAIS31   LA    R15,31
 RETURNGA DS    0H
          RETURN (14,12),RC=(15)
          LTORG ,
-*
-*
-*
+         SPACE 2
 ***********************************************************************
 *                                                                     *
 *  ADDNUM - Add two numbers using 80386                               *
 *                                                                     *
 ***********************************************************************
-*
-         PUSH  USING
-         DROP  ,
-         ENTRY @@ADDNUM
-@@ADDNUM DS    0H
-         SAVE  (14,12),,@@ADDNUM
-         LR    R12,R15
-         USING @@ADDNUM,R12
-*         L     R2,0(R1)
-*         L     R3,4(R1)
-*         AR    R3,R2
-*         LR    R15,R3
-         LR    R2,R1  new register for parms
-         L     R0,=X'FFFFFFFD' API for execute 80386
-         LR    R1,R0
-         LA    R3,CODE386
-         LA    R14,ANRET
-         SVC   120
-ANRET    DS    0H
-         RETURN (14,12),RC=(15)
-*
-         LTORG ,
-CODE386  DS    0D
-         DC    X'55' push ebp
-         DC    X'8B' mov ebp,esp
-         DC    X'EC'
-         DC    X'8B' mov eax, ebp + 8
-         DC    X'45'
-         DC    X'08'
-         DC    X'03' add eas, ebp + 12
-         DC    X'45'
-         DC    X'0C'
-         DC    X'C9' leave
-         DC    X'C3' return near
-         DC    X'22' eyecatcher
-         DC    X'22'
-         DC    X'22'
-         POP   USING
+*                                                               PE18032
+         PUSH  USING                                            PE18032
+         DROP  ,                                                PE18032
+         ENTRY @@ADDNUM                                         PE18032
+@@ADDNUM DS    0H                                               PE18032
+         SAVE  (14,12),,@@ADDNUM                                PE18032
+         LR    R12,R15                                          PE18032
+         USING @@ADDNUM,R12                                     PE18032
+*         L     R2,0(R1)                                        PE18032
+*         L     R3,4(R1)                                        PE18032
+*         AR    R3,R2                                           PE18032
+*         LR    R15,R3                                          PE18032
+         LR    R2,R1  new register for parms                    PE18032
+         L     R0,=X'FFFFFFFD' API for execute 80386            PE18032
+         LR    R1,R0                                            PE18032
+         LA    R3,CODE386                                       PE18032
+         LA    R14,ANRET                                        PE18032
+         SVC   120                                              PE18032
+ANRET    DS    0H                                               PE18032
+         RETURN (14,12),RC=(15)                                 PE18032
+*                                                               PE18032
+         LTORG ,                                                PE18032
+CODE386  DS    0D                                               PE18032
+         DC    X'55' push ebp                                   PE18032
+         DC    X'8B' mov ebp,esp                                PE18032
+         DC    X'EC'                                            PE18032
+         DC    X'8B' mov eax, ebp + 8                           PE18032
+         DC    X'45'                                            PE18032
+         DC    X'08'                                            PE18032
+         DC    X'03' add eas, ebp + 12                          PE18032
+         DC    X'45'                                            PE18032
+         DC    X'0C'                                            PE18032
+         DC    X'C9' leave                                      PE18032
+         DC    X'C3' return near                                PE18032
+         DC    X'22' eyecatcher                                 PE18032
+         DC    X'22'                                            PE18032
+         DC    X'22'                                            PE18032
+         POP   USING                                            PE18032
          SPACE 2
 ***********************************************************************
 *                                                                     *
@@ -4826,20 +4601,20 @@ CODE386  DS    0D
 *                                                                     *
 ***********************************************************************
 *
-         PUSH  USING
-         DROP  ,
-         ENTRY @@GETMSZ
-@@GETMSZ DS    0H
-         SAVE  (14,12),,@@GETMSZ
-         LR    R12,R15
-         USING @@GETMSZ,R12
-*         DIAGNOSE X'60'
-         DC    X'83',X'000060'
-         LR    R15,R0
-         RETURN (14,12),RC=(15)
-*
-         LTORG ,
-         POP   USING
+         PUSH  USING                                            PE18032
+         DROP  ,                                                PE18032
+         ENTRY @@GETMSZ                                         PE18032
+@@GETMSZ DS    0H                                               PE18032
+         SAVE  (14,12),,@@GETMSZ                                PE18032
+         LR    R12,R15                                          PE18032
+         USING @@GETMSZ,R12                                     PE18032
+*         DIAGNOSE X'60'                                        PE18032
+         DC    X'83',X'000060'                                  PE18032
+         LR    R15,R0                                           PE18032
+         RETURN (14,12),RC=(15)                                 PE18032
+*                                                               PE18032
+         LTORG ,                                                PE18032
+         POP   USING                                            PE18032
          SPACE 2
 *
 *
@@ -4850,46 +4625,40 @@ CODE386  DS    0D
 *                                                                     *
 ***********************************************************************
 *
-         PUSH  USING
-         DROP  ,
-         ENTRY @@GOSUP
-@@GOSUP  DS    0H
-         SAVE  (14,12),,@@GOSUP
-         LR    R12,R15
-         USING @@GOSUP,R12
-         MODESET MODE=SUP
-         LA    R15,0
-         RETURN (14,12),RC=(15)
-*
-         LTORG ,
-         POP   USING
+         PUSH  USING                                            PE18032
+         DROP  ,                                                PE18032
+         ENTRY @@GOSUP                                          PE18032
+@@GOSUP  DS    0H                                               PE18032
+         SAVE  (14,12),,@@GOSUP                                 PE18032
+         LR    R12,R15                                          PE18032
+         USING @@GOSUP,R12                                      PE18032
+         MODESET MODE=SUP                                       PE18032
+         LA    R15,0                                            PE18032
+         RETURN (14,12),RC=(15)                                 PE18032
+*                                                               PE18032
+         LTORG ,                                                PE18032
+         POP   USING                                            PE18032
          SPACE 2
-*
-*
-*
 ***********************************************************************
 *                                                                     *
 *  GOPROB - go into problem mode                                      *
 *                                                                     *
 ***********************************************************************
 *
-         PUSH  USING
-         DROP  ,
-         ENTRY @@GOPROB
-@@GOPROB DS    0H
-         SAVE  (14,12),,@@GOPROB
-         LR    R12,R15
-         USING @@GOPROB,R12
-         MODESET MODE=PROB
-         LA    R15,0
-         RETURN (14,12),RC=(15)
-*
-         LTORG ,
-         POP   USING
+         PUSH  USING                                            PE18032
+         DROP  ,                                                PE18032
+         ENTRY @@GOPROB                                         PE18032
+@@GOPROB DS    0H                                               PE18032
+         SAVE  (14,12),,@@GOPROB                                PE18032
+         LR    R12,R15                                          PE18032
+         USING @@GOPROB,R12                                     PE18032
+         MODESET MODE=PROB                                      PE18032
+         LA    R15,0                                            PE18032
+         RETURN (14,12),RC=(15)                                 PE18032
+*                                                               PE18032
+         LTORG ,                                                PE18032
+         POP   USING                                            PE18032
          SPACE 2
-*
-*
-*
 ***********************************************************************
 *                                                                     *
 *  CALL @@SVC99,(rb)                                                  *

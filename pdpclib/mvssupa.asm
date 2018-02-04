@@ -981,7 +981,7 @@ ZZ&SYSNDX.B LM R14,R12,12(R13)    reload                        GP18031
 .*   R15 IS USED AS THE (ONLY) WORK REGISTER.
 .*
 .*   THE ASSEMBLY MUST INCLUDE SYSTEM MACROS IHAPSA, IHAASCB,
-.*     IHAASXB, IKJTCB, IEZJSCB, IKJPSCB, AND IKJEFLWA
+.*     IHAASXB, IKJTCB, IEZJSCB, IKJPSCB
 .*                                        G. POSTPISCHIL; ADDED 2016276
          LCLC  &ERB,&C,&LBL
          LCLA  &I,&N
@@ -4573,6 +4573,9 @@ RETURNGA DS    0H
          LR    R1,R0                                            PE18032
          LA    R3,CODE386                                       PE18032
          LA    R14,ANRET                                        PE18032
+         L     R4,0(R2)                                         PE18032
+         L     R5,4(R2)                                         PE18032
+         L     R6,8(R2)                                         PE18032
          SVC   120                                              PE18032
 ANRET    DS    0H                                               PE18032
          RETURN (14,12),RC=(15)                                 PE18032
@@ -5440,7 +5443,6 @@ ZDCBLEN  EQU   *-ZDCBAREA
          IEFZB4D0 ,          MAP SVC 99 PARAMETER LIST
          IEFZB4D2 ,          MAP SVC 99 PARAMETERS
          IKJPGPB ,
-         IKJEFLWA ,
          SPACE 2
 MYUCB    DSECT ,
          IEFUCBOB ,

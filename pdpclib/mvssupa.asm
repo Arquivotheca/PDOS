@@ -1,6 +1,6 @@
 MVSSUPA  TITLE 'M V S S U P A  ***  MVS VERSION OF PDP CLIB SUPPORT'
 ***********************************************************************
-*                                                Updated 2018-02-03   *
+*                                                Updated 2018-02-04   *
 *                                                                     *
 *  This program written by Paul Edwards.                              *
 *  Released to the public domain                                      *
@@ -982,6 +982,9 @@ ZZ&SYSNDX.B LM R14,R12,12(R13)    reload                        GP18031
 .*
 .*   THE ASSEMBLY MUST INCLUDE SYSTEM MACROS IHAPSA, IHAASCB,
 .*     IHAASXB, IKJTCB, IEZJSCB, IKJPSCB
+.*
+.*   NOTE THAT THE LWA OFFSET COMES FROM THE IKJEFLWA MACRO.
+.*
 .*                                        G. POSTPISCHIL; ADDED 2016276
          LCLC  &ERB,&C,&LBL
          LCLA  &I,&N
@@ -4564,10 +4567,6 @@ RETURNGA DS    0H
          SAVE  (14,12),,@@ADDNUM                                PE18032
          LR    R12,R15                                          PE18032
          USING @@ADDNUM,R12                                     PE18032
-*         L     R2,0(R1)                                        PE18032
-*         L     R3,4(R1)                                        PE18032
-*         AR    R3,R2                                           PE18032
-*         LR    R15,R3                                          PE18032
          LR    R2,R1  new register for parms                    PE18032
          L     R0,=X'FFFFFFFD' API for execute 80386            PE18032
          LR    R1,R0                                            PE18032
@@ -4581,6 +4580,7 @@ ANRET    DS    0H                                               PE18032
          RETURN (14,12),RC=(15)                                 PE18032
 *                                                               PE18032
          LTORG ,                                                PE18032
+*                                                               PE18032
 CODE386  DS    0D                                               PE18032
          DC    X'55' push ebp                                   PE18032
          DC    X'8B' mov ebp,esp                                PE18032
@@ -4898,7 +4898,7 @@ SNAPALEN EQU   *-SNAPAREA    LENGTH TO GET                      GP14244
 *     and set the local flag for faster testing.                GP18022
 *                                                               GP18022
          CLI   ENVFG,0       Initialized?                       GP18022
-         BNE   SETSKIPI        yes; don't do it again           GP18022
+         BNE   SETEXIT         yes; don't do it again           GP18035
          L     R3,CVTPTR     get CVT                            GP18022
          LR    R4,R3         COPY CVT                           GP18022
          SH    R4,DCH256     GET PREFIX                         GP18022
@@ -4906,8 +4906,18 @@ SNAPALEN EQU   *-SNAPAREA    LENGTH TO GET                      GP14244
          USING CVTMAP,R3     DECLARE IT                         GP18022
          TM    CVTDCB,X'80'  31-bit system support?             GP18022
          BNZ   SETE9           yes; set flag                    GP18022
-         LA    R0,FGE7       preset for S/370                   GP18022
-         CLI   CVTMDL-2,X'80'  370 or not set?                  GP18022
+         CLI   CVTMDL-2,X'70'  370 or not set?                  GP18035
+         BE    SETE7             370                            GP18035
+         BH    SETTST            380 OR 390                     GP18035
+         L     R2,DCFF00                                        GP18035
+         LA    R2,0(,R2)                                        GP18035
+         CLM   R2,B'1000',DCFF00                                GP18035
+         BE    SETE9           390                              GP18035
+         LA    R0,FGE8       set for S/380                      GP18035
+         BM    SETENV          380                              GP18035
+SETE7    LA    R0,FGE7       preset for S/370                   GP18022
+         B     SETENV          yes; set flag                    GP18022
+SETTST   CLI   CVTMDL-2,X'80'  370 or not set?                  GP18022
          BL    SETENV            yes; set flag                  GP18022
          LA    R0,FGE8       preset for S/380                   GP18022
          BE    SETENV          yes; set flag                    GP18022
@@ -4920,7 +4930,7 @@ SETENV   STC   R0,ENVFG      set environment                    GP18022
 * ever do AMODE switching, so none of this AMODE
 * switching code is required at all
 *
-SETSKIPI TM    ENVFG,FGE7    S/370?                             GP18022
+         TM    ENVFG,FGE7    S/370?                             GP18022
          BNZ   SETEXIT         yes; do absolutely nothing       GP18022
          L     R2,DCFF00                                        GP18022
          LA    R2,0(,R2)

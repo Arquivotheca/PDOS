@@ -2549,7 +2549,6 @@ EXLSTACB EXLST AM=VSAM,EODAD=VSAMEOD,LERAD=VLERAD,SYNAD=VSYNAD  GP14244
 *     instead, by clobbering the Write CCW and restoring it after.    *
 *                                                                     *
 ***********************************************************************
-         PUSH  USING                                            GP17079
 OPFBS    OSUBHEAD ,          Define extended entry              GP17079
          CLI   ZPMODE+3,ZPMAPP    Record mode append?           GP17079
          BNE   OPFBSEX              No; return                  GP17079
@@ -3760,7 +3759,6 @@ ATCLOSEX FUNEXIT RC=0                                           GP17119
 ***********************************************************************
          PUSH  USING                                            GP18034
          ENTRY @@AQZDCB                                         GP17274
-         DROP  R10
 @@AQZDCB L     R1,0(,R1)          R1 POINTS TO THE DESIRED DD NAME
 AQZDCB   STM   R14,R12,12(R13)    SAVE A BIT                    GP17274
          LR    R12,R15                                          GP17274
@@ -4900,12 +4898,13 @@ SNAPALEN EQU   *-SNAPAREA    LENGTH TO GET                      GP14244
          CLI   ENVFG,0       Initialized?                       GP18022
          BNE   SETEXIT         yes; don't do it again           GP18035
          L     R3,CVTPTR     get CVT                            GP18022
-         LR    R4,R3         COPY CVT                           GP18022
-         SH    R4,DCH256     GET PREFIX                         GP18022
-         USING CVTFIX,R4                                        GP18022
          USING CVTMAP,R3     DECLARE IT                         GP18022
          TM    CVTDCB,X'80'  31-bit system support?             GP18022
          BNZ   SETE9           yes; set flag                    GP18022
+         LR    R4,R3         COPY CVT                           GP18022
+         SH    R4,DCH256     GET PREFIX                         GP18022
+         DROP  R3                                               GP18039
+         USING CVTFIX,R4                                        GP18022
          CLI   CVTMDL-2,X'70'  370 or not set?                  GP18035
          BE    SETE7             370                            GP18035
          BH    SETTST            380 OR 390                     GP18035
@@ -4923,7 +4922,7 @@ SETTST   CLI   CVTMDL-2,X'80'  370 or not set?                  GP18022
          BE    SETENV          yes; set flag                    GP18022
 SETE9    LA    R0,FGE9       set for OS/390, z/OS, etc.         GP18022
 SETENV   STC   R0,ENVFG      set environment                    GP18022
-         DROP  R3,R4                                            GP18022
+         DROP  R4                                               GP18039
 *
 * If we are running in a pure environment, where the
 * AMODE and RMODE are the same, there is no need to

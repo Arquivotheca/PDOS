@@ -1494,11 +1494,11 @@ DDCTDONE MVC   DDWFLAGS,DDWFLAG1  COPY FIRST DD'S FLAGS         GP14205
 *   Using RC to get a return code if memory unavailable.
 *   SWITCH THE *DEBUG* LABELS IF YOUR STORAGE SPACE IS TIGHT.
 *
-         #GETMEM RC,LV=ZDCBLEN,SP=SUBPOOL,LOC=BELOW,BNDRY=PAGE **DEBUG
-         LA    R0,ORFNOSTO        Preset for no storage         GP14205
-         BXH   R15,R15,OPRERR       Return error code           GP14205
+*DEBUG*  #GETMEM RC,LV=ZDCBLEN,SP=SUBPOOL,LOC=BELOW,BNDRY=PAGE **DEBUG
+*RC use  LA    R0,ORFNOSTO        Preset for no storage         GP14205
+*RC use  BXH   R15,R15,OPRERR       Return error code           GP14205
 *
-*        #GETMEM RU,LV=ZDCBLEN,SP=SUBPOOL,LOC=BELOW  I/O work area BTL
+         #GETMEM RU,LV=ZDCBLEN,SP=SUBPOOL,LOC=BELOW  I/O work area BTL
          LR    R10,R1             Addr.of storage obtained to its base
          USING IHADCB,R10         Give assembler DCB area base register
          LR    R0,R10             Load output DCB area address

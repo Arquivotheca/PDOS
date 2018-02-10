@@ -42,7 +42,7 @@ MVSSUPA  TITLE 'M V S S U P A  ***  MVS VERSION OF PDP CLIB SUPPORT'
 *     The program now supports reading the VTOC of a disk pack;
 *     use @@AOPEN, @@ACLOSE, @@AREAD normally for a sequential data
 *       set with record length 140 (44 key, 96 data). The DD card:
-*       //ddname DD DISP=OLD,DSN=FORMAT4.DSCB,UNIT=SYSALLDA,
+*       //ddname DD DISP=OLD,DSN=FORMAT4.DSCB,UNIT=SYSDA,
 *       //           VOL=SER=serial                      2014-08-01
 *
 ***********************************************************************
@@ -1494,11 +1494,11 @@ DDCTDONE MVC   DDWFLAGS,DDWFLAG1  COPY FIRST DD'S FLAGS         GP14205
 *   Using RC to get a return code if memory unavailable.
 *   SWITCH THE *DEBUG* LABELS IF YOUR STORAGE SPACE IS TIGHT.
 *
-*DEBUG*  #GETMEM RC,LV=ZDCBLEN,SP=SUBPOOL,LOC=BELOW,BNDRY=PAGE **DEBUG
-*RC use  LA    R0,ORFNOSTO        Preset for no storage         GP14205
-*RC use  BXH   R15,R15,OPRERR       Return error code           GP14205
+         #GETMEM RC,LV=ZDCBLEN,SP=SUBPOOL,LOC=BELOW,BNDRY=PAGE **DEBUG
+         LA    R0,ORFNOSTO        Preset for no storage         GP14205
+         BXH   R15,R15,OPRERR       Return error code           GP14205
 *
-         #GETMEM RU,LV=ZDCBLEN,SP=SUBPOOL,LOC=BELOW  I/O work area BTL
+*        #GETMEM RU,LV=ZDCBLEN,SP=SUBPOOL,LOC=BELOW  I/O work area BTL
          LR    R10,R1             Addr.of storage obtained to its base
          USING IHADCB,R10         Give assembler DCB area base register
          LR    R0,R10             Load output DCB area address
@@ -4910,10 +4910,10 @@ MVSSUPA  CSECT ,             RESTORE CSECT                      GP14244
          BH    SETTST            380 OR 390                     GP18035
          L     R2,DCFF00                                        GP18035
          LA    R2,0(,R2)                                        GP18035
-         CLM   R2,B'1000',DCFF00                                GP18035
-         BE    SETE9           390                              GP18035
+         CLM   R2,B'1000',DC4FHB+4   COMPARE TO X'80'           GP18040
+         BH    SETE9           390                              GP18040
          LA    R0,FGE8       set for S/380                      GP18035
-         BM    SETENV          380                              GP18035
+         BE    SETENV          380                              GP18040
 SETE7    LA    R0,FGE7       preset for S/370                   GP18022
          B     SETENV          yes; set flag                    GP18022
 SETTST   CLI   CVTMDL-2,X'80'  370 or not set?                  GP18022

@@ -573,7 +573,7 @@ ZZZZ&I   DS    0H
 .DOB64   O     &WORK,=X'00000001' request AM64
 .*next   AGO   .DOBSM
 .DOBSM   ANOP  ,
-         BSM 0,&WORK              change AMODE
+         BSM   0,&WORK            change AMODE
 .LABEL   ANOP  ,
 ZZ&SYSNDX.X DS 0H                 define branch label
 .MEND    MEND  ,
@@ -635,8 +635,8 @@ ZZ&SYSNDX.X DS 0H            DEFINE LABEL ONLY                  GP18031
          L     R5,=A(ENVFG)       locate environment flag       GP18031
          CLI   0(R5),FGE7         have BSM support?             GP18031
          BNH   ZZ&SYSNDX.B          no; ignore                  GP18031
+         SLR   R4,R4              clear to get only AM bits     PE18040
          BSM   R4,0               get AM bits                   GP18031
-         N     R4,=X'80000001'    retain only mode bits         GP18031
          N     R14,=X'7FFFFFFE'   reset extraneous mode bits    GP18031
          OR    R14,R4             make AMODE return BSM value   GP18031
          ST    R14,12(,R13)       and save for exit             GP18031
@@ -726,7 +726,7 @@ ZZ&SYSNDX L    R13,4(,R13)        restore higher save area      GP18031
          CLI   0(R5),FGE7         have BSM support?             GP18031
          BNH   ZZ&SYSNDX.B          no; ignore                  GP18031
          LM    R14,R12,12(R13)                                  GP18031
-         BSM   R14,0              get AM bits                   GP18031
+         BSM   0,R14              return in user's AM           GP18040
 .*
 ZZ&SYSNDX.B LM R14,R12,12(R13)    reload                        GP18031
          BR    R14
@@ -4971,7 +4971,7 @@ COMM3132 DS    0H
 * the OS mode, now we need to set the return to
 * application mode. That is easy, it is the current
 * amode, either AM32 or AM31
-         LA    R2,0
+         SLR   R2,R2                                            GP18040
          BSM   R2,0
          ST    R2,NEEDBOA this will be suitable for ORing
          OI    NEEDBF,NEEDBANY  set flag to say we need BSM switching
@@ -5002,7 +5002,7 @@ SETUP64  TM    ENVFG,FGE9    S/390 or later ?                   GP18022
          BNZ   SETEXIT No amode switching possible
 * Now we need to save the original AMODE settings,
 * ie AM31. We do this in a generic manner though.
-         LA    R2,0
+         SLR   R2,R2                                            GP18040
          BSM   R2,0
          ST    R2,NEEDBOA this will be suitable for ORing
 * Now we need to set appropriate flags to let GAMOS
@@ -5019,7 +5019,7 @@ SET64    DS    0H
          BNZ   SETEXIT No amode switching possible
 * Now we need to save the original AMODE settings,
 * ie AM64. We do this in a generic manner though.
-         LA    R2,0
+         SLR   R2,R2                                            GP18040
          BSM   R2,0
          ST    R2,NEEDBOA low bit will be set indicating AM64
          OI    NEEDBF,NEEDBANY

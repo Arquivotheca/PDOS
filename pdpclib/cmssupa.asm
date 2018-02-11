@@ -805,7 +805,10 @@ RETURNGC DS    0H
 **********************************************************************
          ENTRY @@SETM31
          USING @@SETM31,R15
-@@SETM31 ICM   R14,8,=X'80'       Set to switch mode
+@@SETM31 DS    0H
+         ICM   R14,8,=X'80'       Set to switch mode
+*         LA    R14,0(,R14)        Clear junk from high byte
+*         O     R14,=X'00000001'
          BSM   0,R14              Return in amode 31
          LTORG ,
 *

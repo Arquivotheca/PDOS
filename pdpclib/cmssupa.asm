@@ -25,8 +25,40 @@
 *  native CMS macros.                                                *
 *                                                                    *
 **********************************************************************
+*
+*
+*
+         MACRO ,
+&NM      GAMOS
+         GBLC  &ZSYS
+.*
+.*   GAMOS sets addressing mode to 24 for
+.*   S380 ready for calling OS functions
+.*
+         AIF ('&ZSYS' NE 'S380').NOT380
+         CALL  @@SETM24
+.NOT380  ANOP
+.MEND    MEND  ,
+*
+*
+*
+         MACRO ,
+&NM      GAMAPP
+         GBLC  &ZSYS
+.*
+.*   GAMAPP sets addressing mode to 31 for S380 which the
+.*   APP was running in before
+.*
+         AIF ('&ZSYS' NE 'S380').NOT380
+         CALL  @@SETM31
+.NOT380  ANOP
+.MEND    MEND  ,
+*
+*
+*
          COPY  PDPTOP
          PRINT GEN
+*
 * YREGS IS NOT AVAILABLE WITH IFOX
 *         YREGS
 R0       EQU   0
@@ -286,9 +318,7 @@ OUTDCBLN EQU   *-OUTDCB
          LR    R12,R15
          USING @@AREAD,R12
          LR    R11,R1
-         AIF ('&ZSYS' EQ 'S370').NOMOD1
-         CALL  @@SETM24
-.NOMOD1  ANOP
+         GAMOS
 *         AIF   ('&ZSYS' NE 'S370').BELOW1
 * CAN'T USE "BELOW" ON MVS 3.8
 *         GETMAIN R,LV=WORKLEN,SP=SUBPOOL
@@ -320,9 +350,7 @@ RETURNAR DS    0H
          L     R13,SAVEAREA+4
          LR    R7,R15
 *        FREEMAIN R,LV=WORKLEN,A=(R1),SP=SUBPOOL
-         AIF ('&ZSYS' EQ 'S370').NOMOD2
-         CALL  @@SETM31
-.NOMOD2  ANOP
+         GAMAPP
          ST    R5,0(R4)         Tell caller the length read
          LR    R15,R7
          RETURN (14,12),RC=(15)
@@ -347,9 +375,7 @@ RETURNAR DS    0H
          STH   R4,DCBLRECL      store length to write
          L     R3,4(R1)         R3 POINTS TO BUF POINTER
 *
-         AIF ('&ZSYS' EQ 'S370').NOMOD3
-         CALL  @@SETM24
-.NOMOD3  ANOP
+         GAMOS
          LA    R1,SAVEADCB
          ST    R13,4(R1)
          ST    R1,8(R13)
@@ -368,9 +394,7 @@ RETURNAR DS    0H
          AIF   ('&OUTM' NE 'L').NLM3
          ST    R1,0(R3)
 .NLM3    ANOP
-         AIF ('&ZSYS' EQ 'S370').NOMOD4
-         CALL  @@SETM31
-.NOMOD4  ANOP
+         GAMAPP
          LA    R15,0
 *
 RETURNAW DS    0H

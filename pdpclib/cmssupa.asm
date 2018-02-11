@@ -111,7 +111,9 @@ SUBPOOL  EQU   0
          LR    R12,R15
          USING @@AOPEN,R12
          LR    R11,R1
+         GAMOS
          GETMAIN R,LV=WORKLEN,SP=SUBPOOL
+         GAMAPP
          ST    R13,4(R1)
          ST    R1,8(R13)
          LR    R13,R1
@@ -131,6 +133,7 @@ SUBPOOL  EQU   0
 *         L     R9,24(,R1)         R9 POINTS TO MEMBER NAME (OF PDS)
 *         LA    R9,00(,R9)         Strip off high-order bit or byte
 *
+         GAMOS
          AIF   ('&ZSYS' EQ 'S390').BELOW
 * CAN'T USE "BELOW" ON MVS 3.8
          GETMAIN R,LV=ZDCBLEN,SP=SUBPOOL
@@ -138,6 +141,7 @@ SUBPOOL  EQU   0
 .BELOW   ANOP
          GETMAIN R,LV=ZDCBLEN,SP=SUBPOOL,LOC=BELOW
 .CHKBLWE ANOP
+         GAMAPP
          LR    R2,R1
          LR    R0,R2              Load output DCB area address
          LA    R1,ZDCBLEN         Load output length of DCB area
@@ -166,7 +170,9 @@ SUBPOOL  EQU   0
          MVC   DCBDDNAM,0(R3)
          MVC   OPENMB,OPENMAC
 *
+         GAMOS
          RDJFCB ((R2),INPUT)
+         GAMAPP
 *        LTR   R9,R9
 * DW * DON'T SUPPORT MEMBER NAME FOR NOW
 *        BZ    NOMEM
@@ -178,7 +184,9 @@ SUBPOOL  EQU   0
 NOMEM    DS    0H
 *         OPEN  ((R2),INPUT),MF=(E,OPENMB),MODE=31,TYPE=J
 * CAN'T USE MODE=31 ON MVS 3.8, OR WITH TYPE=J
+         GAMOS
          OPEN  ((R2),INPUT),MF=(E,OPENMB),TYPE=J
+         GAMAPP
 * CMS is missing this flag
 *         TM    DCBOFLGS,DCBOFOPN  Did OPEN work?
          TM    DCBOFLGS,OFOPN     Did OPEN work?
@@ -196,7 +204,9 @@ WRITING  DS    0H
          MVC   DCBDDNAM,0(R3)
          MVC   WOPENMB,WOPENMAC
 *
+         GAMOS
          RDJFCB ((R2),OUTPUT)
+         GAMAPP
 *        LTR   R9,R9
 * DW * NO MEMBER ON VM/370
 *        BZ    WNOMEM
@@ -208,7 +218,9 @@ WRITING  DS    0H
 WNOMEM   DS    0H
 *         OPEN  ((R2),OUTPUT),MF=(E,WOPENMB),MODE=31,TYPE=J
 * CAN'T USE MODE=31 ON MVS 3.8, OR WITH TYPE=J
+         GAMOS
          OPEN  ((R2),OUTPUT),MF=(E,WOPENMB),TYPE=J
+         GAMAPP
 * CMS is missing this flag
 *         TM    DCBOFLGS,DCBOFOPN  Did OPEN work?
          TM    DCBOFLGS,OFOPN  Did OPEN work?
@@ -223,12 +235,14 @@ WNOMEM   DS    0H
 *
 * S/370 can't handle LOC=BELOW
 *
+         GAMOS
          AIF   ('&ZSYS' NE 'S370').MVT8090 If not S/370 then 380 or 390
          GETMAIN R,LV=(R6),SP=SUBPOOL  No LOC= for S/370
          AGO   .GETOENE
 .MVT8090 ANOP  ,                  S/380 or S/390
          GETMAIN R,LV=(R6),SP=SUBPOOL,LOC=BELOW
 .GETOENE ANOP
+         GAMAPP
          ST    R1,ASMBUF
          L     R5,20(,R11)        R5 points to ASMBUF
          ST    R1,0(R5)           save the pointer
@@ -264,7 +278,9 @@ DONESET  DS    0H
          LR    R15,R7
          B     RETURNOP
 BADOPEN  DS    0H
+         GAMOS
          FREEMAIN R,LV=ZDCBLEN,A=(R2),SP=SUBPOOL  Free DCB area
+         GAMAPP
          L     R15,=F'-1'
          B     RETURNOP           Go return to caller with negative RC
 *
@@ -277,7 +293,9 @@ RETURNOP DS    0H
          LR    R1,R13
          L     R13,SAVEAREA+4
          LR    R7,R15
+         GAMOS
          FREEMAIN R,LV=WORKLEN,A=(R1),SP=SUBPOOL
+         GAMAPP
          LR    R15,R7
          RETURN (14,12),RC=(15)
          LTORG
@@ -318,7 +336,6 @@ OUTDCBLN EQU   *-OUTDCB
          LR    R12,R15
          USING @@AREAD,R12
          LR    R11,R1
-         GAMOS
 *         AIF   ('&ZSYS' NE 'S370').BELOW1
 * CAN'T USE "BELOW" ON MVS 3.8
 *         GETMAIN R,LV=WORKLEN,SP=SUBPOOL
@@ -340,7 +357,9 @@ OUTDCBLN EQU   *-OUTDCB
          L     R4,8(R1)         R4 point to a length
          LA    R6,0
          ST    R6,RDEOF
+         GAMOS
          GET   (R2)
+         GAMAPP
          ST    R1,0(R3)
          LH    R5,DCBLRECL
          L     R15,RDEOF
@@ -350,7 +369,6 @@ RETURNAR DS    0H
          L     R13,SAVEAREA+4
          LR    R7,R15
 *        FREEMAIN R,LV=WORKLEN,A=(R1),SP=SUBPOOL
-         GAMAPP
          ST    R5,0(R4)         Tell caller the length read
          LR    R15,R7
          RETURN (14,12),RC=(15)
@@ -375,7 +393,6 @@ RETURNAR DS    0H
          STH   R4,DCBLRECL      store length to write
          L     R3,4(R1)         R3 POINTS TO BUF POINTER
 *
-         GAMOS
          LA    R1,SAVEADCB
          ST    R13,4(R1)
          ST    R1,8(R13)
@@ -383,6 +400,7 @@ RETURNAR DS    0H
          LR    R1,R11
          USING WORKAREA,R13
 *
+         GAMOS
          AIF   ('&OUTM' NE 'L').NLM2
          PUT   (R2)
 .NLM2    ANOP
@@ -391,10 +409,10 @@ RETURNAR DS    0H
          L     R3,ASMBUF
          PUT   (R2),(R3)
 .NMM2    ANOP
+         GAMAPP
          AIF   ('&OUTM' NE 'L').NLM3
          ST    R1,0(R3)
 .NLM3    ANOP
-         GAMAPP
          LA    R15,0
 *
 RETURNAW DS    0H
@@ -418,6 +436,7 @@ RETURNAW DS    0H
          LR    R12,R15
          USING @@ACLOSE,R12
          LR    R11,R1
+         GAMOS
          AIF   ('&ZSYS' EQ 'S390').BELOW3
 * CAN'T USE "BELOW" ON MVS 3.8
          GETMAIN R,LV=WORKLEN,SP=SUBPOOL
@@ -425,6 +444,7 @@ RETURNAW DS    0H
 .BELOW3  ANOP
          GETMAIN R,LV=WORKLEN,SP=SUBPOOL,LOC=BELOW
 .NOBEL3  ANOP
+         GAMAPP
          ST    R13,4(R1)
          ST    R1,8(R13)
          LR    R13,R1
@@ -439,22 +459,28 @@ RETURNAW DS    0H
          LTR   R5,R5
          BZ    NFRCL
          L     R6,=F'32768'
+         GAMOS
          FREEMAIN R,LV=(R6),A=(R5),SP=SUBPOOL
+         GAMAPP
 NFRCL    DS    0H
 .NMM6    ANOP
          MVC   CLOSEMB,CLOSEMAC
 *         CLOSE ((R2)),MF=(E,CLOSEMB),MODE=31
 * CAN'T USE MODE=31 WITH MVS 3.8
+         GAMOS
          CLOSE ((R2)),MF=(E,CLOSEMB)
          FREEPOOL ((R2))
          FREEMAIN R,LV=ZDCBLEN,A=(R2),SP=SUBPOOL
+         GAMAPP
          LA    R15,0
 *
 RETURNAC DS    0H
          LR    R1,R13
          L     R13,SAVEAREA+4
          LR    R7,R15
+         GAMOS
          FREEMAIN R,LV=WORKLEN,A=(R1),SP=SUBPOOL
+         GAMAPP
          LR    R15,R7
          RETURN (14,12),RC=(15)
          LTORG
@@ -537,6 +563,7 @@ RETURNGA DS    0H
 * for this program to reside below the line. As such,
 * we need to use LOC=ANY to get ATL memory.
 *
+         GAMOS
          AIF   ('&ZSYS' NE 'S370').ANYCHKY
 * CAN'T USE "ANY" ON MVS 3.8
          GETMAIN R,LV=(R3),SP=SUBPOOL
@@ -544,6 +571,7 @@ RETURNGA DS    0H
 .ANYCHKY ANOP
          GETMAIN RU,LV=(R3),SP=SUBPOOL,LOC=ANY
 .ANYCHKE ANOP
+         GAMAPP
 *
 * WE STORE THE AMOUNT WE REQUESTED FROM MVS INTO THIS ADDRESS
          ST    R3,0(R1)
@@ -573,6 +601,7 @@ RETURNGM DS    0H
          L     R2,0(R1)
          S     R2,=F'8'
          L     R3,0(R2)
+         GAMOS
          AIF   ('&ZSYS' EQ 'S370').F370
          FREEMAIN RU,LV=(R3),A=(R2),SP=SUBPOOL
          AGO   .FINFREE
@@ -580,6 +609,7 @@ RETURNGM DS    0H
 * S/370
          FREEMAIN R,LV=(R3),A=(R2),SP=SUBPOOL
 .FINFREE ANOP
+         GAMAPP
 *
 RETURNFM DS    0H
          RETURN (14,12),RC=(15)
@@ -608,9 +638,7 @@ RETURNFM DS    0H
          LR    R12,R15
          USING @@SVC202,R12
          LR    R11,R1           NEED TO RESTORE R1 FOR C
-         AIF ('&ZSYS' NE 'S380').NOMODS1
-         CALL  @@SETM24
-.NOMODS1 ANOP
+         GAMOS
          L     R3,0(R1)         R3 POINTS TO SVC202 PARM LIST
          L     R4,4(R1)         R4 POINTS TO CODE
          L     R5,8(R1)         R5 POINTS TO RETURN CODE
@@ -628,9 +656,7 @@ RETURNFM DS    0H
 *
 SV202RT  EQU    *
          LR    R7,R15
-         AIF ('&ZSYS' NE 'S380').NOMODS2
-         CALL  @@SETM31
-.NOMODS2 ANOP
+         GAMAPP
          LR    R15,R7
          LR    R1,R11
          RETURN (14,12),RC=(15)
@@ -672,7 +698,9 @@ SV202ER  EQU   *
          SR    R6,R6            CLEAR R6
 *        ST    R6,0(R5)         AND SAVE IN RETURN CODE
          LA    R1,ATTNPL
+         GAMOS
          SVC   202              ISSUE COMMAND
+         GAMAPP
          DC    AL4(ATTNER)      ERROR
 ATTNRT   EQU    *
          LR     R1,R11

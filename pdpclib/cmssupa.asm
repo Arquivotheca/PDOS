@@ -563,7 +563,6 @@ RETURNGA DS    0H
 * for this program to reside below the line. As such,
 * we need to use LOC=ANY to get ATL memory.
 *
-         GAMOS
          AIF   ('&ZSYS' NE 'S370').ANYCHKY
 * CAN'T USE "ANY" ON MVS 3.8
          GETMAIN R,LV=(R3),SP=SUBPOOL

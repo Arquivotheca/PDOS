@@ -76,7 +76,11 @@ CEESTART DS    0H
 *                                trash R1, so we need to save that,
 *                                in R11 in this case.
 * Keep stack BTL so that the save area traceback works on MVS/380 2.0
+         AIF ('&ZSYS' EQ 'S370').NOBEL
          GETMAIN RU,LV=STACKLEN,SP=SUBPOOL,LOC=BELOW
+         AGO .GETFIN
+.NOBEL   GETMAIN RU,LV=STACKLEN,SP=SUBPOOL
+.GETFIN  ANOP
          ST    R13,4(,R1)        Remember the R13 that MVS gave us
          ST    R1,8(,R13)        Let MVS know our new R13 (save area)
          LR    R13,R1            Switch to using our new R13

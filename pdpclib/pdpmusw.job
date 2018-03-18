@@ -69,6 +69,7 @@ exit rc
 'pdpcomp stdlib'
 'pdpcomp string'
 'pdpcomp time'
+'pdpcomp start'
 'pdpasm musstart'
 'pdpasm mussupa'
 /END
@@ -95,7 +96,8 @@ exit rc
 /inc stdlib.obj
 /inc string.obj
 /inc time.obj
- ENTRY @@MAIN
+/inc start.obj
+ ENTRY @@CRT0
 /END
 
 /ID SAVE-JOB-123456 @BLD000 9999 9999 9999 9999

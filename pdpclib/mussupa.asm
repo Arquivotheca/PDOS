@@ -92,6 +92,8 @@ SUBPOOL  EQU   0
 *  be found halfway through the stdio.c file in PDPCLIB.             *
 *                                                                    *
 **********************************************************************
+         ENTRY $$AOPEN
+$$AOPEN  DS    0H
          ENTRY @@AOPEN
 @@AOPEN  DS    0H
          SAVE  (14,12),,@@AOPEN
@@ -285,6 +287,8 @@ OUTDCBLN EQU   *-OUTDCB
 *  AREAD - Read from file                                            *
 *                                                                    *
 **********************************************************************
+         ENTRY $$AREAD
+$$AREAD  DS    0H
          ENTRY @@AREAD
 @@AREAD  DS    0H
          SAVE  (14,12),,@@AREAD
@@ -339,6 +343,8 @@ RETURNAR DS    0H
 *  AWRITE - Write to an open dataset
 *
 ***********************************************************************
+         ENTRY $$AWRITE
+$$AWRITE DS    0H
          ENTRY @@AWRITE
 @@AWRITE DS    0H
          SAVE  (14,12),,@@AWRITE
@@ -389,6 +395,8 @@ RETURNAR DS    0H
 *  ACLOSE - Close file                                               *
 *                                                                    *
 **********************************************************************
+         ENTRY $$ACLOSE
+$$ACLOSE DS    0H
          ENTRY @@ACLOSE
 @@ACLOSE DS    0H
          SAVE  (14,12),,@@ACLOSE
@@ -447,6 +455,8 @@ CLOSEMLN EQU   *-CLOSEMAC
 *  GETM - GET MEMORY
 *
 ***********************************************************************
+         ENTRY $$GETM
+$$GETM   DS    0H
          ENTRY @@GETM
 @@GETM   DS    0H
          SAVE  (14,12),,@@GETM
@@ -498,6 +508,8 @@ RETURNGM DS    0H
 *  FREEM - FREE MEMORY
 *
 ***********************************************************************
+         ENTRY $$FREEM
+$$FREEM  DS    0H
          ENTRY @@FREEM
 @@FREEM  DS    0H
          SAVE  (14,12),,@@FREEM
@@ -531,6 +543,8 @@ RETURNFM DS    0H
 *  BY USING SOME EMPERICALLY-DERIVED MAGIC NUMBERS
 *
 ***********************************************************************
+         ENTRY $$GETCLK
+$$GETCLK DS    0H
          ENTRY @@GETCLK
 @@GETCLK DS    0H
          SAVE  (14,12),,@@GETCLK
@@ -574,6 +588,8 @@ RETURNGC DS    0H
 *  they should really be saying is 24, 31 and user-defined.          *
 *                                                                    *
 **********************************************************************
+         ENTRY $$GETAM
+$$GETAM  DS    0H
          ENTRY @@GETAM
 @@GETAM  DS    0H
          SAVE  (14,12),,@@GETAM
@@ -603,6 +619,8 @@ RETURNGA DS    0H
 *  dummy function for MUSIC - not sure if supported                   *
 *                                                                     *
 ***********************************************************************
+         ENTRY $$GETTZ
+$$GETTZ  LA    R15,0
          ENTRY @@GETTZ
 @@GETTZ  LA    R15,0
          BR    R14
@@ -615,6 +633,8 @@ RETURNGA DS    0H
 *  SYSTEM - execute another command
 *
 ***********************************************************************
+         ENTRY $$SYSTEM
+$$SYSTEM DS    0H
          ENTRY @@SYSTEM
 @@SYSTEM DS    0H
          SAVE  (14,12),,@@SYSTEM
@@ -667,6 +687,8 @@ SYSTEMLN EQU   *-SYSTMWRK    LENGTH OF DYNAMIC STORAGE
 *  TEXTLC - switch terminal to lower case mode
 *
 ***********************************************************************
+         ENTRY $$TEXTLC
+$$TEXTLC DS    0H
          ENTRY @@TEXTLC
 @@TEXTLC DS    0H
          SAVE  (14,12),,@@TEXTLC  Save caller's regs.
@@ -701,6 +723,8 @@ LCOPTS   DC    X'A0'              Constant
 *  IDCAMS - dummy function to keep MVS happy
 *
 ***********************************************************************
+         ENTRY $$IDCAMS
+$$IDCAMS DS    0H
          ENTRY @@IDCAMS
 @@IDCAMS DS    0H
          SAVE  (14,12),,@@IDCAMS
@@ -722,6 +746,8 @@ LCOPTS   DC    X'A0'              Constant
 *  MVS documentation for this (which is very complicated)             *
 *                                                                     *
 ***********************************************************************
+         ENTRY $$SVC99
+$$SVC99  DS    0H
          ENTRY @@SVC99
 @@SVC99  DS    0H
          SAVE  (14,12),,@@SVC99   Save caller's regs.
@@ -767,9 +793,12 @@ RETURN99 DS    0H
 *  SETJ - SAVE REGISTERS INTO ENV
 *
 ***********************************************************************
+         ENTRY $$SETJ
+$$SETJ   DS    0H
          ENTRY @@SETJ
+@@SETJ   DS    0H
          USING @@SETJ,R15
-@@SETJ   L     R15,0(R1)          get the env variable
+         L     R15,0(R1)          get the env variable
          STM   R0,R14,0(R15)      save registers to be restored
          LA    R15,0              setjmp needs to return 0
          BR    R14                return to caller
@@ -780,9 +809,12 @@ RETURN99 DS    0H
 *  LONGJ - RESTORE REGISTERS FROM ENV
 *
 ***********************************************************************
+         ENTRY $$LONGJ
+$$LONGJ  DS    0H
          ENTRY @@LONGJ
+@@LONGJ  DS    0H
          USING @@LONGJ,R15
-@@LONGJ  L     R2,0(R1)           get the env variable
+         L     R2,0(R1)           get the env variable
          L     R15,60(R2)         get the return code
          LM    R0,R14,0(R2)       restore registers
          BR    R14                return to caller

@@ -4512,9 +4512,9 @@ PFXRET   RETURN (14,12),RC=(15)                                 GP17107
 *                                                                    *
 *  GETAM - get the current AMODE                                     *
 *                                                                    *
-*  This function returns 24 if we are running in AMODE 24 (or less), *
-*  31 if we are running anything between 25-31, and 32 for anything  *
-*  32 or above.                                                      *
+*  This function returns 24 if we are running in exactly AMODE 24,   *
+*  31 if we are running in exactly AMODE 31, and 64 for anything     *
+*  else (user-defined/infinity/16/32/64/37)                          *
 *                                                                    *
 *  Be aware that MVS 3.8j I/O routines require an AMODE of exactly   *
 *  24 - nothing more, nothing less - so applications are required    *
@@ -4526,7 +4526,7 @@ PFXRET   RETURN (14,12),RC=(15)                                 GP17107
 *  instead of the user-configurable x'01', which is unfortunate.     *
 *                                                                    *
 *  For traditional reasons, people refer to 24, 31 and 64, when what *
-*  they should really be saying is 24, 31 and 32+.                   *
+*  they should really be saying is 24, 31 and user-defined.          *
 *                                                                    *
 **********************************************************************
          ENTRY @@GETAM
@@ -4535,13 +4535,13 @@ PFXRET   RETURN (14,12),RC=(15)                                 GP17107
          LR    R12,R15
          USING @@GETAM,R12
 *
-         L     R2,=X'FF000000'
+         L     R2,=X'C1800000'
          LA    R2,0(,R2)
-         CLM   R2,B'1000',=X'00'
+         CLM   R2,B'1100',=X'0080'
          BE    GAIS24
-         LTR   R2,R2
-         BNM   GAIS31
-         LA    R15,32
+         CLM   R2,B'1000',=X'41'
+         BE    GAIS31
+         LA    R15,64
          B     RETURNGA
 GAIS24   DS    0H
          LA    R15,24

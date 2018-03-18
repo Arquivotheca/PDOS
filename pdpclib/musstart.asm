@@ -40,6 +40,8 @@ SUBPOOL  EQU   0
 * correctly.
          DC    C'PDPCLIB!'
 *
+         ENTRY $CSTART
+$CSTART  DS    0H
          ENTRY @@CRT0
 @@CRT0   DS    0H
          AIF ('&COMP' NE 'C370').NOCEES
@@ -112,7 +114,9 @@ CEESTART DS    0H
 IN31     DS    0H
 .N380ST1 ANOP
 *
-         CALL  @@START
+* Watcom needs $$START
+         CALL  $$START
+*         CALL  @@START
 *
          AIF   ('&ZSYS' NE 'S380').N380ST2
 * If we were called in AMODE 31, don't switch back to 24-bit
@@ -135,6 +139,8 @@ SAVER13  DS    F
          DS    0H
 *         ENTRY CEESG003
 *CEESG003 DS    0H
+         ENTRY $$EXITA
+$$EXITA  DS    0H
          ENTRY @@EXITA
 @@EXITA  DS    0H
 * SWITCH BACK TO OUR OLD SAVE AREA

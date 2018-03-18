@@ -46,7 +46,7 @@ queue "/file obj1 n("name".obj) new(repl) sp(50) secsp(100%)"
 queue "/file syslib pds(@BLD000:*.H)"
 queue "/inc watc"
 queue "/job nogo"
-queue "/opt PRM __STDC_VERSION__ 0 PRM __MVS__ 1 PRM __WATMUS__ 1"
+queue "/opt PRM __STDC_VERSION__ 0 PRM __MVS__ 1 PRM __WATMUS__ 1 PRM MUSIC 1"
 queue "/inc" name".c"
 "EXEC"
 
@@ -64,7 +64,6 @@ exit rc
 'pdpcomp math'
 'pdpcomp setjmp'
 'pdpcomp signal'
-'pdpcomp start'
 'pdpcomp stdio'
 'pdpcomp stdlib'
 'pdpcomp string'
@@ -91,7 +90,6 @@ exit rc
 /inc math.obj
 /inc setjmp.obj
 /inc signal.obj
-/inc start.obj
 /inc stdio.obj
 /inc stdlib.obj
 /inc string.obj

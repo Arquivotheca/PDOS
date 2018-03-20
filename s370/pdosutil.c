@@ -139,7 +139,8 @@ int findFile(int ipldev, char *dsn, int *c, int *h, int *r)
 
 
 /* Structures here are documented in Appendix B and E of
-   MVS Program Management: Advanced Facilities SA22-7644-01
+   MVS Program Management: Advanced Facilities SA22-7644-14:
+   http://publibfp.dhe.ibm.com/cgi-bin/bookmgr/BOOKS/iea2b2b1/CCONTENTS
    and Appendix B of OS/390 DFSMSdfp Utilities SC26-7343-00
 */
 

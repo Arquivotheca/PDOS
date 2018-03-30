@@ -1,6 +1,6 @@
 MVSSUPA  TITLE 'M V S S U P A  ***  MVS VERSION OF PDP CLIB SUPPORT'
 ***********************************************************************
-*                                                Updated 2018-02-04   *
+*                                                Updated 2017-11-19   *
 *                                                                     *
 *  This program written by Paul Edwards.                              *
 *  Released to the public domain                                      *
@@ -53,572 +53,105 @@ MVSSUPA  TITLE 'M V S S U P A  ***  MVS VERSION OF PDP CLIB SUPPORT'
 *
 ***********************************************************************
 *
+*
 * Internal macros (these replace external macro library)        GP16001
 *
-*---------------------------------------------------------------------*
 *
-         MACRO ,                   for S370 XF ASM              GP18031
-&LABEL   NG    &R1,&R3,&S2                                      GP18031
-         DS    0H                                               GP18031
-&LABEL   DC    0XL6'00',X'E3',AL.4(&R1,&R3),S(&S2),X'0080'      GP18031
-         MEND                                                   GP18031
-*---------------------------------------------------------------------*
-         SPACE 2
-         MACRO ,                   for S370 XF ASM
-&LABEL   LGR   &R1,&R2
-         DS    0H
-&LABEL   DC    0XL4'00',X'B90400',AL.4(&R1,&R2)
-         MEND
-*---------------------------------------------------------------------*
-         SPACE 2
-         MACRO ,                  for S370 XF assembly
-&LABEL   BSM   &R1,&R2
-&LABEL   DC    0H'0',X'0B',AL.4(&R1,&R2)
-         MEND
-*---------------------------------------------------------------------*
-         SPACE 2
-         MACRO ,                   for S370 XF ASM
-&NAME    #GETMEM &MODE,&LV=,&LA=,&A=,&SP=,&MF=I,&HIARCHY=,&BNDRY=,     *
-               &KEY=,&BRANCH=,&RELATED=,&LOC=              *MVS380*
-.*
-.*   MODIFIED GETMAIN TO ASSEMBLE UNDER S/370 ASM XF            GP18031
-.*
-         LCLA  &SVCN,&PRG
-         LCLB  &B,&C,&D,&GLBR,&BR,&SPREG,&UNCND,&BND,&L,&V,&CND
-         LCLB  &RL,&VA,&VB                                 *MVS380*
-         LCLB  &KEYRG,&LVREG
-         LCLC  &GNAME
-.*0000000400,012200,013000-013200,016800-017600,026600-026800      LC0A
-.*    047000                                                       LC0A
-&GNAME   SETC  'IHB'.'&SYSNDX'
-&PRG     SETA  15                 DEFAULT REGISTER FOR RC AND RU
-         AIF   ('&MODE' EQ '').NOMODE
-         AIF   ('&MODE'(1,1) NE 'V' AND '&MODE'(1,1) NE 'E' AND        *
-               '&MODE'(1,1) NE 'L' AND '&MODE'(1,1) NE 'R' AND         *
-               '&MODE'(1,1) NE 'P').ERROR7                     @Z30EN9G
-         AIF   (K'&MODE EQ 1).MODE1    SINGLE CHARACTER MODE?
-         AIF   ('&MODE'(2,1) NE 'U' AND '&MODE'(2,1) NE 'C').ERROR7
-.MODE1   ANOP
-&L       SETB  ('&MODE'(1,1) EQ 'V' OR '&MODE'(1,1) EQ 'L')
-&V       SETB  ('&MODE'(1,1) EQ 'V')
-         AIF   ('&MODE'(1,1) EQ 'R' OR '&MODE'(1,1) EQ 'P').NOMODE
-         AIF   (K'&MODE EQ 1).ERROR7
-&CND     SETB  ('&MODE'(2,1) EQ 'C')
-.NOMODE  AIF   ('&BNDRY' EQ '').NOBNDRY
-&BND     SETB  ('&BNDRY' EQ 'PAGE')
-.NOBNDRY AIF   ('&LOC' EQ '').NOLOC                        *MVS380*
-.*                                                         *MVS380*
-.*   LOC ADDED FOR THE MVS/380 PROJECT FOR COMPATIBILITY   *MVS380*
-.*   WITH THE X/A AND LATER VERSIONS OF THE SYSTEM.        *MVS380*
-.*   BITS ARE (CURRENTLY) IGNORED BY THE SVC 120           *MVS380*
-.*   INTERCEPT CODE.                                       *MVS380*
-.*   USE RC/RU, AND LV>=16mb FOR ABOVE THE LINE MEMORY     *MVS380*
-.*                                                         *MVS380*
-.*   REVISION 2016-AUG-25                                  *MVS380* REV
-.*   1. Remove LOC=EXPLICIT due to no INADDR parameter.    *MVS380* REV
-.*   2. Support '24', '31' and '64' LOC specifications.    *MVS380* REV
-.*                                                         *MVS380* REV
-.*   R15 low byte "MODE" settings match those of z/OS.     *MVS380* REV
-.*   LOC=(,64) and LOC=(,31) are flagged identically.      *MVS380* REV
-.*   z/OS sets x'10' in the R15 high byte for LOC=(,64).   *MVS380* REV
-.*                                                         *MVS380* REV
-         AIF   (N'&LOC LE 2).LOCNUGH   TOO MANY OPERANDS?  *MVS380*
-         IHBERMAC 1012,LOC   TOO MANY OPERANDS             *MVS380*
-.LOCNUGH AIF   (N'&LOC EQ 1).LOCONE    JUST ONE ?          *MVS380*
-         AIF   ('&LOC(2)' EQ '').LOCONE  COMMA ONLY?       *MVS380*
-&RL      SETB  ('&LOC(2)' EQ 'ANY' OR '&LOC(2)' EQ '31' OR             X
-               '&LOC(2)' EQ '64')                          *MVS380* REV
-         AIF   (&RL).LOCONE                                *MVS380* REV
-.ERR22   IHBERMAC 1007,LOC(2)     INVALID                  *MVS380*
-         MEXIT ,                                           *MVS380*
-.LOCONE  AIF   ('&LOC(1)' EQ '').NOLOC                     *MVS380*
-         AIF   ('&LOC(1)' EQ 'RES').NOLOC                  *MVS380* REV
-&VA      SETB  ('&LOC(1)' EQ 'ANY' OR '&LOC(1)' EQ '31' )  *MVS380* REV
-&VB      SETB  ('&LOC(1)' EQ 'BELOW' OR '&LOC(1)' EQ '24' OR           X
-               &VA)           Set both bits for LOC=31     *MVS380* REV
-&RL      SETB  (&VA OR &RL)   Handle absent &LOC(2)        *MVS380* REV
-         AIF   (&VB).NOLOC                                 *MVS380* REV
-         IHBERMAC 1007,LOC(1)     INVALID                  *MVS380*
-         MEXIT ,                                           *MVS380*
-.NOLOC   AIF   ('&KEY' EQ '').SKIP                         *MVS380*
-         AIF   ('&MODE' NE 'RC' AND '&MODE' NE 'RU').ERRORA
-         AIF   ('&BRANCH' EQ '').ERRORE
-         AIF   ('&BRANCH' NE 'YES' AND '&BRANCH'(1,1) NE '(').ERRORA
-         AIF   ('&BRANCH(1)' NE 'YES').ERRORE
-         AIF   ('&KEY'(1,1) EQ '(').SKIP
-         AIF   (T'&KEY NE 'N').SKIP   CAN'T CHECK EQUATED VALUE
-         AIF   (&KEY GT 15).ERRORB
-.SKIP    AIF   ('&MF' EQ 'L' AND '&BRANCH' NE '').ERRORC
-         AIF   ('&BRANCH' EQ '').BRCNT
-         AIF   (N'&BRANCH LT 2).BRSNG
-       AIF   ('&BRANCH(1)' NE 'YES' OR '&BRANCH(2)' NE 'GLOBAL').ERRORD
-         AIF   ('&BRANCH(2)' EQ 'GLOBAL' AND '&MODE' NE 'RC' AND       *
-               '&MODE' NE 'RU').ERRORF
-&GLBR    SETB  1
-&BR      SETB  1
-         AGO   .BRCNT
-.BRSNG   AIF   ('&BRANCH' NE 'YES').ERRORD
-&BR      SETB  1
-.BRCNT   ANOP
-&SVCN    SETA  4
-         AIF   ('&MODE' EQ '' AND '&MF' EQ 'I').ERROR1
-         AIF   ('&LV' NE '' AND '&LA' NE '').ERROR5
-         AIF   ('&MODE' EQ '').CONT1
-         AIF   ('&MODE'(1,1) EQ 'E' AND '&LA' NE '').ERROR6
-         AIF   ('&MODE'(1,1) EQ 'R' AND '&LA' NE '').ERROR6
-         AIF   ('&BNDRY' NE '' AND '&BNDRY' NE 'DBLWD' AND '&BNDRY'    X
-               NE 'PAGE').ERROR10
-         AIF   ('&BNDRY' EQ 'PAGE' AND '&MODE' EQ 'R').ERR10A
-         AIF   ('&MODE'(1,1) EQ 'L' AND '&LV' NE '').ERROR4
-         AIF   ('&MODE'(1,1) EQ 'V' AND '&LV' NE '').ERROR4
-         AIF   ('&HIARCHY' EQ '' OR '&HIARCHY' EQ '0' OR '&HIARCHY' EQ X
-               '1').CONT1
-         IHBERMAC 195
-         MEXIT
-.CONT1   AIF   ('&MF' EQ 'L').LROUT
-         AIF   ('&MF' EQ 'I').IROUT
-         AIF   (N'&MF LE 1).ERROR2
-         AIF   ('&MF(1)' NE 'E').ERROR2
-&NAME    IHBINNRA &MF(2)
-         AIF   ('&LV' EQ '').CONTB
-         AIF   ('&LV'(1,1) EQ '(').ISAREG
-         AIF   (T'&LV NE 'N').CONTBB
-         AIF   (&LV LE 4095).CONTAA
-.CONTBB  CNOP  0,4
-         B     *+8                               BRANCH AROUND LENGTH
-         DC    A(&LV)                            LENGTH
-         MVC   0(4,1),*-4                        MOVE LENGTH INTO LIST
-         AGO   .CONTB
-.CONTAA  LA    14,&LV.(0,0)                      PICK UP LENGTH
-         ST    14,0(0,1)                         STORE INTO LIST
-         AGO   .CONTB
-.ISAREG  ST    &LV(1),0(0,1)                     STORE LENGTH INTO LIST
-.CONTB   AIF   ('&LA' EQ '').CONTD
-         AIF   ('&LA'(1,1) EQ '(').ISAREGA
-         LA    14,&LA                            PICK UP LIST ADDRESS
-         ST    14,0(0,1)                         STORE INTO PARAM LIST
-         AGO   .CONTD
-.ISAREGA ST    &LA(1),0(0,1)                     STORE LA IN PARAM LIST
-.CONTD   AIF   ('&MODE' EQ '' AND '&BNDRY' EQ '').CONTE
-         MVI   8(1),B'&L&V&CND&BND.0000'         SET MODE / BNDRY FLGS
-.CONTE   AIF   ('&A' EQ '').CONTI
-         AIF   ('&A'(1,1) EQ '(').ISAREGB
-         LA    14,&A                             LOAD AREA LIST ADDRESS
-         ST    14,4(0,1)                         STORE INTO PARAM LIST
-         AGO   .CONTI
-.ISAREGB ST    &A(1),4(1,0)                      STORE INTO PARAM LIST
-.CONTI   AIF   ('&SP' EQ '').FINI
-         AIF   ('&SP'(1,1) EQ '(').ISAREGC
-         MVI   9(1),&SP                          MOVE IN SUBPOOL VALUE
-         AGO   .FINI
-.ISAREGC STC   &SP(1),9(1,0)                     STORE SUBPOOL VALUE
-         AGO   .FINI
-.LROUT   AIF   ('&LV' EQ  '').CONTJ
-         AIF   ('&LV'(1,1) EQ '(').ERROR3
-&NAME    DC    A(&LV)                            LENGTH
-         AGO   .CONTLL
-.CONTJ   AIF   ('&LA' EQ '').CONTK
-         AIF   ('&LA'(1,1) EQ '(').ERROR3
-&NAME    DC    A(&LA)                            ADDR. OF LENGTH LIST
-         AGO   .CONTLL
-.CONTK   ANOP
-&NAME    DC   A(0)                               LA OR LU
-.CONTLL  AIF   ('&A' EQ '').CONTM
-         AIF   ('&A'(1,1) EQ '(').ERROR3
-         DC    A(&A)                             ADDR. OF ADDR. LIST
-         AGO   .CONTN
-.CONTM   DC    A(0)                              ADDR. OF ADDR. LIST
-.CONTN   DC    BL1'&L&V&CND&BND.0000'            MODE AND OPTION FLAGS
-         AIF   ('&SP' EQ '').CONTU
-         AIF   ('&SP'(1,1) EQ '(').ERROR3
-         DC    AL1(&SP)                          SUBPOOL VALUE
-         AGO   .FINISH
-.CONTU   DC    AL1(0)                            SUBPOOL VALUE
-.FINISH  MEXIT
-.IROUT   AIF   ('&MODE'(1,1) EQ 'R').RROUT
-         AIF   ('&MODE'(1,1) EQ 'P').PROUT                     @Z30EN9G
-         AIF   ('&LV' EQ '' AND '&LA' EQ '').ERROR8
-         CNOP  0,4
-&NAME    BAL   1,*+14                            BRANCH AROUND LIST
-         AIF   ('&LV' EQ '').CNTA
-         AIF   ('&LV'(1,1) EQ '(').CNTB
-         DC    A(&LV)                            LENGTH
-         AGO   .CNTC
-.CNTB    DC    A(0)                              LENGTH
-&B       SETB  1
-         AGO   .CNTC
-.CNTA    AIF   ('&LA'(1,1) EQ '(').CNTD
-         DC    A(&LA)                            ADDR. OF LENGTH LIST
-         AGO   .CNTC
-.CNTD    DC    A(0)                              ADDR. OF LENGTH LIST
-&C       SETB  1
-.CNTC    AIF   ('&A' EQ '').ERROR8
-         AIF   ('&A'(1,1) EQ '(').CNTE
-         DC    A(&A)                  ADDR. OF ADDR. LIST
-         AGO   .CNTF
-.CNTE    DC    A(0)                              ADDR. OF ADDR. LIST
-&D       SETB  1
-.CNTF    DC    BL1'&L&V&CND&BND.0000'            MODE AND OPTION FLAGS
-         AIF   ('&SP' EQ '').CNTL
-         AIF   ('&SP'(1,1) EQ '(').ISAREGQ
-         DC    AL1(&SP)                          SUBPOOL VALUE
-         AGO   .CNTM
-.ISAREGQ DC    AL1(0)                            SUBPOOL VALUE
-         STC   &SP(1),9(0,1)                     STORE SP INTO LIST
-         AGO   .CNTM
-.CNTL    DC    AL1(0)                            SUBPOOL VALUE
-.CNTM    AIF   (NOT &B).CNTN
-         ST    &LV(1),0(0,1)                     STORE LENGTH INTO LIST
-         AGO   .CNTO
-.CNTN    AIF   (NOT &C).CNTO
-         ST    &LA(1),0(0,1)                     STORE LA INTO LIST
-.CNTO    AIF   (NOT &D).FINI
-         ST    &A(1),4(0,1)                      STORE INTO PARAM LIST
-         AGO   .FINI
-.PROUT   ANOP                                                  @Z30EN9G
-         AIF   ('&SP' EQ '').ERROR8                            @Z30EN9G
-         AIF   ('&BRANCH' EQ '').ERROR8                        @Z30EN9G
-         AGO   .PROUT1                                         @Z30EN9G
-.*       R-FORM GETMAIN (REGMAIN) OR RC OR RU FORMS
-.RROUT   AIF   ('&A' NE '').ERROR9
-         AIF   ('&LV' EQ '').ERROR8
-         AIF   (K'&MODE EQ 2).NREGM
-&SVCN    SETA  10
-         AIF   ('&LV'(1,1) EQ '(').ISARGA
-         AIF   ('&SP' EQ '').CTUA
-.PROUT1  ANOP                                                  @Z30EN9G
-         AIF   ('&SP'(1,1) EQ '(').ISARGB
-         CNOP  0,4
-         AIF   ('&MODE' EQ 'P').PMODE                          @Z30EN9G
-&NAME    BAL   1,*+8                             BRANCH AROUND SP+LV
-         DC    AL1(&SP)                          SUBPOOL VALUE
-         DC    AL3(&LV)                          LENGTH
-         L     0,0(0,1)                          LOAD SP AND LV
-         AGO   .FINI
-.PMODE   ANOP                                                  @Z30EN9G
-&NAME    LA    0,&SP.(0,0)      PICK UP SUBPOOL                @Z30EN9G
-         SLL   0,24(0)          SHIFT TO HIGH-ORDER BYTE       @Z30EN9G
-         BAL   1,*+4            INDICATE GETMAIN               @Z30EN9G
-         AGO   .FINI                                           @Z30EN9G
-.CTUA    AIF   (T'&LV NE 'N').CTUAA
-         AIF   (&LV LE 4095).CONTCC
-.CTUAA   CNOP  0,4
-&NAME    BAL   1,*+8                             BRANCH AROUND LENGTH
-         DC    A(&LV)                            LENGTH
-         L     0,0(0,1)                          LOAD LENGTH
-         AGO   .FINI
-.CONTCC  ANOP
-&NAME    LA    0,&LV.(0,0)                       LOAD LENGTH
-         AGO   .NOP2
-.ISARGB  AIF   ('&MODE' EQ 'P').PMODE2                         @Z30EN9G
-         AIF   (T'&LV NE 'N').CONTFF                           @Z30EN9G
-         AIF   (&LV LE 4095).CONTEE
-.CONTFF  CNOP  0,4
-&NAME    BAL   1,*+8                             BRANCH AROUND LENGTH
-         DC    A(&LV)                            LENGTH
-         LR    0,&SP(1)                          PICK UP SUBPOOL
-         SLL   0,24(0)                           SHIFT TO HI-ORDER BYTE
-         O     0,0(0,1)                          PACK SP AND LV
-         AGO   .FINI
-.PMODE2  ANOP                                                  @Z30EN9G
-         AIF   ('&SP(1)' EQ '0').PMODE3                        @Z30EN9G
-&NAME    LR    0,&SP(1)         PICK UP SUBPOOL                @Z30EN9G
-         CNOP  0,4                                             @Z30EN9G
-         SLL   0,24(0)          SHIFT TO HIGH-ORDER BYTE       @Z30EN9G
-         BAL   1,*+4            INDICATE GETMAIN               @Z30EN9G
-         AGO   .FINI                                           @Z30EN9G
-.PMODE3  ANOP                                                  @Z30EN9G
-         CNOP  0,4                                             @Z30EN9G
-&NAME    SLL   0,24(0)          SHIFT SUBPOOL TO HIGH-BYTE     @Z30EN9G
-         BAL   1,*+4            INDICATE GETMAIN               @Z30EN9G
-         AGO   .FINI                                           @Z30EN9G
-.CONTEE  ANOP
-&NAME    LR    0,&SP(1)                          PICK UP SUBPOOL
-         SLL   0,24(0)                           SHIFT TO HI-ORDER BYTE
-         LA    1,&LV.(0,0)                       LOAD LENGTH
-         OR    0,1                               PACK SP AND LV
-         AGO   .NOP2
-.ISARGA  AIF   ('&LV(1)' EQ '0').ZEROUT
-         AIF   ('&SP' EQ '').CTUB
-         AIF   ('&SP'(1,1) EQ '(').ISARGC
-&NAME    LA    0,&SP.(0,0)                       PICK UP SUBPOOL
-.NOP1    SLL   0,24(0)                           SHIFT TO HI-ORDER BYTE
-         OR    0,&LV(1)                          PACK SP AND LV
-.NOP2    BAL   1,*+4                             INDICATE GETMAIN
-         AGO   .FINI
-.CTUB    ANOP
-&NAME    LR    0,&LV(1)                          LOAD LENGTH
-         AGO   .NOP2
-.ISARGC  ANOP
-&NAME    LR    0,&SP(1)                          PICK UP SUBPOOL
-         AGO   .NOP1
-.ZEROUT  AIF   ('&SP' NE '').ERROR0
-&NAME    BAL   1,*+4                             INDICATE GETMAIN
-         AGO   .FINI
-.NREGM   ANOP    RC AND RU FORMS OF GETMAIN
-&SVCN    SETA  120
-&UNCND   SETB  ('&MODE' EQ 'RU')  CONDITIONAL REQUEST FLAG
-         AIF   (NOT &BR).COND     CHECK FOR BRANCH ENTRY TO GETMAIN
-&PRG     SETA  3                  SET PARAMETER REG FOR BRANCH ENTRY
-.COND    AIF   ('&SP' EQ '').CREG1
-&SPREG   SETB  ('&SP'(1,1) EQ '(')
-.CREG1   AIF   ('&KEY' EQ '').CREG01
-&KEYRG   SETB  ('&KEY'(1,1) EQ '(')
-.CREG01  ANOP
-&LVREG   SETB  ('&LV'(1,1) EQ '(')
-&B       SETB  (&SPREG AND &KEYRG)
-         CNOP  0,4
-&NAME    B     *+12-4*&LVREG-2*&B                BRANCH AROUND DATA
-         AIF   (&LVREG).CREG11
-         DC    A(&LV)                            LENGTH
-.CREG11  ANOP
-&GNAME.F DC    AL1(0)                            RESERVED
-         AIF   ('&KEY' EQ '').CREG1A             KEY OMITTED ?
-         AIF   (&KEYRG).CREG1B                   KEY IN REGISTER?
-         DC    AL1(&KEY*16)                      STORAGE KEY
-         AGO   .CREG1B
-.CREG1A  DC    AL1(0)                            RESERVED
-.CREG1B  AIF   ('&SP' EQ '').SPNULL1             SUBPOOL OMITTED?
-         AIF   (&SPREG).CREG1C                   SUBPOOL IN REGISTER?
-         DC    AL1(&SP)                          SUBPOOL
-         AGO   .CREG1C
-.CREG1E  AIF   ('&LV(1)' EQ '0').CREG1D                        @ZA07133
-         LR    0,&LV(1)                          LOAD LENGTH   @ZA07133
-         AGO   .CREG1D                                         @ZA07133
-.SPNULL1 DC    AL1(0)                            SUBPOOL
-.CREG1C  DC    BL1'0&RL&VA&VB.0&BND&UNCND.0'     MODE BYTE *MVS380*
-         AIF   (&LVREG).CREG1E                                 @ZA07133
-         L     0,*-8+2*&B                        LOAD LENGTH
-.CREG1D  AIF   (&KEYRG OR &SPREG).KORSREG
-.*       NEITHER KEY OR SP IS A REGISTER.
-         L     &PRG.,&GNAME.F                    LOAD GETMAIN PARMS
-         AGO   .LVCHK
-.*       EITHER KEY OR SP IS A REGISTER.
-.KORSREG AIF   (&KEYRG AND &SPREG).BOTHREG
-.*       ONLY ONE OF THEM IS A REGISTER
-         AIF   (NOT &SPREG).KEYREG
-.*       ONLY SP IS A REGISTER
-         AIF   ('&SP(1)' EQ '&PRG').SPINPRG
-.*       SP IS NOT IN THE PREFERRED PARM REG.
-         LR    &PRG.,&SP(1)                      OBTAIN SUBPOOL ID
-.SPINPRG SLL   &PRG.,8(0)                 MOVE SUBPOOL TO BYTE 2 YM1995
-         ICM   &PRG.,13,&GNAME.F                 ADD REMAINING PARMS
-         AGO   .LVCHK
-.* ONLY KEY IS A REGISTER
-.KEYREG  AIF   ('&KEY(1)' EQ '&PRG').KYINPRG
-.*       KEY IS NOT IN THE PREFERRED REGISTER
-         LR    &PRG.,&KEY(1)                     GET STORAGE KEY
-.KYINPRG SLL   &PRG.,16(0)                   SHIFT KEY TO BYTE 1 YM1995
-         ICM   &PRG.,11,&GNAME.F                 ADD REMAINING PARMS
-         AGO      .LVCHK
-.*       BOTH KEY AND SP ARE IN REGISTERS
-.BOTHREG AIF   ('&KEY(1)' NE '&SP(1)').NOTSAME
-.*       BOTH KEY AND SP ARE IN THE SAME REGISTER.
-         AIF   ('&KEY(1)' EQ '&PRG').BOTHPRG
-.*       THE COMMON REGISTER IS NOT THE PREFERRED PARM REGISTER.
-         LR    &PRG.,&KEY(1)                     GET STORAGE KEY
-.BOTHPRG ICM   &PRG.,9,&GNAME.F                  ADD REMAINING PARMS
-         AGO   .LVCHK
-.* BOTH ARE IN REGISTERS, BUT THEY ARE DIFFERENT REGISTERS.
-.NOTSAME AIF   ('&KEY(1)' EQ '&PRG' OR '&SP(1)' EQ '&PRG').PRGIS1
-.*       NEITHER REGISTER IS THE PREFERRED PARM REGISTER.
-         LR    &PRG.,&KEY(1)                     GET STORAGE KEY
-.ADDSP   SLL   &PRG.,8(0)                  SHIFT KEY OVER FOR SP YM1995
-         OR    &PRG.,&SP(1)                      ADD SUBPOOL NUMBER
-         SLL   &PRG.,8(0)                 MOVE PAIR TO BYTES 1-2 YM1995
-         AGO   .BOTHPRG
-.PRGIS1  AIF   ('&KEY(1)' EQ '&PRG').ADDSP
-.*       SP IN IN THE PREFERRED PARM REGISTER.
-         SLL   &PRG.,8(0)                 MOVE SUBPOOL TO BYTE 2 YM1995
-         SLL   &KEY(1),16(0)                 SHIFT KEY TO BYTE 1 YM1995
-         OR    &PRG.,&KEY(1)                     COMBINE KEY & SP
-         AGO   .BOTHPRG
-.LVCHK   ANOP                                                  @ZA07133
-.FINI    AIF   ('&MODE' NE 'RC' AND '&MODE' NE 'RU').FINI1
-         SR    1,1                               ZERO RESERVED REG 1
-.FINI1   AIF   (&BR).SETBE                    TEST FOR BRANCH=YES
-         SVC   &SVCN                             ISSUE GETMAIN SVC
-         MEXIT
-.SETBE   L     15,CVTPTR(0,0)                    LOAD THE CVT ADDRESS
-         AIF   ('&MODE' EQ 'P').CBBE                           @Z30EN9G
-         AIF   (&SVCN EQ 120).CRBE
-         AIF   (&SVCN EQ 10).RMBE
-         L     15,CVTGMBR-CVTMAP(0,15)           GETMAIN ENTRY ADDRESS
-         AGO   .SBE
-.CBBE    ANOP                                                  @Z30EN9G
-         L     15,CVTCBBR-CVTMAP(0,15)  GETMAIN ENTRY ADDRESS  @Z30EN9G
-         AGO   .SBE                                            @Z30EN9G
-.RMBE    L     15,CVTRMBR-CVTMAP(0,15)           GETMAIN ENTRY ADDRESS
-         AGO   .SBE
-.CRBE    AIF   (&GLBR).GLBE   GLOBAL BRANCH ENTRY?
-         L     15,CVTCRMN-CVTMAP(0,15)           GETMAIN ENTRY ADDRESS
-         AGO   .SBE
-.GLBE    L     4,CVTSPSA-CVTMAP(0,15)            SAVE AREA VECTOR
-         L     4,WSAGGMFM-WSAG(0,4)              GLOBAL SAVE AREA ADDR
-         L     15,CVTGLMN-CVTMAP(0,15)           GLBRANCH ENTRY ADDR
-.SBE     BALR  14,15                             BRANCH TO GETMAIN
-         MEXIT
-.ERROR0  IHBERMAC 92
-         MEXIT
-.ERROR1  IHBERMAC 17
-         MEXIT
-.ERROR2  IHBERMAC 1001,MF,&MF
-         MEXIT
-.ERROR3  IHBERMAC 69
-         MEXIT
-.ERROR4  IHBERMAC 89
-         MEXIT
-.ERROR5  IHBERMAC 91
-         MEXIT
-.ERROR6  IHBERMAC 90
-         MEXIT
-.ERROR7  IHBERMAC 1001,MODE,&MODE
-         MEXIT
-.ERROR8  IHBERMAC 01
-         MEXIT
-.ERROR9  IHBERMAC 93
-         MEXIT
-.ERROR10 IHBERMAC 1014,BNDRY
-         MEXIT
-.ERR10A  IHBERMAC 1020,&BNDRY,&MODE
-         MEXIT
-.ERRORA  IHBERMAC 1020,KEY,&MODE
-         MEXIT
-.ERRORB  IHBERMAC 1001,KEY,&KEY
-         MEXIT
-.ERRORC  IHBERMAC 1020,BRANCH,'MF=L'
-         MEXIT
-.ERRORD  IHBERMAC 1001,BRANCH,&BRANCH
-         MEXIT
-.ERRORE  IHBERMAC 1020,KEY,'BRANCH='&BRANCH
-         MEXIT
-.ERRORF  IHBERMAC 1020,&BRANCH(2),&MODE
-         MEND  ,
-*---------------------------------------------------------------------*
-         SPACE 2
-         MACRO ,
-&NM      MIN   &R,&A,&TYPE=
-.*
-.*   MIN sets the smaller value of register &R and location &A into
-.*        register &R
-.*
-.*       &A may be an addressable variable, or a register
-.*
-.*   TYPE may be E or D to do a floating point comparison
-.*   TYPE may be H to do a signed halfword compare
-.*   TYPE defaulted or set to A or F results in a normal compare
-.*
-         LCLA  &I,&K
-         LCLC  &SUF
-&I       SETA  &SYSNDX
-&K       SETA  K'&A
-      AIF   (T'&TYPE EQ 'O' OR '&TYPE' EQ 'F' OR '&TYPE' EQ 'A').NOSUF
-         AIF   ('&TYPE' EQ 'D' OR '&TYPE' EQ 'E').DOSUF
-         AIF   ('&TYPE' EQ 'L' OR '&TYPE' EQ 'H').DOSUF
-         MNOTE 4,'MIN: TYPE=&TYPE unrecognized - ignored'
-         AGO   .NOSUF
-.DOSUF   ANOP  ,
-&SUF     SETC  '&TYPE'
-.NOSUF   AIF   (T'&R NE 'O').HAVER
-         MNOTE 8,'MIN: REGISTER OPERAND MISSING'
-.DOLAB   AIF   ('&NM' EQ '').MEXIT
-&NM      DS    0H
-.MEXIT   MEXIT ,
-.*
-.HAVER   AIF   (T'&A NE 'O').HAVEA
-         MNOTE 8,'MIN: ADDRESS OPERAND MISSING'
-         AGO   .DOLAB
-.HAVEA   AIF   ('&A'(1,1) NE '(' OR '&A'(&K,1) NE ')').NOTREG
-         AIF   ('&A'(2,1) EQ '(' OR '&A'(&K-1,1) EQ ')').NOTREG
-&NM      C&SUF.R &R,&A(1)
-         BNH   ZZZZ&I
-         L&SUF.R &R,&A(1)
-         AGO   .EXIT
-.NOTREG  ANOP  ,
-&NM      C&SUF &R,&A
-         BNH   ZZZZ&I
-         AIF   ('&SUF' NE 'L').ILLOGIC
-&SUF     SETC  ''
-.ILLOGIC L&SUF &R,&A
-.EXIT    ANOP  ,
-ZZZZ&I   DS    0H
-.MEND    MEND  ,
-*---------------------------------------------------------------------*
-         SPACE 2
-         MACRO ,
-&NM      MAM   &AM,&WORK=R15                              Added GP18031
-.*
-.*   The Modify AMode macro alters the AMODE only when we are
-.*     running under the S/380 system. It acts as a NOP under
-.*     S/370 and S/390 systems.
-.*
-.*   The &AM operand may have the values of
-.*     24 - set AMODE 24
-.*     31 - set AMODE 31
-.*     32 - (fake for AM64 bits)
-.*     64 - set AMODE 64 (note that RM64 is not supported)
-.*
-&NM      L     &WORK,=A(ENVFG)    locate environment flag
-         TM    0(&WORK),FGE8      running on S/380 ?
-         BZ    ZZ&SYSNDX.X          no; ignore request
-         LA    &WORK,ZZ&SYSNDX.X  set BSM target address
-         AIF   ('&AM' EQ '24').DOBSM
-         AIF   ('&AM' EQ '31').DOB31
-         AIF   ('&AM' EQ '32').DOB64
-         AIF   ('&AM' EQ '64').DOB64
-         MNOTE 8,'MAM: INCORRECT AMODE REQUEST &AM'
-         AGO   .LABEL
-.DOB31   O     &WORK,=X'80000000' request AM31
-         AGO   .DOBSM
-.DOB64   O     &WORK,=X'00000001' request AM64
-.*next   AGO   .DOBSM
-.DOBSM   ANOP  ,
-         BSM   0,&WORK            change AMODE
-.LABEL   ANOP  ,
-ZZ&SYSNDX.X DS 0H                 define branch label
-.MEND    MEND  ,
-*---------------------------------------------------------------------*
-         SPACE 2
+*
          MACRO ,
 &NM      AMUSE &WRK1=R14,&WRK2=R15
+         GBLC  &ZSYS
 .*
-.*   AMUSE sets addressing mode back to the caller's AMODE.     GP18031
-.*     Functional NOP for S370.                                 GP18031
-.*                                                              GP18031
-&NM      L     &WRK1,=A(ENVFG)    locate environment flag       GP18031
-         CLI   0(&WRK1),FGE7      have BSM support?             GP18031
-         BNH   ZZ&SYSNDX.X          no; ignore                  GP18031
-         L     &WRK1,4(,R13)      Old save area                 GP18031
-         L     &WRK1,12(,&WRK1)   Caller's BSM mode bits        GP18031
-         N     &WRK1,=X'80000001'   sans address                GP18031
-         LA    &WRK2,*+4+2+2      Get new mode and address      GP18031
-         OR    &WRK1,&WRK2                                      GP18031
-         BSM   R0,&WRK1           CONTINUE IN USER MODE         GP18031
-ZZ&SYSNDX.X DS 0H            DEFINE LABEL ONLY                  GP18031
+.*   AMUSE sets addressing mode back to the caller's
+.*         Expands nothing or label for S370 or S390
+.*         Required after SAM24 call to return data to caller
+.*
+         AIF   ('&ZSYS' NE 'S380').OTHSYS
+&NM      L     &WRK1,4(,R13)      Old save area
+         L     &WRK1,12(,&WRK1)   Caller's mode in high bit     GP15363
+         N     &WRK1,=X'80000000'   Kill address
+         LA    &WRK2,*+4+2+2      Get new mode and address
+         OR    &WRK1,&WRK2
+         BSM   R0,&WRK1           CONTINUE IN USER MODE
+         MEXIT ,
+.OTHSYS  AIF   ('&NM' EQ '').MEND
+&NM      DS    0H            DEFINE LABEL ONLY
 .MEND    MEND  ,
-*---------------------------------------------------------------------*
-         SPACE 2
-         MACRO ,             UPDATED 2018.024
-&NM      FUNHEAD &ID=YES,&IO=NO,&SAVE=,&US=YES                  GP18031
+*
+*
+*
+         MACRO ,                  FIXED 2010.293
+&NM      FUNEXIT &RC=
+         GBLC  &ZSYS,&ZZSETSA,&ZZSETSL,&ZZSETSP
+         GBLB  &ZZSETAM
+         LCLC  &LBL
+&LBL     SETC  '&NM'
+         AIF   ('&ZZSETSL' NE '' AND '&RC' EQ '').JUSTF
+         AIF   ('&ZZSETSA' EQ '').SAMESA
+         AIF   ('&ZZSETSL' NE '').SAMESA
+&LBL     L     R13,4(,R13)        RESTORE HIGHER SA
+&LBL     SETC  ''
+.SAMESA  AIF   ('&RC' EQ '').LMALL
+         AIF   ('&RC' EQ '(15)' OR '&RC' EQ '(R15)').NORC
+         AIF   (K'&RC LT 3).LA
+         AIF   ('&RC'(1,1) NE '(' OR '&RC'(2,1) EQ '(').LA
+         AIF   ('&RC'(K'&RC,1) NE ')' OR '&RC'(K'&RC-1,1) EQ ')').LA
+&LBL     LR    R15,&RC(1)
+&LBL     SETC  ''
+         AGO   .NORC
+.LA      ANOP  ,
+&LBL     LA    R15,&RC            SET RETURN CODE
+&LBL     SETC  ''
+.NORC    AIF   ('&ZZSETSL' EQ '').NOFRM
+         LR    R1,R13             SAVE CURRENT SA
+         L     R13,4(,R13)        REGAIN CALLER'S SA
+         ST    R15,16(,R13)       SAVE RETURN CODE
+         FREEMAIN R,A=(1),LV=&ZZSETSL,SP=&ZZSETSP
+         AGO   .LMALL             GOTTA LOVE SPAGHETTI CODE
+.NOFRM   ANOP  ,
+&LBL     L     R14,12(,R13)
+         LM    R0,R12,20(R13)
+         AGO   .EXMODE
+.JUSTF   ANOP  ,
+&LBL     LR    R1,R13             SAVE CURRENT SA
+&LBL     SETC  ''
+         L     R13,4(,R13)        REGAIN CALLER'S SA
+         FREEMAIN R,A=(1),LV=&ZZSETSL,SP=&ZZSETSP
+.LMALL   ANOP  ,
+&LBL     LM    R14,R12,12(R13)    RELOAD ALL
+.EXMODE  AIF   (&ZZSETAM).BSM
+         BR    R14
+         MEXIT ,
+.BSM     BSM   R0,R14
+         MEND  ,
+*
+*
+*
+         MACRO ,             UPDATED 2010.293
+&NM      FUNHEAD &ID=YES,&IO=NO,&AM=YES,&SAVE=,&US=YES          GP17274
+.*
 .*   MACRO TO BEGIN EACH FUNCTION
 .*     HANDLES STANDARD OS ENTRY CONVENTIONS
-.*   ID=  YES ¦ NO      YES GENERATES DC WITH FUNCTION NAME
-.*   IO=  YES ¦ NO      YES GENERATES LOAD / USING FOR ZDCBAREA
-.*   AM=  YES ¦ NO      YES USES BSM TO PRESERVE CALLER'S AMODE
+.*   ID=  YES | NO      YES GENERATES DC WITH FUNCTION NAME
+.*   IO=  YES | NO      YES GENERATES LOAD / USING FOR ZDCBAREA
+.*   AM=  YES | NO      YES USES BSM TO PRESERVE CALLER'S AMODE
 .*   SAVE=name          USES STATIC SAVE AREA OF THAT NAME,
 .*                           SETS R13, AND DECLARES ON USING
 .*   SAVE=(name,len{,subpool})   CREATES SAVE AREA WITH GETMAIN,
 .*                           SETS R13, AND DECLARES ON USING
-.*   US=  YES ¦ NO      YES - want a USING for R13
+.*   US=  YES | NO      YES - want a USING for R13
 .*   Options used here are remembered and handled properly by
 .*     subsequent FUNEXIT macros
 .*
-         GBLC  &ZZSETSA,&ZZSETSL,&ZZSETSP                       GP18031
+         GBLC  &ZSYS,&ZZSETSA,&ZZSETSL,&ZZSETSP
+         GBLB  &ZZSETAM
          LCLC  &LBL
          LCLA  &I
 &I       SETA  K'&NM
 &I       SETA  ((&I)/2*2+1)       NEED ODD LENGTH FOR STM ALIGN
 &LBL     SETC  '&NM'
+&ZZSETAM SETB  ('&AM' NE 'NO')
+&ZZSETAM SETB  (&ZZSETAM AND '&ZSYS' EQ 'S380')
 &ZZSETSA SETC  ''
 &ZZSETSL SETC  ''
 &ZZSETSP SETC  ''
@@ -628,19 +161,13 @@ ZZ&SYSNDX.X DS 0H            DEFINE LABEL ONLY                  GP18031
 &LBL     B     *+4+1+&I-&NM.(,R15)    SKIP LABEL
          DC    AL1(&I),CL(&I)'&NM'    EXPAND LABEL
 &LBL     SETC  ''
-.SKIPID  ANOP  ,
+.SKIPID  AIF   (NOT &ZZSETAM).SKIPAM
+&LBL     BSM   R14,R0                 PRESERVE AMODE
+&LBL     SETC  ''
+.SKIPAM  ANOP  ,
 &LBL     STM   R14,R12,12(R13)    SAVE CALLER'S REGISTERS
          LR    R12,R15
          USING &NM,R12
-         L     R5,=A(ENVFG)       locate environment flag       GP18031
-         CLI   0(R5),FGE7         have BSM support?             GP18031
-         BNH   ZZ&SYSNDX.B          no; ignore                  GP18031
-         SLR   R4,R4              clear to get only AM bits     PE18040
-         BSM   R4,0               get AM bits                   GP18031
-         N     R14,=X'7FFFFFFE'   reset extraneous mode bits    GP18031
-         OR    R14,R4             make AMODE return BSM value   GP18031
-         ST    R14,12(,R13)       and save for exit             GP18031
-ZZ&SYSNDX.B DS 0H                                               GP18031
          AIF   ('&IO' EQ 'NO').SAVE
          L     R10,0(,R1)         LOAD FILE WORK AREA
          USING IHADCB,R10
@@ -651,10 +178,10 @@ ZZ&SYSNDX.B DS 0H                                               GP18031
 .DYNAM   ANOP  ,
 &ZZSETSL SETC  '&SAVE(2)'
 &ZZSETSA SETC  '&SAVE(1)'
-         #GETMEM RU,LV=&ZZSETSL,SP=&ZZSETSP,LOC=BELOW
+         GETMAIN RU,LV=&ZZSETSL,SP=&ZZSETSP,LOC=BELOW
          LR    R14,R1             START OF NEW AREA
          LA    R15,&ZZSETSL       LENGTH
-         SLR   R3,R3              ZERO FILL
+         SR    R3,R3              ZERO FILL
          MVCL  R14,R2             CLEAR GOTTEN STORAGE
          ST    R1,8(,R13)         POINT DOWN
          ST    R13,4(,R1)         POINT UP
@@ -671,68 +198,44 @@ ZZ&SYSNDX.B DS 0H                                               GP18031
          AIF   ('&US' EQ 'NO').MEND
          USING &SAVE(1),R13       DECLARE IT
 .MEND    MEND  ,
-*---------------------------------------------------------------------*
-         SPACE 2
-         MACRO ,                        FIXED 2010.293; REDONE 2018.030
-&NM      FUNEXIT &RC=,&RV=                                      GP18031
-         GBLC  &ZZSETSA,&ZZSETSL,&ZZSETSP                       GP18031
-.*  This macro must appear after the corresponding FUNHEAD,     GP18031
-.*    and may appear more than once prior to the next FUNHEAD   GP18031
+*
+*
+*
+         MACRO ,
+&NM      GAM24 &WORK=R15
+         GBLC  &ZSYS
 .*
-.*  Note that this macro does not support save areas that are   GP18031
-.*    above the line. If ATL support is needed, then the AGO    GP18031
-.*    .NOATLSV should be removed/ANOP.  This mode not tested.   GP18031
-.*                                                              GP18031
-.*  RV specifies a word containing the return code   *OR*       GP18031
-.*  RC specifies a self-defining term or a register name with   GP18031
-.*     the return code.                                         GP18031
+.*   GAM24 sets addressing mode to 24 for S380
+.*         expands nothing or label for S370 AND S390
 .*
-&NM      DS    0H                                               GP18031
-         AGO   .NOATLSV   skip around ATL save area code        GP18031
-         L     R14,=A(ENVFG) SUPPORT ATL SAVE AREA !!!          GP18031
-         CLI   0(R14),FGE7   BSM support ?                      GP18031
-         BNH   ZZ&SYSNDX       NO                               GP18031
-         LA    R14,ZZ&SYSNDX set target                         GP18031
-         O     R14,=X'80000000'   need AM31 to access           GP18031
-         BSM   0,R14              will restore user's AM later  GP18031
-.NOATLSV ANOP  ,                                                GP18031
-ZZ&SYSNDX L    R13,4(,R13)        restore higher save area      GP18031
-.SAMESA  AIF   ('&RC' EQ '' AND '&RV' EQ '').TFREE              GP18031
-         AIF   ('&RC' EQ '' OR  '&RV' EQ '').GORC               GP18031
-         MNOTE 8,'FUNEXIT: RC AND RV ARE MUTUALLY EXCLUSIVE'    GP18031
-.GORC    AIF   ('&RC' NE '').USERC                              GP18031
-         AIF   (K'&RV LT 3).GOLO                                GP18031
-         AIF   ('&RV'(1,1) NE '(' OR '&RV'(2,1) EQ '(').GOLO    GP18031
-         AIF   ('&RV'(K'&RV,1) NE ')' OR '&RV'(K'&RV-1,1) EQ ')').GOLO
-         ST    &RV(1),16(,R13)    set return code from reg      GP18031
-         AGO   .TFREE             test for FREEMAIN             GP18031
-.GOLO    L     R15,&RV            get return code               GP18031
-         AGO   .ST15                                            GP18031
-.USERC   ANOP  ,                                                GP18031
-         AIF   ('&RC' EQ '(15)' OR '&RC' EQ '(R15)').ST15       GP18031
-         AIF   (K'&RC LT 3).LA
-         AIF   ('&RC'(1,1) NE '(' OR '&RC'(2,1) EQ '(').LA
-         AIF   ('&RC'(K'&RC,1) NE ')' OR '&RC'(K'&RC-1,1) EQ ')').LA
-         ST    &RC(1),16(,R13)    set return code               GP18031
-         AGO   .TFREE             test for FREEMAIN             GP18031
-.LA      LA    R15,&RC            load return code              GP18031
-.ST15    ST    R15,16(,R13)       set return code               GP18031
+         AIF   ('&ZSYS' NE 'S380').OLDSYS
+&NM      LA    &WORK,*+6     GET PAST BSM WITH BIT 0 OFF
+         BSM   R0,&WORK      CONTINUE IN 24-BIT MODE
+         MEXIT ,
+.OLDSYS  AIF   ('&NM' EQ '').MEND
+&NM      DS    0H            DEFINE LABEL ONLY
+.MEND    MEND  ,
+*
+*
+*
+         MACRO ,
+&NM      GAM31 &WORK=R15
+         GBLC  &ZSYS
 .*
-.TFREE   AIF   ('&ZZSETSL' EQ '' OR '&ZZSETSA' EQ '').NOFRE     GP18031
-         L     R1,8(,R13)         get area to free              GP18031
-         FREEMAIN R,A=(1),LV=&ZZSETSL,SP=&ZZSETSP
+.*   GAM31 sets addressing mode to 31 for S380.
+.*         expands nothing or label for S370  AND S390
 .*
-.NOFRE   L     R5,=A(ENVFG)       locate environment flag       GP18031
-         CLI   0(R5),FGE7         have BSM support?             GP18031
-         BNH   ZZ&SYSNDX.B          no; ignore                  GP18031
-         LM    R14,R12,12(R13)                                  GP18031
-         BSM   0,R14              return in user's AM           GP18040
-.*
-ZZ&SYSNDX.B LM R14,R12,12(R13)    reload                        GP18031
-         BR    R14
-         MEND  ,
-*---------------------------------------------------------------------*
-         SPACE 2
+         AIF   ('&ZSYS' NE 'S380').OLDSYS
+&NM      LA    &WORK,*+10    GET PAST BSM WITH BIT 0 ON
+         O     &WORK,=X'80000000'  SET MODE BIT
+         BSM   R0,&WORK            CONTINUE IN 31-BIT MODE
+         MEXIT ,
+.OLDSYS  AIF   ('&NM' EQ '').MEND
+&NM      DS    0H            DEFINE LABEL ONLY
+.MEND    MEND  ,
+*
+*
+*
          MACRO ,             COMPILER DEPENDENT LOAD INTEGER
 &NM      LDVAL &R,&A         LOAD VALUE FROM PARM LIST
          GBLC  &COMP         COMPILER GCC OR C/370
@@ -742,8 +245,9 @@ ZZ&SYSNDX.B LM R14,R12,12(R13)    reload                        GP18031
 .* THIS LINE IS FOR ANYTHING NOT GCC: C/370
 .LVAL    L     &R,0(,&R)     LOAD VALUE
 .MEND    MEND  ,
-*---------------------------------------------------------------------*
-         SPACE 2
+*
+*
+*
          MACRO ,             COMPILER DEPENDENT LOAD PARM ADDRESS
 &NM      LDADD &R,&A         GET ADDRESS FROM PARM LIST
          GBLC  &COMP         COMPILER GCC OR C/370
@@ -752,19 +256,30 @@ ZZ&SYSNDX.B LM R14,R12,12(R13)    reload                        GP18031
 .* THIS LINE IS FOR ANYTHING NOT GCC: C/370
          L     &R,0(,&R)     LOAD ADDRESS
 .MEND    MEND  ,
-*---------------------------------------------------------------------*
-         SPACE 2
-         MACRO ,             COMPILER DEPENDENT LOAD INTEGER
-&NM      STVAL &R,&A,&S=R14  STORE VALUE FROM PARM LIST
-         GBLC  &COMP         COMPILER GCC OR C/370
-&NM      L     &S,&A         LOAD PARM VALUE
-         AIF   ('&COMP' EQ 'GCC').LVAL
-         L     &S,0(,&S)     LOAD ADDRESS
-.* THIS LINE IS FOR ANYTHING NOT GCC: C/370
-.LVAL    ST    &R,0(,&S)     RETURN VALUE
+*
+*
+*
+         MACRO ,
+&NM      QBSM  &F1,&F2
+         GBLC  &ZSYS
+.*
+.*   QBSM expands as BSM on environments that require such
+.*   mode switch (S380-only)
+.*   Otherwise it expands as BALR r1,r2 (instead of BSM r1,r2)
+.*   Unless r1 = 0, in which case, a simple BR r2 is done instead
+.*
+         AIF   ('&ZSYS' NE 'S380').OTHSYS
+&NM      BSM   &F1,&F2
+         MEXIT ,
+.OTHSYS  AIF   ('&F1' EQ '0' OR '&F1' EQ 'R0').BR
+&NM      BALR  &F1,&F2
+         MEXIT ,
+.BR      ANOP  ,
+&NM      BR    &F2
 .MEND    MEND  ,
-*---------------------------------------------------------------------*
-         SPACE 2
+*
+*
+*
          MACRO ,
 &NM      MAPSUPRM &PFX=ZP,&DSECT=                           NEW GP14220
 .*  THIS MACRO DESCRIBES/DEFINES THE OPEN I/O MODE AND ASSOCIATED WORK
@@ -847,10 +362,8 @@ ZZ&SYSNDX.B LM R14,R12,12(R13)    reload                        GP18031
 &P.IXVSM EQU   8               VSAM DATA SET
 &P.IXVTC EQU   12              VTOC READER
 &P.IXTRM EQU   16              TSO TERMINAL
-&P.IXWTO EQU   20              WTO ON OUTPUT; WTOR ON INPUT     GP18031
-&P.IXCIB EQU   24              WTO ON OUTPUT; QEDIT/CIB IPUT    GP18031
-.*.IXVSK EQU   28              (RESERVED) VSAM KEYED I/O
-.*.IXVSU EQU   32              (RESERVED) VSAM UPDATE (GET/PUT/RELEASE)
+.*.IXVSK EQU   20              (RESERVED) VSAM KEYED I/O
+.*.IXVSU EQU   24              (RESERVED) VSAM UPDATE (GET/PUT/RELEASE)
 .*
 &P.BLKPT DC    X'00'         BLOCKS PER TRACK (MAX BLKSI)       GP17079
 .*
@@ -874,8 +387,21 @@ ZZ&SYSNDX.B LM R14,R12,12(R13)    reload                        GP18031
 .*
 &P.SIZE  EQU   *-&P.MODE     SIZE TO CLEAR
          MEND  ,
-*---------------------------------------------------------------------*
-         SPACE 2
+*
+*
+*
+         MACRO ,             COMPILER DEPENDENT LOAD INTEGER
+&NM      STVAL &R,&A,&S=R14  STORE VALUE FROM PARM LIST
+         GBLC  &COMP         COMPILER GCC OR C/370
+&NM      L     &S,&A         LOAD PARM VALUE
+         AIF   ('&COMP' EQ 'GCC').LVAL
+         L     &S,0(,&S)     LOAD ADDRESS
+.* THIS LINE IS FOR ANYTHING NOT GCC: C/370
+.LVAL    ST    &R,0(,&S)     RETURN VALUE
+.MEND    MEND  ,
+*
+*
+*
          MACRO ,             PATTERN FOR @@DYNAL'S DYNAMIC WORK AREA
 &NM      DYNPAT &P=MISSING-PFX
 .*   NOTE THAT EXTRA FIELDS ARE DEFINED FOR FUTURE EXPANSION
@@ -907,15 +433,17 @@ ZZ&SYSNDX.B LM R14,R12,12(R13)    reload                        GP18031
 &P.ULEN  EQU   *-&P.URBP       LENGTH OF REQUEST BLOCK
 &P.DYNLN EQU   *-&P.ARBP     LENGTH OF ALL DATA
          MEND  ,
-*---------------------------------------------------------------------*
-         SPACE 2
+*
+*
+*
          MACRO ,
 &NM      FIXWRITE ,
 &NM      L     R15,=A(TRUNCOUT)
          BALR  R14,R15       TRUNCATE CURRENT WRITE BLOCK
          MEND  ,
-*---------------------------------------------------------------------*
-         SPACE 2
+*
+*
+*
          MACRO ,
 &NM      OSUBHEAD ,
          PUSH  USING
@@ -926,8 +454,10 @@ ZZ&SYSNDX.B LM R14,R12,12(R13)    reload                        GP18031
          BALR  R12,0
          USING *,R12
          MEND  ,
-*---------------------------------------------------------------------*
-         SPACE 2
+         SPACE 1
+*
+*
+*
          MACRO ,
 &NM      OSUBRET &ROUTE=
          LCLC  &T
@@ -944,8 +474,10 @@ ZZ&SYSNDX.B LM R14,R12,12(R13)    reload                        GP18031
 &T       LM    R10,R15,SAVOSUB    Load registers                GP14233
          BR    R14                Return to caller              GP14233
          MEND  ,
-*---------------------------------------------------------------------*
-         SPACE 2
+         SPACE 1
+*
+*
+*
          MACRO ,
 &NM      OPENCALL &WHOM
 &NM      L     R15,=A(&WHOM)      Extension routine             GP14233
@@ -958,99 +490,11 @@ ZZ&SYSNDX.B LM R14,R12,12(R13)    reload                        GP18031
 &NM      L     R14,=A(&WHERE)     Return point                  GP14233
          &OP   &EXIT              Branch to alternate return    GP17079
          MEND  ,
-*---------------------------------------------------------------------*
-         SPACE 2
-         MACRO ,
-&NM      GET@PPL &PSCB=,&UPT=,&ECT=,&ERRET=                     GP18031
-.*
-.*   THE FUNCTION OF THIS MACRO IS TO ACQUIRE ALL NECESSARY CONTROL
-.*     BLOCK ADDRESSES NORMALLY SUPPLIED WITH A TSO CP, FOR USE
-.*     WITH A NON-CP PROGRAM, IN EITHER A FOREGROUND OR BACKGROUND
-.*     TSO SESSION.
-.*
-.*   TO USE THIS MACRO, SPECIFY ONE TO THREE OF THE CONTROL BLOCK
-.*     NAMES. EACH OPERAND MAY BE A SINGLE NAME, OR A PARENTHESIZED
-.*     LIST OF NAMES. THE MACRO WILL STORE THE APPROPRIATE BLOCK
-.*     ADDRESS IN EACH OF THE SPECIFIED ADDRESSES.
-.*
-.*   THE (SINGLE) ERRET ADDRESS IS BRANCHED TO FOR A NON-TSO JOB,
-.*     OR WHEN A REQUIRED CONTROL BLOCK IS NOT FOUND (=0).
-.*     WHEN ERRET IS NOT FOUND, THE CODE SIMPLY DOESN'T STORE ANY
-.*     ADDRESSES.
-.*
-.*   R15 IS USED AS THE (ONLY) WORK REGISTER.
-.*
-.*   THE ASSEMBLY MUST INCLUDE SYSTEM MACROS IHAPSA, IHAASCB,
-.*     IHAASXB, IKJTCB, IEZJSCB, IKJPSCB
-.*
-.*   NOTE THAT THE LWA OFFSET COMES FROM THE IKJEFLWA MACRO.
-.*
-.*                                        G. POSTPISCHIL; ADDED 2016276
-         LCLC  &ERB,&C,&LBL
-         LCLA  &I,&N
-&LBL     SETC  '&NM'
-&ERB     SETC  '&ERRET'
-         AIF   (T'&ERRET NE 'O').HAVER
-&ERB     SETC  'ZZ'.'&SYSNDX'.'X'
-.HAVER   AIF   (T'&PSCB NE 'O' OR T'&UPT NE 'O' OR T'&ECT NE 'O').OK
-         MNOTE 8,'GET@PPL: AT LEAST ONE OF PSCB, UPT, OR ECT REQUIRED'
-         AIF   ('&LBL' EQ '').MEND
-&LBL     DS    0H                 AVOID MISSING LABEL MSG
-         MEXIT ,
-.OK      PUSH  USING
-         AIF   (T'&PSCB EQ 'O' AND T'&UPT EQ 'O').NOPSCB
-         L     R15,PSATOLD-PSA    GET MY TCB
-         USING TCB,R15
-         ICM   R15,15,TCBJSCB     LOOK FOR THE JSCB
-         BZ    &ERB                 HUH ?
-         USING IEZJSCB,R15
-         ICM   R15,15,JSCBPSCB    PSCB PRESENT ?
-         BZ    &ERB                 HUH ?
-&N       SETA  N'&PSCB
-&I       SETA  1
-.PSCBLUP AIF   (&I GT &N).PSCBDON
-&C       SETC  '&PSCB(&I)'
-&I       SETA  &I+1
-         AIF   ('&C' EQ '').PSCBLUP
-         ST    R15,&C
-         AGO   .PSCBLUP
-.PSCBDON USING PSCB,R15           DECLARE THE PSCB
-&N       SETA  N'&UPT
-         AIF   (&N LT 1).UPTDON
-         L     R15,PSCBUPT
-&I       SETA  1
-.UPTLUP  AIF   (&I GT &N).UPTDON
-&C       SETC  '&UPT(&I)'
-&I       SETA  &I+1
-         AIF   ('&C' EQ '').UPTLUP
-         ST    R15,&C
-         AGO   .UPTLUP
-.UPTDON  ANOP  ,
-.NOPSCB  AIF   (T'&ECT EQ 'O').NOECT
-         L     R15,PSAAOLD-PSA    GET ADDRESS OF MY ASCB
-         USING ASCB,R15
-         ICM   R15,15,ASCBASXB GET ASXB
-         BZ    &ERB          HUH ?
-         USING ASXB,R15
-         ICM   R15,15,ASXBLWA     GET LWA ADDRESS
-         BZ    &ERB          HUH ?
-         ICM   R15,15,32(R15)  LWAPECT  HAVE AN ECT POINTER IN LWA?
-         BZ    &ERB          HUH ?
-&N       SETA  N'&ECT
-&I       SETA  1
-.ECTLUP  AIF   (&I GT &N).ECTDON
-&C       SETC  '&ECT(&I)'
-&I       SETA  &I+1
-         AIF   ('&C' EQ '').ECTLUP
-         ST    R15,&C
-         AGO   .ECTLUP
-.ECTDON  ANOP  ,
-.NOECT   ANOP  ,
-ZZ&SYSNDX.X  DS 0H
-         POP   USING
-.MEND    MEND  ,
-*---------------------------------------------------------------------*
-         SPACE 2
+         SPACE 1
+*
+*
+*
+         SPACE 1
          COPY  PDPTOP
          SPACE 1
 * For S/390 we need to deliberately request LOC=BELOW storage
@@ -1058,9 +502,6 @@ ZZ&SYSNDX.X  DS 0H
 * For S/380 we need to deliberately request LOC=ANY storage.
 * For all other environments, just let it naturally default
 * to LOC=RES
-*
-* GETMAIN references have been changed to #GETMEM to enable assembly
-*   and execution under all supported environments.             GP18031
 *
 MVSSUPA  CSECT ,
          PRINT GEN,ON
@@ -1079,6 +520,7 @@ SUBPOOL  EQU   0                                                      *
 *                                                                     *
 * Start of functions                                                  *
 *                                                                     *
+*                                                                     *
 ***********************************************************************
 *                                                                     *
 *  AOPEN - Open a data set                                            *
@@ -1088,12 +530,11 @@ SUBPOOL  EQU   0                                                      *
 *  Parameters are:                                                    *
 *1 DDNAME - space-padded, 8 character DDNAME to be opened             *
 *                                                                     *
-*2 MODE+3 = 0 INPUT 1 OUTPUT  2 UPDAT   3 APPEND      RECORD MODE     *
-*  MODE+3 = 4 INOUT 5 OUTIN     (6-7 RESERVED)                        *
-*  MODE+3 = 8/9 EXCP FOR TAPE, BSAM OTHERWISE (OR 32<=JFCPNCP<=65)    *
-*  MODE+3 + 10 = USE BLOCK MODE (VALID HEX 10-15)                     *
-*  MODE+3 = 80 = GETLINE, 81 = PUTLINE (OTHER BITS IGNORED)           *
-*  MODE+2 = 10 - INHERIT OLDER TASK'S ZDCBAREA                        *
+*2 MODE =  0 INPUT  1 OUTPUT  2 UPDAT   3 APPEND      Record mode     *
+*  MODE =  4 INOUT  5 OUTIN     (6-7 reserved)                        *
+*  MODE = 8/9 Use EXCP for tape, BSAM otherwise (or 32<=JFCPNCP<=65)  *
+*  MODE + 10 = Use BLOCK mode (valid hex 10-15)                       *
+*  MODE = 80 = GETLINE, 81 = PUTLINE (other bits ignored)             *
 *    N.B.: see comments under Return value                            *
 *                                                                     *
 *3 RECFM - 0 = F, 1 = V, 2 = U. Default/preference set by caller;     *
@@ -1110,19 +551,18 @@ SUBPOOL  EQU   0                                                      *
 *6 ZBUFF2 - pointer to an area that may be written to (size is LRECL) *
 *                                                                     *
 *7 MEMBER - *pointer* to space-padded, 8 character member name.       *
-*    When pointer is 0 (NULL), no member is requested                 *
 *    A member name beginning with blank or hex zero is ignored.       *
+*    If pointer is 0 (NULL), no member is requested                   *
 *    For a DD card specifying a PDS with a member name, this parameter*
 *    will replace the JCL member, unless the DD is concatenated, then *
 *    all DDs are treated as sequential and a member operand will be   *
 *    an error.                                                        *
 *                                                                     *
-*---------------------------------------------------------------------*
 *                                                                     *
 *  Return value: In R15                                               *
-*    For a satisfied request R15 contains the ZDCBAREA address, this  *
-*    is used by the caller as a "handle" to request I/O and           *
-*    informational services.                                          *
+*  An internal "handle" that allows the assembler routines to         *
+*  keep track of what's what, when READ etc are subsequently          *
+*  called.                                                            *
 *                                                                     *
 *                                                                     *
 *  Return value: PARM2 MODE:                                          *
@@ -1181,42 +621,13 @@ SUBPOOL  EQU   0                                                      *
 ***********************************************************************
          PUSH  USING
 @@AOPEN  FUNHEAD SAVE=(WORKAREA,OPENLEN,SUBPOOL)                GP17264
-*---------------------------------------------------------------------*
-*                                                                     *
-*  N.B.: all calling parameters, or their addresses, are saved in the *
-*    temporary work area. This prevents AMODE related complications   *
-*    accessing the values.  Updated values are returned in the user's *
-*    AMODE at the end of a successful OPEN (label DONECOMM)           *
-*                                                                     *
-         SLR   R10,R10            INDICATE NO ZDCB AREA GOTTEN  GP14205
-         ST    R1,@OPARM          SAVE PARM ADDRESS             GP18031
-         USING PARMSECT,R1        DECLARE IT FOR COPYING        GP18031
+         SR    R10,R10            Indicate no ZDCB area gotten  GP14205
+         LR    R11,R1             KEEP R11 FOR PARAMETERS
+         USING PARMSECT,R11       MAKE IT EASIER TO READ
          LDADD R3,PARM1           R3 POINTS TO DDNAME           GP14251
          MVC   DWDDNAM,0(R3)      Move below the line           GP17262
-         LDVAL R14,PARM2          GET THE MODE                  GP14251
-         ST    R14,TMPMODE        I/O MODE                      GP18031
-         L     R15,PARM3          RECFM CODE (0-FB 1-VB 2-U)    GP18031
-         L     R14,0(,R15)        LOAD RECFM VALUE              GP18031
-         ST    R14,TMPRECFM                                     GP18031
-         L     R15,PARM4          LRECL                         GP18031
-         L     R14,0(,R15)        LOAD LRECL VALUE              GP18031
-         ST    R14,TMPLRECL       SAVE                          GP18031
-         L     R15,PARM5          BLKSIZE                       GP18031
-         L     R14,0(,R15)        LOAD BLOCK SIZE               GP18031
-         ST    R14,TMPBLKSI       SAVE                          GP18031
-*NOT     L     R5,PARM6           GET CALLER'S BUFFER ADDRESS   GP18031
-*USED    ST    R14,TMP@BUFF         (VALUE RETURNED, ONLY)      GP18031
-         MVC   TMPMEM,=CL8' '     PROVISIONALLY SET MEMBER BLK  GP18031
-         LDADD R14,PARM7      14 POINTS TO MEMBER NAME (OF PDS) GP18031
-         LA    R14,0(,R14)    STRIP OFF HIGH-ORDER BIT OR BYTE  GP18031
-         LTR   R14,R14        ZERO ADDRESS PASSED ?             GP18031
-         BZ    DONEPARM         YES; NOT MEMBER NAME            GP18031
-         MVC   TMPMEM,0(R14)  SAVE NAME FOR LATER               GP18031
-DONEPARM L     R10,=A(ENVFG)  DID WE TEST ENVIRONMENT?          GP18031
-         BNZ   DONESET          YES                             GP18031
-         L     R15,=A(@@SETUP)                                  GP18031
-         BALR  R14,R15        CALL THE ENVIRONMENT SETUP        GP18031
-         DROP  R1                                               GP18031
+         PUSH  USING                                            GP14205
+***********************************************************************
 **                                                                   **
 **  Code added to support unlike concatenation for both sequential   **
 **  and partitioned access (one member from FB or VB library DDs).   **
@@ -1224,54 +635,16 @@ DONEPARM L     R10,=A(ENVFG)  DID WE TEST ENVIRONMENT?          GP18031
 **                                                                   **
 **  Added validity checking and error codes.                         **
 **                                                                   **
-**  Note that R10 is used globally as the ZDCBAREA address.          **
+**  Does not use R3, R11-R13                                         **
 **                                                                   **
 ***********************************************************************
-DONESET  MVI   OPERF,ORFBADNM     PRESET FOR BAD DD NAME        GP14205
+         MVI   OPERF,ORFBADNM     PRESET FOR BAD DD NAME        GP14205
          CLI   DWDDNAM,C' '       VALID NAME ?                  GP17262
          BNH   OPSERR               NO; REJECT IT               GP14205
-*---------------------------------------------------------------------*
-*   The AOPEN function may be called more than once for the same DD,  *
-*    by the same or different programs. For some data sets this may   *
-*    work as expected, or it may fail spectacularly.                  *
-*   By removing (TMPMODE+2 to BZ DONECOMM), the code will prevent     *
-*    sharing of a DD's ZDCBAREA.                                      *
-*   ACLOSE has been changed so that only the original opener of a DD  *
-*    can close it - another's request is ignored.                     *
-*   @@AQZDCB may be called to detect duplication, prior to @@AOPEN.   *
-*---------------------------------------------------------------------*
-         TM    TMPMODE+2,X'01'    OK TO INHERIT?                GP18031
-         BZ    OPNODUAL             NO                          GP18031
-         TM    TMPMODE+3,255-X'03'    SIMPLE READ/WRITE?        GP18031
-         BNZ   OPNODUAL                 NO; WON'T WORK          GP18031
-         LA    R1,DWDDNAM         POINT TO DD NAME              GP18031
-         L     R15,=A(@@AQZDCB)   PRIOR OPEN FOR THIS DD?       GP18031
-         BAL   R14,AQZDCB-@@AQZDCB(,R15)  LOOK FOR IT           GP18031
-         LTR   R1,R1              CHECK RETURN                  GP18031
-         BZ    OPNODUAL             NOT IN USE                  GP18031
-         LR    R7,R1              PUT INTO ZDCB RETURN REG.     GP18031
-         TM    ZPMODE-ZDCBAREA(R1),255-X'03' SIMPLE READ/WRITE? GP18031
-         BZ    DONECOMM             YES; USE RETURN IT          GP18031
-         SPACE 1
-OPNODUAL MVI   OPERF,ORFNODD      PRESET FOR MISSING DD NAME    GP14205
+         MVI   OPERF,ORFNODD      PRESET FOR MISSING DD NAME    GP14205
          LA    R8,DWDDNAM         COPY DDNAME POINTER TO SCRATCH REG.
-*---------------------------------------------------------------------*
-*  AMODE considerations:                                              *
-*    For S370 mode, we do nothing                                     *
-*    For S380 mode, we switch to AM24                                 *
-*    For S390 mode (AM24, AM31, AM64) we must switch to AM31 to access*
-*      system control blocks above the line.                          *
-*---------------------------------------------------------------------*
-         L     R4,=A(ENVFG)       get environment flag          GP18031
-         CLI   0(R4),FGE8         see what we have              GP18031
-         BL    OPDOAM               S370                        GP18031
-         BH    OPDO31               S390                        GP18031
-         LA    R4,OPDOAM            S380                        GP18031
-         BSM   0,R4                 set AMODE 24                GP18031
-OPDO31   LA    R4,OPDOAM            S380                        GP18031
-         O     R4,=X'80000000'    AM31                          GP18031
-         BSM   0,R4                 set AMODE 31                GP18031
-OPDOAM   LA    R4,DDWATTR         POINTER TO DD ATTRIBUTES      GP15051
+         GAM31 ,                  AM31 FOR S380                 GP15015
+         LA    R4,DDWATTR         POINTER TO DD ATTRIBUTES      GP15051
          USING DDATTRIB,R4        DECLARE TABLE                 GP14205
          L     R14,PSATOLD-PSA    GET MY TCB                    GP14205
          L     R9,TCBTIO-TCB(,R14) GET TIOT                     GP14205
@@ -1289,7 +662,7 @@ DDCFDD1  AR    R9,R0              NEXT ENTRY                    GP14205
          BNZ   DDCFDD1              YES; IGNORE                 GP14205
          CLC   TIOEDDNM,0(R8)     MATCHES USER REQUEST?         GP14205
          BNE   DDCFDD1              NO; TRY AGAIN               GP14205
-         SLR   R7,R7                                            GP14205
+         SR    R7,R7                                            GP14205
          ICM   R7,7,TIOEFSRT      LOAD UCB ADDRESS (COULD BE ZERO)
          USING UCBOB,R7                                         GP14205
          MVI   OPERF,ORFBATIO     SET FOR INVALID TIOT          GP14205
@@ -1302,13 +675,25 @@ DDCFDD1  AR    R9,R0              NEXT ENTRY                    GP14205
 DDCHECK  MVI   OPERF,ORFNOJFC     PRESET FOR BAD JFCB           GP14205
          ICM   R1,7,TIOEJFCB      GET JFCB ADDRESS OR TOKEN     GP15006
          BZ    OPSERR               NO JFCB ?                   GP15006
-*  N.B.: OLD SWAREQ MACRO REPLACED BY UNIVERSAL SUBROUTINE
-*
          L     R15,=A(LOOKSWA)    GET TOKEN CONVERSION          GP15006
          BALR  R14,R15            INVOKE IT                     GP15006
          LTR   R6,R15             LOAD AND TEST ADDRESS         GP15006
          BNP   OPSERR               NO JFCB ?                   GP15006
-         MVC   MYJFCB(JFCBLGTH),0(R6)   MOVE TO MY STORAGE      GP14205
+*COMP*   AIF   ('&ZSYS' NE 'S390').MVSJFCB                      GP14205
+*COMP*   XC    DDWSWA(DDWSWAL),DDWSWA  CLEAR SWA LIST FORM      GP14205
+*COMP*   LA    R1,DDWSVA          ADDRESS OF JFCB TOKEN         GP14205
+*COMP*   ST    R1,DDWEPA                                        GP14205
+*COMP*   MVC   DDWSVA+4(3),TIOEJFCB    JFCB TOKEN               GP14205
+*COMP*   SWAREQ FCODE=RL,EPA=DDWEPA,MF=(E,DDWSWA),UNAUTH=YES    GP14205
+*COMP*   BXH   R15,R15,OPSERR                                   GP14205
+*COMP*   ICM   R6,15,DDWSVA       LOAD JFCB ADDRESS             GP14205
+*COMP*   BZ    OPSERR               NO; SERIOUS PROBLEM         GP14205
+*COMP*   AGO   .COMJFCB                                         GP14205
+*MVSJFCB SR    R6,R6              FOR AM31                      GP14205
+*COMP*   ICM   R6,7,TIOEJFCB      SHOULD NEVER BE ZERO          GP14205
+*COMP*   BZ    OPSERR               NO; SERIOUS PROBLEM         GP14205
+*COMP*   LA    R6,16(,R6)         SKIP QUEUE HEADER             GP14205
+.COMJFCB MVC   MYJFCB(JFCBLGTH),0(R6)   MOVE TO MY STORAGE      GP14205
          OI    DDWFLAG2,CWFDD     DD FOUND                      GP14205
          MVC   DDADSORG,JFCDSORG  SAVE                          GP14205
          MVC   DDARECFM,JFCRECFM    DCB                         GP14205
@@ -1322,7 +707,7 @@ DDCHECK  MVI   OPERF,ORFNOJFC     PRESET FOR BAD JFCB           GP14205
          BNE   BADDSORG             YES; CAN'T USE              GP14205
          TM    JFCDSRG1,254-JFCORGPS-JFCORGPO  UNSUPPORTED ?    GP14205
          BNZ   BADDSORG             YES; FAIL                   GP14205
-DDCNOORG SLR   R5,R5                                            GP14205
+DDCNOORG SR    R5,R5                                            GP14205
          ICM   R5,3,JFCBUFSI      ANY BLOCK/BUFFER SIZE ?       GP14205
          C     R5,DDWBLOCK        COMPARE TO PRIOR VALUE        GP14205
          BNH   DDCNJBLK             NOT LARGER                  GP14205
@@ -1341,7 +726,8 @@ DDCNRPS  TM    UCBTBYT3,255-(UCB3DACC+UCB3TAPE+UCB3UREC)        GP14205
          CLC   =C'FORMAT4.DSCB ',JFCBDSNM    VTOC READ?         GP14213
          BNE   NOTVTOC                                          GP14213
          LA    R0,ORFBDMOD        PRESET FOR BAD MODE           GP14251
-         TM    TMPMODE+3,X'07'    ANYTHING OTHER THAN INPUT?    GP18031
+         LDVAL R14,PARM2          GET THE MODE                  GP14251
+         TM    3(R14),X'07'       ANYTHING OTHER THAN INPUT?    GP14251
          BNZ   OPRERR             VTOC WRITE NOT SUPPORTED      GP14251
          MVI   JFCBDSNM,X'04'     MAKE VTOC 'NAME'              GP14213
          MVC   JFCBDSNM+1(L'JFCBDSNM-1),JFCBDSNM   44X'04'      GP14213
@@ -1353,15 +739,11 @@ DDCNRPS  TM    UCBTBYT3,255-(UCB3DACC+UCB3TAPE+UCB3UREC)        GP14205
          MVC   DDWBLOCK,=A(DS1END-IECSDSL1+5)    SET BUFFER SZ  GP14213
          B     DDCSEQ             SKIP AROUND                   GP14213
          SPACE 1
-*---------------------------------------------------------------------*
 *   For a DASD data set, obtain the format 1 DSCB to get DCB parameters
 *   prior to OPEN. If the data set is not found, the DD may have
 *   used an alias name for the data set. If so, we look it up in the
 *   catalog, and use the true name to try again.
 *
-*   NOTE THAT WE MAY ENCOUNTERED AN OLD (1960S STYLE) DSCB1 WITH THE
-*     IBM LABEL; IF SO WE ZERO THE NEW OS/390 & Z/OS FLAGS.
-*---------------------------------------------------------------------*
 NOTVTOC  L     R14,CAMDUM         GET FLAGS IN FIRST WORD       GP14205
          LA    R15,JFCBDSNM       POINT TO DSN                  GP14205
          LA    R0,UCBVOLI         POINT TO SERIAL               GP14205
@@ -1452,12 +834,12 @@ DDCKPDS  DS    0H                                               GP14205
 *   FOR A CONCATENATION, PROCESS THE NEXT DD                          *
 *---------------------------------------------------------------------*
 DDCSEQ   OI    DDWFLAG2,CWFSEQ    SET FOR SEQUENTIAL ACCESS     GP14205
-DDCX1DD  SLR   R0,R0              RESET                         GP14205
+DDCX1DD  SR    R0,R0              RESET                         GP14205
          LTR   R8,R8              FIRST TIME FOR DD ?           GP14205
          BZ    FIND1DD              NO                          GP14205
          MVC   DDWFLAG1,DDWFLAG2  SAVE FLAGS FOR FIRST DD       GP14205
          MVI   DDWFLAG2,0         RESET DD                      GP14205
-         SLR   R8,R8              SIGNAL FIRST DD DONE          GP14205
+         SR    R8,R8              SIGNAL FIRST DD DONE          GP14205
 FIND1DD  IC    R0,TIOELNGH        GET ENTRY LENGTH BACK         GP14205
          AR    R9,R0              NEXT ENTRY                    GP14205
          ICM   R0,1,TIOELNGH      GET NEW ENTRY LENGTH          GP14205
@@ -1467,24 +849,30 @@ FIND1DD  IC    R0,TIOELNGH        GET ENTRY LENGTH BACK         GP14205
          CLI   TIOEDDNM,C' '      CONCATENATION?                GP14205
          BH    DDCTDONE             NO; DONE WITH DD            GP14205
          LA    R4,DDASIZE(,R4)    NEXT DD ATTRIBUTE ENTRY       GP14205
-         SLR   R7,R7                                            GP14205
+         SR    R7,R7                                            GP14205
          ICM   R7,7,TIOEFSRT      LOAD UCB ADDRESS (COULD BE ZERO)
          USING UCBOB,R7                                         GP14205
          MVI   OPERF,ORFBATIO     SET FOR INVALID TIOT          GP14205
          CLI   TIOELNGH,20        SINGLE UCB ?                  GP14205
          BL    OPSERR               NOT EVEN                    GP14205
          B     DDCHECK            AND PROCESS IT                GP14205
-         DROP  R4,R9              done with DDA, TIOE for now   GP18034
          SPACE 1                                                GP14205
 BADDSORG LA    R0,ORFBADSO        BAD DSORG                     GP14205
          B     OPRERR                                           GP14205
          SPACE 2                                                GP14205
 ***********************************************************************
+         POP   USING                                            GP14205
          SPACE 1                                                GP14205
 DDCTDONE MVC   DDWFLAGS,DDWFLAG1  COPY FIRST DD'S FLAGS         GP14205
          NI    DDWFLAGS,255-CWFDD BUT RESET FIRST DD PRESENT    GP14205
          OC    DDWFLAGS,DDWFLAG2  OR TOGETHER                   GP14205
          AMUSE ,                  RESTORE AMODE FROM ENTRY      GP14205
+* Note that R5 is used as a scratch register
+         L     R8,PARM4           R8 POINTS TO LRECL
+* PARM5    has BLKSIZE
+* PARM6    has ZBUFF2 pointer
+         SPACE 1
+         LDVAL R4,PARM2           MODE.  0=input 1=output, etc. GP14251
          SPACE 1
 *   Conditional forms of storage acquisition are reentrant unless
 *     they pass values that vary between uses, which ours don't,
@@ -1492,13 +880,11 @@ DDCTDONE MVC   DDWFLAGS,DDWFLAG1  COPY FIRST DD'S FLAGS         GP14205
 *   Note that PAGE alignment makes for easier dump reading
 *   but wastes storage - so we use it for debugging only.
 *   Using RC to get a return code if memory unavailable.
-*   SWITCH THE *DEBUG* LABELS IF YOUR STORAGE SPACE IS TIGHT.
+*DEBUG*  GETMAIN RC,LV=ZDCBLEN,SP=SUBPOOL,LOC=BELOW,BNDRY=PAGE **DEBUG
+*not usd LA    R0,ORFNOSTO        Preset for no storage         GP14205
+*not set BXH   R15,R15,OPRERR       Return error code           GP14205
+         GETMAIN RU,LV=ZDCBLEN,SP=SUBPOOL,LOC=BELOW  I/O work area BTL
 *
-*DEBUG*  #GETMEM RC,LV=ZDCBLEN,SP=SUBPOOL,LOC=BELOW,BNDRY=PAGE **DEBUG
-*RC use  LA    R0,ORFNOSTO        Preset for no storage         GP14205
-*RC use  BXH   R15,R15,OPRERR       Return error code           GP14205
-*
-         #GETMEM RU,LV=ZDCBLEN,SP=SUBPOOL,LOC=BELOW  I/O work area BTL
          LR    R10,R1             Addr.of storage obtained to its base
          USING IHADCB,R10         Give assembler DCB area base register
          LR    R0,R10             Load output DCB area address
@@ -1506,23 +892,27 @@ DDCTDONE MVC   DDWFLAGS,DDWFLAG1  COPY FIRST DD'S FLAGS         GP14205
          LA    R15,0              Pad of X'00' and no input length
          MVCL  R0,R14             Clear DCB area to binary zeroes
          MVC   ZDDN,DWDDNAM       DDN for debugging             GP17262
-         MVC   ZMEM,TMPMEM        COPY MEMBER NAME              GP18031
-         L     R15,PSATOLD-PSA    GET TCB                       GP18031
-         ST    R15,ZOWNTCB        REMEMBER FOR CLOSE            GP18031
-         MVC   ZOWNPRB,TCBRBP-TCB(R15)                          GP18031
+         XC    ZMEM,ZMEM          Preset for no member          GP14205
          MVC   ZPFLAGS,DDWFLAGS   SAVE FLAGS                    GP15024
+         LDADD R14,PARM7          R14 POINTS TO MEMBER NAME (OF PDS)
+         LA    R14,0(,R14)        Strip off high-order bit or byte
+         LTR   R14,R14            Zero address passed ?         GP14205
+         BZ    OPENMPRM             Yes; skip                   GP14205
+         TM    0(R14),255-X'40'   Either blank or zero?         GP14205
+         BZ    OPENMPRM             Yes; no member              GP14205
+         MVC   ZMEM,0(R14)        Save member name              GP14205
 *---------------------------------------------------------------------*
 *   GET USER'S DEFAULTS HERE, BECAUSE THEY MAY GET CHANGED
 *---------------------------------------------------------------------*
-OPENMPRM L     R14,TMPRECFM       LOAD RECFM VALUE              GP18031
-         SRL   R14,6              CONVERT TO MODE               GP18031
+OPENMPRM L     R5,PARM3    HAS RECFM code (0-FB 1-VB 2-U)
+         L     R14,0(,R5)         LOAD RECFM VALUE
          STC   R14,FILEMODE       PASS TO OPEN
-         L     R14,TMPLRECL       GET LRECL VALUE               GP18031
+         L     R14,0(,R8)         GET LRECL VALUE
          ST    R14,ZPLRECL        PASS TO OPEN                  GP14233
-         L     R14,TMPBLKSI       GET BLOCK SIZE                GP18031
+         L     R14,PARM5          R14 POINTS TO BLKSIZE
+         L     R14,0(,R14)        GET BLOCK SIZE
          ST    R14,ZPBLKSZ        PASS TO OPEN                  GP14233
          MVC   ZDDFLAGS,DDWFLAGS  PRESERVE FLAGS (OPEN EXIT)    GP14244
-         L     R4,TMPMODE         GET THE OPTION BITS           GP18031
          SPACE 1
 *---------------------------------------------------------------------*
 *   DO THE DEVICE TYPE NOW TO CHECK WHETHER EXCP IS POSSIBLE
@@ -1593,9 +983,9 @@ OPFIXMOD STC   R4,WWORK           Save to storage
          BE    OPRERR               Yes; fail                   GP14251
          SPACE 1
          TM    WWORK,IOFEXCP      (TAPE) EXCP mode ?
-         BZ    OPREPBSM             NO                          GP18031
-         L     R14,=A(EXCPDCB)    GET EXCP DCB PATTERN          GP18031
-         MVC   ZDCBAREA(EXCPDCBL),0(R14)  MOVE DCB/IOB/CCW      GP18031
+         BZ    OPQRYBSM             No
+         L     R15,=A(EXCPDCB)    Point to DCB/IOB/CCW          GP17274
+         MVC   ZDCBAREA(EXCPDCBL),0(R15)   Move DCB/IOB/CCW     GP17274
          LA    R15,TAPEIOB   FOR EASIER SETTINGS
          USING IOBSTDRD,R15
          MVI   IOBFLAG1,IOBDATCH+IOBCMDCH   COMMAND CHAINING IN USE
@@ -1614,18 +1004,16 @@ OPFIXMOD STC   R4,WWORK           Save to storage
          DROP  R15
          B     OPREPCOM
          SPACE 1
-*PQRYBSM TM    WWORK,IOFBLOCK     BLOCK MODE ?
+OPQRYBSM TM    WWORK,IOFBLOCK     Block mode ?
 *DEFUNCT BNZ   OPREPBSM
 *DEFUNCT TM    WWORK,X'01'        In or Out
 *DEFUNCT BNZ   OPREPQSM
-OPREPBSM L     R15,=A(BPAMDCB)    GET DCB ADDRESSABILITY        GP18031
-         USING BPAMDCB,R15        DECLARE IT                    GP18031
-         CLI   DDWFLAGS,CWFPDS    PDS ONLY (NO CONCAT?)         GP14244
+OPREPBSM CLI   DDWFLAGS,CWFPDS    PDS ONLY (NO CONCAT?)         GP14244
          BE    OPREPBSQ             Yes; use for directory read GP14244
          TM    DDWFLAGS,CWFCONC+CWFSEQ   Seq. Concatenation?    GP14244
          BNZ   OPREPBSQ             Yes; plain BSAM             GP14244
          TM    DDWFLAGS,CWFCONC+CWFPDQ   Concatenation pds(MEM) GP14244
-         BNZ   OPREPBSQ             Yes; plain BSAM             GP14244
+         BNZ   OPREPBSQ             YES; plain BSAM             GP14244
          CLI   DDWFLAGS,CWFPDQ    Single PDS with member?       GP14244
          BNE   OPREPBAM           Test PDS concatenation        GP14244
          CLI   WWORK+1,0          Plain input ?                 GP14244
@@ -1649,7 +1037,6 @@ OPREPBSQ MVC   ZDCBAREA(BSAMDCBL),BSAMDCB  Move DCB template to work
          B     OPREPCOM
          SPACE 1
 *PREPQSM MVC   ZDCBAREA(QSAMDCBL),QSAMDCB   *> UNUSED <*
-         DROP  R15                                              GP18031
 OPREPCOM MVC   DCBDDNAM,ZDDN          WAS 0(R3)
          MVC   DEVINFO(8),DWORK   Check device type
          ICM   R14,15,DEVINFO+4   Any ?                         GP14251
@@ -1671,23 +1058,22 @@ OPREPJFC LA    R14,MYJFCB
 * EXIT TYPE 07 + 80 (END OF LIST INDICATOR)
          ST    R14,DCBXLST+4
          MVI   DCBXLST+4,X'87'    JFCB address; end of list     GP15024
-*---------------------------------------------------------------------*
-* This program may be part of a module that is loaded above or below  *
-*   the 16MiB line. To make it work, we put the DCBEXIT and the EODAD *
-*   routine in the ZDCB work area below the line.                     *
-*---------------------------------------------------------------------*
-         MVC   EOFR24(EOFRLEN),PATEODAD  Put EOF code below the line
+* While the code is meant to be assembled in S370, it may also get
+* assembled in S390. Thus the EODAD must be below the line.
+* For end-file processing we place a small stub in the ZDCB work area.
          LA    R1,EOFR24
          STCM  R1,B'0111',DCBEODA
-         LA    R14,OCDCBEX
-         L     R15,=A(PATSTUB)                                  GP18031
-         USING PATSTUB,R15                                      GP18031
-         TM    @OCDCBEX,X'7F'     loaded ATL ?                  GP18026
-         BZ    SETXLST              No; invoke directly         GP15015
-         MVC   A24STUB,PATSTUB    Stub code for DCB exit        GP18031
-         DROP  R15                                              GP18031
+         MVC   EOFR24(EOFRLEN),ENDFILE   Put EOF code below the line
+* The DCB exit (OCDCBEX) is coded to work in any AMODE, and only
+* needs a simple branch, UNLESS this module is loaded ATL.      GP15015
+         LA    R14,OCDCBEX        POINT TO DCB EXIT for BTL
+         AIF   ('&ZSYS' NE 'S390').NOSTB        Only S/390 needs a stub
+         TM    @OCDCBEX,X'7F'     Loaded above the line?        GP15015
+         BZ    EXBTL                No; invoke directly         GP15015
+         MVC   A24STUB,PATSTUB    Stub code for DCB exit        GP15015
          LA    R14,A24STUB        Switch to 24-bit stub         GP15015
-SETXLST  ST    R14,DCBXLST        AND SET IT BACK
+.NOSTB   ANOP  ,                  Only S/390 needs a stub
+EXBTL    ST    R14,DCBXLST        AND SET IT BACK
          MVI   DCBXLST,X'05'      Identify Open exit address    GP15015
          LA    R14,DCBXLST
          STCM  R14,B'0111',DCBEXLSA
@@ -1716,10 +1102,12 @@ SETXLST  ST    R14,DCBXLST        AND SET IT BACK
          LA    R1,ZDCBLEN         Load output length
          LA    R15,0              Pad of X'00'
          MVCL  R0,R14             Clear DCB area to zeroes
-         SLR   R0,R0
+         SR    R0,R0
          ICM   R0,1,JFCNCP        NUMBER OF CHANNEL PROGRAMS
          SLL   R0,10              *1024
-         MIN   R0,=F'65535'       truncate to CCW max length
+         C     R0,=F'65535'       LARGER THAN CCW SUPPORTS?
+         BL    *+8                NO
+         L     R0,=F'65535'       LOAD MAX SUPPORTED
          ST    R0,ZPBLKSZ         MAKE NEW VALUES THE DEFAULT   GP14233
          ST    R0,ZPLRECL         MAKE NEW VALUES THE DEFAULT   GP14233
          MVI   FILEMODE,2         USE RECFM=U
@@ -1727,7 +1115,7 @@ SETXLST  ST    R14,DCBXLST        AND SET IT BACK
          OR    R4,R0              ADD TO USER'S REQUEST
          B     OPCURSE            AND RESTART THE OPEN
          SPACE 1
-OPVOLCNT SLR   R1,R1
+OPVOLCNT SR    R1,R1
          ICM   R1,1,JFCBVLCT      GET VOLUME COUNT FROM DD
          BNZ   *+8                OK
          LA    R1,1               SET FOR ONE
@@ -1859,7 +1247,7 @@ OPENIN   OPEN  MF=(E,OPENCLOS),TYPE=J  OPEN THE DATA SET
 *  SET USER'S DCB PARAMETERS FOR MEMBER'S PDS                   GP14205
 *    PHYSICAL DCB WILL BE SET TO RECFM=U, MAX BLKSIZE           GP15051
 *
-         SLR   R15,R15                                          GP14205
+         SR    R15,R15                                          GP14205
          IC    R15,PDS2CNCT-PDS2+BLDLNAME                       GP14205
          MH    R15,=AL2(DDASIZE)  Position to entry             GP14205
          LA    R15,DDWATTR(R15)   Point to start of table       GP15051
@@ -1897,7 +1285,7 @@ OPNOMEM  LR    R2,R15             Save error code               GP14205
          LA    R7,2064            Set for error                 GP14205
          B     FREEDCB
          SPACE 1
-FAILDCB  L     R4,TMPMODE         RELOAD MODE                   GP18031
+FAILDCB  LDVAL R4,PARM2           Reload mode                   GP14251
          N     R4,=F'1'           Mask other option bits
          LA    R7,37(R4,R4)       Preset OPEN error code
 FREEDCB  LR    R14,R13            COPY WORK AREA ADDRESS        GP14244
@@ -1910,8 +1298,7 @@ FREEDCB  LR    R14,R13            COPY WORK AREA ADDRESS        GP14244
          STM   R14,R15,OSNLIST+8                                GP14244
          OI    OSNLIST+12,X'80'   SET END OF LIST               GP14244
          NI    OSNLIST+4,X'7F'    RESET SHORT END               GP14244
-OSNDONE  MAM   24                 SNAP IS OLD                   GP18031
-         L     R15,=A(@@SNAP)                                   GP14244
+OSNDONE  L     R15,=A(@@SNAP)                                   GP14244
          LA    R1,OSNAP                                         GP14244
          BALR  R14,R15            CALL SNAPPER                  GP14244
          MVC   OPBADDD,DWDDNAM    SHOW WHAT                     GP17262
@@ -1973,7 +1360,7 @@ WNOMEM2  OPEN  MF=(E,OPENCLOS),TYPE=J
 *   Acquire one BLKSIZE buffer for our I/O; and one LRECL buffer
 *   for use by caller for @@AWRITE, and us for @@AREAD.
 *
-*   Note that the GETMAIN allows for extra padding of 4 bytes.
+*   Note that the GETMAIN allows for extra padeding of 4 bytes.
 *   In BLOCK mode, the "record" buffer uses the block size.
 *
 *---------------------------------------------------------------------*
@@ -1984,7 +1371,7 @@ GETBUFF  L     R5,ZPBLKSZ         Load the input blocksize      GP14233
          CR    R6,R0              Buffer size OK?               GP14205
          BNL   *+4+2                Yes                         GP14205
          LR    R6,R0              Use larger                    GP14205
-         #GETMEM RU,LV=(R6),SP=SUBPOOL,LOC=BELOW  Get input buffer
+         GETMAIN RU,LV=(R6),SP=SUBPOOL,LOC=BELOW  Get input buffer
          ST    R1,ZBUFF1          Save for cleanup
          ST    R6,ZBUFF1+4           ditto
          ST    R1,BUFFADDR        Save the buffer address for READ
@@ -1997,23 +1384,16 @@ GETBUFF  L     R5,ZPBLKSZ         Load the input blocksize      GP14233
          BZ    GETBUFC              No                          GP17064
          L     R6,ZPBLKSZ         Use block size instead        GP17064
 GETBUFC  LA    R6,4(,R6)          Insurance
-         #GETMEM RU,LV=(R6),SP=SUBPOOL  Get VBS buffer
+         GETMAIN RU,LV=(R6),SP=SUBPOOL  Get VBS buffer
          ST    R1,ZBUFF2          Save for cleanup
          ST    R6,ZBUFF2+4           ditto
          LA    R14,4(,R1)
          ST    R14,VBSADDR        Save the VBS read/user write
-         ST    R14,TMPBUFF        SAVE WORK ADDRESS FOR RETURN  GP18031
+         L     R5,PARM6           Get caller's BUFFER address
+         ST    R14,0(,R5)         and return work address
          AR    R1,R6              Add size GETMAINed to find end
          ST    R1,VBSEND          Save address after VBS rec.build area
-         CLI   RECFMIX,IXVAR      RECFM=V                       GP17116
-         BL    DONEOPEN           F - JUST EXIT                 GP17116
-         LA    R4,4               BUILD BDW                     GP17116
-         L     R3,BUFFADDR        GET BUFFER                    GP17116
-         STH   R4,0(,R3)          UPDATE                        GP17116
-         TM    IOMFLAGS,IOFOUT    INPUT OR OUTPUT ?             GP17121
-         BZ    DONEOPEN             INPUT; LEAVE BUFFCURR =0    GP17121
-         AR    R4,R3              SEY FOR EMPTY BUFFER          GP17116
-         ST    R4,BUFFCURR        SET NEXT AVAILABLE            GP17116
+         FIXWRITE ,               Initialize BDW prior to use   GP15015
          B     DONEOPEN           Go return to caller with DCB info
          SPACE 1
          PUSH  USING
@@ -2029,7 +1409,20 @@ TERMOPEN MVC   IOMFLAGS,WWORK     Save for duration
          TM    ZMEM,255-C' '      See if a member name          GP14251
          LA    R0,ORFBDMEM
          BNZ   OPRERR             Yes; fail                     GP14251
-         GET@PPL UPT=ZIOUPT,ECT=ZIOECT                          GP18031
+         L     R14,PSATOLD-PSA    GET MY TCB
+         USING TCB,R14
+         ICM   R15,15,TCBJSCB  LOOK FOR THE JSCB
+         LA    R0,ORFNOJFC        Bad/missing system area       GP14251
+         BZ    OPRERR        HUH ?                              GP14251
+         USING IEZJSCB,R15
+         ICM   R15,15,JSCBPSCB  PSCB PRESENT ?
+         BZ    OPRERR        HUH ?                              GP14251
+         L     R1,TCBFSA     GET FIRST SAVE AREA
+         N     R1,=X'00FFFFFF'    IN CASE AM31
+         L     R1,24(,R1)         LOAD INVOCATION R1
+         USING CPPL,R1       DECLARE IT
+         MVC   ZIOECT,CPPLECT
+         MVC   ZIOUPT,CPPLUPT
          SPACE 1
 *---------------------------------------------------------------------*
 *                                                                     *
@@ -2068,12 +1461,13 @@ TERMOVFF LA    R1,255             default LRECL                 GP17107
 TERMOSET ST    R6,ZPBLKSZ         Return it                     GP14233
          ST    R1,ZPLRECL         Return it                     GP17107
          LA    R6,4(,R6)          Add 4 in case RECFM=U buffer
-         #GETMEM RU,LV=(R6),SP=SUBPOOL,LOC=BELOW  Get input buffer
+         GETMAIN RU,LV=(R6),SP=SUBPOOL,LOC=BELOW  Get input buffer
          ST    R1,ZBUFF2          Save for cleanup
          ST    R6,ZBUFF2+4           ditto
          LA    R1,4(,R1)          Allow for RDW if not V
          ST    R1,BUFFADDR        Save the buffer address for READ
-         ST    R1,TMPBUFF         SAVE BUFFER FOR RETURN        GP18031
+         L     R5,PARM6           R5 points to ZBUFF2
+         ST    R1,0(,R5)          save the pointer
          XC    0(4,R1),0(R1)      Clear the RECFM=U Record Desc. Word
          MVI   ZPPIX,ZPIXTRM      SET FOR TERMINAL I/O          GP15024
 *DELETED POP   USING                                            GP17064
@@ -2095,23 +1489,21 @@ GETINDFV SR    R0,R0              Set for F
          BNZ   SETINDEX           Yes
 SETINDVD LA    R0,4               Preset for V
 SETINDEX STC   R0,RECFMIX         Save for the duration
-DONECOMM AMUSE ,                  NEED CALLER'S AM FOR DATA MVC GP18031
-         L     R2,@OPARM          GET PARM LIST                 GP18031
-         USING PARMSECT,R2                                      GP18031
-         L     R5,PARM2           POINT TO MODE
-         MVC   0(4,R5),ZDVTYPE    DevTyp,RecFm,IOS+IOM flags    GP14251
          L     R5,PARM3           Point to RECFM
          SRL   R0,2               change to major record format
          ST    R0,0(,R5)          Pass either RECFM F or V to caller
          L     R8,PARM4           R8 POINTS TO LRECL            GP17263
          L     R1,ZPLRECL         Load RECFM F or V max. record length
          ST    R1,0(,R8)          Return record length back to caller
+         L     R5,PARM5           POINT TO BLKSIZE
          L     R0,ZPBLKSZ         Load RECFM U maximum record length
-         L     R5,PARM5           CALLER'S BLKSI ADDRESS        GP18031
          ST    R0,0(,R5)          Pass new BLKSIZE
-         L     R5,PARM6           GET BUFFER POINTER            GP18031
-         L     R0,TMPBUFF         GET BUFFRE ADDRESS            GP18031
-         ST    R0,0(,R5)          RETURN RECORD SIZE BUFFER     GP18031
+         L     R5,PARM2           POINT TO MODE
+         MVC   0(4,R5),ZDVTYPE    DevTyp,RecFm,IOS+IOM flags    GP14251
+* Finished with all but R7 (handle) now
+         MVC   ZPMODE,ZDVTYPE                                   GP15024
+         MVC   ZPORG,DDADSORG-DDATTRIB+DDWATTR  SAVE ORG        GP15024
+         MVC   ZPOPC,DCBOPTCD     RETURN OPTCD                  GP15024
          SPACE 1
 *---------------------------------------------------------------------*
 *   Request was made for member name to be all blanks when not used   *
@@ -2119,23 +1511,13 @@ DONECOMM AMUSE ,                  NEED CALLER'S AM FOR DATA MVC GP18031
 *     This preserves funny characters in name (e.g., SMP data)        *
 *---------------------------------------------------------------------*
          LA    R1,255             Number of TR bytes            GP17079
-         LA    R15,CATWORK        USE 256-BYTE WORK AREA        GP17079
-OPUPPLUP STC   R1,0(R1,R15)       START AT THE END              GP17079
+         LA    R2,CATWORK         use 256-byte work area        GP17079
+OPUPPLUP STC   R1,0(R1,R2)        start at the end              GP17079
          BCT   R1,OPUPPLUP          repeat until done           GP17079
          MVI   CATWORK,C' '       replace x'00' by x'40'        GP17079
          TR    ZMEM,CATWORK       fix it                        GP17079
-         LDADD R14,PARM7          GET MEMBER NAME ADDRESS       GP18031
-         LA    R14,0(,R14)        CLEAN HIGH BIT/BYTE           GP18031
-         LTR   R14,R14            ANY?                          GP18031
-         BZ    *+4+6                NO                          GP18031
-         MVC   0(8,R14),ZMEM      RETURN MEMBER NAME            GP18031
-         DROP  R2                                               GP18031
          SPACE 1
-* Finished with all but R7 (handle) now
-         MVC   ZPMODE,ZDVTYPE                                   GP15024
-         MVC   ZPORG,DDADSORG-DDATTRIB+DDWATTR  SAVE ORG        GP15024
-         MVC   ZPOPC,DCBOPTCD     RETURN OPTCD                  GP15024
-         SPACE 1
+*---------------------------------------------------------------------*
 *   Latest addition - calculate number of blocks (DCB error if none)  *
 *   For RECFM=FBS opened for EXTEND in record mode, position to next  *
 *     record to fill out short block.                                 *
@@ -2146,6 +1528,7 @@ OPUPPLUP STC   R1,0(R1,R15)       START AT THE END              GP17079
          BNM   RETURNOP                    neither; skip rest   GP17110
          TM    DDWFLAG2,CWFDD     Concatenation ?               GP17262
          BNZ   RETURNOP             Yes, can't support FBS      GP17262
+         GAM24 ,                  (OLD note; TRKCALC)           GP17263
          NOTE  (R7)                                             GP17079
          STCM  R1,14,ZPTTR        Save initial TTR or tape blk  GP17079
          CLI   ZPDEVT,UCB3DACC    Working on DASD?              GP17079
@@ -2174,16 +1557,16 @@ RETURNOP FUNEXIT RC=(R7)          Return to caller
 OPNOFIT  LA    R0,ORFBADCB        Error code for bad DCB(BLKSI) GP17079
 OPRERR   LR    R7,R0              CODE PASSED IN R0             GP14205
          B     OPSERR2                                          GP14205
-OPSERR   SLR   R7,R7              CLEAR FOR IC                  GP14205
+OPSERR   SR    R7,R7              CLEAR FOR IC                  GP14205
          IC    R7,OPERF           GET ERROR FLAG                GP14205
 OPSERR2  LA    R7,2000(,R7)       GET INTO RANGE                GP14205
          B     FREEDCB              AND RETURN WITH ERROR       GP14205
 *
 * This is not executed directly, but copied into 24-bit storage
-PATEODAD LA    R6,1               Indicate @@AREAD reached end-of-file
+ENDFILE  LA    R6,1               Indicate @@AREAD reached end-of-file
          LNR   R6,R6              Make negative
          BR    R14                Return to instruction after the GET
-EOFRLEN  EQU   *-PATEODAD
+EOFRLEN  EQU   *-ENDFILE
 *
          SPACE 1
          LTORG ,
@@ -2225,7 +1608,7 @@ PARM4    DS    A              NEXT PARM     RECORD LEN
 PARM5    DS    A              NEXT PARM     BLOCK SIZE
 PARM6    DS    A              NEXT PARM     opt. BUFFER
 PARM7    DS    A              NEXT PARM     MEMBER NAME
-PARM8    DS    A              NEXT PARM       (DEFERRED)
+PARM8    DS    A              NEXT PARM
          SPACE 1
 DDATTRIB DSECT ,
 DDADSORG DS    H             DS ORG FROM JFCB OR DSCB1 (2B)
@@ -2287,10 +1670,10 @@ OCDCBEX  LA    R12,0(,R15)        Load and clean base           GP17079
          MVC   ZPLRECL+2(2),DCBLRECL                            GP14205
          MVC   ZPBLKSZ+2(2),DCBBLKSI                            GP14205
 OCDCBX1  OI    IOPFLAGS,IOFDCBEX  Show exit entered
-         SLR   R2,R2         FOR POSSIBLE DIVIDE (FB)
-         SLR   R3,R3
+         SR    R2,R2         FOR POSSIBLE DIVIDE (FB)
+         SR    R3,R3
          ICM   R3,3,DCBBLKSI   GET CURRENT BLOCK SIZE
-         SLR   R4,R4         FOR POSSIBLE LRECL=X
+         SR    R4,R4         FOR POSSIBLE LRECL=X
          ICM   R4,3,DCBLRECL GET CURRENT RECORD LENGTH
          NI    FILEMODE,3    MASK FILE MODE
          MVC   ZRECFM,FILEMODE   GET OPTION BITS
@@ -2317,7 +1700,7 @@ OCDCBFH  LTR   R4,R4
          N     R5,=X'000000C0'  RETAIN ONLY D,F,U,V
          SRL   R5,6          CHANGE TO 0-D 1-V 2-F 3-U
          MH    R5,=H'3'      PREPARE INDEX
-         SLR   R6,R6
+         SR    R6,R6
          IC    R6,FILEMODE   GET USER'S VALUE
          AR    R5,R6         DCB VS. DFLT ARRAY
 *     DCB RECFM:       --D--- --V--- --F--- --U---
@@ -2334,7 +1717,9 @@ OCDCBLH  LTR   R3,R3         ANY ?
          ICM   R3,15,ZPBLKSZ SET OUR PREFERRED SIZE             GP14233
          BNZ   *+8           OK
          L     R3,DEVINFO+4  SET NON-ZERO
-         MIN   R3,DEVINFO+4  LEGAL? Else shorten                GP18031
+         C     R3,DEVINFO+4  LEGAL ?
+         BNH   *+8
+         L     R3,DEVINFO+4  NO; SHORTEN
          TM    DCBRECFM,DCBRECU   U?
          BO    OCDCBBU       YES
          TM    DCBRECFM,DCBRECF   FIXED ?
@@ -2369,6 +1754,7 @@ ODCBEXRT BR    R14           RETURN TO OPEN (or via caller)     GP15004
          SPACE 1
          POP   USING
          SPACE 2
+         AIF   ('&ZSYS' NE 'S390').NOSTUB       Only S/390 needs a stub
 ***********************************************************************
 *                                                                     *
 *    OPEN DCB EXIT - 24 bit stub                                      *
@@ -2396,6 +1782,7 @@ PATRET   LR    R14,R11            Restore OS return address     GP15015
 PATSTUBL EQU   *-PATSTUB                                        GP15015
          POP   USING
          SPACE 2
+.NOSTUB  ANOP  ,        Only S/390 needs a stub
 ***********************************************************************
 *                                                                     *
 *   Low access data areas - here for addressability                   *
@@ -2493,7 +1880,7 @@ OPENVSAM OSUBHEAD ,          Define extended entry              GP14233
          MVC   ACBDDNM-IFGACB+ZAACB(L'ACBDDNM),ZDDN             GP14233
          MVC   ZARPL(VSAMRPLL),VSAMRPL BUILD ACB                GP14233
          OPEN  ((R10)),MF=(E,OPENCLOS)                          GP14233
-         SLR   R7,R7                                            GP14233
+         SR    R7,R7                                            GP14233
          IC    R7,ACBERFLG-IFGACB+ZAACB  LOAD ERROR FLAG        GP14233
          LA    R7,1000(,R7)       Get into the 3000 range       GP14233
          LTR   R15,R15            Did it open?                  GP14233
@@ -2549,6 +1936,7 @@ EXLSTACB EXLST AM=VSAM,EODAD=VSAMEOD,LERAD=VLERAD,SYNAD=VSYNAD  GP14244
 *     instead, by clobbering the Write CCW and restoring it after.    *
 *                                                                     *
 ***********************************************************************
+         PUSH  USING                                            GP17079
 OPFBS    OSUBHEAD ,          Define extended entry              GP17079
          CLI   ZPMODE+3,ZPMAPP    Record mode append?           GP17079
          BNE   OPFBSEX              No; return                  GP17079
@@ -2562,6 +1950,7 @@ OPFBS    OSUBHEAD ,          Define extended entry              GP17079
          ST    R2,ZWORK           Remember for a while          GP17079
          BZ    OPFBSEX              New/Old not append?         GP17079
          POINT (R10),ZWORK                                      GP17079
+         GAM24 ,                  Get low on S380               GP17079
          L     R5,DCBIOBA-IHADCB(,R10)  Get IOB prefix          GP17079
          LA    R5,8(,R5)          Skip prfix                    GP17079
          USING IOBSTDRD,R5        Give assembler IOB base       GP17079
@@ -2586,6 +1975,7 @@ OPFBSBP  MVC   DWORK(16),0(R4)      MOVE WRITE CKD              GP17079
          SH    R14,=H'8'
          MVC   0(16,R4),DWORK     MOVE WRITE CKD                GP17079
          WAIT  ECB=(R2)           Wait for READ to complete     GP17079
+         AMUSE ,                  Restore caller's mode         GP17079
          SLR   R1,R1              Clear residual amount work register
          ICM   R1,B'0011',IOBCSW+5  Load residual count         GP17079
          BZ    OPFBSFL                                          GP17079
@@ -2628,7 +2018,7 @@ OPFBSER  OSUBRET ROUTE=(R14)      Take error return             GP17079
          USING LOOKSWA,R15                                      GP15006
 LOOKSWA  STM   R0,R3,12(R13)      Save regs                     GP15009
          N     R1,=X'00FFFFFF'    CLEAN IT                      GP15006
-         EX    R1,EXSWAODD   SEE WHETHER IT'S AN ODD VALUE      GP15006
+         EX    R1,EXSWAODD   SEE WHETHER IT'S AN ODD ADDRESS    GP15006
          BZ    LOOKSVA       NO; HAVE ADDRESS                   GP15006
          L     R2,PSATOLD-PSA     Get TCB                       GP15006
          USING TCB,R2                                           GP15006
@@ -2664,7 +2054,7 @@ LOOKSWAX ALR   R1,R2         ADD QMAT BASE                      GP15006
 LOOKSVA  LA    R15,16(,R1)   SKIP HEADER                        GP15006
 LOOKSWAT LM    R0,R3,12(R13)     RESTORE CALLER'S REGISTERS     GP15006
          BR    R14           RETURN IN CALLER'S AMODE           GP15009
-LOOKSWA0 SLR   R15,R15       NOTHING FOUND - RETURN 0           GP15006
+LOOKSWA0 SR    R15,R15       NOTHING FOUND - RETURN 0           GP15006
          B     LOOKSWAT      RETURN                             GP15006
 EXSWAODD TM    =X'01',*-*    ODD ADDRESS?                       GP15006
          POP   USING                                            GP15006
@@ -2672,7 +2062,7 @@ EXSWAODD TM    =X'01',*-*    ODD ADDRESS?                       GP15006
 *
 ***********************************************************************
 *                                                                     *
-*  ALINE - Test whether any more input is available                   *
+*  ALINE - See whether any more input is available                    *
 *     R15=0 EOF     R15=1 More data available                         *
 *                                                                     *
 ***********************************************************************
@@ -2687,7 +2077,7 @@ EXSWAODD TM    =X'01',*-*    ODD ADDRESS?                       GP15006
          LA    R15,@@AREAD
          LA    R1,DWORK
          BALR  R14,R15       GET NEXT RECORD
-         SLR   R15,R15       SET EOF FLAG
+         SR    R15,R15       SET EOF FLAG
          LTR   R6,R6         HIT EOF ?
          BM    ALINEX        YES; RETURN ZERO
          OI    IOPFLAGS,IOFKEPT   SHOW WE'RE KEEPING A RECORD
@@ -2707,12 +2097,12 @@ ALINEX   FUNEXIT RC=(R15)
 @@AREAD  FUNHEAD IO=YES,SAVE=SAVEADCB,US=NO          READ / GET
          L     R3,4(,R1)  R3 points to where to store record pointer
          L     R4,8(,R1)  R4 points to where to store record length
-         SLR   R0,R0
+         SR    R0,R0
          ST    R0,0(,R3)          Return null in case of EOF
          ST    R0,0(,R4)          Return null in case of EOF
          TM    IOPFLAGS,IOFLEOF   Prior EOF ?                   GP14213
          BNZ   READEOD            Yes; don't abend              GP14213
-         SLR   R6,R6              NO EOF
+         SR    R6,R6              No EOF
          TM    IOPFLAGS,IOFKEPT   Saved record ?
          BZ    READREAD           No; go to read                GP14213
          LM    R8,R9,KEPTREC      Get prior address & length
@@ -2740,7 +2130,7 @@ REREAD   ICM   R8,B'1111',BUFFCURR  Load address of next record
          CLI   RECFMIX,IXVAR      RECFM=Vxx ?
          BE    READ               No, deblock
          LA    R8,4(,R8)          Room for fake RDW
-READ     MAM   24,WORK=R14        For old code under S380       GP18031
+READ     GAM24 ,                  For old code under S380       GP15015
          TM    IOMFLAGS,IOFEXCP   EXCP mode?
          BZ    READBSAM           No, use BSAM
 *---------------------------------------------------------------------*
@@ -2771,7 +2161,7 @@ READEXCP STCM  R8,7,TAPECCW+1     Read buffer
          SPACE 1
 EXRDBAD  ABEND 001,DUMP           bad way to show error?
          SPACE 1
-EXRDOK   SLR   R0,R0
+EXRDOK   SR    R0,R0
          ICM   R0,3,IOBCSW+5-IOBSTDRD+TAPEIOB
          SR    R9,R0         LENGTH READ
          BNP   BADBLOCK      NONE ?
@@ -2784,8 +2174,8 @@ EXRDOK   SLR   R0,R0
 *   BSAM read   (also used for BPAM member read)                      *
 *---------------------------------------------------------------------*
 READBSAM FIXWRITE ,               For OUTIN request and UPDAT   GP17079
-         SLR   R6,R6              RESET EOF FLAG
-         MAM   24                 Get low on S380               GP18031
+         SR    R6,R6              Reset EOF flag
+         GAM24 ,                  Get low on S380               GP15015
          READ  DECB,              Read record Data Event Control Block C
                SF,                Read record Sequential Forward       C
                (R10),             Read record DCB address              C
@@ -2835,7 +2225,7 @@ READNNOT TM    IOPFLAGS,IOFCONCT  Did we hit concatenation?
          FREEMAIN R,LV=(R2),A=(R1),SP=SUBPOOL  and free it      GP14205
          L     R5,ZPBLKSZ         Load the input blocksize      GP14205
          LA    R6,4(,R5)          Add 4 in case RECFM=U buffer  GP14205
-         #GETMEM RU,LV=(R6),SP=SUBPOOL,LOC=BELOW  Get input buffer
+         GETMAIN RU,LV=(R6),SP=SUBPOOL,LOC=BELOW  Get input buffer
          ST    R1,ZBUFF1          Save for cleanup              GP14205
          ST    R6,ZBUFF1+4           ditto                      GP14205
          ST    R1,BUFFADDR        Save the buffer address for READ
@@ -2919,7 +2309,7 @@ DEBLOCKV CLI   0(R8),X'80'   LOGICAL END OF BLOCK ?
          BL    DEBVCURR      LOW - LEAVE IT
          BH    BADBLOCK      NO; FAIL
          LA    R6,3          Preset for bad sdw                 GP14244
-         SLR   R7,R7         PRESET FOR BLOCK DONE
+         SR    R7,R7         Preset for block done
 DEBVCURR ST    R7,BUFFCURR        for recursion
          TM    3(R8),X'FF'   CLEAN RDW ?
          BNZ   BADBLOCK
@@ -2941,11 +2331,11 @@ DEBVAPND CLI   2(R8),3            IS THIS A MIDDLE SEGMENT ?
          BNE   BADBLOCK           No; bad segment sequence
          NI    IOPFLAGS,255-IOFLSDW  INDICATE RECORD COMPLETE
 DEBVMOVE L     R2,VBSADDR         Get segment assembly area
-         SLR   R1,R1              NEVER TRUST ANYONE
+         SR    R1,R1              Never trust anyone
          ICM   R1,3,0(R8)         Length of addition
          SH    R1,=H'4'           Data length
          LA    R0,4(,R8)          Skip SDW
-         SLR   R15,R15
+         SR    R15,R15
          ICM   R15,3,0(R2)        Get amount used so far
          LA    R14,0(R15,R2)      Address for next segment
          LA    R8,0(R1,R15)       New length
@@ -2958,7 +2348,7 @@ DEBVMOVE L     R2,VBSADDR         Get segment assembly area
          TM    IOPFLAGS,IOFLSDW    Did last segment?
          BNZ   REREAD             No; get next one
          L     R8,VBSADDR         Give user the assembled record
-         SLR   R0,R0
+         SR    R0,R0
          ICM   R0,3,0(R8)         Provisional length if simple
          ST    R0,0(,R4)          Return length
          ST    R0,KEPTREC+4       Remember record info
@@ -2973,25 +2363,19 @@ DEBLOCKF L     R7,ZPLRECL         Load RECFM=F DCB LRECL        GP14233
 * If address=BUFFEND, zero BUFFCURR
 SETCURR  CL    R7,BUFFEND         Is it off end of block?
          BL    SETCURS            Is not off, go store it
-         SLR   R7,R7              CLEAR THE NEXT RECORD ADDRESS
+         SR    R7,R7              Clear the next record address
 SETCURS  ST    R7,BUFFCURR        Store the next record address
          ST    R8,0(,R3)          Store record address for caller
          ST    R8,KEPTREC         Remember record info
          B     READGOOD                                         GP14244
          SPACE 1
-*---------------------------------------------------------------------*
-*   Get a line from the terminal (foreground or batch session).       *
-*   Return is in format specified by user in AOPEN (V or F).          *
-*   Input text will not exceed 256 bytes, and will be truncated when  *
-*     user's length is less.                                          *
-*---------------------------------------------------------------------*
 TGETREAD L     R6,ZIOECT          RESTORE ECT ADDRESS
          L     R7,ZIOUPT          RESTORE UPT ADDRESS
          MVI   ZGETLINE+2,X'80'   EXPECTED FLAG
-         MAM   24                 S380 AM24                     GP18031
+         GAM24                    S380 AM24                     GP15015
          GETLINE PARM=ZGETLINE,ECT=(R6),UPT=(R7),ECB=ZIOECB,           *
                MF=(E,ZIOPL)
-         AMUSE WRK2=R2            S380 SWITCH TO USER'S AMODE   GP18031
+         GAM31                    S380 SWITCH TO AM31           GP15015
          LR    R6,R15             COPY RETURN CODE
          CH    R6,=H'16'          HIT BARRIER ?
          BE    READEOD2           YES; EOF, BUT ALLOW READS
@@ -3007,12 +2391,10 @@ TGETREAD L     R6,ZIOECT          RESTORE ECT ADDRESS
          XC    KEPTREC(8),KEPTREC Clear saved record info
          LA    R6,1
          LNR   R6,R6              Signal EOF
-         OI    IOPFLAGS,IOFLEOF   Remember that we hit EOF      GP18031
          B     TGETFREE           FREE BUFFER AND QUIT
 TGETNEOF L     R6,BUFFADDR        GET INPUT BUFFER
          LR    R8,R1              INPUT LINE W/RDW
          LH    R9,0(,R1)          GET LENGTH
-         MIN   R9,ZBUFF2+4        but not too long              GP18031
          LR    R7,R9               FOR V, IN LEN = OUT LEN
          CLI   RECFMIX,IXVAR      RECFM=V ?
          BE    TGETHAVE           YES
@@ -3020,20 +2402,19 @@ TGETNEOF L     R6,BUFFADDR        GET INPUT BUFFER
          SH    R7,=H'4'           ALLOW FOR RDW
          B     TGETSKPV
 TGETSKPF L     R7,ZPLRECL           FULL SIZE IF F              GP14233
-         ICM   R9,8,=C' '         blank padding                 GP18031
 TGETSKPV LA    R8,4(,R8)          SKIP RDW
          SH    R9,=H'4'           LENGTH SANS RDW
 TGETHAVE ST    R6,0(,R3)          RETURN ADDRESS
          ST    R7,0(,R4)            AND LENGTH
          STM   R6,R7,KEPTREC      Remember record info
-         MVCL  R6,R8              move to BTL buffer            GP18031
-         SLR   R6,R6              NO EOF
+         ICM   R9,8,=C' '           BLANK FILL
+         MVCL  R6,R8              PRESERVE IT FOR USER
+         SR    R6,R6              NO EOF
 TGETFREE LH    R0,0(,R1)          GET LENGTH
          ICM   R0,8,=AL1(1)       SUBPOOL 1
          FREEMAIN R,LV=(0),A=(1)  FREE SYSTEM BUFFER
-         B     READEXIT           EXIT WITH R6 SET              GP17280
-EXGETMVC MVC   0(*-*,R6),0(R8)      move text                   GP18031
-READGOOD SLR   R6,R6              Set good return               GP14244
+         B     READEXIT                                         GP17280
+READGOOD SR    R6,R6              Set good return               GP14244
          B     READEXIT           TAKE NORMAL EXIT
          SPACE 1
 READEOD  OI    IOPFLAGS,IOFLEOF   Remember that we hit EOF
@@ -3041,7 +2422,9 @@ READEOD2 XC    KEPTREC(8),KEPTREC Clear saved record info
          NI    IOPFLAGS,255-IOFKEPT   Reset flag                GP14213
          LA    R6,1
 READEXNG LNR   R6,R6              Signal EOF
-READEXIT FUNEXIT RC=(R6)          Return to caller (0, 4, or -1)
+READEXIT DS    0H
+         GAM31
+         FUNEXIT RC=(R6)          Return to caller (0, 4, or -1)
          SPACE 1
 *---------------------------------------------------------------------*
 *   VSAM read
@@ -3090,11 +2473,11 @@ VTOCREAD CLC   ZVUSCCHH,ZVHICCHH  At or past VTOC end?          GP14213
          LA    R2,DS1END-DS1DSNAM Length                        GP14213
          ST    R2,0(,R4)                                        GP14213
          STM   R14,R1,ZVSEEK      Complete CAMLST               GP14213
-         SLR   R14,R14            Clear for address increae     GP14213
+         SR    R14,R14            Clear for address increae     GP14213
          ICM   R14,3,ZVUSCCHH     Load cylinder                 GP14213
-         SLR   R15,R15                                          GP14213
+         SR    R15,R15                                          GP14213
          ICM   R15,3,ZVUSCCHH+2   Load track                    GP14213
-         SLR   R1,R1                                            GP14213
+         SR    R1,R1                                            GP14213
          IC    R1,ZVUSCCHH+L'ZVUSCCHH-1     Get current record  GP14213
          LA    R1,1(,R1)          Increase                      GP14213
          CLM   R1,1,ZVHIREC       Valid?                        GP14213
@@ -3118,8 +2501,7 @@ VTOCSET@ STH   R14,ZVUSCCHH                 New cylinder        GP14213
 PATSEEK  CAMLST SEEK,*-*,*-*,*-*                                GP14213
          ORG   PATSEEK+4                                        GP14213
          SPACE 1
-BADBLOCK MAM   24                 SNAP IS OLD                   GP18034
-         LM    R14,R15,RSNAREA    GET START/SIZE OF BLOCK       GP14244
+BADBLOCK LM    R14,R15,RSNAREA    GET START/SIZE OF BLOCK       GP14244
          AR    R15,R14            END + 1                       GP14244
          BCTR  R15,0              END                           GP14244
          ST    R15,RSNAREA+4      UPDATE END                    GP14244
@@ -3166,7 +2548,7 @@ WRITRITE SLR   R15,R15                                          GP14363
            B   WRITSAM              QSAM (reserved)             GP15051
            B   VSAMWRIT             VSAM                        GP14233
            B   6      ***VTOC write not supported***            GP14233
-           B   TERMWRIT             Terminal                    GP14233
+           B   TPUTWRIT             Terminal                    GP14233
 *
 WRITSAM  TM    IOMFLAGS,IOFBLOCK  Block mode?
          BNZ   WRITBLK            Yes
@@ -3270,7 +2652,6 @@ WRITEBAD LA    R14,0(,R4)         Get current record address    GP14363
          BCTR  R15,0              END                           GP14251
          ST    R15,WSNLIST+4      UPDATE END                    GP14251
          OI    WSNLIST+4,X'80'    SET END OF LIST               GP14251
-         MAM   24                 SNAP IS OLD                   GP18034
          L     R15,=A(@@SNAP)                                   GP14251
          LA    R1,WSNAP                                         GP14251
          BALR  R14,R15            CALL SNAPPER                  GP14251
@@ -3324,7 +2705,7 @@ VSAMWRIT LA    R8,ZARPL      GET RPL ADDRESS                    GP14233
          BXLE  R15,R15,WRITEEX    Return                        GP14233
 WRITBAD  ABEND 001,DUMP           Or set error code?            GP14233
          SPACE 1
-TERMWRIT CLI   RECFMIX,IXVAR      RECFM=V ?
+TPUTWRIT CLI   RECFMIX,IXVAR      RECFM=V ?
          BE    TPUTWRIV           YES
          L     R1,BUFFADDR        GET MY (INPUT?) BUFFER        GP16234
          LA    R2,4(,R5)          LENGTH WITH RDW               GP16234
@@ -3338,136 +2719,14 @@ TPUTWRIV STH   R5,0(,R4)          FILL RDW
          STCM  R5,12,2(R4)          ZERO REST
          L     R6,ZIOECT          RESTORE ECT ADDRESS
          L     R7,ZIOUPT          RESTORE UPT ADDRESS
-         MAM   24                 SET AM24 ON S380              GP18031
+         GAM24 ,                  SET AM24 ON S380              GP15015
          PUTLINE PARM=ZPUTLINE,ECT=(R6),UPT=(R7),ECB=ZIOECB,           *
                OUTPUT=((R4),DATA),TERMPUT=EDIT,MF=(E,ZIOPL)
-         MAM   31                 S380 SWITCH TO AM31           GP18031
+         GAM31 ,                  S380 SWITCH TO AM31           GP15015
          SPACE 1
 WRITEEX  TM    IOPFLAGS,IOFCURSE  RECURSION REQUESTED?
          BNZ   WRITMORE           PROCESS REMAINING DATA        GP14363
          FUNEXIT RC=0             EXIT
-         SPACE 2
-***********************************************************************
-*                                                                     *
-*  PUTGET - BALR with R1-> (handle,inpadd,inplen,prompt,promptlen)    *
-*                                                                     *
-***********************************************************************
-         SPACE 2
-         PUSH  USING                                            GP18031
-         DROP  ,                                                GP18031
-@@PUTGET FUNHEAD IO=YES,SAVE=SAVEADCB,US=NO                     GP18031
-         TM    IOPFLAGS,IOFLEOF   Prior EOF ?                   GP18031
-         BNZ   PTGTEOF              Yes; just return            GP18031
-         SLR   R6,R6         PROVISIONALLY GOOD RETURN          GP18031
-         LR    R11,R1             SAVE PARM LIST                GP18031
-         NI    IOPFLAGS,255-IOFCURSE   RESET RECURSION          GP18031
-         SLR   R0,R0          zero fields to indicate no input  GP18031
-         L     R4,4(,R11)     R4 points to the record address   GP18031
-         ST    R0,0(,R4)          Get record address            GP18031
-         L     R5,8(,R11)     R5 points to length of data to write
-         ST    R0,0(,R5)          Length of data to write       GP18031
-         L     R4,12(,R11)        R4 points to the record address
-         L     R4,0(,R4)          Get record address            GP18031
-         L     R5,16(,R11)        R5 points to length of data to write
-         L     R5,0(,R5)          Length of data to write       GP18031
-         GET@PPL ECT=IOPLECT,UPT=IOPLUPT                        GP18031
-         SPACE 1
-         LA    R15,ZIOECB     GET DUMMY ECB                     GP18031
-         ST    R15,IOPLECB                                      GP18031
-         LA    R15,ZIOPTGT                                      GP18031
-         ST    R15,IOPLIOPB                                     GP18031
-         SPACE 2
-*---------------------------------------------------------------------*
-*   The prompt address and length are pointed to by the fourth and    *
-*     fifth operand. For a RECFM=V AOPEN, the text must be in the     *
-*     form of a valid RDW, or 0                                       *
-*   Adjust the address and length past the RDW, if any.               *
-*   For a length of zero, rpelace by a canned prompt.                 *
-*   Truncate the length to the buffer length - 4, or 256, whichever   *
-*     is less. Note that we cannot use MVCL for ATL text, and MVCLE   *
-*     is not available in 370 mode, so we use MVC to move text BTL.   *
-*   The adjusted text length is used to build a new RDW for PUTGET.   *
-*                                                                     *
-*   After input is received, the process is reversed. The text length *
-*     is truncated to the buffer size, and the RDW is adjusted.       *
-*   The TSO buffer is freed prior to returning control.               *
-*   Note that batch TSO generates an 'END' when input is exhausted.   *
-*---------------------------------------------------------------------*
-         LM    R14,R15,ZBUFF2     Get buffer address and length GP18031
-         SH    R15,=H'4'          allow for RDW length          GP18031
-         CLI   RECFMIX,IXVAR      RECFM=V ?                     GP18031
-         BNE   PTGTNVO              No                          GP18031
-         LA    R4,4(,R4)          Skip RDW                      GP18031
-         SH    R5,=H'4'           adjust length                 GP18031
-PTGTNVO  MIN   R5,(R15)           Truncate to buffer length     GP18031
-         MIN   R5,=H'256'         Truncate to max for MVC       GP18031
-         SH    R5,=H'1'           Adjust for EXecute            GP18031
-         BP    PTGTUPR            Use user prompt               GP18031
-         LA    R4,=C'Input>'      Use a default                 GP18031
-         LA    R5,6               Set input length              GP18031
-PTGTUPR  EX    R5,EXPTGTO         move text                     GP18031
-         LA    R5,5(,R5)          Length for RDW                GP18031
-         SLL   R5,16              put into RDW format           GP18031
-         ST    R5,0(,R14)         build RDW for prompt          GP18031
-         STCM  R5,12,2(R4)          ZERO REST
-         SPACE 2
-         XC    ZIOECB,ZIOECB            CLEAR EVENT CNTL BLOCK  GP18031
-         PUTGET  PARM=ZIOPTGT,MF=(E,ZIOPL),                            X
-               TERMPUT=(ASIS,WAIT,NOHOLD,NOBREAK),                     X
-               TERMGET=(EDIT,WAIT),                                    X
-               OUTPUT=(0(R5),SINGLE,MODE)                       GP18031
-         C     R15,=F'4'                                        GP18031
-         BH    PTGTERR                                          GP18031
-         SLR   R6,R6          Set for good return               GP18031
-         SPACE 1
-         L     R1,ZIOPTGT+12  GET INPUT BUFFER ADDRESS          GP18031
-         LTR   R4,R1                                            GP18031
-         BZ    PTGTERR4         SHOULD NOT HAPPEN ?             GP18031
-         LH    R5,0(,R4)      LENGTH INCLUDING 4 BYTE HDR       GP18031
-         LM    R8,R9,ZBUFF2   Get buffer address and length     GP18031
-         CH    R5,=H'4'       valid?                            GP18031
-         BNH   FREEBUF        ERROR                             GP18031
-         MIN   R5,(R9)        but not longer than buffer        GP18031
-         LR    R0,R5          save length                       GP18031
-         MVCL  R8,R4          move text to buffer               GP18031
-         L     R8,ZBUFF2                                        GP18031
-         STH   R0,0(,R8)      update the length                 GP18031
-         CLI   RECFMIX,IXVAR      RECFM=V ?                     GP18031
-         BE    PTGTNVI              Yes                         GP18031
-         LA    R8,4(,R8)      Skip the RDW                      GP18031
-         SH    R0,=H'4'         and adjust the length           GP18031
-PTGTNVI  L     R4,4(,R11)     R4 points to the record address   GP18031
-         ST    R8,0(,R4)          Get record address            GP18031
-         L     R5,8(,R11)     R5 points to length of data to write
-         ST    R0,0(,R5)          Length of data to write       GP18031
-         SPACE 1
-FREEBUF  L     R1,ZIOPTGT+12                                    GP18031
-         LH    R0,0(R1)       LENGTH OF LINE INCLUDING HEADER   GP18031
-         LA    R15,1          SUBPOOL 1                         GP18031
-         SLL   R15,24                                           GP18031
-         OR    R0,R15                                           GP18031
-         FREEMAIN R,LV=(0),A=(1)      FREE INPUT BUFFR          GP18031
-         XC    ZIOPTGT+12(4),ZIOPTGT+12 SHOW FREED              GP18031
-         SPACE 1                                                GP18031
-         L     R8,ZBUFF2                                        GP18031
-         CLC   DCGTEND,0(R8) Is this a batch END ?              GP18031
-         BNE   PGEX                 No; exit with RC=0          GP18031
-PTGTEOF  L     R6,=F'-1'            Yes; set RC=-1              GP18031
-         OI    IOPFLAGS,IOFLEOF   Remember that we hit EOF      GP18031
-         SPACE 1
-PGEX     FUNEXIT RC=(R6)                                        GP18031
-         SPACE 1
-PTGTERR4 LA    R15,4         PUTGET good return, but no buffer  GP18031
-PTGTERR  LNR   R6,R15        return PTGT error                  GP18031
-         B     PGEX          return                             GP18031
-         SPACE 1
-EXPTGTO  MVC   4(*-*,R14),0(R4)   move prompt                   GP18031
-*
-MYPGCNT  DC    A(1,MYPGRDW)                                     GP18031
-MYPGRDW  DC    AL2(7,0)                                         GP18031
-MYPGTXT  DC    CL32'Prompt>'                                    GP18031
-DCGTEND  DC    XL7'00070000C5D5C4'  RDW+END                     GP18031
-         POP   USING                                            GP18031
          SPACE 2
 ***********************************************************************
 *                                                                     *
@@ -3478,7 +2737,7 @@ DCGTEND  DC    XL7'00070000C5D5C4'  RDW+END                     GP18031
          L     R3,4(,R1)          R3 points to the return value
          TM    ZPDEVT,UCB3TAPE+UCB3DACC  Tape or disk?          GP17110
          BNM   NOTECOM                     neither; skip rest   GP17110
-         MAM   24                 SET AM24 ON S380              GP18031
+         GAM24 ,                  SET AM24 ON S380              GP15015
          TM    IOMFLAGS,IOFEXCP   EXCP mode?
          BZ    NOTEBSAM           No
          L     R4,DCBBLKCT        Return block count
@@ -3506,7 +2765,7 @@ NOTECOM  AMUSE ,
          TM    ZPDEVT,UCB3TAPE+UCB3DACC  Tape or disk?          GP17110
          BNM   POINCOM                     neither; skip rest   GP17110
          FIXWRITE ,                 Write pending data
-         MAM   24                 SET AM24 ON S380              GP18031
+         GAM24 ,                  SET AM24 ON S380              GP15015
          TM    IOMFLAGS,IOFEXCP   EXCP mode ?
          BZ    POINBSAM           No
          L     R4,DCBBLKCT        Get current position
@@ -3697,20 +2956,13 @@ DCBF003F ST    R9,8(,R4)          Concatenation # (0-n/m)       GP17079
 *---------------------------------------------------------------------*
 ADCBGOOD SLR   R15,R15            Good exit                     GP17079
 ADCBEXIT FUNEXIT RC=(R15)         Return to caller              GP14205
-         POP   USING                                            GP17079
          SPACE 2
 ***********************************************************************
 *                                                                     *
 *  ACLOSE - Close a data set                                          *
 *                                                                     *
 ***********************************************************************
-         PUSH  USING                                            GP17119
 @@ACLOSE FUNHEAD IO=YES,SAVE=(WORKAREA,WORKLEN,SUBPOOL)  CLOSE
-         L     R15,PSATOLD-PSA    GET THE CURREENT TCB          GP18031
-         CL    R15,ZOWNTCB        OWNING TCB?                   GP18031
-         BNE   ACLOSEX              NO; IGNORE                  GP18031
-         CLC   ZOWNPRB,TCBRBP-TCB(R15)     OWNING PRB?          GP18031
-         BNE   ACLOSEX              NO; IGNORE                  GP18031
          TM    IOMFLAGS,IOFTERM   TERMINAL I/O MODE?
          BNZ   FREEBUFF           YES; JUST FREE STUFF
          FIXWRITE ,          WRITE FINAL BUFFER, IF ONE
@@ -3727,37 +2979,21 @@ FREEDBF2 TM    IOMFLAGS,IOFTERM   TERMINAL I/O MODE?
          CLOSE MF=(E,OPENCLOS)
          TM    DCBBUFCA+L'DCBBUFCA-1,1      BUFFER POOL?
          BNZ   NOPOOL             NO, INVALIDATED
-         SLR   R15,R15
+         SR    R15,R15
          ICM   R15,7,DCBBUFCA     DID WE GET A BUFFER?
          BZ    NOPOOL             0-NO
          FREEPOOL ((R10))
 NOPOOL   DS    0H
          FREEMAIN R,LV=ZDCBLEN,A=(R10),SP=SUBPOOL
-ACLOSEX  FUNEXIT RC=0                                           GP18031
-         POP   USING                                            GP17119
+         FUNEXIT RC=0
          SPACE 2
-***********************************************************************
-*                                                                     *
-*  ATCLOS - ALMOST CLOSE A DATA SET (E.G., PRIOR TO SYSTEM()          *
-*             Works with BSAM only, and should not be used with FBS   *
-*                                                                     *
-***********************************************************************
          PUSH  USING
          DROP  ,
-@@ATCLOS FUNHEAD IO=YES,SAVE=(WORKAREA,WORKLEN,SUBPOOL)         GP18031
-         TM    IOMFLAGS,IOFTERM   TERMINAL I/O MODE?            GP17119
-         BNZ   ATCLOSEX             YES; IGNORE                 GP17119
-         FIXWRITE ,          WRITE BUFFER AS-IS                 GP17119
-         CLOSE MF=(E,OPENCLOS),TYPE=T  TENTATIVE NON-CLOSE      GP17119
-ATCLOSEX FUNEXIT RC=0                                           GP17119
-         POP   USING                                            GP17119
-         SPACE 2
-***********************************************************************
+*---------------------------------------------------------------------*
 * FIND THE ZDCBAREA FOR A PREVIOUSLY OPENED FILE (CURRENT OR HIGHER   *
 *   TCB, AND RETURN ITS ADDRESS OR ZERO IN R1                         *
 * THE ADDRESS OF THE DESIRED DDNAME IS POINTED TO BY R1               *
-***********************************************************************
-         PUSH  USING                                            GP18034
+*---------------------------------------------------------------------*
          ENTRY @@AQZDCB                                         GP17274
 @@AQZDCB L     R1,0(,R1)          R1 POINTS TO THE DESIRED DD NAME
 AQZDCB   STM   R14,R12,12(R13)    SAVE A BIT                    GP17274
@@ -3793,34 +3029,28 @@ AQZDCBEX ST    R15,24(,R13)       RETURN ADDRESS OR 0 IN R1     GP17274
          BR    R14                RETURN ZDCBAREA ADDRESS OR 0  GP17274
          POP   USING                                            GP17274
          SPACE 2
-*---------------------------------------------------------------------*
-*  Physical Write - called by @@ACLOSE, switch from output to input   *
-*    mode, and whenever output buffer is full or needs to be emptied. *
-*  Works for EXCP and BSAM. Special processing for UPDAT mode         *
-*---------------------------------------------------------------------*
          PUSH  USING
          DROP  ,
+*---------------------------------------------------------------------*
+*  Physical Write - called by @@ACLOSE, switch from output to input
+*    mode, and whenever output buffer is full or needs to be emptied.
+*  Works for EXCP and BSAM. Special processing for UPDAT mode
+*---------------------------------------------------------------------*
          USING IHADCB,R10    COMMON I/O AREA SET BY CALLER
 TRUNCOUT B     TRUNCBEG-TRUNCOUT(,R15)   SKIP LABEL             GP17263
          DC    AL1(9),CL(9)'TRUNCOUT' EXPAND LABEL
 TRUNCBEG TM    IOPFLAGS,IOFLDATA   PENDING WRITE ?              GP17263
          BZR   R14           NO; JUST RETURN                    GP17263
+         AIF   ('&ZSYS' NE 'S380').NOTRUBS
+         BSM   R14,R0             PRESERVE AMODE
 .NOTRUBS STM   R14,R12,12(R13)    SAVE CALLER'S REGISTERS
          LR    R12,R15
          USING TRUNCOUT,R12
-         L     R15,=A(ENVFG)      locate environment flag       GP18031
-         CLI   0(R15),FGE7        have BSM support?             GP18031
-         BNH   TRUNCSAM             no; ignore                  GP18031
-         BSM   R14,0              get AMODE                     GP18031
-         ST    R14,12(,R13)       update for return             GP18031
-TRUNCSAM LA    R15,ZIOSAVE2-ZDCBAREA(,R10)
+         LA    R15,ZIOSAVE2-ZDCBAREA(,R10)
          ST    R15,8(,R13)
          ST    R13,4(,R15)
          LR    R13,R15
-         USING IHADCB,R10    COMMON I/O AREA SET BY CALLER
-         TM    IOPFLAGS,IOFLDATA   PENDING WRITE ?
-         BZ    TRUNCOEX      NO; JUST RETURN
-         MAM   24                 SET AM24 ON S380              GP18031
+         GAM24 ,                  SET AM24 ON S380              GP15015
          LM    R4,R5,BUFFADDR  START/NEXT ADDRESS
          CLI   RECFMIX,IXVAR      RECFM=V?
          BNE   TRUNLEN5
@@ -3884,13 +3114,8 @@ TRUNPOST XC    BUFFCURR,BUFFCURR  CLEAR
          LA    R4,0(R4,R3)                                      GP14363
          ST    R4,BUFFCURR        SET NEXT AVAILABLE            GP14363
 TRUNCOEX L     R13,4(,R13)
-         L     R5,=A(ENVFG)       locate environment flag       GP18031
-         CLI   0(R5),FGE7         have BSM support?             GP18031
-         BNH   TRUNCOR7             no; ignore                  GP18031
          LM    R14,R12,12(R13)    Reload all
-         BSM   0,R14              Return in caller's mode       GP18031
-TRUNCOR7 LM    R14,R12,12(R13)    Reload all                    GP18031
-         BR    R14                Return in caller's mode       GP18031
+         QBSM  0,R14              Return in caller's mode
          LTORG ,
          POP   USING
          SPACE 2
@@ -3912,15 +3137,18 @@ TRUNCOR7 LM    R14,R12,12(R13)    Reload all                    GP18031
          LTR   R4,R3              CHECK REQUEST
          BNP   GETMEX             QUIT IF INVALID
 *
-* To reduce fragmentation, round size to 64 byte multiple
+* To reduce fragmentation, round up size to 64 byte multiple
 *
          A     R3,=A(8+(64-1))    OVERHEAD PLUS ROUNDING
          N     R3,=X'FFFFFFC0'    MULTIPLE OF 64
-         #GETMEM RC,LV=(R3),SP=SUBPOOL,LOC=ANY                  GP18031
-         LTR   R15,R15            Sucessful?                    GP15017
+         AIF   ('&ZSYS' NE 'S380').NOANY
+         GETMAIN RC,LV=(R3),SP=SUBPOOL,LOC=ANY                  GP15019
+         AGO   .FINANY
+.NOANY   GETMAIN RC,LV=(R3),SP=SUBPOOL                          GP15019
+.FINANY  LTR   R15,R15            Sucessful?                    GP15017
          BNZ   GETMEX               No; return 0                GP15017
 *
-* We store the amount requested from MVS into this address
+* We store the amount we requested from MVS into this address
 * and just below the value we return to the caller, we save
 * the amount requested.
 *
@@ -3963,7 +3191,7 @@ GETMEX   FUNEXIT RC=(R5)                                        GP15017
          N     R3,=X'FFFFFFF8'      on a double word boundary   GP17274
          STCK  0(R3)              stash the clock               GP17274
          L     R2,0(,R1)          address may be ATL            GP17274
-         MVC   0(8,R2),0(R3)      copy unaligned ATL or BTL     GP17274
+         MVC   0(8,R2),0(R3)      copy to BTL or ATL            GP17274
          L     R4,0(,R2)
          L     R5,4(,R2)
          SRDL  R4,12
@@ -3999,8 +3227,6 @@ GETMEX   FUNEXIT RC=(R5)                                        GP15017
 *                                                                     *
 *    "parm" is the address of a text string of length "parm-len",     *
 *        and may be zero to one hundred bytes (OS JCL limit)          *
-*        PROGRAM NOT KNOWN TO BE CAPABLE OF HANDLING LONGER STRINGS.  *
-*        THE CURRENT LIMIT IS (ARBITRARILY) 257.                      *
 *                                                                     *
 *    "req-type" is or points to 1 for a program ATTACH                *
 *                               2 for TSO CP invocation               *
@@ -4134,22 +3360,7 @@ SYSATLSV STM   R14,R15,ECTPCMD
          BNE   SYSATCOM           HAVE SOMETHING
          OI    ECTSWS,ECTNOPD     ALL BLANK
          POP   USING
-*---------------------------------------------------------------------*
-*  Special AMODE handling:                                            *
-*    S/370 - no change                                                *
-*    S/380 - change to AM24                                           *
-*    S/390 - change to AM31                                           *
-*                                                                     *
-*  After WAIT - resume caller's AMODE                                 *
-*---------------------------------------------------------------------*
-SYSATCOM L     R15,=A(ENVFG)                                    GP18031
-         CLI   0(R15),FGE8        BSM support ?                 GP18031
-         BL    SYSATCON             S/370 - no                  GP18031
-         LA    R15,SYSATCON       BSM target                    GP18031
-         BE    SYSATCOB             S/380 - AM24                GP18031
-         O     R15,=X'80000000'     S/390 - AM31                GP18031
-SYSATCOB BSM   0,R15              set AMODE                     GP18031
-SYSATCON LA    R1,SYSATPRM        PASS ADDRESS OF PARM ADDRESS
+SYSATCOM LA    R1,SYSATPRM        PASS ADDRESS OF PARM ADDRESS
          LA    R2,SYSATPGM        POINT TO NAME
          LA    R3,SYSATECB        AND ECB
          ATTACH EPLOC=(R2),       INVOKE THE REQUESTED PROGRAM         *
@@ -4161,7 +3372,6 @@ SYSATCON LA    R1,SYSATPRM        PASS ADDRESS OF PARM ADDRESS
          B     SYSATEXT           FAIL
 SYSATWET ST    R1,SYSATTCB        SAVE FOR DETACH
          WAIT  ECB=SYSATECB       WAIT FOR IT TO FINISH
-         AMUSE ,                  resume caller's AMODE         GP18031
          L     R2,SYSATTCB        GET SUBTASK TCB
          USING TCB,R2             DECLARE IT
          MVC   0(4,R11),TCBCMP    COPY RETURN OR ABEND CODE
@@ -4176,7 +3386,7 @@ SYSAXTXT MVC   SYSATOTX(0),0(R8)    MOVE PARM TEXT
 SYSAXBLK CLC   SYSATOTX(0),SYSATOTX-1  TEST FOR OPERANDS
 *    PROGRAM EXIT, WITH APPROPRIATE RETURN CODES
 *
-SYSATEXT FUNEXIT ,  RESTORE REGS; SET RETURN CODES (prev. set in R11)
+SYSATEXT FUNEXIT ,           RESTORE REGS; SET RETURN CODES
          SPACE 1             RETURN TO CALLER
 *    DYNAMICALLY ACQUIRED STORAGE
 *
@@ -4202,27 +3412,20 @@ MVSSUPA  CSECT ,             RESTORE
 ***********************************************************************
          PUSH  USING
          DROP  ,
-@@IDCAMS FUNHEAD SAVE=IDCSAVE,US=NO  EXECUTE IDCAMS REQUEST     GP18034
+@@IDCAMS FUNHEAD SAVE=IDCSAVE     EXECUTE IDCAMS REQUEST
          LA    R1,0(,R1)          ADDRESS OF IDCAMS REQUEST (V-CON)
          ST    R1,IDC@REQ         SAVE REQUEST ADDRESS
          MVI   EXFLAGS,0          INITIALIZE FLAGS
-         L     R2,=A(ENVFG)       get environment               GP18034
-         TM    0(R2),FGE8         S/380 MODE?                   GP18034
-         BZ    IDCLINK              NO; NO FINAGLING            GP18034
-         L     R2,4(,R13)         GET CALLER'S SAVE AREA        GP18034
-         TM    12+3(R2),X'01'     AM32/64 ?                     GP18034
-         BZ    IDCLINK              NO                          GP18034
-         MAM   24                 TEMPORARY(?) BYPASS FOR ABEND GP18034
-IDCLINK  LA    R1,AMSPARM         PASS PARAMETER LIST
+         LA    R1,AMSPARM         PASS PARAMETER LIST
          LINK  EP=IDCAMS          INVOKE UTILITY
          FUNEXIT RC=(15)          RESTORE CALLER'S REGS
          POP   USING
          SPACE 1
-*---------------------------------------------------------------------*
+***********************************************************************
 *                                                                     *
 * XIDCAMS - ASYNCHRONOUS EXIT ROUTINE                                 *
 *                                                                     *
-*---------------------------------------------------------------------*
+***********************************************************************
          PUSH  USING
          DROP  ,
 XIDCAMS  STM   R14,R12,12(R13)
@@ -4232,7 +3435,7 @@ XIDCAMS  STM   R14,R12,12(R13)
          ST    R13,4(,R9)         MAKE BACK LINK
          ST    R9,8(,R13)         MAKE DOWN LINK
          LR    R13,R9             MAKE ACTIVE SAVE AREA
-         SLR   R15,R15            PRESET FOR GOOD RETURN
+         SR    R15,R15            PRESET FOR GOOD RETURN
          LM    R3,R5,0(R1)        LOAD PARM LIST ADDRESSES
          SLR   R14,R14
          IC    R14,0(,R4)         LOAD FUNCTION
@@ -4271,10 +3474,11 @@ XIDCPUT  TM    EXFLAGS,EXFSUPP+EXFSKIP  ANY FORM OF SUPPRESSION?
          BE    XIDCEXIT           YES; SKIP
 XIDCSHOW DS    0H            Consider how/whether to pass to user
 *later   WTO   MF=(E,AMSPRINT)
-XIDCPUTZ SLR   R15,R15
+XIDCPUTZ SR    R15,R15
          B     XIDCEXIT
 XIDCSKIP OI    EXFLAGS,EXFSKIP    SKIP THIS AND REMAINING MESSAGES
-         SLR   R15,R15
+         SR    R15,R15
+*---------------------------------------------------------------------*
 * IDCAMS ASYNC EXIT ROUTINE - EXIT, CONSTANTS & WORKAREAS
 *---------------------------------------------------------------------*
 XIDCEXIT L     R13,4(,R13)        GET CALLER'S SAVE AREA
@@ -4350,7 +3554,7 @@ EXFGLOB  EQU   EXFMALL+EXFSUPP+EXFRET  GLOBAL FLAGS
          MVC   0(4,R11),=X'04804000'  PRESET
          LR    R9,R1              SAVE PARAMETER LIST ADDRESS
          LA    R0,DYNALDLN        GET LENGTH OF SAVE AND WORK AREA
-         #GETMEM RC,LV=(0),LOC=BELOW  GET STORAGE               GP17323
+         GETMAIN RC,LV=(0),LOC=BELOW        GET STORAGE
          LTR   R15,R15            SUCCESSFUL ?
          BZ    DYNALHAV           YES
          STC   R15,3(,R11)        SET RETURN VALUES
@@ -4397,7 +3601,7 @@ DYNALHAV ST    R1,8(,R13)         LINK OURS TO CALLER'S SAVE AREA
          CH    R4,=AL2(L'ALLADDN-1)   CORRECT SIZE FOR RETURN ?
          BE    DYNALNDD           AND LEAVE R5 NON-ZERO
          B     DYNALEXT           NO
-DYNALDDN SLR   R5,R5              SIGNAL NO FEEDBACK
+DYNALDDN SR    R5,R5              SIGNAL NO FEEDBACK
 *  WHEN USER SUPPLIES A DD NAME, DO AN UNCONDITIONAL UNALLOCATE ON IT
          LA    R0,ALLURB
          STCM  R0,7,ALLURBP+1     REQUEST POINTER
@@ -4448,6 +3652,9 @@ DYNLIST  DYNPAT P=ALL        EXPAND ALLOCATION DATA
 DYNALDLN EQU   *-DYNALWRK     LENGTH OF DYNAMIC STORAGE
 MVSSUPA  CSECT ,             RESTORE
          SPACE 2
+*
+*
+*
 **********************************************************************
 *                                                                    *
 *  GETPFX - get TSO prefix                                           *
@@ -4464,23 +3671,20 @@ MVSSUPA  CSECT ,             RESTORE
          LA    R0,0    Not really needed, just looks nice
          USING PSA,R0
          ICM   R2,15,PSATOLD
-         BZ    PFXRET
+         BZ    RETURNGP
          USING TCB,R2
          ICM   R3,15,TCBJSCB
-         BZ    PFXRET
+         BZ    RETURNGP
          USING IEZJSCB,R3
          ICM   R4,15,JSCBPSCB
-         BZ    PFXRET
+         BZ    RETURNGP
          USING PSCB,R4
          ICM   R5,15,PSCBUPT
-         BZ    PFXRET
+         BZ    RETURNGP
          USING UPT,R5
          LA    R15,UPTPREFX       RETURN ADDRESS (CL7/AL1)      GP17107
-         CLI   0(R15),C'>'        new 8-BYTE prefix?            GP18031
-         BNE   PFXRET               no                          GP18031
-         LA    R15,UPT+21         address of CL8 prefix         GP18031
 *
-PFXRET   RETURN (14,12),RC=(15)                                 GP17107
+RETURNGP RETURN (14,12),RC=(15)                                 GP17107
          POP   USING                                            GP17107
 *
 *
@@ -4504,17 +3708,30 @@ PFXRET   RETURN (14,12),RC=(15)                                 GP17107
 *                                                                    *
 **********************************************************************
          ENTRY @@TEST31
-@@TEST31 BALR  R15,0                                            GP18031
-         SRL   R15,31             return 0 or 1                 GP18031
-         BR    R14                                              GP18031
-         SPACE 2
+@@TEST31 DS    0H
+         SAVE  (14,12),,@@TEST31
+         LR    R12,R15
+         USING @@TEST31,R12
+*
+         LA    R15,1
+         BALR  R1,R0
+         LTR   R1,R1
+         BM    RETURNTS
+         LA    R15,0
+*
+RETURNTS DS    0H
+         RETURN (14,12),RC=(15)
+         LTORG ,
+*
+*
+*
 **********************************************************************
 *                                                                    *
 *  GETAM - get the current AMODE                                     *
 *                                                                    *
-*  This function returns 24 if we are running in exactly AMODE 24,   *
-*  31 if we are running in exactly AMODE 31, and 64 for anything     *
-*  else (user-defined/infinity/16/32/64/37)                          *
+*  This function returns 24 if we are running in AMODE 24 (or less), *
+*  31 if we are running anything between 25-31, and 32 for anything  *
+*  32 or above.                                                      *
 *                                                                    *
 *  Be aware that MVS 3.8j I/O routines require an AMODE of exactly   *
 *  24 - nothing more, nothing less - so applications are required    *
@@ -4526,7 +3743,7 @@ PFXRET   RETURN (14,12),RC=(15)                                 GP17107
 *  instead of the user-configurable x'01', which is unfortunate.     *
 *                                                                    *
 *  For traditional reasons, people refer to 24, 31 and 64, when what *
-*  they should really be saying is 24, 31 and user-defined.          *
+*  they should really be saying is 24, 31 and 32+.                   *
 *                                                                    *
 **********************************************************************
          ENTRY @@GETAM
@@ -4535,13 +3752,13 @@ PFXRET   RETURN (14,12),RC=(15)                                 GP17107
          LR    R12,R15
          USING @@GETAM,R12
 *
-         L     R2,=X'C1800000'
+         L     R2,=X'FF000000'
          LA    R2,0(,R2)
-         CLM   R2,B'1100',=X'0080'
+         CLM   R2,B'1000',=X'00'
          BE    GAIS24
-         CLM   R2,B'1000',=X'41'
-         BE    GAIS31
-         LA    R15,64
+         LTR   R2,R2
+         BNM   GAIS31
+         LA    R15,32
          B     RETURNGA
 GAIS24   DS    0H
          LA    R15,24
@@ -4551,115 +3768,9 @@ GAIS31   LA    R15,31
 RETURNGA DS    0H
          RETURN (14,12),RC=(15)
          LTORG ,
-         SPACE 2
-***********************************************************************
-*                                                                     *
-*  ADDNUM - Add two numbers using 80386                               *
-*                                                                     *
-***********************************************************************
-*                                                               PE18032
-         PUSH  USING                                            PE18032
-         DROP  ,                                                PE18032
-         ENTRY @@ADDNUM                                         PE18032
-@@ADDNUM DS    0H                                               PE18032
-         SAVE  (14,12),,@@ADDNUM                                PE18032
-         LR    R12,R15                                          PE18032
-         USING @@ADDNUM,R12                                     PE18032
-         LR    R2,R1  new register for parms                    PE18032
-         L     R0,=X'FFFFFFFD' API for execute 80386            PE18032
-         LR    R1,R0                                            PE18032
-         LA    R3,CODE386                                       PE18032
-         LA    R14,ANRET                                        PE18032
-         L     R4,0(R2)                                         PE18032
-         L     R5,4(R2)                                         PE18032
-         L     R6,8(R2)                                         PE18032
-         SVC   120                                              PE18032
-ANRET    DS    0H                                               PE18032
-         RETURN (14,12),RC=(15)                                 PE18032
-*                                                               PE18032
-         LTORG ,                                                PE18032
-*                                                               PE18032
-CODE386  DS    0D                                               PE18032
-         DC    X'55' push ebp                                   PE18032
-         DC    X'8B' mov ebp,esp                                PE18032
-         DC    X'EC'                                            PE18032
-         DC    X'8B' mov eax, ebp + 8                           PE18032
-         DC    X'45'                                            PE18032
-         DC    X'08'                                            PE18032
-         DC    X'03' add eas, ebp + 12                          PE18032
-         DC    X'45'                                            PE18032
-         DC    X'0C'                                            PE18032
-         DC    X'C9' leave                                      PE18032
-         DC    X'C3' return near                                PE18032
-         DC    X'22' eyecatcher                                 PE18032
-         DC    X'22'                                            PE18032
-         DC    X'22'                                            PE18032
-         POP   USING                                            PE18032
-         SPACE 2
-***********************************************************************
-*                                                                     *
-*  GETMSZ - Get memory size via DIAG                                  *
-*                                                                     *
-***********************************************************************
-*
-         PUSH  USING                                            PE18032
-         DROP  ,                                                PE18032
-         ENTRY @@GETMSZ                                         PE18032
-@@GETMSZ DS    0H                                               PE18032
-         SAVE  (14,12),,@@GETMSZ                                PE18032
-         LR    R12,R15                                          PE18032
-         USING @@GETMSZ,R12                                     PE18032
-*         DIAGNOSE X'60'                                        PE18032
-         DC    X'83',X'000060'                                  PE18032
-         LR    R15,R0                                           PE18032
-         RETURN (14,12),RC=(15)                                 PE18032
-*                                                               PE18032
-         LTORG ,                                                PE18032
-         POP   USING                                            PE18032
-         SPACE 2
 *
 *
 *
-***********************************************************************
-*                                                                     *
-*  GOSUP - go into supervisor mode                                    *
-*                                                                     *
-***********************************************************************
-*
-         PUSH  USING                                            PE18032
-         DROP  ,                                                PE18032
-         ENTRY @@GOSUP                                          PE18032
-@@GOSUP  DS    0H                                               PE18032
-         SAVE  (14,12),,@@GOSUP                                 PE18032
-         LR    R12,R15                                          PE18032
-         USING @@GOSUP,R12                                      PE18032
-         MODESET MODE=SUP                                       PE18032
-         LA    R15,0                                            PE18032
-         RETURN (14,12),RC=(15)                                 PE18032
-*                                                               PE18032
-         LTORG ,                                                PE18032
-         POP   USING                                            PE18032
-         SPACE 2
-***********************************************************************
-*                                                                     *
-*  GOPROB - go into problem mode                                      *
-*                                                                     *
-***********************************************************************
-*
-         PUSH  USING                                            PE18032
-         DROP  ,                                                PE18032
-         ENTRY @@GOPROB                                         PE18032
-@@GOPROB DS    0H                                               PE18032
-         SAVE  (14,12),,@@GOPROB                                PE18032
-         LR    R12,R15                                          PE18032
-         USING @@GOPROB,R12                                     PE18032
-         MODESET MODE=PROB                                      PE18032
-         LA    R15,0                                            PE18032
-         RETURN (14,12),RC=(15)                                 PE18032
-*                                                               PE18032
-         LTORG ,                                                PE18032
-         POP   USING                                            PE18032
-         SPACE 2
 ***********************************************************************
 *                                                                     *
 *  CALL @@SVC99,(rb)                                                  *
@@ -4679,7 +3790,7 @@ CODE386  DS    0D                                               PE18032
          USING @@SVC99,R12
          LR    R11,R1
 *
-         #GETMEM RU,LV=WORKLEN,SP=SUBPOOL,LOC=BELOW             GP17323
+         GETMAIN RU,LV=WORKLEN,SP=SUBPOOL,LOC=BELOW
          ST    R13,4(,R1)
          ST    R1,8(,R13)
          LR    R13,R1
@@ -4697,10 +3808,9 @@ CODE386  DS    0D                                               PE18032
 * the parameter in writable storage so that we can ensure that
 * we set that bit.
 *
-*waste   L     R2,0(,R1)
-*waste   O     R2,=X'80000000'
-*waste   ST    R2,0(,R1)
-         OI    0(R1),X'80'   set high bit                       GP18031
+         L     R2,0(,R1)
+         O     R2,=X'80000000'
+         ST    R2,0(,R1)
          SVC   99
          LR    R2,R15
 *
@@ -4712,7 +3822,7 @@ RETURN99 DS    0H
          LR    R15,R2             Return success
          RETURN (14,12),RC=(15)   Return to caller
 *
-         POP   USING                                            GP18031
+         POP   USING
          SPACE 2
 ***********************************************************************
 *                                                                     *
@@ -4768,7 +3878,7 @@ RETURN99 DS    0H
          BNZ   SNAPGOT                                          GP14244
          USING SNAPDCB,R10   DECLARE DYNAMIC WORK AREA          GP14244
 SNAPGET  LA    R0,SNAPSLEN   GET LENGTH OF SAVE AND WORK AREA   GP14244
-         #GETMEM RU,LV=(0),LOC=BELOW                            GP15019
+         GETMAIN RU,LV=(0),LOC=BELOW                            GP15019
          STM   R0,R1,#SNAPDCB     SAVE FOR RELEASE              GP14244
          LR    R10,R1                                           GP14244
          MVC   SNAPDCB(PATSNAPL),PATSNAP   INIT DCB, ETC.       GP14244
@@ -4844,227 +3954,12 @@ MVSSUPA  CSECT ,             RESTORE CSECT                      GP14244
          L     R15,60(,R2)        get the return code
          LM    R0,R14,0(R2)       restore registers
          BR    R14                return to caller
-         TITLE 'M V S S U P A  ***  MODE SWITCHING SUPPORT'     GP18031
-*
-**********************************************************************
-*                                                                    *
-*  SETUP - do initialization. I used the word "setup" instead of     *
-*  "init" in case someone imagines that "init" is some sort of       *
-*  complicated compiler-generated function.                          *
-*                                                                    *
-*  This routine figures out the amode switching strategy given that  *
-*  the operating system may require a lower amode that the           *
-*  application, and this will be reflected in the fact that the      *
-*  rmode will be lower than the amode, to allow this switch to       *
-*  occur. It is left to the user to use a utility to set the RMODE   *
-*  to something that their current operating system supports. E.g.   *
-*  a future version of z/OS may allow execution of READ in AM64 in   *
-*  which case the z/OS user is free to change this module from RM31  *
-*  to RM64. Although that won't work until we make the READ etc      *
-*  macros trimodal (24/31/64) instead of the current bimodal (24/31) *
-*                                                                    *
-*  Note that AMODE switching is not required, and thus doesn't even  *
-*  need time to be wasted, if you are targeting a "pure" environment *
-*  such as S370 where everything is in AM24 and the OS can handle    *
-*  that, or S390 where everything is in AM31 and the OS can handle   *
-*  that, and possibly in the future there will be such a thing as    *
-*  Z999 where the OS can handle being called in AM64, so there is    *
-*  no need to waste time checking to see if an amode switch is       *
-*  required. However, it is strongly advised that instead of coding  *
-*  for such pure environments, you instead select either S380,       *
-*  which will work optimally on all environments, ie AM24 in         *
-*  MVS 3.8j, switch between AM31 and AM24 on MVS/XA, and remain in   *
-*  AM31 on late MVS/ESA and above. OR if you are building a 64-bit   *
-*  capable module, which necessarily requires the z/Arch 1.0         *
-*  instruction set to be available, that you choose Z900, which will *
-*  switch between AM64 and AM31 normally on z/OS, but is also        *
-*  capable of switching from AM64 to AM24 if the code is loaded BTL, *
-*  which will be the case on an operating system like MVS/380.       *
-*  It will also handle the case where a future z/OS or a future      *
-*  MVS/380 or a future z/PDOS is able to handle an RM64 module       *
-*  such that the application is always executing in AM64 instead of  *
-*  dropping down to AM31 to execute OS routines.                     *
-*                                                                    *
-**********************************************************************
-         ENTRY @@SETUP
-@@SETUP  DS    0H
-         SAVE  (14,12),,@@SETUP
-         LR    R12,R15
-         USING @@SETUP,R12
-*                                                               GP18022
-*   Check the environment code (370,380,390) set by MVS380MN,   GP18022
-*     and set the local flag for faster testing.                GP18022
-*                                                               GP18022
-         CLI   ENVFG,0       Initialized?                       GP18022
-         BNE   SETEXIT         yes; don't do it again           GP18035
-         L     R3,CVTPTR     get CVT                            GP18022
-         USING CVTMAP,R3     DECLARE IT                         GP18022
-         TM    CVTDCB,X'80'  31-bit system support?             GP18022
-         BNZ   SETE9           yes; set flag                    GP18022
-         LR    R4,R3         COPY CVT                           GP18022
-         SH    R4,DCH256     GET PREFIX                         GP18022
-         DROP  R3                                               GP18039
-         USING CVTFIX,R4                                        GP18022
-         CLI   CVTMDL-2,X'70'  370 or not set?                  GP18035
-         BE    SETE7             370                            GP18035
-         BH    SETTST            380 OR 390                     GP18035
-         L     R2,DCFF00                                        GP18035
-         LA    R2,0(,R2)                                        GP18035
-         CLM   R2,B'1000',DC4FHB+4   COMPARE TO X'80'           GP18040
-         BH    SETE9           390                              GP18040
-         LA    R0,FGE8       set for S/380                      GP18035
-         BE    SETENV          380                              GP18040
-SETE7    LA    R0,FGE7       preset for S/370                   GP18022
-         B     SETENV          yes; set flag                    GP18022
-SETTST   CLI   CVTMDL-2,X'80'  370 or not set?                  GP18022
-         BL    SETENV            yes; set flag                  GP18022
-         LA    R0,FGE8       preset for S/380                   GP18022
-         BE    SETENV          yes; set flag                    GP18022
-SETE9    LA    R0,FGE9       set for OS/390, z/OS, etc.         GP18022
-SETENV   STC   R0,ENVFG      set environment                    GP18022
-         DROP  R4                                               GP18039
-*
-* If we are running in a pure environment, where the
-* AMODE and RMODE are the same, there is no need to
-* ever do AMODE switching, so none of this AMODE
-* switching code is required at all
-*
-         TM    ENVFG,FGE7    S/370?                             GP18022
-         BNZ   SETEXIT         yes; do absolutely nothing       GP18022
-         L     R2,DCFF00                                        GP18022
-         LA    R2,0(,R2)
-         CLM   R2,B'1000',DCB0                                  GP18022
-*
-* If we are currently in AM24, there is nothing
-* to ever do, as we will stay in that mode forever
-         BNE   SETEXIT
-*
-         TM    ENVFG,FGE8    running MVS/380 ?                  GP18022
-         BZ    SETUP64         no; do 32/64                     GP18022
-*
-* The S380 target handles AM32 that is
-* supported on some S/380 platforms.
-* First handle the case of us running AM32
-         CLM   R2,B'1000',DCFF00       is it FF?                GP18022
-         BE    S8SET32
-* Now we know we are running AM31. If we are,
-* and we are RM31, then no switching is required.
-         LR    R2,R12
-         N     R2,DC7F                                          GP18022
-         BNZ   SETEXIT No amode switching needed
-* Now we know we need to switch to RM24, so no
-* OR is required.
-         B     COMM3132
-S8SET32  DS    0H
-* If we are AM32 and also (surprisingly) RM32, we must
-* not do any BSM manipulations at all.
-         LR    R2,R12
-         N     R2,DCHB                                          GP18022
-         BNZ   SETEXIT No amode switching needed
-* If we are AM32, but RM31, we need to set the AM31 bit
-         LR    R2,R12
-         N     R2,DC7F                                          GP18022
-         BZ    COMM3132  Not RM31, must be RM24
-         OI    NEEDBOO,X'80'
-COMM3132 DS    0H
-* We have dealt with the appropriate bits to set
-* the OS mode, now we need to set the return to
-* application mode. That is easy, it is the current
-* amode, either AM32 or AM31
-         SLR   R2,R2                                            GP18040
-         BSM   R2,0
-         ST    R2,NEEDBOA this will be suitable for ORing
-         OI    NEEDBF,NEEDBANY  set flag to say we need BSM switching
-         B     SETEXIT
-* End of S380 code
-         SPACE 2
-* Start of Z900 code
-SETUP64  TM    ENVFG,FGE9    S/390 or later ?                   GP18022
-         BZ    SETEXIT                                          GP18022
-* If we are running in AM64, the high byte
-* should have remained intact. It will also
-* remain intact for AM32, but since there are
-* no known operating systems that can cope with
-* execution in AM32 but not AM64, we never need
-* to step down from AM64 to AM32, so we never
-* need to distinguish between these two modes.
-* We just treat them both as AM64.
-         CLM   R2,B'1000',DCFF00                                GP18022
-         BE    SET64
-* Ok, we are currently in AM31. We now need to
-* see if this code is ATL. Because if we are
-* ATL, it is not possible to switch down to
-* AM24, so we instead need to rely on the operating
-* system to be able to handle an AM31 caller, which
-* is the case in OS/390 but not MVS/XA.
-         LR    R2,R12
-         N     R2,DC7F                                          GP18022
-         BNZ   SETEXIT No amode switching possible
-* Now we need to save the original AMODE settings,
-* ie AM31. We do this in a generic manner though.
-         SLR   R2,R2                                            GP18040
-         BSM   R2,0
-         ST    R2,NEEDBOA this will be suitable for ORing
-* Now we need to set appropriate flags to let GAMOS
-* know what we need to drop down to. In the simple
-* case of AM31, we can only drop down to AM24
-         OI    NEEDBF,NEEDBANY  set flag to say we need BSM switching
-         OI    NEEDBF,NEEDB24  set flag to say we need AM24
-         B     SETEXIT
-* Ok, we're in AM64, and that means the full raft of
-* z/Arch 1.0 instructions are available.
-SET64    DS    0H
-         LGR   R2,R12
-         NG    R2,0,DC4FHB                                      GP18022
-         BNZ   SETEXIT No amode switching possible
-* Now we need to save the original AMODE settings,
-* ie AM64. We do this in a generic manner though.
-         SLR   R2,R2                                            GP18040
-         BSM   R2,0
-         ST    R2,NEEDBOA low bit will be set indicating AM64
-         OI    NEEDBF,NEEDBANY
-* Now we need to check if we need to switch to
-* AM24 or AM31. This will be driven by the RMODE,
-* which at this stage we know is either 24 or 31
-         LR    R2,R12
-         N     R2,DC7F                                          GP18022
-         BZ    AM64S24
-* We are RM31, meaning we need SAM31
-         OI    NEEDBF,NEEDB31
-         B     AM64SFIN
-AM64S24  DS    0H     we are RM24, so we need AM24
-         OI    NEEDBF,NEEDB24
-AM64SFIN DS    0H     finished setting flags
-*
-.NO64B   ANOP  ,   end of Z900 processing
-SETEXIT  LA    R15,0
-         RETURN (14,12),RC=(15)
-         SPACE 1
-DC4FHB   DC    0D'0',X'FFFFFFFF80000000'   1/2                  GP18022
-DCHB     EQU   *-4,4,C'X'            2/2                        GP18022
-DCFF00   DC    X'FF000000'           1/2                        GP18022
-DCB0     EQU   *-1,1,C'X'            2/2                        GP18022
-DC7F     DC    X'7F000000'                                      GP18022
-DCH256   DC    H'256'                                           GP18022
-         SPACE 1
-*extrnl? ENTRY ENVFG
-ENVFG    DC    X'00'         Environment flag                   GP18022
-FGE7     EQU   X'01'           S/370 (must be lowest value)     GP18022
-FGE8     EQU   X'02'           S/380                            GP18022
-FGE9     EQU   X'03'           S/390                            GP18022
-         SPACE 1
-NEEDBF   DC    X'00'   flag bits for whether BSM needed
-NEEDBANY EQU   X'01'   need any amode switching at all?
-NEEDB24  EQU   X'02'   OS requires AM24
-NEEDB31  EQU   X'04'   OS requires AM31
-NEEDBOA  DC    A(0)    amode bits to be ORed in to return APP to
-*                      original amode
-NEEDBOO  DC    A(0)    amode bits to be ORed in to set OS amode
          SPACE 2
 *
 * S/370 doesn't support switching modes so this code is useless,
 * and won't compile anyway because "BSM" is not known.
 *
+         AIF   ('&ZSYS' EQ 'S370').NOMODE If S/370 we can't switch mode
          PUSH  USING
          DROP  ,
 ***********************************************************************
@@ -5074,15 +3969,8 @@ NEEDBOO  DC    A(0)    amode bits to be ORed in to set OS amode
 ***********************************************************************
          ENTRY @@SETM24
          USING @@SETM24,R15
-@@SETM24 ST    R1,24(R13)         save one register             GP18031
-         N     R14,=X'00FFFFFE'   get clean 24-bit return addr  GP18031
-         L     R1,=A(ENVFG)       locate environment flag       GP18031
-         CLI   0(R1),FGE7         have BSM support?             GP18031
-         BNH   SET24EX              no; ignore                  GP18031
-         L     R1,24(,R13)        restore                       GP18031
+@@SETM24 LA    R14,0(,R14)        Sure hope caller is below the line
          BSM   0,R14              Return in amode 24
-SET24EX  L     R1,24(,R13)        restore                       GP18031
-         BR    R14                return in amode 24            GP18031
          POP   USING
          SPACE 1
          PUSH  USING
@@ -5094,40 +3982,19 @@ SET24EX  L     R1,24(,R13)        restore                       GP18031
 ***********************************************************************
          ENTRY @@SETM31
          USING @@SETM31,R15
-@@SETM31 ST    R1,24(R13)         save one register             GP18031
-         N     R14,=X'FFFFFFFE'   get clean 31-bit return addr  GP18031
-         O     R14,=X'80000000'   request AM31                  GP18031
-         L     R1,=A(ENVFG)       locate environment flag       GP18031
-         CLI   0(R1),FGE7         have BSM support?             GP18031
-         BNH   SET31EX              no; ignore                  GP18031
-         L     R1,24(,R13)        restore                       GP18031
+@@SETM31 ICM   R14,8,=X'80'       Clobber entire high byte of R14
+*                                 This is necessary because if people
+*                                 use BALR in 24-bit mode, the address
+*                                 will have rubbish in the high byte.
+*                                 People switching between 24-bit and
+*                                 31-bit will be RMODE 24 anyway, so
+*                                 there is nothing to preserve in the
+*                                 high byte.
          BSM   0,R14              Return in amode 31
-SET31EX  L     R1,24(,R13)        restore                       GP18031
-         BR    R14                return in amode 24            GP18031
-         POP   USING
-         SPACE 1
-         PUSH  USING
-         DROP  ,
-***********************************************************************
-*                                                                     *
-*  SETM64 - Set AMODE to 64                                           *
-*                                                                     *
-***********************************************************************
-         ENTRY @@SETM64
-         USING @@SETM64,R15
-@@SETM64 ST    R1,24(R13)         save one register             GP18031
-*no-op*  N     R14,=X'FFFFFFFE'   get clean 64-bit return addr  GP18031
-         O     R14,=X'00000001'   request AM64                  GP18031
-         L     R1,=A(ENVFG)       locate environment flag       GP18031
-         TM    0(R1),FGE7         have BSM support?             GP18031
-         BNZ   SET64EX              no; ignore                  GP18031
-         L     R1,24(,R13)        restore                       GP18031
-         BSM   0,R14              Return in amode 64            GP18031
-SET64EX  L     R1,24(,R13)        restore                       GP18031
-         BR    R14                return in amode 24            GP18031
          LTORG ,
          POP   USING
 *
+.NOMODE  ANOP  ,                  S/370 doesn't support MODE switching
 *
 *
 *
@@ -5152,16 +4019,6 @@ DWORK    DS    D                  Extra work space
 WWORK    DS    D                  Extra work space
 DWDDNAM  DS    D                  Extra work space
 WORKLEN  EQU   *-WORKAREA
-@OPARM   DS    A             ADDRESS OF CALLING PARM(S)         GP18031
-TMPMODE  DS    A              NEXT PARM     I/O MODE            GP18031
-TMPHEIR  EQU   TMPMODE+2,1,C'B'   INHERITANCE FLAG              GP18031
-TMPRECFM DS    A              NEXT PARM     FORMAT (F, V, U)    GP18031
-TMPLRECL DS    A              NEXT PARM     RECORD LEN          GP18031
-TMPBLKSI DS    A              NEXT PARM     BLOCK SIZE          GP18031
-*MP@BUFF DS    A   (UNUSED)   NEXT PARM     BUFFER POINTER      GP18031
-TMPBUFF  DS    A              NEXT PARM     BUFFER ADDRESS      GP18031
-TMPRM7   DS    A              NEXT PARM     MEMBER NAME         GP18031
-TMPMEM   DS    CL8            BLANKS OR MEMBER NAME             GP18031
 SAVOSUB  DS    6A         R10-R15 Return saver for AOPEN subs   GP14234
 MYJFCB   DS    0F
          IEFJFCBN LIST=YES        Job File Control Block
@@ -5234,7 +4091,13 @@ FM1SCAL3 EQU   FM1SCAL1+1,3,C'X'  SEC ALLOC QUANTITY            GP14205
 DDWATTR  DS    16XL8         DS ATTRIBUTES (DSORG,RECFM,X,LRECL,BLKSI)
 BLDLLIST DS    Y(1,12+2+31*2)     BLDL LIST HEADER              GP14205
 BLDLNAME DS    CL8' ',XL(4+2+31*2)    MEMBER NAME AND DATA      GP14205
-         SPACE 1                                                GP14205
+         AGO   .COMSWA  replaced SWA for cross-assembly compatibility
+*COMP*   AIF   ('&ZSYS' NE 'S390').COMSWA                       GP14205
+DDWEPA   DS    A(DDWSVA)                                        GP14205
+DDWSWA   SWAREQ FCODE=RL,EPA=DDWEPA,MF=L                        GP14205
+DDWSVA   DS    7A                 (IBM LIES ABOUT 4A)           GP14205
+DDWSWAL  EQU   *-DDWSWA           LENGTH TO CLEAR               GP14205
+.COMSWA  SPACE 1                                                GP14205
 ZEROES   DS    F             CONSTANT
 DDWBLOCK DS    F             MAXIMUM BUFFER SIZE NEEDED         GP14205
 DDWFLAGS DS    X             RESULT FLAGS FOR ALL               GP14205
@@ -5293,9 +4156,6 @@ OPENLEN  EQU   *-WORKAREA         Length for @@AOPEN processing
          DCBD  DSORG=PS,DEVD=(DA,TA)   Map Data Control Block
          ORG   IHADCB             Overlay the DCB DSECT
 ZDCBAREA DS    0H
-*---------------------------------------------------------------------*
-*   normal BSAM processing (DISK, TAPEèEXCP, JES, Unit record         *
-*---------------------------------------------------------------------*
          DS    CL(BPAMDCBL)       Room for BPAM DCB             GP14205
          READ  DECB,SF,IHADCB,2-2,3-3,MF=L  READ/WRITE BSAM     GP14205
 *DEFUNCT ORG   IHADCB             Only using one DCB
@@ -5310,9 +4170,6 @@ ZASHOCB  DS    XL(ZASHOCBL)  SHOCB WORK AREA                    GP14233
 ZAARG    DS    A                  Pointer                       GP14233
 ZARRN    DS    F                  Relative record number        GP14233
          SPACE 2
-*---------------------------------------------------------------------*
-*   TAPE with EXCP; blocks > 32760                                    *
-*---------------------------------------------------------------------*
          ORG   IHADCB             Only using one DCB
 TAPEDCB  DCB   DDNAME=TAPE,MACRF=E,DSORG=PS,REPOS=Y,BLKSIZE=0,         *
                DEVD=TA                 LARGE SIZE
@@ -5328,10 +4185,7 @@ TAPEIOB  DC    X'42,00,00,00'
          DC    A(TAPECCW)
          DC    A(TAPEDCB)
          DC    2A(0)
-         SPACE 2
-*---------------------------------------------------------------------*
-*   TSO support for PUTLINE, PUTGET, and GETLINE                      *
-*---------------------------------------------------------------------*
+         SPACE 1
          ORG   IHADCB
 ZPUTLINE PUTLINE MF=L        PATTERN FOR TERMINAL I/O
 *DSECT*  IKJIOPL ,
@@ -5345,12 +4199,10 @@ ZIOECB   DS    A                   TPUT ECB
 ZIOECT   DS    A                   ORIGINATING ECT
 ZIOUPT   DS    A                   UPT
 ZIODDNM  DS    CL8      DD NAME AT OFFSET X'28' FOR DCB COMPAT.
-ZIOPTGT  PUTGET MF=L
 ZGETLINE GETLINE MF=L             TWO WORD GTPB
          SPACE 2
-*---------------------------------------------------------------------*
-*   VTOC READ ACCESS                                                  *
-*---------------------------------------------------------------------*
+*   VTOC READ ACCESS - INTERLEAVE WITH BSAM DCB
+*
          ORG   IHADCB                                           GP14213
 ZVCPVOL  DS    H                  Cylinder per volume           GP14213
 ZVTPCYL  DS    H                  Tracks per cylinder           GP14213
@@ -5363,14 +4215,13 @@ ZVSER    DS    CL6                Volume serial                 GP14213
 ZVSEEK   CAMLST SEEK,1-1,2-2,3-3  CAMLST to SEEK by address     GP14213
          SPACE 2
          ORG   ,
-*---------------------------------------------------------------------*
-*  COMMON DATA AREA                                                   *
-*---------------------------------------------------------------------*
 OPENCLOS DS    A                  OPEN/CLOSE parameter list
 DCBXLST  DS    2A                 07 JFCB / 85 DCB EXIT
 EOFR24   DS    CL(EOFRLEN)
          DS    0A                 Ensure correct DC A alignment GP15015
+         AIF   ('&ZSYS' NE 'S390').NOSB         Only S/390 needs a stub
 A24STUB  DS    CL(PATSTUBL)       DCB open exit 24-bit code     GP15015
+.NOSB    ANOP  ,                  Only S/390 needs a stub
 ZBUFF1   DS    A,F                Address, length of buffer
 ZBUFF2   DS    A,F                Address, length of 2nd buffer
 KEPTREC  DS    A,F                Address & length of saved rcd
@@ -5387,10 +4238,6 @@ ZDDN     DS    CL8           DD NAME                            GP14205
 ZMEM     DS    CL8           MEMBER NAME or nulls               GP14205
 DEVINFO  DS    2F                 UCB Type / Max block size
 ZTTR     DS    A             Last TTR written (BSAM, EXCP)      GP17079
-* THE ZDCBAREA MAY BE SHARED BY MULTIPLE PROGRAMS, BUT ONLY THE OPENING
-*   TCB/PRB PROGRAM MAY DO THE CLOSE.                           GP18031
-ZOWNTCB  DS    A             ADDRESS OF OWNING TCB              GP18031
-ZOWNPRB  DS    A             ADDRESS OF OWNING PRB              GP18031
          SPACE 1
 RECFMIX  DS    X             Record format index: 0-F 4-V 8-U
 IXFIX    EQU   0               Recfm = F                        GP14213
@@ -5439,9 +4286,7 @@ ZDCBLEN  EQU   *-ZDCBAREA
          SPACE 2
          PRINT NOGEN
          IHAPSA ,            MAP LOW STORAGE
-         IHAASCB ,                                              GP18031
-         IHAASXB ,                                              GP18031
-         CVT DSECT=YES,PREFIX=YES                               GP18031
+         CVT DSECT=YES
          IKJTCB ,            MAP TASK CONTROL BLOCK
          IKJECT ,            MAP ENV. CONTROL BLOCK
          IKJPTPB ,           PUTLINE PARAMETER BLOCK
@@ -5451,8 +4296,6 @@ ZDCBLEN  EQU   *-ZDCBAREA
          IEZIOB ,
          IEFZB4D0 ,          MAP SVC 99 PARAMETER LIST
          IEFZB4D2 ,          MAP SVC 99 PARAMETERS
-         IKJPGPB ,
-         SPACE 2
 MYUCB    DSECT ,
          IEFUCBOB ,
 MYTIOT   DSECT ,

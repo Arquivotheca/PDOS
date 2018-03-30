@@ -503,7 +503,7 @@ MVSSUPA  TITLE 'M V S S U P A  ***  MVS VERSION OF PDP CLIB SUPPORT'
 * For all other environments, just let it naturally default
 * to LOC=RES
 *
-MVSSUPA  CSECT ,
+         CSECT ,
          PRINT GEN,ON
          SPACE 1
 *-----------------------ASSEMBLY OPTIONS------------------------------*
@@ -1617,7 +1617,7 @@ DDAATTR  DS    X             ATTRIBUTES (UCBRPS)
 DDALRECL DS    H             RECORD LENGTH
 DDABLKSI DS    H             BLOCK/BUFFER SIZE
 DDASIZE  EQU   *-DDATTRIB
-MVSSUPA  CSECT ,
+         CSECT ,
          SPACE 2
 ***********************************************************************
 *                                                                     *
@@ -3403,7 +3403,7 @@ SYSATOTL DS    Y      3/4    OS PARM LENGTH / BLANKS FOR CP CALL
 SYSATZER EQU   SYSATCLR,*-SYSATCLR,C'X'   ADDRESS & SIZE TO CLEAR
 SYSATOTX DS    CL247  4/4    NORMAL PARM TEXT STRING
 SYSATDLN EQU   *-SYSATWRK     LENGTH OF DYNAMIC STORAGE
-MVSSUPA  CSECT ,             RESTORE
+         CSECT ,             RESTORE
          SPACE 2
 ***********************************************************************
 *                                                                     *
@@ -3650,7 +3650,7 @@ DYNALWRK DSECT ,             MAP STORAGE
          DS    18A           OUR OS SAVE AREA
 DYNLIST  DYNPAT P=ALL        EXPAND ALLOCATION DATA
 DYNALDLN EQU   *-DYNALWRK     LENGTH OF DYNAMIC STORAGE
-MVSSUPA  CSECT ,             RESTORE
+         CSECT ,             RESTORE
          SPACE 2
 *
 *
@@ -4034,7 +4034,7 @@ SNAPAREA DSECT ,                                                GP14244
 SNAPALEN EQU   *-SNAPAREA    LENGTH TO GET                      GP14244
          POP   USING                                            GP14244
          POP   PRINT                                            GP14244
-MVSSUPA  CSECT ,             RESTORE CSECT                      GP14244
+         CSECT ,             RESTORE CSECT                      GP14244
          SPACE 2
 *
 * Keep this code last because it makes no difference - no USINGs

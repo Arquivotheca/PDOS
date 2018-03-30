@@ -3729,9 +3729,9 @@ RETURNTS DS    0H
 *                                                                    *
 *  GETAM - get the current AMODE                                     *
 *                                                                    *
-*  This function returns 24 if we are running in AMODE 24 (or less), *
-*  31 if we are running anything between 25-31, and 32 for anything  *
-*  32 or above.                                                      *
+*  This function returns 24 if we are running in exactly AMODE 24,   *
+*  31 if we are running in exactly AMODE 31, and 64 for anything     *
+*  else (user-defined/infinity/16/32/64/37)                          *
 *                                                                    *
 *  Be aware that MVS 3.8j I/O routines require an AMODE of exactly   *
 *  24 - nothing more, nothing less - so applications are required    *
@@ -3743,7 +3743,7 @@ RETURNTS DS    0H
 *  instead of the user-configurable x'01', which is unfortunate.     *
 *                                                                    *
 *  For traditional reasons, people refer to 24, 31 and 64, when what *
-*  they should really be saying is 24, 31 and 32+.                   *
+*  they should really be saying is 24, 31 and user-defined.          *
 *                                                                    *
 **********************************************************************
          ENTRY @@GETAM
@@ -3752,13 +3752,13 @@ RETURNTS DS    0H
          LR    R12,R15
          USING @@GETAM,R12
 *
-         L     R2,=X'FF000000'
+         L     R2,=X'C1800000'
          LA    R2,0(,R2)
-         CLM   R2,B'1000',=X'00'
+         CLM   R2,B'1100',=X'0080'
          BE    GAIS24
-         LTR   R2,R2
-         BNM   GAIS31
-         LA    R15,32
+         CLM   R2,B'1000',=X'41'
+         BE    GAIS31
+         LA    R15,64
          B     RETURNGA
 GAIS24   DS    0H
          LA    R15,24
@@ -3768,9 +3768,115 @@ GAIS31   LA    R15,31
 RETURNGA DS    0H
          RETURN (14,12),RC=(15)
          LTORG ,
+         SPACE 2
+***********************************************************************
+*                                                                     *
+*  ADDNUM - Add two numbers using 80386                               *
+*                                                                     *
+***********************************************************************
+*                                                               PE18032
+         PUSH  USING                                            PE18032
+         DROP  ,                                                PE18032
+         ENTRY @@ADDNUM                                         PE18032
+@@ADDNUM DS    0H                                               PE18032
+         SAVE  (14,12),,@@ADDNUM                                PE18032
+         LR    R12,R15                                          PE18032
+         USING @@ADDNUM,R12                                     PE18032
+         LR    R2,R1  new register for parms                    PE18032
+         L     R0,=X'FFFFFFFD' API for execute 80386            PE18032
+         LR    R1,R0                                            PE18032
+         LA    R3,CODE386                                       PE18032
+         LA    R14,ANRET                                        PE18032
+         L     R4,0(R2)                                         PE18032
+         L     R5,4(R2)                                         PE18032
+         L     R6,8(R2)                                         PE18032
+         SVC   120                                              PE18032
+ANRET    DS    0H                                               PE18032
+         RETURN (14,12),RC=(15)                                 PE18032
+*                                                               PE18032
+         LTORG ,                                                PE18032
+*                                                               PE18032
+CODE386  DS    0D                                               PE18032
+         DC    X'55' push ebp                                   PE18032
+         DC    X'8B' mov ebp,esp                                PE18032
+         DC    X'EC'                                            PE18032
+         DC    X'8B' mov eax, ebp + 8                           PE18032
+         DC    X'45'                                            PE18032
+         DC    X'08'                                            PE18032
+         DC    X'03' add eas, ebp + 12                          PE18032
+         DC    X'45'                                            PE18032
+         DC    X'0C'                                            PE18032
+         DC    X'C9' leave                                      PE18032
+         DC    X'C3' return near                                PE18032
+         DC    X'22' eyecatcher                                 PE18032
+         DC    X'22'                                            PE18032
+         DC    X'22'                                            PE18032
+         POP   USING                                            PE18032
+         SPACE 2
+***********************************************************************
+*                                                                     *
+*  GETMSZ - Get memory size via DIAG                                  *
+*                                                                     *
+***********************************************************************
+*
+         PUSH  USING                                            PE18032
+         DROP  ,                                                PE18032
+         ENTRY @@GETMSZ                                         PE18032
+@@GETMSZ DS    0H                                               PE18032
+         SAVE  (14,12),,@@GETMSZ                                PE18032
+         LR    R12,R15                                          PE18032
+         USING @@GETMSZ,R12                                     PE18032
+*         DIAGNOSE X'60'                                        PE18032
+         DC    X'83',X'000060'                                  PE18032
+         LR    R15,R0                                           PE18032
+         RETURN (14,12),RC=(15)                                 PE18032
+*                                                               PE18032
+         LTORG ,                                                PE18032
+         POP   USING                                            PE18032
+         SPACE 2
 *
 *
 *
+***********************************************************************
+*                                                                     *
+*  GOSUP - go into supervisor mode                                    *
+*                                                                     *
+***********************************************************************
+*
+         PUSH  USING                                            PE18032
+         DROP  ,                                                PE18032
+         ENTRY @@GOSUP                                          PE18032
+@@GOSUP  DS    0H                                               PE18032
+         SAVE  (14,12),,@@GOSUP                                 PE18032
+         LR    R12,R15                                          PE18032
+         USING @@GOSUP,R12                                      PE18032
+         MODESET MODE=SUP                                       PE18032
+         LA    R15,0                                            PE18032
+         RETURN (14,12),RC=(15)                                 PE18032
+*                                                               PE18032
+         LTORG ,                                                PE18032
+         POP   USING                                            PE18032
+         SPACE 2
+***********************************************************************
+*                                                                     *
+*  GOPROB - go into problem mode                                      *
+*                                                                     *
+***********************************************************************
+*
+         PUSH  USING                                            PE18032
+         DROP  ,                                                PE18032
+         ENTRY @@GOPROB                                         PE18032
+@@GOPROB DS    0H                                               PE18032
+         SAVE  (14,12),,@@GOPROB                                PE18032
+         LR    R12,R15                                          PE18032
+         USING @@GOPROB,R12                                     PE18032
+         MODESET MODE=PROB                                      PE18032
+         LA    R15,0                                            PE18032
+         RETURN (14,12),RC=(15)                                 PE18032
+*                                                               PE18032
+         LTORG ,                                                PE18032
+         POP   USING                                            PE18032
+         SPACE 2
 ***********************************************************************
 *                                                                     *
 *  CALL @@SVC99,(rb)                                                  *

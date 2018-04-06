@@ -668,6 +668,7 @@ FUTURE DEVELOPMENT
 ------------------
 
 Use INT 15 AX=E820 to see how much memory is available.
+http://www.ctyme.com/intr/rb-1741.htm
 
 New philosophy for PDOS:
 Should be a poor man's Win 98 console mode.

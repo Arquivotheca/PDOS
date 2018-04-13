@@ -22,9 +22,8 @@
          EXTRN @@CRT0
          ENTRY @@MAIN
 @@MAIN   DS    0H
+         BALR  15,0
          USING *,15
-         SRL   15,1
-         SLL   15,1
          L     15,=V(@@CRT0)
          BR    15
          LTORG

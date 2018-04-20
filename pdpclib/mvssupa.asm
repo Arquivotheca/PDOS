@@ -2777,10 +2777,10 @@ TPUTWRIV STH   R5,0(,R4)          FILL RDW
          STCM  R5,12,2(R4)          ZERO REST
          L     R6,ZIOECT          RESTORE ECT ADDRESS
          L     R7,ZIOUPT          RESTORE UPT ADDRESS
-         GAM24 ,                  SET AM24 ON S380              GP15015
+         GAMOS ,
          PUTLINE PARM=ZPUTLINE,ECT=(R6),UPT=(R7),ECB=ZIOECB,           *
                OUTPUT=((R4),DATA),TERMPUT=EDIT,MF=(E,ZIOPL)
-         GAM31 ,                  S380 SWITCH TO AM31           GP15015
+         GAMAPP ,
          SPACE 1
 WRITEEX  TM    IOPFLAGS,IOFCURSE  RECURSION REQUESTED?
          BNZ   WRITMORE           PROCESS REMAINING DATA        GP14363
@@ -3099,16 +3099,14 @@ TRUNCOUT B     TRUNCBEG-TRUNCOUT(,R15)   SKIP LABEL             GP17263
          DC    AL1(9),CL(9)'TRUNCOUT' EXPAND LABEL
 TRUNCBEG TM    IOPFLAGS,IOFLDATA   PENDING WRITE ?              GP17263
          BZR   R14           NO; JUST RETURN                    GP17263
-         AIF   ('&ZSYS' NE 'S380').NOTRUBS
-         BSM   R14,R0             PRESERVE AMODE
-.NOTRUBS STM   R14,R12,12(R13)    SAVE CALLER'S REGISTERS
+         STM   R14,R12,12(R13)    SAVE CALLER'S REGISTERS
          LR    R12,R15
          USING TRUNCOUT,R12
          LA    R15,ZIOSAVE2-ZDCBAREA(,R10)
          ST    R15,8(,R13)
          ST    R13,4(,R15)
          LR    R13,R15
-         GAM24 ,                  SET AM24 ON S380              GP15015
+         GAMOS ,
          LM    R4,R5,BUFFADDR  START/NEXT ADDRESS
          CLI   RECFMIX,IXVAR      RECFM=V?
          BNE   TRUNLEN5
@@ -3172,8 +3170,9 @@ TRUNPOST XC    BUFFCURR,BUFFCURR  CLEAR
          LA    R4,0(R4,R3)                                      GP14363
          ST    R4,BUFFCURR        SET NEXT AVAILABLE            GP14363
 TRUNCOEX L     R13,4(,R13)
+         GAMAPP
          LM    R14,R12,12(R13)    Reload all
-         QBSM  0,R14              Return in caller's mode
+         BR    R14
          LTORG ,
          POP   USING
          SPACE 2

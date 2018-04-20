@@ -88,10 +88,16 @@ MVSSUPA  TITLE 'M V S S U P A  ***  MVS VERSION OF PDP CLIB SUPPORT'
 .*   potentially bypasses the BSM
 .*
          AIF   ('&ZSYS' NE 'S380').OTHSYS2
-         TM    NEEDBF,NEEDBANY   Need AM switching?
+&NM      DS    0H
+         L     R15,=A(NEEDBF)
+         TM    0(R15),NEEDBANY   Need AM switching?
+*         TM    NEEDBF,NEEDBANY   Need AM switching?
          BZ    ZZ&SYSNDX.X
          LA    R14,ZZ&SYSNDX.X
-         O     R14,NEEDBOO whatever mode OS requires
+         L     R15,=A(NEEDBOO)
+         L     R15,0(,R15)
+         OR    R14,R15    whatever mode OS requires
+*         O     R14,NEEDBOO whatever mode OS requires
          BSM   0,R14
 ZZ&SYSNDX.X DS 0H
 .OTHSYS2 AIF   ('&NM' EQ '').MEND
@@ -108,11 +114,17 @@ ZZ&SYSNDX.X DS 0H
 .*   potentially bypasses the BSM
 .*
          AIF   ('&ZSYS' NE 'S380').OTHSYS3
-&NM      TM    NEEDBF,NEEDBANY   Did we previously need a switch?
+&NM      DS    0H
+         L     R15,=A(NEEDBF)
+         TM    0(R15),NEEDBANY   Did we previously need a switch?
+*         TM    NEEDBF,NEEDBANY   Did we previously need a switch?
          BZ    ZZ&SYSNDX.X       No, no switching required
 .* We don't know whether we need to switch to 31 or 64
          LA    R14,ZZ&SYSNDX.X
-         O     R14,NEEDBOA  This decides 31/64
+         L     R15,=A(NEEDBOA)
+         L     R15,0(,R15)
+         OR    R14,R15      This decides 31/64
+*         O     R14,NEEDBOA  This decides 31/64
          BSM   R0,R14
 ZZ&SYSNDX.X DS 0H
 .OTHSYS3 AIF   ('&NM' EQ '').MEND
@@ -2169,7 +2181,7 @@ REREAD   ICM   R8,B'1111',BUFFCURR  Load address of next record
          CLI   RECFMIX,IXVAR      RECFM=Vxx ?
          BE    READ               No, deblock
          LA    R8,4(,R8)          Room for fake RDW
-READ     GAM24 ,                  For old code under S380       GP15015
+READ     DS    0H
          TM    IOMFLAGS,IOFEXCP   EXCP mode?
          BZ    READBSAM           No, use BSAM
 *---------------------------------------------------------------------*
@@ -2214,13 +2226,14 @@ EXRDOK   SR    R0,R0
 *---------------------------------------------------------------------*
 READBSAM FIXWRITE ,               For OUTIN request and UPDAT   GP17079
          SR    R6,R6              Reset EOF flag
-         GAM24 ,                  Get low on S380               GP15015
+         GAMOS
          READ  DECB,              Read record Data Event Control Block C
                SF,                Read record Sequential Forward       C
                (R10),             Read record DCB address              C
                (R8),              Read record input buffer             C
                (R9),              Read BLKSIZE or 256 for PDS.DirectoryC
                MF=E               Execute a MF=L MACRO
+         GAMAPP
 *---------------------------------------------------------------------*
 *                                                                     *
 *   There is a stupid (?) error in the code. When processing unlike   *
@@ -2243,7 +2256,10 @@ READBSAM FIXWRITE ,               For OUTIN request and UPDAT   GP17079
          MVI   DECB,X'7F'    Fake good I/O                      GP15051
          DROP  R14                Don't need IOB address base anymore
 *                                 If EOF, R6 will be set to F'-1'
-READCHEK CHECK DECB               Wait for READ to complete
+READCHEK DS    0H
+         GAMOS
+         CHECK DECB               Wait for READ to complete
+         GAMAPP
          TM    ZPDEVT,UCB3TAPE+UCB3DACC  Tape or disk?          GP17110
          BNM   READNNOT                    neither; skip rest   GP17110
          NOTE  (R10)              Note current position         GP17079

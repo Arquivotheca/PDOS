@@ -155,6 +155,8 @@ FINTSO   DS    0H
          LA    R5,SAVEAREA
          ST    R5,SAVER13
 *
+         CALL  @@SETUP           Give assembler code a chance to init
+*
          LA    R1,PARMLIST       Standard MVS convention parameters
 *                                for calling assembler, also used by C
 *

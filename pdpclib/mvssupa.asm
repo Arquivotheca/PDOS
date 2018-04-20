@@ -80,6 +80,47 @@ MVSSUPA  TITLE 'M V S S U P A  ***  MVS VERSION OF PDP CLIB SUPPORT'
 *
 *
 *
+         MACRO ,
+&NM      GAMOS
+         GBLC  &ZSYS
+.*
+.*   GAMOS sets addressing mode to 24 or 31 or
+.*   potentially bypasses the BSM
+.*
+         AIF   ('&ZSYS' NE 'S380').OTHSYS2
+         TM    NEEDBF,NEEDBANY   Need AM switching?
+         BZ    ZZ&SYSNDX.X
+         LA    R14,ZZ&SYSNDX.X
+         O     R14,NEEDBOO whatever mode OS requires
+         BSM   0,R14
+ZZ&SYSNDX.X DS 0H
+.OTHSYS2 AIF   ('&NM' EQ '').MEND
+&NM      DS    0H            DEFINE LABEL ONLY
+.MEND    MEND  ,
+*
+*
+*
+         MACRO ,
+&NM      GAMAPP
+         GBLC  &ZSYS
+.*
+.*   GAMAPP sets addressing mode to 31 or 64 or
+.*   potentially bypasses the BSM
+.*
+         AIF   ('&ZSYS' NE 'S380').OTHSYS3
+&NM      TM    NEEDBF,NEEDBANY   Did we previously need a switch?
+         BZ    ZZ&SYSNDX.X       No, no switching required
+.* We don't know whether we need to switch to 31 or 64
+         LA    R14,ZZ&SYSNDX.X
+         O     R14,NEEDBOA  This decides 31/64
+         BSM   R0,R14
+ZZ&SYSNDX.X DS 0H
+.OTHSYS3 AIF   ('&NM' EQ '').MEND
+&NM      DS    0H            DEFINE LABEL ONLY
+.MEND    MEND  ,
+*
+*
+*
          MACRO ,                  FIXED 2010.293
 &NM      FUNEXIT &RC=
          GBLC  &ZSYS,&ZZSETSA,&ZZSETSL,&ZZSETSP
@@ -4104,6 +4145,112 @@ SNAPALEN EQU   *-SNAPAREA    LENGTH TO GET                      GP14244
 .NOMODE  ANOP  ,                  S/370 doesn't support MODE switching
 *
 *
+*
+**********************************************************************
+*                                                                    *
+*  SETUP - do initialization. I used the word "setup" instead of     *
+*  "init" in case someone imagines that "init" is some sort of       *
+*  complicated compiler-generated function.                          *
+*                                                                    *
+*  This routine figures out the amode switching strategy given that  *
+*  the operating system may require a lower amode that the           *
+*  application, and this will be reflected in the fact that the      *
+*  rmode will be lower than the amode, to allow this switch to       *
+*  occur. It is left to the user to use a utility to set the RMODE   *
+*  to something that their current operating system supports. E.g.   *
+*  a future version of z/OS may allow execution of READ in AM64 in   *
+*  which case the z/OS user is free to change this module from RM31  *
+*  to RM64. Although that won't work until we make the READ etc      *
+*  macros trimodal (24/31/64) instead of the current bimodal (24/31) *
+*                                                                    *
+*  Note that AMODE switching is not required, and thus doesn't even  *
+*  need time to be wasted, if you are targeting a "pure" environment *
+*  such as S370 where everything is in AM24 and the OS can handle    *
+*  that, or S390 where everything is in AM31 and the OS can handle   *
+*  that, and possibly in the future there will be such a thing as    *
+*  Z999 where the OS can handle being called in AM64, so there is    *
+*  no need to waste time checking to see if an amode switch is       *
+*  required. However, it is strongly advised that instead of coding  *
+*  for such pure environments, you instead select S380,              *
+*  which will work optimally for 32-bit applications on all          *
+*  environments, ie AM24 in MVS 3.8j, switch between AM31 and AM24   *
+*  on MVS/XA, remain in AM31 on late MVS/ESA and above, and switch   *
+*  between AM32 (aka AM64) and AM24 on MVS/380, while attempting to  *
+*  obtain RM32 memory on MVS/380.                                    *
+*                                                                    *
+**********************************************************************
+         ENTRY @@SETUP
+@@SETUP  DS    0H
+         SAVE  (14,12),,@@SETUP
+         LR    R12,R15
+         USING @@SETUP,R12
+*
+         AIF   ('&ZSYS' NE 'S380').NOSETUP
+*
+* If we are running in a pure 24-bit environment, where
+* the AMODE and RMODE are the same, there is no need to
+* ever do AMODE switching, so none of this AMODE
+* switching code is required at all
+*
+         L     R2,=X'C1800000'
+         LA    R2,0(,R2)
+         CLM   R2,B'1100',=X'0080'
+* If we are currently in AM24, there is nothing
+* to ever do, as we will stay in that mode forever
+         BE    RETURNSU
+*
+* Now see if we are running AM31
+         CLM   R2,B'1000',=X'41'
+         BNE   IS32
+* We are running AM31. If we are also located in
+* RM31 space we do not need to do BSM switching
+         LR    R2,R12
+         N     R2,=X'7F000000'
+         BNZ   RETURNSU No amode switching possible
+* The app is AM31 but the OS is AM24
+* An OS of AM24 is default, so just go and set the
+* application AMODE now
+         B     COMM3164
+* Note that we say "32" here, but it is actually
+* any value other than 24 or 31.
+IS32     DS    0H
+*
+* At this stage we know we are running in AM64
+* aka AM32 aka AM-infinity (we don't know which one)
+* First we need to know if we are running in RM32,
+* highly unlikely.
+*
+         LR    R2,R12
+         N     R2,=X'80000000'
+         BNZ   RETURNSU No amode switching possible
+* Now see if we are running in RM31 space
+         LR    R2,R12
+         N     R2,=X'7F000000'
+         BZ    COMM3164 RM24 so just set the app amode bits
+* We are indeed running in RM31 so we need the high bit
+* set whenever we switch to OS mode
+         OI    NEEDBOO,X'80'
+COMM3164 DS    0H
+* We have dealt with the appropriate bits to set
+* the OS mode, now we need to set the return to
+* application mode. That is easy, it is the current
+* amode, either AM64 or AM31
+         LA    R2,0
+         BSM   R2,0
+         ST    R2,NEEDBOA this will be suitable for ORing
+         OI    NEEDBF,NEEDBANY  set flag to say we need BSM switching
+         B     RETURNSU
+*
+.NOSETUP ANOP  ,     Mode switching only relevant to S/380-style
+RETURNSU DS    0H
+         LA    R15,0
+         RETURN (14,12),RC=(15)
+         LTORG ,
+NEEDBF   DC    X'00'   flag bits for whether BSM needed
+NEEDBANY EQU   X'01'   need any amode switching at all?
+NEEDBOA  DC    A(0)    amode bits to be ORed in to return APP to
+*                      original amode
+NEEDBOO  DC    A(0)    amode bits to be ORed in to set OS amode
 *
 ***********************************************************************
 ***********************************************************************

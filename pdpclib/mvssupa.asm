@@ -619,7 +619,7 @@ SUBPOOL  EQU   0                                                      *
 * RC = -3nnn VSAM OPEN failed with ACBERF=nn                          *
 *                                                                     *
 ***********************************************************************
-         PUSH  USING
+*         PUSH  USING
 @@AOPEN  FUNHEAD SAVE=(WORKAREA,OPENLEN,SUBPOOL)                GP17264
          SR    R10,R10            Indicate no ZDCB area gotten  GP14205
          LR    R11,R1             KEEP R11 FOR PARAMETERS
@@ -1936,7 +1936,7 @@ EXLSTACB EXLST AM=VSAM,EODAD=VSAMEOD,LERAD=VLERAD,SYNAD=VSYNAD  GP14244
 *     instead, by clobbering the Write CCW and restoring it after.    *
 *                                                                     *
 ***********************************************************************
-         PUSH  USING                                            GP17079
+*        PUSH  USING                                            GP17079
 OPFBS    OSUBHEAD ,          Define extended entry              GP17079
          CLI   ZPMODE+3,ZPMAPP    Record mode append?           GP17079
          BNE   OPFBSEX              No; return                  GP17079
@@ -3415,7 +3415,7 @@ SYSATDLN EQU   *-SYSATWRK     LENGTH OF DYNAMIC STORAGE
 ***********************************************************************
          PUSH  USING
          DROP  ,
-@@IDCAMS FUNHEAD SAVE=IDCSAVE     EXECUTE IDCAMS REQUEST
+@@IDCAMS FUNHEAD SAVE=IDCSAVE,US=NO  EXECUTE IDCAMS REQUEST
          LA    R1,0(,R1)          ADDRESS OF IDCAMS REQUEST (V-CON)
          ST    R1,IDC@REQ         SAVE REQUEST ADDRESS
          MVI   EXFLAGS,0          INITIALIZE FLAGS

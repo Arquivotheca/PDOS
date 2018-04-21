@@ -1447,7 +1447,7 @@ GETBUFF  L     R5,ZPBLKSZ         Load the input blocksize      GP14233
          BZ    GETBUFC              No                          GP17064
          L     R6,ZPBLKSZ         Use block size instead        GP17064
 GETBUFC  LA    R6,4(,R6)          Insurance
-         GETMAIN RU,LV=(R6),SP=SUBPOOL  Get VBS buffer
+         GETMAIN RU,LV=(R6),SP=SUBPOOL,LOC=BELOW  Get VBS buffer
          ST    R1,ZBUFF2          Save for cleanup
          ST    R6,ZBUFF2+4           ditto
          LA    R14,4(,R1)
@@ -3110,7 +3110,6 @@ TRUNCBEG TM    IOPFLAGS,IOFLDATA   PENDING WRITE ?              GP17263
          ST    R15,8(,R13)
          ST    R13,4(,R15)
          LR    R13,R15
-         GAMOS ,
          LM    R4,R5,BUFFADDR  START/NEXT ADDRESS
          CLI   RECFMIX,IXVAR      RECFM=V?
          BNE   TRUNLEN5
@@ -3128,9 +3127,12 @@ TRUNTMOD DS    0H
          CLI   RECFMIX,IXVAR      RECFM=F ?
          BNL   *+8                No; leave it alone
          STH   R5,DCBBLKSI        Why do I need this?
+         GAMOS ,
          WRITE DECB,SF,(R10),(R4),(R5),MF=E  Write block
          B     TRUNCHK
-TRUNSHRT WRITE DECB,SF,MF=E       Rewrite block from READ
+TRUNSHRT DS    0H
+         GAMOS ,
+         WRITE DECB,SF,MF=E       Rewrite block from READ
 TRUNCHK  CHECK DECB
          TM    ZPDEVT,UCB3TAPE+UCB3DACC  Tape or disk?          GP17110
          BNM   TRUNPOST                    neither; skip rest   GP17110
@@ -3166,6 +3168,7 @@ EXWRB001 LA    R9,TAPEIOB    GET IOB FOR QUICK REFERENCE
          SPACE 1
 TRUNPOST XC    BUFFCURR,BUFFCURR  CLEAR
          NI    IOPFLAGS,255-IOFLDATA  Reset it                  GP14363
+         GAMAPP
          CLI   RECFMIX,IXVAR      RECFM=V
          BL    TRUNCOEX           F - JUST EXIT
          LA    R4,4               BUILD BDW
@@ -3174,7 +3177,6 @@ TRUNPOST XC    BUFFCURR,BUFFCURR  CLEAR
          LA    R4,0(R4,R3)                                      GP14363
          ST    R4,BUFFCURR        SET NEXT AVAILABLE            GP14363
 TRUNCOEX L     R13,4(,R13)
-         GAMAPP
          LM    R14,R12,12(R13)    Reload all
          BR    R14
          LTORG ,

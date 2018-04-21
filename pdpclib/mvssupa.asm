@@ -2002,7 +2002,7 @@ OPFBS    OSUBHEAD ,          Define extended entry              GP17079
          ST    R2,ZWORK           Remember for a while          GP17079
          BZ    OPFBSEX              New/Old not append?         GP17079
          POINT (R10),ZWORK                                      GP17079
-         GAM24 ,                  Get low on S380               GP17079
+         GAMOS ,                  Get low on S380               GP17079
          L     R5,DCBIOBA-IHADCB(,R10)  Get IOB prefix          GP17079
          LA    R5,8(,R5)          Skip prfix                    GP17079
          USING IOBSTDRD,R5        Give assembler IOB base       GP17079
@@ -2027,7 +2027,7 @@ OPFBSBP  MVC   DWORK(16),0(R4)      MOVE WRITE CKD              GP17079
          SH    R14,=H'8'
          MVC   0(16,R4),DWORK     MOVE WRITE CKD                GP17079
          WAIT  ECB=(R2)           Wait for READ to complete     GP17079
-         AMUSE ,                  Restore caller's mode         GP17079
+         GAMAPP ,                 Restore caller's mode         GP17079
          SLR   R1,R1              Clear residual amount work register
          ICM   R1,B'0011',IOBCSW+5  Load residual count         GP17079
          BZ    OPFBSFL                                          GP17079
@@ -2479,7 +2479,7 @@ READEOD2 XC    KEPTREC(8),KEPTREC Clear saved record info
          LA    R6,1
 READEXNG LNR   R6,R6              Signal EOF
 READEXIT DS    0H
-         GAM31
+         GAMAPP ,                 Do we still need this?
          FUNEXIT RC=(R6)          Return to caller (0, 4, or -1)
          SPACE 1
 *---------------------------------------------------------------------*

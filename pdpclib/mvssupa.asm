@@ -2796,14 +2796,14 @@ WRITEEX  TM    IOPFLAGS,IOFCURSE  RECURSION REQUESTED?
          L     R3,4(,R1)          R3 points to the return value
          TM    ZPDEVT,UCB3TAPE+UCB3DACC  Tape or disk?          GP17110
          BNM   NOTECOM                     neither; skip rest   GP17110
-         GAM24 ,                  SET AM24 ON S380              GP15015
+         GAMOS ,                  SET AM24 ON S380              GP15015
          TM    IOMFLAGS,IOFEXCP   EXCP mode?
          BZ    NOTEBSAM           No
          L     R4,DCBBLKCT        Return block count
          B     NOTECOM
          SPACE 1
 NOTEBSAM L     R4,ZTTR            Get current position          GP17079
-NOTECOM  AMUSE ,
+NOTECOM  GAMAPP ,
          ST    R4,0(,R3)          Return TTR0 to user
          FUNEXIT RC=0
          SPACE 2
@@ -2824,7 +2824,7 @@ NOTECOM  AMUSE ,
          TM    ZPDEVT,UCB3TAPE+UCB3DACC  Tape or disk?          GP17110
          BNM   POINCOM                     neither; skip rest   GP17110
          FIXWRITE ,                 Write pending data
-         GAM24 ,                  SET AM24 ON S380              GP15015
+         GAMOS ,                  SET AM24 ON S380              GP15015
          TM    IOMFLAGS,IOFEXCP   EXCP mode ?
          BZ    POINBSAM           No
          L     R4,DCBBLKCT        Get current position
@@ -2844,7 +2844,7 @@ POINELUP EXCP  TAPEIOB
          B     POINCOM
          SPACE 1
 POINBSAM POINT (R10),ZWORK        Request repositioning
-POINCOM  AMUSE ,
+POINCOM  GAMAPP ,
          NI    IOPFLAGS,255-IOFLEOF   Valid POINT resets EOF
          XC    KEPTREC(8),KEPTREC      Also clear record data
          FUNEXIT RC=0

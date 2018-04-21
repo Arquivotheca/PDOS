@@ -100,6 +100,7 @@ MVSSUPA  TITLE 'M V S S U P A  ***  MVS VERSION OF PDP CLIB SUPPORT'
 *         O     R14,NEEDBOO whatever mode OS requires
          BSM   0,R14
 ZZ&SYSNDX.X DS 0H
+         MEXIT ,
 .OTHSYS2 AIF   ('&NM' EQ '').MEND
 &NM      DS    0H            DEFINE LABEL ONLY
 .MEND    MEND  ,
@@ -127,6 +128,7 @@ ZZ&SYSNDX.X DS 0H
 *         O     R14,NEEDBOA  This decides 31/64
          BSM   R0,R14
 ZZ&SYSNDX.X DS 0H
+         MEXIT ,
 .OTHSYS3 AIF   ('&NM' EQ '').MEND
 &NM      DS    0H            DEFINE LABEL ONLY
 .MEND    MEND  ,
@@ -697,7 +699,14 @@ SUBPOOL  EQU   0                                                      *
          BNH   OPSERR               NO; REJECT IT               GP14205
          MVI   OPERF,ORFNODD      PRESET FOR MISSING DD NAME    GP14205
          LA    R8,DWDDNAM         COPY DDNAME POINTER TO SCRATCH REG.
-         GAM31 ,                  AM31 FOR S380                 GP15015
+* If running on MVS/XA or above, this code must be executed in AM31.
+* This means that the module must be marked AM31. AM24 is only
+* supported on MVS 3.8j. Hopefully one day via some mechanism
+* such as dynamic allocation, this code can be executed in AM24
+* on MVS/XA+, but until then, this restriction is in place.
+* We do not force AM31, as that is contrary to the AMODE
+* switching doctrine used by PDPCLIB.
+*         GAM31 ,                 AM31 FOR S380                 GP15015
          LA    R4,DDWATTR         POINTER TO DD ATTRIBUTES      GP15051
          USING DDATTRIB,R4        DECLARE TABLE                 GP14205
          L     R14,PSATOLD-PSA    GET MY TCB                    GP14205
@@ -920,7 +929,7 @@ BADDSORG LA    R0,ORFBADSO        BAD DSORG                     GP14205
 DDCTDONE MVC   DDWFLAGS,DDWFLAG1  COPY FIRST DD'S FLAGS         GP14205
          NI    DDWFLAGS,255-CWFDD BUT RESET FIRST DD PRESENT    GP14205
          OC    DDWFLAGS,DDWFLAG2  OR TOGETHER                   GP14205
-         AMUSE ,                  RESTORE AMODE FROM ENTRY      GP14205
+         GAMAPP ,                 RESTORE AMODE FROM ENTRY      GP14205
 * Note that R5 is used as a scratch register
          L     R8,PARM4           R8 POINTS TO LRECL
 * PARM5    has BLKSIZE
@@ -1529,7 +1538,7 @@ TERMOSET ST    R6,ZPBLKSZ         Return it                     GP14233
 *   Lots of code tests DCBRECFM twice, to distinguish among F, V, and
 *     U formats. We set the index byte to 0,4,8 to allow a single test
 *     with a three-way branch.
-DONEOPEN AMUSE ,             Return user's data in user's AMODE GP17262
+DONEOPEN GAMAPP ,            Return user's data in user's AMODE GP17262
          LR    R7,R10             Return DCB/file handle address
          LA    R0,IXUND
          TM    ZRECFM,DCBRECU     Undefined ?
@@ -1582,7 +1591,7 @@ OPUPPLUP STC   R1,0(R1,R2)        start at the end              GP17079
          BNM   RETURNOP                    neither; skip rest   GP17110
          TM    DDWFLAG2,CWFDD     Concatenation ?               GP17262
          BNZ   RETURNOP             Yes, can't support FBS      GP17262
-         GAM24 ,                  (OLD note; TRKCALC)           GP17263
+         GAMOS ,                  (OLD note; TRKCALC)           GP17263
          NOTE  (R7)                                             GP17079
          STCM  R1,14,ZPTTR        Save initial TTR or tape blk  GP17079
          CLI   ZPDEVT,UCB3DACC    Working on DASD?              GP17079
@@ -2419,10 +2428,10 @@ SETCURS  ST    R7,BUFFCURR        Store the next record address
 TGETREAD L     R6,ZIOECT          RESTORE ECT ADDRESS
          L     R7,ZIOUPT          RESTORE UPT ADDRESS
          MVI   ZGETLINE+2,X'80'   EXPECTED FLAG
-         GAM24                    S380 AM24                     GP15015
+         GAMOS                    S380 AM24                     GP15015
          GETLINE PARM=ZGETLINE,ECT=(R6),UPT=(R7),ECB=ZIOECB,           *
                MF=(E,ZIOPL)
-         GAM31                    S380 SWITCH TO AM31           GP15015
+         GAMAPP                   S380 SWITCH TO AM31           GP15015
          LR    R6,R15             COPY RETURN CODE
          CH    R6,=H'16'          HIT BARRIER ?
          BE    READEOD2           YES; EOF, BUT ALLOW READS

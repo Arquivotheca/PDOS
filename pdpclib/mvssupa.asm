@@ -2068,6 +2068,7 @@ OPFBSER  OSUBRET ROUTE=(R14)      Take error return             GP17079
 *                                                                     *
 ***********************************************************************
          PUSH  USING                                            GP15006
+         DROP  R11
          USING LOOKSWA,R15                                      GP15006
 LOOKSWA  STM   R0,R3,12(R13)      Save regs                     GP15009
          N     R1,=X'00FFFFFF'    CLEAN IT                      GP15006

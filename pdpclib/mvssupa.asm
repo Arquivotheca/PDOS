@@ -2218,7 +2218,6 @@ EXRDOK   SR    R0,R0
          ICM   R0,3,IOBCSW+5-IOBSTDRD+TAPEIOB
          SR    R9,R0         LENGTH READ
          BNP   BADBLOCK      NONE ?
-         GAMAPP ,                 Restore caller's mode
          LTR   R6,R6              See if end of input data set
          BM    READEOD            Is end, go return to caller
          B     POSTREAD           Go to common code
@@ -2264,7 +2263,9 @@ READCHEK DS    0H
          GAMAPP
          TM    ZPDEVT,UCB3TAPE+UCB3DACC  Tape or disk?          GP17110
          BNM   READNNOT                    neither; skip rest   GP17110
+         GAMOS
          NOTE  (R10)              Note current position         GP17079
+         GAMAPP
          ST    R1,ZTTR            Save TTR0                     GP17079
 READNNOT TM    IOPFLAGS,IOFCONCT  Did we hit concatenation?
          BZ    READUSAM           No; restore user's AM
@@ -2292,7 +2293,7 @@ READNNOT TM    IOPFLAGS,IOFCONCT  Did we hit concatenation?
 READUNLK LA    R6,4          SET RETURN CODE FOR NEXT DS READ   GP14205
          B     READEXIT           Return code 4; read next call GP14205
          SPACE 1
-READUSAM GAMAPP ,                 Restore caller's mode
+READUSAM DS    0H
          LTR   R6,R6              See if end of input data set
          BM    READEOD            Is end, go return to caller
          L     R14,DECB+16    DECIOBPT
@@ -2480,7 +2481,6 @@ READEOD2 XC    KEPTREC(8),KEPTREC Clear saved record info
          LA    R6,1
 READEXNG LNR   R6,R6              Signal EOF
 READEXIT DS    0H
-         GAMAPP ,                 Do we still need this?
          FUNEXIT RC=(R6)          Return to caller (0, 4, or -1)
          SPACE 1
 *---------------------------------------------------------------------*
@@ -2488,9 +2488,11 @@ READEXIT DS    0H
 *---------------------------------------------------------------------*
 VSAMREAD LA    R8,ZARPL      GET RPL ADDRESS                    GP14233
          LM    R5,R6,ZBUFF1  GET AVAILABLE BUFFER               GP14244
+         GAMOS
          MODCB RPL=(R8),AREA=(R5),AREALEN=(R6),OPTCD=(LOC),            *
                MF=(G,ZAMODCB)                                   GP14233
          GET   RPL=(R8)           Get a record                  GP14233
+         GAMAPP
          TM    IOPFLAGS,IOFLEOF   EOF ?                         GP14244
          BNZ   READEOD              Yes; get out                GP14244
          BXH   R15,R15,EXRDBAD FAIL ON ERROR                    GP14233

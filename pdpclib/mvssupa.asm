@@ -1130,7 +1130,7 @@ OPREPJFC LA    R14,MYJFCB
 * The DCB exit (OCDCBEX) is coded to work in any AMODE, and only
 * needs a simple branch, UNLESS this module is loaded ATL.      GP15015
          LA    R14,OCDCBEX        POINT TO DCB EXIT for BTL
-         AIF   ('&ZSYS' NE 'S390').NOSTB        Only S/390 needs a stub
+         AIF   ('&ZSYS' EQ 'S370').NOSTB   Only S/380+90 needs a stub
          TM    @OCDCBEX,X'7F'     Loaded above the line?        GP15015
          BZ    EXBTL                No; invoke directly         GP15015
          MVC   A24STUB,PATSTUB    Stub code for DCB exit        GP15015
@@ -1807,7 +1807,7 @@ ODCBEXRT BR    R14           RETURN TO OPEN (or via caller)     GP15004
          SPACE 1
          POP   USING
          SPACE 2
-         AIF   ('&ZSYS' NE 'S390').NOSTUB       Only S/390 needs a stub
+         AIF   ('&ZSYS' EQ 'S370').NOSTUB  Only S/380+90 needs a stub
 ***********************************************************************
 *                                                                     *
 *    OPEN DCB EXIT - 24 bit stub                                      *
@@ -4496,7 +4496,7 @@ OPENCLOS DS    A                  OPEN/CLOSE parameter list
 DCBXLST  DS    2A                 07 JFCB / 85 DCB EXIT
 EOFR24   DS    CL(EOFRLEN)
          DS    0A                 Ensure correct DC A alignment GP15015
-         AIF   ('&ZSYS' NE 'S390').NOSB         Only S/390 needs a stub
+         AIF   ('&ZSYS' EQ 'S370').NOSB   Only S/380+90 needs a stub
 A24STUB  DS    CL(PATSTUBL)       DCB open exit 24-bit code     GP15015
 .NOSB    ANOP  ,                  Only S/390 needs a stub
 ZBUFF1   DS    A,F                Address, length of buffer

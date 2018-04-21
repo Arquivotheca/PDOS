@@ -674,8 +674,10 @@ SUBPOOL  EQU   0                                                      *
 ***********************************************************************
 @@AOPEN  FUNHEAD SAVE=(WORKAREA,OPENLEN,SUBPOOL)                GP17264
          SR    R10,R10            Indicate no ZDCB area gotten  GP14205
-         LR    R11,R1             KEEP R11 FOR PARAMETERS
-         USING PARMSECT,R11       MAKE IT EASIER TO READ
+         LA    R11,2048(R12)
+         LA    R11,2048(R11)
+         USING @@AOPEN+4096,R11
+         MVC   PARM1(4*7),0(R1)   Move parameters to work area
          LDADD R3,PARM1           R3 POINTS TO DDNAME           GP14251
          MVC   DWDDNAM,0(R3)      Move below the line           GP17262
          PUSH  USING                                            GP14205
@@ -1651,16 +1653,6 @@ OPENREF  OPEN  (BSAMDCB,INPUT),MF=L    QSAM, BSAM, any DEVTYPE
          OPEN  (BSAMDCB,INOUT),MF=L          BSAM, DASD, TAPE
          OPEN  (BSAMDCB,OUTINX),MF=L         BSAM, DASD, TAPE
          OPEN  (BSAMDCB,OUTIN),MF=L          BSAM, DASD, TAPE
-         SPACE 1
-PARMSECT DSECT ,             MAP CALL PARM
-PARM1    DS    A             FIRST PARM     DD NAME
-PARM2    DS    A              NEXT PARM     I/O MODE
-PARM3    DS    A              NEXT PARM     FORMAT (F, V, U)
-PARM4    DS    A              NEXT PARM     RECORD LEN
-PARM5    DS    A              NEXT PARM     BLOCK SIZE
-PARM6    DS    A              NEXT PARM     opt. BUFFER
-PARM7    DS    A              NEXT PARM     MEMBER NAME
-PARM8    DS    A              NEXT PARM
          SPACE 1
 DDATTRIB DSECT ,
 DDADSORG DS    H             DS ORG FROM JFCB OR DSCB1 (2B)
@@ -4288,6 +4280,13 @@ DWORK    DS    D                  Extra work space
 WWORK    DS    D                  Extra work space
 DWDDNAM  DS    D                  Extra work space
 WORKLEN  EQU   *-WORKAREA
+PARM1    DS    A             FIRST PARM     DD NAME
+PARM2    DS    A              NEXT PARM     I/O MODE
+PARM3    DS    A              NEXT PARM     FORMAT (F, V, U)
+PARM4    DS    A              NEXT PARM     RECORD LEN
+PARM5    DS    A              NEXT PARM     BLOCK SIZE
+PARM6    DS    A              NEXT PARM     opt. BUFFER
+PARM7    DS    A              NEXT PARM     MEMBER NAME
 SAVOSUB  DS    6A         R10-R15 Return saver for AOPEN subs   GP14234
 MYJFCB   DS    0F
          IEFJFCBN LIST=YES        Job File Control Block

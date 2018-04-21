@@ -2217,7 +2217,7 @@ EXRDOK   SR    R0,R0
          ICM   R0,3,IOBCSW+5-IOBSTDRD+TAPEIOB
          SR    R9,R0         LENGTH READ
          BNP   BADBLOCK      NONE ?
-         AMUSE ,                  Restore caller's mode
+         GAMAPP ,                 Restore caller's mode
          LTR   R6,R6              See if end of input data set
          BM    READEOD            Is end, go return to caller
          B     POSTREAD           Go to common code
@@ -2291,7 +2291,7 @@ READNNOT TM    IOPFLAGS,IOFCONCT  Did we hit concatenation?
 READUNLK LA    R6,4          SET RETURN CODE FOR NEXT DS READ   GP14205
          B     READEXIT           Return code 4; read next call GP14205
          SPACE 1
-READUSAM AMUSE ,                  Restore caller's mode
+READUSAM GAMAPP ,                 Restore caller's mode
          LTR   R6,R6              See if end of input data set
          BM    READEOD            Is end, go return to caller
          L     R14,DECB+16    DECIOBPT

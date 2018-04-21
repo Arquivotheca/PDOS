@@ -1612,7 +1612,8 @@ OPUPPLUP STC   R1,0(R1,R2)        start at the end              GP17079
 *---------------------------------------------------------------------*
 *   Common return from OPEN - R7=+ handle  R7=- error in open         *
 *---------------------------------------------------------------------*
-RETURNOP FUNEXIT RC=(R7)          Return to caller
+RETURNOP GAMAPP
+         FUNEXIT RC=(R7)          Return to caller
          SPACE 1
 *---------------------------------------------------------------------*
 *   Return error code in 2000 range - set in concatenation check code *

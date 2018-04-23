@@ -40,10 +40,10 @@
 * &OS      SETC 'MUSIC'           Indicate that this is for MUSIC/SP
 *
 * The S/380 model (e.g. MVS/XA) is a hybrid model - the code
-* needs to reside below the line so that it can do I/O, but it
-* can address data above the line. So it has to constantly
+* can reside below the line so that it can do I/O, but it
+* can address data above the line. So it can constantly
 * switch between AMODEs.
 *
-         AMODE 31
-         RMODE 24
+         AMODE ANY
+         RMODE ANY
 *

@@ -1994,7 +1994,7 @@ OPFBS    OSUBHEAD ,          Define extended entry              GP17079
          CLI   ZPMODE+3,ZPMAPP    Record mode append?           GP17079
          BNE   OPFBSEX              No; return                  GP17079
          LA    R0,24              Preset for invalid DSORG      GP17079
-         TM    DDWFLAG1,CWFSEQ    True sequential ¬ PDS(mem)    GP17079
+         TM    DDWFLAG1,CWFSEQ    True sequential not PDS(mem)  GP17079
          OBRAN OPRERR,OP=BZ,EXIT=OPFBSER  Extend PDS member ?   GP17079
          TM    DDWFLAG1,CWFPDQ+CWFPDS+CWFVSM+CWFVTOC  Other ?   GP17079
          OBRAN OPRERR,OP=BNZ,EXIT=OPFBSER  non-sequential?      GP17079

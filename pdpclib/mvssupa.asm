@@ -1680,7 +1680,8 @@ DDASIZE  EQU   *-DDATTRIB
 *                     not blocked)                                    *
 *                    for PDS directory read, F, 256, 256 are preset.  *
 *    a) device is unit record - default U, device size, device size   *
-*    b) all others - default to values passed to AOPEN                *
+*    b) For VS in DSCB or JFCB, do not turn on BLOCKED (IEBCOPY unld) *
+*    c) all others - default to values passed to AOPEN                *
 *                                                                     *
 *    For FB, if LRECL > BLKSIZE, make LRECL=BLKSIZE                   *
 *    For VB, if LRECL+3 > BLKSIZE, set spanned                        *
@@ -1731,7 +1732,7 @@ OCDCBX1  OI    IOPFLAGS,IOFDCBEX  Show exit entered
          ICM   R4,3,DCBLRECL GET CURRENT RECORD LENGTH
          NI    FILEMODE,3    MASK FILE MODE
          MVC   ZRECFM,FILEMODE   GET OPTION BITS
-         TR    ZRECFM,=X'90,40,C0,C0'  0-FB  1-VB  2-U          GP15053
+         TR    ZRECFM,=X'90,40,C0,C0'  0-FB  1-V   2-U          GP15053
          TM    DCBRECFM,DCBRECLA  ANY RECORD FORMAT SPECIFIED?
          BNZ   OCDCBFH       YES
          CLI   DEVINFO+2,UCB3UREC  UNIT RECORD?
@@ -1788,7 +1789,11 @@ OCDCBBB  MR    R2,R4         BLOCK SIZE NOW MULTIPLE OF LRECL
          B     OCDCBXX       AND GET OUT
 *   VARIABLE
 OCDCBBV  LA    R5,4(,R4)     LRECL+4
-         CR    R5,R3         WILL IT FIT ?
+         CLI   DCBRECFM,DCBRECV+DCBRECSB   plain VS ?           GP18112
+         BNE   OCDCBBW         no                               GP18112
+         MVC   ZRECFM,DCBRECFM        no block (iebcopy unload) GP18112
+         B     OCDCBXX       done                               GP18112
+OCDCBBW  CR    R5,R3         WILL IT FIT ?
          BE    OCDCBXX         Yes; exactly - leave default V   GP15053
          BNH   *+8           YES
          OI    DCBRECFM,DCBRECSB  SET SPANNED

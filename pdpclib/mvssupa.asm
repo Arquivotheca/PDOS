@@ -2061,66 +2061,6 @@ OPFBSER  OSUBRET ROUTE=(R14)      Take error return             GP17079
          SPACE 2
 ***********************************************************************
 *                                                                     *
-*   This routine provided to enable cross-assembly of OS/390 & zOS    *
-*   code under MVS 3.8. For a full featured system, use SWAREQ.       *
-*   Caller must be in AMODE 31 under OS/390 or zOS system.            *
-*                                                                     *
-*   SWA LOOK-UP SUBROUTINE  (in older systems, just skips Q header    *
-*    >> CALLER IN AMODE 31 FOR ATL access <<                          *
-*        R1  - REQUESTED SVA ADDRESS/TOKEN; 24-BIT, RIGHT-JUSTIFIED   *
-*        R15 - RETURNED SWA ADDRESS OR 0                              *
-*        R14 - RETURN                                                 *
-*                                                                     *
-***********************************************************************
-         PUSH  USING                                            GP15006
-         DROP  R11
-         USING LOOKSWA,R15                                      GP15006
-LOOKSWA  STM   R0,R3,12(R13)      Save regs                     GP15009
-         N     R1,=X'00FFFFFF'    CLEAN IT                      GP15006
-         EX    R1,EXSWAODD   SEE WHETHER IT'S AN ODD ADDRESS    GP15006
-         BZ    LOOKSVA       NO; HAVE ADDRESS                   GP15006
-         L     R2,PSATOLD-PSA     Get TCB                       GP15006
-         USING TCB,R2                                           GP15006
-         L     R2,TCBJSCB                                       GP15006
-*COMP*   USING IEZJSCB,R2                                       GP15006
-*COMP*   L     R2,JSCBQMPI   (not in S370/380)                  GP15006
-         L     R2,X'0F4'(,R2)     Get QMPI                      GP15006
-*COMP*   USING IOPARAMS,R2                                      GP15006
-*COMP*   ICM   R2,15,QMAT    QMAT BASE                          GP15006
-         ICM   R2,15,X'018'(R2)   Get QMAT                      GP15006
-         BZ    LOOKSWA0      NO QMAT, SKIP IT                   GP15006
-         SPACE 1                                                GP15006
-*COMP*   USING QMAT,R2                                          GP15006
-         LR    R0,R1         COPY TOKEN                         GP15006
-         SRL   R0,16         MOVE EXTENT TO LAST BYTE           GP15006
-         N     R1,=XL4'FFFF'   ISOLATE SVA OFFSET               GP15006
-         LA    R3,X'FF'      MAX QMAT EXTENTS                   GP15006
-         NR    R0,R3         ISOLATE QMAT COUNTER               GP15006
-         BZ    LOOKSWAV      ZERO; CHECK QMAT VERSION           GP15006
-         SPACE 1                                                GP15006
-*COMP*AP ICM   R2,15,QMATNEXT  NEXT QMAT EXTENT                 GP15006
-LOOKSWAP ICM   R2,15,X'00C'(R2) NXT QMAT EXTENT                 GP15006
-         BZ    LOOKSWAX      NONE?                              GP15006
-         BCT   R0,LOOKSWAP   LOOP TO FIND THE EXTENT            GP15006
-         SPACE 1                                                GP15006
-*COMP*AV CLI   QMATVERS,2    IS IT AN ESA4 QMAT?                GP15006
-LOOKSWAV CLI   X'004'(R2),2  IS IT AN ESA4 QMAT?                GP15006
-         BL    LOOKSWAX      NO, USE AS IS                      GP15006
-         LA    R2,1(,R2)     ALIGN                              GP15006
-LOOKSWAX ALR   R1,R2         ADD QMAT BASE                      GP15006
-         L     R1,0(,R1)     GET HEADER ADDRESS                 GP15006
-.NOQMAT  ANOP  ,                                                GP15006
-LOOKSVA  LA    R15,16(,R1)   SKIP HEADER                        GP15006
-LOOKSWAT LM    R0,R3,12(R13)     RESTORE CALLER'S REGISTERS     GP15006
-         BR    R14           RETURN IN CALLER'S AMODE           GP15009
-LOOKSWA0 SR    R15,R15       NOTHING FOUND - RETURN 0           GP15006
-         B     LOOKSWAT      RETURN                             GP15006
-EXSWAODD TM    =X'01',*-*    ODD ADDRESS?                       GP15006
-         POP   USING                                            GP15006
-         SPACE 2                                                GP14233
-*
-***********************************************************************
-*                                                                     *
 *  ALINE - See whether any more input is available                    *
 *     R15=0 EOF     R15=1 More data available                         *
 *                                                                     *
@@ -3023,6 +2963,65 @@ DCBF003F ST    R9,8(,R4)          Concatenation # (0-n/m)       GP17079
 ADCBGOOD SLR   R15,R15            Good exit                     GP17079
 ADCBEXIT FUNEXIT RC=(R15)         Return to caller              GP14205
          SPACE 2
+***********************************************************************
+*                                                                     *
+*   This routine provided to enable cross-assembly of OS/390 & zOS    *
+*   code under MVS 3.8. For a full featured system, use SWAREQ.       *
+*   Caller must be in AMODE 31 under OS/390 or zOS system.            *
+*                                                                     *
+*   SWA LOOK-UP SUBROUTINE  (in older systems, just skips Q header    *
+*    >> CALLER IN AMODE 31 FOR ATL access <<                          *
+*        R1  - REQUESTED SVA ADDRESS/TOKEN; 24-BIT, RIGHT-JUSTIFIED   *
+*        R15 - RETURNED SWA ADDRESS OR 0                              *
+*        R14 - RETURN                                                 *
+*                                                                     *
+***********************************************************************
+         PUSH  USING                                            GP15006
+         USING LOOKSWA,R15                                      GP15006
+LOOKSWA  STM   R0,R3,12(R13)      Save regs                     GP15009
+         N     R1,=X'00FFFFFF'    CLEAN IT                      GP15006
+         EX    R1,EXSWAODD   SEE WHETHER IT'S AN ODD ADDRESS    GP15006
+         BZ    LOOKSVA       NO; HAVE ADDRESS                   GP15006
+         L     R2,PSATOLD-PSA     Get TCB                       GP15006
+         USING TCB,R2                                           GP15006
+         L     R2,TCBJSCB                                       GP15006
+*COMP*   USING IEZJSCB,R2                                       GP15006
+*COMP*   L     R2,JSCBQMPI   (not in S370/380)                  GP15006
+         L     R2,X'0F4'(,R2)     Get QMPI                      GP15006
+*COMP*   USING IOPARAMS,R2                                      GP15006
+*COMP*   ICM   R2,15,QMAT    QMAT BASE                          GP15006
+         ICM   R2,15,X'018'(R2)   Get QMAT                      GP15006
+         BZ    LOOKSWA0      NO QMAT, SKIP IT                   GP15006
+         SPACE 1                                                GP15006
+*COMP*   USING QMAT,R2                                          GP15006
+         LR    R0,R1         COPY TOKEN                         GP15006
+         SRL   R0,16         MOVE EXTENT TO LAST BYTE           GP15006
+         N     R1,=XL4'FFFF'   ISOLATE SVA OFFSET               GP15006
+         LA    R3,X'FF'      MAX QMAT EXTENTS                   GP15006
+         NR    R0,R3         ISOLATE QMAT COUNTER               GP15006
+         BZ    LOOKSWAV      ZERO; CHECK QMAT VERSION           GP15006
+         SPACE 1                                                GP15006
+*COMP*AP ICM   R2,15,QMATNEXT  NEXT QMAT EXTENT                 GP15006
+LOOKSWAP ICM   R2,15,X'00C'(R2) NXT QMAT EXTENT                 GP15006
+         BZ    LOOKSWAX      NONE?                              GP15006
+         BCT   R0,LOOKSWAP   LOOP TO FIND THE EXTENT            GP15006
+         SPACE 1                                                GP15006
+*COMP*AV CLI   QMATVERS,2    IS IT AN ESA4 QMAT?                GP15006
+LOOKSWAV CLI   X'004'(R2),2  IS IT AN ESA4 QMAT?                GP15006
+         BL    LOOKSWAX      NO, USE AS IS                      GP15006
+         LA    R2,1(,R2)     ALIGN                              GP15006
+LOOKSWAX ALR   R1,R2         ADD QMAT BASE                      GP15006
+         L     R1,0(,R1)     GET HEADER ADDRESS                 GP15006
+.NOQMAT  ANOP  ,                                                GP15006
+LOOKSVA  LA    R15,16(,R1)   SKIP HEADER                        GP15006
+LOOKSWAT LM    R0,R3,12(R13)     RESTORE CALLER'S REGISTERS     GP15006
+         BR    R14           RETURN IN CALLER'S AMODE           GP15009
+LOOKSWA0 SR    R15,R15       NOTHING FOUND - RETURN 0           GP15006
+         B     LOOKSWAT      RETURN                             GP15006
+EXSWAODD TM    =X'01',*-*    ODD ADDRESS?                       GP15006
+         POP   USING                                            GP15006
+         SPACE 2                                                GP14233
+*
 ***********************************************************************
 *                                                                     *
 *  ACLOSE - Close a data set                                          *

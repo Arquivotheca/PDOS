@@ -2650,8 +2650,7 @@ WRITEVAT L     R9,BUFFEND         GET BUFFER END
          SR    R9,R6              LESS CURRENT POSITION
          TM    ZRECFM,DCBRECSB    SPANNED?
          BZ    WRITEVAR           NO; ROUTINE VARIABLE WRITE
-         LA    R1,0(,R5)          GET RECORD LENGTH
-         C     R1,ZPLRECL         VALID SIZE?                   GP14233
+         C     R5,ZPLRECL         VALID SIZE?                   GP18092
          BH    WRITEBAD           NO; TAKE A DIVE
          TM    IOPFLAGS,IOFLSDW   CONTINUATION ?
          BNZ   WRITEVAW           YES; DO HERE
@@ -2666,12 +2665,11 @@ WRITEVAW CH    R9,=H'5'           AT LEAST FIVE BYTES LEFT ?
          LR    R7,R5              USE ONLY WHAT'S AVAILABLE
          MVCL  R6,R4              COPY SDW + DATA
          ST    R6,BUFFCURR        UPDATE NEXT AVAILABLE
-         LR    R7,R6              r7 is free i think, not sure about r9
-*                                 so save highwater mark
+         LR    R7,R6              SAVE SECOND COPY              PE18090
          SR    R6,R8              LESS START
          STH   R6,0(,R8)          UPDATE BDW
-         SR    R7,R3              get record length
-         STH   R7,0(,R3)          FIX RDW LENGTH
+         SR    R7,R3              GET RECORD LENGTH             PE18090
+         STH   R7,0(,R3)          FIX RDW LENGTH                PE18090
          MVC   2(2,R3),=X'0100'   SET FLAGS FOR START SEGMENT
          OI    IOPFLAGS,IOFLDATA  SHOW WRITE DATA IN BUFFER     GP14363
          TM    IOPFLAGS,IOFLSDW   DID START ?

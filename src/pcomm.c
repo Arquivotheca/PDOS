@@ -54,6 +54,7 @@ static void dodel(char *fnm);
 static void dopath(char *s);
 static void changedir(char *to);
 static void changedisk(int drive);
+static void dohelp(char *cmd);
 static int ins_strcmp(char *one, char *two);
 static int ins_strncmp(char *one, char *two, size_t len);
 static void readBat(char *fnm);
@@ -206,6 +207,10 @@ static void processInput(void)
     else if (ins_strcmp(buf, "copy") == 0)
     {
         doCopy(p);
+    }
+    else if (ins_strcmp(buf, "help") == 0)
+    {
+        dohelp(p);
     }
     else
     {
@@ -504,6 +509,101 @@ static void changedisk(int drive)
     return;
 }
 
+/* dohelp function and condition for it written by Alica Okano */
+static void dohelp(char *cmd)
+{    
+    if(*cmd == '\0')
+    {
+        printf("Use HELP [command] to obtain more information about\n");
+        printf("specific command.\n\n");
+        printf("CD      Changes the current directory.\n");
+        printf("COPY    Copies files and directories.\n");
+        printf("DEL     Deletes files.\n");
+        printf("DIR     Displays a list of files and directories\n");
+        printf("        in the current directory.\n");
+        printf("ECHO    Displays a message.\n");
+        printf("HELP    Provides information about PDOS commands.\n");
+        printf("PATH    Displays or modifies PATH variable.\n");
+        printf("REBOOT  Reboots the computer.\n");
+        printf("TYPE    Reads and displays a text file.\n");
+        printf("VER     Displays the current version of PDOS.\n");
+        return;
+    }
+
+    else if(ins_strcmp(cmd, "cd") == 0)
+    {
+        printf("Changes the current directory.\n\n");
+        printf("CD [path]\n");
+    }
+
+    else if(ins_strcmp(cmd, "copy") == 0)
+    {
+        printf("Copies files and directories.\n\n");
+        printf("COPY [path1] [path2]\n");
+    }
+
+    else if(ins_strcmp(cmd, "del") == 0)
+    {
+        printf("Deletes files.\n\n");
+        printf("DEL [path]\n");
+    }
+
+    else if(ins_strcmp(cmd, "dir") == 0)
+    {
+        printf("Displays a list of files and directories\n");
+        printf("in the current directory.\n\n");
+        printf("DIR\n");
+    }
+
+    else if(ins_strcmp(cmd, "echo") == 0)
+    {
+        printf("Displays a message.\n\n");
+        printf("ECHO [message]\n");
+    }
+
+    else if(ins_strcmp(cmd, "help") == 0)
+    {
+        printf("Provides information about PDOS commands.\n\n");
+        printf("HELP\n");
+        printf("HELP [command]\n");
+    }
+
+    else if(ins_strcmp(cmd, "path") == 0)
+    {
+        printf("Displays or modifies PATH variable.\n\n");
+        printf("PATH variable provides a list of directories\n");
+        printf("which are searched when looking for executables.\n\n");
+        printf("PATH\n");
+        printf("PATH [path]\n");
+        printf("PATH [;]\n");
+    }
+
+    else if(ins_strcmp(cmd, "reboot") == 0)
+    {
+        printf("Reboots the computer.\n\n");
+        printf("REBOOT\n");
+    }
+
+    else if(ins_strcmp(cmd, "type") == 0)
+    {
+        printf("Reads and displays a text file.\n\n");
+        printf("TYPE [path]\n");
+    }
+
+    else if(ins_strcmp(cmd, "ver") == 0)
+    {
+        printf("Displays the current version of PDOS.\n\n");
+        printf("VER\n");
+    }
+
+    else
+    {
+        printf("No such command \"%s\"\n",cmd);
+    }
+
+    return;
+}
+
 static int ins_strcmp(char *one, char *two)
 {
     while (toupper(*one) == toupper(*two))
@@ -571,7 +671,6 @@ static int exists(char *fnm)
     
     return 0;
 }
-
 
 /* Written By NECDET COKYAZICI, Public Domain */
 

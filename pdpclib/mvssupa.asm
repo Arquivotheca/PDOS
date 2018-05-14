@@ -2977,6 +2977,7 @@ ADCBEXIT FUNEXIT RC=(R15)         Return to caller              GP14205
 *                                                                     *
 ***********************************************************************
          PUSH  USING                                            GP15006
+         DROP  ,
          USING LOOKSWA,R15                                      GP15006
 LOOKSWA  STM   R0,R3,12(R13)      Save regs                     GP15009
          N     R1,=X'00FFFFFF'    CLEAN IT                      GP15006

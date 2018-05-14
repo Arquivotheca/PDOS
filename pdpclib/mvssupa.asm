@@ -4185,8 +4185,8 @@ SNAPALEN EQU   *-SNAPAREA    LENGTH TO GET                      GP14244
 *  to something that their current operating system supports. E.g.   *
 *  a future version of z/OS may allow execution of READ in AM64 in   *
 *  which case the z/OS user is free to change this module from RM31  *
-*  to RM64. Although that won't work until we make the READ etc      *
-*  macros trimodal (24/31/64) instead of the current bimodal (24/31) *
+*  to RM64, with a view to having the 32-bit load module loaded in   *
+*  the 2 GiB to 4 GiB region.                                        *
 *                                                                    *
 *  Note that AMODE switching is not required, and thus doesn't even  *
 *  need time to be wasted, if you are targeting a "pure" environment *
@@ -4202,6 +4202,14 @@ SNAPALEN EQU   *-SNAPAREA    LENGTH TO GET                      GP14244
 *  on MVS/XA, remain in AM31 on late MVS/ESA and above, and switch   *
 *  between AM32 (aka AM64) and AM24 on MVS/380, while attempting to  *
 *  obtain RM32 memory on MVS/380.                                    *
+*                                                                    *
+*  Note that this function should be the last in the source file,    *
+*  so that when the test is done to see where the function has been  *
+*  loaded, it will err on the side of caution when e.g. the load     *
+*  module spans the 2 GiB bar, and only activate step-down           *
+*  processing if it finds the SETUP function itself is below the     *
+*  2 GiB bar which means the other functions will succeed in         *
+*  switching to AM31.                                                *
 *                                                                    *
 **********************************************************************
          ENTRY @@SETUP

@@ -2620,6 +2620,8 @@ WRITEVAW CH    R9,=H'5'           AT LEAST FIVE BYTES LEFT ?
          MVI   2(R3),2            SHOW LAST SEGMENT
          NI    IOPFLAGS,255-IOFLSDW-IOFCURSE  RCD COMPLETE
          XC    KEPTREC(8),KEPTREC      Reset saved address/len  GP14363
+         TM    DCBRECFM,DCBRECBR  BLOCKED?                      GP18135
+         BZ    WRITPREP             No; write it now            GP18135
          B     WRITEEX            DONE
 WRITEWAY LA    R9,4               ALLOW FOR EXTRA RDW           GP14363
          SR    R4,R9                                            GP14363

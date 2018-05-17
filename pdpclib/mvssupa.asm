@@ -4086,7 +4086,8 @@ SNAPRET  FUNEXIT ,           RESTORE REGS; SET RETURN CODES     GP14244
          SPACE 1                                                GP14244
 PATSNAP  DCB   DDNAME=SYSTERM,MACRF=(W),DSORG=PS,                      *
                RECFM=VBA,LRECL=125,BLKSIZE=1632  882            GP14244
-PATSNOC  OPEN  (PATSNAP,OUTPUT),MF=L                            GP14244
+PATSNOC  DC    X'8F000000'   OPEN MF=L                          GP18136
+*OLD*OC  OPEN  (PATSNAP,OUTPUT),MF=L                            GP14244
 PATSCTR  DC    F'0'          DUMP ID; WRAPS AT 256->0           GP14244
 PATSNAPL EQU   *-PATSNAP                                        GP14244
          SPACE 1                                                GP14244
@@ -4094,7 +4095,8 @@ PATSNAPL EQU   *-PATSNAP                                        GP14244
 SNAPSAVE DSECT ,                                                GP14244
 SNAPDCB  DCB   DDNAME=SYSTERM,MACRF=(W),DSORG=PS,                      *
                RECFM=VBA,LRECL=125,BLKSIZE=1632  882            GP14244
-SNAPOCL  OPEN  (SNAPDCB,OUTPUT),MF=L                            GP14244
+*OLDOCL  OPEN  (SNAPDCB,OUTPUT),MF=L                            GP14244
+SNAPOCL  DC    A(0)          OPEN MF=L                          GP18136
 SNAPCTR  DC    F'0'          DUMP ID; WRAPS AT 256->0           GP14244
 SNAPSLEN EQU   *-SNAPSAVE                                       GP14244
          SPACE 1                                                GP14244

@@ -4221,6 +4221,23 @@ SNAPALEN EQU   *-SNAPAREA    LENGTH TO GET                      GP14244
 *
 **********************************************************************
 *                                                                    *
+* DOLOOP - go into a hard loop                                       *
+*                                                                    *
+**********************************************************************
+         ENTRY @@DOLOOP
+@@DOLOOP DS    0H
+         LR    R12,R15
+         USING @@DOLOOP,R12
+*
+         LA    R3,3
+         LA    R4,4
+         LA    R5,5
+HARDLOOP B     HARDLOOP
+*
+*
+*
+**********************************************************************
+*                                                                    *
 *  SETUP - do initialization. I used the word "setup" instead of     *
 *  "init" in case someone imagines that "init" is some sort of       *
 *  complicated compiler-generated function.                          *

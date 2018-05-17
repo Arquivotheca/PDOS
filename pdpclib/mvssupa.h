@@ -39,3 +39,6 @@ int __system(int req_type,
              size_t parm_len,
              char *parm);
 #endif
+
+#pragma linkage(__doloop, OS)
+void __doloop(void);

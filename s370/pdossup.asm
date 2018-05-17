@@ -510,6 +510,23 @@ DCHECK   DS    0H
 *
 *
 *
+**********************************************************************
+*                                                                    *
+*  DNOTPNT - DCB note/point routine (for when people do NOTE/POINT)  *
+*                                                                    *
+*  for now is pretty much a dummy function                           *
+*                                                                    *
+**********************************************************************
+*
+         ENTRY DNOTPNT
+DNOTPNT  DS    0H
+* NOTE entry point is 0
+         LA    R1,0
+* POINT entry point is 4
+         LA    R1,0
+         BR    R14
+*
+*
 *
 **********************************************************************
 *                                                                    *
@@ -553,6 +570,24 @@ DEXITRET DS    0H
          LR    R13,R4                 restore save area
          RETURN (14,12),RC=(15)
          LTORG
+*
+*
+*
+**********************************************************************
+*                                                                    *
+*  TRKCLC - TRKCALC CVT function                                     *
+*                                                                    *
+*  just return 3 tracks per block                                    *
+*                                                                    *
+**********************************************************************
+*
+         ENTRY TRKCLC
+TRKCLC   DS    0H
+* Main entry point is offset 12
+         DC    12X'00'
+         LA    R0,3
+         LA    R15,0
+         BR    R14
 *
 *
 *

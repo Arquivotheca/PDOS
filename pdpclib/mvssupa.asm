@@ -4244,7 +4244,7 @@ SNAPALEN EQU   *-SNAPAREA    LENGTH TO GET                      GP14244
 *  Z999 where the OS can handle being called in AM64, so there is    *
 *  no need to waste time checking to see if an amode switch is       *
 *  required. However, it is strongly advised that instead of coding  *
-*  for such pure environments, you instead select S380,              *
+*  for such pure environments, you instead select STEPD,             *
 *  which will work optimally for 32-bit applications on all          *
 *  environments, ie AM24 in MVS 3.8j, switch between AM31 and AM24   *
 *  on MVS/XA, remain in AM31 on late MVS/ESA and above, and switch   *
@@ -4266,7 +4266,7 @@ SNAPALEN EQU   *-SNAPAREA    LENGTH TO GET                      GP14244
          LR    R12,R15
          USING @@SETUP,R12
 *
-         AIF   ('&ZSYS' NE 'S380').NOSETUP
+         AIF   ('&STEPD' NE 'YES').NOSETUP
 *
 * If we are running in a pure 24-bit environment, where
 * the AMODE and RMODE are the same, there is no need to

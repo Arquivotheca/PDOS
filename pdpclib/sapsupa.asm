@@ -895,6 +895,27 @@ RETURN99 DS    0H
          LM    R0,R14,0(R2)       restore registers
          BR    R14                return to caller
          LTORG ,
+**********************************************************************
+*                                                                    *
+* DOLOOP - dummy function                                            *
+*                                                                    *
+**********************************************************************
+         ENTRY @@DOLOOP
+@@DOLOOP DS    0H
+         BR    R14
+*
+*
+*
+***********************************************************************
+*
+*  GETPFX - dummy function
+*
+***********************************************************************
+         ENTRY @@GETPFX
+         USING @@GETPFX,R15
+         LA    R15,0
+@@GETPFX BR    R14
+         LTORG ,
 *
 * S/370 doesn't support switching modes so this code is useless,
 * and won't compile anyway because "BSM" is not known.

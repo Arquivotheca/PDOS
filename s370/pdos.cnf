@@ -2,7 +2,8 @@
 # needs 160 MB though. And even that isn't really required.
 MAINSIZE             600
 
-ARCHMODE             ESA/390
+# S/370 actually gives us S/380 under Hercules/380
+ARCHMODE             S/370
 
 CPUSERIAL            000611
 CPUMODEL             4381
@@ -17,12 +18,8 @@ PGMPRDOS             RESTRICTED
 # Ideally put the console first. It can be either an integrated
 # console (3215-C) or a "normal" telnet console (3215). The address
 # can be anything.
-# Note that the telnet command required is:
-# telnet localhost 3270
-# 3270 is correct, even though it's a 3215
 
 0009      3215-C     noprompt
-#0009      3215       noprompt
 
 
 # This is the IPL disk and can be any address

@@ -233,7 +233,12 @@ ZZ&SYSNDX.X DS 0H
 .DYNAM   ANOP  ,
 &ZZSETSL SETC  '&SAVE(2)'
 &ZZSETSA SETC  '&SAVE(1)'
+         AIF ('&ZSYS' EQ 'S370').NOBEL2
          GETMAIN RU,LV=&ZZSETSL,SP=&ZZSETSP,LOC=BELOW
+         AGO .GETFIN2
+.NOBEL2  ANOP  ,
+         GETMAIN RU,LV=&ZZSETSL,SP=&ZZSETSP
+.GETFIN2 ANOP  ,
          LR    R14,R1             START OF NEW AREA
          LA    R15,&ZZSETSL       LENGTH
          SR    R3,R3              ZERO FILL
@@ -552,11 +557,10 @@ ZZ&SYSNDX.X DS 0H
          SPACE 1
          COPY  PDPTOP
          SPACE 1
-* For S/390 we need to deliberately request LOC=BELOW storage
-* in some places. This is accomplished by using GETMAIN R form.
-* For S/380 we need to deliberately request LOC=ANY storage.
-* For all other environments, just let it naturally default
-* to LOC=RES
+* For non-S/370 we need to deliberately request LOC=BELOW storage
+* in most places. We can't use GETMAIN R because that is not
+* AM32/AM64 clean. For the main storage we deliberately request
+* LOC=ANY storage. Fortunately those flags are ignored for S/370.
 *
          CSECT ,
          PRINT GEN,ON
@@ -946,7 +950,12 @@ DDCTDONE MVC   DDWFLAGS,DDWFLAG1  COPY FIRST DD'S FLAGS         GP14205
 *DEBUG*  GETMAIN RC,LV=ZDCBLEN,SP=SUBPOOL,LOC=BELOW,BNDRY=PAGE **DEBUG
 *not usd LA    R0,ORFNOSTO        Preset for no storage         GP14205
 *not set BXH   R15,R15,OPRERR       Return error code           GP14205
+         AIF ('&ZSYS' EQ 'S370').NOBEL3
          GETMAIN RU,LV=ZDCBLEN,SP=SUBPOOL,LOC=BELOW  I/O work area BTL
+         AGO .GETFIN3
+.NOBEL3  ANOP  ,
+         GETMAIN RU,LV=ZDCBLEN,SP=SUBPOOL  I/O work area BTL
+.GETFIN3 ANOP  ,
 *
          LR    R10,R1             Addr.of storage obtained to its base
          USING IHADCB,R10         Give assembler DCB area base register
@@ -1434,7 +1443,12 @@ GETBUFF  L     R5,ZPBLKSZ         Load the input blocksize      GP14233
          CR    R6,R0              Buffer size OK?               GP14205
          BNL   *+4+2                Yes                         GP14205
          LR    R6,R0              Use larger                    GP14205
+         AIF ('&ZSYS' EQ 'S370').NOBEL4
          GETMAIN RU,LV=(R6),SP=SUBPOOL,LOC=BELOW  Get input buffer
+         AGO .GETFIN4
+.NOBEL4  ANOP  ,
+         GETMAIN RU,LV=(R6),SP=SUBPOOL  Get input buffer
+.GETFIN4 ANOP  ,
          ST    R1,ZBUFF1          Save for cleanup
          ST    R6,ZBUFF1+4           ditto
          ST    R1,BUFFADDR        Save the buffer address for READ
@@ -1447,7 +1461,12 @@ GETBUFF  L     R5,ZPBLKSZ         Load the input blocksize      GP14233
          BZ    GETBUFC              No                          GP17064
          L     R6,ZPBLKSZ         Use block size instead        GP17064
 GETBUFC  LA    R6,4(,R6)          Insurance
+         AIF ('&ZSYS' EQ 'S370').NOBEL5
          GETMAIN RU,LV=(R6),SP=SUBPOOL,LOC=BELOW  Get VBS buffer
+         AGO .GETFIN5
+.NOBEL5  ANOP  ,
+         GETMAIN RU,LV=(R6),SP=SUBPOOL  Get VBS buffer
+.GETFIN5 ANOP  ,
          ST    R1,ZBUFF2          Save for cleanup
          ST    R6,ZBUFF2+4           ditto
          LA    R14,4(,R1)
@@ -1524,7 +1543,12 @@ TERMOVFF LA    R1,255             default LRECL                 GP17107
 TERMOSET ST    R6,ZPBLKSZ         Return it                     GP14233
          ST    R1,ZPLRECL         Return it                     GP17107
          LA    R6,4(,R6)          Add 4 in case RECFM=U buffer
+         AIF ('&ZSYS' EQ 'S370').NOBEL6
          GETMAIN RU,LV=(R6),SP=SUBPOOL,LOC=BELOW  Get input buffer
+         AGO .GETFIN6
+.NOBEL6  ANOP  ,
+         GETMAIN RU,LV=(R6),SP=SUBPOOL  Get input buffer
+.GETFIN6 ANOP  ,
          ST    R1,ZBUFF2          Save for cleanup
          ST    R6,ZBUFF2+4           ditto
          LA    R1,4(,R1)          Allow for RDW if not V
@@ -2229,7 +2253,12 @@ READNNOT TM    IOPFLAGS,IOFCONCT  Did we hit concatenation?
          FREEMAIN R,LV=(R2),A=(R1),SP=SUBPOOL  and free it      GP14205
          L     R5,ZPBLKSZ         Load the input blocksize      GP14205
          LA    R6,4(,R5)          Add 4 in case RECFM=U buffer  GP14205
+         AIF ('&ZSYS' EQ 'S370').NOBEL7
          GETMAIN RU,LV=(R6),SP=SUBPOOL,LOC=BELOW  Get input buffer
+         AGO .GETFIN7
+.NOBEL7  ANOP  ,
+         GETMAIN RU,LV=(R6),SP=SUBPOOL  Get input buffer
+.GETFIN7 ANOP  ,
          ST    R1,ZBUFF1          Save for cleanup              GP14205
          ST    R6,ZBUFF1+4           ditto                      GP14205
          ST    R1,BUFFADDR        Save the buffer address for READ
@@ -3623,7 +3652,12 @@ EXFGLOB  EQU   EXFMALL+EXFSUPP+EXFRET  GLOBAL FLAGS
          MVC   0(4,R11),=X'04804000'  PRESET
          LR    R9,R1              SAVE PARAMETER LIST ADDRESS
          LA    R0,DYNALDLN        GET LENGTH OF SAVE AND WORK AREA
+         AIF ('&ZSYS' EQ 'S370').NOBEL8
          GETMAIN RC,LV=(0),LOC=BELOW        GET STORAGE
+         AGO .GETFIN8
+.NOBEL8  ANOP  ,
+         GETMAIN RC,LV=(0)        GET STORAGE
+.GETFIN8 ANOP  ,
          LTR   R15,R15            SUCCESSFUL ?
          BZ    DYNALHAV           YES
          STC   R15,3(,R11)        SET RETURN VALUES
@@ -3965,7 +3999,12 @@ CODE386  DS    0D                                               PE18032
          USING @@SVC99,R12
          LR    R11,R1
 *
+         AIF ('&ZSYS' EQ 'S370').NOBEL9
          GETMAIN RU,LV=WORKLEN,SP=SUBPOOL,LOC=BELOW
+         AGO .GETFIN9
+.NOBEL9  ANOP  ,
+         GETMAIN RU,LV=WORKLEN,SP=SUBPOOL
+.GETFIN9 ANOP  ,
          ST    R13,4(,R1)
          ST    R1,8(,R13)
          LR    R13,R1
@@ -4053,7 +4092,12 @@ RETURN99 DS    0H
          BNZ   SNAPGOT                                          GP14244
          USING SNAPDCB,R10   DECLARE DYNAMIC WORK AREA          GP14244
 SNAPGET  LA    R0,SNAPSLEN   GET LENGTH OF SAVE AND WORK AREA   GP14244
-         GETMAIN RU,LV=(0),LOC=BELOW                            GP15019
+         AIF ('&ZSYS' EQ 'S370').NOBELA
+         GETMAIN RU,LV=(0),LOC=BELOW
+         AGO .GETFINA
+.NOBELA  ANOP  ,
+         GETMAIN RU,LV=(0)
+.GETFINA ANOP  ,
          STM   R0,R1,#SNAPDCB     SAVE FOR RELEASE              GP14244
          LR    R10,R1                                           GP14244
          MVC   SNAPDCB(PATSNAPL),PATSNAP   INIT DCB, ETC.       GP14244

@@ -418,7 +418,14 @@ typedef struct {
 } TCB;
 
 typedef struct {
-    char unused1[32];
+    char unused1[232];
+    int trkcalc; /* TRKCALC function */
+} CVT;
+
+typedef struct {
+    char unused1a[16];
+    CVT *cvt;
+    char unused1b[12];
     unsigned int svcopsw[2];
     char unused2[96];
     unsigned int svc_code;
@@ -439,13 +446,14 @@ typedef struct {
     char dcbddnam[8];
     union {
         char dcboflgs;
-        int dcbgetput;
+        int dcbgetput; /* offset 48+1 */
     } u1;
-    int dcbcheck;
+    int dcbcheck; /* offset 52+1 */
     char unused3[6];
     short dcbblksi;
     char unused4[18];
     short dcblrecl;
+    int dcbnotepoint; /* offset 84+1 */
 } DCB;
 
 typedef struct {
@@ -722,7 +730,9 @@ int adisp(void);
 void dread(void);
 void dwrite(void);
 void dcheck(void);
+void dnotpnt(void);
 void dexit(int oneexit, DCB *dcb);
+void trkclc(void);
 void datoff(void);
 void daton(void);
 extern int __consdn;
@@ -885,6 +895,8 @@ int pdosInit(PDOS *pdos)
     printf("IPL device is %x\n", pdos->ipldev);
 #endif
     pdos->shutdown = 0;
+    pdos->psa->cvt = malloc(sizeof(CVT));
+    pdos->psa->cvt->trkcalc = (int)trkclc;
     pdosInitAspaces(pdos);
     pdos->curr_aspace = 0;
     pdos->context =
@@ -1745,6 +1757,7 @@ static void pdosProcessSVC(PDOS *pdos)
         ocode >>= 24;
         pdos->context->regs[15] = 0;
         gendcb->dcbcheck = (int)dcheck;
+        gendcb->dcbnotepoint = (int)dnotpnt;
         oneexit = gendcb->u2.dcbexlsa & 0xffffff;
         if (oneexit != 0)
         {

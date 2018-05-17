@@ -2,7 +2,8 @@
 # needs 160 MB though. And even that isn't really required.
 MAINSIZE             600
 
-ARCHMODE             S/380
+# S/370 actually gives us S/380 under Hercules/380
+ARCHMODE             S/370
 
 CPUSERIAL            000611
 CPUMODEL             4381

@@ -411,9 +411,19 @@ typedef struct rb {
     char *pptrs[1];
 } RB;
 
+typedef struct {
+    char tioelngh;
+} TIOENTRY;
+
+typedef struct {
+    char unused[24];
+    TIOENTRY tioentry;
+} TIOT;
+
 /* note that the TCB has more data in a prefix area */
 typedef struct {
-    char unused1[16];
+    char unused1[12];
+    TIOT *tcbtio;
     int tcbcmp;
 } TCB;
 
@@ -431,6 +441,8 @@ typedef struct {
     unsigned int svc_code;
     char unused[244];
     int flcgrsav[NUM_GPR];
+    char unused3[92];
+    TCB *psatold;
 } PSA;
 
 typedef struct {
@@ -895,10 +907,12 @@ int pdosInit(PDOS *pdos)
     printf("IPL device is %x\n", pdos->ipldev);
 #endif
     pdos->shutdown = 0;
-    pdos->psa->cvt = malloc(sizeof(CVT));
+    pdos->psa->cvt = calloc(sizeof(CVT), 1);
     pdos->psa->cvt->trkcalc = (int)trkclc;
     pdosInitAspaces(pdos);
     pdos->curr_aspace = 0;
+    pdos->psa->psatold = &pdos->aspaces[pdos->curr_aspace].o.tcb;
+    pdos->aspaces[pdos->curr_aspace].o.tcb.tcbtio = calloc(sizeof(TIOT), 1);
     pdos->context =
         pdos->aspaces[pdos->curr_aspace].o.curr_rb =
         &pdos->aspaces[pdos->curr_aspace].o.first_rb;

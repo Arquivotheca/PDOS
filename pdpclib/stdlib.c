@@ -51,8 +51,8 @@ extern int __tso;
 /* Note that you can set MAX_CHUNK to less than REQ_CHUNK */
 /* But don't do this until MVS/380 etc have been changed to */
 /* allow multiple memory requests. */
-/* But bump it up to 64 MiB so that if CMS is misconfigured */
-/* it tries to get almost 16 MiB so should fail */
+/* But bump it up to almost 64 MiB so that if CMS is misconfigured */
+/* it tries to get almost 16 MiB (and from subpool 3) so should fail */
 
 #if defined(MULMEM)
 #define MAX_CHUNK 67108608

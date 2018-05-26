@@ -51,12 +51,15 @@ extern int __tso;
 /* Note that you can set MAX_CHUNK to less than REQ_CHUNK */
 /* But don't do this until MVS/380 etc have been changed to */
 /* allow multiple memory requests. */
+/* But bump it up to 64 MiB so that if CMS is misconfigured */
+/* it tries to get almost 16 MiB so should fail */
+
 #if defined(MULMEM)
-#define MAX_CHUNK 60000000
-#define REQ_CHUNK 60000000
+#define MAX_CHUNK 67108608
+#define REQ_CHUNK 67108608
 #else
-#define MAX_CHUNK 60000000 /* maximum size we will store in memmgr */
-#define REQ_CHUNK 60000000 /* size that we request from OS */
+#define MAX_CHUNK 67108608 /* maximum size we will store in memmgr */
+#define REQ_CHUNK 67108608 /* size that we request from OS */
 #endif
 void *__lastsup = NULL; /* last thing supplied to memmgr */
 #endif

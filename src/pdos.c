@@ -86,6 +86,7 @@ static int bios2driv(int bios);
 static int fileCreat(const char *fnm, int attrib);
 static int dirCreat(const char *dnm, int attrib);
 static int fileOpen(const char *fnm);
+static int fileWrite(int fno, const void *buf, size_t szbuf);
 static int fileDelete(const char *fnm);
 static int fileClose(int fno);
 static int fileRead(int fno, void *buf, size_t szbuf);
@@ -118,7 +119,7 @@ static int writeLBA(void *buf,
                     unsigned long sector);
 static void analyseBpb(DISKINFO *diskinfo, unsigned char *bpb);
 int pdosstrt(void);
-static void formatcwd(char *input,char *output);
+static void formatcwd(const char *input,char *output);
 
 static MEMMGR memmgr;
 
@@ -1434,7 +1435,7 @@ void PosGetFreeSpace(int drive,
 int PosMakeDir(const char *dname)
 {
     char dirname[MAX_PATH];
-    char *orig;
+    const char *orig;
 
     orig = dname;
     if (dname[1] == ':')
@@ -1494,7 +1495,7 @@ int PosCreatFile(const char *name, int attrib, int *handle)
 {
     char filename[MAX_PATH];
     int fno;
-    char *orig;
+    const char *orig;
 
     orig = name;
     if (name[1] == ':')
@@ -1528,7 +1529,7 @@ int PosOpenFile(const char *name, int mode, int *handle)
     char filename[MAX_PATH];
     int fno;
     int ret;
-    char *orig;
+    const char *orig;
 
     orig = name;
 
@@ -1627,7 +1628,7 @@ int PosDeleteFile(const char *name)
 {
     char filename[MAX_PATH];
     int ret;
-    char *orig;
+    const char *orig;
 
     orig = name;
 
@@ -1881,7 +1882,7 @@ int PosFindFirst(char *pat, int attrib)
       to avoid this the ff_pat formed by the current FindFirst call
       is stored in a temporary buffer and set in DTA so that proper
       data gets populated DTA*/
-    ffblk = dta;
+    ffblk = (FFBLK *) dta;
     ffblk->handle = ff_handle;
     strcpy(ffblk->pat, ff_pat);
 
@@ -1892,7 +1893,7 @@ int PosFindNext(void)
 {
     FFBLK *ffblk;
 
-    ffblk = dta;
+    ffblk = (FFBLK *) dta;
     ff_handle = ffblk->handle;
     strcpy(ff_pat, ffblk->pat);
 
@@ -2878,7 +2879,7 @@ static int fileRead(int fno, void *buf, size_t szbuf)
 }
 
 
-static int fileWrite(int fno, void *buf, size_t szbuf)
+static int fileWrite(int fno, const void *buf, size_t szbuf)
 {
     size_t ret;
 
@@ -3352,7 +3353,7 @@ unsigned int PosAbsoluteDiskRead(int drive, unsigned long start_sector,
  with the appropriate directory name,drive name and current 
  working directory. 
 */
-static void formatcwd(char *input,char *output)
+static void formatcwd(const char *input,char *output)
 {
    /*
      The user only provides the <folder-name>

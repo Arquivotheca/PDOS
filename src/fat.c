@@ -520,7 +520,7 @@ size_t fatReadFile(FAT *fat, FATFILE *fatfile, void *buf, size_t szbuf)
  * fatWriteFile - write to an already-open file.
  */
 
-size_t fatWriteFile(FAT *fat, FATFILE *fatfile, void *buf, size_t szbuf)
+size_t fatWriteFile(FAT *fat, FATFILE *fatfile, const void *buf, size_t szbuf)
 {
     static unsigned char bbuf[MAXSECTSZ];
     size_t rem; /* remaining bytes in sector */

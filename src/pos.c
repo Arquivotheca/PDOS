@@ -353,6 +353,30 @@ void PosGetFreeSpace(int drive,unsigned int *secperclu,
     return;
 }
 
+int PosMakeDir(const char *dname)
+{
+    union REGS regsin;
+    union REGS regsout;
+    struct SREGS sregs;
+
+    regsin.h.ah = 0x39;
+#ifdef __32BIT__
+    regsin.d.edx = (int)dname;
+#else
+    regsin.x.dx = FP_OFF(dname);
+    sregs.ds = FP_SEG(dname);
+#endif
+    int86x(0x21, &regsin, &regsout, &sregs);
+    if (regsout.x.cflag)
+    {
+        return (regsout.x.ax);
+    }
+    else
+    {
+        return (0);
+    }
+}
+
 int PosChangeDir(char *to)
 {
     union REGS regsin;

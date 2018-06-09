@@ -143,6 +143,8 @@ void fatInit(FAT *fat,
 void fatTerm(FAT *fat);
 unsigned int fatCreatFile(FAT *fat, const char *fnm, FATFILE *fatfile, 
                           int attrib);
+unsigned int fatCreatDir(FAT *fat, const char *dnm, const char *parentname,
+                         int attrib);
 unsigned int fatOpenFile(FAT *fat, const char *fnm, FATFILE *fatfile);
 size_t fatReadFile(FAT *fat, FATFILE *fatfile, void *buf, size_t szbuf);
 size_t fatWriteFile(FAT *fat, FATFILE *fatfile, void *buf, size_t szbuf);

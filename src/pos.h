@@ -94,6 +94,8 @@ void PosGetFreeSpace(int drive,
                      unsigned int *bytpersec,
                      unsigned int *totclus); /* func 36 */
 
+int PosMakeDir(const char *dname); /* func 39 */
+
 int PosChangeDir(char *to); /* func 3b */
 
 int PosCreatFile(const char *name, /* func 3c */

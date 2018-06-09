@@ -188,6 +188,7 @@ unsigned int fatCreatFile(FAT *fat, const char *fnm, FATFILE *fatfile,
         memset(p, '\0', sizeof(DIRENT));
         memcpy(p->file_name, fat->search, 
               (sizeof(p->file_name)+sizeof(p->file_ext)));
+        p->file_attr = (unsigned char)attrib;
         fatfile->totbytes = 0;
         p->file_size[0] = fatfile->totbytes;
         p->file_size[1] = (fatfile->totbytes >> 8) & 0xff ;
@@ -222,6 +223,114 @@ unsigned int fatCreatFile(FAT *fat, const char *fnm, FATFILE *fatfile,
                 fatWriteLogical(fat, fat->dirSect + 1, lbuf);
             }
         }
+    }
+    return (0);
+}
+
+unsigned int fatCreatDir(FAT *fat, const char *dnm, const char *parentname,
+                         int attrib)
+{
+    DIRENT *p;
+    DIRENT dot;
+    unsigned char lbuf[MAXSECTSZ];
+    int startcluster = 0;
+    int parentstartcluster = 0;
+    long startsector;
+    int i;
+
+    if ((dnm[0] == '\\') || (dnm[0] == '/'))
+    {
+        dnm++;
+    }
+    if ((parentname[0] == '\\') || (parentname[0] == '/'))
+    {
+        parentname++;
+    }
+
+    if(parentname[0] != '\0')
+    {
+        fatPosition(fat,parentname);
+        parentstartcluster = fat->currcluster;
+    }
+    else
+    {
+        parentstartcluster = 0;
+    }
+
+    fatPosition(fat,dnm);
+    p = fat->de;
+
+    if (!fat->notfound)
+    {
+        return(2);
+    }
+    if (p->file_name[0] == '\0')
+    {
+        startcluster = fatFindFreeCluster(fat);
+        if(!(startcluster)) return(1);
+
+        fat->currcluster = startcluster;
+
+        memset(p, '\0', sizeof(DIRENT));
+        memcpy(p->file_name, fat->search,
+              (sizeof(p->file_name)+sizeof(p->file_ext)));
+        p->file_attr = (unsigned char)attrib;
+        p->start_cluster[1] = (fat->currcluster >> 8) & 0xff;
+        p->start_cluster[0] = fat->currcluster & 0xff;
+
+        p->file_size[0] = p->file_size[1] = p->file_size[2]
+            = p->file_size[3] = 0;
+
+        p++;
+        if (p != (fat->dbuf + fat->sector_size))
+        {
+            p->file_name[0] = '\0';
+            fatWriteLogical(fat, fat->dirSect, fat->dbuf);
+        }
+        else
+        {
+            fatWriteLogical(fat, fat->dirSect, fat->dbuf);
+
+            /* +++ need to detect end of directory sectors and
+               expand if possible */
+            fatReadLogical(fat, fat->dirSect + 1, lbuf);
+            lbuf[0] = '\0';
+            fatWriteLogical(fat, fat->dirSect + 1, lbuf);
+        }
+
+        fat->currcluster = startcluster;
+        fatMarkCluster(fat, fat->currcluster);
+
+        startsector = (fat->currcluster - 2)
+                * (long)fat->sectors_per_cluster
+                + fat->filestart;
+
+        memset(lbuf,'\0',sizeof(lbuf));
+
+        memset(&dot,'\0',sizeof(dot));
+        memset(dot.file_name, ' ', sizeof(dot.file_name)
+               + sizeof(dot.file_ext));
+        dot.file_name[0] = DIRENT_DOT;
+        dot.file_attr = DIRENT_SUBDIR;
+
+        dot.start_cluster[1] = (startcluster >> 8) & 0xff;
+        dot.start_cluster[0] = startcluster & 0xff;
+
+        memcpy(lbuf,&dot,sizeof(dot));
+
+        memset(&dot,'\0',sizeof(dot));
+        memset(dot.file_name, ' ', sizeof(dot.file_name)
+               + sizeof(dot.file_ext));
+        dot.file_name[0] = DIRENT_DOT;
+        dot.file_name[1] = DIRENT_DOT;
+        dot.file_attr = DIRENT_SUBDIR;
+
+        dot.start_cluster[1] = (parentstartcluster >> 8) & 0xff;
+        dot.start_cluster[0] = parentstartcluster & 0xff;
+
+        memcpy(lbuf+sizeof(dot),&dot,sizeof(dot));
+
+        fatWriteLogical(fat, startsector, lbuf);
     }
     return (0);
 }
@@ -551,6 +660,7 @@ size_t fatWriteFile(FAT *fat, FATFILE *fatfile, void *buf, size_t szbuf)
 
 static void fatPosition(FAT *fat, const char *fnm)
 {
+    fat->notfound = 0;
     fat->upto = fnm;
     fat->currcluster = 0;
     fatNextSearch(fat, fat->search, &fat->upto);

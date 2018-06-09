@@ -84,6 +84,7 @@ static void loadExe(char *prog, PARMBLOCK *parmblock);
 static int fixexe32(unsigned char *psp, unsigned long entry, unsigned int sp);
 static int bios2driv(int bios);
 static int fileCreat(const char *fnm, int attrib);
+static int dirCreat(const char *dnm, int attrib);
 static int fileOpen(const char *fnm);
 static int fileDelete(const char *fnm);
 static int fileClose(int fno);
@@ -679,6 +680,14 @@ static void int21handler(union REGS *regsin,
                             &regsout->x.bx,
                             &regsout->x.cx,
                             &regsout->x.dx);
+#endif
+            break;
+
+        case 0x39:
+#ifdef __32BIT__
+            regsout->d.eax = PosMakeDir(SUBADDRFIX(regsin->d.edx));
+#else
+            regsout->x.ax = PosMakeDir(MK_FP(sregs->ds, regsin->x.dx));
 #endif
             break;
             
@@ -1421,6 +1430,33 @@ void PosGetFreeSpace(int drive,
     return;
 }
 /**/
+
+int PosMakeDir(const char *dname)
+{
+    char dirname[MAX_PATH];
+    char *orig;
+
+    orig = dname;
+    if (dname[1] == ':')
+    {
+        dname += 2;
+    }
+    if ((dname[0] == '\\') || (dname[0] == '/'))
+    {
+        strcpy(dirname,orig);
+    }
+    else
+    {
+        strcpy(dirname, cwd);
+        strcat(dirname, "\\");
+        strcat(dirname, dname);
+    }
+    upper_str(dirname);
+
+    dirCreat(dirname, DIRENT_SUBDIR);
+
+    return (0);
+}
 
 int PosChangeDir(char *to)
 {
@@ -2732,6 +2768,59 @@ static int fileCreat(const char *fnm, int attrib)
     fhandle[x].inuse = 1;
     fhandle[x].fatptr = &disks[drive].fat;
     return (x);
+}
+
+static int dirCreat(const char *dnm, int attrib)
+{
+    const char *p;
+    int drive;
+    int rc;
+    char tempf[FILENAME_MAX];
+    char parentname[MAX_PATH];
+    char *end;
+    char *temp;
+
+    strcpy(tempf, dnm);
+    upper_str(tempf);
+    dnm = tempf;
+    p = strchr(dnm, ':');
+    if (p == NULL)
+    {
+        p = dnm;
+        drive = currentDrive;
+    }
+    else
+    {
+        drive = *(p - 1);
+        drive = toupper(drive) - 'A';
+        p++;
+    }
+
+    if ((p[0] == '\\') || (p[0] == '/'))
+    {
+        p++;
+    }
+
+    memset(parentname,'\0',sizeof(parentname));
+    end = strrchr(p, '\\');
+    temp = strrchr(p, '/');
+
+    if(!end || (temp > end))
+    {
+        end = temp;
+    }
+    if(end)
+    {
+        strncpy(parentname,p,(end-p));
+    }
+
+    rc = fatCreatDir(&disks[drive].fat, p, parentname, attrib);
+    if (rc < 0)
+    {
+        return (rc);
+    }
+
+    return(0);
 }
 
 static int fileOpen(const char *fnm)

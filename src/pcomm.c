@@ -55,6 +55,7 @@ static void dopath(char *s);
 static void changedir(char *to);
 static void changedisk(int drive);
 static void dohelp(char *cmd);
+static void domkdir(char *dnm);
 static int ins_strcmp(char *one, char *two);
 static int ins_strncmp(char *one, char *two, size_t len);
 static void readBat(char *fnm);
@@ -211,6 +212,10 @@ static void processInput(void)
     else if (ins_strcmp(buf, "help") == 0)
     {
         dohelp(p);
+    }
+    else if (ins_strcmp(buf, "mkdir") == 0)
+    {
+        domkdir(p);
     }
     else
     {
@@ -523,6 +528,7 @@ static void dohelp(char *cmd)
         printf("        in the current directory.\n");
         printf("ECHO    Displays a message.\n");
         printf("HELP    Provides information about PDOS commands.\n");
+        printf("MKDIR   Creates new directories.\n");
         printf("PATH    Displays or modifies PATH variable.\n");
         printf("REBOOT  Reboots the computer.\n");
         printf("TYPE    Reads and displays a text file.\n");
@@ -568,6 +574,12 @@ static void dohelp(char *cmd)
         printf("HELP [command]\n");
     }
 
+    else if(ins_strcmp(cmd, "mkdir") == 0)
+    {
+        printf("Creates new directories.\n\n");
+        printf("MKDIR [path]\n");
+    }
+
     else if(ins_strcmp(cmd, "path") == 0)
     {
         printf("Displays or modifies PATH variable.\n\n");
@@ -601,6 +613,19 @@ static void dohelp(char *cmd)
         printf("No such command \"%s\"\n",cmd);
     }
 
+    return;
+}
+
+static void domkdir(char *dnm)
+{
+    if(*dnm == '\0')
+    {
+        printf("Required Parameter Missing\n");
+        return;
+    }
+    /* +++ Add a message when the directory was not created. */
+
+    PosMakeDir(dnm);
     return;
 }
 

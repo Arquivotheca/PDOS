@@ -2763,7 +2763,7 @@ static int fileCreat(const char *fnm, int attrib)
     rc = fatCreatFile(&disks[drive].fat, p, &fhandle[x].fatfile, attrib);
     if (rc < 0)
     {
-        return (rc);
+        return (-rc);
     }
     fhandle[x].inuse = 1;
     fhandle[x].fatptr = &disks[drive].fat;
@@ -2815,10 +2815,7 @@ static int dirCreat(const char *dnm, int attrib)
     }
 
     rc = fatCreatDir(&disks[drive].fat, p, parentname, attrib);
-    if (rc < 0)
-    {
-        return (rc);
-    }
+    return (rc);
 
     return(0);
 }

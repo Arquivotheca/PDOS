@@ -207,7 +207,7 @@ unsigned int fatCreatFile(FAT *fat, const char *fnm, FATFILE *fatfile,
         else
         {
             p++;
-            if (p != (fat->dbuf + fat->sector_size))
+            if ((unsigned char *) p != (fat->dbuf + fat->sector_size))
             {    
                 p->file_name[0] = '\0';
                 fatWriteLogical(fat, fat->dirSect, fat->dbuf);
@@ -282,7 +282,7 @@ unsigned int fatCreatDir(FAT *fat, const char *dnm, const char *parentname,
             = p->file_size[3] = 0;
 
         p++;
-        if (p != (fat->dbuf + fat->sector_size))
+        if ((unsigned char *) p != (fat->dbuf + fat->sector_size))
         {
             p->file_name[0] = '\0';
             fatWriteLogical(fat, fat->dirSect, fat->dbuf);
@@ -879,14 +879,13 @@ static void fatDirSectorSearch(FAT *fat,
 {
     int x;
     unsigned char *buf;
-    FATFILE *fatfile = fat->currfatfile;
     DIRENT *p;
 
     buf = fat->dbuf;
     for (x = 0; x < numsectors; x++)
     {
         fatReadLogical(fat, startSector + x, buf);
-        for (p = buf; p < buf + fat->sector_size; p++)
+        for (p = (DIRENT *) buf; (unsigned char *) p < buf + fat->sector_size; p++)
         {
             fat->fnd=1;
             if (memcmp(p->file_name, search, 11) == 0)
@@ -1073,7 +1072,7 @@ unsigned int fatRenameFile(FAT *fat,const char *old,const char *new)
 {
     FATFILE fatfile;
     char fnm[FILENAME_MAX];
-    const char *p;
+    char *p;
     int len;
     int lenext;
 

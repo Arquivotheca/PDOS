@@ -102,7 +102,7 @@ int BosDiskSectorWLBA(void         *buffer, /* 13:43 */
 
 long BosExtendedMemorySize(void); /* 15:88 */
 
-unsigned int BosReadKeyboardCharacter(int *scancode, int *ascii); /* 16:0 */
+void BosReadKeyboardCharacter(int *scancode, int *ascii); /* 16:0 */
 
 void BosSystemWarmBoot(void); /* 19: */
 

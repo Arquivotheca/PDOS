@@ -723,7 +723,7 @@ long BosExtendedMemorySize(void)
     Notes: None.
 */
 
-unsigned int BosReadKeyboardCharacter(int *scancode, int *ascii)
+void BosReadKeyboardCharacter(int *scancode, int *ascii)
 {
     union REGS regsin;
     union REGS regsout;

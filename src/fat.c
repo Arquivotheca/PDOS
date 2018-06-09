@@ -1104,7 +1104,7 @@ unsigned int fatRenameFile(FAT *fat,const char *old,const char *new)
         p = strchr(new, '.');
         if (p != NULL)
         {
-            len=(p-new);
+            len=(p-(char *) new);
             lenext=strlen(p+1);
             if (len > 8)
             {   

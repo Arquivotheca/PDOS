@@ -250,6 +250,7 @@ unsigned int fatCreatDir(FAT *fat, const char *dnm, const char *parentname,
     if(parentname[0] != '\0')
     {
         fatPosition(fat,parentname);
+        if (!fat->currcluster) return (POS_ERR_PATH_NOT_FOUND);
         parentstartcluster = fat->currcluster;
     }
     else
@@ -262,12 +263,12 @@ unsigned int fatCreatDir(FAT *fat, const char *dnm, const char *parentname,
 
     if (!fat->notfound)
     {
-        return(2);
+        return (POS_ERR_PATH_NOT_FOUND);
     }
     if (p->file_name[0] == '\0')
     {
         startcluster = fatFindFreeCluster(fat);
-        if(!(startcluster)) return(1);
+        if(!(startcluster)) return (POS_ERR_PATH_NOT_FOUND);
 
         fat->currcluster = startcluster;
 

@@ -630,27 +630,41 @@ static void dohelp(char *cmd)
 
 static void domkdir(char *dnm)
 {
+    int ret;
+
     if(*dnm == '\0')
     {
         printf("Required Parameter Missing\n");
         return;
     }
-    /* +++ Add a message when the directory was not created. */
 
-    PosMakeDir(dnm);
+    ret = PosMakeDir(dnm);
+
+    if (ret == POS_ERR_PATH_NOT_FOUND) printf("Unable to create directory\n");
+    if (ret == POS_ERR_ACCESS_DENIED) printf("Access denied\n");
+
     return;
 }
 
 static void dormdir(char *dnm)
 {
+    int ret;
+
     if(*dnm == '\0')
     {
         printf("Required Parameter Missing\n");
         return;
     }
-    /* +++ Add a message when the directory was not removed. */
 
-    PosRemoveDir(dnm);
+    ret = PosRemoveDir(dnm);
+
+    if (ret == POS_ERR_PATH_NOT_FOUND)
+        printf("Invalid path, not directory,\nor directory not empty\n");
+    else if (ret == POS_ERR_ACCESS_DENIED) printf("Access denied\n");
+    else if (ret == POS_ERR_INVALID_HANDLE) printf("Invalid handle\n");
+    else if (ret == POS_ERR_ATTEMPTED_TO_REMOVE_CURRENT_DIRECTORY)
+        printf("Attempt to remove current directory\n");
+
     return;
 }
 

@@ -688,16 +688,20 @@ static void int21handler(union REGS *regsin,
         case 0x39:
 #ifdef __32BIT__
             regsout->d.eax = PosMakeDir(SUBADDRFIX(regsin->d.edx));
+            if (regsout->d.eax) regsout->x.cflag = 1;
 #else
             regsout->x.ax = PosMakeDir(MK_FP(sregs->ds, regsin->x.dx));
+            if (regsout->d.ax) regsout->x.cflag = 1;
 #endif
             break;
 
         case 0x3a:
 #ifdef __32BIT__
             regsout->d.eax = PosRemoveDir(SUBADDRFIX(regsin->d.edx));
+            if (regsout->d.eax) regsout->x.cflag = 1;
 #else
             regsout->x.ax = PosRemoveDir(MK_FP(sregs->ds, regsin->x.dx));
+            if (regsout->d.ax) regsout->x.cflag = 1;
 #endif
             break;
             
@@ -1446,6 +1450,7 @@ int PosMakeDir(const char *dname)
     int ret;
     char dirname[MAX_PATH];
     const char *orig;
+    char *end;
 
     orig = dname;
     if (dname[1] == ':')
@@ -1459,6 +1464,20 @@ int PosMakeDir(const char *dname)
     else
     {
         strcpy(dirname, cwd);
+        end = 0;
+        while (dname[0] == '.' && dname[1] == '.')
+        {
+            dname += 3;
+
+            end = strrchr(dirname, '\\');
+            if (!end)
+            {
+                if (!strlen(dirname)) return (POS_ERR_PATH_NOT_FOUND);
+                end = dirname;
+            }
+            *end = '\0';
+        }
+        if (end) memset(end, '\0', sizeof(dirname) - (end - dirname));
         strcat(dirname, "\\");
         strcat(dirname, dname);
     }
@@ -1474,6 +1493,7 @@ int PosRemoveDir(const char *dname)
     int ret;
     char dirname[MAX_PATH];
     const char *orig;
+    char *end;
 
     orig = dname;
     if (dname[1] == ':')
@@ -1487,6 +1507,20 @@ int PosRemoveDir(const char *dname)
     else
     {
         strcpy(dirname, cwd);
+        end = 0;
+        while (dname[0] == '.' && dname[1] == '.')
+        {
+            dname += 3;
+
+            end = strrchr(dirname, '\\');
+            if (!end)
+            {
+                if (!strlen(dirname)) return (POS_ERR_PATH_NOT_FOUND);
+                end = dirname;
+            }
+            *end = '\0';
+        }
+        if (end) memset(end, '\0', sizeof(dirname) - (end - dirname));
         strcat(dirname, "\\");
         strcat(dirname, dname);
     }
@@ -2961,6 +2995,7 @@ static int dirDelete(const char *dnm)
     int rc;
     char tempf[FILENAME_MAX];
     int attr;
+    int i;
     int ret;
     int dotcount = 0;
     int fh;
@@ -2983,8 +3018,20 @@ static int dirDelete(const char *dnm)
     }
 
     rc = fatGetFileAttributes(&disks[drive].fat, p, &attr);
-    if (rc) return(rc);
-    if (attr != DIRENT_SUBDIR) return(1);
+    if (rc || attr != DIRENT_SUBDIR) return (POS_ERR_PATH_NOT_FOUND);
+
+    if (drive == currentDrive)
+    {
+        strcpy(tempf, p);
+        for (i = 0; i < strlen(tempf); i++)
+        {
+            if (tempf[i] == '/') tempf[i] = '\\';
+        }
+        if (strcmp(tempf, cwd) == 0 || strcmp(tempf + 1, cwd) == 0)
+        {
+            return (POS_ERR_ATTEMPTED_TO_REMOVE_CURRENT_DIRECTORY);
+        }
+    }
 
     fh = fileOpen(dnm);
 
@@ -2996,16 +3043,16 @@ static int dirDelete(const char *dnm)
             if (dirent.file_name[0] == DIRENT_DOT) dotcount++;
             if (dirent.file_name[0] != DIRENT_DOT || dotcount > 2)
             {
-                rc = 1;
-                break;
+                fileClose(fh);
+                return (POS_ERR_PATH_NOT_FOUND);
             }
         }
         ret = fileRead(fh, &dirent , sizeof dirent);
     }
     fileClose(fh);
-    if (rc) return(rc);
 
     rc = fatDeleteFile(&disks[drive].fat, p);
+    if (rc == POS_ERR_FILE_NOT_FOUND) return (POS_ERR_PATH_NOT_FOUND);
     return (rc);
 }
 /**/

@@ -1689,6 +1689,11 @@ static void pdosProcessSVC(PDOS *pdos)
                     pdos->context->regs[15]);
 #endif
             }
+            if (getmain == 0)
+            {
+                printf("out of memory - looping\n");
+                for (;;) ;
+            }
             pdos->context->regs[1] = getmain;
         }
         /* freemain */

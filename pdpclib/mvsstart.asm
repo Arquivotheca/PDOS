@@ -131,6 +131,7 @@ CEESTART DS    0H
          MVC   PGMNAME,CDNAME
 *
 * Find out if this is TSO or not
+         LA    R5,0              preset to non-TSO
          L     R3,PSAAOLD-PSA    get address of my ASCB
          USING ASCB,R3
          ICM   R4,B'1111',ASCBASXB

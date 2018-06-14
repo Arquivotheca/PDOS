@@ -88,6 +88,7 @@ static int dirCreat(const char *dnm, int attrib);
 static int fileOpen(const char *fnm);
 static int fileWrite(int fno, const void *buf, size_t szbuf);
 static int fileDelete(const char *fnm);
+static int dirDelete(const char *dnm);
 static int fileClose(int fno);
 static int fileRead(int fno, void *buf, size_t szbuf);
 static void accessDisk(int drive);
@@ -689,6 +690,14 @@ static void int21handler(union REGS *regsin,
             regsout->d.eax = PosMakeDir(SUBADDRFIX(regsin->d.edx));
 #else
             regsout->x.ax = PosMakeDir(MK_FP(sregs->ds, regsin->x.dx));
+#endif
+            break;
+
+        case 0x3a:
+#ifdef __32BIT__
+            regsout->d.eax = PosRemoveDir(SUBADDRFIX(regsin->d.edx));
+#else
+            regsout->x.ax = PosRemoveDir(MK_FP(sregs->ds, regsin->x.dx));
 #endif
             break;
             
@@ -1434,6 +1443,7 @@ void PosGetFreeSpace(int drive,
 
 int PosMakeDir(const char *dname)
 {
+    int ret;
     char dirname[MAX_PATH];
     const char *orig;
 
@@ -1454,9 +1464,37 @@ int PosMakeDir(const char *dname)
     }
     upper_str(dirname);
 
-    dirCreat(dirname, DIRENT_SUBDIR);
+    ret = dirCreat(dirname, DIRENT_SUBDIR);
 
-    return (0);
+    return (ret);
+}
+
+int PosRemoveDir(const char *dname)
+{
+    int ret;
+    char dirname[MAX_PATH];
+    const char *orig;
+
+    orig = dname;
+    if (dname[1] == ':')
+    {
+        dname += 2;
+    }
+    if ((dname[0] == '\\') || (dname[0] == '/'))
+    {
+        strcpy(dirname,orig);
+    }
+    else
+    {
+        strcpy(dirname, cwd);
+        strcat(dirname, "\\");
+        strcat(dirname, dname);
+    }
+    upper_str(dirname);
+
+    ret = dirDelete(dirname);
+
+    return (ret);
 }
 
 int PosChangeDir(char *to)
@@ -2817,8 +2855,6 @@ static int dirCreat(const char *dnm, int attrib)
 
     rc = fatCreatDir(&disks[drive].fat, p, parentname, attrib);
     return (rc);
-
-    return(0);
 }
 
 static int fileOpen(const char *fnm)
@@ -2914,6 +2950,62 @@ static int fileDelete(const char *fnm)
 
     rc = fatDeleteFile(&disks[drive].fat, p);
     if (rc != 0) return (-1);
+    return (rc);
+}
+
+static int dirDelete(const char *dnm)
+{
+    int x;
+    const char *p;
+    int drive;
+    int rc;
+    char tempf[FILENAME_MAX];
+    int attr;
+    int ret;
+    int dotcount = 0;
+    int fh;
+    DIRENT dirent;
+
+    strcpy(tempf, dnm);
+    upper_str(tempf);
+    dnm = tempf;
+    p = strchr(dnm, ':');
+    if (p == NULL)
+    {
+        p = dnm;
+        drive = currentDrive;
+    }
+    else
+    {
+        drive = *(p - 1);
+        drive = toupper(drive) - 'A';
+        p++;
+    }
+
+    rc = fatGetFileAttributes(&disks[drive].fat, p, &attr);
+    if (rc) return(rc);
+    if (attr != DIRENT_SUBDIR) return(1);
+
+    fh = fileOpen(dnm);
+
+    ret = fileRead(fh, &dirent, sizeof dirent);
+    while ((ret == sizeof dirent) && (dirent.file_name[0] != '\0'))
+    {
+        if (dirent.file_name[0] != DIRENT_DEL)
+        {
+            if (dirent.file_name[0] == DIRENT_DOT) dotcount++;
+            if (dirent.file_name[0] != DIRENT_DOT || dotcount > 2)
+            {
+                rc = 1;
+                break;
+            }
+        }
+        ret = fileRead(fh, &dirent , sizeof dirent);
+    }
+    fileClose(fh);
+    if (rc) return(rc);
+
+    rc = fatDeleteFile(&disks[drive].fat, p);
     return (rc);
 }
 /**/

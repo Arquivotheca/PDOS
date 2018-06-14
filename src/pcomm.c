@@ -56,6 +56,7 @@ static void changedir(char *to);
 static void changedisk(int drive);
 static void dohelp(char *cmd);
 static void domkdir(char *dnm);
+static void dormdir(char *dnm);
 static int ins_strcmp(char *one, char *two);
 static int ins_strncmp(char *one, char *two, size_t len);
 static void readBat(char *fnm);
@@ -216,6 +217,10 @@ static void processInput(void)
     else if (ins_strcmp(buf, "mkdir") == 0)
     {
         domkdir(p);
+    }
+    else if (ins_strcmp(buf, "rmdir") == 0)
+    {
+        dormdir(p);
     }
     else
     {
@@ -531,6 +536,7 @@ static void dohelp(char *cmd)
         printf("MKDIR   Creates new directories.\n");
         printf("PATH    Displays or modifies PATH variable.\n");
         printf("REBOOT  Reboots the computer.\n");
+        printf("RMDIR   Removes a directory.\n");
         printf("TYPE    Reads and displays a text file.\n");
         printf("VER     Displays the current version of PDOS.\n");
         return;
@@ -596,6 +602,12 @@ static void dohelp(char *cmd)
         printf("REBOOT\n");
     }
 
+     else if(ins_strcmp(cmd, "rmdir") == 0)
+    {
+        printf("Removes a directory.\n\n");
+        printf("RMDIR [path]\n");
+    }
+
     else if(ins_strcmp(cmd, "type") == 0)
     {
         printf("Reads and displays a text file.\n\n");
@@ -626,6 +638,19 @@ static void domkdir(char *dnm)
     /* +++ Add a message when the directory was not created. */
 
     PosMakeDir(dnm);
+    return;
+}
+
+static void dormdir(char *dnm)
+{
+    if(*dnm == '\0')
+    {
+        printf("Required Parameter Missing\n");
+        return;
+    }
+    /* +++ Add a message when the directory was not removed. */
+
+    PosRemoveDir(dnm);
     return;
 }
 

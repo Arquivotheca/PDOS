@@ -1,3 +1,8 @@
+rem If pdptop is set to S/370, you don't need MEMMGR
+rem if it is set to S/380, you do need MEMMGR, because
+rem it does an ATL GETMAIN which only works once, with
+rem current VM/380 technology
+
 del pdpcms.zip
 gcccms -Os -DXXX_MEMMGR -S -I . start.c
 gcccms -Os -DXXX_MEMMGR -S -I . stdio.c

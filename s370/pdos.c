@@ -399,12 +399,21 @@ typedef struct {
     int abend;
 } TASK;
 
+typedef struct cdentry {
+    char filler1[8];
+    char cdname[8]; /* name of module */
+    void *cdentpt; /* entry point of module */
+} CDENTRY;
+
+/* note that RB has another 64 bytes in a prefix area */
 typedef struct rb {
-    /* char filler1[96]; */
+    char filler1[12];
+    CDENTRY *rbcde1; /* this is actually a 3-byte address */
+    /* the following stuff is not in correct order/place */
     int regs[NUM_GPR];
     unsigned int psw1;
     unsigned int psw2;
-    struct rb *rblinkb;
+    struct rb *rblinkb; /* this is really 3 bytes */
     ECB *postecb;
     char *next_exe; /* next executable's location */
     int savearea[20]; /* needs to be in user space */
@@ -420,9 +429,10 @@ typedef struct {
     TIOENTRY tioentry;
 } TIOT;
 
-/* note that the TCB has more data in a prefix area */
+/* note that the TCB has another 32 bytes in a prefix area */
 typedef struct {
-    char unused1[12];
+    RB *tcbrbp;
+    char unused1[8];
     TIOT *tcbtio;
     int tcbcmp;
 } TCB;
@@ -913,6 +923,11 @@ int pdosInit(PDOS *pdos)
     pdos->curr_aspace = 0;
     pdos->psa->psatold = &pdos->aspaces[pdos->curr_aspace].o.tcb;
     pdos->aspaces[pdos->curr_aspace].o.tcb.tcbtio = calloc(sizeof(TIOT), 1);
+    pdos->aspaces[pdos->curr_aspace].o.tcb.tcbrbp = calloc(sizeof(RB), 1);
+    pdos->aspaces[pdos->curr_aspace].o.tcb.tcbrbp->rbcde1
+        = calloc(sizeof(CDENTRY), 1);
+    memcpy(pdos->aspaces[pdos->curr_aspace].o.tcb.tcbrbp->rbcde1->cdname,
+           "PROGNAME", 8);
     pdos->context =
         pdos->aspaces[pdos->curr_aspace].o.curr_rb =
         &pdos->aspaces[pdos->curr_aspace].o.first_rb;

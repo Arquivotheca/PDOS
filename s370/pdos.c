@@ -2778,7 +2778,7 @@ static int pdosLoadExe(PDOS *pdos, char *prog, char *parm)
         pdos->context->regs[15] = entry;
         pdos->context->psw1 = PSW_ENABLE_INT; /* need to enable interrupts */
         pdos->context->psw2 = entry; /* 24-bit mode for now */
-#if defined(S390)
+#if defined(S380) || defined(S390)
         pdos->context->psw2 |= 0x80000000; /* dispatch in 31-bit mode */
 #endif
 

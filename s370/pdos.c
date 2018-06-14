@@ -1929,6 +1929,9 @@ static void pdosProcessSVC(PDOS *pdos)
            was used by this program, and free all 256 possible memids
            instead of just subpool 0 */
         memmgrFreeId(&pdos->aspaces[pdos->curr_aspace].o.btlmem, memid);
+#ifndef S370
+        memmgrFreeId(&pdos->aspaces[pdos->curr_aspace].o.atlmem, memid);
+#endif
         memid -= 256;
     }
     else if (svc == 20) /* close */

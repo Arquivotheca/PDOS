@@ -1649,9 +1649,7 @@ static void pdosProcessSVC(PDOS *pdos)
             || ((svc == 120) && (pdos->context->regs[1] == 0)))
         {
             int len;
-#ifndef S370
             int above = 0;
-#endif
 
 #ifndef S370
             if ((svc == 120) && ((pdos->context->regs[15] & 0x30) == 0x30))
@@ -1672,7 +1670,6 @@ static void pdosProcessSVC(PDOS *pdos)
             }
 #endif
 
-#ifndef S370
             if (above)
             {
                 getmain = (int)memmgrAllocate(
@@ -1681,7 +1678,6 @@ static void pdosProcessSVC(PDOS *pdos)
                     memid);
             }
             else
-#endif
             {
                 getmain = (int)memmgrAllocate(
                     &pdos->aspaces[pdos->curr_aspace].o.btlmem,
@@ -1695,7 +1691,8 @@ static void pdosProcessSVC(PDOS *pdos)
 #endif
             if (getmain == 0)
             {
-                printf("out of memory - looping\n");
+                printf("out of memory, above is %d, len is %d - looping\n",
+                       above, len);
                 for (;;) ;
             }
             pdos->context->regs[1] = getmain;

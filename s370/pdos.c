@@ -443,6 +443,11 @@ typedef struct {
 } CVT;
 
 typedef struct {
+    char filler1[108];
+    void *ascbasxb;
+} ASCB;
+
+typedef struct {
     char unused1a[16];
     CVT *cvt;
     char unused1b[12];
@@ -453,6 +458,8 @@ typedef struct {
     int flcgrsav[NUM_GPR];
     char unused3[92];
     TCB *psatold;
+    ASCB *psaanew;
+    ASCB *psaaold;
 } PSA;
 
 typedef struct {
@@ -918,6 +925,7 @@ int pdosInit(PDOS *pdos)
 #endif
     pdos->shutdown = 0;
     pdos->psa->cvt = calloc(sizeof(CVT), 1);
+    pdos->psa->psaaold = calloc(sizeof(ASCB), 1);
     pdos->psa->cvt->trkcalc = (int)trkclc;
     pdosInitAspaces(pdos);
     pdos->curr_aspace = 0;

@@ -1649,46 +1649,50 @@ static void pdosProcessSVC(PDOS *pdos)
             || ((svc == 120) && (pdos->context->regs[1] == 0)))
         {
             int len;
+#ifndef S370
+            int above = 0;
+#endif
 
+#ifndef S370
+            if ((svc == 120) && ((pdos->context->regs[15] & 0x30) == 0x30))
+            {
+                above = 1;
+            }
+#endif
             pdos->context->regs[15] = 0;
             len = pdos->context->regs[0];
             if (svc == 10)
             {
                 len &= 0xffffff;
             }
-            if (len < (16 * 1024 * 1024))
-            {
-                getmain = (int)memmgrAllocate(
-                    &pdos->aspaces[pdos->curr_aspace].o.btlmem,
-                    len,
-                    memid);
-#if MEMDEBUG
-                printf("allocated %x for r0 %x, r1 %x, r15 %x\n", getmain,
-                    len, pdos->context->regs[1],
-                    pdos->context->regs[15]);
-#endif
-            }
-            else
-            {
 #ifdef S370
-                /* trim down excessive getmains in S/370 to cope
-                   with the user of memmgr */
-                getmain = (int)memmgrAllocate(
-                    &pdos->aspaces[pdos->curr_aspace].o.btlmem,
-                    PDOS_STORINC,
-                    memid);
-#else
+            if (len >= (16 * 1024 * 1024)
+            {
+                len = PDOS_STORINC;
+            }
+#endif
+
+#ifndef S370
+            if (above)
+            {
                 getmain = (int)memmgrAllocate(
                     &pdos->aspaces[pdos->curr_aspace].o.atlmem,
                     len,
                     memid);
-#endif
-#if MEMDEBUG
-                printf("allocated %x for r0 %x, r1 %x, r15 %x\n", getmain,
-                    len, pdos->context->regs[1],
-                    pdos->context->regs[15]);
-#endif
             }
+            else
+#endif
+            {
+                getmain = (int)memmgrAllocate(
+                    &pdos->aspaces[pdos->curr_aspace].o.btlmem,
+                    len,
+                    memid);
+            }
+#if MEMDEBUG
+            printf("allocated %x for r0 %x, r1 %x, r15 %x\n", getmain,
+                len, pdos->context->regs[1],
+                pdos->context->regs[15]);
+#endif
             if (getmain == 0)
             {
                 printf("out of memory - looping\n");

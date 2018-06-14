@@ -149,7 +149,8 @@ int 33h - mouse support
 int 5Ch - NETBIOS      NETBIOS interface, TOPS interface
 int 67h - LIM/EMS specification
 
-
+For a detailed description of their subfunctions check:
+http://faculty.petra.ac.id/indi/titip/HelpPC/INTERRUP.TXT
 
 
 

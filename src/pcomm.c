@@ -607,7 +607,7 @@ static void dohelp(char *cmd)
         printf("REBOOT\n");
     }
 
-     else if(ins_strcmp(cmd, "rmdir") == 0)
+    else if(ins_strcmp(cmd, "rmdir") == 0)
     {
         printf("Removes a directory.\n\n");
         printf("RMDIR [path]\n");

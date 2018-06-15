@@ -57,6 +57,7 @@ static void changedisk(int drive);
 static void dohelp(char *cmd);
 static void domkdir(char *dnm);
 static void dormdir(char *dnm);
+static void dorename(char *src);
 static int ins_strcmp(char *one, char *two);
 static int ins_strncmp(char *one, char *two, size_t len);
 static void readBat(char *fnm);
@@ -182,7 +183,7 @@ static void processInput(void)
     {
         printf("%s\n", p);
     }
-    else if (ins_strcmp(buf, "cd") == 0)
+    else if (ins_strcmp(buf, "chdir") == 0 || ins_strcmp(buf, "cd") == 0)
     {
         changedir(p);
     }
@@ -214,13 +215,17 @@ static void processInput(void)
     {
         dohelp(p);
     }
-    else if (ins_strcmp(buf, "mkdir") == 0)
+    else if (ins_strcmp(buf, "mkdir") == 0 || ins_strcmp(buf, "md") == 0)
     {
         domkdir(p);
     }
-    else if (ins_strcmp(buf, "rmdir") == 0)
+    else if (ins_strcmp(buf, "rmdir") == 0 || ins_strcmp(buf, "rd") == 0)
     {
         dormdir(p);
+    }
+    else if (ins_strcmp(buf, "rename") == 0 || ins_strcmp(buf, "ren") == 0)
+    {
+        dorename(p);
     }
     else
     {
@@ -532,24 +537,31 @@ static void dohelp(char *cmd)
         printf("Use HELP [command] to obtain more information about\n");
         printf("specific command.\n\n");
         printf("CD      Changes the current directory.\n");
+        printf("CHDIR   Changes the current directory.\n");
         printf("COPY    Copies files and directories.\n");
         printf("DEL     Deletes files.\n");
         printf("DIR     Displays a list of files and directories\n");
         printf("        in the current directory.\n");
         printf("ECHO    Displays a message.\n");
         printf("HELP    Provides information about PDOS commands.\n");
+        printf("MD      Creates new directories.\n");
         printf("MKDIR   Creates new directories.\n");
         printf("PATH    Displays or modifies PATH variable.\n");
+        printf("RD      Removes directories.\n");
         printf("REBOOT  Reboots the computer.\n");
-        printf("RMDIR   Removes a directory.\n");
+        printf("RD      Removes directories.\n");
+        printf("RMDIR   Removes directories.\n");
+        printf("REN     Renames files and directories.\n");
+        printf("RENAME  Renames files and directories.\n");
         printf("TYPE    Reads and displays a text file.\n");
         printf("VER     Displays the current version of PDOS.\n");
         return;
     }
 
-    else if(ins_strcmp(cmd, "cd") == 0)
+    else if(ins_strcmp(cmd, "chdir") == 0 || ins_strcmp(cmd, "cd") == 0)
     {
         printf("Changes the current directory.\n\n");
+        printf("CHDIR [path]\n");
         printf("CD [path]\n");
     }
 
@@ -580,15 +592,16 @@ static void dohelp(char *cmd)
 
     else if(ins_strcmp(cmd, "help") == 0)
     {
-        printf("Provides information about PDOS commands.\n\n");
+        printf("Provides information about PCOMM commands.\n\n");
         printf("HELP\n");
         printf("HELP [command]\n");
     }
 
-    else if(ins_strcmp(cmd, "mkdir") == 0)
+    else if(ins_strcmp(cmd, "mkdir") == 0 || ins_strcmp(cmd, "md") == 0)
     {
         printf("Creates new directories.\n\n");
         printf("MKDIR [path]\n");
+        printf("MD [path]\n");
     }
 
     else if(ins_strcmp(cmd, "path") == 0)
@@ -607,10 +620,18 @@ static void dohelp(char *cmd)
         printf("REBOOT\n");
     }
 
-    else if(ins_strcmp(cmd, "rmdir") == 0)
+    else if(ins_strcmp(cmd, "rmdir") == 0 || ins_strcmp(cmd, "rd") == 0)
     {
-        printf("Removes a directory.\n\n");
+        printf("Removes directories.\n\n");
         printf("RMDIR [path]\n");
+        printf("RD [path]\n");
+    }
+
+    else if(ins_strcmp(cmd, "rename") == 0 || ins_strcmp(cmd, "ren") == 0)
+    {
+        printf("Renames files and directories.\n\n");
+        printf("RENAME [path] [name]\n");
+        printf("REN [path] [name]\n");
     }
 
     else if(ins_strcmp(cmd, "type") == 0)
@@ -669,6 +690,31 @@ static void dormdir(char *dnm)
     else if (ret == POS_ERR_INVALID_HANDLE) printf("Invalid handle\n");
     else if (ret == POS_ERR_ATTEMPTED_TO_REMOVE_CURRENT_DIRECTORY)
         printf("Attempt to remove current directory\n");
+
+    return;
+}
+
+static void dorename(char *src)
+{
+    int ret;
+    char *dest;
+
+    dest = strchr(src, ' ');
+    if (*src == '\0' || dest == NULL)
+    {
+        printf("Required Parameter Missing\n");
+        return;
+    }
+
+    *dest = '\0';
+    dest++;
+
+    ret = PosRenameFile(src, dest);
+
+    if (ret == POS_ERR_FILE_NOT_FOUND) printf("File not found\n");
+    else if (ret == POS_ERR_PATH_NOT_FOUND) printf("Invalid path\n");
+    else if (ret == POS_ERR_ACCESS_DENIED) printf("Access denied\n");
+    else if (ret == POS_ERR_FORMAT_INVALID) printf("Invalid format\n");
 
     return;
 }

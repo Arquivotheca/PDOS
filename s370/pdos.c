@@ -1670,7 +1670,7 @@ static void pdosProcessSVC(PDOS *pdos)
                 len &= 0xffffff;
             }
 #ifdef S370
-            if (len >= (16 * 1024 * 1024)
+            if (len >= (16 * 1024 * 1024))
             {
                 len = PDOS_STORINC;
             }

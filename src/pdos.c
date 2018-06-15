@@ -691,7 +691,7 @@ static void int21handler(union REGS *regsin,
             if (regsout->d.eax) regsout->x.cflag = 1;
 #else
             regsout->x.ax = PosMakeDir(MK_FP(sregs->ds, regsin->x.dx));
-            if (regsout->d.ax) regsout->x.cflag = 1;
+            if (regsout->x.ax) regsout->x.cflag = 1;
 #endif
             break;
 
@@ -701,7 +701,7 @@ static void int21handler(union REGS *regsin,
             if (regsout->d.eax) regsout->x.cflag = 1;
 #else
             regsout->x.ax = PosRemoveDir(MK_FP(sregs->ds, regsin->x.dx));
-            if (regsout->d.ax) regsout->x.cflag = 1;
+            if (regsout->x.ax) regsout->x.cflag = 1;
 #endif
             break;
             
@@ -711,7 +711,7 @@ static void int21handler(union REGS *regsin,
             if (regsout->d.eax) regsout->x.cflag = 1;
 #else
             regsout->x.ax = PosChangeDir(MK_FP(sregs->ds, regsin->x.dx));
-            if (regsout->d.ax) regsout->x.cflag = 1;
+            if (regsout->x.ax) regsout->x.cflag = 1;
 #endif
             break;
 
@@ -961,6 +961,38 @@ static void int21handler(union REGS *regsin,
                                                             regsin->h.cl,p);
 #endif
             }
+            break;
+
+        case 0x45:
+#ifdef __32BIT__
+            ret = PosDuplicateFileHandle(regsin->d.ebx);
+            if (ret < 0)
+            {
+                regsout->x.cflag = 1;
+                ret = -ret;
+            }
+            regsout->d.eax = ret;
+#else
+            ret = PosDuplicateFileHandle(regsin->x.bx);
+            if (ret < 0)
+            {
+                regsout->x.cflag = 1;
+                ret = -ret;
+            }
+            regsout->x.ax = ret;
+#endif
+            break;
+
+        case 0x46:
+#ifdef __32BIT__
+            regsout->d.eax = PosForceDuplicateFileHandle(regsin->d.ebx,
+                                                         regsin->d.ecx);
+            if (regsout->d.eax) regsout->x.cflag = 1;
+#else
+            regsout->x.ax = PosForceDuplicateFileHandle(regsin->x.bx,
+                                                        regsin->x.cx);
+            if (regsout->x.ax) regsout->x.cflag = 1;
+#endif
             break;
 
         case 0x47:
@@ -1846,6 +1878,50 @@ int PosGenericBlockDeviceRequest(int drive,int catcode,int function,
     return (0);
 }
 /**/
+
+int PosDuplicateFileHandle(int fh)
+{
+    int x;
+
+    if (fh >= MAXFILES || fh < 0)
+    {
+        return (-POS_ERR_INVALID_HANDLE);
+    }
+
+    for (x = NUM_SPECIAL_FILES; x < MAXFILES; x++)
+    {
+        if (!fhandle[x].inuse)
+        {
+            break;
+        }
+    }
+    if (x == MAXFILES) return (-POS_ERR_MANY_OPEN_FILES);
+
+    fhandle[x].fatfile = fhandle[fh].fatfile;
+    fhandle[x].fatptr = fhandle[fh].fatptr;
+    fhandle[x].inuse = fhandle[fh].inuse;
+    fhandle[x].special = fhandle[fh].special;
+
+    return (x);
+}
+
+int PosForceDuplicateFileHandle(int fh, int newfh)
+{
+    if (fh >= MAXFILES || fh < 0 || newfh >= MAXFILES || newfh < 0)
+    {
+        return (POS_ERR_INVALID_HANDLE);
+    }
+
+    if (fhandle[newfh].inuse) fileClose(newfh);
+
+    fhandle[newfh].fatfile = fhandle[fh].fatfile;
+    fhandle[newfh].fatptr = fhandle[fh].fatptr;
+    fhandle[newfh].inuse = fhandle[fh].inuse;
+    fhandle[newfh].special = fhandle[fh].special;
+
+    return (0);
+}
+
 int PosGetCurDir(int drive, char *buf)
 {
     if (drive == 0)

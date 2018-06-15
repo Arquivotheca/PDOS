@@ -369,7 +369,11 @@ int PosMakeDir(const char *dname)
     int86x(0x21, &regsin, &regsout, &sregs);
     if (regsout.x.cflag)
     {
+#ifdef __32BIT__
+        return (regsout.d.eax);
+#else
         return (regsout.x.ax);
+#endif
     }
     else
     {
@@ -393,7 +397,11 @@ int PosRemoveDir(const char *dname)
     int86x(0x21, &regsin, &regsout, &sregs);
     if (regsout.x.cflag)
     {
+#ifdef __32BIT__
+        return (regsout.d.eax);
+#else
         return (regsout.x.ax);
+#endif
     }
     else
     {
@@ -417,7 +425,11 @@ int PosChangeDir(const char *to)
     int86x(0x21, &regsin, &regsout, &sregs);
     if (regsout.x.cflag)
     {
+#ifdef __32BIT__
+        return (regsout.d.eax);
+#else
         return (regsout.x.ax);
+#endif
     }
     else
     {
@@ -815,6 +827,45 @@ int PosGenericBlockDeviceRequest(int drive,
 #endif
 }
 
+int PosDuplicateFileHandle(int fh)
+{
+    union REGS regsin;
+    union REGS regsout;
+
+    regsin.h.ah = 0x45;
+#ifdef __32BIT__
+    regsin.d.ebx = fh;
+#else
+    regsin.x.bx = fh;
+#endif
+    int86(0x21, &regsin, &regsout);
+#ifdef __32BIT__
+        return (regsout.d.eax);
+#else
+        return (regsout.x.ax);
+#endif
+}
+
+int PosForceDuplicateFileHandle(int fh, int newfh)
+{
+    union REGS regsin;
+    union REGS regsout;
+
+    regsin.h.ah = 0x46;
+#ifdef __32BIT__
+    regsin.d.ebx = fh;
+    regsin.d.ecx = newfh;
+#else
+    regsin.x.bx = fh;
+    regsin.x.cx = newfh;
+#endif
+    int86(0x21, &regsin, &regsout);
+#ifdef __32BIT__
+        return (regsout.d.eax);
+#else
+        return (regsout.x.ax);
+#endif
+}
 
 /**/
 int PosGetCurDir(int drive, char *dir)

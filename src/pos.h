@@ -140,6 +140,10 @@ int PosGenericBlockDeviceRequest(int drive,
                                  void *parmblock); /*func 44 subfunc 0D*/
 
 
+int PosDuplicateFileHandle(int fh); /* func 45 */
+
+int PosForceDuplicateFileHandle(int fh, int newfh); /* func 46 */
+
 int PosGetCurDir(int drive, char *dir); /* func 47 */
 
 void *PosAllocMem(unsigned int size); /* func 48 */

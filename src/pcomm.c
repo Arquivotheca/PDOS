@@ -509,7 +509,12 @@ static void doCopy(char *b)
 
 static void changedir(char *to)
 {
-    PosChangeDir(to);
+    int ret;
+
+    ret = PosChangeDir(to);
+
+    if (ret == POS_ERR_PATH_NOT_FOUND) printf("Invalid directory\n");
+
     return;
 }
 

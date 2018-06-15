@@ -98,7 +98,7 @@ int PosMakeDir(const char *dname); /* func 39 */
 
 int PosRemoveDir(const char *dname); /* func 3a */
 
-int PosChangeDir(char *to); /* func 3b */
+int PosChangeDir(const char *to); /* func 3b */
 
 int PosCreatFile(const char *name, /* func 3c */
                  int attrib,

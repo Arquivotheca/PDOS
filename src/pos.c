@@ -401,7 +401,7 @@ int PosRemoveDir(const char *dname)
     }
 }
 
-int PosChangeDir(char *to)
+int PosChangeDir(const char *to)
 {
     union REGS regsin;
     union REGS regsout;

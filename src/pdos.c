@@ -708,8 +708,10 @@ static void int21handler(union REGS *regsin,
         case 0x3b:
 #ifdef __32BIT__
             regsout->d.eax = PosChangeDir(SUBADDRFIX(regsin->d.edx));
+            if (regsout->d.eax) regsout->x.cflag = 1;
 #else
             regsout->x.ax = PosChangeDir(MK_FP(sregs->ds, regsin->x.dx));
+            if (regsout->d.ax) regsout->x.cflag = 1;
 #endif
             break;
 
@@ -1467,7 +1469,8 @@ int PosMakeDir(const char *dname)
         end = 0;
         while (dname[0] == '.' && dname[1] == '.')
         {
-            dname += 3;
+            if (strcmp(dname, "..") != 0) dname += 3;
+            else dname += 2;
 
             end = strrchr(dirname, '\\');
             if (!end)
@@ -1510,7 +1513,8 @@ int PosRemoveDir(const char *dname)
         end = 0;
         while (dname[0] == '.' && dname[1] == '.')
         {
-            dname += 3;
+            if (strcmp(dname, "..") != 0) dname += 3;
+            else dname += 2;
 
             end = strrchr(dirname, '\\');
             if (!end)
@@ -1531,35 +1535,58 @@ int PosRemoveDir(const char *dname)
     return (ret);
 }
 
-int PosChangeDir(char *to)
+int PosChangeDir(const char *to)
 {
-    char *p;
+    char newcwd[MAX_PATH];
+    int drive = currentDrive;
+    char *end;
+    int attr;
+    int ret;
 
-    if (strcmp(to, "..") == 0)
+    if (strchr(to, '/')) return (POS_ERR_PATH_NOT_FOUND);
+
+    if (to[1] == ':')
     {
-        p = strrchr(cwd, '\\');
-        if (p != NULL)
-        {
-            *p = '\0';
-        }
-        else
-        {
-            strcpy(cwd, "");
-        }
+        drive = to[0];
+        drive = toupper(drive) - 'A';
+        to += 2;
     }
-    else if (to[0] == '\\')
+
+    if (to[0] == '\\')
     {
-        strcpy(cwd, to + 1);
+        strcpy(newcwd, to + 1);
     }
     else
     {
-        if (strcmp(cwd, "") != 0)
+        strcpy(newcwd, disks[drive].cwd);
+        end = 0;
+        while (to[0] == '.' && to[1] == '.')
         {
-            strcat(cwd, "\\");
+            if (strcmp(to, "..") != 0) to += 3;
+            else to += 2;
+
+            end = strrchr(newcwd, '\\');
+            if (!end)
+            {
+                if (!strlen(newcwd)) return (POS_ERR_PATH_NOT_FOUND);
+                end = newcwd;
+            }
+            *end = '\0';
         }
-        strcat(cwd, to);
+        if (end) memset(end, '\0', sizeof(newcwd) - (end - newcwd));
+        if (strcmp(to, "") != 0 && strcmp(newcwd, "") != 0)
+        {
+            strcat(newcwd, "\\");
+        }
+        strcat(newcwd, to);
     }
-    upper_str(cwd);
+    upper_str(newcwd);
+
+    ret = fatGetFileAttributes(&disks[drive].fat, newcwd, &attr);
+    if (ret || attr != DIRENT_SUBDIR) return (POS_ERR_PATH_NOT_FOUND);
+
+    strcpy(disks[drive].cwd, newcwd);
+
     return (0);
 }
 

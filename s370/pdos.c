@@ -1657,6 +1657,12 @@ static void pdosProcessSVC(PDOS *pdos)
                 above = 1;
             }
 #endif
+#ifdef S390
+            if ((svc == 120) && ((pdos->context->regs[15] & 0x30) != 0x10))
+            {
+                above = 1;
+            }
+#endif
             pdos->context->regs[15] = 0;
             len = pdos->context->regs[0];
             if (svc == 10)

@@ -325,13 +325,15 @@ __PDPCLIB_API__ int CTYP __start(char *p)
        because it determines how the permanent files will be
        opened */
     parmLen = ((unsigned int)p[0] << 8) | (unsigned int)p[1];
-#if 0 /* old way of checking to see if it is TSO */
+#if 1 /* traditional way of checking to see if it is TSO */
     if ((parmLen > 0) && (p[2] == 0))     /* assume TSO */
     {
         __tso = 1;
     }
+#else
+    __tso = (tso != 0); /* even "CALL" is considered to be TSO */
 #endif
-    __tso = (tso != 0); /* new way to check TSO */
+
 #endif /* MVS */
     __doperm = 1;
     stdout = fopen("dd:SYSPRINT", "w");

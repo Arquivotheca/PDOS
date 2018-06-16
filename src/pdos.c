@@ -85,6 +85,7 @@ static int fixexe32(unsigned char *psp, unsigned long entry, unsigned int sp);
 static int bios2driv(int bios);
 static int fileCreat(const char *fnm, int attrib);
 static int dirCreat(const char *dnm, int attrib);
+static int newFileCreat(const char *fnm, int attrib);
 static int fileOpen(const char *fnm);
 static int fileWrite(int fno, const void *buf, size_t szbuf);
 static int fileDelete(const char *fnm);
@@ -1196,6 +1197,28 @@ static void int21handler(union REGS *regsin,
             }
             
             break;
+
+        case 0x5b:
+#ifdef __32BIT__
+            p = SUBADDRFIX(regsin->d.edx);
+            ret = PosCreatNewFile(p, regsin->x.cx);
+            if (ret < 0)
+            {
+                regsout->x.cflag = 1;
+                ret = -ret;
+            }
+            regsout->d.eax = ret;
+#else
+            p = MK_FP(sregs->ds, regsin->x.dx);
+            ret = PosCreatNewFile(p, regsin->x.cx);
+            if (ret < 0)
+            {
+                regsout->x.cflag = 1;
+                ret = -ret;
+            }
+            regsout->x.ax = ret;
+#endif
+            break;
             
         case 0x60:
 #ifdef __32BIT__
@@ -1897,10 +1920,7 @@ int PosDuplicateFileHandle(int fh)
     }
     if (x == MAXFILES) return (-POS_ERR_MANY_OPEN_FILES);
 
-    fhandle[x].fatfile = fhandle[fh].fatfile;
-    fhandle[x].fatptr = fhandle[fh].fatptr;
-    fhandle[x].inuse = fhandle[fh].inuse;
-    fhandle[x].special = fhandle[fh].special;
+    fhandle[x] = fhandle[fh];
 
     return (x);
 }
@@ -1914,10 +1934,7 @@ int PosForceDuplicateFileHandle(int fh, int newfh)
 
     if (fhandle[newfh].inuse) fileClose(newfh);
 
-    fhandle[newfh].fatfile = fhandle[fh].fatfile;
-    fhandle[newfh].fatptr = fhandle[fh].fatptr;
-    fhandle[newfh].inuse = fhandle[fh].inuse;
-    fhandle[newfh].special = fhandle[fh].special;
+    fhandle[newfh] = fhandle[fh];
 
     return (0);
 }
@@ -2126,6 +2143,50 @@ int PosSetFileLastWrittenDateAndTime(int handle,
     return 0;
 }
 /**/
+
+int PosCreatNewFile(const char *name, int attrib)
+{
+    int ret;
+    char filename[MAX_PATH];
+    const char *orig;
+    char *end;
+
+    orig = name;
+    if (name[1] == ':')
+    {
+        name += 2;
+    }
+    if ((name[0] == '\\') || (name[0] == '/'))
+    {
+        strcpy(filename,orig);
+    }
+    else
+    {
+        strcpy(filename, cwd);
+        end = 0;
+        while (name[0] == '.' && name[1] == '.')
+        {
+            if (strcmp(name, "..") != 0) name += 3;
+            else name += 2;
+
+            end = strrchr(filename, '\\');
+            if (!end)
+            {
+                if (!strlen(filename)) return (POS_ERR_PATH_NOT_FOUND);
+                end = filename;
+            }
+            *end = '\0';
+        }
+        if (end) memset(end, '\0', sizeof(filename) - (end - filename));
+        strcat(filename, "\\");
+        strcat(filename, name);
+    }
+    upper_str(filename);
+
+    ret = newFileCreat(filename, attrib);
+
+    return (ret);
+}
 
 int PosTruename(char *prename,char *postname)
 {
@@ -2937,7 +2998,7 @@ static int fileCreat(const char *fnm, int attrib)
     }
     if (x == MAXFILES) return (-4); /* 4 = too many open files */
     rc = fatCreatFile(&disks[drive].fat, p, &fhandle[x].fatfile, attrib);
-    if (rc < 0)
+    if (rc > 0)
     {
         return (-rc);
     }
@@ -2992,6 +3053,47 @@ static int dirCreat(const char *dnm, int attrib)
 
     rc = fatCreatDir(&disks[drive].fat, p, parentname, attrib);
     return (rc);
+}
+
+static int newFileCreat(const char *fnm, int attrib)
+{
+    int x;
+    const char *p;
+    int drive;
+    int rc;
+    char tempf[FILENAME_MAX];
+
+    strcpy(tempf, fnm);
+    upper_str(tempf);
+    fnm = tempf;
+    p = strchr(fnm, ':');
+    if (p == NULL)
+    {
+        p = fnm;
+        drive = currentDrive;
+    }
+    else
+    {
+        drive = *(p - 1);
+        drive = toupper(drive) - 'A';
+        p++;
+    }
+    for (x = NUM_SPECIAL_FILES; x < MAXFILES; x++)
+    {
+        if (!fhandle[x].inuse)
+        {
+            break;
+        }
+    }
+    if (x == MAXFILES) return (-POS_ERR_MANY_OPEN_FILES);
+    rc = fatCreatNewFile(&disks[drive].fat, p, &fhandle[x].fatfile, attrib);
+    if (rc > 0)
+    {
+        return (-rc);
+    }
+    fhandle[x].inuse = 1;
+    fhandle[x].fatptr = &disks[drive].fat;
+    return (x);
 }
 
 static int fileOpen(const char *fnm)

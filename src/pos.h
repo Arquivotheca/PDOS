@@ -52,6 +52,8 @@
 #define POS_ERR_NO_MORE_FILES 0x12
 /**/
 
+#define POS_ERR_FILE_EXISTS 0x50
+
 /* API functions */
 
 void PosTermNoRC(void); /* int 20h */
@@ -175,7 +177,9 @@ int PosGetFileLastWrittenDateAndTime(int handle,
 int PosSetFileLastWrittenDateAndTime(int handle,
                                      unsigned int fdate,
                                      unsigned int ftime);/*func 57 subfunc 1*/
-                         
+
+int PosCreatNewFile(const char *name, int attrib); /*func 5b*/
+
 int PosTruename(char *prename,char *postname); /*func 60*/
 
 

@@ -336,6 +336,71 @@ unsigned int fatCreatDir(FAT *fat, const char *dnm, const char *parentname,
     return (0);
 }
 
+unsigned int fatCreatNewFile(FAT *fat, const char *fnm, FATFILE *fatfile,
+                          int attrib)
+{
+    DIRENT *p;
+    int found = 0;
+    unsigned char lbuf[MAXSECTSZ];
+
+    fat->notfound = 0;
+
+    if ((fnm[0] == '\\') || (fnm[0] == '/'))
+    {
+        fnm++;
+    }
+    fatPosition(fat,fnm);
+    p = fat->de;
+
+    if (!fat->notfound)
+    {
+        return (POS_ERR_FILE_EXISTS);
+    }
+    if (found || (p->file_name[0] == '\0'))
+    {
+        fatfile->startcluster=0;
+        memset(p, '\0', sizeof(DIRENT));
+        memcpy(p->file_name, fat->search,
+              (sizeof(p->file_name)+sizeof(p->file_ext)));
+        p->file_attr = (unsigned char)attrib;
+        fatfile->totbytes = 0;
+        p->file_size[0] = fatfile->totbytes;
+        p->file_size[1] = (fatfile->totbytes >> 8) & 0xff ;
+        p->file_size[2] = (fatfile->totbytes >> 16) & 0xff ;
+        p->file_size[3] = (fatfile->totbytes >> 24) & 0xff ;
+
+        fatfile->dirSect = fat->dirSect;
+        fatfile->dirOffset = ((unsigned char*)p - fat->dbuf);
+        fatfile->lastBytes = 0;
+
+        /* if file was found, don't mark next entry as null */
+        if (found)
+        {
+            fatWriteLogical(fat, fat->dirSect, fat->dbuf);
+        }
+        else
+        {
+            p++;
+            if ((unsigned char *) p != (fat->dbuf + fat->sector_size))
+            {
+                p->file_name[0] = '\0';
+                fatWriteLogical(fat, fat->dirSect, fat->dbuf);
+            }
+            else
+            {
+                fatWriteLogical(fat, fat->dirSect, fat->dbuf);
+
+                /* +++ need to detect end of directory sectors and
+                   expand if possible */
+                fatReadLogical(fat, fat->dirSect + 1, lbuf);
+                lbuf[0] = '\0';
+                fatWriteLogical(fat, fat->dirSect + 1, lbuf);
+            }
+        }
+    }
+    return (0);
+}
+
 
 /* If opening root directory, abide by rootentries.  If opening
    subdirectory or file, follow clusters */

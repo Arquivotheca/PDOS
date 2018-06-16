@@ -1186,6 +1186,28 @@ int PosSetFileLastWrittenDateAndTime(int handle,
 #endif
 }
 
+int PosCreatNewFile(const char *name, int attrib)
+{
+    union REGS regsin;
+    union REGS regsout;
+    struct SREGS sregs;
+
+    regsin.h.ah = 0x5b;
+    regsin.x.cx = attrib;
+#ifdef __32BIT__
+    regsin.d.edx = (unsigned int)name;
+#else
+    sregs.ds = FP_SEG(name);
+    regsin.x.dx = FP_OFF(name);
+#endif
+    int86x(0x21, &regsin, &regsout, &sregs);
+#ifdef __32BIT__
+    return (regsout.d.eax);
+#else
+    return (regsout.x.ax);
+#endif
+}
+
 /**/
 /*Determine the canonical name of the specified filename or path*/
 int PosTruename(char *prename,char *postname)

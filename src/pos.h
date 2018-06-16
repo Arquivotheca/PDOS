@@ -256,9 +256,9 @@ typedef struct{
 /**/
 
 /*Structure for tempDTA in case of multiple PosFindFirst Calls*/
-typedef struct { 
-    int handle; 
-    char pat[20]; 
+typedef struct {
+    int handle;
+    char pat[20];
 }FFBLK;
 /**/
 
@@ -268,8 +268,8 @@ typedef struct {
     char drive;            /*drive used in search(0x01)*/
     char search[11];       /*search name used(0x02)*/
     int direntno;          /*directory entry number(0x0D)*/
-    int startcluster;      /*starting cluster number for 
-                             current directory zero for 
+    int startcluster;      /*starting cluster number for
+                             current directory zero for
                              root directory(0x0F)*/
     int reserved;          /*reserved(0x11)*/
     int startcluster2;     /*starting cluster number for

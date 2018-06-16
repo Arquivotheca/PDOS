@@ -58,12 +58,12 @@ unsigned int PosDisplayOutput(unsigned int ch)
 {
     union REGS regsin;
     union REGS regsout;
-    
+
     regsin.h.ah = 0x02;
     regsin.h.dl = ch;
-    
+
     int86(0x21, &regsin, &regsout);
-    
+
     return (regsout.h.al);
 }
 
@@ -80,7 +80,7 @@ unsigned int PosDirectCharInputNoEcho(void)
     union REGS regsout;
 
     regsin.h.ah = 0x07;
-    
+
     int86(0x21, &regsin, &regsout);
 
     return (regsout.h.al);
@@ -101,7 +101,7 @@ unsigned int PosGetCharInputNoEcho(void)
     union REGS regsout;
 
     regsin.h.ah = 0x08;
-    
+
     int86(0x21, &regsin, &regsout);
 
     return (regsout.h.al);
@@ -121,7 +121,7 @@ unsigned int PosDisplayString(const char *buf)
     struct SREGS sregs;
 
     regsin.h.ah = 0x09;
-    
+
 #ifdef __32BIT__
     regsin.d.edx = (int)buf;
 #else
@@ -129,7 +129,7 @@ unsigned int PosDisplayString(const char *buf)
     sregs.ds = FP_SEG(buf);
 #endif
     int86x(0x21, &regsin, &regsout, &sregs);
-    
+
     return (regsout.h.al);
 }
 
@@ -147,7 +147,7 @@ unsigned int PosSelectDisk(unsigned int drive)
 
     regsin.h.ah = 0x0e;
     regsin.h.dl = drive;
-    
+
     int86(0x21, &regsin, &regsout);
     return (regsout.h.al);
 }
@@ -165,7 +165,7 @@ unsigned int PosGetDefaultDrive(void)
     union REGS regsout;
 
     regsin.h.ah = 0x19;
-    
+
     int86(0x21, &regsin, &regsout);
     return (regsout.h.al);
 }
@@ -234,12 +234,12 @@ void PosGetSystemDate(int *year, int *month, int *day, int *dw)
 
     regsin.h.ah = 0x2a;
     int86(0x21, &regsin, &regsout);
-    
+
     *year = regsout.x.cx;
     *month = regsout.h.dh;
     *day = regsout.h.dl;
     *dw = regsout.h.al;
-    
+
     return;
 }
 
@@ -256,24 +256,24 @@ unsigned int PosSetSystemDate(int year, int month, int day)
 {
     union REGS regsin;
     union REGS regsout;
-    
+
     regsin.h.ah = 0x2b;
     regsin.x.cx = year;
     regsin.h.dh = month;
     regsin.h.dl = day;
-    
+
     int86(0x21, &regsin, &regsout);
-    
+
     return (regsout.h.al);
 }
 
 /* PosGetSystemTime-INT 21/AH=2Ch */
 /*
     Input: None.
-    Returns: 
+    Returns:
     Notes:  On most systems, the resolution of the system clock
-            is about 5/100sec,so returned times generally do not 
-            increment by 1. On some systems, DL may always return 00h. 
+            is about 5/100sec,so returned times generally do not
+            increment by 1. On some systems, DL may always return 00h.
 */
 
 void PosGetSystemTime(int *hour, int *min, int *sec, int *hundredths)
@@ -283,12 +283,12 @@ void PosGetSystemTime(int *hour, int *min, int *sec, int *hundredths)
 
     regsin.h.ah = 0x2c;
     int86(0x21, &regsin, &regsout);
-    
+
     *hour = regsout.h.ch;
     *min = regsout.h.cl;
     *sec = regsout.h.dh;
     *hundredths = regsout.h.dl;
-    
+
     return;
 }
 
@@ -342,7 +342,7 @@ void PosGetFreeSpace(int drive,unsigned int *secperclu,
 {
     union REGS regsin;
     union REGS regsout;
- 
+
     regsin.h.ah=0x36;
     regsin.h.dl=drive;
     int86(0x21, &regsin, &regsout);
@@ -1129,7 +1129,7 @@ int PosGetFileLastWrittenDateAndTime(int handle,
     regsin.x.ax=0x5700;
     regsin.x.bx=handle;
 
-    int86(0x21, &regsin, &regsout);  
+    int86(0x21, &regsin, &regsout);
 
     if (!regsout.x.cflag)
     {
@@ -1161,7 +1161,7 @@ int PosSetFileLastWrittenDateAndTime(int handle,
 
     regsin.x.ax=0x5701;
     regsin.x.bx=handle;
-#ifdef __32BIT__ 
+#ifdef __32BIT__
     regsin.d.edx=fdate;
     regsin.d.ecx=ftime;
 #else

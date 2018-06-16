@@ -6,52 +6,52 @@
 #define MAXSECTSZ 512
 
 /*File name special values*/
-#define DIRENT_AVA 0x00         
-#define DIRENT_IC 0x05           
-#define DIRENT_DOT 0x2E         
-#define DIRENT_DEL 0xE5         
+#define DIRENT_AVA 0x00
+#define DIRENT_IC 0x05
+#define DIRENT_DOT 0x2E
+#define DIRENT_DEL 0xE5
 /**/
 
 /*File attributes*/
-#define DIRENT_READONLY 0x01    
-#define DIRENT_HIDDEN 0x02       
-#define DIRENT_SYSTEM 0x04      
-#define DIRENT_SUBDIR 0x10       
-#define DIRENT_ARCHIVE 0x20      
-#define DIRENT_DEVICE 0X40      
-#define DIRENT_RESERVED 0x80    
+#define DIRENT_READONLY 0x01
+#define DIRENT_HIDDEN 0x02
+#define DIRENT_SYSTEM 0x04
+#define DIRENT_SUBDIR 0x10
+#define DIRENT_ARCHIVE 0x20
+#define DIRENT_DEVICE 0X40
+#define DIRENT_RESERVED 0x80
 /**/
 
 /*Last access attributes*/
-#define DIRENT_EXTRAB7  0x80    
-#define DIRENT_EXTRAB6  0x40    
-#define DIRENT_EXTRAB5  0x20    
-#define DIRENT_EXTRAB4  0x10    
-#define DIRENT_EXTRAB3  0x08    
-#define DIRENT_EXTRAB2  0x04    
-#define DIRENT_EXTRAB1  0x02    
-#define DIRENT_EXTRAB0  0x01    
+#define DIRENT_EXTRAB7  0x80
+#define DIRENT_EXTRAB6  0x40
+#define DIRENT_EXTRAB5  0x20
+#define DIRENT_EXTRAB4  0x10
+#define DIRENT_EXTRAB3  0x08
+#define DIRENT_EXTRAB2  0x04
+#define DIRENT_EXTRAB1  0x02
+#define DIRENT_EXTRAB0  0x01
 /**/
 
 /*File access rights bitmap*/
-#define DIRENT_ACCESSB0 0x0001  
-#define DIRENT_ACCESSB1 0x0002  
-#define DIRENT_ACCESSB2 0x0004  
-#define DIRENT_ACCESSB3 0x0008  
-#define DIRENT_ACCESSB4 0x0010  
-#define DIRENT_ACCESSB5 0x0020  
-#define DIRENT_ACCESSB6 0x0040  
-#define DIRENT_ACCESSB7 0x0080  
-#define DIRENT_ACCESSB8 0x0100  
-#define DIRENT_ACCESSB9 0x0200  
-#define DIRENT_ACCESSB10 0x0400 
-#define DIRENT_ACCESSB11 0x0800 
+#define DIRENT_ACCESSB0 0x0001
+#define DIRENT_ACCESSB1 0x0002
+#define DIRENT_ACCESSB2 0x0004
+#define DIRENT_ACCESSB3 0x0008
+#define DIRENT_ACCESSB4 0x0010
+#define DIRENT_ACCESSB5 0x0020
+#define DIRENT_ACCESSB6 0x0040
+#define DIRENT_ACCESSB7 0x0080
+#define DIRENT_ACCESSB8 0x0100
+#define DIRENT_ACCESSB9 0x0200
+#define DIRENT_ACCESSB10 0x0400
+#define DIRENT_ACCESSB11 0x0800
 /**/
 
 /*Structure for Directory Entry */
 typedef struct {
-    unsigned char file_name[8]; /*Short file name (0x00)*/       
-    unsigned char file_ext[3];  /*Short file extension (0x08)*/ 
+    unsigned char file_name[8]; /*Short file name (0x00)*/
+    unsigned char file_ext[3];  /*Short file extension (0x08)*/
     unsigned char file_attr;    /*file attributes (0x0B)*/
     unsigned char extra_attributes;  /*extra attributes (0x0C)*/
     unsigned char first_char;        /*first character of deleted file
@@ -141,7 +141,7 @@ void fatInit(FAT *fat,
              void (*writeLogical)(void *diskptr, long sector, void *buf),
              void *parm);
 void fatTerm(FAT *fat);
-unsigned int fatCreatFile(FAT *fat, const char *fnm, FATFILE *fatfile, 
+unsigned int fatCreatFile(FAT *fat, const char *fnm, FATFILE *fatfile,
                           int attrib);
 unsigned int fatCreatDir(FAT *fat, const char *dnm, const char *parentname,
                          int attrib);
@@ -150,7 +150,7 @@ unsigned int fatCreatNewFile(FAT *fat, const char *fnm, FATFILE *fatfile,
 unsigned int fatOpenFile(FAT *fat, const char *fnm, FATFILE *fatfile);
 size_t fatReadFile(FAT *fat, FATFILE *fatfile, void *buf, size_t szbuf);
 size_t fatWriteFile(FAT *fat, FATFILE *fatfile, const void *buf, size_t szbuf);
-unsigned int fatDeleteFile(FAT *fat,const char *fnm); 
+unsigned int fatDeleteFile(FAT *fat,const char *fnm);
 /*To delete a file from a given directory*/
 unsigned int fatRenameFile(FAT *fat,const char *old,const char *new);
 /*To rename a given file*/

@@ -31,7 +31,7 @@
 #include "dow.h"
 
 #define MAX_PATH 120
-#define DOS_VERSION 0x04 
+#define DOS_VERSION 0x04
 #define NUM_SPECIAL_FILES 5
     /* stdin, stdout, stderr, stdaux, stdprn */
 
@@ -625,7 +625,7 @@ static void int21handler(union REGS *regsin,
                 regsout->h.al = dw;
             }
             break;
-            
+
         case 0x2b:
             regsout->h.al = PosSetSystemDate(regsin->x.cx,
                                              regsin->h.dh,
@@ -669,7 +669,7 @@ static void int21handler(union REGS *regsin,
             sregs->es = FP_SEG(p);
 #endif
             break;
-            
+
         case 0x36:
 #ifdef __32BIT__
             PosGetFreeSpace(regsin->h.dl,
@@ -705,7 +705,7 @@ static void int21handler(union REGS *regsin,
             if (regsout->x.ax) regsout->x.cflag = 1;
 #endif
             break;
-            
+
         case 0x3b:
 #ifdef __32BIT__
             regsout->d.eax = PosChangeDir(SUBADDRFIX(regsin->d.edx));
@@ -850,7 +850,7 @@ static void int21handler(union REGS *regsin,
                 }
 #endif
             }
-            
+
             else if (regsin->h.al == 0x01)
             {
 #ifdef __32BIT__
@@ -1135,7 +1135,7 @@ static void int21handler(union REGS *regsin,
                 regsout->d.eax=PosGetFileLastWrittenDateAndTime(regsin->d.ebx,
                                                                &regsout->d.edx,
                                                                &regsout->d.ecx);
-#else                                                               
+#else
                 regsout->x.ax=PosGetFileLastWrittenDateAndTime(regsin->x.bx,
                                                               &regsout->x.dx,
                                                               &regsout->x.cx);
@@ -1149,7 +1149,7 @@ static void int21handler(union REGS *regsin,
                 }
                 else
                 {
-                    regsout->x.cflag=0; 
+                    regsout->x.cflag=0;
                 }
 #else
                 if (regsout->x.ax != 0)
@@ -1158,7 +1158,7 @@ static void int21handler(union REGS *regsin,
                 }
                 else
                 {
-                    regsout->x.cflag=0; 
+                    regsout->x.cflag=0;
                 }
 #endif
             }
@@ -1182,7 +1182,7 @@ static void int21handler(union REGS *regsin,
                 }
                 else
                 {
-                    regsout->x.cflag=0; 
+                    regsout->x.cflag=0;
                 }
 #else
                 if (regsout->x.ax != 0)
@@ -1191,11 +1191,11 @@ static void int21handler(union REGS *regsin,
                 }
                 else
                 {
-                    regsout->x.cflag=0; 
+                    regsout->x.cflag=0;
                 }
 #endif
             }
-            
+
             break;
 
         case 0x5b:
@@ -1219,7 +1219,7 @@ static void int21handler(union REGS *regsin,
             regsout->x.ax = ret;
 #endif
             break;
-            
+
         case 0x60:
 #ifdef __32BIT__
             p = SUBADDRFIX(regsin->d.esi);
@@ -1321,7 +1321,7 @@ unsigned int PosDisplayOutput(unsigned int ch)
 
     buf[0] = ch;
     PosWriteFile(1, buf, 1);
-    
+
     return ch;
 }
 
@@ -1330,7 +1330,7 @@ unsigned int PosDirectCharInputNoEcho(void)
 {
     int scan;
     int ascii;
-    
+
     BosReadKeyboardCharacter(&scan, &ascii);
 
     return ascii;
@@ -1366,18 +1366,18 @@ unsigned int PosDisplayString(const char *buf)
 unsigned int PosSelectDisk(unsigned int drive)
 {
     unsigned int ret;
-    
+
     currentDrive = drive;
-    
+
     if (drive < 2)
     {
         accessDisk(drive);
     }
-    
+
     cwd = disks[drive].cwd;
 
     ret = lastDrive;
-    
+
     if (ret < 5)
     {
         ret = 5;
@@ -1414,7 +1414,7 @@ void PosGetSystemDate(int *year, int *month, int *day, int *dw)
     int retval;
 
     retval = BosGetSystemDate(&c,&y,&m,&d);
-    
+
     if(retval == 0)
     {
         *year = bcd2int(c) * 100 + bcd2int(y);
@@ -1422,7 +1422,7 @@ void PosGetSystemDate(int *year, int *month, int *day, int *dw)
         *day = bcd2int(d);
         *dw = dow(*year,*month,*day);
     }
-    
+
     return;
 }
 
@@ -1430,7 +1430,7 @@ void PosGetSystemDate(int *year, int *month, int *day, int *dw)
 unsigned int PosSetSystemDate(int year, int month, int day)
 {
     BosSetSystemDate(year / 100,year % 100,month,day);
-    
+
     return 0;
 }
 
@@ -1441,7 +1441,7 @@ void PosGetSystemTime(int *hour, int *minute, int *second, int *hundredths)
     unsigned int midnight;
 
     BosGetSystemTime(&ticks,&midnight);
-    
+
     t=(ticks*1000)/182;
     *hundredths=(int)t%100;
     t/=100;
@@ -1478,10 +1478,10 @@ void PosGetFreeSpace(int drive,
                      unsigned int *numfreeclu,
                      unsigned int *bytpersec,
                      unsigned int *totclus)
-{   
+{
     if (drive==0)
     {
-        drive=currentDrive;   
+        drive=currentDrive;
     }
     else
     {
@@ -2055,7 +2055,7 @@ int PosFindFirst(char *pat, int attrib)
 {
     int ret;
     FFBLK *ffblk;
-    
+
     attr = attrib;
     memset(dta, '\0', 0x15); /* clear out reserved area */
     make_ff(pat);
@@ -2099,11 +2099,11 @@ int PosRenameFile(const char *old, const char *new)
     char tempf1[FILENAME_MAX];
     char tempf2[FILENAME_MAX];
 
-    
+
     formatcwd(old,tempf1);
     strcpy(tempf2, new);
     upper_str(tempf2);
-    
+
     old = tempf1;
     new = tempf2;
 
@@ -2319,7 +2319,7 @@ static void scrunchf(char *dest, char *new)
             new += 3;
         }
         strcat(dest, "\\");
-        strcat(dest, new);  
+        strcat(dest, new);
     }
     return;
 }
@@ -2372,21 +2372,21 @@ static int ff_search(void)
             {
                 if ((p != NULL) && (*p == '.')) *p = '\0';
                 dta->attrib = dirent.file_attr; /* attribute */
-                
+
                 dta->file_time = dirent.last_modtime[0]   /*time*/
                 | ((unsigned int)dirent.last_modtime[1] << 8);
-                
-                dta->file_date = dirent.last_moddate[0]   /*date*/ 
+
+                dta->file_date = dirent.last_moddate[0]   /*date*/
                 | ((unsigned int)dirent.last_moddate[1] << 8);
-                
+
                 dta->file_size = dirent.file_size[0]      /*size*/
                 | ((unsigned long)dirent.file_size[1] << 8)
                 | ((unsigned long)dirent.file_size[2] << 16)
                 | ((unsigned long)dirent.file_size[3] << 24);
-                
+
                 dta->startcluster=dirent.start_cluster[0]
-                |(dirent.start_cluster[1]<<8);      
-                
+                |(dirent.start_cluster[1]<<8);
+
                 memset(dta->file_name, '\0', sizeof(dta->file_name));
                 strcpy(dta->file_name, file);
                 return (0);
@@ -3692,10 +3692,10 @@ unsigned int PosAbsoluteDiskRead(int drive, unsigned long start_sector,
 
 /*
  Different cases for cwd The user can input
- directory name,file name in a format convinent to 
- user in each case the cwd must prepended or appended 
- with the appropriate directory name,drive name and current 
- working directory. 
+ directory name,file name in a format convinent to
+ user in each case the cwd must prepended or appended
+ with the appropriate directory name,drive name and current
+ working directory.
 */
 static void formatcwd(const char *input,char *output)
 {
@@ -3708,24 +3708,24 @@ static void formatcwd(const char *input,char *output)
     {
         output[0] = 'A' + currentDrive;
         strcpy(output + 1,":");
-        strcat(output,input);   
+        strcat(output,input);
     }
 
     /*
      The user provides the file name in full format
      e.g. c:\from\1.txt
      */
-    else if((strlen(input) >= 3) 
+    else if((strlen(input) >= 3)
             && (memcmp(input + 1, ":\\", 2) == 0)
            )
-    { 
+    {
         strcpy(output,input);
     }
-    
+
     /*
      The user misses the '\' e.g. c:1.txt.
      */
-    else if (strlen(input) >= 3 && input[1] == ':' 
+    else if (strlen(input) >= 3 && input[1] == ':'
              && input[2] != '\\')
     {
         char *cwd;
@@ -3745,10 +3745,10 @@ static void formatcwd(const char *input,char *output)
         }
         strcat(output,input+2);
     }
-    
+
     /*
      The user provides only the <file-name>
-     e.g. 1.txt in that case the drive name,'\' 
+     e.g. 1.txt in that case the drive name,'\'
      and currect working directory needs to be
      prepended e.g. c:\from\1.txt.
      */
@@ -3765,7 +3765,7 @@ static void formatcwd(const char *input,char *output)
         strcat(output,input);
     }
     tempDrive=toupper(output[0]) - 'A';
-    upper_str(output);  
+    upper_str(output);
     return;
-}   
+}
 /**/

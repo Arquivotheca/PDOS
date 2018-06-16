@@ -100,7 +100,7 @@ int main(int argc, char **argv)
 static void parseArgs(int argc, char **argv)
 {
     int x;
-    
+
     if (argc > 1)
     {
         if ((argv[1][0] == '-') || (argv[1][0] == '/'))
@@ -108,11 +108,11 @@ static void parseArgs(int argc, char **argv)
             if ((argv[1][1] == 'C') || (argv[1][1] == 'c'))
             {
                 singleCommand = 1;
-            }            
+            }
             if ((argv[1][1] == 'P') || (argv[1][1] == 'p'))
             {
                 primary = 1;
-            }            
+            }
         }
     }
     if (singleCommand)
@@ -237,7 +237,7 @@ static void processInput(void)
 static void putPrompt(void)
 {
     int d;
-    
+
     d = PosGetDefaultDrive();
     drive[0] = d + 'A';
     PosGetCurDir(0, cwd);
@@ -249,15 +249,15 @@ static void putPrompt(void)
 static void dotype(char *file)
 {
     FILE *fp;
-    
+
     if (strcmp(file,"") == 0)
     {
         printf("Required Parameter Missing\n");
         return;
     }
-        
+
     fp = fopen(file, "r");
-    
+
     if (fp != NULL)
     {
         while (fgets(buf, sizeof buf, fp) != NULL)
@@ -266,17 +266,17 @@ static void dotype(char *file)
         }
         fclose(fp);
     }
-    
+
     else
     {
        printf("file not found: %s\n", file);
     }
-    
+
     return;
 }
 
 static void dodel(char *fnm)
-{    
+{
     int ret;
     DTA *dta;
 
@@ -287,7 +287,7 @@ static void dodel(char *fnm)
         return;
     }
     ret = PosFindFirst(fnm,0x10);
-    
+
     if(ret == 2)
     {
         printf("File not found \n");
@@ -295,8 +295,8 @@ static void dodel(char *fnm)
         return;
     }
     while(ret == 0)
-    {           
-        PosDeleteFile(dta->file_name);  
+    {
+        PosDeleteFile(dta->file_name);
         ret = PosFindNext();
     }
     return;
@@ -309,7 +309,7 @@ static void dodir(char *pattern)
     char *p;
     time_t tt;
     struct tm *tms;
-    
+
     dta = PosGetDTA();
     if (*pattern == '\0')
     {
@@ -324,7 +324,7 @@ static void dodir(char *pattern)
     {
         tt = dos_to_timet(dta->file_date,dta->file_time);
         tms = localtime(&tt);
-        printf("%-13s %9ld %02x %04d-%02d-%02d %02d:%02d:%02d\n", 
+        printf("%-13s %9ld %02x %04d-%02d-%02d %02d:%02d:%02d\n",
                dta->file_name,
                dta->file_size,
                dta->attrib,
@@ -346,41 +346,41 @@ static void dover(void)
 }
 
 static void dopath(char *s)
-{    
+{
      if (strcmp(s, "") == 0)
      {
         char *t;
 
         t = path;
-        
+
         if (*t == ';')
         {
             t++;
-        } 
-        
+        }
+
         if (*t == '\0')
         {
             printf("No Path defined\n");
         }
-        
+
         else
         {
             printf("%s\n", t);
         }
      }
-     
+
      else if (*s == ';')
      {
         strcpy(path, s);
      }
-     
+
      else
      {
         strcpy(path, ";");
         strcat(path, s);
      }
      return;
-} 
+}
 
 static void doExec(char *b,char *p)
 {
@@ -390,17 +390,17 @@ static void doExec(char *b,char *p)
     size_t ln;
     size_t ln2;
     char tempbuf[FILENAME_MAX];
-    
-    s = path;    
+
+    s = path;
     ln = strlen(p);
     cmdt[0] = ln;
     memcpy(cmdt + 1, p, ln);
     memcpy(cmdt + ln + 1, "\r", 2);
-    
+
     while(*s != '\0')
-    {    
+    {
         t = strchr(s, ';');
-        
+
         if (t == NULL)
         {
             t = s + strlen(s);
@@ -408,12 +408,12 @@ static void doExec(char *b,char *p)
 
         ln2 = t - s;
         memcpy(tempbuf, s ,ln2);
-        
+
         if (ln2 != 0)
         {
             tempbuf[ln2++] = '\\';
         }
-        
+
         strcpy(tempbuf + ln2, b);
         ln2 += strlen(b);
         strcpy(tempbuf + ln2, ".com");
@@ -423,36 +423,36 @@ static void doExec(char *b,char *p)
             PosExec(tempbuf, &parmblock);
             break;
         }
-        
+
         strcpy(tempbuf + ln2 ,".exe");
-        
+
         if (exists(tempbuf))
         {
             PosExec(tempbuf, &parmblock);
             break;
         }
-        
+
         strcpy(tempbuf + ln2 ,".bat");
-        
+
         if (exists(tempbuf))
         {
             readBat(tempbuf);
             break;
         }
-        
+
         s = t;
-        
+
         if (*s == ';')
         {
             s++;
         }
     }
-    
+
     if (*s == '\0')
     {
         printf("command not found\n");
     }
-    
+
     return;
 }
 
@@ -463,53 +463,53 @@ static void doCopy(char *b)
     char *dest;
     FILE *fsrc;
     FILE *fdest;
-    int bytes_read = 0; 
-    
+    int bytes_read = 0;
+
     src = b;
     dest = strchr(b,' ');
-     
+
     if (dest == NULL)
     {
         printf("\n Two Filenames required");
         return;
     }
-    
+
     *dest++ ='\0';
-        
+
     printf("Source is %s \n",src);
     printf("Dest is %s \n",dest);
-       
+
     fsrc = fopen(src,"rb");
-    
+
     if (fsrc != NULL)
     {
         fdest = fopen(dest,"wb");
-        
+
         if (fdest != NULL)
         {
             while((bytes_read = fread(bbb,1,sizeof(bbb),fsrc)) != 0)
             {
                 fwrite(bbb,1,bytes_read,fdest);
             }
-            
-            fclose(fdest);   
+
+            fclose(fdest);
         }
-        
+
         else
         {
             printf("Destination %s file not found \n",dest);
         }
-        
+
         fclose(fsrc);
     }
-    
+
     else
     {
         printf("Source file %s not found \n",src);
     }
-      
+
     return;
-    
+
 }
 
 static void changedir(char *to)
@@ -531,7 +531,7 @@ static void changedisk(int drive)
 
 /* dohelp function and condition for it written by Alica Okano */
 static void dohelp(char *cmd)
-{    
+{
     if(*cmd == '\0')
     {
         printf("Use HELP [command] to obtain more information about\n");
@@ -740,7 +740,7 @@ static int ins_strcmp(char *one, char *two)
 static int ins_strncmp(char *one, char *two, size_t len)
 {
     size_t x = 0;
-    
+
     if (len == 0) return (0);
     while ((x < len) && (toupper(*one) == toupper(*two)))
     {
@@ -759,10 +759,10 @@ static int ins_strncmp(char *one, char *two, size_t len)
 static void readBat(char *fnm)
 {
     FILE *fp;
-    
+
     fp = fopen(fnm, "r");
     if (fp != NULL)
-    {        
+    {
         while (fgets(buf, sizeof buf, fp) != NULL)
         {
             processInput();
@@ -775,15 +775,15 @@ static void readBat(char *fnm)
 static int exists(char *fnm)
 {
     FILE *fp;
-    
+
     fp = fopen(fnm,"rb");
-    
+
     if (fp != NULL)
     {
         fclose(fp);
         return 1;
     }
-    
+
     return 0;
 }
 
@@ -822,7 +822,7 @@ void safegets(char *buffer, int size)
             if ((a != '\n') && (a != '\r') && (a != '\b'))
             if (islower(a))
             a -= 32;
-     
+
             else if ((a >= '0') && (a <= '9'))
             a -= 16;
         }
@@ -832,7 +832,7 @@ void safegets(char *buffer, int size)
         if (i == size)
         {
             buffer[size] = '\0';
-      
+
             if ((a == '\n') || (a == '\r'))
             return;
 
@@ -857,10 +857,10 @@ void safegets(char *buffer, int size)
 
             if (a == '\b')
             {
-        
+
                 if (i == 0)
                 continue;
-        
+
                 else
                 i--;
 

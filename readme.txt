@@ -669,6 +669,13 @@ FUTURE DEVELOPMENT
 
 Use INT 15 AX=E820 to see how much memory is available.
 http://www.ctyme.com/intr/rb-1741.htm
+This has a problem in that protintp.c is only expecting
+16-bit registers to be used in real mode, but this call
+uses full 32-bit registers. A possible workaround would
+be to pass es in the high 16 bits of edi, and pass ds in
+the high 16 bits of esi, and then pass the full 32-bit
+register values of EAX/EBX/ECX/EDX down to the real mode
+interrupt.
 
 New philosophy for PDOS:
 Should be a poor man's Win 98 console mode.

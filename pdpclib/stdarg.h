@@ -15,8 +15,9 @@
 
 /* don't use builtins on MVS until they have been implemented */
 /* don't use on EMX either */
+/* and they haven't been implemented in PDOS/386 either */
 #if defined(__GNUC__) && !defined(__MVS__) && !defined(__CMS__) \
-    && !defined(__VSE__) && !defined(__EMX__)
+    && !defined(__VSE__) && !defined(__EMX__) && !defined(__PDOS__)
 
 #ifndef __GNUC_VA_LIST
 #define __GNUC_VA_LIST

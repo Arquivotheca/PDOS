@@ -788,10 +788,6 @@ int PosGenericBlockDeviceRequest(int drive,
     regsin.h.ch = catcode;
     regsin.h.cl = function;
 
-/*debug statements*/
-    printf("dx is %02x \n",regsin.x.dx);
-    printf("ds is %02x \n",sregs.ds);
-/**/
 #ifdef __32BIT__
     regsin.d.edx = (unsigned int)parmblock;
 #else
@@ -800,10 +796,6 @@ int PosGenericBlockDeviceRequest(int drive,
 #endif
     int86x(0x21, &regsin, &regsout, &sregs);
 
-/*debug statements*/
-    printf("dx is %02x \n",regsout.x.dx);
-    printf("ds is %02x \n",sregs.ds);
-/**/
 #ifdef __32BIT__
     if (regsout.x.cflag)
     {

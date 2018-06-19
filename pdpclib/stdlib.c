@@ -323,13 +323,13 @@ __PDPCLIB_API__ void abort(void)
 {
     raise(SIGABRT);
     exit(EXIT_FAILURE);
-#if !defined(__EMX__) && !defined(__GCC__) && !defined(__WIN32__) \
+#if !defined(__EMX__) && !defined(__GNUC__) && !defined(__WIN32__) \
   && !defined(__gnu_linux__)
     return;
 #endif
 }
 
-#if !defined(__EMX__) && !defined(__GCC__) && !defined(__WIN32__) \
+#if !defined(__EMX__) && !defined(__GNUC__) && !defined(__WIN32__) \
   && !defined(__gnu_linux__)
 void __exit(int status);
 #else
@@ -339,7 +339,7 @@ void __exit(int status) __attribute__((noreturn));
 __PDPCLIB_API__ void exit(int status)
 {
     __exit(status);
-#if !defined(__EMX__) && !defined(__GCC__) && !defined(__WIN32__) \
+#if !defined(__EMX__) && !defined(__GNUC__) && !defined(__WIN32__) \
   && !defined(__gnu_linux__)
     return;
 #endif

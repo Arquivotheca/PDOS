@@ -6,8 +6,8 @@
         .globl _int86x
         .globl _enable
         .globl _disable
-        .globl __setj
-        .globl __longj
+        .globl ___setj
+        .globl ___longj
 
         .text
 
@@ -115,7 +115,7 @@ _disable:
 / setjmp and longjmp are untested under PDOS32 due to the
 / test environment currently not being available
 
-__setj:
+___setj:
         push    %ebp
         mov     %esp, %ebp
         mov     12(%ebp), %eax
@@ -149,7 +149,7 @@ __setj:
         ret
 
 
-__longj:
+___longj:
         push    %ebp
         mov     %esp, %ebp
         mov     12(%ebp), %eax

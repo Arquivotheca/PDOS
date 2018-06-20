@@ -2,6 +2,8 @@
 /* released to the public domain */
 /* poor man's version of a.out.h - contains everything required by
    pdos at time of writing */
+/* Documentation for the a.out format can be found here:
+   http://man.cat-v.org/unix_8th/5/a.out */
 
 #define SEGMENT_SIZE 0x10000UL
 

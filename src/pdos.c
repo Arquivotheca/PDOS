@@ -2675,6 +2675,7 @@ static void loadPcomm(void)
 
 static void loadExe(char *prog, PARMBLOCK *parmblock)
 {
+    static int first = 1;
 #ifdef __32BIT__
     struct exec firstbit;
 #else
@@ -2708,10 +2709,17 @@ static void loadExe(char *prog, PARMBLOCK *parmblock)
     if (fno < 0) return;
 #ifdef __32BIT__
     fileRead(fno, &firstbit, sizeof firstbit);
-    headerLen = N_TXTOFF(firstbit);
-    header = memmgrAllocate(&memmgr, headerLen, 0);
-    memcpy(header, &firstbit, sizeof firstbit);
-    fileRead(fno, header + sizeof firstbit, headerLen - sizeof firstbit);
+    if (first)
+    {
+        first = 0;
+        /* this logic only applies to executables built with EMX,
+           ie only PCOMM. All other cross-compiled apps do not
+           have NULs after the firstbit that need to be skipped */
+        headerLen = N_TXTOFF(firstbit);
+        header = memmgrAllocate(&memmgr, headerLen, 0);
+        memcpy(header, &firstbit, sizeof firstbit);
+        fileRead(fno, header + sizeof firstbit, headerLen - sizeof firstbit);
+    }
 #else
     fileRead(fno, firstbit, sizeof firstbit);
     if (memcmp(firstbit, "MZ", 2) == 0)

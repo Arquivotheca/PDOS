@@ -388,3 +388,7 @@ Int 21/AX=71A7h/BL=01h - Windows95 - LONG FILENAME - DOS TIME TO FILE TIME
 Just as a place-holder, we should also implement
 BIOS Int 16 AH=01H to check for a keystroke without
 removing it from the buffer.
+
+It would be good if PDOS/x86 allowed other than
+8.3 filenames, even though FAT creates that
+limit currently.

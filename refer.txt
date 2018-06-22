@@ -391,4 +391,9 @@ removing it from the buffer.
 
 It would be good if PDOS/x86 allowed other than
 8.3 filenames, even though FAT creates that
-limit currently.
+limit currently. Note that it may already do
+this, just need to test a hexdump verylongname.c
+and see what happens.
+
+Switch PosReboot etc to use INT 21H AH=F6H as
+no-one else seems to be using that.

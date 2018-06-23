@@ -220,7 +220,7 @@ unsigned int fatCreatFile(FAT *fat, const char *fnm, FATFILE *fatfile,
                 if ((fat->dirSect - fat->startSector
                     == fat->sectors_per_cluster - 1))
                 {
-                    if (fat->processing_root) return (POS_ERR_PATH_NOT_FOUND);
+                    if (fat->processing_root) return (0);
                     fatChain(fat,&tempfatfile);
                     fat->dirSect = tempfatfile.sectorStart;
                 }
@@ -421,7 +421,7 @@ unsigned int fatCreatNewFile(FAT *fat, const char *fnm, FATFILE *fatfile,
                 if ((fat->dirSect - fat->startSector
                     == fat->sectors_per_cluster - 1))
                 {
-                    if (fat->processing_root) return (POS_ERR_PATH_NOT_FOUND);
+                    if (fat->processing_root) return (0);
                     fatChain(fat,&tempfatfile);
                     fat->dirSect = tempfatfile.sectorStart;
                 }

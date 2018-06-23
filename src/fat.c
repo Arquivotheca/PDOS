@@ -165,6 +165,7 @@ unsigned int fatCreatFile(FAT *fat, const char *fnm, FATFILE *fatfile,
     DIRENT *p;
     int found = 0;
     unsigned char lbuf[MAXSECTSZ];
+    FATFILE tempfatfile;
 
     fat->notfound = 0;
 
@@ -216,11 +217,20 @@ unsigned int fatCreatFile(FAT *fat, const char *fnm, FATFILE *fatfile,
             {
                 fatWriteLogical(fat, fat->dirSect, fat->dbuf);
 
-                /* +++ need to detect end of directory sectors and
-                   expand if possible */
-                fatReadLogical(fat, fat->dirSect + 1, lbuf);
+                if ((fat->dirSect - fat->startSector
+                    == fat->sectors_per_cluster - 1))
+                {
+                    fatChain(fat,&tempfatfile);
+                    fat->dirSect = tempfatfile.sectorStart;
+                }
+                else
+                {
+                    fat->dirSect++;
+                }
+
+                fatReadLogical(fat, fat->dirSect, lbuf);
                 lbuf[0] = '\0';
-                fatWriteLogical(fat, fat->dirSect + 1, lbuf);
+                fatWriteLogical(fat, fat->dirSect, lbuf);
             }
         }
     }
@@ -236,7 +246,7 @@ unsigned int fatCreatDir(FAT *fat, const char *dnm, const char *parentname,
     int startcluster = 0;
     int parentstartcluster = 0;
     long startsector;
-    int i;
+    FATFILE tempfatfile;
 
     if ((dnm[0] == '\\') || (dnm[0] == '/'))
     {
@@ -292,11 +302,20 @@ unsigned int fatCreatDir(FAT *fat, const char *dnm, const char *parentname,
         {
             fatWriteLogical(fat, fat->dirSect, fat->dbuf);
 
-            /* +++ need to detect end of directory sectors and
-               expand if possible */
-            fatReadLogical(fat, fat->dirSect + 1, lbuf);
+            if ((fat->dirSect - fat->startSector
+                == fat->sectors_per_cluster - 1))
+            {
+                fatChain(fat,&tempfatfile);
+                fat->dirSect = tempfatfile.sectorStart;
+            }
+            else
+            {
+                fat->dirSect++;
+            }
+
+            fatReadLogical(fat, fat->dirSect, lbuf);
             lbuf[0] = '\0';
-            fatWriteLogical(fat, fat->dirSect + 1, lbuf);
+            fatWriteLogical(fat, fat->dirSect, lbuf);
         }
 
         fat->currcluster = startcluster;
@@ -342,6 +361,7 @@ unsigned int fatCreatNewFile(FAT *fat, const char *fnm, FATFILE *fatfile,
     DIRENT *p;
     int found = 0;
     unsigned char lbuf[MAXSECTSZ];
+    FATFILE tempfatfile;
 
     fat->notfound = 0;
 
@@ -390,11 +410,20 @@ unsigned int fatCreatNewFile(FAT *fat, const char *fnm, FATFILE *fatfile,
             {
                 fatWriteLogical(fat, fat->dirSect, fat->dbuf);
 
-                /* +++ need to detect end of directory sectors and
-                   expand if possible */
-                fatReadLogical(fat, fat->dirSect + 1, lbuf);
+                if ((fat->dirSect - fat->startSector
+                    == fat->sectors_per_cluster - 1))
+                {
+                    fatChain(fat,&tempfatfile);
+                    fat->dirSect = tempfatfile.sectorStart;
+                }
+                else
+                {
+                    fat->dirSect++;
+                }
+
+                fatReadLogical(fat, fat->dirSect, lbuf);
                 lbuf[0] = '\0';
-                fatWriteLogical(fat, fat->dirSect + 1, lbuf);
+                fatWriteLogical(fat, fat->dirSect, lbuf);
             }
         }
     }
@@ -851,15 +880,15 @@ static void fatRootSearch(FAT *fat, char *search)
 
 static void fatDirSearch(FAT *fat, char *search)
 {
-    unsigned long startSector;
     unsigned int nextCluster;
     fat->fnd=0;
 
-    fatClusterAnalyse(fat, fat->currcluster, &startSector, &nextCluster);
+    fatClusterAnalyse(fat, fat->currcluster, &fat->startSector, &nextCluster);
     fatDirSectorSearch(fat,
                        search,
-                       startSector,
+                       fat->startSector,
                        fat->sectors_per_cluster);
+
     while (fat->fnd == 0)    /* not found but not end */
     {
         if (fatEndCluster(fat, nextCluster))
@@ -868,10 +897,10 @@ static void fatDirSearch(FAT *fat, char *search)
             return;
         }
         fat->currcluster = nextCluster;
-        fatClusterAnalyse(fat, fat->currcluster, &startSector, &nextCluster);
+        fatClusterAnalyse(fat, fat->currcluster, &fat->startSector, &nextCluster);
         fatDirSectorSearch(fat,
                            search,
-                           startSector,
+                           fat->startSector,
                            fat->sectors_per_cluster);
     }
     return;
@@ -953,9 +982,9 @@ static void fatDirSectorSearch(FAT *fat,
         fatReadLogical(fat, startSector + x, buf);
         for (p = (DIRENT *) buf; (unsigned char *) p < buf + fat->sector_size; p++)
         {
-            fat->fnd=1;
             if (memcmp(p->file_name, search, 11) == 0)
             {
+                fat->fnd=1;
                 fat->currcluster = p->start_cluster[0]
                     | ((unsigned int) p->start_cluster[1] << 8);
                 fat->de = p;
@@ -964,6 +993,7 @@ static void fatDirSectorSearch(FAT *fat,
             }
             else if (p->file_name[0] == '\0')
             {
+                fat->fnd=1;
                 fat->de = p;
                 fat->dirSect = startSector + x;
                 fat->notfound = 1;

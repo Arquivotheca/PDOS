@@ -220,6 +220,7 @@ unsigned int fatCreatFile(FAT *fat, const char *fnm, FATFILE *fatfile,
                 if ((fat->dirSect - fat->startSector
                     == fat->sectors_per_cluster - 1))
                 {
+                    if (fat->processing_root) return (POS_ERR_PATH_NOT_FOUND);
                     fatChain(fat,&tempfatfile);
                     fat->dirSect = tempfatfile.sectorStart;
                 }
@@ -305,17 +306,24 @@ unsigned int fatCreatDir(FAT *fat, const char *dnm, const char *parentname,
             if ((fat->dirSect - fat->startSector
                 == fat->sectors_per_cluster - 1))
             {
-                fatChain(fat,&tempfatfile);
-                fat->dirSect = tempfatfile.sectorStart;
+                if (fat->processing_root) fat->processing_root = 2;
+                else
+                {
+                    fatChain(fat,&tempfatfile);
+                    fat->dirSect = tempfatfile.sectorStart;
+                }
             }
             else
             {
                 fat->dirSect++;
             }
 
-            fatReadLogical(fat, fat->dirSect, lbuf);
-            lbuf[0] = '\0';
-            fatWriteLogical(fat, fat->dirSect, lbuf);
+            if (fat->processing_root != 2)
+            {
+                fatReadLogical(fat, fat->dirSect, lbuf);
+                lbuf[0] = '\0';
+                fatWriteLogical(fat, fat->dirSect, lbuf);
+            }
         }
 
         fat->currcluster = startcluster;
@@ -413,6 +421,7 @@ unsigned int fatCreatNewFile(FAT *fat, const char *fnm, FATFILE *fatfile,
                 if ((fat->dirSect - fat->startSector
                     == fat->sectors_per_cluster - 1))
                 {
+                    if (fat->processing_root) return (POS_ERR_PATH_NOT_FOUND);
                     fatChain(fat,&tempfatfile);
                     fat->dirSect = tempfatfile.sectorStart;
                 }
@@ -758,9 +767,15 @@ static void fatPosition(FAT *fat, const char *fnm)
     fat->notfound = 0;
     fat->upto = fnm;
     fat->currcluster = 0;
+    fat->processing_root = 0;
     fatNextSearch(fat, fat->search, &fat->upto);
     if (fat->notfound) return;
     fatRootSearch(fat, fat->search);
+    if (fat->notfound)
+    {
+        fat->processing_root = 1;
+        return;
+    }
     while (!fat->last)
     {
         fatNextSearch(fat, fat->search, &fat->upto);

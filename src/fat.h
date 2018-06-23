@@ -117,7 +117,9 @@ typedef struct {
     unsigned int fatsize;
     int fat16;
     unsigned long hidden;
+    unsigned long startSector;
     int notfound;
+    int processing_root;
     int currcluster;
     FATFILE *currfatfile;
     void (*readLogical)(void *diskptr, long sector, void *buf);

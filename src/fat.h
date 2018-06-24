@@ -5,6 +5,10 @@
 
 #define MAXSECTSZ 512
 
+#define FATPOS_FOUND 1
+#define FATPOS_ONEMPTY 2
+#define FATPOS_ENDCLUSTER 3
+
 /*File name special values*/
 #define DIRENT_AVA 0x00
 #define DIRENT_IC 0x05
@@ -119,6 +123,7 @@ typedef struct {
     unsigned long hidden;
     unsigned long startSector;
     int notfound;
+    int pos_result;
     int processing_root;
     int currcluster;
     FATFILE *currfatfile;

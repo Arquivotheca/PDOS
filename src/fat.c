@@ -167,8 +167,6 @@ unsigned int fatCreatFile(FAT *fat, const char *fnm, FATFILE *fatfile,
     unsigned char lbuf[MAXSECTSZ];
     FATFILE tempfatfile;
 
-    fat->notfound = 0;
-
     if ((fnm[0] == '\\') || (fnm[0] == '/'))
     {
         fnm++;
@@ -176,14 +174,14 @@ unsigned int fatCreatFile(FAT *fat, const char *fnm, FATFILE *fatfile,
     fatPosition(fat,fnm);
     p = fat->de;
 
-    if (!fat->notfound)
+    if (fat->pos_result == FATPOS_FOUND)
     {
         fat->currcluster = p->start_cluster[1] << 8
                            | p->start_cluster[0];
         fatNuke(fat, fat->currcluster);
         found = 1;
     }
-    if (found || (p->file_name[0] == '\0'))
+    if (found || fat->pos_result == FATPOS_ONEMPTY)
     {
         fatfile->startcluster=0;
         memset(p, '\0', sizeof(DIRENT));
@@ -272,11 +270,11 @@ unsigned int fatCreatDir(FAT *fat, const char *dnm, const char *parentname,
     fatPosition(fat,dnm);
     p = fat->de;
 
-    if (!fat->notfound)
+    if (fat->pos_result == FATPOS_FOUND)
     {
         return (POS_ERR_PATH_NOT_FOUND);
     }
-    if (p->file_name[0] == '\0')
+    if (fat->pos_result == FATPOS_ONEMPTY)
     {
         startcluster = fatFindFreeCluster(fat);
         if(!(startcluster)) return (POS_ERR_PATH_NOT_FOUND);
@@ -367,11 +365,8 @@ unsigned int fatCreatNewFile(FAT *fat, const char *fnm, FATFILE *fatfile,
                           int attrib)
 {
     DIRENT *p;
-    int found = 0;
     unsigned char lbuf[MAXSECTSZ];
     FATFILE tempfatfile;
-
-    fat->notfound = 0;
 
     if ((fnm[0] == '\\') || (fnm[0] == '/'))
     {
@@ -380,11 +375,11 @@ unsigned int fatCreatNewFile(FAT *fat, const char *fnm, FATFILE *fatfile,
     fatPosition(fat,fnm);
     p = fat->de;
 
-    if (!fat->notfound)
+    if (fat->pos_result == FATPOS_FOUND)
     {
         return (POS_ERR_FILE_EXISTS);
     }
-    if (found || (p->file_name[0] == '\0'))
+    if (fat->pos_result == FATPOS_ONEMPTY)
     {
         fatfile->startcluster=0;
         memset(p, '\0', sizeof(DIRENT));
@@ -401,39 +396,31 @@ unsigned int fatCreatNewFile(FAT *fat, const char *fnm, FATFILE *fatfile,
         fatfile->dirOffset = ((unsigned char*)p - fat->dbuf);
         fatfile->lastBytes = 0;
 
-        /* if file was found, don't mark next entry as null */
-        if (found)
+        p++;
+        if ((unsigned char *) p != (fat->dbuf + fat->sector_size))
         {
+            p->file_name[0] = '\0';
             fatWriteLogical(fat, fat->dirSect, fat->dbuf);
         }
         else
         {
-            p++;
-            if ((unsigned char *) p != (fat->dbuf + fat->sector_size))
+            fatWriteLogical(fat, fat->dirSect, fat->dbuf);
+
+            if ((fat->dirSect - fat->startSector
+                == fat->sectors_per_cluster - 1))
             {
-                p->file_name[0] = '\0';
-                fatWriteLogical(fat, fat->dirSect, fat->dbuf);
+                if (fat->processing_root) return (0);
+                fatChain(fat,&tempfatfile);
+                fat->dirSect = tempfatfile.sectorStart;
             }
             else
             {
-                fatWriteLogical(fat, fat->dirSect, fat->dbuf);
-
-                if ((fat->dirSect - fat->startSector
-                    == fat->sectors_per_cluster - 1))
-                {
-                    if (fat->processing_root) return (0);
-                    fatChain(fat,&tempfatfile);
-                    fat->dirSect = tempfatfile.sectorStart;
-                }
-                else
-                {
-                    fat->dirSect++;
-                }
-
-                fatReadLogical(fat, fat->dirSect, lbuf);
-                lbuf[0] = '\0';
-                fatWriteLogical(fat, fat->dirSect, lbuf);
+                fat->dirSect++;
             }
+
+            fatReadLogical(fat, fat->dirSect, lbuf);
+            lbuf[0] = '\0';
+            fatWriteLogical(fat, fat->dirSect, lbuf);
         }
     }
     return (0);
@@ -447,7 +434,6 @@ unsigned int fatOpenFile(FAT *fat, const char *fnm, FATFILE *fatfile)
 {
     DIRENT *p;
 
-    fat->notfound = 0;
     fat->currfatfile=fatfile;
     if ((fnm[0] == '\\') || (fnm[0] == '/'))
     {
@@ -765,6 +751,7 @@ size_t fatWriteFile(FAT *fat, FATFILE *fatfile, const void *buf, size_t szbuf)
 static void fatPosition(FAT *fat, const char *fnm)
 {
     fat->notfound = 0;
+    fat->pos_result = FATPOS_FOUND;
     fat->upto = fnm;
     fat->currcluster = 0;
     fat->processing_root = 0;
@@ -837,6 +824,7 @@ static void fatNextSearch(FAT *fat, char *search, const char **upto)
     if ((p - *upto) > 12)
     {
         fat->notfound = 1;
+        fat->pos_result = FATPOS_ONEMPTY;
         return;
     }
     q = memchr(*upto, '.', p - *upto);
@@ -845,11 +833,13 @@ static void fatNextSearch(FAT *fat, char *search, const char **upto)
         if ((q - *upto) > 8)
         {
             fat->notfound = 1;
+            fat->pos_result = FATPOS_ONEMPTY;
             return;
         }
         if ((p - q) > 4)
         {
             fat->notfound = 1;
+            fat->pos_result = FATPOS_ONEMPTY;
             return;
         }
         memcpy(search, *upto, q - *upto);
@@ -909,6 +899,7 @@ static void fatDirSearch(FAT *fat, char *search)
         if (fatEndCluster(fat, nextCluster))
         {
             fat->notfound = 1;
+            fat->pos_result = FATPOS_ENDCLUSTER;
             return;
         }
         fat->currcluster = nextCluster;
@@ -1012,6 +1003,7 @@ static void fatDirSectorSearch(FAT *fat,
                 fat->de = p;
                 fat->dirSect = startSector + x;
                 fat->notfound = 1;
+                fat->pos_result = FATPOS_ONEMPTY;
                 return;
             }
         }
@@ -1150,12 +1142,10 @@ static void fatChain(FAT *fat, FATFILE *fatfile)
 
 /*
   Delete a file by searching for its start sector and setting all the
-  clusters to point to zero,by calling the fatnuke function
+  clusters to point to zero, by calling the fatnuke function
 */
 unsigned int fatDeleteFile(FAT *fat,const char *fnm)
 {
-    fat->notfound = 0;
-
     if ((fnm[0] == '\\') || (fnm[0] == '/'))
     {
         fnm++;
@@ -1280,8 +1270,6 @@ unsigned int fatGetFileAttributes(FAT *fat,const char *fnm,int *attr)
 /*To set the attributes of the file given by file name fnm*/
 unsigned int fatSetFileAttributes(FAT *fat,const char *fnm,int attr)
 {
-    fat->notfound = 0;
-
     if ((fnm[0] == '\\') || (fnm[0] == '/'))
     {
         fnm++;

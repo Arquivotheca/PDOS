@@ -81,7 +81,8 @@ int int25(unsigned int *regs);
 static void loadConfig(void);
 static void loadPcomm(void);
 static void loadExe(char *prog, PARMBLOCK *parmblock);
-static int fixexe32(unsigned char *psp, unsigned long entry, unsigned int sp);
+static int fixexe32(unsigned char *psp, unsigned long entry, unsigned int sp,
+                    int doing_pcomm);
 static int bios2driv(int bios);
 static int fileCreat(const char *fnm, int attrib);
 static int dirCreat(const char *dnm, int attrib);
@@ -2676,6 +2677,7 @@ static void loadPcomm(void)
 static void loadExe(char *prog, PARMBLOCK *parmblock)
 {
     static int first = 1;
+    int doing_pcomm = 0;
 #ifdef __32BIT__
     struct exec firstbit;
 #else
@@ -2712,6 +2714,10 @@ static void loadExe(char *prog, PARMBLOCK *parmblock)
     if (first)
     {
         first = 0;
+        doing_pcomm = 1;
+    }
+    if (doing_pcomm)
+    {
         /* this logic only applies to executables built with EMX,
            ie only PCOMM. All other cross-compiled apps do not
            have NULs after the firstbit that need to be skipped */
@@ -2743,7 +2749,14 @@ static void loadExe(char *prog, PARMBLOCK *parmblock)
     memcpy(envptr + 7, prog, strlen(prog) + 1);
 
 #ifdef __32BIT__
-    exeLen = N_BSSADDR(firstbit) - N_TXTADDR(firstbit) + firstbit.a_bss;
+    if (doing_pcomm)
+    {
+        exeLen = N_BSSADDR(firstbit) - N_TXTADDR(firstbit) + firstbit.a_bss;
+    }
+    else
+    {
+        exeLen = firstbit.a_text + firstbit.a_data + firstbit.a_bss;
+    }
     /* allocate exeLen + 0x100 (psp) + stack + extra (safety margin) */
     psp = memmgrAllocate(&memmgr, exeLen + 0x100 + 0x8000 + 0x100, 0);
 #else
@@ -2799,9 +2812,16 @@ static void loadExe(char *prog, PARMBLOCK *parmblock)
 
 #ifdef __32BIT__
     fileRead(fno, exeStart, firstbit.a_text);
-    fileRead(fno,
-            exeStart + N_DATADDR(firstbit) - N_TXTADDR(firstbit),
-            firstbit.a_data);
+    if (doing_pcomm)
+    {
+        fileRead(fno,
+                exeStart + N_DATADDR(firstbit) - N_TXTADDR(firstbit),
+                firstbit.a_data);
+    }
+    else
+    {
+        fileRead(fno, exeStart + firstbit.a_text, firstbit.a_data);
+    }
 #else
     if (isexe)
     {
@@ -2866,12 +2886,26 @@ static void loadExe(char *prog, PARMBLOCK *parmblock)
         exeEntry, psp, ss, sp); */
 #else
     /* initialise BSS */
-    bss = exeStart + N_BSSADDR(firstbit);
+    if (doing_pcomm)
+    {
+        bss = exeStart + N_BSSADDR(firstbit);
+    }
+    else
+    {
+        bss = exeStart + firstbit.a_text + firstbit.a_data;
+    }
     for (y = 0; y < firstbit.a_bss; y++)
     {
         bss[y] = '\0';
     }
-    sp = N_BSSADDR(firstbit) + firstbit.a_bss + 0x8000;
+    if (doing_pcomm)
+    {
+        sp = N_BSSADDR(firstbit) + firstbit.a_bss + 0x8000;
+    }
+    else
+    {
+        sp = bss + firstbit.a_bss + 0x8000;
+    }
 #endif
 #if (!defined(USING_EXE) && !defined(__32BIT__))
     olddta = dta;
@@ -2882,7 +2916,7 @@ static void loadExe(char *prog, PARMBLOCK *parmblock)
     envptr = origenv;
 #endif
 #ifdef __32BIT__
-    ret = fixexe32(psp, firstbit.a_entry, sp);
+    ret = fixexe32(psp, firstbit.a_entry, sp, doing_pcomm);
 #else
     memmgrFree(&memmgr, header);
 #endif
@@ -2893,7 +2927,8 @@ static void loadExe(char *prog, PARMBLOCK *parmblock)
 }
 
 #ifdef __32BIT__
-static int fixexe32(unsigned char *psp, unsigned long entry, unsigned int sp)
+static int fixexe32(unsigned char *psp, unsigned long entry, unsigned int sp,
+                    int doing_pcomm)
 {
     char *source;
     char *dest;
@@ -2916,7 +2951,14 @@ static int fixexe32(unsigned char *psp, unsigned long entry, unsigned int sp)
 
     commandLine = psp + 0x80;
 
-    exeStart = (unsigned long)psp + 0x100 - 0x10000;
+    if (doing_pcomm)
+    {
+        exeStart = (unsigned long)psp + 0x100 - 0x10000;
+    }
+    else
+    {
+        exeStart = (unsigned long)psp + 0x100;
+    }
 
     dataStart = exeStart;
     dataStart = (unsigned long)ADDR2ABS(dataStart);
@@ -2951,7 +2993,7 @@ static int fixexe32(unsigned char *psp, unsigned long entry, unsigned int sp)
     realdata->base_23_16 = (dataStart >> 16) & 0xff;
     realdata->base_31_24 = (dataStart >> 24) & 0xff;
 
-    ret = call32(entry, ADDRFIXSUB(&exeparms), sp);
+    ret = call32(entry, ADDRFIXSUB(&exeparms), ADDRFIXSUB(sp));
     subcor = oldsubcor;
     *realcode = savecode;
     *realdata = savedata;

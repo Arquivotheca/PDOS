@@ -158,7 +158,17 @@ drive letter!), plus the drive you want to install
 it on.  PDOS will happily run from a logical
 partition.  You can't use Win98 or Freedos to do
 this work, because the "sys" command produces an
-incompatible boot sector.
+incompatible boot sector. Although there is a
+workaround for Freedos:
+
+compb
+compbu
+tcc sectread.c bos.c
+tcc sectwrit.c bos.c
+get xychop.c from OZPD at http://pdos.sourceforge.net
+format d: /u
+doinst
+newboot
 
 
 

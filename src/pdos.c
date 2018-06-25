@@ -2904,7 +2904,68 @@ static void loadExe(char *prog, PARMBLOCK *parmblock)
     }
     else
     {
-        sp = bss + firstbit.a_bss + 0x8000;
+        sp = (unsigned int)bss + firstbit.a_bss + 0x8000;
+    }
+    if (!doing_pcomm)
+    {
+        unsigned int *corrections;
+        unsigned int i;
+        unsigned int offs;
+        unsigned int type;
+        unsigned int zapdata;
+        unsigned char *zap;
+
+        if (firstbit.a_trsize != 0)
+        {
+            corrections = memmgrAllocate(&memmgr, firstbit.a_trsize, 0);
+            if (corrections == NULL)
+            {
+                printf("insufficient memory %d\n", firstbit.a_trsize);
+                memmgrFree(&memmgr, envptr);
+                memmgrFree(&memmgr, psp);
+                return;
+            }
+            fileRead(fno, corrections, firstbit.a_trsize);
+            zap = psp + 0x100;
+            zapdata = (unsigned int)ADDR2ABS(zap);
+            for (i = 0; i < firstbit.a_trsize / 4; i += 2)
+            {
+                offs = corrections[i];
+                type = corrections[i + 1];
+                if (((type >> 24) & 0xff) != 0x04)
+                {
+                    continue;
+                }
+                *(unsigned int *)(zap + offs) += zapdata;
+            }
+            memmgrFree(&memmgr, corrections);
+        }
+        if (firstbit.a_drsize != 0)
+        {
+            corrections = memmgrAllocate(&memmgr, firstbit.a_drsize, 0);
+            if (corrections == NULL)
+            {
+                printf("insufficient memory %d\n", firstbit.a_drsize);
+                memmgrFree(&memmgr, envptr);
+                memmgrFree(&memmgr, psp);
+                return;
+            }
+            fileRead(fno, corrections, firstbit.a_drsize);
+            zap = psp + 0x100 + firstbit.a_text;
+            zapdata = (unsigned int)ADDR2ABS(zap);
+            for (i = 0; i < firstbit.a_drsize / 4; i += 2)
+            {
+                offs = corrections[i];
+                type = corrections[i + 1];
+                if (((type >> 24) & 0xff) != 0x04)
+                {
+                    continue;
+                }
+                *(unsigned int *)(zap + offs) += zapdata;
+            }
+            memmgrFree(&memmgr, corrections);
+        }
+        firstbit.a_entry += (unsigned long)ADDR2ABS(psp + 0x100);
     }
 #endif
 #if (!defined(USING_EXE) && !defined(__32BIT__))
@@ -2957,17 +3018,24 @@ static int fixexe32(unsigned char *psp, unsigned long entry, unsigned int sp,
     }
     else
     {
-        exeStart = (unsigned long)psp + 0x100;
+        exeStart = 0;
+        sp = (unsigned int)ADDR2ABS(sp);
     }
 
     dataStart = exeStart;
-    dataStart = (unsigned long)ADDR2ABS(dataStart);
+    if (doing_pcomm)
+    {
+        dataStart = (unsigned long)ADDR2ABS(dataStart);
+    }
 
     /* now we need to record the subroutine's absolute offset fix */
     oldsubcor = subcor;
     subcor = dataStart;
 
-    exeStart = (unsigned long)ADDR2ABS(exeStart);
+    if (doing_pcomm)
+    {
+        exeStart = (unsigned long)ADDR2ABS(exeStart);
+    }
 
     exeparms.len = sizeof exeparms;
     exeparms.abscor = subcor;
@@ -2993,7 +3061,7 @@ static int fixexe32(unsigned char *psp, unsigned long entry, unsigned int sp,
     realdata->base_23_16 = (dataStart >> 16) & 0xff;
     realdata->base_31_24 = (dataStart >> 24) & 0xff;
 
-    ret = call32(entry, ADDRFIXSUB(&exeparms), ADDRFIXSUB(sp));
+    ret = call32(entry, ADDRFIXSUB(&exeparms), sp);
     subcor = oldsubcor;
     *realcode = savecode;
     *realdata = savedata;

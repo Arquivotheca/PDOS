@@ -168,7 +168,7 @@ tcc sectwrit.c bos.c
 get xychop.c from OZPD at http://pdos.sourceforge.net
 format d: /u
 doinst
-newboot
+newboot (or newboota for floppies)
 
 
 

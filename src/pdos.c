@@ -178,14 +178,14 @@ static int exec_subcor;
 #endif
 
 #ifdef __32BIT__
-char *__vidptr;
+extern char *__vidptr;
 /* SUBADDRFIX - given a pointer from the subprogram, convert
 it into an address usable by us */
 #define SUBADDRFIX(x) ((void *)((char *)(x) + subcor - __abscor))
 #define ADDRFIXSUB(x) ((void *)((char *)(x) - subcor + __abscor))
 #define SUB2ABS(x) ((void *)((char *)(x) + subcor))
 
-int __abscor;
+extern int __abscor;
 unsigned long __userparm;
 int subcor;
 static void *gdt;

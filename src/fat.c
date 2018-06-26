@@ -174,6 +174,10 @@ unsigned int fatCreatFile(FAT *fat, const char *fnm, FATFILE *fatfile,
     fatPosition(fat,fnm);
     p = fat->de;
 
+    if (fat->pos_result == FATPOS_DIR_INVALID)
+    {
+        return (POS_ERR_PATH_NOT_FOUND);
+    }
     if (fat->pos_result == FATPOS_FOUND)
     {
         fat->currcluster = p->start_cluster[1] << 8
@@ -198,8 +202,8 @@ unsigned int fatCreatFile(FAT *fat, const char *fnm, FATFILE *fatfile,
         fatfile->dirOffset = ((unsigned char*)p - fat->dbuf);
         fatfile->lastBytes = 0;
 
-        /* if file was found, don't mark next entry as null */
-        if (found)
+        /* if file or deleted entry was found, don't mark next entry as null */
+        if (found || fat->found_deleted)
         {
             fatWriteLogical(fat, fat->dirSect, fat->dbuf);
         }
@@ -270,6 +274,10 @@ unsigned int fatCreatDir(FAT *fat, const char *dnm, const char *parentname,
     fatPosition(fat,dnm);
     p = fat->de;
 
+    if (fat->pos_result == FATPOS_DIR_INVALID)
+    {
+        return (POS_ERR_PATH_NOT_FOUND);
+    }
     if (fat->pos_result == FATPOS_FOUND)
     {
         return (POS_ERR_PATH_NOT_FOUND);
@@ -279,48 +287,54 @@ unsigned int fatCreatDir(FAT *fat, const char *dnm, const char *parentname,
         startcluster = fatFindFreeCluster(fat);
         if(!(startcluster)) return (POS_ERR_PATH_NOT_FOUND);
 
-        fat->currcluster = startcluster;
-
         memset(p, '\0', sizeof(DIRENT));
         memcpy(p->file_name, fat->search,
               (sizeof(p->file_name)+sizeof(p->file_ext)));
         p->file_attr = (unsigned char)attrib;
-        p->start_cluster[1] = (fat->currcluster >> 8) & 0xff;
-        p->start_cluster[0] = fat->currcluster & 0xff;
+        p->start_cluster[1] = (startcluster >> 8) & 0xff;
+        p->start_cluster[0] = startcluster & 0xff;
 
         p->file_size[0] = p->file_size[1] = p->file_size[2]
             = p->file_size[3] = 0;
 
-        p++;
-        if ((unsigned char *) p != (fat->dbuf + fat->sector_size))
+        /* if deleted entry was found, don't mark next entry as null */
+        if (fat->found_deleted)
         {
-            p->file_name[0] = '\0';
             fatWriteLogical(fat, fat->dirSect, fat->dbuf);
         }
         else
         {
-            fatWriteLogical(fat, fat->dirSect, fat->dbuf);
-
-            if ((fat->dirSect - fat->startSector
-                == fat->sectors_per_cluster - 1))
+            p++;
+            if ((unsigned char *) p != (fat->dbuf + fat->sector_size))
             {
-                if (fat->processing_root) fat->processing_root = 2;
-                else
-                {
-                    fatChain(fat,&tempfatfile);
-                    fat->dirSect = tempfatfile.sectorStart;
-                }
+                p->file_name[0] = '\0';
+                fatWriteLogical(fat, fat->dirSect, fat->dbuf);
             }
             else
             {
-                fat->dirSect++;
-            }
+                fatWriteLogical(fat, fat->dirSect, fat->dbuf);
 
-            if (fat->processing_root != 2)
-            {
-                fatReadLogical(fat, fat->dirSect, lbuf);
-                lbuf[0] = '\0';
-                fatWriteLogical(fat, fat->dirSect, lbuf);
+                if ((fat->dirSect - fat->startSector
+                    == fat->sectors_per_cluster - 1))
+                {
+                    if (fat->processing_root) fat->processing_root = 2;
+                    else
+                    {
+                        fatChain(fat,&tempfatfile);
+                        fat->dirSect = tempfatfile.sectorStart;
+                    }
+                }
+                else
+                {
+                    fat->dirSect++;
+                }
+
+                if (fat->processing_root != 2)
+                {
+                    fatReadLogical(fat, fat->dirSect, lbuf);
+                    lbuf[0] = '\0';
+                    fatWriteLogical(fat, fat->dirSect, lbuf);
+                }
             }
         }
 
@@ -375,6 +389,10 @@ unsigned int fatCreatNewFile(FAT *fat, const char *fnm, FATFILE *fatfile,
     fatPosition(fat,fnm);
     p = fat->de;
 
+    if (fat->pos_result == FATPOS_DIR_INVALID)
+    {
+        return (POS_ERR_PATH_NOT_FOUND);
+    }
     if (fat->pos_result == FATPOS_FOUND)
     {
         return (POS_ERR_FILE_EXISTS);
@@ -396,31 +414,39 @@ unsigned int fatCreatNewFile(FAT *fat, const char *fnm, FATFILE *fatfile,
         fatfile->dirOffset = ((unsigned char*)p - fat->dbuf);
         fatfile->lastBytes = 0;
 
-        p++;
-        if ((unsigned char *) p != (fat->dbuf + fat->sector_size))
+        /* if deleted entry was found, don't mark next entry as null */
+        if (fat->found_deleted)
         {
-            p->file_name[0] = '\0';
             fatWriteLogical(fat, fat->dirSect, fat->dbuf);
         }
         else
         {
-            fatWriteLogical(fat, fat->dirSect, fat->dbuf);
-
-            if ((fat->dirSect - fat->startSector
-                == fat->sectors_per_cluster - 1))
+            p++;
+            if ((unsigned char *) p != (fat->dbuf + fat->sector_size))
             {
-                if (fat->processing_root) return (0);
-                fatChain(fat,&tempfatfile);
-                fat->dirSect = tempfatfile.sectorStart;
+                p->file_name[0] = '\0';
+                fatWriteLogical(fat, fat->dirSect, fat->dbuf);
             }
             else
             {
-                fat->dirSect++;
-            }
+                fatWriteLogical(fat, fat->dirSect, fat->dbuf);
 
-            fatReadLogical(fat, fat->dirSect, lbuf);
-            lbuf[0] = '\0';
-            fatWriteLogical(fat, fat->dirSect, lbuf);
+                if ((fat->dirSect - fat->startSector
+                    == fat->sectors_per_cluster - 1))
+                {
+                    if (fat->processing_root) return (0);
+                    fatChain(fat,&tempfatfile);
+                    fat->dirSect = tempfatfile.sectorStart;
+                }
+                else
+                {
+                    fat->dirSect++;
+                }
+
+                fatReadLogical(fat, fat->dirSect, lbuf);
+                lbuf[0] = '\0';
+                fatWriteLogical(fat, fat->dirSect, lbuf);
+            }
         }
     }
     return (0);
@@ -754,20 +780,37 @@ static void fatPosition(FAT *fat, const char *fnm)
     fat->pos_result = FATPOS_FOUND;
     fat->upto = fnm;
     fat->currcluster = 0;
+    fat->found_deleted = 0;
     fat->processing_root = 0;
     fatNextSearch(fat, fat->search, &fat->upto);
     if (fat->notfound) return;
     fatRootSearch(fat, fat->search);
     if (fat->notfound)
     {
+        if (fat->found_deleted)
+        {
+            fat->currcluster = fat->temp_currcluster;
+            fat->de = fat->temp_de;
+            fat->dirSect = fat->temp_dirSect;
+        }
+
         fat->processing_root = 1;
         return;
     }
     while (!fat->last)
     {
         fatNextSearch(fat, fat->search, &fat->upto);
-        if (fat->notfound) return;
+        if (fat->notfound) break;
+        fat->found_deleted = 0;
         fatDirSearch(fat, fat->search);
+    }
+    if ((fat->pos_result == FATPOS_ONEMPTY ||
+        fat->pos_result == FATPOS_ENDCLUSTER)
+        && fat->found_deleted)
+    {
+        fat->currcluster = fat->temp_currcluster;
+        fat->de = fat->temp_de;
+        fat->dirSect = fat->temp_dirSect;
     }
     return;
 }
@@ -824,7 +867,7 @@ static void fatNextSearch(FAT *fat, char *search, const char **upto)
     if ((p - *upto) > 12)
     {
         fat->notfound = 1;
-        fat->pos_result = FATPOS_ONEMPTY;
+        fat->pos_result = FATPOS_DIR_INVALID;
         return;
     }
     q = memchr(*upto, '.', p - *upto);
@@ -833,13 +876,13 @@ static void fatNextSearch(FAT *fat, char *search, const char **upto)
         if ((q - *upto) > 8)
         {
             fat->notfound = 1;
-            fat->pos_result = FATPOS_ONEMPTY;
+            fat->pos_result = FATPOS_DIR_INVALID;
             return;
         }
         if ((p - q) > 4)
         {
             fat->notfound = 1;
-            fat->pos_result = FATPOS_ONEMPTY;
+            fat->pos_result = FATPOS_DIR_INVALID;
             return;
         }
         memcpy(search, *upto, q - *upto);
@@ -873,7 +916,7 @@ static void fatNextSearch(FAT *fat, char *search, const char **upto)
 
 static void fatRootSearch(FAT *fat, char *search)
 {
-    fatDirSectorSearch(fat, search,fat->rootstart, fat->rootsize);
+    fatDirSectorSearch(fat, search, fat->rootstart, fat->rootsize);
     return;
 }
 
@@ -1005,6 +1048,13 @@ static void fatDirSectorSearch(FAT *fat,
                 fat->notfound = 1;
                 fat->pos_result = FATPOS_ONEMPTY;
                 return;
+            }
+            else if (p->file_name[0] == DIRENT_DEL && !fat->found_deleted)
+            {
+                fat->found_deleted = 1;
+                fat->temp_currcluster = fat->currcluster;
+                fat->temp_de = p;
+                fat->temp_dirSect = startSector + x;
             }
         }
     }

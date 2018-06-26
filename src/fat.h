@@ -8,6 +8,7 @@
 #define FATPOS_FOUND 1
 #define FATPOS_ONEMPTY 2
 #define FATPOS_ENDCLUSTER 3
+#define FATPOS_DIR_INVALID 4
 
 /*File name special values*/
 #define DIRENT_AVA 0x00
@@ -124,8 +125,10 @@ typedef struct {
     unsigned long startSector;
     int notfound;
     int pos_result;
+    int found_deleted;
     int processing_root;
     int currcluster;
+    int temp_currcluster;
     FATFILE *currfatfile;
     void (*readLogical)(void *diskptr, long sector, void *buf);
     void (*writeLogical)(void *diskptr, long sector, void *buf);
@@ -136,7 +139,9 @@ typedef struct {
     const char *upto;
     unsigned char *dbuf;
     DIRENT *de;
+    DIRENT *temp_de;
     unsigned long dirSect; /* sector which contains directory entry */
+    unsigned long temp_dirSect;
     int fnd;
 } FAT;
 

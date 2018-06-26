@@ -2,7 +2,7 @@
 # but the 16-bit version is just MSDOS
 
 CC=gcc
-COPTS=-c -s -O -I. -I..\src -D__PDOS__
+COPTS=-fno-common -c -s -O -I. -I..\src -D__PDOS__
 
 pdptest.exe: pdosst32.o pdptest.o stdio.o string.o stdlib.o \
        start.o time.o errno.o assert.o signal.o locale.o \
@@ -12,7 +12,7 @@ pdptest.exe: pdosst32.o pdptest.o stdio.o string.o stdlib.o \
   ar r pdos.a start.o time.o errno.o assert.o signal.o
   ar r pdos.a locale.o ctype.o setjmp.o math.o
   ar r pdos.a pos.o support.o pdossupc.o
-  ld -o pdptest pdosst32.o pdptest.o pdos.a
+  ld -r -s -o pdptest pdosst32.o pdptest.o pdos.a
   if exist pdptest.exe del pdptest.exe
   ren pdptest pdptest.exe
 

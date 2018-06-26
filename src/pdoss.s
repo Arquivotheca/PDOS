@@ -144,8 +144,16 @@ _callwithbypass:
 
 
 .data
-        .comm saveess, 4
-        .comm saveesp, 4
-        .comm saveesp2, 4
-        .comm call32_esp, 4
-
+        .p2align 2
+saveess:
+        .space 4
+        .p2align 2
+saveesp:
+        .space 4
+        .p2align 2
+saveesp2:
+        .space 4
+        .p2align 2
+        .globl call32_esp
+call32_esp:
+        .space 4

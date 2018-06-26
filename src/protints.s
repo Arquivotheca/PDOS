@@ -144,7 +144,8 @@ _inthdlr_p:
         mov    %eax, %esp
 level10:
         mov    saveeax, %eax
-        push   %edx              / actually room for cflag
+        push   %edx
+/ above is actually room for cflag
         push   %edi
         push   %esi
         push   %edx
@@ -153,10 +154,12 @@ level10:
         push   %eax
         mov    %eax, %esi
         mov    %ebx, %edi
-        mov    %esp, %eax    / pointer to saved registers
+        mov    %esp, %eax
+/ above is pointer to saved registers
         push   %eax
         mov    intnum, %edx
-        push   %edx          / interrupt number
+        push   %edx
+/ above interrupt number
         call   _gotint
         pop    %edx
         pop    %eax
@@ -171,7 +174,8 @@ level10:
         pop    %esi
         pop    %edi
         mov    %eax, saveeax
-        pop    %eax                 / actually cflag        
+        pop    %eax
+/ above is actually cflag
         cmp    $0, %eax
         je     clear
         jmp    notclear
@@ -243,7 +247,15 @@ _int_enable:
         ret
 
 .data
-        .comm saveeax, 4
-        .comm saveess, 4
-        .comm saveesp, 4
-        .comm intnum, 4
+        .p2align 2
+saveeax:
+        .space 4
+        .p2align 2
+saveess:
+        .space 4
+        .p2align 2
+saveesp:
+        .space 4
+        .p2align 2
+intnum:
+        .space 4

@@ -1639,7 +1639,7 @@ int PosChangeDir(const char *to)
     upper_str(newcwd);
 
     ret = fatGetFileAttributes(&disks[drive].fat, newcwd, &attr);
-    if (ret || attr != DIRENT_SUBDIR) return (POS_ERR_PATH_NOT_FOUND);
+    if (ret || !(attr & DIRENT_SUBDIR)) return (POS_ERR_PATH_NOT_FOUND);
 
     strcpy(disks[drive].cwd, newcwd);
 
@@ -3341,7 +3341,7 @@ static int dirDelete(const char *dnm)
     }
 
     rc = fatGetFileAttributes(&disks[drive].fat, p, &attr);
-    if (rc || attr != DIRENT_SUBDIR) return (POS_ERR_PATH_NOT_FOUND);
+    if (rc || !(attr & DIRENT_SUBDIR)) return (POS_ERR_PATH_NOT_FOUND);
 
     if (drive == currentDrive)
     {

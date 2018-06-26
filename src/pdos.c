@@ -3244,11 +3244,11 @@ static int fileOpen(const char *fnm)
             break;
         }
     }
-    if (x == MAXFILES) return (-1);
+    if (x == MAXFILES) return (-POS_ERR_MANY_OPEN_FILES);
     rc = fatOpenFile(&disks[drive].fat, p, &fhandle[x].fatfile);
     if (rc != 0)
     {
-        return (-1);
+        return (-rc);
     }
     fhandle[x].inuse = 1;
     fhandle[x].fatptr = &disks[drive].fat;

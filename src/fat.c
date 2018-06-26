@@ -528,10 +528,6 @@ unsigned int fatOpenFile(FAT *fat, const char *fnm, FATFILE *fatfile)
     fatfile->currentCluster = fat->currcluster;
     fatfile->sectorUpto = 0;
     fatfile->byteUpto = 0;
-    if (fat->notfound)
-    {
-        return (POS_ERR_FILE_NOT_FOUND);
-    }
     return (0);
 }
 

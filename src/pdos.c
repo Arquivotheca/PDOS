@@ -2915,6 +2915,8 @@ static void loadExe(char *prog, PARMBLOCK *parmblock)
         unsigned int zapdata;
         unsigned char *zap;
 
+        zap = psp + 0x100;
+        zapdata = (unsigned int)ADDR2ABS(zap);
         if (firstbit.a_trsize != 0)
         {
             corrections = memmgrAllocate(&memmgr, firstbit.a_trsize, 0);
@@ -2926,8 +2928,6 @@ static void loadExe(char *prog, PARMBLOCK *parmblock)
                 return;
             }
             fileRead(fno, corrections, firstbit.a_trsize);
-            zap = psp + 0x100;
-            zapdata = (unsigned int)ADDR2ABS(zap);
             for (i = 0; i < firstbit.a_trsize / 4; i += 2)
             {
                 offs = corrections[i];
@@ -2952,7 +2952,6 @@ static void loadExe(char *prog, PARMBLOCK *parmblock)
             }
             fileRead(fno, corrections, firstbit.a_drsize);
             zap = psp + 0x100 + firstbit.a_text;
-            zapdata = (unsigned int)ADDR2ABS(zap);
             for (i = 0; i < firstbit.a_drsize / 4; i += 2)
             {
                 offs = corrections[i];

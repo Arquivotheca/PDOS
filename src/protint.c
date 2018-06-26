@@ -183,9 +183,51 @@ unsigned long runaout(char *fnm, unsigned long absaddr, unsigned long userparm)
     struct exec firstbit;
     int numreads;
     unsigned long sp;
+    long z;
 
     fp = fopen(fnm, "rb");
     if (fp == NULL) return (-1);
+#if 1
+    /* at time of writing, fread() is only know to work on
+       512-byte buffers */
+    ret = fread(buf, 1, sizeof buf, fp);
+    memcpy(&firstbit, buf, sizeof firstbit);
+    curraddr = absaddr;
+    for (y = 0; y < ret; y++)
+    {
+        putabs(curraddr + y, buf[y]);
+    }
+    curraddr += ret;
+
+    /* read code and data, maybe a little beyond */
+    numreads = (int)((firstbit.a_text + firstbit.a_data) / sizeof buf);
+    numreads++;
+    for (x = 0; x < numreads; x++)
+    {
+        ret = fread(buf, 1, sizeof buf, fp);
+        for (y = 0; y < ret; y++)
+        {
+            putabs(curraddr + y, buf[y]);
+        }
+        curraddr += ret;
+    }
+
+    fclose(fp);
+
+    absaddr += 0x20;
+    curraddr = absaddr + firstbit.a_text + firstbit.a_data;
+    /* initialise BSS */
+    for (z = 0; z < firstbit.a_bss; z++)
+    {
+        putabs(curraddr + z, '\0');
+    }
+    curraddr += firstbit.a_bss;
+
+    sp = curraddr - absaddr + 0x8000;
+    /* absaddr -= 0x10000UL; */
+    return (runprot(absaddr, firstbit.a_entry, absaddr, sp, userparm));
+#endif
+#if 0
     fread(buf, 1, sizeof buf, fp);
     memcpy(&firstbit, buf, sizeof firstbit);
 
@@ -231,10 +273,11 @@ unsigned long runaout(char *fnm, unsigned long absaddr, unsigned long userparm)
     {
         putabs(curraddr + y, '\0');
     }
-    
+
     sp = N_BSSADDR(firstbit) + firstbit.a_bss + 0x8000;
     absaddr -= 0x10000UL;
     return (runprot(absaddr, 0x10000UL, absaddr, sp, userparm));
+#endif
 }
 
 unsigned long realsub(unsigned long func, unsigned long parm)

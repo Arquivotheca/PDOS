@@ -4,6 +4,7 @@
 
 / symbols defined outside of here that are accessed
         .globl _gotint
+        .globl saveesp
 
 / symbols defined here that are accessed from elsewhere
         .globl _inthdlr
@@ -252,9 +253,6 @@ saveeax:
         .space 4
         .p2align 2
 saveess:
-        .space 4
-        .p2align 2
-saveesp:
         .space 4
         .p2align 2
 intnum:

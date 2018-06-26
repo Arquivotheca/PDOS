@@ -148,6 +148,8 @@ _callwithbypass:
 saveess:
         .space 4
         .p2align 2
+/ Not sure if this needs to be global
+        .globl saveesp
 saveesp:
         .space 4
         .p2align 2

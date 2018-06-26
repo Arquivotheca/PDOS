@@ -2714,7 +2714,7 @@ static void loadExe(char *prog, PARMBLOCK *parmblock)
     if (first)
     {
         first = 0;
-        doing_pcomm = 1;
+        doing_pcomm = 0;
     }
     if (doing_pcomm)
     {

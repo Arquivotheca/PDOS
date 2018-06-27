@@ -1073,6 +1073,10 @@ static void int21handler(union REGS *regsin,
                 pb->cmdtail = SUBADDRFIX(pb->cmdtail);
             }
             PosExec(SUBADDRFIX(regsin->d.edx), pb);
+            if (pb != NULL)
+            {
+                pb->cmdtail = ADDRFIXSUB(pb->cmdtail);
+            }
 #else
             PosExec(MK_FP(sregs->ds, regsin->x.dx),
                     MK_FP(sregs->es, regsin->x.bx));

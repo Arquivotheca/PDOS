@@ -7,6 +7,7 @@
         .globl _pdosstrt
 
 / symbols defined here that are accessed from elsewhere
+        .globl start
         .globl ___main
         .globl ___userparm
 

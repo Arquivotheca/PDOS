@@ -94,10 +94,9 @@ _call32_singlelret:
         cmp     $0, %ebx
         je      no_callback
         push    %eax
-/ this gives a warning, so do push/ret instead: call    %ebx
-        push    %ebx
-        ret
-/ end of workaround
+/ +++ We need to test whether this should instead be
+/ call *(%ebx)
+        call    *%ebx
         pop     %eax
 no_callback:
         pop     %ebx

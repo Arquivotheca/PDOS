@@ -397,3 +397,6 @@ and see what happens.
 
 Switch PosReboot etc to use INT 21H AH=F6H as
 no-one else seems to be using that.
+
+If first bit of executable shows that there are
+symbols, report an error

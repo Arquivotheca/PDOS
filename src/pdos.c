@@ -2688,7 +2688,7 @@ static void loadExe(char *prog, PARMBLOCK *parmblock)
     unsigned char firstbit[10];
 #endif
     unsigned int headerLen;
-    unsigned char *header;
+    unsigned char *header = NULL;
     unsigned char *envptr;
     unsigned long exeLen;
     unsigned char *psp;
@@ -2790,7 +2790,7 @@ static void loadExe(char *prog, PARMBLOCK *parmblock)
     if (psp == NULL)
     {
         printf("insufficient memory to load program\n");
-        memmgrFree(&memmgr, header);
+        if (header != NULL) memmgrFree(&memmgr, header);
         memmgrFree(&memmgr, envptr);
         return;
     }
@@ -2981,10 +2981,9 @@ static void loadExe(char *prog, PARMBLOCK *parmblock)
 #endif
 #ifdef __32BIT__
     ret = fixexe32(psp, firstbit.a_entry, sp, doing_pcomm);
-#else
-    memmgrFree(&memmgr, header);
 #endif
     lastrc = ret;
+    if (header != NULL) memmgrFree(&memmgr, header);
     memmgrFree(&memmgr, psp);
     memmgrFree(&memmgr, envptr);
     return;

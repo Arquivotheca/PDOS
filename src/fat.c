@@ -1091,7 +1091,6 @@ static void fatMarkCluster(FAT *fat, unsigned int cluster)
     static unsigned char buf[MAXSECTSZ];
     int offset;
 
-    /* +++ need fat12 logic too */
     if (fat->fat16)
     {
         fatSector = fat->fatstart + (cluster * 2) / fat->sector_size;
@@ -1099,6 +1098,30 @@ static void fatMarkCluster(FAT *fat, unsigned int cluster)
         offset = (cluster * 2) % fat->sector_size;
         buf[offset] = 0xff;
         buf[offset + 1] = 0xff;
+        fatWriteLogical(fat, fatSector, buf);
+    }
+    else
+    {
+        fatSector = fat->fatstart + (cluster * 3 / 2) / fat->sector_size;
+        fatReadLogical(fat, fatSector, buf);
+        offset = (cluster * 3 / 2) % fat->sector_size;
+
+        /* Clusters divisible by 2 have format 0x23 0x?1,
+         * other have format 0x3? 0x12. */
+
+        if (cluster % 2) buf[offset] = buf[offset] | 0xf0;
+        else buf[offset] = 0xff;
+
+        if (offset == (fat->sector_size - 1))
+        {
+            fatWriteLogical(fat, fatSector, buf);
+            fatSector++;
+            fatReadLogical(fat, fatSector, buf);
+            offset = -1;
+        }
+        if (cluster % 2) buf[offset+1] = 0xff;
+        else buf[offset+1] = buf[offset+1] | 0xf;
+
         fatWriteLogical(fat, fatSector, buf);
     }
 
@@ -1116,7 +1139,6 @@ static unsigned int fatFindFreeCluster(FAT *fat)
     int x;
     unsigned int ret;
 
-    /* +++ need fat12 logic too */
     if (fat->fat16)
     {
         for (fatSector = fat->fatstart;
@@ -1140,6 +1162,40 @@ static unsigned int fatFindFreeCluster(FAT *fat)
             return (ret);
         }
     }
+    else
+    {
+        fatSector = fat->fatstart; /* + (cluster * 3 / 2) / fat->sector_size; */
+        fatReadLogical(fat, fatSector, buf);
+
+        for (ret = 0;
+             ret <= (fat->rootstart - fat->fatstart)*MAXSECTSZ*2/3;
+             ret++)
+        {
+            x = (ret * 3 / 2) % fat->sector_size;
+
+            if (x == 0 && (fatSector != (fat->fatstart +
+                                         (ret * 3 / 2) / fat->sector_size)))
+            {
+                fatSector++;
+                fatReadLogical(fat, fatSector, buf);
+            }
+
+            if (ret % 2 && (buf[x] & 0xf0)) continue;
+            else if (!(ret % 2) && buf[x]) continue;
+
+            if (x == (fat->sector_size - 1))
+            {
+                fatSector++;
+                fatReadLogical(fat, fatSector, buf);
+                x = -1;
+            }
+
+            if (ret % 2 && buf[x+1]) continue;
+            else if (!(ret % 2) && (buf[x+1] & 0xf)) continue;
+
+            return (ret);
+        }
+    }
     return (0);
 }
 
@@ -1156,7 +1212,6 @@ static void fatChain(FAT *fat, FATFILE *fatfile)
 
     oldcluster = fat->currcluster;
     newcluster = fatFindFreeCluster(fat);
-    /* +++ need fat12 logic too */
     if (fat->fat16)
     {
         /* for fat-16, each cluster in the FAT takes up 2 bytes */
@@ -1167,6 +1222,44 @@ static void fatChain(FAT *fat, FATFILE *fatfile)
         /* point the old cluster towards the new one */
         buf[offset] = newcluster & 0xff;
         buf[offset + 1] = newcluster >> 8;
+        fatWriteLogical(fat, fatSector, buf);
+
+        /* mark the new cluster as last */
+        fatMarkCluster(fat, newcluster);
+
+        /* update to new cluster */
+        fat->currcluster = newcluster;
+
+        /* update to new set of sectors */
+        fatfile->sectorStart = (fat->currcluster - 2)
+                    * (long)fat->sectors_per_cluster
+                    + fat->filestart;
+        fatfile->sectorUpto = 0;
+    }
+    else
+    {
+        /* for fat-12, each cluster in the FAT takes up 1.5 bytes */
+        fatSector = fat->fatstart + (oldcluster * 3 / 2) / fat->sector_size;
+        /* read the FAT sector that contains this cluster entry */
+        fatReadLogical(fat, fatSector, buf);
+        offset = (oldcluster * 3 / 2) % fat->sector_size;
+        /* point the old cluster towards the new one */
+        /* Clusters divisible by 2 have format 0x23 0x?1,
+         * other have format 0x3? 0x12. */
+        if (oldcluster % 2)
+        buf[offset] = (buf[offset] & 0xf) | ((newcluster & 0xf) << 4);
+        else buf[offset] = newcluster & 0xff;
+
+        if (offset == (fat->sector_size - 1))
+        {
+            fatWriteLogical(fat, fatSector, buf);
+            fatSector++;
+            fatReadLogical(fat, fatSector, buf);
+            offset = -1;
+        }
+        if (oldcluster % 2) buf[offset+1] = newcluster >> 4;
+        else buf[offset+1] = (buf[offset+1] & 0xf0) | (newcluster >> 8);
+
         fatWriteLogical(fat, fatSector, buf);
 
         /* mark the new cluster as last */
@@ -1365,11 +1458,11 @@ static void fatNuke(FAT *fat, unsigned int cluster)
     static unsigned char buf[MAXSECTSZ];
     int offset;
     int buffered = 0;
+    int oldcluster;
 
     if (cluster == 0) return;
     while (!fatEndCluster(fat, cluster))
     {
-        /* +++ need fat12 logic too */
         if (fat->fat16)
         {
             fatSector = fat->fatstart + (cluster * 2) / fat->sector_size;
@@ -1386,6 +1479,52 @@ static void fatNuke(FAT *fat, unsigned int cluster)
             cluster = buf[offset + 1] << 8 | buf[offset];
             buf[offset] = 0x00;
             buf[offset + 1] = 0x00;
+        }
+        else
+        {
+            fatSector = fat->fatstart + (cluster * 3 / 2) / fat->sector_size;
+            if (buffered != fatSector)
+            {
+                if (buffered != 0)
+                {
+                    fatWriteLogical(fat, buffered, buf);
+                }
+                fatReadLogical(fat, fatSector, buf);
+                buffered = fatSector;
+            }
+            offset = (cluster * 3 / 2) % fat->sector_size;
+            oldcluster = cluster;
+
+            /* Clusters divisible by 2 have format 0x23 0x?1,
+             * other have format 0x3? 0x12. */
+            if (oldcluster % 2)
+            {
+                cluster = (buf[offset] & 0xf0) >> 4;
+                buf[offset] = buf[offset] & 0xf;
+            }
+            else
+            {
+                cluster = buf[offset];
+                buf[offset] = 0x00;
+            }
+            if (offset == (fat->sector_size - 1))
+            {
+                fatWriteLogical(fat, fatSector, buf);
+                fatSector++;
+                buffered = fatSector;
+                fatReadLogical(fat, fatSector, buf);
+                offset = -1;
+            }
+            if (oldcluster % 2)
+            {
+                cluster = (buf[offset+1] << 4) | cluster;
+                buf[offset+1] = 0x00;
+            }
+            else
+            {
+                cluster = ((buf[offset+1] & 0xf) << 8) | cluster;
+                buf[offset+1] = buf[offset+1] & 0xf0;
+            }
         }
     }
     if (buffered != 0)

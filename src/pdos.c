@@ -2743,14 +2743,15 @@ static void loadExe(char *prog, PARMBLOCK *parmblock)
     }
 #endif
 
-    envptr = memmgrAllocate(&memmgr, strlen(prog) + 9, 0);
+    envptr = memmgrAllocate(&memmgr,
+                            strlen(prog) + 7 + sizeof(unsigned short), 0);
 #ifndef __32BIT__
     origenv = envptr;
     envptr = (unsigned char *)FP_NORM(envptr);
 #endif
     memcpy(envptr, "A=B\0\0", 5);
-    *((unsigned int *)(envptr + 5)) = 1; /* who knows why */
-    memcpy(envptr + 7, prog, strlen(prog) + 1);
+    *((unsigned short *)(envptr + 5)) = 1; /* who knows why */
+    memcpy(envptr + 5 + sizeof(unsigned short), prog, strlen(prog) + 1);
 
 #ifdef __32BIT__
     if (doing_pcomm)

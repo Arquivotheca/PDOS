@@ -145,6 +145,8 @@ _callwithbypass:
         jmp     _call32_ret
 
 
+/ I tried making these variables .long instead
+/ of space, but it caused a hang
 .data
         .p2align 2
 saveess:

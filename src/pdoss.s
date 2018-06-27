@@ -145,14 +145,11 @@ _callwithbypass:
         jmp     _call32_ret
 
 
-/ I tried making these variables .long instead
-/ of space, but it caused a hang
-.data
+.bss
         .p2align 2
 saveess:
         .space 4
         .p2align 2
-/ Not sure if this needs to be global
         .globl saveesp
 saveesp:
         .space 4

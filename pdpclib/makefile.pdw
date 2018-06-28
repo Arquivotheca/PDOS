@@ -1,0 +1,31 @@
+# For the 32-bit version of PDOS we define __PDOS__
+# but the 16-bit version is just MSDOS
+
+CC=gcc386
+COPTS=-S -Os -fno-common -I. -I..\src -D__32BIT__
+
+pdptest.exe: pdosst32.o pdptest.o stdio.o string.o stdlib.o \
+       start.o time.o errno.o assert.o signal.o locale.o \
+       ctype.o setjmp.o math.o pos.o support.o pdossupc.o
+  rm -f pdos.a
+  ar386 r pdos.a pdosst32.o stdio.o string.o stdlib.o
+  ar386 r pdos.a start.o time.o errno.o assert.o signal.o
+  ar386 r pdos.a locale.o ctype.o setjmp.o math.o
+  ar386 r pdos.a pos.o support.o pdossupc.o
+  ld386 -s -e ___pdosst32 -o pdptest.exe pdosst32.o pdptest.o pdos.a
+  ld386 -r -s -e ___pdosst32 -o pdptest.exe pdosst32.o pdptest.o pdos.a
+  strip386 --strip-unneeded pdptest.exe
+
+pos.o: ..\src\pos.c
+  $(CC) $(COPTS) -o $&.s ..\src\pos.c
+  as386 -o $@ $&.s
+
+support.o: ..\src\support.s
+  as386 -o $@ ..\src\support.s
+
+.c.o:
+  $(CC) $(COPTS) -o $&.s $<
+  as386 -o $@ $&.s
+
+.s.o:
+  as386 -o $@ $<

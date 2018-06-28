@@ -1,8 +1,6 @@
 gcc386 -S -Os -fno-common -I../pdpclib -D__32BIT__ pdos.c
 gcc386 -S -Os -fno-common -I../pdpclib -D__32BIT__ bos.c
 gcc386 -S -Os -fno-common -I../pdpclib -D__32BIT__ fat.c
-gcc386 -S -Os -fno-common -I../pdpclib -D__32BIT__ ../pdpclib/string.c
-gcc386 -S -Os -fno-common -I../pdpclib -D__32BIT__ ../pdpclib/ctype.c
 gcc386 -S -Os -fno-common -I../pdpclib -D__32BIT__ patmat.c
 gcc386 -S -Os -fno-common -I../pdpclib -D__32BIT__ memmgr.c
 gcc386 -S -Os -fno-common -I../pdpclib -D__32BIT__ protintp.c
@@ -11,14 +9,9 @@ as386 -o strt32.o strt32.s
 as386 -o support.o support.s
 as386 -o protints.o protints.s
 as386 -o pdoss.o pdoss.s
-rem copy \devel\bochs\pdoss.o
-rem copy \devel\bochs\protints.o
-
 as386 -o pdos.o pdos.s
 as386 -o bos.o bos.s
 as386 -o fat.o fat.s
-as386 -o string.o string.s
-as386 -o ctype.o ctype.s
 as386 -o patmat.o patmat.s
 as386 -o memmgr.o memmgr.s
 as386 -o protintp.o protintp.s

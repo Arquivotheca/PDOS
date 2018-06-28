@@ -185,6 +185,24 @@ unsigned int fatCreatFile(FAT *fat, const char *fnm, FATFILE *fatfile,
         fatNuke(fat, fat->currcluster);
         found = 1;
     }
+    if (fat->pos_result == FATPOS_ENDCLUSTER)
+    {
+        /* MS-DOS expands directory when trying to add new
+         * entry to a full cluster. */
+        /* Root directory cannot be expanded. */
+        if (fat->processing_root) return (POS_ERR_PATH_NOT_FOUND);
+
+        fatChain(fat,&tempfatfile);
+        fat->dirSect = tempfatfile.sectorStart;
+
+        fatReadLogical(fat, fat->dirSect, lbuf);
+        lbuf[0] = '\0';
+        fatWriteLogical(fat, fat->dirSect, lbuf);
+
+        /* Position on the new empty slot. */
+        fatPosition(fat,fnm);
+        p = fat->de;
+    }
     if (found || fat->pos_result == FATPOS_ONEMPTY)
     {
         fatfile->startcluster=0;
@@ -217,23 +235,18 @@ unsigned int fatCreatFile(FAT *fat, const char *fnm, FATFILE *fatfile,
             }
             else
             {
+                /* We are at the end of dirSect, so empty
+                 * entry is added to the next one. */
                 fatWriteLogical(fat, fat->dirSect, fat->dbuf);
 
+                /* Empty entries are not added at the end of cluster. */
                 if ((fat->dirSect - fat->startSector
-                    == fat->sectors_per_cluster - 1))
+                    != fat->sectors_per_cluster - 1))
                 {
-                    if (fat->processing_root) return (0);
-                    fatChain(fat,&tempfatfile);
-                    fat->dirSect = tempfatfile.sectorStart;
+                    fatReadLogical(fat, fat->dirSect + 1, lbuf);
+                    lbuf[0] = '\0';
+                    fatWriteLogical(fat, fat->dirSect + 1, lbuf);
                 }
-                else
-                {
-                    fat->dirSect++;
-                }
-
-                fatReadLogical(fat, fat->dirSect, lbuf);
-                lbuf[0] = '\0';
-                fatWriteLogical(fat, fat->dirSect, lbuf);
             }
         }
     }
@@ -282,6 +295,24 @@ unsigned int fatCreatDir(FAT *fat, const char *dnm, const char *parentname,
     {
         return (POS_ERR_PATH_NOT_FOUND);
     }
+    if (fat->pos_result == FATPOS_ENDCLUSTER)
+    {
+        /* MS-DOS expands directory when trying to add new
+         * entry to a full end cluster. */
+        /* Root directory cannot be expanded. */
+        if (fat->processing_root) return (POS_ERR_PATH_NOT_FOUND);
+
+        fatChain(fat,&tempfatfile);
+        fat->dirSect = tempfatfile.sectorStart;
+
+        fatReadLogical(fat, fat->dirSect, lbuf);
+        lbuf[0] = '\0';
+        fatWriteLogical(fat, fat->dirSect, lbuf);
+
+        /* Position on the new empty slot. */
+        fatPosition(fat,dnm);
+        p = fat->de;
+    }
     if (fat->pos_result == FATPOS_ONEMPTY)
     {
         startcluster = fatFindFreeCluster(fat);
@@ -312,28 +343,17 @@ unsigned int fatCreatDir(FAT *fat, const char *dnm, const char *parentname,
             }
             else
             {
+                /* We are at the end of dirSect, so empty
+                 * entry is added to the next one. */
                 fatWriteLogical(fat, fat->dirSect, fat->dbuf);
 
+                /* Empty entries are not added at the end of cluster. */
                 if ((fat->dirSect - fat->startSector
-                    == fat->sectors_per_cluster - 1))
+                    != fat->sectors_per_cluster - 1))
                 {
-                    if (fat->processing_root) fat->processing_root = 2;
-                    else
-                    {
-                        fatChain(fat,&tempfatfile);
-                        fat->dirSect = tempfatfile.sectorStart;
-                    }
-                }
-                else
-                {
-                    fat->dirSect++;
-                }
-
-                if (fat->processing_root != 2)
-                {
-                    fatReadLogical(fat, fat->dirSect, lbuf);
+                    fatReadLogical(fat, fat->dirSect + 1, lbuf);
                     lbuf[0] = '\0';
-                    fatWriteLogical(fat, fat->dirSect, lbuf);
+                    fatWriteLogical(fat, fat->dirSect + 1, lbuf);
                 }
             }
         }
@@ -397,6 +417,24 @@ unsigned int fatCreatNewFile(FAT *fat, const char *fnm, FATFILE *fatfile,
     {
         return (POS_ERR_FILE_EXISTS);
     }
+    if (fat->pos_result == FATPOS_ENDCLUSTER)
+    {
+        /* MS-DOS expands directory when trying to add new
+         * entry to a full cluster. */
+        /* Root directory cannot be expanded. */
+        if (fat->processing_root) return (POS_ERR_PATH_NOT_FOUND);
+
+        fatChain(fat,&tempfatfile);
+        fat->dirSect = tempfatfile.sectorStart;
+
+        fatReadLogical(fat, fat->dirSect, lbuf);
+        lbuf[0] = '\0';
+        fatWriteLogical(fat, fat->dirSect, lbuf);
+
+        /* Position on the new empty slot. */
+        fatPosition(fat,fnm);
+        p = fat->de;
+    }
     if (fat->pos_result == FATPOS_ONEMPTY)
     {
         fatfile->startcluster=0;
@@ -429,23 +467,18 @@ unsigned int fatCreatNewFile(FAT *fat, const char *fnm, FATFILE *fatfile,
             }
             else
             {
+                /* We are at the end of dirSect, so empty
+                 * entry is added to the next one. */
                 fatWriteLogical(fat, fat->dirSect, fat->dbuf);
 
+                /* Empty entries are not added at the end of cluster. */
                 if ((fat->dirSect - fat->startSector
-                    == fat->sectors_per_cluster - 1))
+                    != fat->sectors_per_cluster - 1))
                 {
-                    if (fat->processing_root) return (0);
-                    fatChain(fat,&tempfatfile);
-                    fat->dirSect = tempfatfile.sectorStart;
+                    fatReadLogical(fat, fat->dirSect + 1, lbuf);
+                    lbuf[0] = '\0';
+                    fatWriteLogical(fat, fat->dirSect + 1, lbuf);
                 }
-                else
-                {
-                    fat->dirSect++;
-                }
-
-                fatReadLogical(fat, fat->dirSect, lbuf);
-                lbuf[0] = '\0';
-                fatWriteLogical(fat, fat->dirSect, lbuf);
             }
         }
     }
@@ -767,7 +800,8 @@ size_t fatWriteFile(FAT *fat, FATFILE *fatfile, const void *buf, size_t szbuf)
 
 /*
  * fatPosition - given a filename, retrieve the starting
- * cluster, or set not found flag if not found.
+ * cluster, or set not found flag if not found. pos_result
+ * is also set so other functions have more information.
  */
 
 static void fatPosition(FAT *fat, const char *fnm)
@@ -788,6 +822,7 @@ static void fatPosition(FAT *fat, const char *fnm)
             fat->currcluster = fat->temp_currcluster;
             fat->de = fat->temp_de;
             fat->dirSect = fat->temp_dirSect;
+            fat->pos_result = FATPOS_ONEMPTY;
         }
 
         fat->processing_root = 1;
@@ -807,6 +842,7 @@ static void fatPosition(FAT *fat, const char *fnm)
         fat->currcluster = fat->temp_currcluster;
         fat->de = fat->temp_de;
         fat->dirSect = fat->temp_dirSect;
+        fat->pos_result = FATPOS_ONEMPTY;
     }
     return;
 }
@@ -1009,7 +1045,7 @@ static void fatClusterAnalyse(FAT *fat,
  * file size.  If we get to the end of the directory (NUL in first
  * character of directory entry), set the notfound flag.  Otherwise,
  * if we reach the end of this block of sectors without reaching the
- * end of directory marker, we set the cluster to 0.
+ * end of directory marker, we do not change anything.
  */
 
 static void fatDirSectorSearch(FAT *fat,
@@ -1054,7 +1090,6 @@ static void fatDirSectorSearch(FAT *fat,
             }
         }
     }
-    fat->currcluster = 0;
     return;
 }
 

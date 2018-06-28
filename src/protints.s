@@ -124,7 +124,7 @@ _inthdlr_21:
 _inthdlr_p:
         push   saveess
         push   saveesp
-        mov    0, %eax
+        mov    $0, %eax
         mov    %ss, %ax
         mov    %eax, saveess
         mov    %esp, %eax

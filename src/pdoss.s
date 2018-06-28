@@ -61,8 +61,9 @@ _call32:
         mov    %ax, %ds
         
 / push return address
-        mov    $0x8, %ax
-        push   %ax
+/ +++ should next 2 %eax be %ax?
+        mov    $0x8, %eax
+        push   %eax
         push   %ecx
 / push parameters for subroutine from right to left
         push   %edx
@@ -77,8 +78,9 @@ _call32:
 / push address of a "ret" statement so that we don't directly call
 / their code, but they can return from their executable with a
 / normal ret
-        mov     $0x28, %ax
-        push    %ax
+/ +++ should next 2 references be %ax instead of %eax?
+        mov     $0x28, %eax
+        push    %eax
         push    %esi
 / reenable interrupts for called program        
         sti

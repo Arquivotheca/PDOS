@@ -172,6 +172,26 @@ unsigned long runprot(unsigned long csbase,
     return (rawprot(csbase, ip, dsbase, prot_sp, runparm_p, intloc));
 }
 
+static unsigned long getlong(unsigned long loc)
+{
+    unsigned long retval;
+
+    retval = ((unsigned long)getabs(loc + 3) << 24)
+             | ((unsigned long)getabs(loc + 2) << 16)
+             | ((unsigned long)getabs(loc + 1) << 8)
+             | (unsigned long)getabs(loc);
+    return (retval);
+}
+
+static void putlong(unsigned long loc, unsigned long val)
+{
+    putabs(loc, val & 0xff); val >>= 8;
+    putabs(loc + 1, val & 0xff); val >>= 8;
+    putabs(loc + 2, val & 0xff); val >>= 8;
+    putabs(loc + 3, val & 0xff);
+    return;
+}
+
 unsigned long runaout(char *fnm, unsigned long absaddr, unsigned long userparm)
 {
     FILE *fp;
@@ -183,12 +203,96 @@ unsigned long runaout(char *fnm, unsigned long absaddr, unsigned long userparm)
     struct exec firstbit;
     int numreads;
     unsigned long sp;
-    long z;
+    unsigned long z;
+    unsigned long offs;
+    unsigned long type;
+    unsigned long zaploc;
+    unsigned long oldval;
+    unsigned long newval;
+    unsigned long corrloc;
+    unsigned long progret;
 
     fp = fopen(fnm, "rb");
     if (fp == NULL) return (-1);
 #if 1
-    /* at time of writing, fread() is only know to work on
+    /* This version accepts a relocatable executable,
+       and relocates it */
+    /* at time of writing, fread() is only known to work on
+       512-byte buffers */
+    curraddr = absaddr;
+    ret = fread(buf, 1, sizeof buf, fp);
+    memcpy(&firstbit, buf, sizeof firstbit);
+    while (1)
+    {
+        for (y = 0; y < ret; y++)
+        {
+            putabs(curraddr + y, buf[y]);
+        }
+        curraddr += ret;
+        if (ret < sizeof buf) break;
+        ret = fread(buf, 1, sizeof buf, fp);
+    }
+
+    fclose(fp);
+
+    absaddr += 0x20;
+
+    corrloc = absaddr + firstbit.a_text + firstbit.a_data;
+    for (z = 0; z < firstbit.a_trsize; z += 8)
+    {
+        offs = getlong(corrloc + z);
+        type = getlong(corrloc + z + 4);
+        if (((type >> 24) & 0xff) != 0x04) continue;
+        zaploc = absaddr + offs;
+        oldval = getlong(zaploc);
+        if ((type & 0xffffff) == 8) /* BSS */
+        {
+            newval = absaddr + firstbit.a_text + firstbit.a_data + oldval;
+        }
+        else
+        {
+            newval = oldval + absaddr;
+        }
+        putlong(zaploc, newval);
+    }
+
+    corrloc += firstbit.a_trsize;
+    for (z = 0; z < firstbit.a_drsize; z += 8)
+    {
+        offs = getlong(corrloc + z);
+        type = getlong(corrloc + z + 4);
+        if (((type >> 24) & 0xff) != 0x04) continue;
+        zaploc = absaddr + firstbit.a_text + offs;
+        oldval = getlong(zaploc);
+        if ((type & 0xffffff) == 8) /* BSS */
+        {
+            newval = absaddr + firstbit.a_text + firstbit.a_data + oldval;
+        }
+        else
+        {
+            newval = oldval + absaddr;
+        }
+        putlong(zaploc, newval);
+    }
+
+    curraddr = absaddr + firstbit.a_text + firstbit.a_data;
+    /* initialise BSS */
+    for (z = 0; z < firstbit.a_bss; z++)
+    {
+        putabs(curraddr + z, '\0');
+    }
+    curraddr += firstbit.a_bss;
+
+    sp = curraddr + 0x8000;
+    /* absaddr -= 0x10000UL; */
+    progret = runprot(0, absaddr + firstbit.a_entry, 0, sp, userparm);
+    /* dumplong(progret); */
+    return (progret);
+#endif
+#if 0
+    /* This version accepts a relocatable executable,
+       but doesn't relocate it */
+    /* at time of writing, fread() is only known to work on
        512-byte buffers */
     ret = fread(buf, 1, sizeof buf, fp);
     memcpy(&firstbit, buf, sizeof firstbit);
@@ -228,6 +332,7 @@ unsigned long runaout(char *fnm, unsigned long absaddr, unsigned long userparm)
     return (runprot(absaddr, firstbit.a_entry, absaddr, sp, userparm));
 #endif
 #if 0
+    /* this version expects a ZMAGIC file */
     fread(buf, 1, sizeof buf, fp);
     memcpy(&firstbit, buf, sizeof firstbit);
 

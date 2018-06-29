@@ -2917,16 +2917,11 @@ static void loadExe(char *prog, PARMBLOCK *parmblock)
         unsigned int i;
         unsigned int offs;
         unsigned int type;
-        unsigned int zaptext;
         unsigned int zapdata;
-        unsigned int zapbss;
         unsigned char *zap;
 
         zap = psp + 0x100;
-        zaptext = (unsigned int)ADDR2ABS(zap);
-        zapdata = (unsigned int)ADDR2ABS(zap + firstbit.a_text);
-        zapbss = (unsigned int)ADDR2ABS(zap + firstbit.a_text
-                                        + firstbit.a_data);
+        zapdata = (unsigned int)ADDR2ABS(zap);
         if (firstbit.a_trsize != 0)
         {
             corrections = memmgrAllocate(&memmgr, firstbit.a_trsize, 0);
@@ -2946,19 +2941,7 @@ static void loadExe(char *prog, PARMBLOCK *parmblock)
                 {
                     continue;
                 }
-                type &= 0xffffff;
-                if (type == 4)
-                {
-                    *(unsigned int *)(zap + offs) += zaptext;
-                }
-                else if (type == 6)
-                {
-                    *(unsigned int *)(zap + offs) += zaptext;
-                }
-                else if (type == 8)
-                {
-                    *(unsigned int *)(zap + offs) += zapbss;
-                }
+                *(unsigned int *)(zap + offs) += zapdata;
             }
             memmgrFree(&memmgr, corrections);
         }
@@ -2982,19 +2965,7 @@ static void loadExe(char *prog, PARMBLOCK *parmblock)
                 {
                     continue;
                 }
-                type &= 0xffffff;
-                if (type == 4)
-                {
-                    *(unsigned int *)(zap + offs) += zaptext;
-                }
-                else if (type == 6)
-                {
-                    *(unsigned int *)(zap + offs) += zaptext;
-                }
-                else if (type == 8)
-                {
-                    *(unsigned int *)(zap + offs) += zapbss;
-                }
+                *(unsigned int *)(zap + offs) += zapdata;
             }
             memmgrFree(&memmgr, corrections);
         }

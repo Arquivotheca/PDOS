@@ -34,6 +34,7 @@
 #define DOS_VERSION 0x04
 #define NUM_SPECIAL_FILES 5
     /* stdin, stdout, stderr, stdaux, stdprn */
+#define STACKSZ32 0x40000 /* stack size for 32-bit version */
 
 typedef struct {
     int env;
@@ -2763,7 +2764,7 @@ static void loadExe(char *prog, PARMBLOCK *parmblock)
         exeLen = firstbit.a_text + firstbit.a_data + firstbit.a_bss;
     }
     /* allocate exeLen + 0x100 (psp) + stack + extra (safety margin) */
-    psp = memmgrAllocate(&memmgr, exeLen + 0x100 + 0x8000 + 0x100, 0);
+    psp = memmgrAllocate(&memmgr, exeLen + 0x100 + STACKSZ32 + 0x100, 0);
 #else
     if (isexe)
     {
@@ -2909,7 +2910,7 @@ static void loadExe(char *prog, PARMBLOCK *parmblock)
     }
     else
     {
-        sp = (unsigned int)bss + firstbit.a_bss + 0x8000;
+        sp = (unsigned int)bss + firstbit.a_bss + STACKSZ32;
     }
     if (!doing_pcomm)
     {

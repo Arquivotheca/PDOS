@@ -245,14 +245,7 @@ unsigned long runaout(char *fnm, unsigned long absaddr, unsigned long userparm)
         if (((type >> 24) & 0xff) != 0x04) continue;
         zaploc = absaddr + offs;
         oldval = getlong(zaploc);
-        if ((type & 0xffffff) == 8) /* BSS */
-        {
-            newval = absaddr + firstbit.a_text + firstbit.a_data + oldval;
-        }
-        else
-        {
-            newval = oldval + absaddr;
-        }
+        newval = oldval + absaddr;
         putlong(zaploc, newval);
     }
 
@@ -264,14 +257,7 @@ unsigned long runaout(char *fnm, unsigned long absaddr, unsigned long userparm)
         if (((type >> 24) & 0xff) != 0x04) continue;
         zaploc = absaddr + firstbit.a_text + offs;
         oldval = getlong(zaploc);
-        if ((type & 0xffffff) == 8) /* BSS */
-        {
-            newval = absaddr + firstbit.a_text + firstbit.a_data + oldval;
-        }
-        else
-        {
-            newval = oldval + absaddr;
-        }
+        newval = oldval + absaddr;
         putlong(zaploc, newval);
     }
 

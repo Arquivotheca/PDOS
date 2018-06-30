@@ -111,6 +111,31 @@ _disable:
         cli
         ret
 
+/ read a character from a port
+_inp:
+        push    %ebp
+        mov     %esp, %ebp
+        push    %edx
+        mov     8(%ebp), %edx
+        mov     $0, %eax
+        in      %dx, %al
+        pop     %edx
+        pop     %ebp
+        ret
+
+/ write a character to a port
+_outp:
+        push    %ebp
+        mov     %esp, %ebp
+        push    %edx
+        mov     8(%ebp), %edx
+        mov     12(%ebp), %eax
+        out     %al, %dx
+        pop     %edx
+        pop     %ebp
+        ret
+
+
 
 / setjmp and longjmp are untested under PDOS32 due to the
 / test environment currently not being available

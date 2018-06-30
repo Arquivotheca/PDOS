@@ -1344,3 +1344,9 @@ unsigned int PosAbsoluteDiskRead(int drive,unsigned long start_sector,
 #endif
 }
 /**/
+
+
+int intdos(union REGS *regsin, union REGS *regsout)
+{
+    return (int86(0x21, regsin, regsout));
+}

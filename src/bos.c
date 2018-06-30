@@ -18,84 +18,6 @@ static void int86n(unsigned int intno);
 /* x86 interrupt call with registers */
 static void int86i(unsigned int intno, union REGS *regsin);
 
-/* BosGetSystemTime-BIOS Int 1Ah/AH=00h */
-/* 
-   Input: Pointers to variable Ticks(long) and midnight(int).
-   Returns: None.
-   Notes: None.
-*/
-
-void BosGetSystemTime(unsigned long *ticks, unsigned int *midnight)
-{
-    union REGS regsin;
-    union REGS regsout;
-
-    regsin.h.ah = 0x00;
-    
-    int86(0x1A,&regsin,&regsout);
-    
-    *ticks = ((unsigned long)regsout.x.cx << 16 | regsout.x.dx);
-    *midnight = regsout.h.al;
-    
-    return;
-}
-
-/* BosGetSystemDate-BIOS Int 1Ah/AH=04h */
-/*
-   Input: Pointers to century(int),year(int),month(int),day(int).
-   Returns: 0 on successful call.
-   Notes: Clear the carry flag before interrupt Some ROM leave carry
-          flag unchanged on successful call.
-*/
-
-unsigned int BosGetSystemDate(int *century,int *year,int *month,int *day)
-{
-    union REGS regsin;
-    union REGS regsout;
-
-    regsin.h.ah = 0x04;
-    /*regsin.x.cflag = 0x00; TODO: Clearing the Carry flag.*/
-    
-    int86(0x1A,&regsin,&regsout);
-    
-    *century = regsout.h.ch;
-    *year = regsout.h.cl;
-    *month = regsout.h.dh;
-    *day = regsout.h.dl;
-
-    if(regsout.x.cflag)
-    {
-        return(BOS_ERROR);
-    }
-    else
-    {
-        return(0);
-    }
-}
-
-/* BosSetSystemDate-BIOS Int 1Ah/AH=05h */
-/*
-   Input: Values to century(int),year(int),month(int),day(int).
-   Returns: None.
-   Notes: Used to set the Date.
-*/
-
-void BosSetSystemDate(int century,int year,int month,int day)
-{
-    union REGS regsin;
-
-    regsin.h.ah = 0x05;
-    
-    regsin.h.ch = century;
-    regsin.h.cl = year;
-    regsin.h.dh = month;
-    regsin.h.dl = day;
-    
-    int86i(0x1A,&regsin);
-    
-    return;
-}
-
 /* BosPrintScreen-BIOS Int 05h */
 /*
     Input: None.
@@ -743,6 +665,84 @@ void BosReadKeyboardCharacter(int *scancode, int *ascii)
 void BosSystemWarmBoot(void)
 {
     int86n(0x19);
+    return;
+}
+
+/* BosGetSystemTime-BIOS Int 1Ah/AH=00h */
+/* 
+   Input: Pointers to variable Ticks(long) and midnight(int).
+   Returns: None.
+   Notes: None.
+*/
+
+void BosGetSystemTime(unsigned long *ticks, unsigned int *midnight)
+{
+    union REGS regsin;
+    union REGS regsout;
+
+    regsin.h.ah = 0x00;
+    
+    int86(0x1A,&regsin,&regsout);
+    
+    *ticks = ((unsigned long)regsout.x.cx << 16 | regsout.x.dx);
+    *midnight = regsout.h.al;
+    
+    return;
+}
+
+/* BosGetSystemDate-BIOS Int 1Ah/AH=04h */
+/*
+   Input: Pointers to century(int),year(int),month(int),day(int).
+   Returns: 0 on successful call.
+   Notes: Clear the carry flag before interrupt Some ROM leave carry
+          flag unchanged on successful call.
+*/
+
+unsigned int BosGetSystemDate(int *century,int *year,int *month,int *day)
+{
+    union REGS regsin;
+    union REGS regsout;
+
+    regsin.h.ah = 0x04;
+    /*regsin.x.cflag = 0x00; TODO: Clearing the Carry flag.*/
+    
+    int86(0x1A,&regsin,&regsout);
+    
+    *century = regsout.h.ch;
+    *year = regsout.h.cl;
+    *month = regsout.h.dh;
+    *day = regsout.h.dl;
+
+    if(regsout.x.cflag)
+    {
+        return(BOS_ERROR);
+    }
+    else
+    {
+        return(0);
+    }
+}
+
+/* BosSetSystemDate-BIOS Int 1Ah/AH=05h */
+/*
+   Input: Values to century(int),year(int),month(int),day(int).
+   Returns: None.
+   Notes: Used to set the Date.
+*/
+
+void BosSetSystemDate(int century,int year,int month,int day)
+{
+    union REGS regsin;
+
+    regsin.h.ah = 0x05;
+    
+    regsin.h.ch = century;
+    regsin.h.cl = year;
+    regsin.h.dh = month;
+    regsin.h.dl = day;
+    
+    int86i(0x1A,&regsin);
+    
     return;
 }
 

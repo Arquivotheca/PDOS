@@ -8,6 +8,8 @@
         .globl _disable
         .globl ___setj
         .globl ___longj
+        .globl _inp
+        .globl _outp
 
         .text
 

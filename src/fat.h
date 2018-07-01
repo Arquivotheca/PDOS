@@ -120,7 +120,7 @@ typedef struct {
     unsigned int rootentries;
     unsigned int rootsize;
     unsigned int fatsize;
-    int fat16;
+    int fat_type;
     unsigned long hidden;
     unsigned long startSector;
     int notfound;

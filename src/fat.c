@@ -107,14 +107,24 @@ void fatInit(FAT *fat,
     fat->num_tracks = fat->sectors_per_disk / fat->sectors_per_track;
     fat->num_cylinders = (unsigned int)(fat->num_tracks / fat->num_heads);
     fat->sectors_per_cylinder = fat->sectors_per_track * fat->num_heads;
+    /* FAT type | Max. clusters
+     *       12 |          4086
+     *       16 |         65526
+     *       32 |     268435456
+     * Reason for this is unknown, but those numbers are confirmed. */
     if ((fat->sectors_per_disk / fat->sectors_per_cluster) < 4087)
     {
-        fat->fat16 = 0;
+        fat->fat_type = 12;
     }
-    else
+    else if ((fat->sectors_per_disk / fat->sectors_per_cluster) < 65527)
     {
-        fat->fat16 = 1;
+        fat->fat_type = 16;
     }
+    else if ((fat->sectors_per_disk / fat->sectors_per_cluster) < 268435457)
+    {
+        fat->fat_type = 32;
+    }
+    /* +++Add EBPB logic. */
     return;
 }
 
@@ -138,7 +148,7 @@ void fatTerm(FAT *fat)
 
 static int fatEndCluster(FAT *fat, unsigned int cluster)
 {
-    if (fat->fat16)
+    if (fat->fat_type == 16)
     {
         /* if(cluster==0) return (1); */
         if (cluster >= 0xfff8U)
@@ -146,13 +156,14 @@ static int fatEndCluster(FAT *fat, unsigned int cluster)
             return (1);
         }
     }
-    else
+    else if (fat->fat_type == 12)
     {
         if ((cluster >= 0xff8U) || (cluster == 0xff0U))
         {
             return (1);
         }
     }
+    /* +++Add fat 32 logic. */
     return (0);
 }
 
@@ -189,8 +200,11 @@ unsigned int fatCreatFile(FAT *fat, const char *fnm, FATFILE *fatfile,
     {
         /* MS-DOS expands directory when trying to add new
          * entry to a full cluster. */
-        /* Root directory cannot be expanded. */
-        if (fat->processing_root) return (POS_ERR_PATH_NOT_FOUND);
+        /* Root directory cannot be expanded if the size is already set. */
+        if (fat->rootsize && fat->processing_root)
+        {
+            return (POS_ERR_PATH_NOT_FOUND);
+        }
 
         fatChain(fat,&tempfatfile);
         fat->dirSect = tempfatfile.sectorStart;
@@ -298,9 +312,12 @@ unsigned int fatCreatDir(FAT *fat, const char *dnm, const char *parentname,
     if (fat->pos_result == FATPOS_ENDCLUSTER)
     {
         /* MS-DOS expands directory when trying to add new
-         * entry to a full end cluster. */
-        /* Root directory cannot be expanded. */
-        if (fat->processing_root) return (POS_ERR_PATH_NOT_FOUND);
+         * entry to a full cluster. */
+        /* Root directory cannot be expanded if the size is already set. */
+        if (fat->rootsize && fat->processing_root)
+        {
+            return (POS_ERR_PATH_NOT_FOUND);
+        }
 
         fatChain(fat,&tempfatfile);
         fat->dirSect = tempfatfile.sectorStart;
@@ -421,8 +438,11 @@ unsigned int fatCreatNewFile(FAT *fat, const char *fnm, FATFILE *fatfile,
     {
         /* MS-DOS expands directory when trying to add new
          * entry to a full cluster. */
-        /* Root directory cannot be expanded. */
-        if (fat->processing_root) return (POS_ERR_PATH_NOT_FOUND);
+        /* Root directory cannot be expanded if the size is already set. */
+        if (fat->rootsize && fat->processing_root)
+        {
+            return (POS_ERR_PATH_NOT_FOUND);
+        }
 
         fatChain(fat,&tempfatfile);
         fat->dirSect = tempfatfile.sectorStart;
@@ -527,14 +547,15 @@ unsigned int fatOpenFile(FAT *fat, const char *fnm, FATFILE *fatfile)
         if ((fatfile->fileSize == 0)
             && (fatfile->startcluster == 0))
         {
-            if (fat->fat16)
+            if (fat->fat_type == 16)
             {
                 fat->currcluster = fatfile->startcluster = 0xfff8;
             }
-            else
+            else if (fat->fat_type == 12)
             {
                 fat->currcluster = fatfile->startcluster = 0xff8;
             }
+            /* +++Add fat 32 logic. */
         }
 
         fatfile->attr = p->file_attr;
@@ -679,9 +700,10 @@ size_t fatWriteFile(FAT *fat, FATFILE *fatfile, const void *buf, size_t szbuf)
     if (szbuf == 0) return (0);
 
     if ((fatfile->startcluster==0)
-        || (fat->fat16 && (fatfile->startcluster == 0xfff8))
-        || (!fat->fat16 && (fatfile->startcluster == 0xff8))
+        || ((fat->fat_type == 16) && (fatfile->startcluster == 0xfff8))
+        || ((fat->fat_type == 12) && (fatfile->startcluster == 0xff8))
        )
+    /* +++Add fat 32 logic. */
     {
         fat->currcluster = fatFindFreeCluster(fat);
         fatfile->startcluster = fat->currcluster;
@@ -948,7 +970,11 @@ static void fatNextSearch(FAT *fat, char *search, const char **upto)
 
 static void fatRootSearch(FAT *fat, char *search)
 {
-    fatDirSectorSearch(fat, search, fat->rootstart, fat->rootsize);
+    if (fat->rootsize)
+    {
+        fatDirSectorSearch(fat, search, fat->rootstart, fat->rootsize);
+    }
+    /* +++Add logic for expandable root directories. */
     return;
 }
 
@@ -1005,14 +1031,14 @@ static void fatClusterAnalyse(FAT *fat,
 
     *startSector = (cluster - 2) * (long)fat->sectors_per_cluster
                    + fat->filestart;
-    if (fat->fat16)
+    if (fat->fat_type == 16)
     {
         fatSector = fat->fatstart + (cluster * 2) / fat->sector_size;
         fatReadLogical(fat, fatSector, buf);
         offset = (cluster * 2) % fat->sector_size;
         *nextCluster = buf[offset] | ((unsigned int)buf[offset + 1] << 8);
     }
-    else
+    else if (fat->fat_type == 12)
     {
         fatSector = fat->fatstart + (cluster * 3 / 2) / fat->sector_size;
         fatReadLogical(fat, fatSector, buf);
@@ -1033,6 +1059,7 @@ static void fatClusterAnalyse(FAT *fat,
             *nextCluster = *nextCluster >> 4;
         }
     }
+    /* +++Add fat 32 logic. */
     return;
 }
 
@@ -1126,7 +1153,7 @@ static void fatMarkCluster(FAT *fat, unsigned int cluster)
     static unsigned char buf[MAXSECTSZ];
     int offset;
 
-    if (fat->fat16)
+    if (fat->fat_type == 16)
     {
         fatSector = fat->fatstart + (cluster * 2) / fat->sector_size;
         fatReadLogical(fat, fatSector, buf);
@@ -1135,7 +1162,7 @@ static void fatMarkCluster(FAT *fat, unsigned int cluster)
         buf[offset + 1] = 0xff;
         fatWriteLogical(fat, fatSector, buf);
     }
-    else
+    else if (fat->fat_type == 12)
     {
         fatSector = fat->fatstart + (cluster * 3 / 2) / fat->sector_size;
         fatReadLogical(fat, fatSector, buf);
@@ -1159,6 +1186,7 @@ static void fatMarkCluster(FAT *fat, unsigned int cluster)
 
         fatWriteLogical(fat, fatSector, buf);
     }
+    /* +++Add fat 32 logic. */
 
     return;
 }
@@ -1174,7 +1202,7 @@ static unsigned int fatFindFreeCluster(FAT *fat)
     int x;
     unsigned int ret;
 
-    if (fat->fat16)
+    if (fat->fat_type == 16)
     {
         for (fatSector = fat->fatstart;
              fatSector < fat->rootstart;
@@ -1197,7 +1225,7 @@ static unsigned int fatFindFreeCluster(FAT *fat)
             return (ret);
         }
     }
-    else
+    else if (fat->fat_type == 12)
     {
         fatSector = fat->fatstart; /* + (cluster * 3 / 2) / fat->sector_size; */
         fatReadLogical(fat, fatSector, buf);
@@ -1231,6 +1259,7 @@ static unsigned int fatFindFreeCluster(FAT *fat)
             return (ret);
         }
     }
+    /* +++Add fat 32 logic. */
     return (0);
 }
 
@@ -1247,7 +1276,7 @@ static void fatChain(FAT *fat, FATFILE *fatfile)
 
     oldcluster = fat->currcluster;
     newcluster = fatFindFreeCluster(fat);
-    if (fat->fat16)
+    if (fat->fat_type == 16)
     {
         /* for fat-16, each cluster in the FAT takes up 2 bytes */
         fatSector = fat->fatstart + (oldcluster * 2) / fat->sector_size;
@@ -1271,7 +1300,7 @@ static void fatChain(FAT *fat, FATFILE *fatfile)
                     + fat->filestart;
         fatfile->sectorUpto = 0;
     }
-    else
+    else if (fat->fat_type == 12)
     {
         /* for fat-12, each cluster in the FAT takes up 1.5 bytes */
         fatSector = fat->fatstart + (oldcluster * 3 / 2) / fat->sector_size;
@@ -1309,6 +1338,7 @@ static void fatChain(FAT *fat, FATFILE *fatfile)
                     + fat->filestart;
         fatfile->sectorUpto = 0;
     }
+    /* +++Add fat 32 logic. */
 
     return;
 }
@@ -1498,7 +1528,7 @@ static void fatNuke(FAT *fat, unsigned int cluster)
     if (cluster == 0) return;
     while (!fatEndCluster(fat, cluster))
     {
-        if (fat->fat16)
+        if (fat->fat_type == 16)
         {
             fatSector = fat->fatstart + (cluster * 2) / fat->sector_size;
             if (buffered != fatSector)
@@ -1515,7 +1545,7 @@ static void fatNuke(FAT *fat, unsigned int cluster)
             buf[offset] = 0x00;
             buf[offset + 1] = 0x00;
         }
-        else
+        else if (fat->fat_type == 12)
         {
             fatSector = fat->fatstart + (cluster * 3 / 2) / fat->sector_size;
             if (buffered != fatSector)
@@ -1561,6 +1591,7 @@ static void fatNuke(FAT *fat, unsigned int cluster)
                 buf[offset+1] = buf[offset+1] & 0xf0;
             }
         }
+        /* +++Add fat 32 logic. */
     }
     if (buffered != 0)
     {

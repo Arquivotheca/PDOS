@@ -20,25 +20,25 @@
 #include "unused.h"
 #include "pos.h"
 
-static int fatEndCluster(FAT *fat, unsigned int cluster);
+static int fatEndCluster(FAT *fat, unsigned long cluster);
 static void fatPosition(FAT *fat, const char *fnm);
 static void fatNextSearch(FAT *fat, char *search, const char **upto);
 static void fatRootSearch(FAT *fat, char *search);
 static void fatDirSearch(FAT *fat, char *search);
 static void fatClusterAnalyse(FAT *fat,
-                              unsigned int cluster,
+                              unsigned long cluster,
                               unsigned long *startSector,
-                              unsigned int *nextCluster);
+                              unsigned long *nextCluster);
 static void fatDirSectorSearch(FAT *fat,
                                char *search,
                                unsigned long startSector,
                                int numsectors);
-static void fatReadLogical(FAT *fat, long sector, void *buf);
-static void fatWriteLogical(FAT *fat, long sector, void *buf);
-static void fatMarkCluster(FAT *fat, unsigned int cluster);
+static void fatReadLogical(FAT *fat, unsigned long sector, void *buf);
+static void fatWriteLogical(FAT *fat, unsigned long sector, void *buf);
+static void fatMarkCluster(FAT *fat, unsigned long cluster);
 static unsigned int fatFindFreeCluster(FAT *fat);
 static void fatChain(FAT *fat, FATFILE *fatfile);
-static void fatNuke(FAT *fat, unsigned int cluster);
+static void fatNuke(FAT *fat, unsigned long cluster);
 
 static unsigned char dir_buf[MAXSECTSZ];
 
@@ -65,14 +65,17 @@ void fatDefaults(FAT *fat)
 
 void fatInit(FAT *fat,
              unsigned char *bpb,
-             void (*readLogical)(void *diskptr, long sector, void *buf),
-             void (*writeLogical)(void *diskptr, long sector, void *buf),
+             void (*readLogical)(void *diskptr, unsigned long sector,
+                                 void *buf),
+             void (*writeLogical)(void *diskptr, unsigned long sector,
+                                  void *buf),
              void *parm)
 {
     fat->readLogical = readLogical;
     fat->writeLogical = writeLogical;
     fat->parm = parm;
-    fat->drive = bpb[25];
+    /* BPB passed by PDOS is already at offset 11
+     * (skipping jump code and OEM info). */
     fat->sector_size = bpb[0] | ((unsigned int)bpb[1] << 8);
     fat->sectors_per_cluster = bpb[2];
     fat->bytes_per_cluster = fat->sector_size * fat->sectors_per_cluster;
@@ -81,9 +84,10 @@ void fatInit(FAT *fat,
     printf("sectors per cluster is %x\n", (int)fat->sectors_per_cluster);
 #endif
     fat->numfats = bpb[5];
+    /* Number of sectors per FAT. Only for FAT 12/16. */
     fat->fatsize = bpb[11] | ((unsigned int)bpb[12] << 8);
+    /* Total sectors on the volume. If 0, checks offset 32 (bpb[21]). */
     fat->sectors_per_disk = bpb[8] | ((unsigned int)bpb[9] << 8);
-    fat->num_heads = bpb[15];
     if (fat->sectors_per_disk == 0)
     {
         fat->sectors_per_disk =
@@ -92,6 +96,7 @@ void fatInit(FAT *fat,
             | ((unsigned long)bpb[23] << 16)
             | ((unsigned long)bpb[24] << 24);
     }
+    fat->num_heads = bpb[15];
     fat->hidden = bpb[17]
                   | ((unsigned long)bpb[18] << 8)
                   | ((unsigned long)bpb[19] << 16)
@@ -124,7 +129,27 @@ void fatInit(FAT *fat,
     {
         fat->fat_type = 32;
     }
-    /* +++Add EBPB logic. */
+    /* EBPB comes right after BPB and is different for fat32. */
+    if (fat->fat_type == 12 || fat->fat_type == 16)
+    {
+        /* Drive number. 0x00 for floppy disk, 0x80 for hard disk. */
+        fat->drive = bpb[25];
+    }
+    else if (fat->fat_type == 32)
+    {
+        /* Sectors per FAT. 4 bytes. */
+        fat->fatsize = bpb[25]
+                  | ((unsigned long)bpb[26] << 8)
+                  | ((unsigned long)bpb[27] << 16)
+                  | ((unsigned long)bpb[28] << 24);
+        /* Root directory start cluster. 4 bytes. */
+        fat->rootstartcluster = bpb[33]
+                  | ((unsigned long)bpb[34] << 8)
+                  | ((unsigned long)bpb[35] << 16)
+                  | ((unsigned long)bpb[36] << 24);
+        /* Drive number. 0x00 for floppy disk, 0x80 for hard disk. */
+        fat->drive = bpb[53];
+    }
     return;
 }
 
@@ -146,7 +171,7 @@ void fatTerm(FAT *fat)
  * courtesy Neil, Young Ones.
  */
 
-static int fatEndCluster(FAT *fat, unsigned int cluster)
+static int fatEndCluster(FAT *fat, unsigned long cluster)
 {
     if (fat->fat_type == 16)
     {
@@ -193,6 +218,7 @@ unsigned int fatCreatFile(FAT *fat, const char *fnm, FATFILE *fatfile,
     {
         fat->currcluster = p->start_cluster[1] << 8
                            | p->start_cluster[0];
+        /* +++Add fat 32 logic. */
         fatNuke(fat, fat->currcluster);
         found = 1;
     }
@@ -273,9 +299,9 @@ unsigned int fatCreatDir(FAT *fat, const char *dnm, const char *parentname,
     DIRENT *p;
     DIRENT dot;
     unsigned char lbuf[MAXSECTSZ];
-    int startcluster = 0;
-    int parentstartcluster = 0;
-    long startsector;
+    unsigned long startcluster = 0;
+    unsigned parentstartcluster = 0;
+    unsigned long startsector;
     FATFILE tempfatfile;
 
     if ((dnm[0] == '\\') || (dnm[0] == '/'))
@@ -341,6 +367,7 @@ unsigned int fatCreatDir(FAT *fat, const char *dnm, const char *parentname,
         p->file_attr = (unsigned char)attrib;
         p->start_cluster[1] = (startcluster >> 8) & 0xff;
         p->start_cluster[0] = startcluster & 0xff;
+        /* +++Add fat 32 logic. */
 
         p->file_size[0] = p->file_size[1] = p->file_size[2]
             = p->file_size[3] = 0;
@@ -392,6 +419,7 @@ unsigned int fatCreatDir(FAT *fat, const char *dnm, const char *parentname,
 
         dot.start_cluster[1] = (startcluster >> 8) & 0xff;
         dot.start_cluster[0] = startcluster & 0xff;
+        /* +++Add fat 32 logic. */
 
         memcpy(lbuf,&dot,sizeof(dot));
 
@@ -404,6 +432,7 @@ unsigned int fatCreatDir(FAT *fat, const char *dnm, const char *parentname,
 
         dot.start_cluster[1] = (parentstartcluster >> 8) & 0xff;
         dot.start_cluster[0] = parentstartcluster & 0xff;
+        /* +++Add fat 32 logic. */
 
         memcpy(lbuf+sizeof(dot),&dot,sizeof(dot));
 
@@ -595,7 +624,7 @@ size_t fatReadFile(FAT *fat, FATFILE *fatfile, void *buf, size_t szbuf)
     size_t bytesRead = 0;
     static unsigned char bbuf[MAXSECTSZ];
     int bytesAvail;
-    int sectorsAvail;
+    unsigned int sectorsAvail;
 
     /* until we reach the end of the chain */
     while (!fatEndCluster(fat, fatfile->currentCluster))
@@ -721,6 +750,7 @@ size_t fatWriteFile(FAT *fat, FATFILE *fatfile, const void *buf, size_t szbuf)
 
         d->start_cluster[1] = (fat->currcluster >> 8) & 0xff;
         d->start_cluster[0] = fat->currcluster & 0xff;
+        /* +++Add fat 32 logic. */
 
         fatWriteLogical(fat,
                         fatfile->dirSect,
@@ -986,7 +1016,7 @@ static void fatRootSearch(FAT *fat, char *search)
 
 static void fatDirSearch(FAT *fat, char *search)
 {
-    unsigned int nextCluster;
+    unsigned long nextCluster;
     fat->fnd=0;
 
     fatClusterAnalyse(fat, fat->currcluster, &fat->startSector, &nextCluster);
@@ -1021,11 +1051,11 @@ static void fatDirSearch(FAT *fat, char *search)
  */
 
 static void fatClusterAnalyse(FAT *fat,
-                              unsigned int cluster,
+                              unsigned long cluster,
                               unsigned long *startSector,
-                              unsigned int *nextCluster)
+                              unsigned long *nextCluster)
 {
-    unsigned int fatSector;
+    unsigned long fatSector;
     static unsigned char buf[MAXSECTSZ];
     int offset;
 
@@ -1095,6 +1125,7 @@ static void fatDirSectorSearch(FAT *fat,
                 fat->fnd=1;
                 fat->currcluster = p->start_cluster[0]
                     | ((unsigned int) p->start_cluster[1] << 8);
+                /* +++Add fat 32 logic. */
                 fat->de = p;
                 fat->dirSect = startSector + x;
                 return;
@@ -1126,7 +1157,7 @@ static void fatDirSectorSearch(FAT *fat,
  * function provided at initialization.
  */
 
-static void fatReadLogical(FAT *fat, long sector, void *buf)
+static void fatReadLogical(FAT *fat, unsigned long sector, void *buf)
 {
     fat->readLogical(fat->parm, sector, buf);
     return;
@@ -1138,7 +1169,7 @@ static void fatReadLogical(FAT *fat, long sector, void *buf)
  * function provided at initialization.
  */
 
-static void fatWriteLogical(FAT *fat, long sector, void *buf)
+static void fatWriteLogical(FAT *fat, unsigned long sector, void *buf)
 {
     fat->writeLogical(fat->parm, sector, buf);
     return;
@@ -1147,7 +1178,7 @@ static void fatWriteLogical(FAT *fat, long sector, void *buf)
 
 /* fatMarkCluster - mark a cluster as end of chain */
 
-static void fatMarkCluster(FAT *fat, unsigned int cluster)
+static void fatMarkCluster(FAT *fat, unsigned long cluster)
 {
     unsigned long fatSector;
     static unsigned char buf[MAXSECTSZ];
@@ -1200,7 +1231,7 @@ static unsigned int fatFindFreeCluster(FAT *fat)
     unsigned long fatSector;
     int found = 0;
     int x;
-    unsigned int ret;
+    unsigned long ret;
 
     if (fat->fat_type == 16)
     {
@@ -1271,8 +1302,8 @@ static void fatChain(FAT *fat, FATFILE *fatfile)
     unsigned long fatSector;
     static unsigned char buf[MAXSECTSZ];
     int offset;
-    unsigned int newcluster;
-    unsigned int oldcluster;
+    unsigned long newcluster;
+    unsigned long oldcluster;
 
     oldcluster = fat->currcluster;
     newcluster = fatFindFreeCluster(fat);
@@ -1517,13 +1548,13 @@ unsigned int fatUpdateDateAndTime(FAT *fat,FATFILE *fatfile)
 /**/
 
 /* Delete a file by setting cluster chain to zeros */
-static void fatNuke(FAT *fat, unsigned int cluster)
+static void fatNuke(FAT *fat, unsigned long cluster)
 {
     unsigned long fatSector;
     static unsigned char buf[MAXSECTSZ];
     int offset;
-    int buffered = 0;
-    int oldcluster;
+    unsigned long buffered = 0;
+    unsigned long oldcluster;
 
     if (cluster == 0) return;
     while (!fatEndCluster(fat, cluster))

@@ -99,8 +99,8 @@ static void upper_str(char *str);
 int bcd2int(unsigned int bcd);
 void dumplong(unsigned long x);
 void dumpbuf(unsigned char *buf, int len);
-static void readLogical(void *diskptr, long sector, void *buf);
-static void writeLogical(void *diskptr, long sector, void *buf);
+static void readLogical(void *diskptr, unsigned long sector, void *buf);
+static void writeLogical(void *diskptr, unsigned long sector, void *buf);
 static int readAbs(void *buf,
                 int sectors,
                 int drive,
@@ -3464,7 +3464,7 @@ void dumpbuf(unsigned char *buf, int len)
     return;
 }
 
-static void readLogical(void *diskptr, long sector, void *buf)
+static void readLogical(void *diskptr, unsigned long sector, void *buf)
 {
     int track;
     int head;
@@ -3494,7 +3494,7 @@ static void readLogical(void *diskptr, long sector, void *buf)
     return;
 }
 
-static void writeLogical(void *diskptr, long sector, void *buf)
+static void writeLogical(void *diskptr, unsigned long sector, void *buf)
 {
     int track;
     int head;

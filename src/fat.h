@@ -64,7 +64,8 @@ typedef struct {
     unsigned char create_time[2];    /*create time(0x0E)*/
     unsigned char create_date[2];    /*create date(0x10)*/
     unsigned char last_access[2];    /*last access (0x12)*/
-    unsigned char access_rights[2];  /*file access rights (0x14)*/
+    unsigned char access_rights[2];  /*file access rights (0x14)
+                                      *2 high bytes of start cluster (fat32)*/
     unsigned char last_modtime[2];   /*last modified time (0x16)*/
     unsigned char last_moddate[2];   /*last modified date (0x18)*/
     unsigned char start_cluster[2];  /*Size of file in clusters (0x1A)*/
@@ -74,7 +75,7 @@ typedef struct {
 
 typedef struct {
     int root;
-    unsigned int startcluster; /* start cluster for this file (for reading)
+    unsigned long startcluster; /* start cluster for this file (for reading)
         or current cluster (for writing) */
     unsigned long fileSize;
     unsigned int lastSectors; /* when opening a file for read, this
@@ -84,14 +85,14 @@ typedef struct {
         contains the number of bytes expected in the last sector.
         when opening for write, it contains how many bytes were
         written in the last sector. */
-    unsigned int currentCluster; /* cluster currently up to for
+    unsigned long currentCluster; /* cluster currently up to for
         reading. */
     unsigned int ftime;
     unsigned int fdate;
     unsigned int attr;
     unsigned int sectorCount; /* how many sectors in the current cluster */
     unsigned long sectorStart; /* starting sector for this cluster */
-    unsigned int nextCluster; /* next cluster in chain */
+    unsigned long nextCluster; /* next cluster in chain */
     unsigned int byteUpto;
     unsigned int sectorUpto; /* which sector currently being processed,
     zero-based */
@@ -114,12 +115,13 @@ typedef struct {
     unsigned int numfats;
     unsigned int bootstart;
     unsigned int fatstart;
-    unsigned int rootstart;
-    unsigned int filestart;
+    unsigned long rootstart;
+    unsigned long filestart;
     unsigned int drive;
     unsigned int rootentries;
     unsigned int rootsize;
-    unsigned int fatsize;
+    unsigned long rootstartcluster;
+    unsigned long fatsize;
     int fat_type;
     unsigned long hidden;
     unsigned long startSector;
@@ -127,11 +129,11 @@ typedef struct {
     int pos_result;
     int found_deleted;
     int processing_root;
-    int currcluster;
-    int temp_currcluster;
+    unsigned long currcluster;
+    unsigned long temp_currcluster;
     FATFILE *currfatfile;
-    void (*readLogical)(void *diskptr, long sector, void *buf);
-    void (*writeLogical)(void *diskptr, long sector, void *buf);
+    void (*readLogical)(void *diskptr, unsigned long sector, void *buf);
+    void (*writeLogical)(void *diskptr, unsigned long sector, void *buf);
     void *parm;
     char new_file[12]; /*new filename for rename*/
     int last;
@@ -149,8 +151,8 @@ typedef struct {
 void fatDefaults(FAT *fat);
 void fatInit(FAT *fat,
              unsigned char *bpb,
-             void (*readLogical)(void *diskptr, long sector, void *buf),
-             void (*writeLogical)(void *diskptr, long sector, void *buf),
+             void (*readLogical)(void *diskptr, unsigned long sector, void *buf),
+             void (*writeLogical)(void *diskptr, unsigned long sector, void *buf),
              void *parm);
 void fatTerm(FAT *fat);
 unsigned int fatCreatFile(FAT *fat, const char *fnm, FATFILE *fatfile,

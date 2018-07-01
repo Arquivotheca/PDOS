@@ -37,7 +37,7 @@ static void fixexe(unsigned long laddr,
                    unsigned int seg, 
                    unsigned int *progentry);
 #endif
-static void readLogical(void *diskptr, long sector, void *buf);
+static void readLogical(void *diskptr, unsigned long sector, void *buf);
 static void analyseBpb(DISKINFO *diskinfo, unsigned char *bpb);
 static unsigned long doreboot(unsigned long parm);
 
@@ -156,7 +156,7 @@ static void fixexe(unsigned long laddr,
 }
 #endif
 
-static void readLogical(void *diskptr, long sector, void *buf)
+static void readLogical(void *diskptr, unsigned long sector, void *buf)
 {
     int track;
     int head;

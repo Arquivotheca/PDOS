@@ -50,7 +50,7 @@ void PosTermNoRC(void)
 /*
     Input: Character to write.
     Returns: Last character output.
-    Notes: If standard output is redirected to file no erroer checks
+    Notes: If standard output is redirected to file no error checks
            are performed.
 */
 
@@ -60,6 +60,25 @@ unsigned int PosDisplayOutput(unsigned int ch)
     union REGS regsout;
 
     regsin.h.ah = 0x02;
+    regsin.h.dl = ch;
+
+    int86(0x21, &regsin, &regsout);
+
+    return (regsout.h.al);
+}
+
+/* PosDirectConsoleOutput-INT 21/AH=06h */
+/*
+    Input: Character to write.
+    Returns: Character written.
+*/
+
+unsigned int PosDirectConsoleOutput(unsigned int ch)
+{
+    union REGS regsin;
+    union REGS regsout;
+
+    regsin.h.ah = 0x06;
     regsin.h.dl = ch;
 
     int86(0x21, &regsin, &regsout);

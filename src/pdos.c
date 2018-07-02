@@ -578,6 +578,10 @@ static void int21handler(union REGS *regsin,
             regsout->h.al = PosDisplayOutput(regsin->h.dl);
             break;
 
+        case 0x06:
+            regsout->h.al = PosDirectConsoleOutput(regsin->h.dl);
+            break;
+
         case 0x07:
             regsout->h.al = PosDirectCharInputNoEcho();
             break;
@@ -1322,6 +1326,17 @@ void PosTermNoRC(void)
 
 /* INT 21/AH=02h */
 unsigned int PosDisplayOutput(unsigned int ch)
+{
+    unsigned char buf[1];
+
+    buf[0] = ch;
+    PosWriteFile(1, buf, 1);
+
+    return ch;
+}
+
+/* INT 21/AH=06h */
+unsigned int PosDirectConsoleOutput(unsigned int ch)
 {
     unsigned char buf[1];
 

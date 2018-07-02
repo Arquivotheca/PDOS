@@ -1350,3 +1350,22 @@ int intdos(union REGS *regsin, union REGS *regsout)
 {
     return (int86(0x21, regsin, regsout));
 }
+
+int bdos(int func, int dx, int al)
+{
+    union REGS regs;
+
+    regs.h.ah = (char)func;
+    regs.h.al = al;
+#ifdef __32BIT__
+    regs.d.edx = dx;
+#else
+    regs.x.dx = dx;
+#endif
+    int86(0x21, &regs, &regs);
+#ifdef __32BIT__
+    return (regs.d.eax);
+#else
+    return (regs.x.ax);
+#endif
+}

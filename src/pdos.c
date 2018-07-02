@@ -380,9 +380,13 @@ static void scanPartition(int drive)
         {
             lba = 0;
             systemId = buf[PT_OFFSET + x * PT_LEN + PTO_SYSID];
+            /* Currently supported systems. */
+            /* +++Add support for other systems and test. */
             if ((systemId == PTS_FAT12)
                 || (systemId == PTS_FAT16S)
-                || (systemId == PTS_FAT16B))
+                || (systemId == PTS_FAT16B)
+                || (systemId == PTS_FAT32)
+                || (systemId == PTS_FAT32L))
             {
                 processPartition(drive, &buf[PT_OFFSET + x * PT_LEN]);
             }
@@ -2348,7 +2352,6 @@ static void scrunchf(char *dest, char *new)
 static int ff_search(void)
 {
     int ret;
-    unsigned char buf[32];
     char file[13];
     char *p;
     DIRENT dirent;

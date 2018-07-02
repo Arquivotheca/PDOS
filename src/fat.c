@@ -79,6 +79,10 @@ void fatInit(FAT *fat,
     fat->sector_size = bpb[0] | ((unsigned int)bpb[1] << 8);
     fat->sectors_per_cluster = bpb[2];
     fat->bytes_per_cluster = fat->sector_size * fat->sectors_per_cluster;
+    /* Reserved sectors before FATs. 2 bytes.
+     * FATs are located right after them. */
+    fat->reserved_sectors = bpb[3] | ((unsigned int)bpb[4] << 8);
+    fat->fatstart = fat->reserved_sectors;
 #if 0
     printf("sector_size is %x\n", (int)fat->sector_size);
     printf("sectors per cluster is %x\n", (int)fat->sectors_per_cluster);
@@ -101,6 +105,7 @@ void fatInit(FAT *fat,
                   | ((unsigned long)bpb[18] << 8)
                   | ((unsigned long)bpb[19] << 16)
                   | ((unsigned long)bpb[20] << 24);
+    /* Calculates start sector of the root and data region. Only for FAT 12/16. */
     fat->rootstart = fat->fatsize * fat->numfats + fat->fatstart;
     fat->rootentries = bpb[6] | ((unsigned int)bpb[7] << 8);
     fat->rootsize = fat->rootentries / (fat->sector_size / 32);
@@ -142,6 +147,11 @@ void fatInit(FAT *fat,
                   | ((unsigned long)bpb[26] << 8)
                   | ((unsigned long)bpb[27] << 16)
                   | ((unsigned long)bpb[28] << 24);
+        /* Calculates root/data region start sector.
+         * rootstart should be the same as filestart
+         * on FAT 32 most (probably all) of the time.*/
+        fat->rootstart = fat->fatsize * fat->numfats + fat->fatstart;
+        fat->filestart = fat->rootstart + fat->rootsize;
         /* Root directory start cluster. 4 bytes. */
         fat->rootstartcluster = bpb[33]
                   | ((unsigned long)bpb[34] << 8)
@@ -149,6 +159,8 @@ void fatInit(FAT *fat,
                   | ((unsigned long)bpb[36] << 24);
         /* Drive number. 0x00 for floppy disk, 0x80 for hard disk. */
         fat->drive = bpb[53];
+
+        /* +++Add logic for FSInfo structure sector. */
     }
     return;
 }
@@ -188,7 +200,17 @@ static int fatEndCluster(FAT *fat, unsigned long cluster)
             return (1);
         }
     }
-    /* +++Add fat 32 logic. */
+    if (fat->fat_type == 32)
+    {
+        /* Explicit cast (unsigned long) is necessary,
+         * otherwise odd clusters will be considered
+         * larger than 0x0ffffff8 all the time. */
+        /* +++Find explanation and better fix. */
+        if ((cluster & 0x0fffffff) >= (unsigned long) 0x0ffffff8)
+        {
+            return (1);
+        }
+    }
     return (0);
 }
 
@@ -549,15 +571,37 @@ unsigned int fatOpenFile(FAT *fat, const char *fnm, FATFILE *fatfile)
     }
     if (strcmp(fnm, "") == 0)
     {
-        fatfile->root = 1;
-        fatfile->nextCluster = 0xffff;
-        fatfile->sectorCount = fat->rootsize;
-        fatfile->sectorStart = fat->rootstart;
-        fatfile->lastBytes = 0;
-        fatfile->lastSectors = fat->rootsize;
-        fat->currcluster = 0;
-        fatfile->dir = 1;
-        fatfile->attr=DIRENT_SUBDIR;
+        if (fat->rootsize)
+        {
+            fatfile->root = 1;
+            fatfile->nextCluster = 0xffff;
+            fatfile->sectorCount = fat->rootsize;
+            fatfile->sectorStart = fat->rootstart;
+            fatfile->lastBytes = 0;
+            fatfile->lastSectors = fat->rootsize;
+            fat->currcluster = 0;
+            fatfile->dir = 1;
+            fatfile->attr=DIRENT_SUBDIR;
+        }
+        /* Expandable root directory behave
+         * like a normal subdirectory, but
+         * it cannot be found with fatPosition,
+         * so fat->rootstartcluster is used. */
+        else
+        {
+            fatfile->root = 1;
+            fatfile->lastBytes = 0;
+            fatfile->lastSectors = 0;
+            fat->currcluster = fat->rootstartcluster;
+            fatfile->dir = 1;
+            fatfile->attr=DIRENT_SUBDIR;
+
+            fatClusterAnalyse(fat,
+                          fat->currcluster,
+                          &fatfile->sectorStart,
+                          &fatfile->nextCluster);
+            fatfile->sectorCount = fat->sectors_per_cluster;
+        }
     }
     else
     {
@@ -584,7 +628,11 @@ unsigned int fatOpenFile(FAT *fat, const char *fnm, FATFILE *fatfile)
             {
                 fat->currcluster = fatfile->startcluster = 0xff8;
             }
-            /* +++Add fat 32 logic. */
+            if (fat->fat_type == 32)
+            {
+                fat->currcluster = fatfile->startcluster
+                = (unsigned long) 0xffffff8;
+            }
         }
 
         fatfile->attr = p->file_attr;
@@ -627,7 +675,7 @@ size_t fatReadFile(FAT *fat, FATFILE *fatfile, void *buf, size_t szbuf)
     unsigned int sectorsAvail;
 
     /* until we reach the end of the chain */
-    while (!fatEndCluster(fat, fatfile->currentCluster))
+    while (!fatEndCluster(fat, fatfile->currentCluster)) /* +++PROBLEM!!! */
     {
         /* assume all sectors in cluster are available */
         sectorsAvail = fatfile->sectorCount;
@@ -1004,7 +1052,11 @@ static void fatRootSearch(FAT *fat, char *search)
     {
         fatDirSectorSearch(fat, search, fat->rootstart, fat->rootsize);
     }
-    /* +++Add logic for expandable root directories. */
+    else
+    {
+        fat->currcluster = fat->rootstartcluster;
+        fatDirSearch(fat, search);
+    }
     return;
 }
 
@@ -1089,7 +1141,18 @@ static void fatClusterAnalyse(FAT *fat,
             *nextCluster = *nextCluster >> 4;
         }
     }
-    /* +++Add fat 32 logic. */
+    else if (fat->fat_type == 32)
+    {
+        fatSector = fat->fatstart + (cluster * 4) / fat->sector_size;
+        fatReadLogical(fat, fatSector, buf);
+        offset = (cluster * 4) % fat->sector_size;
+        /* Highest 4 bits are reserved. */
+        *nextCluster = (buf[offset]
+                       | ((unsigned long)buf[offset + 1] << 8)
+                       | ((unsigned long)buf[offset + 2] << 16)
+                       | ((unsigned long)buf[offset + 3] << 24))
+                       & 0x0fffffff;
+    }
     return;
 }
 

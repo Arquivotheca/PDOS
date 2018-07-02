@@ -2,7 +2,7 @@
           -------------------------------------
 
 Version 0.8x, released 2010-xx-xx
-Written by Paul Edwards, fight.subjugation@gmail.com
+Written by Paul Edwards, mutazilah@gmail.com
 Released to the public domain
 You may use this entire package for any purpose whatsoever
 without restriction, as discussed here:

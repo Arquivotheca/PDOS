@@ -25,6 +25,7 @@
 #define DIRENT_ARCHIVE 0x20
 #define DIRENT_DEVICE 0X40
 #define DIRENT_RESERVED 0x80
+#define DIRENT_LFN 0x0f
 /**/
 
 /*Last access attributes*/

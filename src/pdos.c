@@ -381,7 +381,7 @@ static void scanPartition(int drive)
             lba = 0;
             systemId = buf[PT_OFFSET + x * PT_LEN + PTO_SYSID];
             /* Currently supported systems. */
-            /* +++Add support for other systems and test. */
+            /* +++Add support for all systems and test. */
             if ((systemId == PTS_FAT12)
                 || (systemId == PTS_FAT16S)
                 || (systemId == PTS_FAT16B)
@@ -3383,7 +3383,9 @@ static int dirDelete(const char *dnm)
     ret = fileRead(fh, &dirent, sizeof dirent);
     while ((ret == sizeof dirent) && (dirent.file_name[0] != '\0'))
     {
-        if (dirent.file_name[0] != DIRENT_DEL)
+        /* LFNs should be ignored when checking if the directory is empty. */
+        if (dirent.file_name[0] != DIRENT_DEL &&
+            dirent.file_attr != DIRENT_LFN)
         {
             if (dirent.file_name[0] == DIRENT_DOT) dotcount++;
             if (dirent.file_name[0] != DIRENT_DOT || dotcount > 2)

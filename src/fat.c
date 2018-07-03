@@ -202,11 +202,9 @@ static int fatEndCluster(FAT *fat, unsigned long cluster)
     }
     if (fat->fat_type == 32)
     {
-        /* Explicit cast (unsigned long) is necessary,
-         * otherwise odd clusters will be considered
-         * larger than 0x0ffffff8 all the time. */
-        /* +++Find explanation and better fix. */
-        if ((cluster & 0x0fffffff) >= (unsigned long) 0x0ffffff8)
+        /* "UL" at the end makes it unsigned long,
+         * the same type as the variable. */
+        if ((cluster & 0x0fffffff) >= 0x0ffffff8UL)
         {
             return (1);
         }
@@ -240,7 +238,12 @@ unsigned int fatCreatFile(FAT *fat, const char *fnm, FATFILE *fatfile,
     {
         fat->currcluster = p->start_cluster[1] << 8
                            | p->start_cluster[0];
-        /* +++Add fat 32 logic. */
+        if (fat->fat_type == 32)
+        {
+            fat->currcluster = fat->currcluster |
+            (((unsigned long) p->access_rights[0] << 16) |
+             ((unsigned long) p->access_rights[1] << 24));
+        }
         fatNuke(fat, fat->currcluster);
         found = 1;
     }
@@ -344,6 +347,7 @@ unsigned int fatCreatDir(FAT *fat, const char *dnm, const char *parentname,
     else
     {
         parentstartcluster = 0;
+        /* +++Check if this is correct for expandable roots. */
     }
 
     fatPosition(fat,dnm);
@@ -389,7 +393,11 @@ unsigned int fatCreatDir(FAT *fat, const char *dnm, const char *parentname,
         p->file_attr = (unsigned char)attrib;
         p->start_cluster[1] = (startcluster >> 8) & 0xff;
         p->start_cluster[0] = startcluster & 0xff;
-        /* +++Add fat 32 logic. */
+        if (fat->fat_type == 32)
+        {
+            p->access_rights[1] = (startcluster >> 24);
+            p->access_rights[0] = (startcluster >> 16) & 0xff;
+        }
 
         p->file_size[0] = p->file_size[1] = p->file_size[2]
             = p->file_size[3] = 0;
@@ -441,7 +449,11 @@ unsigned int fatCreatDir(FAT *fat, const char *dnm, const char *parentname,
 
         dot.start_cluster[1] = (startcluster >> 8) & 0xff;
         dot.start_cluster[0] = startcluster & 0xff;
-        /* +++Add fat 32 logic. */
+        if (fat->fat_type == 32)
+        {
+            dot.access_rights[1] = (startcluster >> 24);
+            dot.access_rights[0] = (startcluster >> 16) & 0xff;
+        }
 
         memcpy(lbuf,&dot,sizeof(dot));
 
@@ -454,7 +466,11 @@ unsigned int fatCreatDir(FAT *fat, const char *dnm, const char *parentname,
 
         dot.start_cluster[1] = (parentstartcluster >> 8) & 0xff;
         dot.start_cluster[0] = parentstartcluster & 0xff;
-        /* +++Add fat 32 logic. */
+        if (fat->fat_type == 32)
+        {
+            dot.access_rights[1] = (parentstartcluster >> 24);
+            dot.access_rights[0] = (parentstartcluster >> 16) & 0xff;
+        }
 
         memcpy(lbuf+sizeof(dot),&dot,sizeof(dot));
 
@@ -583,7 +599,7 @@ unsigned int fatOpenFile(FAT *fat, const char *fnm, FATFILE *fatfile)
             fatfile->dir = 1;
             fatfile->attr=DIRENT_SUBDIR;
         }
-        /* Expandable root directory behave
+        /* Expandable root directory behaves
          * like a normal subdirectory, but
          * it cannot be found with fatPosition,
          * so fat->rootstartcluster is used. */
@@ -675,7 +691,7 @@ size_t fatReadFile(FAT *fat, FATFILE *fatfile, void *buf, size_t szbuf)
     unsigned int sectorsAvail;
 
     /* until we reach the end of the chain */
-    while (!fatEndCluster(fat, fatfile->currentCluster)) /* +++PROBLEM!!! */
+    while (!fatEndCluster(fat, fatfile->currentCluster))
     {
         /* assume all sectors in cluster are available */
         sectorsAvail = fatfile->sectorCount;
@@ -779,8 +795,8 @@ size_t fatWriteFile(FAT *fat, FATFILE *fatfile, const void *buf, size_t szbuf)
     if ((fatfile->startcluster==0)
         || ((fat->fat_type == 16) && (fatfile->startcluster == 0xfff8))
         || ((fat->fat_type == 12) && (fatfile->startcluster == 0xff8))
+        || ((fat->fat_type == 32) && (fatfile->startcluster == 0xffffff8))
        )
-    /* +++Add fat 32 logic. */
     {
         fat->currcluster = fatFindFreeCluster(fat);
         fatfile->startcluster = fat->currcluster;
@@ -798,7 +814,11 @@ size_t fatWriteFile(FAT *fat, FATFILE *fatfile, const void *buf, size_t szbuf)
 
         d->start_cluster[1] = (fat->currcluster >> 8) & 0xff;
         d->start_cluster[0] = fat->currcluster & 0xff;
-        /* +++Add fat 32 logic. */
+        if (fat->fat_type == 32)
+        {
+            d->access_rights[1] = (fat->currcluster >> 24);
+            d->access_rights[0] = (fat->currcluster >> 16) & 0xff;
+        }
 
         fatWriteLogical(fat,
                         fatfile->dirSect,
@@ -922,6 +942,8 @@ static void fatPosition(FAT *fat, const char *fnm)
             fat->currcluster = fat->temp_currcluster;
             fat->de = fat->temp_de;
             fat->dirSect = fat->temp_dirSect;
+            /* Reads the sector in which deleted entry was found. */
+            fatReadLogical(fat, fat->dirSect, fat->dbuf);
             fat->pos_result = FATPOS_ONEMPTY;
         }
 
@@ -942,6 +964,8 @@ static void fatPosition(FAT *fat, const char *fnm)
         fat->currcluster = fat->temp_currcluster;
         fat->de = fat->temp_de;
         fat->dirSect = fat->temp_dirSect;
+        /* Reads the sector in which deleted entry was found. */
+        fatReadLogical(fat, fat->dirSect, fat->dbuf);
         fat->pos_result = FATPOS_ONEMPTY;
     }
     return;
@@ -1187,8 +1211,13 @@ static void fatDirSectorSearch(FAT *fat,
             {
                 fat->fnd=1;
                 fat->currcluster = p->start_cluster[0]
-                    | ((unsigned int) p->start_cluster[1] << 8);
-                /* +++Add fat 32 logic. */
+                    | ((unsigned long) p->start_cluster[1] << 8);
+                if (fat->fat_type == 32)
+                {
+                    fat->currcluster = fat->currcluster |
+                    (((unsigned long) p->access_rights[0] << 16) |
+                     ((unsigned long) p->access_rights[1] << 24));
+                }
                 fat->de = p;
                 fat->dirSect = startSector + x;
                 return;
@@ -1280,7 +1309,18 @@ static void fatMarkCluster(FAT *fat, unsigned long cluster)
 
         fatWriteLogical(fat, fatSector, buf);
     }
-    /* +++Add fat 32 logic. */
+    if (fat->fat_type == 32)
+    {
+        fatSector = fat->fatstart + (cluster * 4) / fat->sector_size;
+        fatReadLogical(fat, fatSector, buf);
+        offset = (cluster * 4) % fat->sector_size;
+        /* 4 highest bits are reserved and must not be changed. */
+        buf[offset] = 0xff;
+        buf[offset + 1] = 0xff;
+        buf[offset + 2] = 0xff;
+        buf[offset + 3] = buf[offset + 3] | 0xf;
+        fatWriteLogical(fat, fatSector, buf);
+    }
 
     return;
 }
@@ -1353,7 +1393,31 @@ static unsigned int fatFindFreeCluster(FAT *fat)
             return (ret);
         }
     }
-    /* +++Add fat 32 logic. */
+    else if (fat->fat_type == 32)
+    {
+        for (fatSector = fat->fatstart;
+             fatSector < fat->rootstart;
+             fatSector++)
+        {
+            fatReadLogical(fat, fatSector, buf);
+            for (x = 0; x < MAXSECTSZ; x += 4)
+            {
+                /* 4 highest bits are reserved, thus ignored. */
+                if ((buf[x] == 0) && (buf[x + 1] == 0) &&
+                    (buf[x + 2] == 0) && ((buf[x + 3] & 0xf) == 0))
+                {
+                    found = 1;
+                    break;
+                }
+            }
+            if (found) break;
+        }
+        if (found)
+        {
+            ret = (fatSector-fat->fatstart)*MAXSECTSZ/4 + x/4;
+            return (ret);
+        }
+    }
     return (0);
 }
 
@@ -1432,7 +1496,32 @@ static void fatChain(FAT *fat, FATFILE *fatfile)
                     + fat->filestart;
         fatfile->sectorUpto = 0;
     }
-    /* +++Add fat 32 logic. */
+    if (fat->fat_type == 32)
+    {
+        /* for fat-32, each cluster in the FAT takes up 4 bytes */
+        fatSector = fat->fatstart + (oldcluster * 4) / fat->sector_size;
+        /* read the FAT sector that contains this cluster entry */
+        fatReadLogical(fat, fatSector, buf);
+        offset = (oldcluster * 4) % fat->sector_size;
+        /* point the old cluster towards the new one */
+        buf[offset] = newcluster & 0xff;
+        buf[offset + 1] = newcluster >> 8;
+        buf[offset + 2] = newcluster >> 16;
+        buf[offset + 3] = (buf[offset + 3] & 0xf0) | ((newcluster >> 24) & 0xf);
+        fatWriteLogical(fat, fatSector, buf);
+
+        /* mark the new cluster as last */
+        fatMarkCluster(fat, newcluster);
+
+        /* update to new cluster */
+        fat->currcluster = newcluster;
+
+        /* update to new set of sectors */
+        fatfile->sectorStart = (fat->currcluster - 2)
+                    * (long)fat->sectors_per_cluster
+                    + fat->filestart;
+        fatfile->sectorUpto = 0;
+    }
 
     return;
 }
@@ -1685,7 +1774,30 @@ static void fatNuke(FAT *fat, unsigned long cluster)
                 buf[offset+1] = buf[offset+1] & 0xf0;
             }
         }
-        /* +++Add fat 32 logic. */
+        if (fat->fat_type == 32)
+        {
+            fatSector = fat->fatstart + (cluster * 4) / fat->sector_size;
+            if (buffered != fatSector)
+            {
+                if (buffered != 0)
+                {
+                    fatWriteLogical(fat, buffered, buf);
+                }
+                fatReadLogical(fat, fatSector, buf);
+                buffered = fatSector;
+            }
+            offset = (cluster * 4) % fat->sector_size;
+            cluster = (buf[offset]
+                       | ((unsigned long)buf[offset + 1] << 8)
+                       | ((unsigned long)buf[offset + 2] << 16)
+                       | ((unsigned long)buf[offset + 3] << 24))
+                       & 0x0fffffff;
+            /* 4 highest bits are reserved and must not be changed. */
+            buf[offset] = 0xff;
+            buf[offset + 1] = 0xff;
+            buf[offset + 2] = 0xff;
+            buf[offset + 3] = buf[offset + 3] & 0xf0;
+        }
     }
     if (buffered != 0)
     {

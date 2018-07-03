@@ -18,6 +18,13 @@
 #include "pos.h"
 #include "dostime.h"
 
+/* In C99 or higher we would just include <stdbool.h>. But, we need to
+ * support older C compilers (C89/C90) which don't come with <stdbool.h>
+ */
+#define true 1
+#define false 0
+#define bool int
+
 /* Written By NECDET COKYAZICI, Public Domain */
 void putch(int a);
 void bell(void);
@@ -51,32 +58,41 @@ static int term = 0;
 static void parseArgs(int argc, char **argv);
 static void processInput(void);
 static void putPrompt(void);
-static void doCopy(char *b);
 static void doExec(char *b,char *p);
-static void dotype(char *file);
-static void doEcho(char *msg);
-static void doExit(char *ignored);
-static void dodir(char *pattern);
-static void doReboot(char *ignored);
-static void dover(char *ignored);
-static void dodel(char *fnm);
-static void doPrompt(char *s);
-static void dopath(char *s);
-static void changedir(char *to);
 static void changedisk(int drive);
-static void dohelp(char *cmd);
-static void domkdir(char *dnm);
-static void doMCD(char *dnm);
-static void dormdir(char *dnm);
-static void dorename(char *src);
 static int ins_strcmp(char *one, char *two);
 static int ins_strncmp(char *one, char *two, size_t len);
 static void readBat(char *fnm);
 static int exists(char *fnm);
+static int isBlankString(char *str);
+static void showArgsUnsupportedMsg(char *cmdName);
+
+/* Prototypes for command execution routines */
+static void do_cd(char *to);
+static void do_copy(char *b);
+static void do_date(char *ignored);
+static void do_del(char *fnm);
+static void do_dir(char *pattern);
+static void do_echo(char *msg);
+static void do_exit(char *ignored);
+static void do_help(char *cmd);
+static void do_mcd(char *dnm);
+static void do_md(char *dnm);
+static void do_path(char *s);
+static void do_pause(char *src);
+static void do_prompt(char *s);
+static void do_rd(char *dnm);
+static void do_reboot(char *ignored);
+static void do_rem(char *src);
+static void do_ren(char *src);
+static void do_time(char *ignored);
+static void do_type(char *file);
+static void do_ver(char *ignored);
 
 /* Prototypes for detailed help routines */
 static void help_cd(void);
 static void help_copy(void);
+static void help_date(void);
 static void help_del(void);
 static void help_dir(void);
 static void help_echo(void);
@@ -85,10 +101,13 @@ static void help_help(void);
 static void help_mcd(void);
 static void help_md(void);
 static void help_path(void);
+static void help_pause(void);
 static void help_prompt(void);
 static void help_rd(void);
 static void help_reboot(void);
+static void help_rem(void);
 static void help_ren(void);
+static void help_time(void);
 static void help_type(void);
 static void help_ver(void);
 
@@ -108,38 +127,88 @@ typedef struct cmdBlock
 }
 cmdBlock;
 
+/* Define command macro.
+ * Parameters are:
+ * name - name of this command (lowercase, unquoted)
+ * aliases - empty string "" for no aliases. Otherwise each alias in string
+ *           prefixed with pipe character.
+ * description - one-line description of command for help system.
+ */
+#define CMDDEF(name,aliases,description) { #name aliases , description , do_##name, help_##name }
+
+/* Sentinel record for end of command registry */
+#define CMD_REGISTRY_END { NULL, NULL, NULL, NULL }
+
 /* The command registry stores definitions of all internal commands.
- *
- * Fields:
- * { name, description, proc, help }
- *
- * where:
- * - name is name of command. Prefix aliases with pipe symbol.
- * - description is one-line description of command for help system
- * - proc is procedure to execute for command
- * - help is detailed help procedure, displays detailed help
- *
  */
 static cmdBlock cmdRegistry[] =
 {
-    { "cd|chdir", "Changes the current directory", changedir, help_cd },
-    { "copy", "Copies files and directories", doCopy, help_copy },
-    { "del", "Deletes files", dodel, help_del },
-    { "dir", "Lists files and directories", dodir, help_dir },
-    { "echo", "Displays a message", doEcho, help_echo },
-    { "exit", "Exits PCOMM", doExit, help_exit },
-    { "help", "Provides information about PDOS commands", dohelp, help_help },
-    { "mcd", "Make new directory and change to it", doMCD, help_mcd },
-    { "md|mkdir", "Creates new directories", domkdir, help_md },
-    { "path", "Displays or modifies PATH variable", dopath, help_path },
-    { "prompt", "Displays or modifies PROMPT variable", doPrompt, help_prompt },
-    { "rd|rmdir", "Removes directories", dormdir, help_rd },
-    { "reboot", "Reboots the computer", doReboot, help_reboot },
-    { "ren|rename", "Renames files and directories", dorename, help_ren },
-    { "type", "Reads and displays a text file", dotype, help_type },
-    { "ver", "Displays the current version of PDOS", dover, help_ver },
-    { NULL, NULL, NULL, NULL } /* Sentinel record for end of command registry */
+    CMDDEF(cd,"|chdir","Changes the current directory"),
+    CMDDEF(copy,"","Copies files and directories"),
+    CMDDEF(date,"","Shows the date"),
+    CMDDEF(del,"|erase","Deletes files"),
+    CMDDEF(dir,"","Lists files and directories"),
+    CMDDEF(echo,"","Displays a message"),
+    CMDDEF(exit,"","Exits PCOMM"),
+    CMDDEF(help,"","Provides information about PDOS commands"),
+    CMDDEF(mcd,"","Make new directory and change to it"),
+    CMDDEF(md,"|mkdir","Creates new directories"),
+    CMDDEF(path,"","Displays or modifies PATH variable"),
+    CMDDEF(pause,"","Wait for user to press any key"),
+    CMDDEF(prompt,"","Displays or modifies PROMPT variable"),
+    CMDDEF(rd,"|rmdir","Removes directories"),
+    CMDDEF(reboot,"","Reboots the computer"),
+    CMDDEF(rem,"","Comment in a batch file"),
+    CMDDEF(ren,"|rename","Renames files and directories"),
+    CMDDEF(time,"","Shows the time"),
+    CMDDEF(type,"","Reads and displays a text file"),
+    CMDDEF(ver,"","Displays the current version of PDOS"),
+    CMD_REGISTRY_END
 };
+
+/* utility function - check if string is blank */
+static bool isBlankString(char *str)
+{
+    while (*str != 0)
+    {
+        if (!isspace(*str))
+        {
+            return false;
+        }
+        str++;
+    }
+    return true;
+}
+
+/* utility function - show an error if command doesn't accept arguments */
+static void showArgsUnsupportedMsg(char *cmdName)
+{
+    printf("ERROR: Command '%s' does not accept any arguments\n", cmdName);
+}
+
+/* utility function - show an error if command requires arguments */
+static void showArgsRequiredMsg(char *cmdName)
+{
+    printf("ERROR: Command '%s' requires arguments, but none supplied\n", cmdName);
+}
+
+/* utility macro - fail command if non-blank arguments supplied */
+#define CMD_HAS_NO_ARGS(cmdName,args) \
+    do { \
+        if (!isBlankString(args)) { \
+            showArgsUnsupportedMsg(cmdName); \
+            return; \
+        } \
+    }  while (0)
+
+/* utility macro - fail command if non-blank arguments missing */
+#define CMD_REQUIRES_ARGS(cmdName,args) \
+    do { \
+        if (isBlankString(args)) { \
+            showArgsRequiredMsg(cmdName); \
+            return; \
+        } \
+    }  while (0)
 
 /* Searches command registry for command with given name */
 cmdBlock *findCommand(char *cmdName)
@@ -279,12 +348,21 @@ static void processInput(void)
     char *p;
     cmdBlock *block;
 
+    /* Remove newline at end of buffer */
     len = strlen(buf);
     if ((len > 0) && (buf[len - 1] == '\n'))
     {
         len--;
         buf[len] = '\0';
     }
+
+    /* If command line is blank, do nothing */
+    if (isBlankString(buf))
+    {
+        return;
+    }
+
+    /* Split command and arguments */
     p = strchr(buf, ' ');
     if (p != NULL)
     {
@@ -299,11 +377,11 @@ static void processInput(void)
     /* Check for special case syntax first */
     if (ins_strncmp(buf, "cd.", 3) == 0)
     {
-        changedir(buf + 2);
+        do_cd(buf + 2);
     }
     else if (ins_strncmp(buf, "cd\\", 3) == 0)
     {
-        changedir(buf + 2);
+        do_cd(buf + 2);
     }
     else if ((strlen(buf) == 2) && (buf[1] == ':'))
     {
@@ -327,6 +405,7 @@ static void processInput(void)
         }
         else
         {
+            /* No internal command found, presume external command */
             doExec(buf,p);
         }
     }
@@ -344,8 +423,9 @@ static void putPrompt(void)
     return;
 }
 
-static void doExit(char *ignored)
+static void do_exit(char *ignored)
 {
+    CMD_HAS_NO_ARGS("EXIT",ignored);
 #ifdef CONTINUOUS_LOOP
     primary = 0;
 #endif
@@ -355,25 +435,23 @@ static void doExit(char *ignored)
     }
 }
 
-static void doEcho(char *msg)
+static void do_echo(char *msg)
 {
     printf("%s\n", msg);
 }
 
-static void doReboot(char *ignored)
+static void do_reboot(char *ignored)
 {
+    CMD_HAS_NO_ARGS("REBOOT",ignored);
     PosReboot();
+    /* if we return from PosReboot(), we know it failed */
+    printf("ERROR: Reboot failed\n");
 }
 
-static void dotype(char *file)
+static void do_type(char *file)
 {
     FILE *fp;
-
-    if (strcmp(file,"") == 0)
-    {
-        printf("Required Parameter Missing\n");
-        return;
-    }
+    CMD_REQUIRES_ARGS("TYPE",file);
 
     fp = fopen(file, "r");
 
@@ -394,17 +472,13 @@ static void dotype(char *file)
     return;
 }
 
-static void dodel(char *fnm)
+static void do_del(char *fnm)
 {
     int ret;
     DTA *dta;
+    CMD_REQUIRES_ARGS("DEL",fnm);
 
     dta = PosGetDTA();
-    if(*fnm == '\0')
-    {
-        printf("Please Specify the file name \n");
-        return;
-    }
     ret = PosFindFirst(fnm,0x10);
 
     if(ret == 2)
@@ -421,7 +495,7 @@ static void dodel(char *fnm)
     return;
 }
 
-static void dodir(char *pattern)
+static void do_dir(char *pattern)
 {
     DTA *dta;
     int ret;
@@ -430,7 +504,7 @@ static void dodir(char *pattern)
     struct tm *tms;
 
     dta = PosGetDTA();
-    if (*pattern == '\0')
+    if (isBlankString(pattern))
     {
         p = "*.*";
     }
@@ -458,15 +532,28 @@ static void dodir(char *pattern)
     return;
 }
 
-static void dover(char *ignored)
+#ifdef __32BIT__
+#define PDOS_FLAVOR "PDOS-32"
+#else
+#define PDOS_FLAVOR "PDOS-16"
+#endif
+
+static void do_ver(char *ignored)
 {
-    printf("%s %s\n", __DATE__, __TIME__);
+    int ver, major, minor;
+    CMD_HAS_NO_ARGS("VER",ignored);
+    ver = PosGetDosVersion();
+    minor = (ver & 0xFF);
+    major = ((ver>>8)&0xFF);
+    printf("PCOMM for " PDOS_FLAVOR "\n");
+    printf("Reporting DOS version %d.%d\n", major, minor);
+    printf("PCOMM built at %s %s\n", __DATE__, __TIME__);
     return;
 }
 
-static void dopath(char *s)
+static void do_path(char *s)
 {
-     if (strcmp(s, "") == 0)
+     if (isBlankString(s))
      {
         char *t;
 
@@ -501,9 +588,9 @@ static void dopath(char *s)
      return;
 }
 
-static void doPrompt(char *s)
+static void do_prompt(char *s)
 {
-     if (strcmp(s, "") == 0)
+     if (isBlankString(s))
      {
         printf("Current PROMPT is %s\n", prompt);
      }
@@ -588,7 +675,7 @@ static void doExec(char *b,char *p)
     return;
 }
 
-static void doCopy(char *b)
+static void do_copy(char *b)
 {
     char bbb[512];
     char *src;
@@ -596,6 +683,7 @@ static void doCopy(char *b)
     FILE *fsrc;
     FILE *fdest;
     int bytes_read = 0;
+    CMD_REQUIRES_ARGS("COPY",b);
 
     src = b;
     dest = strchr(b,' ');
@@ -644,9 +732,20 @@ static void doCopy(char *b)
 
 }
 
-static void changedir(char *to)
+static void do_cd(char *to)
 {
     int ret;
+    int d;
+
+    /* No arguments means to print current drive and directory */
+    if (isBlankString(to))
+    {
+        d = PosGetDefaultDrive();
+        drive[0] = d + 'A';
+        PosGetCurDir(0, cwd);
+        printf("%s:\\%s\n", drive, cwd);
+        return;
+    }
 
     ret = PosChangeDir(to);
 
@@ -657,7 +756,13 @@ static void changedir(char *to)
 
 static void changedisk(int drive)
 {
+    int selected;
     PosSelectDisk(toupper(drive) - 'A');
+    selected = PosGetDefaultDrive() + 'A';
+    if (selected != toupper(drive))
+    {
+        printf("ERROR: Failed changing to drive %c:\n", toupper(drive));
+    }
     return;
 }
 
@@ -751,6 +856,32 @@ static void help_ren(void)
     printf("REN [path] [name]\n");
 }
 
+static void help_date(void)
+{
+    printf("DATE\n\n");
+    printf("Limitations (may be removed in future versions):\n");
+    printf("- No arguments supported at present\n");
+    printf("- No facility to change the date\n");
+}
+
+static void help_time(void)
+{
+    printf("TIME\n\n");
+    printf("Limitations (may be removed in future versions):\n");
+    printf("- No arguments supported at present\n");
+    printf("- No facility to change the time\n");
+}
+
+static void help_rem(void)
+{
+    printf("REM [any arguments ignored]\n");
+}
+
+static void help_pause(void)
+{
+    printf("PAUSE\n");
+}
+
 /* Modify string in-place to be all upper case */
 static void strtoupper(char *s)
 {
@@ -761,17 +892,26 @@ static void strtoupper(char *s)
     }
 }
 
-/* dohelp function and condition for it originally written by Alica Okano.
+/* Assumption as to number of lines before we print
+ * "Press any key to continue...". Actually we should call some API to find
+ * out screen dimensions and calculate dynamically. But for now, we will just
+ * assume a standard 25 line display. The paging offset then is a bit less
+ * than 25 to take into account the 3 line header, etc.
+ */
+#define HELP_PAGE_AMOUNT 19
+
+/* do_help function and condition for it originally written by Alica Okano.
  * Rewritten to use table-driven design by Simon Kissane.
  */
-static void dohelp(char *cmd)
+static void do_help(char *cmd)
 {
     int i = 0;
+    int pageAt = HELP_PAGE_AMOUNT;
     int maxCmdNameLen = 0, curCmdNameLen = 0;
     cmdBlock *block = NULL;
     char *pipe = NULL;
     char tmp[128];
-    if(*cmd == '\0')
+    if (isBlankString(cmd))
     {
         printf("Use HELP [command] to obtain more information about\n");
         printf("specific command.\n\n");
@@ -815,6 +955,13 @@ static void dohelp(char *cmd)
 
             /* Print help line */
             printf("%s %s.\n", tmp, block->description);
+
+            /* Page the screen if necessary */
+            if (i >= pageAt && cmdRegistry[i+1].name != NULL)
+            {
+                do_pause("");
+                pageAt += HELP_PAGE_AMOUNT;
+            }
         }
     }
     else
@@ -876,15 +1023,10 @@ static void dohelp(char *cmd)
     return;
 }
 
-static void domkdir(char *dnm)
+static void do_md(char *dnm)
 {
     int ret;
-
-    if(*dnm == '\0')
-    {
-        printf("Required Parameter Missing\n");
-        return;
-    }
+    CMD_REQUIRES_ARGS("MD",dnm);
 
     ret = PosMakeDir(dnm);
 
@@ -894,20 +1036,17 @@ static void domkdir(char *dnm)
     return;
 }
 
-static void doMCD(char *dnm) {
-    domkdir(dnm);
-    changedir(dnm);
+static void do_mcd(char *dnm)
+{
+    CMD_REQUIRES_ARGS("MCD",dnm);
+    do_md(dnm);
+    do_cd(dnm);
 }
 
-static void dormdir(char *dnm)
+static void do_rd(char *dnm)
 {
     int ret;
-
-    if(*dnm == '\0')
-    {
-        printf("Required Parameter Missing\n");
-        return;
-    }
+    CMD_REQUIRES_ARGS("RD",dnm);
 
     ret = PosRemoveDir(dnm);
 
@@ -921,10 +1060,11 @@ static void dormdir(char *dnm)
     return;
 }
 
-static void dorename(char *src)
+static void do_ren(char *src)
 {
     int ret;
     char *dest;
+    CMD_REQUIRES_ARGS("REN",src);
 
     dest = strchr(src, ' ');
     if (*src == '\0' || dest == NULL)
@@ -1113,4 +1253,32 @@ void safegets(char *buffer, int size)
 
     }
 
+}
+
+static void do_date(char *ignored)
+{
+    int y, m, d, dw;
+    CMD_HAS_NO_ARGS("DATE",ignored);
+    PosGetSystemDate(&y,&m,&d,&dw);
+    printf("%04d-%02d-%02d\n", y, m, d);
+}
+
+static void do_time(char *ignored)
+{
+    int hr, min, sec, hund;
+    CMD_HAS_NO_ARGS("TIME",ignored);
+    PosGetSystemTime(&hr,&min,&sec,&hund);
+    printf("%02d:%02d:%02d\n", hr, min, sec);
+}
+
+static void do_rem(char *ignored)
+{
+    /* Nothing to do for ocmment */
+}
+
+static void do_pause(char *ignored)
+{
+    CMD_HAS_NO_ARGS("PAUSE",ignored);
+    printf("Press any key to continue . . .\n");
+    PosDirectCharInputNoEcho();
 }

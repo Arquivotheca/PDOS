@@ -30,7 +30,7 @@
 #include "unused.h"
 #include "dow.h"
 
-#define MAX_PATH 120
+#define MAX_PATH 260
 #define DOS_VERSION 0x04
 #define NUM_SPECIAL_FILES 5
     /* stdin, stdout, stderr, stdaux, stdprn */

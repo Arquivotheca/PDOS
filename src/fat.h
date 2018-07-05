@@ -4,11 +4,13 @@
 #define FAT_INCLUDED
 
 #define MAXSECTSZ 512
+/* 255 UCS-2 characters for LFN is
+ * artificial limit set by Microsoft. */
+#define MAXFILENAME 255
 
 #define FATPOS_FOUND 1
 #define FATPOS_ONEMPTY 2
 #define FATPOS_ENDCLUSTER 3
-#define FATPOS_DIR_INVALID 4
 
 /*File name special values*/
 #define DIRENT_AVA 0x00
@@ -139,7 +141,9 @@ typedef struct {
     void *parm;
     char new_file[12]; /*new filename for rename*/
     int last;
-    char search[11];
+    unsigned char search[MAXFILENAME]; /* +++Add support for UCS-2. */
+    /* Length of search if search is LFN, 0 if 8.3 name. */
+    unsigned int lfn_search_len;
     const char *upto;
     unsigned char *dbuf;
     DIRENT *de;

@@ -40,6 +40,16 @@ static unsigned int fatFindFreeCluster(FAT *fat);
 static void fatChain(FAT *fat, FATFILE *fatfile);
 static void fatNuke(FAT *fat, unsigned long cluster);
 
+/* Functions for LFNs. */
+/* +++Perhaps move somewhere else. */
+static unsigned int isLFN(const char *fnm, unsigned int length);
+static unsigned char readLFNEntry(DIRENT *p, unsigned char *lfn,
+                                  unsigned int *length);
+static unsigned char generateChecksum(const char *fnm);
+static unsigned int cicmp(const unsigned char *first,
+                          const unsigned char *second,
+                          unsigned int length);
+
 static unsigned char dir_buf[MAXSECTSZ];
 
 
@@ -230,10 +240,6 @@ unsigned int fatCreatFile(FAT *fat, const char *fnm, FATFILE *fatfile,
     fatPosition(fat,fnm);
     p = fat->de;
 
-    if (fat->pos_result == FATPOS_DIR_INVALID)
-    {
-        return (POS_ERR_PATH_NOT_FOUND);
-    }
     if (fat->pos_result == FATPOS_FOUND)
     {
         fat->currcluster = p->start_cluster[1] << 8
@@ -346,17 +352,13 @@ unsigned int fatCreatDir(FAT *fat, const char *dnm, const char *parentname,
     }
     else
     {
+        /* If the root is parent, the dotdot start cluster is always 0. */
         parentstartcluster = 0;
-        /* +++Check if this is correct for expandable roots. */
     }
 
     fatPosition(fat,dnm);
     p = fat->de;
 
-    if (fat->pos_result == FATPOS_DIR_INVALID)
-    {
-        return (POS_ERR_PATH_NOT_FOUND);
-    }
     if (fat->pos_result == FATPOS_FOUND)
     {
         return (POS_ERR_PATH_NOT_FOUND);
@@ -493,10 +495,6 @@ unsigned int fatCreatNewFile(FAT *fat, const char *fnm, FATFILE *fatfile,
     fatPosition(fat,fnm);
     p = fat->de;
 
-    if (fat->pos_result == FATPOS_DIR_INVALID)
-    {
-        return (POS_ERR_PATH_NOT_FOUND);
-    }
     if (fat->pos_result == FATPOS_FOUND)
     {
         return (POS_ERR_FILE_EXISTS);
@@ -1020,37 +1018,28 @@ static void fatNextSearch(FAT *fat, char *search, const char **upto)
     {
         fat->last = 0;
     }
-    if ((p - *upto) > 12)
+    /* Checks if the next part of path is LFN.
+     * If it is, its length is stored. */
+    fat->lfn_search_len = isLFN(*upto, p - *upto);
+    if (!fat->lfn_search_len)
     {
-        fat->notfound = 1;
-        fat->pos_result = FATPOS_DIR_INVALID;
-        return;
-    }
-    q = memchr(*upto, '.', p - *upto);
-    if (q != NULL)
-    {
-        if ((q - *upto) > 8)
+        /* Next part of path is 8.3 name and might need padding. */
+        q = memchr(*upto, '.', p - *upto);
+        if (q != NULL)
         {
-            fat->notfound = 1;
-            fat->pos_result = FATPOS_DIR_INVALID;
-            return;
+            memcpy(search, *upto, q - *upto);
+            memset(search + (q - *upto), ' ', 8 - (q - *upto));
+            memcpy(search + 8, q + 1, p - q - 1);
+            memset(search + 8 + (p - q) - 1, ' ', 3 - ((p - q) - 1));
         }
-        if ((p - q) > 4)
+        else
         {
-            fat->notfound = 1;
-            fat->pos_result = FATPOS_DIR_INVALID;
-            return;
+            memcpy(search, *upto, p - *upto);
+            memset(search + (p - *upto), ' ', 11 - (p - *upto));
         }
-        memcpy(search, *upto, q - *upto);
-        memset(search + (q - *upto), ' ', 8 - (q - *upto));
-        memcpy(search + 8, q + 1, p - q - 1);
-        memset(search + 8 + (p - q) - 1, ' ', 3 - ((p - q) - 1));
     }
-    else
-    {
-        memcpy(search, *upto, p - *upto);
-        memset(search + (p - *upto), ' ', 11 - (p - *upto));
-    }
+    /* If the part of path is LFN, we just copy it into search. */
+    else memcpy(search, *upto, p - *upto);
     if (fat->last)
     {
         *upto = p;
@@ -1200,29 +1189,25 @@ static void fatDirSectorSearch(FAT *fat,
     int x;
     unsigned char *buf;
     DIRENT *p;
+    unsigned char lfn[MAXFILENAME]; /* +++Add UCS-2 support. */
+    unsigned int lfn_len;
+    unsigned char checksum;
 
     buf = fat->dbuf;
     for (x = 0; x < numsectors; x++)
     {
         fatReadLogical(fat, startSector + x, buf);
-        for (p = (DIRENT *) buf; (unsigned char *) p < buf + fat->sector_size; p++)
+        for (p = (DIRENT *) buf; (unsigned char *) p < buf + fat->sector_size;
+             p++)
         {
-            if (memcmp(p->file_name, search, 11) == 0)
-            {
-                fat->fnd=1;
-                fat->currcluster = p->start_cluster[0]
-                    | ((unsigned long) p->start_cluster[1] << 8);
-                if (fat->fat_type == 32)
-                {
-                    fat->currcluster = fat->currcluster |
-                    (((unsigned long) p->access_rights[0] << 16) |
-                     ((unsigned long) p->access_rights[1] << 24));
-                }
-                fat->de = p;
-                fat->dirSect = startSector + x;
-                return;
-            }
-            else if (p->file_name[0] == '\0')
+            /* Order of the conditionals is important,
+             * because deleted LFNs exist and "empty"
+             * LFN might also appear.
+             * Order is: end?, deleted entry?, LFN? */
+            /* Checks if we reached the end of the directory.
+             * The end has the first name character '\0' and
+             * it is an empty entry. */
+            if (p->file_name[0] == '\0')
             {
                 fat->fnd=1;
                 fat->de = p;
@@ -1231,12 +1216,85 @@ static void fatDirSectorSearch(FAT *fat,
                 fat->pos_result = FATPOS_ONEMPTY;
                 return;
             }
-            else if (p->file_name[0] == DIRENT_DEL && !fat->found_deleted)
+            /* Checks for deleted entries.
+             * All deleted entries have DIRENT_DEL
+             * (0xE5) at the beginning of their name. */
+            else if (p->file_name[0] == DIRENT_DEL)
             {
-                fat->found_deleted = 1;
-                fat->temp_currcluster = fat->currcluster;
-                fat->temp_de = p;
-                fat->temp_dirSect = startSector + x;
+                /* If we do not have stored deleted entry,
+                 * it is stored now. */
+                if (!fat->found_deleted)
+                {
+                    fat->found_deleted = 1;
+                    fat->temp_currcluster = fat->currcluster;
+                    fat->temp_de = p;
+                    fat->temp_dirSect = startSector + x;
+                }
+            }
+            /* Checks for LFN.
+             * All LFNs have attribute
+             * DIRENT_LFN (0x0F). */
+            else if (p->file_attr == DIRENT_LFN)
+            {
+                /* LFN entries should be ignored when looking for 8.3 name. */
+                if (fat->lfn_search_len)
+                {
+                    checksum = readLFNEntry(p, lfn, &lfn_len);
+                }
+            }
+            /* If it is not the end, deleted entry or LFN,
+             * it must be a normal entry (8.3 name). */
+            else
+            {
+                /* If we are looking for LFN, this should
+                 * be 8.3 entry for it. */
+                if (fat->lfn_search_len)
+                {
+                    /* Checks if the found LFN has the
+                     * same length as the one we search for. */
+                    if (fat->lfn_search_len == lfn_len &&
+                        /* Checks if the checksum corresponds with 8.3 name. */
+                        generateChecksum(p->file_name) == checksum &&
+                        /* Case-insensitive comparison to check
+                         * if they are same. */
+                        !cicmp(fat->search, lfn, lfn_len))
+                    {
+                        /* Does the same as is done when 8.3 name is found. */
+                        fat->fnd=1;
+                        fat->currcluster = p->start_cluster[0]
+                            | ((unsigned long) p->start_cluster[1] << 8);
+                        if (fat->fat_type == 32)
+                        {
+                            fat->currcluster = fat->currcluster |
+                            (((unsigned long) p->access_rights[0] << 16) |
+                             ((unsigned long) p->access_rights[1] << 24));
+                        }
+                        fat->de = p;
+                        fat->dirSect = startSector + x;
+                        return;
+                    }
+
+                    /* lfn_len is set to 0 to not use this LFN again. */
+                    lfn_len = 0;
+                }
+
+                /* If we are looking for 8.3 name, check if the
+                 * entry is not the one we are looking for. */
+                else if (memcmp(p->file_name, search, 11) == 0)
+                {
+                    fat->fnd=1;
+                    fat->currcluster = p->start_cluster[0]
+                        | ((unsigned long) p->start_cluster[1] << 8);
+                    if (fat->fat_type == 32)
+                    {
+                        fat->currcluster = fat->currcluster |
+                        (((unsigned long) p->access_rights[0] << 16) |
+                         ((unsigned long) p->access_rights[1] << 24));
+                    }
+                    fat->de = p;
+                    fat->dirSect = startSector + x;
+                    return;
+                }
             }
         }
     }
@@ -1804,5 +1862,177 @@ static void fatNuke(FAT *fat, unsigned long cluster)
         fatWriteLogical(fat, buffered, buf);
     }
     return;
+}
+
+/* Functions for LFN. */
+/* Checks if the filename is LFN (Case-insensitive).
+ * If it is LFN, returns length, otherwise 0*/
+static unsigned int isLFN(const char *fnm, unsigned int length)
+{
+    const char *p;
+    int i;
+
+    /* Checks if it is too long for 8.3 name. */
+    if (length > 12) return (length);
+
+    p = memchr(fnm, '.', length);
+    /* Checks if the name or extension are not too long. */
+    if (p && ((p - fnm > 8) || (length - (p - fnm) - 1 > 3)))  return (length);
+    if (!p && length > 8) return length;
+
+    /* Loops over the filename and checks
+     * for invalid characters in 8.3 name. */
+    for (i = 0; i < length; i++)
+    {
+        /* p points to the last dot in filename. */
+        if (i == p - fnm) continue;
+        /* Invalid characters are + , . ; = [ ]. */
+        if (fnm[i] == '+' || fnm[i] == ',' || fnm[i] == '.' ||
+            fnm[i] == ';' || fnm[i] == '=' || fnm[i] == '[' ||
+            fnm[i] == ']') return (length);
+    }
+
+    /* +++Add logic for UCS-2 (Unicode). */
+    return (0);
+}
+
+/* Reads LFN entry and puts the characters into
+ * provided array. Also reads checksum and returns
+ * it. */
+/* +++Add support for UCS-2. */
+static unsigned char readLFNEntry(DIRENT *p, unsigned char *lfn,
+                                  unsigned int *length)
+{
+    unsigned int lfn_place;
+    int i;
+    int offset;
+
+    /* LFN entries go from the end to beginning,
+     * with each one having 13 Unicode characters. */
+    /* Structure of LFN entry (both ends are included):
+     * 0 = Ordinal field
+     * 1 - 10 = 5 UCS-2 characters
+     * 11 = Attribute (DIRENT_LFN)
+     * 12 = Reserved (always 0x00)
+     * 13 = Checksum (takes place of p->first_char)
+     * 14 - 25 = 6 UCS-2 characters
+     * 26 - 27 = Start cluster (always 0x0000)
+     * 28 - 31 = 2 UCS-2 characters */
+    /* Ordinal field (both ends are included):
+     * 0 - 5 = Place of LFN entry in the order
+     * 6 = Last LFN entry (so the first one on disk)
+     * 7 = Deleted LFN (???) */
+    /* +++Find explanation for deleted LFN bit. */
+    /* Ordinal field information is one based,
+     * not zero based. */
+    lfn_place = (p->file_name[0] & 0x3f) - 1;
+    /* Checks if it is not the last LFN entry. */
+    if (p->file_name[0] & 0x40)
+    {
+        /* Read the characters from the entry. Because
+         * it is the last LFN entry, it might not have
+         * all 13 UCS-2 characters. */
+        /* First 5 characters are at 1 - 11,
+         * so offset is 1. */
+        offset = 1;
+        for (i = 0; i < 13; i++)
+        {
+            /* Second 6 characters are at 14 - 25, so 4
+             * bytes offset. 3 non-character bytes are
+             * between first 5 and second 6 characters.*/
+            if (i == 5) offset += 3;
+            /* Third 2 characters are at 28 - 31, so 6
+             * bytes offset. 2 non-character bytes are
+             * between second 6 and third 2 characters.*/
+            if (i == 11) offset += 2;
+
+            /* Checks if it is not 0x0000, what marks
+             * the end of the LFN. */
+            if (p->file_name[i * 2 + offset] == 0x00 &&
+                p->file_name[i * 2 + offset + 1] == 0x00)
+            break;
+
+            /* First byte of UCS-2 character is ASCII
+             * character very often and the second one is
+             * just 0x00. */
+            lfn[lfn_place*13+i] = p->file_name[i * 2 + offset];
+            /* +++Add support for UCS-2. Second byte is
+             * p->file_name[i * 2 + offset + 1]. */
+        }
+        /* Sets length to the length of LFN. Because
+         * this is the last LFN entry, lfn_place * 13
+         * + i gives us the length. */
+        *length = lfn_place * 13 + i;
+    }
+    else
+    {
+        /* Read the characters from the entry. */
+        /* First 5 characters are at 1 - 11,
+         * so offset is 1. */
+        offset = 1;
+        for (i = 0; i < 13; i++)
+        {
+            /* Second 6 characters are at 14 - 25, so 4
+             * bytes offset. 3 non-character bytes are
+             * between first 5 and second 6 characters.*/
+            if (i == 5) offset += 3;
+            /* Third 2 characters are at 28 - 31, so 6
+             * bytes offset. 2 non-character bytes are
+             * between second 6 and third 2 characters.*/
+            if (i == 11) offset += 2;
+
+            /* First byte of UCS-2 character is ASCII
+             * character very often and the second one is
+             * just 0x00. */
+            lfn[lfn_place*13+i] = p->file_name[i * 2 + offset];
+            /* +++Add support for UCS-2. Second byte is
+             * p->file_name[i * 2 + offset + 1]. */
+        }
+    }
+    /* Returns checksum read from 13. byte. */
+    return (p->first_char);
+}
+
+/* Generates checksum from 8.3 name. */
+static unsigned char generateChecksum(const char *fnm)
+{
+    /* Steps are:
+     * 1. Use 0 as start.
+     * 2. Rotate the sum bitwise right.
+     * 3. Add ASCII value of a character from 8.3 name
+     * (go from start to end and do not use the dot, as usual).
+     * 4. Repeat 2. and 3. until all characters (11) are used. */
+    unsigned char checksum = 0;
+    int i;
+
+    for (i = 0; i < 11; i++)
+    {
+        /* Bitwise right rotation is that we shift (move) all
+         * bits to right, but preserve the bit (bit 0) that would get
+         * deleted by this and put it on the beginning ( << 7). */
+        checksum = ((checksum & 1) << 7) | (checksum >> 1);
+        /* Adds the ASCII value of the character from 8.3 name. */
+        checksum += fnm[i];
+    }
+
+    return (checksum);
+}
+
+/* Does case-insensitive comparison of 2 arrays,
+ * with provided length. Returns 0 if they are
+ * same, otherwise 1. */
+/* +++Add UCS-2 support. Changing char to int should be enough. */
+static unsigned int cicmp(const unsigned char *first,
+                          const unsigned char *second,
+                          unsigned int length)
+{
+    unsigned int i;
+
+    for (i = 0; i < length; i++)
+    {
+        if (toupper(first[i]) != toupper(second[i])) return (1);
+    }
+
+    return (0);
 }
 /**/

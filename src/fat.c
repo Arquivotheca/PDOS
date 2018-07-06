@@ -924,6 +924,8 @@ static void fatPosition(FAT *fat, const char *fnm)
 {
     fat->notfound = 0;
     fat->pos_result = FATPOS_FOUND;
+    /* Resets c_path pointer. */
+    fat->c_path = fat->corrected_path;
     fat->upto = fnm;
     fat->currcluster = 0;
     fat->found_deleted = 0;
@@ -1038,6 +1040,8 @@ static void fatNextSearch(FAT *fat, char *search, const char **upto)
     }
     /* If the part of path is LFN, we just copy it into search. */
     else memcpy(search, *upto, p - *upto);
+    /* Stores length of this part of path. */
+    fat->path_part_len = p - *upto;
     if (fat->last)
     {
         *upto = p;
@@ -1188,8 +1192,9 @@ static void fatDirSectorSearch(FAT *fat,
     unsigned char *buf;
     DIRENT *p;
     unsigned char lfn[MAXFILENAME]; /* +++Add UCS-2 support. */
-    unsigned int lfn_len;
+    unsigned int lfn_len = 0;
     unsigned char checksum;
+    int i;
 
     buf = fat->dbuf;
     for (x = 0; x < numsectors; x++)
@@ -1234,11 +1239,7 @@ static void fatDirSectorSearch(FAT *fat,
              * DIRENT_LFN (0x0F). */
             else if (p->file_attr == DIRENT_LFN)
             {
-                /* LFN entries should be ignored when looking for 8.3 name. */
-                if (fat->lfn_search_len)
-                {
-                    checksum = readLFNEntry(p, lfn, &lfn_len);
-                }
+                checksum = readLFNEntry(p, lfn, &lfn_len);
             }
             /* If it is not the end, deleted entry or LFN,
              * it must be a normal entry (8.3 name). */
@@ -1269,6 +1270,14 @@ static void fatDirSectorSearch(FAT *fat,
                         }
                         fat->de = p;
                         fat->dirSect = startSector + x;
+                        /* Adds the LFN to fat->corrected_path. */
+                        memcpy(fat->c_path, lfn, lfn_len);
+                        fat->c_path += lfn_len;
+                        /* Adds '\' if the path continues,
+                         * otherwise adds null terminator. */
+                        if (!fat->last) fat->c_path[0] = '\\';
+                        else fat->c_path[0] = '\0';
+                        fat->c_path++;
                         return;
                     }
 
@@ -1291,6 +1300,35 @@ static void fatDirSectorSearch(FAT *fat,
                     }
                     fat->de = p;
                     fat->dirSect = startSector + x;
+                    /* Checks, if there is LFN associated
+                     * with this 8.3 entry. */
+                    if (lfn_len && generateChecksum(p->file_name) == checksum)
+                    {
+                        /* Adds the LFN to fat->corrected_path. */
+                        memcpy(fat->c_path, lfn, lfn_len);
+                        fat->c_path += lfn_len;
+                        /* Adds '\' if the path continues,
+                         * otherwise adds null terminator. */
+                        if (!fat->last) fat->c_path[0] = '\\';
+                        else fat->c_path[0] = '\0';
+                        fat->c_path++;
+                    }
+                    else
+                    {
+                        /* If no LFN is found, upper the original
+                         * path part and add it to corrected_path */
+                        for (i = 0; i < fat->path_part_len; i++)
+                        {
+                            fat->c_path[i] =
+                            toupper((fat->upto - fat->path_part_len)[i]);
+                        }
+                        fat->c_path += fat->path_part_len;
+                        /* Adds '\' if the path continues,
+                         * otherwise adds null terminator. */
+                        if (!fat->last) fat->c_path[0] = '\\';
+                        else fat->c_path[0] = '\0';
+                        fat->c_path++;
+                    }
                     return;
                 }
             }

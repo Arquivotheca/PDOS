@@ -30,7 +30,7 @@
 #include "unused.h"
 #include "dow.h"
 
-#define MAX_PATH 260
+#define MAX_PATH 260 /* With trailing '\0' included. */
 #define DOS_VERSION 0x04
 #define NUM_SPECIAL_FILES 5
     /* stdin, stdout, stderr, stdaux, stdprn */
@@ -1665,7 +1665,12 @@ int PosChangeDir(const char *to)
     ret = fatGetFileAttributes(&disks[drive].fat, newcwd, &attr);
     if (ret || !(attr & DIRENT_SUBDIR)) return (POS_ERR_PATH_NOT_FOUND);
 
-    strcpy(disks[drive].cwd, newcwd);
+    /* If newcwd is "", we should just change to root
+     * by copying newcwd into cwd. */
+    if (strcmp(newcwd, "") == 0) strcpy(disks[drive].cwd, newcwd);
+    /* fatPosition provides us with corrected path with LFNs
+     * where possible and correct case, so we use it as cwd. */
+    else strcpy(disks[drive].cwd, disks[drive].fat.corrected_path);
 
     return (0);
 }

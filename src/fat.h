@@ -144,6 +144,14 @@ typedef struct {
     unsigned char search[MAXFILENAME]; /* +++Add support for UCS-2. */
     /* Length of search if search is LFN, 0 if 8.3 name. */
     unsigned int lfn_search_len;
+    /* Duplicate path but with all names replaced with read LFNs,
+     * when possible and uppered 8.3 names otherwise.
+     * 260 is MAX_PATH from pos.h. */
+    unsigned char corrected_path[260]; /* +++Add support for UCS-2. */
+    /* Pointer to corrected_path, used for modifying it. */
+    unsigned char *c_path;
+    /* Length of path part between 2 "\" or at the end. */
+    unsigned int path_part_len;
     const char *upto;
     unsigned char *dbuf;
     DIRENT *de;

@@ -517,7 +517,7 @@ static void do_dir(char *pattern)
     {
         tt = dos_to_timet(dta->file_date,dta->file_time);
         tms = localtime(&tt);
-        printf("%-13s %9ld %02x %04d-%02d-%02d %02d:%02d:%02d\n",
+        printf("%-13s %9ld %02x %04d-%02d-%02d %02d:%02d:%02d %s\n",
                dta->file_name,
                dta->file_size,
                dta->attrib,
@@ -526,7 +526,8 @@ static void do_dir(char *pattern)
                tms->tm_mday,
                tms->tm_hour,
                tms->tm_min,
-               tms->tm_sec);
+               tms->tm_sec,
+               dta->lfn);
         ret = PosFindNext();
     }
     return;

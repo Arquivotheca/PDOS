@@ -2355,65 +2355,87 @@ static int ff_search(void)
     char file[13];
     char *p;
     DIRENT dirent;
+    unsigned char lfn[255]; /*+++Add UCS-2 support. */
+    unsigned int lfn_len = 0;
+    unsigned char checksum;
 
     ret = fileRead(ff_handle,&dirent, sizeof dirent);
     while ((ret == sizeof dirent) && (dirent.file_name[0] != '\0'))
     {
         if (dirent.file_name[0] != DIRENT_DEL)
         {
-            memcpy(file, dirent.file_name, sizeof(dirent.file_name));
-            file[sizeof(dirent.file_name)] = '\0';
-            p = strchr(file, ' ');
-            if (p != NULL)
+            if (dirent.file_attr == DIRENT_LFN)
             {
-                *p = '\0';
+                /* Reads LFN entry and stores the checksum. */
+                checksum = readLFNEntry(&dirent, lfn, &lfn_len);
             }
             else
             {
-                p = file + strlen(file);
-            }
-            *p++ = '.';
-            memcpy(p, dirent.file_ext,sizeof(dirent.file_ext));
-            p[3] = '\0';
-            p = strchr(file, ' ');
-            if (p != NULL)
-            {
-                *p-- = '\0';
-            }
-            if (patmat(file, ff_pat)
+                memcpy(file, dirent.file_name, sizeof(dirent.file_name));
+                file[sizeof(dirent.file_name)] = '\0';
+                p = strchr(file, ' ');
+                if (p != NULL)
+                {
+                    *p = '\0';
+                }
+                else
+                {
+                    p = file + strlen(file);
+                }
+                *p++ = '.';
+                memcpy(p, dirent.file_ext,sizeof(dirent.file_ext));
+                p[3] = '\0';
+                p = strchr(file, ' ');
+                if (p != NULL)
+                {
+                    *p-- = '\0';
+                }
+                if (patmat(file, ff_pat)
 
-                /* if it is not a directory, or they asked for
-                directories, then that is OK */
-                && (((dirent.file_attr & DIRENT_SUBDIR) == 0)
-                    || ((attr & DIRENT_SUBDIR) != 0))
+                    /* if it is not a directory, or they asked for
+                    directories, then that is OK */
+                    && (((dirent.file_attr & DIRENT_SUBDIR) == 0)
+                        || ((attr & DIRENT_SUBDIR) != 0))
 
-                /* if it is not a volume label, or they asked
-                for volume labels, then that is OK */
-                && (((dirent.file_attr & DIRENT_EXTRAB3) == 0)
-                    || ((attr & DIRENT_EXTRAB3) != 0))
+                    /* if it is not a volume label, or they asked
+                    for volume labels, then that is OK */
+                    && (((dirent.file_attr & DIRENT_EXTRAB3) == 0)
+                        || ((attr & DIRENT_EXTRAB3) != 0))
 
-            )
-            {
-                if ((p != NULL) && (*p == '.')) *p = '\0';
-                dta->attrib = dirent.file_attr; /* attribute */
+                )
+                {
+                    if ((p != NULL) && (*p == '.')) *p = '\0';
+                    dta->attrib = dirent.file_attr; /* attribute */
 
-                dta->file_time = dirent.last_modtime[0]   /*time*/
-                | ((unsigned int)dirent.last_modtime[1] << 8);
+                    dta->file_time = dirent.last_modtime[0]   /*time*/
+                    | ((unsigned int)dirent.last_modtime[1] << 8);
 
-                dta->file_date = dirent.last_moddate[0]   /*date*/
-                | ((unsigned int)dirent.last_moddate[1] << 8);
+                    dta->file_date = dirent.last_moddate[0]   /*date*/
+                    | ((unsigned int)dirent.last_moddate[1] << 8);
 
-                dta->file_size = dirent.file_size[0]      /*size*/
-                | ((unsigned long)dirent.file_size[1] << 8)
-                | ((unsigned long)dirent.file_size[2] << 16)
-                | ((unsigned long)dirent.file_size[3] << 24);
+                    dta->file_size = dirent.file_size[0]      /*size*/
+                    | ((unsigned long)dirent.file_size[1] << 8)
+                    | ((unsigned long)dirent.file_size[2] << 16)
+                    | ((unsigned long)dirent.file_size[3] << 24);
 
-                dta->startcluster=dirent.start_cluster[0]
-                |(dirent.start_cluster[1]<<8);
+                    dta->startcluster=dirent.start_cluster[0]
+                    |(dirent.start_cluster[1]<<8);
 
-                memset(dta->file_name, '\0', sizeof(dta->file_name));
-                strcpy(dta->file_name, file);
-                return (0);
+                    memset(dta->file_name, '\0', sizeof(dta->file_name));
+                    strcpy(dta->file_name, file);
+
+                    /* Checks if the checksum is correct for this entry
+                     * and if it is, stores it in the DTA. */
+                    if (lfn_len &&
+                        checksum == generateChecksum(dirent.file_name))
+                    {
+                        memcpy(dta->lfn, lfn, lfn_len);
+                        /* Adds null terminator at the end of LFN. */
+                        dta->lfn[lfn_len] = '\0';
+                    }
+                    else dta->lfn[0] = '\0';
+                    return (0);
+                }
             }
         }
         ret = fileRead(ff_handle, &dirent , sizeof dirent);

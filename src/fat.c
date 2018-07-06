@@ -44,9 +44,6 @@ static void fatNuke(FAT *fat, unsigned long cluster);
 /* Functions for LFNs. */
 /* +++Perhaps move somewhere else. */
 static unsigned int isLFN(const char *fnm, unsigned int length);
-static unsigned char readLFNEntry(DIRENT *p, unsigned char *lfn,
-                                  unsigned int *length);
-static unsigned char generateChecksum(const char *fnm);
 static unsigned int cicmp(const unsigned char *first,
                           const unsigned char *second,
                           unsigned int length);
@@ -1901,8 +1898,8 @@ static unsigned int isLFN(const char *fnm, unsigned int length)
  * provided array. Also reads checksum and returns
  * it. */
 /* +++Add support for UCS-2. */
-static unsigned char readLFNEntry(DIRENT *p, unsigned char *lfn,
-                                  unsigned int *length)
+unsigned char readLFNEntry(DIRENT *p, unsigned char *lfn,
+                           unsigned int *length)
 {
     unsigned int lfn_place;
     int i;
@@ -1995,7 +1992,7 @@ static unsigned char readLFNEntry(DIRENT *p, unsigned char *lfn,
 }
 
 /* Generates checksum from 8.3 name. */
-static unsigned char generateChecksum(const char *fnm)
+unsigned char generateChecksum(const char *fnm)
 {
     /* Steps are:
      * 1. Use 0 as start.

@@ -285,6 +285,10 @@ typedef struct {
     char file_name[13];    /*ASCIIZ file name and extension in
                              form NAME.EXT with blanks stripped
                              0x1E)*/
+    unsigned char lfn[256]; /*Stores LFN (255 characters max.) and
+                             *null terminator.*/
+                             /*+++Add support for UCS-2 and find
+                              *better place for LFN provided to DIR.*/
 
 }DTA;
 /**/

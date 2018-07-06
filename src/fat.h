@@ -180,4 +180,11 @@ unsigned int fatSetFileAttributes(FAT *fat,const char *fnm,int attr);
 /*To Set the attributes of the given file*/
 unsigned int fatUpdateDateAndTime(FAT *fat,FATFILE *fatfile);
 /*To update the date and time of the given file*/
+
+/*LFN functions that are used by ff_search.*/
+/*Reads LFN entry and returns checksum.*/
+unsigned char readLFNEntry(DIRENT *p, unsigned char *lfn,
+                                  unsigned int *length);
+/*Generates checksum from 8.3 name. */
+unsigned char generateChecksum(const char *fnm);
 #endif

@@ -1355,8 +1355,21 @@ unsigned int PosDirectCharInputNoEcho(void)
 {
     int scan;
     int ascii;
+    static int gotextend = 0;
 
-    BosReadKeyboardCharacter(&scan, &ascii);
+    if (gotextend != 0)
+    {
+        ascii = gotextend;
+        gotextend = 0;
+    }
+    else
+    {
+        BosReadKeyboardCharacter(&scan, &ascii);
+        if (ascii == 0)
+        {
+            gotextend = scan;
+        }
+    }
 
     return ascii;
 }

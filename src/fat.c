@@ -15,6 +15,7 @@
 
 #include <string.h>
 #include <stdio.h>
+#include <ctype.h>
 #include "fat.h"
 #include "bos.h"
 #include "unused.h"

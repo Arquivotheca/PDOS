@@ -5,7 +5,8 @@
 
 #define MAXSECTSZ 512
 /* 255 UCS-2 characters for LFN is
- * artificial limit set by Microsoft. */
+ * artificial limit set by Microsoft.
+ * Null terminator is not included. */
 #define MAXFILENAME 255
 
 #define FATPOS_FOUND 1

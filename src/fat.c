@@ -47,6 +47,11 @@ static unsigned int isLFN(const char *fnm, unsigned int length);
 static unsigned int cicmp(const unsigned char *first,
                           const unsigned char *second,
                           unsigned int length);
+static int createLFNs(FAT *fat, unsigned char *lfn, unsigned int lfn_len);
+static void generate83Name(unsigned char *lfn, unsigned int lfn_len,
+                           unsigned char *shortname);
+static int findFreeSpaceForLFN(FAT *fat, unsigned int required_free,
+                               char *shortname, unsigned int *numsectors);
 
 static unsigned char dir_buf[MAXSECTSZ];
 
@@ -230,6 +235,7 @@ unsigned int fatCreatFile(FAT *fat, const char *fnm, FATFILE *fatfile,
     int found = 0;
     unsigned char lbuf[MAXSECTSZ];
     FATFILE tempfatfile;
+    int ret;
 
     if ((fnm[0] == '\\') || (fnm[0] == '/'))
     {
@@ -274,6 +280,7 @@ unsigned int fatCreatFile(FAT *fat, const char *fnm, FATFILE *fatfile,
     }
     if (found || fat->pos_result == FATPOS_ONEMPTY)
     {
+        /* +++Add LFN logic. */
         fatfile->startcluster=0;
         memset(p, '\0', sizeof(DIRENT));
         memcpy(p->file_name, fat->search,
@@ -332,6 +339,7 @@ unsigned int fatCreatDir(FAT *fat, const char *dnm, const char *parentname,
     unsigned parentstartcluster = 0;
     unsigned long startsector;
     FATFILE tempfatfile;
+    int ret;
 
     if ((dnm[0] == '\\') || (dnm[0] == '/'))
     {
@@ -384,6 +392,15 @@ unsigned int fatCreatDir(FAT *fat, const char *dnm, const char *parentname,
     }
     if (fat->pos_result == FATPOS_ONEMPTY)
     {
+        if (fat->lfn_search_len)
+        {
+            /* createLFNs is similar to fatPosition, but it
+             * is guaranteed that it will end on empty/deleted
+             * slot or return error. */
+            ret = createLFNs(fat, fat->search, fat->lfn_search_len);
+            if (ret) return (ret);
+            p = fat->de;
+        }
         startcluster = fatFindFreeCluster(fat);
         if(!(startcluster)) return (POS_ERR_PATH_NOT_FOUND);
 
@@ -485,6 +502,7 @@ unsigned int fatCreatNewFile(FAT *fat, const char *fnm, FATFILE *fatfile,
     DIRENT *p;
     unsigned char lbuf[MAXSECTSZ];
     FATFILE tempfatfile;
+    int ret;
 
     if ((fnm[0] == '\\') || (fnm[0] == '/'))
     {
@@ -520,6 +538,7 @@ unsigned int fatCreatNewFile(FAT *fat, const char *fnm, FATFILE *fatfile,
     }
     if (fat->pos_result == FATPOS_ONEMPTY)
     {
+        /* +++Add LFN logic. */
         fatfile->startcluster=0;
         memset(p, '\0', sizeof(DIRENT));
         memcpy(p->file_name, fat->search,
@@ -944,6 +963,12 @@ static void fatPosition(FAT *fat, const char *fnm)
             fatReadLogical(fat, fat->dirSect, fat->dbuf);
             fat->pos_result = FATPOS_ONEMPTY;
         }
+        /* Add null terminator to corrected_path
+         * if we are positioned on empty DIRENT
+         * or at the endcluster. */
+        if (fat->pos_result == FATPOS_ONEMPTY ||
+        fat->pos_result == FATPOS_ENDCLUSTER)
+        fat->c_path[0] = '\0';
 
         fat->processing_root = 1;
         return;
@@ -966,6 +991,13 @@ static void fatPosition(FAT *fat, const char *fnm)
         fatReadLogical(fat, fat->dirSect, fat->dbuf);
         fat->pos_result = FATPOS_ONEMPTY;
     }
+    /* Add null terminator to corrected_path
+     * if we are positioned on empty DIRENT
+     * or at the endcluster. */
+    if (fat->pos_result == FATPOS_ONEMPTY ||
+    fat->pos_result == FATPOS_ENDCLUSTER)
+    fat->c_path[0] = '\0';
+
     return;
 }
 
@@ -1191,6 +1223,7 @@ static void fatDirSectorSearch(FAT *fat,
     int x;
     unsigned char *buf;
     DIRENT *p;
+    /* +++Add logic for LFNs that cross clusters. */
     unsigned char lfn[MAXFILENAME]; /* +++Add UCS-2 support. */
     unsigned int lfn_len = 0;
     unsigned char checksum;
@@ -1316,11 +1349,31 @@ static void fatDirSectorSearch(FAT *fat,
                     else
                     {
                         /* If no LFN is found, upper the original
-                         * path part and add it to corrected_path */
-                        for (i = 0; i < fat->path_part_len; i++)
+                         * path part and add it to corrected_path. */
+                        if (!fat->last)
                         {
-                            fat->c_path[i] =
-                            toupper((fat->upto - fat->path_part_len)[i]);
+                            /* If it is not the last part of the path,
+                             * *upto points at the character after '\',
+                             * not at the '\' as we need, so we read
+                             * from fat->upto - 1 - fat->path_part_len.*/
+                            for (i = 0; i < fat->path_part_len; i++)
+                            {
+                                fat->c_path[i] =
+                                toupper((fat->upto - 1
+                                         - fat->path_part_len)[i]);
+                            }
+                        }
+                        else
+                        {
+                            /* It is the last part of the path, so
+                             * *upto points to '\', so we read from
+                             * fat->upto - fat->path_part_len. */
+                            for (i = 0; i < fat->path_part_len; i++)
+                            {
+                                fat->c_path[i] =
+                                toupper((fat->upto
+                                         - fat->path_part_len)[i]);
+                            }
                         }
                         fat->c_path += fat->path_part_len;
                         /* Adds '\' if the path continues,
@@ -1922,7 +1975,8 @@ static unsigned int isLFN(const char *fnm, unsigned int length)
     {
         /* p points to the last dot in filename. */
         if (i == p - fnm) continue;
-        /* Invalid characters are + , . ; = [ ]. */
+        /* Invalid characters are + , . ; = [ ] and all non-ASCII. */
+        /* +++Add check fnm[i] > 127 when implementing UCS-2 support. */
         if (fnm[i] == '+' || fnm[i] == ',' || fnm[i] == '.' ||
             fnm[i] == ';' || fnm[i] == '=' || fnm[i] == '[' ||
             fnm[i] == ']') return (length);
@@ -2071,4 +2125,423 @@ static unsigned int cicmp(const unsigned char *first,
 
     return (0);
 }
+
+/* Creates LFN entries, generates 8.3 name and
+ * sets all variables so 8.3 entry will be properly
+ * created. */
+static int createLFNs(FAT *fat, unsigned char *lfn, unsigned int lfn_len)
+{
+    char shortname[11];
+    char orig_lfn[MAXFILENAME]; /* +++Add UCS-2 support. */
+    unsigned int required_free;
+    int ret;
+    unsigned char checksum;
+    unsigned int numsectors;
+    unsigned char *buf;
+    unsigned long nextCluster;
+    unsigned long temp_startSector;
+    unsigned int x;
+    DIRENT *p;
+    unsigned int i;
+    unsigned int offset;
+
+    /* Stores the provided LFN because it will be changed by
+     * fatPosition in findFreeSpaceForLFN. */
+    memcpy(orig_lfn, lfn, lfn_len);
+
+    generate83Name(orig_lfn, lfn_len, shortname);
+
+    /* Calculates how many free entries will
+     * be need to store LFN and 8.3 entry. */
+    /* 13 UCS-2 characters fit into one LFN entry. */
+    required_free = lfn_len / 13 + 1;
+    /* Even if it is not whole 13 characters,
+     * another entry will be needed. */
+    if (lfn_len % 13) required_free++;
+
+    ret = findFreeSpaceForLFN(fat, required_free, shortname, &numsectors);
+    if (ret) return (ret);
+    /* Checksum must be generated after finding free space,
+     * because that function modifies shortname if any
+     * conflicts were found. */
+    checksum = generateChecksum(shortname);
+    buf = fat->dbuf;
+    /* Reads sector in which first empty entry was found. */
+
+    while (!fatEndCluster(fat, fat->currcluster))
+    {
+        /* If we are in fixed size root, we set the startSector
+         * to fat->rootstart. */
+        if (fat->processing_root && fat->rootsize)
+        {
+            fat->startSector = fat->rootstart;
+        }
+        /* Otherwise fatClusterAnalyse can provide us
+         * with startSector. */
+        else
+        {
+            fatClusterAnalyse(fat, fat->currcluster,
+                              &fat->startSector, &nextCluster);
+        }
+        /* If fat->de points to a DIRENT, we should start
+         * from sector findFreeSpaceForLFN decided. */
+        if (fat->de) x = fat->dirSect - fat->startSector;
+        /* Otherwise start from the beginning of cluster. */
+        else x = 0;
+        for (; x < numsectors; x++)
+        {
+            fatReadLogical(fat, fat->startSector + x, buf);
+            for (p = (DIRENT *) buf; (unsigned char *) p < buf + fat->sector_size;
+                 p++)
+            {
+                required_free--;
+                if (required_free == 0)
+                {
+                    /* All LFN entries are written, so we
+                     * set fat->de and fat->dirSect so
+                     * other functions can work with them. */
+                    fat->de = p;
+                    fat->dirSect = fat->startSector + x;
+                    /* If we ended on deleted slot, we let the
+                     * function that called this function know
+                     * it.
+                    if (p->file_name[0] == DIRENT_DEL) fat->found_deleted = 1;
+                    /* Copies final 8.3 name into fat->search,
+                     * because other functions use it from there. */
+                    memcpy(fat->search, shortname, 11);
+                    return (0);
+                }
+                if (fat->de)
+                {
+                    /* Start from the DIRENT provided by
+                     * findFreeSpaceForLFN. */
+                    p = fat->de;
+                    fat->de = 0;
+                    memset(p, '\0', sizeof(DIRENT));
+                    /* Because this the first physical LFN
+                     * entry, it should have bit 6 set to
+                     * 1 to mark it is the first. */
+                    p->file_name[0] = 0x40;
+                }
+                else memset(p, '\0', sizeof(DIRENT));
+                /* Creates LFN entry. */
+                /* Sets the ordinal field using OR to not change
+                 * other bits than 0-5. */
+                p->file_name[0] = p->file_name[0] | (required_free);
+                /* Sets attribute so it will be detected as LFN entry. */
+                p->file_attr = DIRENT_LFN;
+                /* Sets checksum (offset 13). */
+                p->first_char = checksum;
+                /* First 5 characters are at 1 - 11,
+                 * so offset is 1. */
+                offset = 1;
+                /* Writes part of LFN to the current DIRENT. */
+                for (i = 0; i < 13; i++)
+                {
+                    /* Second 6 characters are at 14 - 25, so 4
+                     * bytes offset. 3 non-character bytes are
+                     * between first 5 and second 6 characters.*/
+                    if (i == 5) offset += 3;
+                    /* Third 2 characters are at 28 - 31, so 6
+                     * bytes offset. 2 non-character bytes are
+                     * between second 6 and third 2 characters.*/
+                    if (i == 11) offset += 2;
+
+                    /* Checks if we are still inside the LFN. */
+                    if ((required_free - 1)*13 + i < lfn_len)
+                    {
+                        /* If using ASCII, first byte of UCS-2 character
+                         * is the ASCII character and second one is 0x00. */
+                        p->file_name[i * 2 + offset] =
+                        orig_lfn[(required_free - 1)*13 + i];
+                        p->file_name[i * 2 + offset + 1] = 0x00;
+                        /* +++Add support for UCS-2. Second byte is
+                         * p->file_name[i * 2 + offset + 1]. */
+                    }
+                    /* If we are at the end of LFN,
+                     * the character must be set to 0x0000. */
+                    else if ((required_free - 1)*13 + i == lfn_len)
+                    {
+                        p->file_name[i * 2 + offset] = 0x00;
+                        p->file_name[i * 2 + offset + 1] = 0x00;
+                    }
+                    /* If we are past the end of LFN,
+                     * the character must be set to 0xffff. */
+                    else
+                    {
+                        p->file_name[i * 2 + offset] = 0xff;
+                        p->file_name[i * 2 + offset + 1] = 0xff;
+                    }
+                }
+            }
+            /* If we ended using this sector, it is written
+             * so the LFN entries created will be stored. */
+            fatWriteLogical(fat, fat->startSector + x, buf);
+        }
+        /* Advances to the next cluster. */
+        fat->currcluster = nextCluster;
+    }
+    /* Function findFreeSpaceForLFN makes sure that if everything
+     * goes well, this function cannot have any issues. This return
+     * is here just in case something went very wrong, because
+     * normally the return (0) activates or it fails on finding
+     * free space for LFN entries. */
+    return (POS_ERR_PATH_NOT_FOUND);
+}
+
+/* Generates initial 8.3 name from LFN. If it is lossy
+ * conversion (not just changed case), it will be necessary
+ * to check if the same does not exist already elsewhere and
+ * modify the numerical tail for it to be unique. */
+static void generate83Name(unsigned char *lfn, unsigned int lfn_len,
+                           unsigned char *shortname)
+{
+    unsigned int up_char;
+    unsigned int offset = 0;
+    unsigned int i;
+    unsigned int dot_pos = MAXFILENAME;
+    unsigned int j;
+
+    /* +++Add logic for just mixed/lower case 8.3 names. */
+    /* Fills the short name with spaces. */
+    memset(shortname, ' ', 11);
+    /* Strips all leading dots and spaces by increasing
+     * offset. */
+    for (i = 0; i < lfn_len; i++)
+    {
+        if (lfn[i] == '.' || lfn[i] == ' ') offset++;
+        else break;
+    }
+    /* Searches the LFN from end to start to find the
+     * last dot. Trailing dots cannot be in LFN at this
+     * stage and they should be handled elsewhere. */
+    for (i = lfn_len - offset - 1; i > 0; i--)
+    {
+        if ((lfn + offset)[i] == '.')
+        {
+            /* Copies three characters after the dot into 8.3 name,
+             * if there is enough of them. If the character is
+             * '+', ',', ';', '=', '[', ']' or larger than 127 (0x7F)
+             * (ASCII limit), it is replaced with '_'. */
+            for (j = 0; j < 3 && j + i + 1 < lfn_len - offset; j++)
+            {
+                up_char = toupper((lfn + offset)[i + j + 1]);
+                if (up_char > 0x7F || up_char == '+' || up_char == ',' ||
+                    up_char == ';' || up_char == '=' || up_char == '[' ||
+                    up_char == ']')
+                shortname[8 + j] = '_';
+                else shortname[8 + j] = (char) up_char;
+            }
+            /* Also position of the dot is stored so we know when to
+             * stop when creating the 8 part of short_name. */
+            dot_pos = i;
+            break;
+        }
+    }
+    /* Fills 8 part of the short name. All characters
+     * must be uppered and invalid characters must be
+     * replaced with '_'. Spaces and dots are ignored.
+     * At most 6 characters can be put into 8 part to
+     * keep space for numeric tail. */
+    j = 0;
+    /* i < lfn_len is there in case the LFN is shorter
+     * than 6 characters and has no extension. */
+    for (i = 0; j < 6 && i < dot_pos && i < lfn_len; i++)
+    {
+        if ((lfn + offset)[i] == ' ' || (lfn + offset)[i] == '.') continue;
+        up_char = toupper((lfn + offset)[i]);
+        if (up_char > 0x7F || up_char == '+' || up_char == ',' ||
+            up_char == ';' || up_char == '=' || up_char == '[' ||
+            up_char == ']')
+        shortname[j] = '_';
+        else shortname[j] = (char) up_char;
+        j++;
+    }
+    /* Adds numeric tail after the last character
+     * of the 8 part. */
+    shortname[j] = '~';
+    shortname[j + 1] = '1';
+}
+
+/* Goes through whole directory and finds free continuous
+ * space for LFN entries and checks for 8.3 name conflicts. */
+static int findFreeSpaceForLFN(FAT *fat, unsigned int required_free,
+                               char *shortname, unsigned int *numsectors)
+{
+    unsigned char path[260]; /* MAX_PATH from pos.h. */
+    unsigned long nextCluster;
+    unsigned long startSector;
+    unsigned int x;
+    unsigned char *buf = fat->dbuf;
+    DIRENT *p;
+    unsigned int deleted_count = 0;
+    int at_end = 0;
+    FATFILE tempfatfile;
+
+    /* We use numsectors as pointer to let the
+     * other function know what we set it to. */
+    *numsectors = fat->sectors_per_cluster;
+    /* We use fatPosition with corrected_path
+     * to get start cluster of directory we
+     * are in. */
+    if (fat->corrected_path[0] != '\0')
+    {
+        strcpy(path, fat->corrected_path);
+        fatPosition(fat, path);
+        fat->processing_root = 0;
+    }
+    /* If corrrected_path is empty, we must be in
+     * the root directory. */
+    else
+    {
+        fat->processing_root = 1;
+        /* If it is expandable root, we use rootstartcluster. */
+        if (fat->rootsize == 0)
+        {
+            fat->currcluster = fat->rootstartcluster;
+        }
+        /* If it is fixed size root, we set startSector to
+         * the beginning of root and amount of sectors that
+         * should be searched to the size of root. */
+        else
+        {
+            *numsectors = fat->rootsize;
+            startSector = fat->rootstart;
+        }
+    }
+    /* Infinite loop is used because the code inside
+     * can expand directories by adding clusters until
+     * enough of free space is found. */
+    while (1)
+    {
+        /* Unless we are processing fixed size root,
+         * we use fatClusterAnalyse to get startSector. */
+        if (!(fat->processing_root && fat->rootsize))
+        {
+            fatClusterAnalyse(fat, fat->currcluster, &startSector, &nextCluster);
+        }
+        for (x = 0; x < *numsectors; x++)
+        {
+            fatReadLogical(fat, startSector + x, buf);
+            for (p = (DIRENT *) buf; (unsigned char *) p < buf + fat->sector_size;
+                 p++)
+            {
+                /* If we are at the end of directory,
+                 * we expand it. */
+                if (at_end) p->file_name[0] = '\0';
+                if (p->file_name[0] == '\0')
+                {
+                    /* End of the directory was reached,
+                     * so even if there is not enough
+                     * of deleted entries, we can add
+                     * more and there cannot be any more
+                     * conflicts with generated 8.3 name. */
+                    /* If we have enough of empty entries,
+                     * we can end. */
+                    if (deleted_count == required_free)
+                    {
+                        /* We write the current sector, if we expanded
+                         * the directory. */
+                        if (at_end) fatWriteLogical(fat, startSector + x, buf);
+                        /* Sets current cluster to cluster in which
+                         * first empty entry was found. */
+                        fat->currcluster = fat->temp_currcluster;
+                        return (0);
+                    }
+                    /* If we do not have enough empty entries,
+                     * we continue counting because all entries
+                     * at the end and after it are empty. */
+                    deleted_count++;
+                    /* If this is the first free entry, pointer
+                     * to it is stored and other variables too. */
+                    if (deleted_count == 1)
+                    {
+                        fat->de = p;
+                        /* Sector is stored so this sector can be
+                         * accessed later by other functions. */
+                        fat->dirSect = startSector + x;
+                        /* Current cluster is also stored so
+                         * other functions can resume from it
+                         * in case multiple clusters are required. */
+                        fat->temp_currcluster = fat->currcluster;
+                    }
+                    /* Sets the at_end to know that we are
+                     * at the end of directory and any more
+                     * read DIRENTs should have the first byte
+                     * set to '\0' and their content should be
+                     * ignored. */
+                    at_end = 1;
+                    /* All the rest of conditionals should be
+                     * skipped, because there should be just
+                     * empty entries. */
+                    continue;
+                }
+                if (p->file_name[0] == DIRENT_DEL)
+                {
+                    /* There is no need to count deleted entries
+                     * after we have enough of them. */
+                    if (deleted_count < required_free)
+                    {
+                        /* deleted_count is increased and if this
+                         * is first deleted entry after other entry
+                         * pointer to it is stored. */
+                        deleted_count++;
+                        if (deleted_count == 1)
+                        {
+                            fat->de = p;
+                            /* Sector is stored so this sector can be
+                             * accessed later by other functions. */
+                            fat->dirSect = startSector + x;
+                            /* Current cluster is also stored so
+                             * other functions can resume from it
+                             * in case multiple clusters are required. */
+                            fat->temp_currcluster = fat->currcluster;
+                        }
+                    }
+                    continue;
+                }
+                if (p->file_attr != DIRENT_LFN &&
+                    memcmp(p->file_name, shortname, 11) == 0)
+                {
+                    /*+++Modify numeric tail.*/
+                }
+                /* Deleted entry count is reset when a
+                 * non-deleted entry is found but only
+                 * if there is not enough of them for
+                 * LFN entries and 8.3 entry. */
+                if (deleted_count < required_free)
+                {
+                    deleted_count = 0;
+                }
+            }
+            /* We write the current sector, if we expanded
+             * the directory. */
+            if (at_end) fatWriteLogical(fat, startSector + x, buf);
+        }
+        if (fat->processing_root && fat->rootsize)
+        {
+            /* If we are in fixed size root and did not manage
+             * to find enough empty slots for LFN entries and
+             * 8.3 name, return error. */
+            if (deleted_count < required_free) return (POS_ERR_PATH_NOT_FOUND);
+            /* Otherwise we are at the end of fixed size root,
+             * with sufficient amount of empty slots, so we
+             * do the same as we would if we were still inside. */
+            /* Sets current cluster to cluster in which
+             * first empty entry was found. */
+            fat->currcluster = fat->temp_currcluster;
+            return (0);
+        }
+        /* Directory is extended if end cluster is reached. */
+        if (fatEndCluster(fat, nextCluster))
+        {
+            fatChain(fat, &tempfatfile);
+            /* We are extending the directory, so all
+             * entries after this point are empty. */
+            at_end = 1;
+        }
+        else fat->currcluster = nextCluster;
+    }
+}
+
 /**/

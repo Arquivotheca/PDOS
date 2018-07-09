@@ -4,7 +4,7 @@
 # doesn't report unresolved externals for some reason
 
 CC=gcc386
-COPTS=-S -Os -fno-common -I. -I..\src -D__32BIT__
+COPTS=-S -Os -fno-common -I. -I../src -D__32BIT__
 
 pdptest.exe: pdosst32.o pdptest.o stdio.o string.o stdlib.o \
        start.o time.o errno.o assert.o signal.o locale.o \
@@ -18,16 +18,18 @@ pdptest.exe: pdosst32.o pdptest.o stdio.o string.o stdlib.o \
   ld386 -r -s -e ___pdosst32 -o pdptest.exe pdosst32.o pdptest.o pdos.a
   strip386 --strip-unneeded pdptest.exe
 
-pos.o: ..\src\pos.c
-  $(CC) $(COPTS) -o $&.s ..\src\pos.c
+pos.o: ../src/pos.c
+  $(CC) $(COPTS) -o $&.s ../src/pos.c
   as386 -o $@ $&.s
+  rm $&.s
 
-support.o: ..\src\support.s
-  as386 -o $@ ..\src\support.s
+support.o: ../src/support.s
+  as386 -o $@ ../src/support.s
 
 .c.o:
   $(CC) $(COPTS) -o $&.s $<
   as386 -o $@ $&.s
+  rm $&.s
 
 .s.o:
   as386 -o $@ $<

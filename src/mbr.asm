@@ -1,4 +1,5 @@
 ; Public domain MBR by Mark Raymond
+; in nasm format
 
 ; This is a standard MBR, which loads the VBR of the
 ; active partition to 0x7c00 and jumps to it.

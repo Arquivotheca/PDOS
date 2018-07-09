@@ -68,7 +68,6 @@ typedef struct {
 
 descptr gdtinfo = { 0x37 };
 
-static unsigned long interrupts[256*2]; /* allow room for 256 interrupts */
 descptr idtinfo = { 0x7ff };
 
 /* this real mode idt pointer points to the standard real mode
@@ -150,6 +149,7 @@ unsigned long runprot(unsigned long csbase,
     runprot_parms runparm;
     unsigned long runparm_p;
     unsigned long myc32base;
+    unsigned long interrupts[256*2]; /* allow room for 256 interrupts */
     
     intloc = ADDR2ABS(interrupts);
     

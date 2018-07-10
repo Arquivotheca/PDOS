@@ -674,7 +674,7 @@ static int cmd_dir_run(char *pattern)
                tms->tm_hour,
                tms->tm_min,
                tms->tm_sec,
-               genuine_pdos ? dta->lfn : "");
+               genuine_pdos ? (char *)dta->lfn : "");
         ret = PosFindNext();
     }
     return 0;
@@ -1024,7 +1024,7 @@ static int cmd_copy_run(char *b)
             {
                 verify_read += bytes_read;
             }
-            fclose(dest);
+            fclose(fdest);
             if (verify_read == total_read)
             {
                 printf("SUCCESS: Read %ld bytes from destination file\n",

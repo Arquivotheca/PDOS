@@ -212,6 +212,51 @@ size_t memmgrMaxSize(MEMMGR *memmgr)
     return (max);
 }
 
+/* gather memory management statistics */
+void memmgrGetStats(MEMMGR *memmgr, MEMMGRSTATS *stats)
+{
+    MEMMGRN *p;
+    memset(stats, 0, sizeof(MEMMGRSTATS));
+
+    p = memmgr->start;
+
+    while (p != NULL)
+    {
+        if (p->allocated)
+        {
+            stats->countAllocated++;
+            stats->totalAllocated += p->size;
+            if (p->size > stats->maxAllocated)
+            {
+                stats->maxAllocated = p->size;
+            }
+        }
+        else
+        {
+            stats->countFree++;
+            stats->totalFree += p->size;
+            if (p->size > stats->maxFree)
+            {
+                stats->maxFree = p->size;
+            }
+        }
+        p = p->next;
+    }
+
+}
+
+/* Get size of given memory block */
+size_t memmgrGetSize(MEMMGR *memmgr, void *ptr)
+{
+    MEMMGRN *p;
+    p = (MEMMGRN*)(((char *)ptr) - MEMMGRN_SZ);
+    if (p == NULL)
+    {
+            return 0;
+    }
+    return p->size;
+}
+
 /* resize a memory block */
 /* note that the size in the control block is the
    size available for data */

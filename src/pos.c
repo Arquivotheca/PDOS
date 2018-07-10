@@ -1043,6 +1043,24 @@ void PosExec(char *prog, void *parmblock)
     return;
 }
 
+void PosReadBufferedInput(pos_input_buffer *buf)
+{
+    union REGS regsin;
+    union REGS regsout;
+    struct SREGS sregs;
+
+    regsin.h.ah = 0x0A;
+    regsin.h.al = 0x00;
+#ifdef __32BIT__
+    regsin.d.edx = (int)buf;
+#else
+    sregs.ds = FP_SEG(buf);
+    regsin.x.dx = FP_OFF(buf);
+#endif
+    int86x(0x21, &regsin, &regsout, &sregs);
+    return;
+}
+
 void PosTerminate(int rc)
 {
     union REGS regsin;
@@ -1305,6 +1323,41 @@ void PosSetRunTime(void *pstart, void *capi)
     int86i(0x21, &regsin);
 }
 
+/* pos extension to set DOS version */
+void PosSetDosVersion(unsigned int version)
+{
+    union REGS regsin;
+
+    regsin.h.ah = 0xf3;
+    regsin.h.al = 3;
+    regsin.x.bx = version;
+    int86i(0x21, &regsin);
+}
+
+/* pos extension to get "log unimplemented" flag */
+int PosGetLogUnimplemented(void)
+{
+    union REGS regsin;
+    union REGS regsout;
+
+    regsin.h.ah = 0xf3;
+    regsin.h.al = 4;
+    int86(0x21, &regsin, &regsout);
+    return (regsout.x.ax);
+}
+
+/* pos extension to set "log unimplemented" flag */
+void PosSetLogUnimplemented(int flag)
+{
+    union REGS regsin;
+    union REGS regsout;
+
+    regsin.h.ah = 0xf3;
+    regsin.h.al = 5;
+    regsin.x.bx = !!flag;
+    int86(0x21, &regsin, &regsout);
+}
+
 /* int86n - do an interrupt with no registers */
 
 static void int86n(unsigned int intno)
@@ -1364,6 +1417,43 @@ unsigned int PosAbsoluteDiskRead(int drive,unsigned long start_sector,
 }
 /**/
 
+/*int 26 function call*/
+unsigned int PosAbsoluteDiskWrite(int drive,unsigned long start_sector,
+                                  unsigned int sectors,void *buf)
+{
+    union REGS regsin;
+    union REGS regsout;
+    struct SREGS sregs;
+    DP dp;
+
+    regsin.h.al = drive;
+#ifdef __32BIT__
+    regsin.d.ecx = 0xffff;
+    regsin.d.ebx=(int)&dp;
+#else
+    regsin.x.cx = 0xffff;
+    sregs.ds = FP_SEG(&dp);
+    regsin.x.bx = FP_OFF(&dp);
+#endif
+    dp.sectornumber=start_sector;
+    dp.numberofsectors=sectors;
+    dp.transferaddress=buf;
+    int86x(0x26,&regsin,&regsout,&sregs);
+#ifdef __32BIT__
+    if (!regsout.x.cflag)
+    {
+        regsout.d.eax = 0;
+    }
+    return (regsout.d.eax);
+#else
+    if (!regsout.x.cflag)
+    {
+        regsout.x.ax = 0;
+    }
+    return (regsout.x.ax);
+#endif
+}
+/**/
 
 int intdos(union REGS *regsin, union REGS *regsout)
 {
@@ -1387,4 +1477,104 @@ int bdos(int func, int dx, int al)
 #else
     return (regs.x.ax);
 #endif
+}
+
+/* func 54 - get read-after-write verification flag */
+int PosGetVerifyFlag()
+{
+    union REGS regsin;
+    union REGS regsout;
+
+    regsin.h.ah = 0x54;
+    int86(0x21, &regsin, &regsout);
+    return (regsout.h.al);
+}
+
+/* func 2e - set read-after-write verification flag */
+void PosSetVerifyFlag(int flag)
+{
+    union REGS regsin;
+    union REGS regsout;
+
+    regsin.h.ah = 0x2e;
+    regsin.h.al = !!flag;
+    int86(0x21, &regsin, &regsout);
+}
+
+/* func 33, subfunc 00 - get Ctrl+Break checking flag status */
+int PosGetBreakFlag()
+{
+    union REGS regsin;
+    union REGS regsout;
+
+    regsin.h.ah = 0x33;
+    regsin.h.al = 0x00;
+    int86(0x21, &regsin, &regsout);
+    return (regsout.h.dl);
+}
+
+/* func 33, subfunc 01 - set Ctrl+Break checking flag status */
+void PosSetBreakFlag(int flag)
+{
+    union REGS regsin;
+    union REGS regsout;
+
+    regsin.h.ah = 0x33;
+    regsin.h.al = 0x01;
+    regsin.h.dl = !!flag;
+    int86(0x21, &regsin, &regsout);
+}
+
+/* func 33, subfunc 05 - get boot drive */
+int PosGetBootDrive(void)
+{
+    union REGS regsin;
+    union REGS regsout;
+
+    regsin.h.ah = 0x33;
+    regsin.h.al = 0x05;
+    int86(0x21, &regsin, &regsout);
+    return (regsout.h.dl);
+}
+
+/* pos extension to get "PDOS magic" */
+int PosGetMagic(void)
+{
+    union REGS regsin;
+    union REGS regsout;
+
+    regsin.h.ah = 0xf3;
+    regsin.h.al = 6;
+    int86(0x21, &regsin, &regsout);
+    return (regsout.x.ax);
+}
+
+/* INT 21,31 - PosTerminateAndStayResident */
+void PosTerminateAndStayResident(int exitCode, int paragraphs)
+{
+    union REGS regsin;
+
+    regsin.h.ah = 0x31;
+    regsin.h.al = exitCode;
+    regsin.x.dx = paragraphs;
+    int86i(0x21, &regsin);
+}
+
+/* pos extension to get memory manager statistics */
+void PosGetMemoryManagementStats(void *stats)
+{
+    union REGS regsin;
+    union REGS regsout;
+    struct SREGS sregs;
+
+    regsin.h.ah = 0xf3;
+    regsin.h.al = 0x7;
+#ifdef __32BIT__
+    regsin.d.edx = (int)stats;
+#else
+    sregs.ds = FP_SEG(stats);
+    regsin.x.dx = FP_OFF(stats);
+#endif
+    int86x(0x21, &regsin, &regsout, &sregs);
+    return;
 }

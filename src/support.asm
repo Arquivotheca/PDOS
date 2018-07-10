@@ -95,6 +95,12 @@ int 025h
 jmp fintry
 not25:
 
+cmp intnum, 026h
+jne not26
+int 026h
+jmp fintry
+not26:
+
 fintry:
 
 pop bp
@@ -212,6 +218,12 @@ jne xnot25
 int 025h
 jmp xfintry
 xnot25:
+
+cmp intnum, 026h
+jne xnot26
+int 026h
+jmp xfintry
+xnot26:
 
 xfintry:
 

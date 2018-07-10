@@ -31,7 +31,7 @@
 #include "dow.h"
 
 #define MAX_PATH 260 /* With trailing '\0' included. */
-#define DOS_VERSION 0x04
+#define DEFAULT_DOS_VERSION 0x0004 /* 0004 = DOS 4.0, 2206 = DOS 6.22, etc. */
 #define NUM_SPECIAL_FILES 5
     /* stdin, stdout, stderr, stdaux, stdprn */
 #define STACKSZ32 0x40000 /* stack size for 32-bit version */
@@ -75,8 +75,10 @@ static int ff_search(void);
 #ifdef __32BIT__
 int int20(unsigned int *regs);
 int int21(unsigned int *regs);
-/*Interuppt 25 */
+/* INT 25 - Absolute Disk Read */
 int int25(unsigned int *regs);
+/* INT 26 - Absolute Disk Write */
+int int26(unsigned int *regs);
 /**/
 #endif
 static void loadConfig(void);
@@ -177,6 +179,36 @@ static void *exec_c_api;
 #ifdef __32BIT__
 static int exec_subcor;
 #endif
+
+/* DOS version reported to programs.
+ * Can be changed via PosSetDosVersion() call. */
+static unsigned int reportedDosVersion = DEFAULT_DOS_VERSION;
+
+/* Log unimplemented flag. If set, unimplemented INT 21 calls are logged. */
+static int logUnimplementedFlag = 0;
+
+/* Extended Control+Break checking flag.
+ * NOTE: We track flag value but actually changing Ctrl+Break checking
+ * behaviour based on flag value isn't currently implemented.
+ */
+static int breakFlag = 0;
+
+/* Verify after write flag.
+ * NOTE: We track flag value but actually doing the verification isn't done
+ * by PDOS API itself. But PCOMM COPY command will respond to flag.
+ * Implementing VERIFY inside the command interpreter COPY command(s) is
+ * basically how Windows NT handles it, see here:
+ * https://blogs.msdn.microsoft.com/oldnewthing/20160121-00/?p=92911
+ * (MS-DOS instead implements it inside the device drivers, but PDOS
+ * doesn't really have such a thing yet.)
+ */
+static int verifyFlag = 0;
+
+/* Log unimplemented call, but only if logUnimplementedFlag=1. */
+static void logUnimplementedCall(int intNum, int ah, int al);
+
+/* If > 0, program is a TSR, don't deallocate its memory on exit. */
+static int tsrFlag;
 
 #ifdef __32BIT__
 extern char *__vidptr;
@@ -602,6 +634,15 @@ static void int21handler(union REGS *regsin,
             regsout->h.al = PosSelectDisk(regsin->h.dl);
             break;
 
+        /* INT 21,0A - Buffered Input */
+        case 0x0a:
+#ifdef __32BIT__
+            PosReadBufferedInput(SUBADDRFIX(regsin->d.edx));
+#else
+            PosReadBufferedInput(MK_FP(sregs->ds, regsin->x.dx));
+#endif
+            break;
+
         case 0x19:
             regsout->h.al = PosGetDefaultDrive();
             break;
@@ -654,6 +695,11 @@ static void int21handler(union REGS *regsin,
             }
             break;
 
+        /* INT 21,2E - Set Verify Flag */
+        case 0x2e:
+            PosSetVerifyFlag(regsin->h.al);
+            break;
+
         case 0x2f:
             tempdta = PosGetDTA();
 #ifdef __32BIT__
@@ -668,6 +714,69 @@ static void int21handler(union REGS *regsin,
             regsout->x.ax = PosGetDosVersion();
             regsout->x.bx = 0;
             regsout->x.cx = 0;
+            break;
+
+        /* 21,31 is to Terminate and Stay Resident */
+        case 0x31:
+            PosTerminateAndStayResident(regsin->h.al, regsin->x.dx);
+            break;
+
+        /* 21,33 primary function is managing breakFlag.
+         * Also some other subfunctions around DOS version and boot drive.
+         */
+        case 0x33:
+            /* AL=0: Get break flag in DL register */
+            if (regsin->h.al == 0)
+            {
+                regsout->h.dl = PosGetBreakFlag();
+            }
+
+            /* AL=1: Set break flag in DL register */
+            else if (regsin->h.al == 1)
+            {
+                PosSetBreakFlag(regsin->h.dl);
+            }
+
+            /* AL=2: Set break flag, return old value.
+             * This just combines AL=0 and AL=1 in one operation.
+             */
+            else if (regsin->h.al == 2)
+            {
+                regsout->h.dl = PosGetBreakFlag();
+                PosSetBreakFlag(regsin->h.dl);
+            }
+
+            /* AL=3/AL=4: These functions managed CPSW
+             * (Code Page SWitching) state. In released versions of MS-DOS,
+             * these have always been NO-OPS. The CPSW functions were
+             * implemented during the development of DOS 4.0, but removed
+             * before it was releaseed.
+             */
+
+            /* AL=5: Get DOS boot drive (PosGetBootDrive) */
+            else if (regsin->h.al == 5)
+            {
+                regsout->h.dl = PosGetBootDrive();
+            }
+
+            /* AL=6: Get DOS version number.
+             * Unlike INT 21,30, which can be faked with SETVER (in MS-DOS 5+),
+             * 3306 is supposed to return the real DOS version. However, in
+             * PDOS we will just return the fake version here too.
+             */
+            else if (regsin->h.al == 6)
+            {
+                /* BL = Major Version, BH = Minor version */
+                regsout->x.bx = PosGetDosVersion();
+
+                /* DL = Revision, DH = Version Flags */
+                regsout->x.dx = 0;
+            }
+
+            else
+            {
+                logUnimplementedCall(0x21, regsin->h.ah, regsin->h.al);
+            }
             break;
 
         case 0x35:
@@ -897,6 +1006,10 @@ static void int21handler(union REGS *regsin,
 #endif
 
             }
+            else
+            {
+                logUnimplementedCall(0x21, regsin->h.ah, regsin->h.al);
+            }
             break;
 
         case 0x44:
@@ -971,6 +1084,10 @@ static void int21handler(union REGS *regsin,
                                                             regsin->h.ch,
                                                             regsin->h.cl,p);
 #endif
+            }
+            else
+            {
+                logUnimplementedCall(0x21, regsin->h.ah, regsin->h.al);
             }
             break;
 
@@ -1128,6 +1245,11 @@ static void int21handler(union REGS *regsin,
             }
             break;
 
+        /* INT 21,54 - Get Verify Flag */
+        case 0x54:
+            regsout->h.al = PosGetVerifyFlag();
+            break;
+
         case 0x56:
 #ifdef __32BIT__
             p = SUBADDRFIX(regsin->d.edx);
@@ -1147,8 +1269,8 @@ static void int21handler(union REGS *regsin,
             {
 #ifdef __32BIT__
                 regsout->d.eax=PosGetFileLastWrittenDateAndTime(regsin->d.ebx,
-                                                               &regsout->d.edx,
-                                                               &regsout->d.ecx);
+                                                              &regsout->d.edx,
+                                                              &regsout->d.ecx);
 #else
                 regsout->x.ax=PosGetFileLastWrittenDateAndTime(regsin->x.bx,
                                                               &regsout->x.dx,
@@ -1209,6 +1331,10 @@ static void int21handler(union REGS *regsin,
                 }
 #endif
             }
+            else
+            {
+                logUnimplementedCall(0x21, regsin->h.ah, regsin->h.al);
+            }
 
             break;
 
@@ -1265,6 +1391,10 @@ static void int21handler(union REGS *regsin,
                 regsout->h.al=0;
 #endif
             }
+            else
+            {
+                logUnimplementedCall(0x21, regsin->h.ah, regsin->h.al);
+            }
             break;
         /**/
         /* emx calls are 0x7f */
@@ -1285,6 +1415,10 @@ static void int21handler(union REGS *regsin,
             else if (regsin->h.al == 0x0a)
             {
                 regsout->d.eax = 0xffffffffU;
+            }
+            else
+            {
+                logUnimplementedCall(0x21, regsin->h.ah, regsin->h.al);
             }
             break;
 #endif
@@ -1309,12 +1443,40 @@ static void int21handler(union REGS *regsin,
                             SUBADDRFIX(regsin->d.ecx));
 #endif
             }
+            else if (regsin->h.al == 3)
+            {
+                PosSetDosVersion(regsin->x.bx);
+            }
+            else if (regsin->h.al == 4)
+            {
+                regsout->x.ax = PosGetLogUnimplemented();
+            }
+            else if (regsin->h.al == 5)
+            {
+                PosSetLogUnimplemented(!!(regsin->x.bx));
+            }
+            else if (regsin->h.al == 6)
+            {
+                regsout->x.ax = PosGetMagic();
+            }
+            else if (regsin->h.al == 7)
+            {
+#ifdef __32BIT__
+                p = SUBADDRFIX(regsin->d.edx);
+#else
+                p = MK_FP(sregs->ds, regsin->x.dx);
+#endif
+                PosGetMemoryManagementStats(p);
+            }
+            else
+            {
+                logUnimplementedCall(0x21, regsin->h.ah, regsin->h.al);
+            }
             break;
 
         default:
-            /*printf("unimplemented dos call %x\n", regsin->x.ax);*/
+            logUnimplementedCall(0x21, regsin->h.ah, regsin->h.al);
             break;
-
     }
     return;
 }
@@ -1373,8 +1535,6 @@ unsigned int PosDirectCharInputNoEcho(void)
 
     return ascii;
 }
-
-
 
 /* Written By NECDET COKYAZICI, Public Domain */
 
@@ -1498,11 +1658,47 @@ void *PosGetDTA(void)
 
 unsigned int PosGetDosVersion(void)
 {
-    int version;
+    return (reportedDosVersion);
+}
 
-    /* set to 4.00 */
-    version = (0x00 << 8) | DOS_VERSION;
-    return (version);
+void PosSetDosVersion(unsigned int version)
+{
+    reportedDosVersion = version;
+}
+
+void PosSetLogUnimplemented(int flag)
+{
+    logUnimplementedFlag = !!flag;
+}
+
+int PosGetLogUnimplemented(void)
+{
+    return logUnimplementedFlag;
+}
+
+void PosSetBreakFlag(int flag)
+{
+    breakFlag = !!flag;
+}
+
+int PosGetBreakFlag(void)
+{
+    return breakFlag;
+}
+
+void PosSetVerifyFlag(int flag)
+{
+    verifyFlag = !!flag;
+}
+
+int PosGetVerifyFlag(void)
+{
+    return verifyFlag;
+}
+
+int PosGetMagic(void)
+{
+    return PDOS_MAGIC;
 }
 
 void *PosGetInterruptVector(int intnum)
@@ -2508,7 +2704,7 @@ int int21(unsigned int *regs)
     return (0);
 }
 
-/*Intreuppt 25*/
+/* INT 25 - Absolute Disk Read */
 int int25(unsigned int *regs)
 {
     static union REGS regsin;
@@ -2528,6 +2724,35 @@ int int25(unsigned int *regs)
     dp=SUBADDRFIX(regsin.d.ebx);
     p = SUBADDRFIX(dp->transferaddress);
     PosAbsoluteDiskRead(regsin.h.al,dp->sectornumber,dp->numberofsectors,p);
+    regs[0] = regsout.d.eax;
+    regs[1] = regsout.d.ebx;
+    regs[2] = regsout.d.ecx;
+    regs[3] = regsout.d.edx;
+    regs[4] = regsout.d.esi;
+    regs[5] = regsout.d.edi;
+    regs[6] = regsout.d.cflag;
+    return (0);
+}
+/* INT 26 - Absolute Disk Write */
+int int26(unsigned int *regs)
+{
+    static union REGS regsin;
+    static union REGS regsout;
+    static struct SREGS sregs;
+    DP *dp;
+    void *p;
+
+    regsin.d.eax = regs[0];
+    regsin.d.ebx = regs[1];
+    regsin.d.ecx = regs[2];
+    regsin.d.edx = regs[3];
+    regsin.d.esi = regs[4];
+    regsin.d.edi = regs[5];
+    regsin.d.cflag = 0;
+    memcpy(&regsout, &regsin, sizeof regsout);
+    dp=SUBADDRFIX(regsin.d.ebx);
+    p = SUBADDRFIX(dp->transferaddress);
+    PosAbsoluteDiskWrite(regsin.h.al,dp->sectornumber,dp->numberofsectors,p);
     regs[0] = regsout.d.eax;
     regs[1] = regsout.d.ebx;
     regs[2] = regsout.d.ecx;
@@ -2615,7 +2840,7 @@ void int21(unsigned int *regptrs,
     return;
 }
 
-/*Interuppt 25*/
+/* INT 25 - Absolute Disk Read */
 void int25(unsigned int *regptrs,
         unsigned int es,
         unsigned int ds,
@@ -2646,6 +2871,49 @@ void int25(unsigned int *regptrs,
     dp=MK_FP(sregs.ds,regsin.x.bx);
     p=dp->transferaddress;
     PosAbsoluteDiskRead(regsin.h.al,dp->sectornumber,dp->numberofsectors,p);
+    regptrs[0] = sregs.es;
+    regptrs[1] = sregs.ds;
+    regptrs[2] = regsout.x.di;
+    regptrs[3] = regsout.x.si;
+    regptrs[4] = regsout.x.dx;
+    regptrs[5] = regsout.x.cx;
+    regptrs[6] = regsout.x.bx;
+    regptrs[7] = regsout.x.cflag;
+    regptrs[8] = regsout.x.ax;
+    return;
+}
+/**/
+/* INT 26 - Absolute Disk Write */
+void int26(unsigned int *regptrs,
+        unsigned int es,
+        unsigned int ds,
+        unsigned int di,
+        unsigned int si,
+        unsigned int dx,
+        unsigned int cx,
+        unsigned int bx,
+        unsigned int cflag,
+        unsigned int ax)
+{
+    static union REGS regsin;
+    static union REGS regsout;
+    static struct SREGS sregs;
+    DP *dp;
+    void *p;
+
+    regsin.x.ax = ax;
+    regsin.x.bx = bx;
+    regsin.x.cx = cx;
+    regsin.x.dx = dx;
+    regsin.x.si = si;
+    regsin.x.di = di;
+    regsin.x.cflag = 0;
+    sregs.ds = ds;
+    sregs.es = es;
+    memcpy(&regsout, &regsin, sizeof regsout);
+    dp=MK_FP(sregs.ds,regsin.x.bx);
+    p=dp->transferaddress;
+    PosAbsoluteDiskWrite(regsin.h.al,dp->sectornumber,dp->numberofsectors,p);
     regptrs[0] = sregs.es;
     regptrs[1] = sregs.ds;
     regptrs[2] = regsout.x.di;
@@ -2912,7 +3180,8 @@ static void loadExe(char *prog, PARMBLOCK *parmblock)
     if (isexe)
     {
         numReloc = *(unsigned int *)&header[6];
-        relocStart = (unsigned long *)(header + *(unsigned int *)&header[0x18]);
+        relocStart = (unsigned long *)(header +
+                *(unsigned int *)&header[0x18]);
         addSeg = FP_SEG(exeStart);
         for (relocI = 0; relocI < numReloc; relocI++)
         {
@@ -3025,6 +3294,12 @@ static void loadExe(char *prog, PARMBLOCK *parmblock)
         firstbit.a_entry += (unsigned long)ADDR2ABS(psp + 0x100);
     }
 #endif
+
+    /* Before executing program, set tsrFlag = 0.
+     * If program is a TSR, it will change this to non-zero.
+     */
+    tsrFlag = 0;
+
 #if (!defined(USING_EXE) && !defined(__32BIT__))
     olddta = dta;
     dta = psp + 0x80;
@@ -3037,9 +3312,25 @@ static void loadExe(char *prog, PARMBLOCK *parmblock)
     ret = fixexe32(psp, firstbit.a_entry, sp, doing_pcomm);
 #endif
     lastrc = ret;
-    if (header != NULL) memmgrFree(&memmgr, header);
-    memmgrFree(&memmgr, psp);
-    memmgrFree(&memmgr, envptr);
+
+    /*
+     * Don't free all of program's memory if it is a TSR. Only the
+     * "un-reserved" portion.
+     */
+    if (tsrFlag == 0)
+    {
+        if (header != NULL) memmgrFree(&memmgr, header);
+        memmgrFree(&memmgr, psp);
+        memmgrFree(&memmgr, envptr);
+    }
+    else
+    {
+        PosReallocPages(psp, tsrFlag, &maxPages);
+    }
+
+    /* Set TSR flag back to 0 */
+    tsrFlag = 0;
+
     return;
 }
 
@@ -3725,6 +4016,8 @@ int pdosstrt(void)
     bootBPB = ABSADDR(pp->bpb);
     protintHandler(0x20, int20);
     protintHandler(0x21, int21);
+    protintHandler(0x25, int25);
+    protintHandler(0x26, int26);
     psp[0x80] = 0;
     psp[0x81] = 0;
     eparms.psp = psp;
@@ -3847,6 +4140,19 @@ unsigned int PosAbsoluteDiskRead(int drive, unsigned long start_sector,
 }
 /**/
 
+/*int 26 function call*/
+unsigned int PosAbsoluteDiskWrite(int drive, unsigned long start_sector,
+                                unsigned int sectors, void *buf)
+{
+    long x;
+    for(x=0;x<sectors;x++)
+    {
+    writeLogical(&disks[drive],x,(char *)buf+x*512);
+    }
+    return(0);
+}
+/**/
+
 /*
  Different cases for cwd The user can input
  directory name,file name in a format convinent to
@@ -3925,3 +4231,110 @@ static void formatcwd(const char *input,char *output)
     return;
 }
 /**/
+
+static void logUnimplementedCall(int intNum, int ah, int al)
+{
+    if (logUnimplementedFlag)
+    {
+        printf("UNIMPLEMENTED: INT %02X,AH=%02X,AL=%02X\n", intNum, ah, al);
+        return;
+    }
+}
+
+/* INT 21,AH=0A: Read Buffered Input */
+void PosReadBufferedInput(pos_input_buffer *buf)
+{
+    int readBytes;
+    unsigned char cbuf[3]; /* Only 1 byte needed, but protect against any
+                              buffer overflow bug in PosReadFile */
+
+    /* Reset actual chars read to 0 */
+    buf->actualChars = 0;
+
+    /* If no chars asked to be read, return immediately */
+    if (buf->maxChars == 0)
+        return;
+
+    /* Loop until we read either max chars or CR */
+    for (;;)
+    {
+        /* Read enough already, exit loop */
+        if (buf->actualChars == buf->maxChars)
+            break;
+
+        /* Read one byte */
+        readBytes = 0;
+        PosReadFile(1, &cbuf, 1, &readBytes);
+        if (readBytes > 0)
+        {
+            /* Handle backspace */
+            if (cbuf[0] == '\b')
+            {
+                if (buf->actualChars == 0)
+                {
+                    /* Nothing to backspace, ring bell */
+                    PosDisplayOutput('\a');
+                }
+                else
+                {
+                    /* Something to backspace, remove from buffer and from
+                     * screen */
+                    buf->actualChars--;
+                    PosDisplayOutput(' ');
+                    PosDisplayOutput('\b');
+                }
+
+            }
+            /* Read CR, we exit loop */
+            else if (cbuf[0] == '\r')
+            {
+                /* Don't increment actualChars
+                 * since CR not included in count */
+                buf->data[buf->actualChars] = cbuf[0];
+                break;
+            }
+            else
+            {
+                /* Add the byte we read to the buffer */
+                buf->data[buf->actualChars++] = cbuf[0];
+            }
+        }
+        else
+        {
+            /* Read nothing? Probably an IO error. Exit loop then */
+            break;
+        }
+    }
+
+    /* Okay, we are done, return to caller. */
+    return;
+}
+
+/* INT 21,31 - PosTerminateAndStayResident */
+void PosTerminateAndStayResident(int exitCode, int paragraphs)
+{
+    tsrFlag = paragraphs;
+    PosTerminate(exitCode);
+}
+
+void PosGetMemoryManagementStats(void *stats)
+{
+    MEMMGRSTATS *s = (MEMMGRSTATS*)stats;
+    memmgrGetStats(&memmgr, stats);
+#ifdef __32BIT__
+    /* In 32-bit, divide bytes by 16 before returning.
+     * This is so we use consistent units of paragraphs (16 bytes)
+     * for both PDOS-16 and PDOS-32.
+     */
+    s->maxFree = s->maxFree >> 4;
+    s->maxAllocated = s->maxAllocated >> 4;
+    s->totalFree = s->totalFree >> 4;
+    s->totalAllocated = s->totalAllocated >> 4;
+#endif
+}
+
+/* INT 21, function 33, subfunc 05 - get boot drive */
+int PosGetBootDrive(void)
+{
+    return bootDriveLogical + 1;
+}

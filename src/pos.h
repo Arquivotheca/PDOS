@@ -54,6 +54,15 @@
 
 #define POS_ERR_FILE_EXISTS 0x50
 
+/* Input buffer used for INT 21,A */
+typedef struct pos_input_buffer {
+    unsigned char maxChars; /* Maximum number of chars buffer can hold */
+    unsigned char actualChars; /* Number of chars actually read
+                                  (not including final CR) */
+    char data[1]; /* 1 is arbitrary, for C compilers that don't accept
+                     incomplete arrays */
+} pos_input_buffer;
+
 /* API functions */
 
 void PosTermNoRC(void); /* int 20h */
@@ -68,6 +77,8 @@ unsigned int PosDirectCharInputNoEcho(void); /* func 7 */
 unsigned int PosGetCharInputNoEcho(void); /* func 8 */
 
 unsigned int PosDisplayString(const char *buf); /* func 9 */
+
+void PosReadBufferedInput(pos_input_buffer *buf); /* func A */
 
 unsigned int PosSelectDisk(unsigned int drive); /* func e */
 
@@ -86,9 +97,23 @@ void PosGetSystemTime(int *hour, /* func 2c */
                       int *sec,
                       int *hundredths);
 
+void PosSetVerifyFlag(int); /* func 2e
+                               - set read-after-write verification flag */
+
 void *PosGetDTA(void); /* func 2f */
 
 unsigned int PosGetDosVersion(void); /* func 30 */
+
+void PosTerminateAndStayResident(int exitCode, int paragraphs); /* func 31 */
+
+int PosGetBreakFlag(void); /* func 33, subfunc 00
+                              - get Ctrl+Break checking flag status */
+
+void PosSetBreakFlag(int); /* func 33, subfunc 01
+                              - set Ctrl+Break checking flag status */
+
+int PosGetBootDrive(void); /* func 33, subfunc 05
+                              - get boot drive (1=A,2=B,etc.) */
 
 void *PosGetInterruptVector(int intnum); /* func 35 */
 
@@ -170,6 +195,9 @@ int PosFindFirst(char *pat, int attrib); /* func 4e */
 
 int PosFindNext(void); /* func 4f */
 
+/* func 54 - get read-after-write verification flag */
+int PosGetVerifyFlag(void);
+
 int PosRenameFile(const char *old, const char *new); /* func 56 */
 
 int PosGetFileLastWrittenDateAndTime(int handle,
@@ -193,8 +221,28 @@ void PosReboot(void); /* func f3.01 */
 
 void PosSetRunTime(void *pstart, void *capi); /* func f3.02 */
 
+void PosSetDosVersion(unsigned int version); /* func f3.03 */
+
+int PosGetLogUnimplemented(void); /* func f3.04 */
+
+void PosSetLogUnimplemented(int); /* func f3.05 */
+
+/* So programs can reliably determine if they are running under PDOS-16 or
+ * some other implementation of PDOS API, such as FreeDOS, MS-DOS, PC-DOS,
+ * DR-DOS, DOSBox, etc. INT 21,AX=F306 will return AX=1234 under PDOS, but not
+ * under these other operating systems.
+ */
+#define PDOS_MAGIC 0x1234
+
+int PosGetMagic(void); /* func f3.06 */
+
+void PosGetMemoryManagementStats(void *stats); /* func f3.07 */
+
 unsigned int PosAbsoluteDiskRead(int drive, unsigned long start_sector,
                                  unsigned int sectors,void *buf); /*INT25 */
+
+unsigned int PosAbsoluteDiskWrite(int drive, unsigned long start_sector,
+                                  unsigned int sectors,void *buf); /*INT26 */
 
 
 /* An easier-for-HLLs-to-use interface should also have been provided
@@ -249,7 +297,7 @@ typedef struct {
 }PB_1560;
 /**/
 
-/*Structure for int25*/
+/*Structure for int25/26*/
 typedef struct{
     unsigned long sectornumber;
     unsigned int numberofsectors;

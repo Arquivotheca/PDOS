@@ -31,6 +31,8 @@ void inthdlr_15(void);
 void inthdlr_16(void);
 void inthdlr_20(void);
 void inthdlr_21(void);
+void inthdlr_25(void);
+void inthdlr_26(void);
 void int_enable(void);
 
 static unsigned short *intbuffer;
@@ -140,6 +142,8 @@ unsigned long runprot_p(rawprot_parms *parmlist)
         { 0x16, inthdlr_16 },
         { 0x20, inthdlr_20 },
         { 0x21, inthdlr_21 },
+        { 0x25, inthdlr_25 },
+        { 0x26, inthdlr_26 },
         { 0, 0 } };
 
     __abscor = parmlist->dsbase;

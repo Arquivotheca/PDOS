@@ -77,6 +77,18 @@ not20:
         jmp     fintry
 not21:
 
+        cmp     $0x25, 8(%ebp)
+        jne     not25
+        int     $0x25
+        jmp     fintry
+not25:
+
+        cmp     $0x26, 8(%ebp)
+        jne     not26
+        int     $0x26
+        jmp     fintry
+not26:
+
 fintry:
         push    %esi
         mov     16(%ebp), %esi

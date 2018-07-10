@@ -23,6 +23,22 @@ typedef struct {
     MEMMGRN *start;
 } MEMMGR;
 
+/* Used to report memory manage statistics */
+typedef struct {
+    /* Size of largest free block */
+    size_t maxFree;
+    /* Size of largest allocated block */
+    size_t maxAllocated;
+    /* Sum of sizes of all free blocks */
+    size_t totalFree;
+    /* Sum of sizes of all allocated blocks */
+    size_t totalAllocated;
+    /* Number of free blocks */
+    long countFree;
+    /* Number of allocated blocks */
+    long countAllocated;
+} MEMMGRSTATS;
+
 #define MEMMGR_ALIGN 16
 
 #define MEMMGRN_SZ \
@@ -38,6 +54,8 @@ void *memmgrAllocate(MEMMGR *memmgr, size_t bytes, int id);
 void memmgrFree(MEMMGR *memmgr, void *ptr);
 void memmgrFreeId(MEMMGR *memmgr, int id);
 size_t memmgrMaxSize(MEMMGR *memmgr);
+size_t memmgrGetSize(MEMMGR *memmgr, void *ptr);
 int memmgrRealloc(MEMMGR *memmgr, void *ptr, size_t newsize);
+void memmgrGetStats(MEMMGR *memmgr, MEMMGRSTATS *stats);
 
 #endif

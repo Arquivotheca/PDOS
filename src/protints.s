@@ -16,6 +16,8 @@
         .globl _inthdlr_16
         .globl _inthdlr_20
         .globl _inthdlr_21
+        .globl _inthdlr_25
+        .globl _inthdlr_26
         .globl _int_enable
 
         .text
@@ -116,6 +118,24 @@ _inthdlr_21:
         mov    %ax, %ds
         push   intnum
         movl   $0x21, intnum
+        jmp    _inthdlr_p
+_inthdlr_25:
+        push   %eax
+        mov    %ds, %ax
+        push   %eax
+        mov    $0x10, %eax
+        mov    %ax, %ds
+        push   intnum
+        movl   $0x25, intnum
+        jmp    _inthdlr_p
+_inthdlr_26:
+        push   %eax
+        mov    %ds, %ax
+        push   %eax
+        mov    $0x10, %eax
+        mov    %ax, %ds
+        push   intnum
+        movl   $0x26, intnum
         jmp    _inthdlr_p
         
 / by the time we get here, the following things are on the stack:

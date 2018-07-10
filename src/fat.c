@@ -33,7 +33,10 @@ static void fatClusterAnalyse(FAT *fat,
 static void fatDirSectorSearch(FAT *fat,
                                char *search,
                                unsigned long startSector,
-                               int numsectors);
+                               int numsectors,
+                               unsigned char *lfn,
+                               unsigned int *lfn_len,
+                               unsigned char *checksum);
 static void fatReadLogical(FAT *fat, unsigned long sector, void *buf);
 static void fatWriteLogical(FAT *fat, unsigned long sector, void *buf);
 static void fatMarkCluster(FAT *fat, unsigned long cluster);
@@ -280,11 +283,27 @@ unsigned int fatCreatFile(FAT *fat, const char *fnm, FATFILE *fatfile,
     }
     if (found || fat->pos_result == FATPOS_ONEMPTY)
     {
-        /* +++Add LFN logic. */
+        if (!found && fat->lfn_search_len)
+        {
+            /* createLFNs is similar to fatPosition, but it
+             * is guaranteed that it will end on empty/deleted
+             * slot or return error. */
+            ret = createLFNs(fat, fat->search, fat->lfn_search_len);
+            if (ret) return (ret);
+            p = fat->de;
+        }
         fatfile->startcluster=0;
-        memset(p, '\0', sizeof(DIRENT));
-        memcpy(p->file_name, fat->search,
-              (sizeof(p->file_name)+sizeof(p->file_ext)));
+        if (found && fat->lfn_search_len)
+        /* If the file already exists, but it was searched for LFN,
+         * the 8.3 name must not be changed because it would unlink the LFN. */
+        memset(p + sizeof(p->file_name) + sizeof(p->file_ext), '\0',
+               sizeof(DIRENT) - sizeof(p->file_name) - sizeof(p->file_ext));
+        else
+        {
+            memset(p, '\0', sizeof(DIRENT));
+            memcpy(p->file_name, fat->search,
+                  (sizeof(p->file_name)+sizeof(p->file_ext)));
+        }
         p->file_attr = (unsigned char)attrib;
         fatfile->totbytes = 0;
         p->file_size[0] = fatfile->totbytes;
@@ -336,7 +355,7 @@ unsigned int fatCreatDir(FAT *fat, const char *dnm, const char *parentname,
     DIRENT dot;
     unsigned char lbuf[MAXSECTSZ];
     unsigned long startcluster = 0;
-    unsigned parentstartcluster = 0;
+    unsigned long parentstartcluster = 0;
     unsigned long startsector;
     FATFILE tempfatfile;
     int ret;
@@ -538,7 +557,15 @@ unsigned int fatCreatNewFile(FAT *fat, const char *fnm, FATFILE *fatfile,
     }
     if (fat->pos_result == FATPOS_ONEMPTY)
     {
-        /* +++Add LFN logic. */
+        if (fat->lfn_search_len)
+        {
+            /* createLFNs is similar to fatPosition, but it
+             * is guaranteed that it will end on empty/deleted
+             * slot or return error. */
+            ret = createLFNs(fat, fat->search, fat->lfn_search_len);
+            if (ret) return (ret);
+            p = fat->de;
+        }
         fatfile->startcluster=0;
         memset(p, '\0', sizeof(DIRENT));
         memcpy(p->file_name, fat->search,
@@ -1095,9 +1122,16 @@ static void fatNextSearch(FAT *fat, char *search, const char **upto)
 
 static void fatRootSearch(FAT *fat, char *search)
 {
+    /* Because LFNs can cross clusters, it is
+     * necessary to have LFN variables here for
+     * fixed size roots only. */
+    unsigned char lfn[MAXFILENAME]; /* +++Add UCS-2 support. */
+    unsigned int lfn_len = 0;
+    unsigned char checksum;
     if (fat->rootsize)
     {
-        fatDirSectorSearch(fat, search, fat->rootstart, fat->rootsize);
+        fatDirSectorSearch(fat, search, fat->rootstart, fat->rootsize,
+                           lfn, &lfn_len, &checksum);
     }
     else
     {
@@ -1116,13 +1150,19 @@ static void fatRootSearch(FAT *fat, char *search)
 static void fatDirSearch(FAT *fat, char *search)
 {
     unsigned long nextCluster;
+    /* Because LFNs can cross clusters, it is
+     * necessary to have LFN variables here. */
+    unsigned char lfn[MAXFILENAME]; /* +++Add UCS-2 support. */
+    unsigned int lfn_len = 0;
+    unsigned char checksum;
     fat->fnd=0;
 
     fatClusterAnalyse(fat, fat->currcluster, &fat->startSector, &nextCluster);
     fatDirSectorSearch(fat,
                        search,
                        fat->startSector,
-                       fat->sectors_per_cluster);
+                       fat->sectors_per_cluster,
+                       lfn, &lfn_len, &checksum);
 
     while (fat->fnd == 0)    /* not found but not end */
     {
@@ -1137,7 +1177,8 @@ static void fatDirSearch(FAT *fat, char *search)
         fatDirSectorSearch(fat,
                            search,
                            fat->startSector,
-                           fat->sectors_per_cluster);
+                           fat->sectors_per_cluster,
+                           lfn, &lfn_len, &checksum);
     }
     return;
 }
@@ -1218,15 +1259,14 @@ static void fatClusterAnalyse(FAT *fat,
 static void fatDirSectorSearch(FAT *fat,
                                char *search,
                                unsigned long startSector,
-                               int numsectors)
+                               int numsectors,
+                               unsigned char *lfn,
+                               unsigned int *lfn_len,
+                               unsigned char *checksum)
 {
     int x;
     unsigned char *buf;
     DIRENT *p;
-    /* +++Add logic for LFNs that cross clusters. */
-    unsigned char lfn[MAXFILENAME]; /* +++Add UCS-2 support. */
-    unsigned int lfn_len = 0;
-    unsigned char checksum;
     int i;
 
     buf = fat->dbuf;
@@ -1272,7 +1312,7 @@ static void fatDirSectorSearch(FAT *fat,
              * DIRENT_LFN (0x0F). */
             else if (p->file_attr == DIRENT_LFN)
             {
-                checksum = readLFNEntry(p, lfn, &lfn_len);
+                *checksum = readLFNEntry(p, lfn, lfn_len);
             }
             /* If it is not the end, deleted entry or LFN,
              * it must be a normal entry (8.3 name). */
@@ -1284,12 +1324,12 @@ static void fatDirSectorSearch(FAT *fat,
                 {
                     /* Checks if the found LFN has the
                      * same length as the one we search for. */
-                    if (fat->lfn_search_len == lfn_len &&
+                    if (fat->lfn_search_len == *lfn_len &&
                         /* Checks if the checksum corresponds with 8.3 name. */
-                        generateChecksum(p->file_name) == checksum &&
+                        generateChecksum(p->file_name) == *checksum &&
                         /* Case-insensitive comparison to check
                          * if they are same. */
-                        !cicmp(fat->search, lfn, lfn_len))
+                        !cicmp(fat->search, lfn, *lfn_len))
                     {
                         /* Does the same as is done when 8.3 name is found. */
                         fat->fnd=1;
@@ -1304,8 +1344,8 @@ static void fatDirSectorSearch(FAT *fat,
                         fat->de = p;
                         fat->dirSect = startSector + x;
                         /* Adds the LFN to fat->corrected_path. */
-                        memcpy(fat->c_path, lfn, lfn_len);
-                        fat->c_path += lfn_len;
+                        memcpy(fat->c_path, lfn, *lfn_len);
+                        fat->c_path += *lfn_len;
                         /* Adds '\' if the path continues,
                          * otherwise adds null terminator. */
                         if (!fat->last) fat->c_path[0] = '\\';
@@ -1315,7 +1355,7 @@ static void fatDirSectorSearch(FAT *fat,
                     }
 
                     /* lfn_len is set to 0 to not use this LFN again. */
-                    lfn_len = 0;
+                    *lfn_len = 0;
                 }
 
                 /* If we are looking for 8.3 name, check if the
@@ -1335,11 +1375,12 @@ static void fatDirSectorSearch(FAT *fat,
                     fat->dirSect = startSector + x;
                     /* Checks, if there is LFN associated
                      * with this 8.3 entry. */
-                    if (lfn_len && generateChecksum(p->file_name) == checksum)
+                    if (*lfn_len &&
+                        generateChecksum(p->file_name) == *checksum)
                     {
                         /* Adds the LFN to fat->corrected_path. */
-                        memcpy(fat->c_path, lfn, lfn_len);
-                        fat->c_path += lfn_len;
+                        memcpy(fat->c_path, lfn, *lfn_len);
+                        fat->c_path += *lfn_len;
                         /* Adds '\' if the path continues,
                          * otherwise adds null terminator. */
                         if (!fat->last) fat->c_path[0] = '\\';

@@ -1053,6 +1053,7 @@ static void fatNextSearch(FAT *fat, char *search, const char **upto)
 {
     const char *p;
     const char *q;
+    int i;
 
     unused(fat);
     p = strchr(*upto, '\\');
@@ -1086,16 +1087,32 @@ static void fatNextSearch(FAT *fat, char *search, const char **upto)
         q = memchr(*upto, '.', p - *upto);
         if (q != NULL)
         {
-            memcpy(search, *upto, q - *upto);
+            /* Uppers the name part. */
+            for (i = 0; i < q - *upto; i++)
+            {
+                search[i] = toupper((*upto)[i]);
+            }
+            /* Pads the name part with spaces. */
             memset(search + (q - *upto), ' ', 8 - (q - *upto));
-            memcpy(search + 8, q + 1, p - q - 1);
+            /* Uppers the extension part. */
+            for (i = 0; i < p - q - 1; i++)
+            {
+                (search + 8)[i] = toupper((q + 1)[i]);
+            }
+            /* Pads the extension part with spaces. */
             memset(search + 8 + (p - q) - 1, ' ', 3 - ((p - q) - 1));
         }
         else
         {
-            memcpy(search, *upto, p - *upto);
+            /* Uppers the name part. */
+            for (i = 0; i < p - *upto; i++)
+            {
+                search[i] = toupper((*upto)[i]);
+            }
+            /* Pads the name part with spaces. */
             memset(search + (p - *upto), ' ', 11 - (p - *upto));
         }
+        /* +++Add support for lower case/mixed case file creation. */
     }
     /* If the part of path is LFN, we just copy it into search. */
     else memcpy(search, *upto, p - *upto);
@@ -1721,6 +1738,7 @@ static void fatChain(FAT *fat, FATFILE *fatfile)
 */
 unsigned int fatDeleteFile(FAT *fat,const char *fnm)
 {
+    /* +++Add support for LFNs. */
     if ((fnm[0] == '\\') || (fnm[0] == '/'))
     {
         fnm++;
@@ -1751,6 +1769,7 @@ unsigned int fatRenameFile(FAT *fat,const char *old,const char *new)
     char *p;
     int len;
     int lenext;
+    /* +++Add support for LFNs. */
 
     if ((old[0] == '\\') || (old[0] == '/'))
     {

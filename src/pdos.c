@@ -1577,7 +1577,6 @@ int PosMakeDir(const char *dname)
         strcat(dirname, "\\");
         strcat(dirname, dname);
     }
-    upper_str(dirname);
 
     ret = dirCreat(dirname, DIRENT_SUBDIR);
 
@@ -1621,7 +1620,6 @@ int PosRemoveDir(const char *dname)
         strcat(dirname, "\\");
         strcat(dirname, dname);
     }
-    upper_str(dirname);
 
     ret = dirDelete(dirname);
 
@@ -1673,7 +1671,6 @@ int PosChangeDir(const char *to)
         }
         strcat(newcwd, to);
     }
-    upper_str(newcwd);
 
     ret = fatGetFileAttributes(&disks[drive].fat, newcwd, &attr);
     if (ret || !(attr & DIRENT_SUBDIR)) return (POS_ERR_PATH_NOT_FOUND);
@@ -2077,7 +2074,6 @@ void PosExec(char *prog, void *parmblock)
     {
         strcpy(tempp, prog);
     }
-    upper_str(tempp);
     prog = tempp;
     loadExe(prog, parms);
     return;
@@ -2145,7 +2141,6 @@ int PosRenameFile(const char *old, const char *new)
 
     formatcwd(old,tempf1);
     strcpy(tempf2, new);
-    upper_str(tempf2);
 
     old = tempf1;
     new = tempf2;
@@ -2224,7 +2219,6 @@ int PosCreatNewFile(const char *name, int attrib)
         strcat(filename, "\\");
         strcat(filename, name);
     }
-    upper_str(filename);
 
     ret = newFileCreat(filename, attrib);
 
@@ -3152,11 +3146,7 @@ static int fileCreat(const char *fnm, int attrib)
     const char *p;
     int drive;
     int rc;
-    char tempf[FILENAME_MAX];
 
-    strcpy(tempf, fnm);
-    upper_str(tempf);
-    fnm = tempf;
     p = strchr(fnm, ':');
     if (p == NULL)
     {
@@ -3192,14 +3182,10 @@ static int dirCreat(const char *dnm, int attrib)
     const char *p;
     int drive;
     int rc;
-    char tempf[FILENAME_MAX];
     char parentname[MAX_PATH];
     char *end;
     char *temp;
 
-    strcpy(tempf, dnm);
-    upper_str(tempf);
-    dnm = tempf;
     p = strchr(dnm, ':');
     if (p == NULL)
     {
@@ -3241,11 +3227,7 @@ static int newFileCreat(const char *fnm, int attrib)
     const char *p;
     int drive;
     int rc;
-    char tempf[FILENAME_MAX];
 
-    strcpy(tempf, fnm);
-    upper_str(tempf);
-    fnm = tempf;
     p = strchr(fnm, ':');
     if (p == NULL)
     {
@@ -3282,11 +3264,7 @@ static int fileOpen(const char *fnm)
     const char *p;
     int drive;
     int rc;
-    char tempf[FILENAME_MAX];
 
-    strcpy(tempf, fnm);
-    upper_str(tempf);
-    fnm = tempf;
     p = strchr(fnm, ':');
     if (p == NULL)
     {
@@ -3349,11 +3327,7 @@ static int fileDelete(const char *fnm)
     const char *p;
     int drive;
     int rc;
-    char tempf[FILENAME_MAX];
 
-    strcpy(tempf, fnm);
-    upper_str(tempf);
-    fnm = tempf;
     p = strchr(fnm, ':');
     if (p == NULL)
     {
@@ -3407,6 +3381,7 @@ static int dirDelete(const char *dnm)
 
     if (drive == currentDrive)
     {
+        /* +++Add better check, probably using fat->corrected_path. */
         strcpy(tempf, p);
         for (i = 0; i < strlen(tempf); i++)
         {
@@ -3947,7 +3922,6 @@ static void formatcwd(const char *input,char *output)
         strcat(output,input);
     }
     tempDrive=toupper(output[0]) - 'A';
-    upper_str(output);
     return;
 }
 /**/

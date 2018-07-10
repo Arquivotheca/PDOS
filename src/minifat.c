@@ -442,6 +442,7 @@ static void fatPosition(FAT *fat, const char *fnm)
     fatNextSearch(fat, fat->search, &fat->upto);
     if (fat->notfound) return;
     fatRootSearch(fat, fat->search);
+    if (fat->last) fat->processing_root = 1;
     if (fat->notfound)
     {
         if (fat->found_deleted)
@@ -460,7 +461,6 @@ static void fatPosition(FAT *fat, const char *fnm)
         fat->pos_result == FATPOS_ENDCLUSTER)
         fat->c_path[0] = '\0';
 
-        fat->processing_root = 1;
         return;
     }
     while (!fat->last)

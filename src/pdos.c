@@ -2566,6 +2566,8 @@ static int ff_search(void)
     unsigned char lfn[255]; /*+++Add UCS-2 support. */
     unsigned int lfn_len = 0;
     unsigned char checksum;
+    /* Upper lfn which is a string. */
+    unsigned char testlfn[256];
 
     ret = fileRead(ff_handle,&dirent, sizeof dirent);
     while ((ret == sizeof dirent) && (dirent.file_name[0] != '\0'))
@@ -2579,6 +2581,26 @@ static int ff_search(void)
             }
             else
             {
+                /* If LFN was found before, checks
+                 * if it belongs to this 8.3 entry. */
+                if (lfn_len)
+                {
+                    /* Checks if the checksum is correct for this entry. */
+                    if (checksum == generateChecksum(dirent.file_name))
+                    {
+                        /* If it is correct, copies LFN, makes it string
+                         * and uppers it so it is compatible with patmat. */
+                        memcpy(testlfn, lfn, lfn_len);
+                        testlfn[lfn_len] = '\0';
+                        /* +++Make UCS-2 compatible, because upper_str
+                         * uses only char, not unsigned int. Also patmat
+                         * is not yet UCS-2 compatible. */
+                        upper_str(testlfn);
+                    }
+                    /* If it is not, makes sure that
+                     * this LFN will not be used again. */
+                    else lfn_len = 0;
+                }
                 memcpy(file, dirent.file_name, sizeof(dirent.file_name));
                 file[sizeof(dirent.file_name)] = '\0';
                 p = strchr(file, ' ');
@@ -2598,7 +2620,9 @@ static int ff_search(void)
                 {
                     *p-- = '\0';
                 }
-                if (patmat(file, ff_pat)
+                if ((patmat(file, ff_pat) ||
+                    /* If it has LFN, it is enough if only one of them fits. */
+                     (lfn_len && patmat(testlfn, ff_pat)))
 
                     /* if it is not a directory, or they asked for
                     directories, then that is OK */
@@ -2632,10 +2656,11 @@ static int ff_search(void)
                     memset(dta->file_name, '\0', sizeof(dta->file_name));
                     strcpy(dta->file_name, file);
 
-                    /* Checks if the checksum is correct for this entry
-                     * and if it is, stores it in the DTA. */
-                    if (lfn_len &&
-                        checksum == generateChecksum(dirent.file_name))
+                    /* Checks if this file has LFN associated
+                     * and stores it in the DTA. This check
+                     * is sufficient, because the check before
+                     * sets lfn_len to 0 when it fails. */
+                    if (lfn_len)
                     {
                         memcpy(dta->lfn, lfn, lfn_len);
                         /* Adds null terminator at the end of LFN. */
@@ -3618,6 +3643,7 @@ static int fileDelete(const char *fnm)
     const char *p;
     int drive;
     int rc;
+    int attr;
 
     p = strchr(fnm, ':');
     if (p == NULL)
@@ -3632,6 +3658,11 @@ static int fileDelete(const char *fnm)
         p++;
     }
 
+    /* Checks if the file that should be deleted is not a directory.
+     * Directories must be deleted using dirDelete instead. */
+    rc = fatGetFileAttributes(&disks[drive].fat, p, &attr);
+    if (rc || (attr & DIRENT_SUBDIR)) return (POS_ERR_FILE_NOT_FOUND);
+
     rc = fatDeleteFile(&disks[drive].fat, p);
     if (rc != 0) return (-1);
     return (rc);
@@ -3643,17 +3674,12 @@ static int dirDelete(const char *dnm)
     const char *p;
     int drive;
     int rc;
-    char tempf[FILENAME_MAX];
     int attr;
-    int i;
     int ret;
     int dotcount = 0;
     int fh;
     DIRENT dirent;
 
-    strcpy(tempf, dnm);
-    upper_str(tempf);
-    dnm = tempf;
     p = strchr(dnm, ':');
     if (p == NULL)
     {
@@ -3672,13 +3698,7 @@ static int dirDelete(const char *dnm)
 
     if (drive == currentDrive)
     {
-        /* +++Add better check, probably using fat->corrected_path. */
-        strcpy(tempf, p);
-        for (i = 0; i < strlen(tempf); i++)
-        {
-            if (tempf[i] == '/') tempf[i] = '\\';
-        }
-        if (strcmp(tempf, cwd) == 0 || strcmp(tempf + 1, cwd) == 0)
+        if (strcmp(disks[drive].fat.corrected_path,cwd) == 0)
         {
             return (POS_ERR_ATTEMPTED_TO_REMOVE_CURRENT_DIRECTORY);
         }
@@ -4244,7 +4264,7 @@ static void logUnimplementedCall(int intNum, int ah, int al)
 /* INT 21,AH=0A: Read Buffered Input */
 void PosReadBufferedInput(pos_input_buffer *buf)
 {
-    int readBytes;
+    size_t readBytes;
     unsigned char cbuf[3]; /* Only 1 byte needed, but protect against any
                               buffer overflow bug in PosReadFile */
 

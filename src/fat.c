@@ -36,7 +36,10 @@ static void fatDirSectorSearch(FAT *fat,
                                int numsectors,
                                unsigned char *lfn,
                                unsigned int *lfn_len,
-                               unsigned char *checksum);
+                               unsigned char *checksum,
+                               DIRENT *lfn_start_de,
+                               unsigned long *lfn_start_cluster,
+                               unsigned long *lfn_start_dirSect);
 static void fatReadLogical(FAT *fat, unsigned long sector, void *buf);
 static void fatWriteLogical(FAT *fat, unsigned long sector, void *buf);
 static void fatMarkCluster(FAT *fat, unsigned long cluster);
@@ -55,6 +58,7 @@ static void generate83Name(unsigned char *lfn, unsigned int lfn_len,
                            unsigned char *shortname);
 static int findFreeSpaceForLFN(FAT *fat, unsigned int required_free,
                                char *shortname, unsigned int *numsectors);
+static void deleteLFNs(FAT *fat);
 
 static unsigned char dir_buf[MAXSECTSZ];
 
@@ -979,6 +983,7 @@ static void fatPosition(FAT *fat, const char *fnm)
     fatNextSearch(fat, fat->search, &fat->upto);
     if (fat->notfound) return;
     fatRootSearch(fat, fat->search);
+    if (fat->last) fat->processing_root = 1;
     if (fat->notfound)
     {
         if (fat->found_deleted)
@@ -997,7 +1002,6 @@ static void fatPosition(FAT *fat, const char *fnm)
         fat->pos_result == FATPOS_ENDCLUSTER)
         fat->c_path[0] = '\0';
 
-        fat->processing_root = 1;
         return;
     }
     while (!fat->last)
@@ -1145,10 +1149,16 @@ static void fatRootSearch(FAT *fat, char *search)
     unsigned char lfn[MAXFILENAME]; /* +++Add UCS-2 support. */
     unsigned int lfn_len = 0;
     unsigned char checksum;
+    /* We also store some information about start entry
+     * of LFN so it will be possible to delete LFN. */
+    DIRENT lfn_start_de;
+    unsigned long lfn_start_cluster;
+    unsigned long lfn_start_dirSect;
     if (fat->rootsize)
     {
         fatDirSectorSearch(fat, search, fat->rootstart, fat->rootsize,
-                           lfn, &lfn_len, &checksum);
+                           lfn, &lfn_len, &checksum, &lfn_start_de,
+                           &lfn_start_cluster, &lfn_start_dirSect);
     }
     else
     {
@@ -1172,6 +1182,12 @@ static void fatDirSearch(FAT *fat, char *search)
     unsigned char lfn[MAXFILENAME]; /* +++Add UCS-2 support. */
     unsigned int lfn_len = 0;
     unsigned char checksum;
+    /* We also store some information about start entry
+     * of LFN so it will be possible to delete LFN. */
+    DIRENT lfn_start_de;
+    unsigned long lfn_start_cluster;
+    unsigned long lfn_start_dirSect;
+
     fat->fnd=0;
 
     fatClusterAnalyse(fat, fat->currcluster, &fat->startSector, &nextCluster);
@@ -1179,7 +1195,8 @@ static void fatDirSearch(FAT *fat, char *search)
                        search,
                        fat->startSector,
                        fat->sectors_per_cluster,
-                       lfn, &lfn_len, &checksum);
+                       lfn, &lfn_len, &checksum, &lfn_start_de,
+                       &lfn_start_cluster, &lfn_start_dirSect);
 
     while (fat->fnd == 0)    /* not found but not end */
     {
@@ -1195,7 +1212,8 @@ static void fatDirSearch(FAT *fat, char *search)
                            search,
                            fat->startSector,
                            fat->sectors_per_cluster,
-                           lfn, &lfn_len, &checksum);
+                           lfn, &lfn_len, &checksum, &lfn_start_de,
+                           &lfn_start_cluster, &lfn_start_dirSect);
     }
     return;
 }
@@ -1279,7 +1297,10 @@ static void fatDirSectorSearch(FAT *fat,
                                int numsectors,
                                unsigned char *lfn,
                                unsigned int *lfn_len,
-                               unsigned char *checksum)
+                               unsigned char *checksum,
+                               DIRENT *lfn_start_de,
+                               unsigned long *lfn_start_cluster,
+                               unsigned long *lfn_start_dirSect)
 {
     int x;
     unsigned char *buf;
@@ -1330,6 +1351,19 @@ static void fatDirSectorSearch(FAT *fat,
             else if (p->file_attr == DIRENT_LFN)
             {
                 *checksum = readLFNEntry(p, lfn, lfn_len);
+                /* We check using ordinal entry if this is
+                 * the last (first physical) LFN entry.
+                 * If first byte has 6. bit set, it is
+                 * the last LFN entry. */
+                if (p->file_name[0] & 0x40)
+                {
+                    /* Stores some information about this
+                     * entry so it can be later found when
+                     * it is going to be deleted. */
+                    lfn_start_de = p;
+                    *lfn_start_cluster = fat->currcluster;
+                    *lfn_start_dirSect = startSector + x;
+                }
             }
             /* If it is not the end, deleted entry or LFN,
              * it must be a normal entry (8.3 name). */
@@ -1360,6 +1394,12 @@ static void fatDirSectorSearch(FAT *fat,
                         }
                         fat->de = p;
                         fat->dirSect = startSector + x;
+                        /* Information about the last (first physical)
+                         * entry are stored in FAT structure so they
+                         * can be accessed by other functions. */
+                        fat->temp_de = lfn_start_de;
+                        fat->temp_currcluster = *lfn_start_cluster;
+                        fat->temp_dirSect = *lfn_start_dirSect;
                         /* Adds the LFN to fat->corrected_path. */
                         memcpy(fat->c_path, lfn, *lfn_len);
                         fat->c_path += *lfn_len;
@@ -1395,6 +1435,16 @@ static void fatDirSectorSearch(FAT *fat,
                     if (*lfn_len &&
                         generateChecksum(p->file_name) == *checksum)
                     {
+                        /* Information about the last (first physical)
+                         * entry are stored in FAT structure so they
+                         * can be accessed by other functions. */
+                        fat->temp_de = lfn_start_de;
+                        fat->temp_currcluster = *lfn_start_cluster;
+                        fat->temp_dirSect = *lfn_start_dirSect;
+                        /* We also let other functions know that
+                         * this file has LFN associated, so they
+                         * should keep that in mind. */
+                        fat->lfn_search_len = *lfn_len;
                         /* Adds the LFN to fat->corrected_path. */
                         memcpy(fat->c_path, lfn, *lfn_len);
                         fat->c_path += *lfn_len;
@@ -1752,6 +1802,12 @@ unsigned int fatDeleteFile(FAT *fat,const char *fnm)
     else
     {
         fatNuke(fat,fat->currcluster);
+        if (fat->lfn_search_len)
+        {
+            /* If this file has LFN, all associated
+             * LFN entries must be deleted. */
+            deleteLFNs(fat);
+        }
         fat->de->file_name[0]=DIRENT_DEL;
         fatWriteLogical(fat, fat->dirSect, fat->dbuf);
         return(0);
@@ -1765,10 +1821,11 @@ unsigned int fatDeleteFile(FAT *fat,const char *fnm)
 unsigned int fatRenameFile(FAT *fat,const char *old,const char *new)
 {
     FATFILE fatfile;
-    char fnm[FILENAME_MAX];
+    /* 260 is MAX_PATH from pos.h. */
+    char fnm[260]; /* +++Add support for UCS-2. */
     char *p;
-    int len;
-    int lenext;
+    int lfn_len;
+    DIRENT old_dirent;
     /* +++Add support for LFNs. */
 
     if ((old[0] == '\\') || (old[0] == '/'))
@@ -1776,7 +1833,6 @@ unsigned int fatRenameFile(FAT *fat,const char *old,const char *new)
         old++;
     }
     fat->currfatfile = &fatfile;
-    fat->notfound=0;
     strcpy(fnm,old);
     p=strrchr(fnm,'\\');
     if (p == NULL)
@@ -1789,55 +1845,59 @@ unsigned int fatRenameFile(FAT *fat,const char *old,const char *new)
     }
 
     fatPosition(fat,fnm);
-    if(!fat->notfound)
+    if(!fat->notfound) return(POS_ERR_FILE_NOT_FOUND);
+    /* Stores length of LFN so it can be used later. */
+    lfn_len = fat->lfn_search_len;
+    if (!lfn_len)
     {
-        return(POS_ERR_FILE_NOT_FOUND);
+        /* fatPosition generates 8.3 name for us, so we just take it. */
+        memcpy(fat->new_file, fat->search, 11);
+    }
+    /* Copies LFN from new. */
+    else memcpy(fat->new_file, new, lfn_len);
+    fatPosition(fat, old);
+    if(fat->notfound) return(POS_ERR_FILE_NOT_FOUND);
+    if (!lfn_len && !fat->lfn_search_len)
+    {
+        /* It is 8.3 to 8.3 rename, so no entries are created or deleted. */
+        memcpy(fat->de->file_name, fat->new_file, 11);
+        fatWriteLogical(fat, fat->dirSect, fat->dbuf);
+        return (0);
+    }
+    /* Stores old DIRENT in case it will be needed later. */
+    memcpy(&old_dirent, fat->de, sizeof(DIRENT));
+    if (fat->lfn_search_len)
+    {
+        /* Original has LFN, so LFN entries must be deleted. */
+        deleteLFNs(fat);
+    }
+    /* Deletes the original DIRENT and writes data to disk. */
+    fat->de->file_name[0]=DIRENT_DEL;
+    fatWriteLogical(fat, fat->dirSect, fat->dbuf);
+    if (lfn_len)
+    {
+        /* If the new name is LFN, LFN entries are created. */
+        createLFNs(fat, fat->new_file, lfn_len);
+        /* +++Add restoration of the original in case createLFNs fails
+         * because of full root/disk when new LFN is longer than old one. */
+        /* createLFNs left us with everything
+         * prepared for creating new entry. */
+        memcpy(fat->de, &old_dirent, sizeof(DIRENT));
+        memcpy(fat->de, fat->search, 11);
     }
     else
     {
-        memset(fat->new_file, ' ', 11);
-        p = strchr(new, '.');
-        if (p != NULL)
-        {
-            len=(p-(char *) new);
-            lenext=strlen(p+1);
-            if (len > 8)
-            {
-                len=8;
-            }
-            memcpy(fat->new_file, new, len);
-
-            if (lenext > 3)
-            {
-                lenext=3;
-            }
-            memcpy(fat->new_file + 8, p+1, lenext);
-
-        }
-        else
-        {
-            len=strlen(new);
-            if (len > 8)
-            {
-                len=8;
-            }
-            memcpy(fat->new_file,new,len);
-        }
-
-        fat->notfound=0;
-        fatPosition(fat, old);
-
-        if(fat->notfound)
-        {
-            return (POS_ERR_FILE_NOT_FOUND);
-        }
-        else
-        {
-            memcpy(fat->de->file_name, fat->new_file, 11);
-            fatWriteLogical(fat, fat->dirSect, fat->dbuf);
-            return (0);
-        }
+        /* If new name is 8.3 name, fatPosition
+         * is used to get onto first deleted entry.
+         * No checks are necessary, because space
+         * was already freed by deleteLFNs. */
+        fatPosition(fat,fnm);
+        memcpy(fat->de, &old_dirent, sizeof(DIRENT));
+        memcpy(fat->de, fat->search, 11);
     }
+    fatWriteLogical(fat, fat->dirSect, fat->dbuf);
+    return (0);
+
 }
 /**/
 
@@ -2226,8 +2286,6 @@ static int createLFNs(FAT *fat, unsigned char *lfn, unsigned int lfn_len)
      * conflicts were found. */
     checksum = generateChecksum(shortname);
     buf = fat->dbuf;
-    /* Reads sector in which first empty entry was found. */
-
     while (!fatEndCluster(fat, fat->currcluster))
     {
         /* If we are in fixed size root, we set the startSector
@@ -2269,6 +2327,9 @@ static int createLFNs(FAT *fat, unsigned char *lfn, unsigned int lfn_len)
                     /* Copies final 8.3 name into fat->search,
                      * because other functions use it from there. */
                     memcpy(fat->search, shortname, 11);
+                    /* Other functions must write fat->dbuf to
+                     * write some last physical LFN entries
+                     * on disk. */
                     return (0);
                 }
                 if (fat->de)
@@ -2601,6 +2662,92 @@ static int findFreeSpaceForLFN(FAT *fat, unsigned int required_free,
             at_end = 1;
         }
         else fat->currcluster = nextCluster;
+    }
+}
+
+/* Deletes LFN entries using information stored
+ * by fatPosition in FAT structure. fatPosition
+ * guarantees that this function cannot fail,
+ * so no checks are necessary. */
+static void deleteLFNs(FAT *fat)
+{
+    unsigned int remaining;
+    unsigned long nextCluster;
+    int x;
+    unsigned int numsectors;
+    unsigned char *buf;
+    DIRENT *p;
+
+    numsectors = fat->sectors_per_cluster;
+
+    /* Makes information stored by fatPosition active. */
+    fat->de = fat->temp_de;
+    fat->currcluster = fat->temp_currcluster;
+    fat->dirSect = fat->temp_dirSect;
+
+    /* Calculates how many entries should be deleted from
+     * the length of LFN. Each entry stores 13 characters
+     * and the last one can store fewer. */
+    remaining = fat->lfn_search_len / 13;
+    if (fat->lfn_search_len % 13) remaining++;
+
+    buf = fat->dbuf;
+    while (1)
+    {
+        /* If we are in fixed size root, we set the startSector
+         * to fat->rootstart. */
+        if (fat->processing_root && fat->rootsize)
+        {
+            fat->startSector = fat->rootstart;
+            numsectors = fat->rootsize;
+        }
+        /* Otherwise fatClusterAnalyse can provide us
+         * with startSector. */
+        else
+        {
+            fatClusterAnalyse(fat, fat->currcluster,
+                              &fat->startSector, &nextCluster);
+        }
+        /* If fat->de points to a DIRENT, we should start
+         * from sector in which first physical LFN entry
+         * was found. */
+        if (fat->de) x = fat->dirSect - fat->startSector;
+        /* Otherwise start from the beginning of cluster. */
+        else x = 0;
+        for (; x < numsectors; x++)
+        {
+            fatReadLogical(fat, fat->startSector + x, buf);
+            for (p = (DIRENT *) buf; (unsigned char *) p < buf + fat->sector_size;
+                 p++)
+            {
+                if (fat->de)
+                {
+                    /* If we are just starting, we should start
+                     * from where fatPosition found first LFN entry. */
+                    p = fat->de;
+                    fat->de = 0;
+                }
+                if (remaining == 0)
+                {
+                    /* All LFN entries are deleted, so we
+                     * set fat->de and fat->dirSect so
+                     * other functions can work with them. */
+                    fat->de = p;
+                    fat->dirSect = fat->startSector + x;
+                    /* Other functions must write fat->dbuf to
+                     * delete some last physical LFN entries
+                     * on disk. */
+                    return;
+                }
+                p->file_name[0] = DIRENT_DEL;
+                remaining--;
+            }
+            /* If we ended using this sector, it is written
+             * so the LFN entries will be deleted on disk. */
+            fatWriteLogical(fat, fat->startSector + x, buf);
+        }
+        /* Advances to the next cluster. */
+        fat->currcluster = nextCluster;
     }
 }
 

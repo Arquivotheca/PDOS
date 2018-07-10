@@ -140,7 +140,8 @@ typedef struct {
     void (*readLogical)(void *diskptr, unsigned long sector, void *buf);
     void (*writeLogical)(void *diskptr, unsigned long sector, void *buf);
     void *parm;
-    char new_file[12]; /*new filename for rename*/
+    /* +++Add support for UCS-2. */
+    char new_file[MAXFILENAME]; /*new filename for rename*/
     int last;
     unsigned char search[MAXFILENAME]; /* +++Add support for UCS-2. */
     /* Length of search if search is LFN, 0 if 8.3 name. */

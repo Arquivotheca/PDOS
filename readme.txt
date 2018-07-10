@@ -672,6 +672,8 @@ is the first bit of unneeded code. Subtract 0100h from this value
 to find out the amount of code in use. Then subtract that value
 from 3*512 to find out how much space is still available.
 
+When adding a new interrupt, you need to change handlers.asm,
+pdos.c, protintp.c, protints.s, support.asm, support.s.
 
 
 FUTURE DEVELOPMENT

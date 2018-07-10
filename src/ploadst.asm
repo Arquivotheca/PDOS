@@ -3,9 +3,14 @@
 ; This program written by Paul Edwards
 ; Released to the public domain
 
+ifdef WATCOM
+% .model memodel
+extrn main_:proc
+else
 % .model memodel, c
-
 extrn main:proc
+endif
+
 
 _DATA   segment word public 'DATA'
 _DATA   ends
@@ -16,6 +21,11 @@ _TEXT segment word public 'CODE'
 
 org 0100h
 top:
+
+ifdef WATCOM
+public _cstart_
+_cstart_:
+endif
 
 public __startup
 __startup proc
@@ -60,7 +70,11 @@ mov sp, 0fffeh
 
 bypass:
 
+ifdef WATCOM
+call near ptr main_
+else
 call near ptr main
+endif
 sub sp,2
 mov ax, 0
 push ax

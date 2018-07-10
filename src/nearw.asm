@@ -30,17 +30,17 @@ push cx
 push bx
 push dx
 push ax
-call far ptr f_lumod@
+call f_lumod@
 mov cx, dx
 mov bx, ax
-call far ptr f_ludiv@
+call f_ludiv@
 ret
 __U4D endp
 endif
 
 
 public f_ludiv@
-f_ludiv@ proc far
+f_ludiv@ proc
 push bp
 mov bp,sp
 push bx

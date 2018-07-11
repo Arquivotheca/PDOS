@@ -73,7 +73,7 @@ void pdosload(void)
 #ifdef PDOS32    
     a20e(); /* enable a20 line */
     pp.transferbuf = ADDR2ABS(transferbuf);
-    pp.doreboot = (unsigned long)doreboot;
+    pp.doreboot = (unsigned long)(void (far *)())doreboot;
     pp.bpb = ADDR2ABS(bpb);
     runaout("MSDOS.SYS", load, ADDR2ABS(&pp));
 #else    
@@ -87,7 +87,7 @@ void pdosload(void)
         }
         load += 0x200;
     } while (ret == 0x200);
-    start = (unsigned long)psp;
+    start = (unsigned long)(void far *)psp;
     start >>= 4;
     fixexe(loads, (unsigned int)start, &progentry);
     start <<= 16;

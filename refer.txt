@@ -61,7 +61,10 @@ naming style) used in the rest of the project, and also use 4 spaces
 instead of a tab, because some other people working on the project
 might be using a text editor that doesn't support tabs properly.
 Spaces are more portable because every text editor should support
-spaces properly but the same cannot be said about tabs.
+spaces properly but the same cannot be said about tabs. Also,
+please restrict line lengths to 80 displayable characters so
+that the code can be ported to environments with that line
+length restriction, like normal MVS usage.
 
 Check "bos.h" (the header for the prototypes of BIOS functions)
 and see if the DOS call you are going to implement already

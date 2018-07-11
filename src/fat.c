@@ -1874,6 +1874,9 @@ unsigned int fatRenameFile(FAT *fat,const char *old,const char *new)
     /* Deletes the original DIRENT and writes data to disk. */
     fat->de->file_name[0]=DIRENT_DEL;
     fatWriteLogical(fat, fat->dirSect, fat->dbuf);
+    /* fatPosition is ran again to
+     * set FAT variables to proper values. */
+    fatPosition(fat,fnm);
     if (lfn_len)
     {
         /* If the new name is LFN, LFN entries are created. */
@@ -1888,10 +1891,9 @@ unsigned int fatRenameFile(FAT *fat,const char *old,const char *new)
     else
     {
         /* If new name is 8.3 name, fatPosition
-         * is used to get onto first deleted entry.
+         * was used to get onto first deleted entry.
          * No checks are necessary, because space
          * was already freed by deleteLFNs. */
-        fatPosition(fat,fnm);
         memcpy(fat->de, &old_dirent, sizeof(DIRENT));
         memcpy(fat->de, fat->search, 11);
     }

@@ -110,8 +110,8 @@ void disable(void);
 #endif
 
 #define MK_FP(x, y) (void far *)(((unsigned long)(x) << 16) | (y))
-#define FP_OFF(x) (unsigned int)((unsigned long)(x) & 0xffffU)
-#define FP_SEG(x) (unsigned int)((unsigned long)(x) >> 16)
+#define FP_OFF(x) (unsigned int)((unsigned long)(void far *)(x) & 0xffffU)
+#define FP_SEG(x) (unsigned int)((unsigned long)(void far *)(x) >> 16)
 #define FP_NORM(x) (void *)(((((unsigned long)(x) >> 16) \
                      + (((unsigned long)(x) & 0xffffU) / 16)) << 16) \
                      | (((unsigned long)(x) & 0xffffU) % 16))

@@ -97,15 +97,15 @@ unsigned long rawprot(unsigned long csbase,
     myc32base = protget32();
     if (myc32base == 0)
     {
-        myc32base = (unsigned long)(rtop_stage2);
+        myc32base = (unsigned long)(void (far *)())(rtop_stage2);
     }
     myc32base = ADDR2ABS(myc32base);
     myc32base = myc32base & 0xfffffff0UL;
-        
-    mycbase = (unsigned long)rawprota;
+
+    mycbase = (unsigned long)(void (far *)())rawprota;
     mycbase = (mycbase >> 16) << 4;
 
-    mydbase = (unsigned long)&newstack;
+    mydbase = (unsigned long)(void far *)&newstack;
     mydbase = (mydbase >> 16) << 4;
 
     descriptors.os_code.base15_0 = (unsigned short)csbase;
@@ -158,13 +158,13 @@ unsigned long runprot(unsigned long csbase,
     myc32base = protget32();
     if (myc32base == 0)
     {
-        runparm.runreal = ADDR2ABS(runreal);
+        runparm.runreal = CADDR2ABS(runreal);
     }
     else
     {
         runparm.runreal = ((myc32base >> 16) << 4) + (unsigned short)runreal;
     }
-    runparm.dorealint = (unsigned long)dorealint;
+    runparm.dorealint = (unsigned long)(void (far *)())dorealint;
     
     runparm_p = ADDR2ABS(&runparm);
     runparm_p -= dsbase;

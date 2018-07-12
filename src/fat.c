@@ -56,6 +56,8 @@ static unsigned int cicmp(const unsigned char *first,
 static int createLFNs(FAT *fat, unsigned char *lfn, unsigned int lfn_len);
 static void generate83Name(unsigned char *lfn, unsigned int lfn_len,
                            unsigned char *shortname);
+static int checkNumericTail(FAT *fat, char *shortname);
+static int incrementNumericTail(char *shortname);
 static int findFreeSpaceForLFN(FAT *fat, unsigned int required_free,
                                char *shortname, unsigned int *numsectors);
 static void deleteLFNs(FAT *fat);
@@ -2283,6 +2285,9 @@ static int createLFNs(FAT *fat, unsigned char *lfn, unsigned int lfn_len)
 
     ret = findFreeSpaceForLFN(fat, required_free, shortname, &numsectors);
     if (ret) return (ret);
+    /* +++Do not run if the LFN is just mixed case 8.3 name. */
+    ret = checkNumericTail(fat, shortname);
+    if (ret) return (ret);
     /* Checksum must be generated after finding free space,
      * because that function modifies shortname if any
      * conflicts were found. */
@@ -2486,6 +2491,191 @@ static void generate83Name(unsigned char *lfn, unsigned int lfn_len,
     shortname[j + 1] = '1';
 }
 
+/* Checks if there are any files with the same generated 8.3 name
+ * as shortname and if they do, increments numeric tail until it is unique. */
+static int checkNumericTail(FAT *fat, char *shortname)
+{
+    DIRENT *stored_de;
+    unsigned long stored_currcluster;
+    unsigned long stored_dirSect;
+    /* +++Add UCS-2 support. */
+    unsigned char path[260]; /* MAX_PATH from pos.h. */
+    unsigned int numsectors;
+    unsigned long nextCluster;
+    unsigned long startSector;
+    unsigned long startcluster;
+    unsigned int x;
+    unsigned char *buf = fat->dbuf;
+    DIRENT *p;
+    int ret;
+    int notfound;
+
+    /* Stores variables from FAT which are needed for writing LFNs. */
+    stored_de = fat->de;
+    stored_currcluster = fat->currcluster;
+    stored_dirSect = fat->dirSect;
+
+    numsectors = fat->sectors_per_cluster;
+    /* We use fatPosition with corrected_path
+     * to get start cluster of directory we
+     * are in. */
+    if (!fat->processing_root)
+    {
+        strcpy(path, fat->corrected_path);
+        fatPosition(fat, path);
+        fat->processing_root = 0;
+    }
+    else
+    {
+        /* If it is expandable root, we use rootstartcluster. */
+        if (fat->rootsize == 0)
+        {
+            fat->currcluster = fat->rootstartcluster;
+        }
+        /* If it is fixed size root, we set startSector to
+         * the beginning of root and amount of sectors that
+         * should be searched to the size of root. */
+        else
+        {
+            numsectors = fat->rootsize;
+            startSector = fat->rootstart;
+        }
+    }
+    startcluster = fat->currcluster;
+    /* Loops over the directory until the numeric
+     * tail is unique or error occurs. */
+    while (1)
+    {
+        notfound = 1;
+        /* Loops over clusters. */
+        while (!fatEndCluster(fat, fat->currcluster) ||
+               (fat->processing_root && fat->rootsize))
+        {
+            /* Unless we are processing fixed size root,
+             * we use fatClusterAnalyse to get startSector. */
+            if (!(fat->processing_root && fat->rootsize))
+            {
+                fatClusterAnalyse(fat, fat->currcluster, &startSector, &nextCluster);
+            }
+            for (x = 0; x < numsectors; x++)
+            {
+                fatReadLogical(fat, startSector + x, buf);
+                for (p = (DIRENT *) buf; (unsigned char *) p < buf + fat->sector_size;
+                     p++)
+                {
+                    if (p->file_name[0] == '\0')
+                    {
+                        /* If it is end of directory,
+                         * we end the current dirent loop. */
+                        break;
+                    }
+                    if (p->file_name[0] == DIRENT_DEL ||
+                        p->file_attr == DIRENT_LFN)
+                    {
+                        /* Deleted entries and LFN entries are ignored. */
+                        continue;
+                    }
+                    if (memcmp(p->file_name, shortname, 11) == 0)
+                    {
+                        /* Conflict is found, so numeric
+                         * tail is incremented. */
+                        ret = incrementNumericTail(shortname);
+                        if (ret) return (ret);
+                        notfound = 0;
+                    }
+                }
+                if (p->file_name[0] == '\0')
+                {
+                    /* If it is end of directory,
+                     * we end the current sector loop. */
+                    break;
+                }
+            }
+            if ((fat->processing_root && fat->rootsize)
+                || p->file_name[0] == '\0')
+            {
+                /* If it is end of directory,
+                 * we end the current cluster loop. */
+                break;
+            }
+            fat->currcluster = nextCluster;
+        }
+        if (notfound)
+        {
+            /* Restores variables in FAT. */
+            fat->de = stored_de;
+            fat->currcluster = stored_currcluster;
+            fat->dirSect = stored_dirSect;
+            return (0);
+        }
+        /* Sets the currcluster to beginning of the directory. */
+        fat->currcluster = startcluster;
+    }
+}
+
+/* Increments numeric tail of generated 8.3 name. */
+static int incrementNumericTail(char *shortname)
+{
+    char *p;
+    char *q;
+
+    /* Sets pointer at the last digit of the tail by setting right
+     * before the first space. Also stores pointer to the first space. */
+    p = memchr(shortname, ' ', 8);
+    if (!p)
+    {
+        p = shortname + 7;
+        q = 0;
+    }
+    else
+    {
+        q = p;
+        p--;
+    }
+
+    while (1)
+    {
+        /* If the digit we are currently on is less than 9,
+         * we increment it and return. */
+        if (p[0] != '9')
+        {
+            p[0]++;
+            return (0);
+        }
+        /* Otherwise set it to zero. */
+        p[0] = '0';
+        /* Unless the character in front is '~',
+         * we let another loop handle it. */
+        if ((p-1)[0] != '~')
+        {
+            p--;
+            continue;
+        }
+        /* If the character in front of this one is '~',
+         * we must move some parts of 8.3 name. */
+        if (q)
+        {
+            /* We have some free space in back of the name,
+             * so we move all digits one character to right
+             * and put '1' in front of them. */
+            memmove(p + 1, p, q - p);
+            p[0] = '1';
+            return (0);
+        }
+        /* If there is no more space at the end of name, we must
+         * move '~' one character to left and fill the new space
+         * with '1'. */
+        /* Checks if the tilde was not the first character of name,
+         * because then we have no place use and must return error. */
+        if (p - 1 == shortname) return (POS_ERR_PATH_NOT_FOUND);
+        p -= 2;
+        p[0] = '~';
+        p[1] = '1';
+        return (0);
+    }
+    return (0);
+}
+
 /* Goes through whole directory and finds free continuous
  * space for LFN entries and checks for 8.3 name conflicts. */
 static int findFreeSpaceForLFN(FAT *fat, unsigned int required_free,
@@ -2500,6 +2690,7 @@ static int findFreeSpaceForLFN(FAT *fat, unsigned int required_free,
     unsigned int deleted_count = 0;
     int at_end = 0;
     FATFILE tempfatfile;
+    int ret;
 
     /* We use numsectors as pointer to let the
      * other function know what we set it to. */
@@ -2626,7 +2817,9 @@ static int findFreeSpaceForLFN(FAT *fat, unsigned int required_free,
                 if (p->file_attr != DIRENT_LFN &&
                     memcmp(p->file_name, shortname, 11) == 0)
                 {
-                    /*+++Modify numeric tail.*/
+                    /*+++Add logic for just mixed case LFNs.*/
+                    ret = incrementNumericTail(shortname);
+                    if (ret) return (ret);
                 }
                 /* Deleted entry count is reset when a
                  * non-deleted entry is found but only

@@ -2333,7 +2333,7 @@ int PosRenameFile(const char *old, const char *new)
     int rc;
     char tempf1[FILENAME_MAX];
     char tempf2[FILENAME_MAX];
-
+    /* +++Add support for moving files using rename. */
 
     formatcwd(old,tempf1);
     strcpy(tempf2, new);
@@ -2342,7 +2342,6 @@ int PosRenameFile(const char *old, const char *new)
     new = tempf2;
 
     rc = fatRenameFile(&disks[tempDrive].fat, tempf1 + 2,new);
-    if (rc != 0) return (-1);
     return (rc);
 }
 /**/

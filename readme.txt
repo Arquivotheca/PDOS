@@ -7,6 +7,8 @@ Released to the public domain
 You may use this entire package for any purpose whatsoever
 without restriction, as discussed here:
 http://creativecommons.org/publicdomain/zero/1.0/
+That includes, but is not limited to, closed-source,
+proprietary commercial products.
 
 
 INTRODUCTION

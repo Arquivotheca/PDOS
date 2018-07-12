@@ -51,7 +51,7 @@ static char cwd[65];
  * Helps avoid that confusion.
  * - Simon Kissane
  */
-static char prompt[50] = "]";
+static char prompt[50] = "$_$P]";
 static int singleCommand = 0;
 static int primary = 0;
 static int term = 0;
@@ -241,6 +241,72 @@ static cmdBlock cmdRegistry[] =
     CMDDEF(unboot,"","Marks a disk as non-bootable"),
     CMDDEF(ver,"","Displays the current version of PDOS"),
     CMD_REGISTRY_END
+};
+
+/*===== PROMPT SYMBOL REGISTRY =====*/
+
+/* Function signature for PROMPT symbol display func */
+typedef void (*promptSymProc)(void);
+
+/* Macro to generate prototype for PROMPT symbol procedure */
+#define PROMPTSYMPROTO(name) \
+    static void promptSymProc_##name(void)
+
+/* PROMPT symbol procedure prototypes */
+PROMPTSYMPROTO(dollar);
+PROMPTSYMPROTO(B);
+PROMPTSYMPROTO(D);
+PROMPTSYMPROTO(E);
+PROMPTSYMPROTO(G);
+PROMPTSYMPROTO(H);
+PROMPTSYMPROTO(L);
+PROMPTSYMPROTO(N);
+PROMPTSYMPROTO(P);
+PROMPTSYMPROTO(Q);
+PROMPTSYMPROTO(T);
+PROMPTSYMPROTO(V);
+PROMPTSYMPROTO(underscore);
+
+/* Defines a prompt symbol */
+typedef struct promptSym
+{
+    char symbol;
+    char *description;
+    promptSymProc proc;
+}
+promptSym;
+
+/* Define prompt symbol macro.
+ * Parameters are:
+ * symbol - single uppercase character (quoted)
+ * name - name of prompt symbol (unquoted)
+ * description - one-line description of prompt symbol for help system.
+ */
+#define PROMPTSYMDEF(symbol,name,description) { symbol , description , \
+    promptSymProc_##name }
+
+/* Sentinel record for end of prompt symbol registry */
+#define PROMPT_SYM_REGISTRY_END { 0, NULL, NULL }
+
+/* The prompt symbol registry stores definitions of all supported prompt
+ * symbols.
+ */
+static promptSym promptSymRegistry[] =
+{
+    PROMPTSYMDEF('$',dollar,"$ (dollar sign)"),
+    PROMPTSYMDEF('B',B,"| (pipe)"),
+    PROMPTSYMDEF('D',D,"Current date"),
+    PROMPTSYMDEF('E',E,"ASCII escape code (decimal 27)"),
+    PROMPTSYMDEF('G',G,"> (greater-than sign)"),
+    PROMPTSYMDEF('H',H,"ASCII backspace code (decimal 8)"),
+    PROMPTSYMDEF('L',L,"< (less-than sign)"),
+    PROMPTSYMDEF('N',N,"Current drive"),
+    PROMPTSYMDEF('P',P,"Current drive and directory"),
+    PROMPTSYMDEF('Q',Q,"= (equal sign)"),
+    PROMPTSYMDEF('T',T,"Current time"),
+    PROMPTSYMDEF('V',V,"DOS version number"),
+    PROMPTSYMDEF('_',underscore,"CR+LF"),
+    PROMPT_SYM_REGISTRY_END
 };
 
 /* utility function - check if string is blank */
@@ -500,14 +566,127 @@ static int processInput(void)
     }
 }
 
+/* $$ - prints dollar sign */
+static void promptSymProc_dollar(void)
+{
+    fputc('$', stdout);
+}
+
+/* $B - prints pipe symbol */
+static void promptSymProc_B(void)
+{
+    fputc('|', stdout);
+}
+
+/* $D - prints current date */
+static void promptSymProc_D(void)
+{
+    int y, m, d, dw;
+    PosGetSystemDate(&y,&m,&d,&dw);
+    printf("%04d-%02d-%02d", y, m, d);
+}
+
+/* $E - prints escape character */
+static void promptSymProc_E(void)
+{
+    fputc(27, stdout);
+}
+
+/* $G - prints greater than sign */
+static void promptSymProc_G(void)
+{
+    fputc('>', stdout);
+}
+
+/* $H - prints backspace */
+static void promptSymProc_H(void)
+{
+    fputc('\b', stdout);
+}
+
+/* $L - prints less-than sign */
+static void promptSymProc_L(void)
+{
+    fputc('<', stdout);
+}
+
+/* $N - prints current drive letter */
+static void promptSymProc_N(void)
+{
+    fputc(PosGetDefaultDrive() + 'A', stdout);
+}
+
+/* $P - prints current drive and directory */
+static void promptSymProc_P(void)
+{
+    PosGetCurDir(0, cwd);
+    printf("%c:\\%s", 'A' + PosGetDefaultDrive(), cwd);
+}
+
+/* $Q - prints equal sign */
+static void promptSymProc_Q(void)
+{
+    fputc('=', stdout);
+}
+
+/* $T - prints time */
+static void promptSymProc_T(void)
+{
+    int hr, min, sec, hund;
+    PosGetSystemTime(&hr,&min,&sec,&hund);
+    printf("%02d:%02d:%02d", hr, min, sec);
+}
+
+/* $V - prints DOS version number */
+static void promptSymProc_V(void)
+{
+    int ver, major, minor;
+    ver = PosGetDosVersion();
+    minor = (ver & 0xFF);
+    major = ((ver>>8)&0xFF);
+    printf("DOS %d.%d", major, minor);
+}
+
+/* $_ - prints underscore symbol */
+static void promptSymProc_underscore(void)
+{
+    fputs("\r\n", stdout);
+}
+
+static void putPromptSymbol(char ch)
+{
+    int i;
+    ch = toupper(ch);
+    for (i = 0; promptSymRegistry[i].symbol != 0; i++)
+    {
+        if (promptSymRegistry[i].symbol == ch)
+        {
+            promptSymRegistry[i].proc();
+            return;
+        }
+    }
+    /* Unrecognised symbols are ignored */
+}
+
 static void putPrompt(void)
 {
-    int d;
+    int i;
 
-    d = PosGetDefaultDrive();
-    drive[0] = d + 'A';
-    PosGetCurDir(0, cwd);
-    printf("\n%s:\\%s%s", drive, cwd, prompt);
+    /* Process each PROMPT symbol */
+    for (i = 0; prompt[i] != 0; i++)
+    {
+        /* Character not part of prompt symbol, output as-is */
+        if (prompt[i] != '$')
+        {
+            fputc(prompt[i], stdout);
+        }
+
+        /* Character beginning of prompt symbol, call output routine */
+        else if (prompt[i+1] != 0)
+        {
+            putPromptSymbol(prompt[++i]);
+        }
+    }
     fflush(stdout);
     return;
 }
@@ -1107,9 +1286,17 @@ static void cmd_path_help(void)
 
 static void cmd_prompt_help(void)
 {
+    int i;
+    promptSym *sym;
     printf("PROMPT variable stores the PCOMM prompt.\n");
     printf("PROMPT\n");
-    printf("PROMPT [prompt]\n");
+    printf("PROMPT [prompt]\n\n");
+    printf("Supported PROMPT symbols are:\n");
+    for (i = 0; promptSymRegistry[i].symbol != 0; i++)
+    {
+        sym = &(promptSymRegistry[i]);
+        printf("$%c %s\n", sym->symbol, sym->description);
+    }
 }
 
 static void cmd_type_help(void)

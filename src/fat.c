@@ -314,9 +314,8 @@ unsigned int fatCreatFile(FAT *fat, const char *fnm, FATFILE *fatfile,
             }
         }
         fatfile->startcluster=0;
-        if (found && fat->lfn_search_len)
-        /* If the file already exists, but it was searched for LFN,
-         * the 8.3 name must not be changed because it would unlink the LFN. */
+        if (found)
+        /* If the file already exists, name is not cleared and written again. */
         memset(p + sizeof(p->file_name) + sizeof(p->file_ext), '\0',
                sizeof(DIRENT) - sizeof(p->file_name) - sizeof(p->file_ext));
         else
@@ -1892,8 +1891,12 @@ unsigned int fatRenameFile(FAT *fat,const char *old,const char *new)
     /* 260 is MAX_PATH from pos.h. */
     char fnm[260]; /* +++Add support for UCS-2. */
     char *p;
-    int lfn_len;
+    unsigned int lfn_len;
+    char old_lfn[MAXFILENAME];
+    unsigned int old_lfn_len;
     DIRENT old_dirent;
+    int ret;
+    /* +++Add support for moving files. */
 
     if ((old[0] == '\\') || (old[0] == '/'))
     {
@@ -1933,8 +1936,13 @@ unsigned int fatRenameFile(FAT *fat,const char *old,const char *new)
     }
     /* Stores old DIRENT in case it will be needed later. */
     memcpy(&old_dirent, fat->de, sizeof(DIRENT));
+    /* Stores length of old LFN so it can be restored. */
+    old_lfn_len = fat->lfn_search_len;
     if (fat->lfn_search_len)
     {
+        /* Stores the old LFN. */
+        memcpy(old_lfn, strchr(fat->corrected_path, '\0') - old_lfn_len - 1,
+               old_lfn_len);
         /* Original has LFN, so LFN entries must be deleted. */
         deleteLFNs(fat);
     }
@@ -1947,9 +1955,27 @@ unsigned int fatRenameFile(FAT *fat,const char *old,const char *new)
     if (lfn_len)
     {
         /* If the new name is LFN, LFN entries are created. */
-        createLFNs(fat, fat->new_file, lfn_len);
-        /* +++Add restoration of the original in case createLFNs fails
-         * because of full root/disk when new LFN is longer than old one. */
+        ret = createLFNs(fat, fat->new_file, lfn_len);
+        if (ret)
+        {
+            /* If createLFNs had any problems (full root/disk),
+             * we must restore old entry/entries. */
+            /* fatPosition gets us on the first available slot. */
+            fatPosition(fat,old);
+            if (old_lfn_len)
+            {
+                /* If old file had LFN, LFN entries must be recreated.
+                 * This might change the 8.3 name, but that should not
+                 * cause any issues. */
+                createLFNs(fat, old_lfn, old_lfn_len);
+                memcpy(fat->de, &old_dirent, sizeof(DIRENT));
+                memcpy(fat->de, fat->search, 11);
+            }
+            /* Otherwise we place old directory entry on the free slot. */
+            else memcpy(fat->de, &old_dirent, sizeof(DIRENT));
+            fatWriteLogical(fat, fat->dirSect, fat->dbuf);
+            return (POS_ERR_PATH_NOT_FOUND);
+        }
         /* createLFNs left us with everything
          * prepared for creating new entry. */
         memcpy(fat->de, &old_dirent, sizeof(DIRENT));

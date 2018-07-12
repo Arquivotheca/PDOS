@@ -115,6 +115,8 @@ unsigned long rawprot(unsigned long csbase,
         unsigned long extra;
         extra = (unsigned long)(void (far *)())(rtop_stage2);
         extra = ((extra >> 16) << 4);
+        dumpbuf("", 0); /* +++ why is this no-op required to make Watcom
+            work? Without it, the first extra (0x600) is not added */
         myc32base += extra;
         myc32base += 0x100; /* psp */
     }

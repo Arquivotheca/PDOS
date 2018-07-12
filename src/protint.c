@@ -181,6 +181,15 @@ unsigned long runprot(unsigned long csbase,
     else
     {
         runparm.runreal = ((myc32base >> 16) << 4) + (unsigned short)runreal;
+#ifdef __WATCOMC__
+        {
+            unsigned long extra;
+            extra = (unsigned long)(void (far *)())(runreal);
+            extra = ((extra >> 16) << 4);
+            runparm.runreal += extra;
+            runparm.runreal += 0x100; /* psp */
+        }
+#endif
     }
     runparm.dorealint = (unsigned long)(void (far *)())dorealint;
     

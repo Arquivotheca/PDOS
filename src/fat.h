@@ -134,6 +134,9 @@ typedef struct {
     int pos_result;
     int found_deleted;
     int processing_root;
+    /* Flag used when creating LFN entries to know if
+     * the provided name is not just mixed/lowercase 8.3 name. */
+    int lossy_conversion;
     unsigned long currcluster;
     unsigned long temp_currcluster;
     FATFILE *currfatfile;
@@ -146,6 +149,9 @@ typedef struct {
     unsigned char search[MAXFILENAME]; /* +++Add support for UCS-2. */
     /* Length of search if search is LFN, 0 if 8.3 name. */
     unsigned int lfn_search_len;
+    /* Stores original 8.3 name with case preserved. */
+    char origshortname[12];
+    unsigned int origshortname_len;
     /* Duplicate path but with all names replaced with read LFNs,
      * when possible and uppered 8.3 names otherwise.
      * 260 is MAX_PATH from pos.h. */

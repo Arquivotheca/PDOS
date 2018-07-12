@@ -48,7 +48,6 @@ static void fatChain(FAT *fat, FATFILE *fatfile);
 static void fatNuke(FAT *fat, unsigned long cluster);
 
 /* Functions for LFNs. */
-/* +++Perhaps move somewhere else. */
 static unsigned int isLFN(const char *fnm, unsigned int length);
 static unsigned int cicmp(const unsigned char *first,
                           const unsigned char *second,
@@ -289,14 +288,30 @@ unsigned int fatCreatFile(FAT *fat, const char *fnm, FATFILE *fatfile,
     }
     if (found || fat->pos_result == FATPOS_ONEMPTY)
     {
-        if (!found && fat->lfn_search_len)
+        /* If existing file was found, no new LFN entries are generated. */
+        if (!found)
         {
-            /* createLFNs is similar to fatPosition, but it
-             * is guaranteed that it will end on empty/deleted
-             * slot or return error. */
-            ret = createLFNs(fat, fat->search, fat->lfn_search_len);
-            if (ret) return (ret);
-            p = fat->de;
+            if (fat->lfn_search_len)
+            {
+                /* The name is LFN, so LFN entries need to be created. */
+                /* createLFNs is similar to fatPosition, but it
+                 * is guaranteed that it will end on empty/deleted
+                 * slot or return error. */
+                ret = createLFNs(fat, fat->search, fat->lfn_search_len);
+                if (ret) return (ret);
+                p = fat->de;
+            }
+            else if (fat->origshortname_len)
+            {
+                /* The name is mixed/lowercase 8.3 name,
+                 * so one LFN entry is created to preserve case. */
+                /* createLFNs is similar to fatPosition, but it
+                 * is guaranteed that it will end on empty/deleted
+                 * slot or return error. */
+                ret = createLFNs(fat, fat->origshortname, fat->origshortname_len);
+                if (ret) return (ret);
+                p = fat->de;
+            }
         }
         fatfile->startcluster=0;
         if (found && fat->lfn_search_len)
@@ -419,10 +434,22 @@ unsigned int fatCreatDir(FAT *fat, const char *dnm, const char *parentname,
     {
         if (fat->lfn_search_len)
         {
+            /* The name is LFN, so LFN entries need to be created. */
             /* createLFNs is similar to fatPosition, but it
              * is guaranteed that it will end on empty/deleted
              * slot or return error. */
             ret = createLFNs(fat, fat->search, fat->lfn_search_len);
+            if (ret) return (ret);
+            p = fat->de;
+        }
+        else if (fat->origshortname_len)
+        {
+            /* The name is mixed/lowercase 8.3 name,
+             * so one LFN entry is created to preserve case. */
+            /* createLFNs is similar to fatPosition, but it
+             * is guaranteed that it will end on empty/deleted
+             * slot or return error. */
+            ret = createLFNs(fat, fat->origshortname, fat->origshortname_len);
             if (ret) return (ret);
             p = fat->de;
         }
@@ -565,10 +592,22 @@ unsigned int fatCreatNewFile(FAT *fat, const char *fnm, FATFILE *fatfile,
     {
         if (fat->lfn_search_len)
         {
+            /* The name is LFN, so LFN entries need to be created. */
             /* createLFNs is similar to fatPosition, but it
              * is guaranteed that it will end on empty/deleted
              * slot or return error. */
             ret = createLFNs(fat, fat->search, fat->lfn_search_len);
+            if (ret) return (ret);
+            p = fat->de;
+        }
+        else if (fat->origshortname_len)
+        {
+            /* The name is mixed/lowercase 8.3 name,
+             * so one LFN entry is created to preserve case. */
+            /* createLFNs is similar to fatPosition, but it
+             * is guaranteed that it will end on empty/deleted
+             * slot or return error. */
+            ret = createLFNs(fat, fat->origshortname, fat->origshortname_len);
             if (ret) return (ret);
             p = fat->de;
         }
@@ -1079,6 +1118,7 @@ static void fatNextSearch(FAT *fat, char *search, const char **upto)
     {
         p = *upto + strlen(*upto);
         fat->last = 1;
+        fat->origshortname_len = 0;
     }
     else
     {
@@ -1097,6 +1137,13 @@ static void fatNextSearch(FAT *fat, char *search, const char **upto)
             for (i = 0; i < q - *upto; i++)
             {
                 search[i] = toupper((*upto)[i]);
+                /* Checks if the 8.3 name containts lowercase
+                 * if this is the last part of path and if yes,
+                 * stores length of original path part. */
+                if (fat->last && (search[i] != (*upto)[i]))
+                {
+                    fat->origshortname_len = p - *upto;
+                }
             }
             /* Pads the name part with spaces. */
             memset(search + (q - *upto), ' ', 8 - (q - *upto));
@@ -1104,6 +1151,13 @@ static void fatNextSearch(FAT *fat, char *search, const char **upto)
             for (i = 0; i < p - q - 1; i++)
             {
                 (search + 8)[i] = toupper((q + 1)[i]);
+                /* Checks if the 8.3 extension containts lowercase
+                 * if this is the last part of path and if yes,
+                 * stores length of original path part. */
+                if (fat->last && ((search + 8)[i] != (q + 1)[i]))
+                {
+                    fat->origshortname_len = p - *upto;
+                }
             }
             /* Pads the extension part with spaces. */
             memset(search + 8 + (p - q) - 1, ' ', 3 - ((p - q) - 1));
@@ -1114,11 +1168,24 @@ static void fatNextSearch(FAT *fat, char *search, const char **upto)
             for (i = 0; i < p - *upto; i++)
             {
                 search[i] = toupper((*upto)[i]);
+                /* Checks if the 8.3 name containts lowercase
+                 * if this is the last part of path and if yes,
+                 * stores length of original path part. */
+                if (fat->last && (search[i] != (*upto)[i]))
+                {
+                    fat->origshortname_len = p - *upto;
+                }
             }
             /* Pads the name part with spaces. */
             memset(search + (p - *upto), ' ', 11 - (p - *upto));
         }
-        /* +++Add support for lower case/mixed case file creation. */
+        /* If this is the last part of path, it is stored with case
+         * preserved so mixed case 8.3 names can be used as LFNs,
+         * if it has any lowercase. */
+        if (fat->last && fat->origshortname_len)
+        {
+            memcpy(fat->origshortname, *upto, fat->origshortname_len);
+        }
     }
     /* If the part of path is LFN, we just copy it into search. */
     else memcpy(search, *upto, p - *upto);
@@ -1790,7 +1857,6 @@ static void fatChain(FAT *fat, FATFILE *fatfile)
 */
 unsigned int fatDeleteFile(FAT *fat,const char *fnm)
 {
-    /* +++Add support for LFNs. */
     if ((fnm[0] == '\\') || (fnm[0] == '/'))
     {
         fnm++;
@@ -1828,7 +1894,6 @@ unsigned int fatRenameFile(FAT *fat,const char *old,const char *new)
     char *p;
     int lfn_len;
     DIRENT old_dirent;
-    /* +++Add support for LFNs. */
 
     if ((old[0] == '\\') || (old[0] == '/'))
     {
@@ -2273,7 +2338,23 @@ static int createLFNs(FAT *fat, unsigned char *lfn, unsigned int lfn_len)
      * fatPosition in findFreeSpaceForLFN. */
     memcpy(orig_lfn, lfn, lfn_len);
 
-    generate83Name(orig_lfn, lfn_len, shortname);
+    /* Checks if the provided name is just mixed/lowercase 8.3 name. */
+    if (fat->origshortname_len)
+    {
+        /* Sets flag that tells that generated name
+         * is just uppercase padded original without
+         * numeric tail. */
+        fat->lossy_conversion = 0;
+        /* fatPosition already generated suitable
+         * uppercase and padded 8.3 name. */
+        memcpy(shortname, fat->search, 11);
+    }
+    else
+    {
+        /* Otherwise we set a flag and generate 8.3 name ourselves. */
+        fat->lossy_conversion = 1;
+        generate83Name(orig_lfn, lfn_len, shortname);
+    }
 
     /* Calculates how many free entries will
      * be need to store LFN and 8.3 entry. */
@@ -2285,9 +2366,13 @@ static int createLFNs(FAT *fat, unsigned char *lfn, unsigned int lfn_len)
 
     ret = findFreeSpaceForLFN(fat, required_free, shortname, &numsectors);
     if (ret) return (ret);
-    /* +++Do not run if the LFN is just mixed case 8.3 name. */
-    ret = checkNumericTail(fat, shortname);
-    if (ret) return (ret);
+    /* Checks if the numeric tail is unique
+     * if the generated name has numeric tail. */
+    if (fat->lossy_conversion)
+    {
+        ret = checkNumericTail(fat, shortname);
+        if (ret) return (ret);
+    }
     /* Checksum must be generated after finding free space,
      * because that function modifies shortname if any
      * conflicts were found. */
@@ -2430,7 +2515,6 @@ static void generate83Name(unsigned char *lfn, unsigned int lfn_len,
     unsigned int dot_pos = MAXFILENAME;
     unsigned int j;
 
-    /* +++Add logic for just mixed/lower case 8.3 names. */
     /* Fills the short name with spaces. */
     memset(shortname, ' ', 11);
     /* Strips all leading dots and spaces by increasing
@@ -2814,10 +2898,12 @@ static int findFreeSpaceForLFN(FAT *fat, unsigned int required_free,
                     }
                     continue;
                 }
-                if (p->file_attr != DIRENT_LFN &&
+                /* Checks if the numeric tail is unique
+                 * if the generated name has numeric tail. */
+                if (fat->lossy_conversion &&
+                    p->file_attr != DIRENT_LFN &&
                     memcmp(p->file_name, shortname, 11) == 0)
                 {
-                    /*+++Add logic for just mixed case LFNs.*/
                     ret = incrementNumericTail(shortname);
                     if (ret) return (ret);
                 }

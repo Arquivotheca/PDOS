@@ -3,7 +3,7 @@ wasm -zq -zcm -Dmemodel=tiny support.asm
 wasm -zq -zcm -Dmemodel=tiny -DWATCOM ploadst.asm
 wasm -zq -zcm -Dmemodel=tiny -DWATCOM nearw.asm
 wasm -zq -zcm -Dmemodel=tiny lldos.asm
-wasm -zq -zcm -Dmemodel=tiny protinta.asm
+wasm -zq -zcm -Dmemodel=tiny -DWATCOM protinta.asm
 wasm -zq -zcm -Dmemodel=tiny int13x.asm
 wcl -ecc -q -w -c -I. -mt -zl -D__MSDOS__ -fpi87 -s -zdp -zu -DPDOS32 -I..\pdpclib pload.c protint.c file.c minifat.c bos.c
 wcl -ecc -q -w -c -I. -mt -zl -D__MSDOS__ -fpi87 -s -zdp -zu -DPDOS32 -DNEED_DUMP -I..\pdpclib pdosload.c

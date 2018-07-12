@@ -217,6 +217,10 @@ ptor_stage3:
 ; get the far address of the _TEXT32 module
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 protget32 proc
+ifdef WATCOM
+        mov dx, _TEXT32
+        mov ax, offset _TEXT32
+else
 ; if it's the tiny memory model, return 0 and let the C code
 ; handle it.
 if @Model eq 1
@@ -225,6 +229,7 @@ if @Model eq 1
 else
         mov dx, _TEXT32
         mov ax, offset _TEXT32
+endif
 endif
         ret
 protget32 endp
@@ -286,7 +291,7 @@ ptor:
 
 rawprota_stage2:
         push esi  ; protected mode parameter
-        call ecx  ; call protected mode routine (address in ebx)
+        call ecx  ; call protected mode routine (address in ecx)
         add esp, 4     ; skip parameter
 
         mov edi, eax   ; save return code

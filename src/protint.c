@@ -100,7 +100,25 @@ unsigned long rawprot(unsigned long csbase,
         myc32base = (unsigned long)(void (far *)())(rtop_stage2);
     }
     myc32base = ADDR2ABS(myc32base);
+    /* this masking is because the offsets in protinta already
+       have the offset correct, so we don't want to add that
+       twice. The offset of the TEXT32 segment will always be
+       less than 16 I think */
     myc32base = myc32base & 0xfffffff0UL;
+#ifdef __WATCOMC__
+    {
+        /* for Watcom, the TEXT32 segment is not merged in
+        with the TEXT segment, so protget32 is different, in
+        that it returns a non-zero value that gives us much
+        of the information we need. We still need to add the
+        code base though. */
+        unsigned long extra;
+        extra = (unsigned long)(void (far *)())(rtop_stage2);
+        extra = ((extra >> 16) << 4);
+        myc32base += extra;
+        myc32base += 0x100; /* psp */
+    }
+#endif
 
     mycbase = (unsigned long)(void (far *)())rawprota;
     mycbase = (mycbase >> 16) << 4;

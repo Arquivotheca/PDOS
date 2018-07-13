@@ -1684,19 +1684,21 @@ static unsigned int fatFindFreeCluster(FAT *fat)
     }
     else if (fat->fat_type == 12)
     {
-        fatSector = fat->fatstart; /* + (cluster * 3 / 2) / fat->sector_size; */
-        fatReadLogical(fat, fatSector, buf);
-
+        /* FAT-12 is complicated, so we iterate over clusters instead of
+         * sectors and offsets. */
         for (ret = 0;
-             ret <= (fat->rootstart - fat->fatstart)*MAXSECTSZ*2/3;
+             ret <= (fat->rootstart - fat->fatstart)*fat->sector_size*2/3;
              ret++)
         {
+            /* Calculates offset. offset = cluster * 1.5 % sector size */
             x = (ret * 3 / 2) % fat->sector_size;
-
-            if (x == 0 && (fatSector != (fat->fatstart +
-                                         (ret * 3 / 2) / fat->sector_size)))
+            /* Checks if currently loaded sector is the one in which currently
+             * checked cluster resides. sector from fatstart = cluster * 1.5 /
+             * sector size */
+            if (fatSector != (ret * 3 / 2 / fat->sector_size + fat->fatstart))
             {
-                fatSector++;
+                /* If it is not, we set fatSector and load the sector. */
+                fatSector = ret * 3 / 2 / fat->sector_size + fat->fatstart;
                 fatReadLogical(fat, fatSector, buf);
             }
 

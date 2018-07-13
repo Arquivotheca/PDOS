@@ -128,6 +128,7 @@ int pdosstrt(void);
 static void formatcwd(const char *input,char *output);
 
 static MEMMGR memmgr;
+static MEMMGR btlmem;
 
 /* we implement special versions of allocate and free */
 #ifndef __32BIT__
@@ -223,7 +224,8 @@ unsigned long __userparm;
 int subcor;
 static void *gdt;
 static char *transferbuf;
-static void *freem_start; /* start of free memory below 1 MiB */
+static long freem_start; /* start of free memory below 1 MiB,
+                            absolute address */
 static unsigned long doreboot;
 static char *sbrk_start = NULL;
 static char *sbrk_end;
@@ -331,6 +333,10 @@ void pdosRun(void)
 #else
     memmgrSupply(&memmgr, ABSADDR(0x200000), memavail);
 #endif
+    memmgrDefaults(&btlmem);
+    memmgrInit(&btlmem);
+    memmgrSupply(&btlmem, ABSADDR(freem_start),
+                 0xa0000 - freem_start);
 #else
     /* Ok, time for some heavy hacking.  Because we want to
     be able to supply a full 64k to DOS apps, we can't
@@ -352,6 +358,7 @@ void pdosRun(void)
 #ifndef USING_EXE
     loadPcomm();
     memmgrTerm(&memmgr);
+    memmgrTerm(&btlmem);
 #endif
     return;
 }
@@ -4030,7 +4037,7 @@ int pdosstrt(void)
 
     __abscor = rp_parms->dsbase;
     gdt = ABSADDR(rp_parms->gdt);
-    freem_start = ABSADDR(rp_parms->freem_start);
+    freem_start = rp_parms->freem_start;
     pp = ABSADDR(__userparm);
     transferbuf = ABSADDR(pp->transferbuf);
     doreboot = pp->doreboot;

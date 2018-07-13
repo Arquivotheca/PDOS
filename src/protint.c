@@ -155,6 +155,8 @@ unsigned long rawprot(unsigned long csbase,
     
     parmlist.dsbase = dsbase;
     parmlist.gdt = absgdt;
+    parmlist.freem_start = prot_sp; /* free memory in 1 MiB range starts
+                                       after the stack */
     parmlist.intloc = intloc;
     parmlist.userparm = userparm;
     parmlist_p = ADDR2ABS(&parmlist);

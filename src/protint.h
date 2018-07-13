@@ -62,6 +62,7 @@ typedef struct {
 
 typedef struct {
     unsigned long gdt;
+    unsigned long freem_start;
     unsigned long intloc;
     unsigned long csbase;
     unsigned long dsbase;

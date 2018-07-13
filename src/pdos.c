@@ -223,6 +223,7 @@ unsigned long __userparm;
 int subcor;
 static void *gdt;
 static char *transferbuf;
+static void *freem_start; /* start of free memory below 1 MiB */
 static unsigned long doreboot;
 static char *sbrk_start = NULL;
 static char *sbrk_end;
@@ -4029,6 +4030,7 @@ int pdosstrt(void)
 
     __abscor = rp_parms->dsbase;
     gdt = ABSADDR(rp_parms->gdt);
+    freem_start = ABSADDR(rp_parms->freem_start);
     pp = ABSADDR(__userparm);
     transferbuf = ABSADDR(pp->transferbuf);
     doreboot = pp->doreboot;

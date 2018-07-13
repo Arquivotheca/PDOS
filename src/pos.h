@@ -54,6 +54,12 @@
 
 #define POS_ERR_FILE_EXISTS 0x50
 
+/* for use by PosAllocMem callers */
+#define LOC_MASK 0x300
+#define LOC20 0x100
+#define LOC32 0x200
+#define LOC64 0x300
+
 /* Input buffer used for INT 21,A */
 typedef struct pos_input_buffer {
     unsigned char maxChars; /* Maximum number of chars buffer can hold */
@@ -236,7 +242,7 @@ int PosGetMagic(void); /* func f6.06 */
 
 void PosGetMemoryManagementStats(void *stats); /* func f6.07 */
 
-void *PosAllocMem(unsigned int size); /* func f6.08 */
+void *PosAllocMem(unsigned int size, unsigned int flags); /* func f6.08 */
 
 unsigned int PosAbsoluteDiskRead(int drive, unsigned long start_sector,
                                  unsigned int sectors,void *buf); /*INT25 */

@@ -1426,7 +1426,7 @@ void PosGetMemoryManagementStats(void *stats)
     return;
 }
 
-void *PosAllocMem(unsigned int size)
+void *PosAllocMem(unsigned int size, unsigned int flags)
 {
     union REGS regsin;
     union REGS regsout;
@@ -1435,6 +1435,7 @@ void *PosAllocMem(unsigned int size)
     regsin.h.al = 0x8;
 #ifdef __32BIT__
     regsin.d.ebx = size;
+    regsin.d.ecx = flags;
 #else
     regsin.x.bx = size;
     regsin.x.bx >>= 4;

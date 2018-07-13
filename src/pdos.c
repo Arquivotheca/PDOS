@@ -1411,7 +1411,7 @@ static void int21handler(union REGS *regsin,
             {
                 if (sbrk_start == NULL)
                 {
-                    sbrk_start = PosAllocMem(0x100000);
+                    sbrk_start = PosAllocMem(0x100000, LOC32);
                     sbrk_end = sbrk_start + 0x10000;
                 }
                 regsout->d.eax = (unsigned int)sbrk_end;
@@ -1480,7 +1480,7 @@ static void int21handler(union REGS *regsin,
                implemented in 16-bit too. */
             else if (regsin->h.al == 8)
             {
-                regsout->d.eax = (int)PosAllocMem(regsin->d.ebx);
+                regsout->d.eax = (int)PosAllocMem(regsin->d.ebx, regsin->d.ecx);
                 regsout->d.eax = (int)ADDRFIXSUB(regsout->d.eax);
             }
 #endif
@@ -2205,10 +2205,19 @@ int PosGetCurDir(int drive, char *buf)
     return (0);
 }
 
-void *PosAllocMem(unsigned int size)
+#ifdef __32BIT__
+void *PosAllocMem(unsigned int size, unsigned int flags)
 {
-    return (memmgrAllocate(&memmgr, size, 0));
+    unsigned int subpool;
+
+    subpool = flags & 0xff;
+    if ((flags & LOC_MASK) == LOC20)
+    {
+        return (memmgrAllocate(&btlmem, size, subpool));
+    }
+    return (memmgrAllocate(&memmgr, size, subpool));
 }
+#endif
 
 #ifdef __32BIT__
 void *PosAllocMemPages(unsigned int pages, unsigned int *maxpages)
@@ -2238,6 +2247,13 @@ void *PosAllocMemPages(unsigned int pages, unsigned int *maxpages)
 
 int PosFreeMem(void *ptr)
 {
+#ifdef __32BIT__
+    if ((unsigned long)ptr < 0x0100000)
+    {
+        memmgrFree(&btlmem, ptr);
+        return (0);
+    }
+#endif
     memmgrFree(&memmgr, ptr);
     return (0);
 }

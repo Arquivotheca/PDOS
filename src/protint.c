@@ -116,7 +116,11 @@ unsigned long rawprot(unsigned long csbase,
         extra = (unsigned long)(void (far *)())(rtop_stage2);
         extra = ((extra >> 16) << 4);
         dumpbuf("", 0); /* +++ why is this no-op required to make Watcom
-            work? Without it, the first extra (0x600) is not added */
+            work? Without it, the first extra (0x600) is not added.
+            Looks like a bug in Open Watcom 1.6.
+            Good version is generating mov ax,cs
+            Bad version is generating mov ax,offset _rtop_stage2 */
+
         myc32base += extra;
         myc32base += 0x100; /* psp */
     }

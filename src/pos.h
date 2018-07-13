@@ -215,28 +215,28 @@ int PosTruename(char *prename,char *postname); /*func 60*/
 
 /* The following functions are extensions... */
 
-void PosDisplayInteger(int x); /* func f3.00 */
+void PosDisplayInteger(int x); /* func f6.00 */
 
-void PosReboot(void); /* func f3.01 */
+void PosReboot(void); /* func f6.01 */
 
-void PosSetRunTime(void *pstart, void *capi); /* func f3.02 */
+void PosSetRunTime(void *pstart, void *capi); /* func f6.02 */
 
-void PosSetDosVersion(unsigned int version); /* func f3.03 */
+void PosSetDosVersion(unsigned int version); /* func f6.03 */
 
-int PosGetLogUnimplemented(void); /* func f3.04 */
+int PosGetLogUnimplemented(void); /* func f6.04 */
 
-void PosSetLogUnimplemented(int); /* func f3.05 */
+void PosSetLogUnimplemented(int); /* func f6.05 */
 
 /* So programs can reliably determine if they are running under PDOS-16 or
  * some other implementation of PDOS API, such as FreeDOS, MS-DOS, PC-DOS,
- * DR-DOS, DOSBox, etc. INT 21,AX=F306 will return AX=1234 under PDOS, but not
+ * DR-DOS, DOSBox, etc. INT 21,AX=F606 will return AX=1234 under PDOS, but not
  * under these other operating systems.
  */
 #define PDOS_MAGIC 0x1234
 
-int PosGetMagic(void); /* func f3.06 */
+int PosGetMagic(void); /* func f6.06 */
 
-void PosGetMemoryManagementStats(void *stats); /* func f3.07 */
+void PosGetMemoryManagementStats(void *stats); /* func f6.07 */
 
 unsigned int PosAbsoluteDiskRead(int drive, unsigned long start_sector,
                                  unsigned int sectors,void *buf); /*INT25 */

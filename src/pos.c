@@ -1354,7 +1354,7 @@ void PosDisplayInteger(int x)
 {
     union REGS regsin;
 
-    regsin.h.ah = 0xf3;
+    regsin.h.ah = 0xf6;
     regsin.h.al = 0;
 #ifdef __32BIT__
     regsin.d.ecx = x;
@@ -1371,7 +1371,7 @@ void PosReboot(void)
 {
     union REGS regsin;
 
-    regsin.h.ah = 0xf3;
+    regsin.h.ah = 0xf6;
     regsin.h.al = 1;
     int86i(0x21, &regsin);
     return;
@@ -1383,7 +1383,7 @@ void PosSetRunTime(void *pstart, void *capi)
 {
     union REGS regsin;
 
-    regsin.h.ah = 0xf3;
+    regsin.h.ah = 0xf6;
     regsin.h.al = 2;
 #ifdef __32BIT__
     regsin.d.ebx = (int)pstart;
@@ -1397,7 +1397,7 @@ void PosSetDosVersion(unsigned int version)
 {
     union REGS regsin;
 
-    regsin.h.ah = 0xf3;
+    regsin.h.ah = 0xf6;
     regsin.h.al = 3;
     regsin.x.bx = version;
     int86i(0x21, &regsin);
@@ -1409,7 +1409,7 @@ int PosGetLogUnimplemented(void)
     union REGS regsin;
     union REGS regsout;
 
-    regsin.h.ah = 0xf3;
+    regsin.h.ah = 0xf6;
     regsin.h.al = 4;
     int86(0x21, &regsin, &regsout);
     return (regsout.x.ax);
@@ -1421,7 +1421,7 @@ void PosSetLogUnimplemented(int flag)
     union REGS regsin;
     union REGS regsout;
 
-    regsin.h.ah = 0xf3;
+    regsin.h.ah = 0xf6;
     regsin.h.al = 5;
     regsin.x.bx = !!flag;
     int86(0x21, &regsin, &regsout);
@@ -1433,7 +1433,7 @@ int PosGetMagic(void)
     union REGS regsin;
     union REGS regsout;
 
-    regsin.h.ah = 0xf3;
+    regsin.h.ah = 0xf6;
     regsin.h.al = 6;
     int86(0x21, &regsin, &regsout);
     return (regsout.x.ax);
@@ -1446,7 +1446,7 @@ void PosGetMemoryManagementStats(void *stats)
     union REGS regsout;
     struct SREGS sregs;
 
-    regsin.h.ah = 0xf3;
+    regsin.h.ah = 0xf6;
     regsin.h.al = 0x7;
 #ifdef __32BIT__
     regsin.d.edx = (int)stats;

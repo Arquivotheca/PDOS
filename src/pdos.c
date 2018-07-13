@@ -1431,7 +1431,7 @@ static void int21handler(union REGS *regsin,
             break;
 #endif
 
-        case 0xf3:
+        case 0xf6:
             if (regsin->h.al == 0)
             {
 #ifdef __32BIT__

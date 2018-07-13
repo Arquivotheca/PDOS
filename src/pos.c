@@ -311,6 +311,17 @@ void PosGetSystemTime(int *hour, int *min, int *sec, int *hundredths)
     return;
 }
 
+/* func 2e - set read-after-write verification flag */
+void PosSetVerifyFlag(int flag)
+{
+    union REGS regsin;
+    union REGS regsout;
+
+    regsin.h.ah = 0x2e;
+    regsin.h.al = !!flag;
+    int86(0x21, &regsin, &regsout);
+}
+
 void *PosGetDTA(void)
 {
     union REGS regsin;
@@ -336,6 +347,53 @@ unsigned int PosGetDosVersion(void)
     regsin.h.ah = 0x30;
     int86(0x21, &regsin, &regsout);
     return ((regsout.h.al << 8) | regsout.h.ah);
+}
+
+/* INT 21,31 - PosTerminateAndStayResident */
+void PosTerminateAndStayResident(int exitCode, int paragraphs)
+{
+    union REGS regsin;
+
+    regsin.h.ah = 0x31;
+    regsin.h.al = exitCode;
+    regsin.x.dx = paragraphs;
+    int86i(0x21, &regsin);
+}
+
+/* func 33, subfunc 00 - get Ctrl+Break checking flag status */
+int PosGetBreakFlag()
+{
+    union REGS regsin;
+    union REGS regsout;
+
+    regsin.h.ah = 0x33;
+    regsin.h.al = 0x00;
+    int86(0x21, &regsin, &regsout);
+    return (regsout.h.dl);
+}
+
+/* func 33, subfunc 01 - set Ctrl+Break checking flag status */
+void PosSetBreakFlag(int flag)
+{
+    union REGS regsin;
+    union REGS regsout;
+
+    regsin.h.ah = 0x33;
+    regsin.h.al = 0x01;
+    regsin.h.dl = !!flag;
+    int86(0x21, &regsin, &regsout);
+}
+
+/* func 33, subfunc 05 - get boot drive */
+int PosGetBootDrive(void)
+{
+    union REGS regsin;
+    union REGS regsout;
+
+    regsin.h.ah = 0x33;
+    regsin.h.al = 0x05;
+    int86(0x21, &regsin, &regsout);
+    return (regsout.h.dl);
 }
 
 void *PosGetInterruptVector(int intnum)
@@ -1123,6 +1181,17 @@ int PosFindNext(void)
     }
 }
 
+/* func 54 - get read-after-write verification flag */
+int PosGetVerifyFlag()
+{
+    union REGS regsin;
+    union REGS regsout;
+
+    regsin.h.ah = 0x54;
+    int86(0x21, &regsin, &regsout);
+    return (regsout.h.al);
+}
+
 int PosRenameFile(const char *old, const char *new)
 {
     union REGS regsin;
@@ -1358,24 +1427,34 @@ void PosSetLogUnimplemented(int flag)
     int86(0x21, &regsin, &regsout);
 }
 
-/* int86n - do an interrupt with no registers */
-
-static void int86n(unsigned int intno)
+/* pos extension to get "PDOS magic" */
+int PosGetMagic(void)
 {
     union REGS regsin;
     union REGS regsout;
 
-    int86(intno, &regsin, &regsout);
-    return;
+    regsin.h.ah = 0xf3;
+    regsin.h.al = 6;
+    int86(0x21, &regsin, &regsout);
+    return (regsout.x.ax);
 }
 
-/* int86i - do an interrupt with input registers only */
-
-static void int86i(unsigned int intno, union REGS *regsin)
+/* pos extension to get memory manager statistics */
+void PosGetMemoryManagementStats(void *stats)
 {
+    union REGS regsin;
     union REGS regsout;
+    struct SREGS sregs;
 
-    int86(intno, regsin, &regsout);
+    regsin.h.ah = 0xf3;
+    regsin.h.al = 0x7;
+#ifdef __32BIT__
+    regsin.d.edx = (int)stats;
+#else
+    sregs.ds = FP_SEG(stats);
+    regsin.x.dx = FP_OFF(stats);
+#endif
+    int86x(0x21, &regsin, &regsout, &sregs);
     return;
 }
 
@@ -1455,6 +1534,28 @@ unsigned int PosAbsoluteDiskWrite(int drive,unsigned long start_sector,
 }
 /**/
 
+
+/* int86n - do an interrupt with no registers */
+
+static void int86n(unsigned int intno)
+{
+    union REGS regsin;
+    union REGS regsout;
+
+    int86(intno, &regsin, &regsout);
+    return;
+}
+
+/* int86i - do an interrupt with input registers only */
+
+static void int86i(unsigned int intno, union REGS *regsin)
+{
+    union REGS regsout;
+
+    int86(intno, regsin, &regsout);
+    return;
+}
+
 int intdos(union REGS *regsin, union REGS *regsout)
 {
     return (int86(0x21, regsin, regsout));
@@ -1479,102 +1580,3 @@ int bdos(int func, int dx, int al)
 #endif
 }
 
-/* func 54 - get read-after-write verification flag */
-int PosGetVerifyFlag()
-{
-    union REGS regsin;
-    union REGS regsout;
-
-    regsin.h.ah = 0x54;
-    int86(0x21, &regsin, &regsout);
-    return (regsout.h.al);
-}
-
-/* func 2e - set read-after-write verification flag */
-void PosSetVerifyFlag(int flag)
-{
-    union REGS regsin;
-    union REGS regsout;
-
-    regsin.h.ah = 0x2e;
-    regsin.h.al = !!flag;
-    int86(0x21, &regsin, &regsout);
-}
-
-/* func 33, subfunc 00 - get Ctrl+Break checking flag status */
-int PosGetBreakFlag()
-{
-    union REGS regsin;
-    union REGS regsout;
-
-    regsin.h.ah = 0x33;
-    regsin.h.al = 0x00;
-    int86(0x21, &regsin, &regsout);
-    return (regsout.h.dl);
-}
-
-/* func 33, subfunc 01 - set Ctrl+Break checking flag status */
-void PosSetBreakFlag(int flag)
-{
-    union REGS regsin;
-    union REGS regsout;
-
-    regsin.h.ah = 0x33;
-    regsin.h.al = 0x01;
-    regsin.h.dl = !!flag;
-    int86(0x21, &regsin, &regsout);
-}
-
-/* func 33, subfunc 05 - get boot drive */
-int PosGetBootDrive(void)
-{
-    union REGS regsin;
-    union REGS regsout;
-
-    regsin.h.ah = 0x33;
-    regsin.h.al = 0x05;
-    int86(0x21, &regsin, &regsout);
-    return (regsout.h.dl);
-}
-
-/* pos extension to get "PDOS magic" */
-int PosGetMagic(void)
-{
-    union REGS regsin;
-    union REGS regsout;
-
-    regsin.h.ah = 0xf3;
-    regsin.h.al = 6;
-    int86(0x21, &regsin, &regsout);
-    return (regsout.x.ax);
-}
-
-/* INT 21,31 - PosTerminateAndStayResident */
-void PosTerminateAndStayResident(int exitCode, int paragraphs)
-{
-    union REGS regsin;
-
-    regsin.h.ah = 0x31;
-    regsin.h.al = exitCode;
-    regsin.x.dx = paragraphs;
-    int86i(0x21, &regsin);
-}
-
-/* pos extension to get memory manager statistics */
-void PosGetMemoryManagementStats(void *stats)
-{
-    union REGS regsin;
-    union REGS regsout;
-    struct SREGS sregs;
-
-    regsin.h.ah = 0xf3;
-    regsin.h.al = 0x7;
-#ifdef __32BIT__
-    regsin.d.edx = (int)stats;
-#else
-    sregs.ds = FP_SEG(stats);
-    regsin.x.dx = FP_OFF(stats);
-#endif
-    int86x(0x21, &regsin, &regsout, &sregs);
-    return;
-}

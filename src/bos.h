@@ -60,6 +60,8 @@ int BosReadGraphicsPixel(int page, /* 10:D */
 int BosWriteText(int page, int ch, int colour); /* 10:E */
 int BosGetVideoMode(int *columns, int *mode, int *page); /* 10:F */
 
+int BosVBEGetInfo(void *buffer); /* 10:4F00 */
+
 int BosDiskReset(unsigned int drive); /* 13:0 */
 
 int BosDiskStatus(unsigned int drive, unsigned int *status); /* 13:1 */

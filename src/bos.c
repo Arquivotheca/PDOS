@@ -357,6 +357,27 @@ int BosGetVideoMode(int *columns, int *mode, int *page)
 }
 
 
+/* BosVBEGetInfo - BIOS Int 10h Function 4F00h */
+
+int BosVBEGetInfo(void *buffer)
+{
+    union REGS regsin;
+    union REGS regsout;
+    struct SREGS sregs;
+
+    regsin.x.ax = 0x4f00;
+    sregs.es = FP_SEG(buffer);
+    regsin.x.di = FP_OFF(buffer);
+#ifdef __32BIT__
+    sregs.es = ((unsigned long)ADDR2ABS(buffer) >> 4) & 0xffffU;
+    regsin.x.di = (unsigned long)ADDR2ABS(buffer) & 0xf;
+    regsin.d.ebx = (sregs.es << 16);
+#endif
+    int86x(0x10, &regsin, &regsout, &sregs);
+    return (regsout.x.cflag);
+}
+
+
 int BosDiskReset(unsigned int drive)
 {
     union REGS regsin;

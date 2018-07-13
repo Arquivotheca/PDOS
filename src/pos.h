@@ -175,8 +175,6 @@ int PosForceDuplicateFileHandle(int fh, int newfh); /* func 46 */
 
 int PosGetCurDir(int drive, char *dir); /* func 47 */
 
-void *PosAllocMem(unsigned int size); /* func 48 */
-
 /* func 48 alternate entry really for 16-bit */
 void *PosAllocMemPages(unsigned int pages, unsigned int *maxpages);
 
@@ -237,6 +235,8 @@ void PosSetLogUnimplemented(int); /* func f6.05 */
 int PosGetMagic(void); /* func f6.06 */
 
 void PosGetMemoryManagementStats(void *stats); /* func f6.07 */
+
+void *PosAllocMem(unsigned int size); /* func f6.08 */
 
 unsigned int PosAbsoluteDiskRead(int drive, unsigned long start_sector,
                                  unsigned int sectors,void *buf); /*INT25 */

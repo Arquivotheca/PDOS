@@ -1142,10 +1142,8 @@ static void int21handler(union REGS *regsin,
             break;
 
         case 0x48:
-#ifdef __32BIT__
-            regsout->d.eax = (int)PosAllocMem(regsin->d.ebx);
-            regsout->d.eax = (int)ADDRFIXSUB(regsout->d.eax);
-#else
+#ifndef __32BIT__
+            /* This function is only useful in 16-bit PDOS */
             /* for some bizarre reason, MSC allocates 32 bytes,
             then attempts to turn it into 16k - do this in
             advance! */
@@ -1476,6 +1474,16 @@ static void int21handler(union REGS *regsin,
 #endif
                 PosGetMemoryManagementStats(p);
             }
+#ifdef __32BIT__
+            /* this function is currently only implemented
+               for 32-bit, but it could potentially be
+               implemented in 16-bit too. */
+            else if (regsin->h.al == 8)
+            {
+                regsout->d.eax = (int)PosAllocMem(regsin->d.ebx);
+                regsout->d.eax = (int)ADDRFIXSUB(regsout->d.eax);
+            }
+#endif
             else
             {
                 logUnimplementedCall(0x21, regsin->h.ah, regsin->h.al);

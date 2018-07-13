@@ -966,38 +966,6 @@ int PosGetCurDir(int drive, char *dir)
     }
 }
 
-void *PosAllocMem(unsigned int size)
-{
-    union REGS regsin;
-    union REGS regsout;
-
-    regsin.h.ah = 0x48;
-#ifdef __32BIT__
-    regsin.d.ebx = size;
-#else
-    regsin.x.bx = size;
-    regsin.x.bx >>= 4;
-    if ((size % 16) != 0)
-    {
-        regsin.x.bx++;
-    }
-#endif
-    int86(0x21, &regsin, &regsout);
-#ifdef __32BIT__
-    if (regsout.x.cflag)
-    {
-        regsout.d.eax = 0;
-    }
-    return ((void *)regsout.d.eax);
-#else
-    if (regsout.x.cflag)
-    {
-        regsout.x.ax = 0;
-    }
-    return (MK_FP(regsout.x.ax, 0));
-#endif
-}
-
 void *PosAllocMemPages(unsigned int pages, unsigned int *maxpages)
 {
     union REGS regsin;
@@ -1456,6 +1424,39 @@ void PosGetMemoryManagementStats(void *stats)
 #endif
     int86x(0x21, &regsin, &regsout, &sregs);
     return;
+}
+
+void *PosAllocMem(unsigned int size)
+{
+    union REGS regsin;
+    union REGS regsout;
+
+    regsin.h.ah = 0xf6;
+    regsin.h.al = 0x8;
+#ifdef __32BIT__
+    regsin.d.ebx = size;
+#else
+    regsin.x.bx = size;
+    regsin.x.bx >>= 4;
+    if ((size % 16) != 0)
+    {
+        regsin.x.bx++;
+    }
+#endif
+    int86(0x21, &regsin, &regsout);
+#ifdef __32BIT__
+    if (regsout.x.cflag)
+    {
+        regsout.d.eax = 0;
+    }
+    return ((void *)regsout.d.eax);
+#else
+    if (regsout.x.cflag)
+    {
+        regsout.x.ax = 0;
+    }
+    return (MK_FP(regsout.x.ax, 0));
+#endif
 }
 
 /*int 25 function call*/

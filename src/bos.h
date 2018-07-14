@@ -62,6 +62,10 @@ int BosGetVideoMode(int *columns, int *mode, int *page); /* 10:F */
 
 int BosVBEGetInfo(void *buffer); /* 10:4F00 */
 
+int BosVBEGetModeInfo(unsigned int mode, void *buffer); /* 10:4F01 */
+
+int BosVBESetMode(unsigned int mode, void *buffer); /* 10:4F02 */
+
 int BosDiskReset(unsigned int drive); /* 13:0 */
 
 int BosDiskStatus(unsigned int drive, unsigned int *status); /* 13:1 */

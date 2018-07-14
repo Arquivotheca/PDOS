@@ -374,7 +374,51 @@ int BosVBEGetInfo(void *buffer)
     regsin.d.ebx = (sregs.es << 16);
 #endif
     int86x(0x10, &regsin, &regsout, &sregs);
-    return (regsout.x.cflag);
+    return (regsout.h.ah);
+}
+
+
+/* BosVBEGetModeInfo - BIOS Int 10h Function 4F01h */
+
+int BosVBEGetModeInfo(unsigned int mode, void *buffer)
+{
+    union REGS regsin;
+    union REGS regsout;
+    struct SREGS sregs;
+
+    regsin.x.ax = 0x4f01;
+    regsin.x.cx = mode;
+    sregs.es = FP_SEG(buffer);
+    regsin.x.di = FP_OFF(buffer);
+#ifdef __32BIT__
+    sregs.es = ((unsigned long)ADDR2ABS(buffer) >> 4) & 0xffffU;
+    regsin.x.di = (unsigned long)ADDR2ABS(buffer) & 0xf;
+    regsin.d.ebx = (sregs.es << 16);
+#endif
+    int86x(0x10, &regsin, &regsout, &sregs);
+    return (regsout.h.ah);
+}
+
+
+/* BosVBESetMode - BIOS Int 10h Function 4F02h */
+
+int BosVBESetMode(unsigned int mode, void *buffer)
+{
+    union REGS regsin;
+    union REGS regsout;
+    struct SREGS sregs;
+
+    regsin.x.ax = 0x4f02;
+    regsin.x.bx = mode;
+    sregs.es = FP_SEG(buffer);
+    regsin.x.di = FP_OFF(buffer);
+#ifdef __32BIT__
+    sregs.es = ((unsigned long)ADDR2ABS(buffer) >> 4) & 0xffffU;
+    regsin.x.di = (unsigned long)ADDR2ABS(buffer) & 0xf;
+    regsin.d.ebx = (sregs.es << 16) | regsin.x.bx;
+#endif
+    int86x(0x10, &regsin, &regsout, &sregs);
+    return (regsout.h.ah);
 }
 
 

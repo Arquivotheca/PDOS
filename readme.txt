@@ -21,7 +21,7 @@ two broad categories (3 mainframe systems, 2 PC systems):
 Mainframe:
 
 1. PDOS/390 - runs on an IBM mainframe (S/390 architecture).
-Predominantly designed to be compatible with a subset of the 
+Predominantly designed to be compatible with a subset of the
 31-bit MVS interface, so that it can run RMODE ANY, AMODE 31
 programs. Also intended to support Posix interface.
 
@@ -37,7 +37,7 @@ MVS/380 interface, so that it can run RMODE 24, AMODE 31 programs.
 
 PC:
 
-1. PDOS/86 (aka PDOS16) - long-term goal is to be compatible with 
+1. PDOS/86 (aka PDOS16) - long-term goal is to be compatible with
 MSDOS, and thus supports a subset of the 16-bit MSDOS API.
 
 2. PDOS/386 (aka PDOS32) - designed to be a 32-bit version of MSDOS,
@@ -86,30 +86,30 @@ a bootable floppy using CD burner software.
 system as you are likely to find if you want to see what
 the requirements are to write an operating system.  It is
 the 32-bit version that I am most interested in.  It is
-32-bit from both a user's point of view and a 
-programmer's point of view.  Prior to reaching version 
-1.00 the internals are subject to change, pending any 
-suggestions anyone may have on technical issues.  I am 
-mainly concerned about the programming interface, the 
-rest (e.g. task protection, virtual memory) can change 
-quietly.  I do not profess to be an operating system 
-expert or even a DOS expert.  I have spent most of my 
-life avoiding anything that falls out of the scope of 
-strictly conforming ISO C code.  There is also a 16-bit 
-version of PDOS available, which you may find more 
-convenient to use for testing purposes, since any DOS 
+32-bit from both a user's point of view and a
+programmer's point of view.  Prior to reaching version
+1.00 the internals are subject to change, pending any
+suggestions anyone may have on technical issues.  I am
+mainly concerned about the programming interface, the
+rest (e.g. task protection, virtual memory) can change
+quietly.  I do not profess to be an operating system
+expert or even a DOS expert.  I have spent most of my
+life avoiding anything that falls out of the scope of
+strictly conforming ISO C code.  There is also a 16-bit
+version of PDOS available, which you may find more
+convenient to use for testing purposes, since any DOS
 C compiler can be used to write programs for it, while
-the only compiler I know that works for the 32-bit 
+the only compiler I know that works for the 32-bit
 version is EMX 0.9d.
 
 
 The package more accurately contains multiple,
 mostly independent things:
 
-1. BOS application programming interface, for 
+1. BOS application programming interface, for
 standardized access to the BIOS.
 
-2. POS application programming interface, for 
+2. POS application programming interface, for
 standardized access to MSDOS interrupts.
 
 3. PDPCLIB, a C runtime library, for multiple
@@ -123,8 +123,8 @@ considered a clone of MSDOS.
 5. PDOS/386, a 32-bit operating system, which
 can't be considered a clone of any existing
 operating system (that I know of, anyway).
-It shares similarities with MSDOS, except it 
-is 32-bit.  It shares similarities with DOS 
+It shares similarities with MSDOS, except it
+is 32-bit.  It shares similarities with DOS
 extenders, except the API is different, and
 it doesn't require an OS for support.  It shares
 similarities with Unix (the executable format),
@@ -230,7 +230,7 @@ Go to pdpclib and type "compp"
 Go to src and type "comp4" then "comp5" then "comp6".
 Then "compw32"
 
-Run comp0 and then doinst (after editing it!!!) 
+Run comp0 and then doinst (after editing it!!!)
 to install either 16 or 32-bit version.
 NOTE! Installing PDOS in this manner will use
 the MSDOS boot sector rather than PDOS's one.
@@ -283,7 +283,7 @@ voila!
 The original point of contention was to free up real memory, but since
 I am no longer in that position, the goal has instead changed to simply
 producing a nice, clean 32-bit version of DOS, mainly for my own use
-in writing my own ISO C programs.  But that raises the question, what 
+in writing my own ISO C programs.  But that raises the question, what
 does a 32-bit version of DOS actually look like?  This is my interpretation
 of that originally posed question "until DOS is made 32 bit".  I figured
 that you should be able to do things like write to location 0xb8000
@@ -352,7 +352,7 @@ the "perfect C environment" was.  I decided on this:
 On startup, the program is called via a near call, with 4 parameters.
 The first 3 are integers, whose value is currently undefined, but may
 potentially be changed to argc, argv and one we won't talk about.  This
-is not going to happen immediately, as doing C-style parsing of 
+is not going to happen immediately, as doing C-style parsing of
 parameters is deciding on an overhead for one particular language
 without anyone getting a say in the matter.  At the moment, I think
 it's probably better for the program to decide that.
@@ -367,7 +367,7 @@ to argc and argv will be correct, assuming the compiler generates
 standard code like EMX does.  Not even the CRT needs to have any
 assembler code!  Unfortunately EMX only generates this "standard
 code" when optimization is off.  With optimization on, it pushes
-more things onto the stack before calling __main, so is 
+more things onto the stack before calling __main, so is
 unpredictable.  It can probably be changed.
 
 Now return from main doesn't give you a chance to call your exit
@@ -384,11 +384,11 @@ callback facility, so call exit routines yourself before invocation.
 The 4th parameter is a pointer to the following things:
 1. integer, specifying length of this pointer, including the length
 itself.
-2. integer containing the value that needs to be subtracted from 
+2. integer containing the value that needs to be subtracted from
 absolute addresses to make them addressable in this address space.
 3. pointer to program segment prefix
 4. pointer to command line argument
-5. address of callback routine for program exit, 
+5. address of callback routine for program exit,
 initially set to 0 (no callback).
 6. (unimplemented) a pointer to the entire Pos API.
 7. (unimplemented) a pointer to the entire Bos API.
@@ -425,9 +425,9 @@ int BosDiskSectorRead(void         *buffer,
                       unsigned int  track,
                       unsigned int  head,
                       unsigned int  sector);
-                      
+
 This particular function is meant to be called instead of INT 13 function 2.
-                      
+
 Now the first thing you should know is that because this is meant to be an
 interface to INT 13 function 2, you should not expect to get more out of it
 than INT 13 will give you.  E.g. even though the sector number above is
@@ -439,22 +439,22 @@ Potentially there will be multiple things that happen when you call
 BosDiskSectorRead.
 
 1. 16-bit program under 16-bit PDOS.
-   It simply calls the interrupt.  This is designed for you to continue 
-   writing DOS programs as you always have.  Will even work on an XT.  
-   Of course your parameters must be far pointers, which means they are 
+   It simply calls the interrupt.  This is designed for you to continue
+   writing DOS programs as you always have.  Will even work on an XT.
+   Of course your parameters must be far pointers, which means they are
    equally constrained to addresses in the first meg.
-   
+
 2. 32-bit programs under 16-bit PDOS.
    All addresses are 32-bit.  If your program is running under plain DOS,
    the addresses will be translated to far pointers and the function will
-   be done.  You do not need to make sure your addresses are in the lower 
+   be done.  You do not need to make sure your addresses are in the lower
    1 meg, the data will be buffered and converted accordingly.
 
 3. 16-bit program under 32-bit PDOS.
    It calls the interrupt, which is then intercepted, a switch made
-   to protected mode so that PDOS can handle it.  PDOS may or may not 
-   return to real mode to execute the original BIOS interrupt.   
-   
+   to protected mode so that PDOS can handle it.  PDOS may or may not
+   return to real mode to execute the original BIOS interrupt.
+
 4. 32-bit program under 32-bit PDOS.
    It calls the protected mode interrupt.  PDOS may or may not return
    to real mode to get the 16-bit version called, but IF it does, it
@@ -480,7 +480,7 @@ that as far as possible, all you need to do is recompile the code on
 another machine and it instantly works.
 
 PLOAD.COM is a COM program, that has startup code which assumes
-the first 3 sectors are loaded.  It then completely reloads PLOAD.COM 
+the first 3 sectors are loaded.  It then completely reloads PLOAD.COM
 and PDOS.EXE, using the FAT-reading logic.  It also has the logic to do
 program relocation for use by PDOS.EXE.  Also in the 32 bit version
 it has the switch to/from protected mode facility.
@@ -490,8 +490,8 @@ in 32-bit.  It uses special startup code to ensure that it doesn't
 attempt to access the non-existant PSP etc.
 
 So far I have written cut-down versions of all three executables, so that
-it boots (of floppy or hard disk, including logical partitions) and prints 
-"Welcome to pcomm" or similar, and then prompts for a command.  Recognized 
+it boots (of floppy or hard disk, including logical partitions) and prints
+"Welcome to pcomm" or similar, and then prompts for a command.  Recognized
 commands are:
 
 "cd", which will change directories.
@@ -542,10 +542,10 @@ Usable only in batch files:
 
 For more information about specific commands use "help [command]".
 
-You can also launch other programs. The program can't be more than 
-60k in size for the 16-bit version.  Also the program can't do 
-any as-yet unimplemented interrupts.  This means that it is not 
-useful as a general purpose operating system as yet. 
+You can also launch other programs. The program can't be more than
+60k in size for the 16-bit version.  Also the program can't do
+any as-yet unimplemented interrupts.  This means that it is not
+useful as a general purpose operating system as yet.
 
 PDOS currently (even in the 32-bit version) uses the BIOS to read from
 disk and do screen I/O and keyboard input.  This should hopefully make
@@ -623,10 +623,10 @@ a0000
 
 30000
   unused I suppose (16-bit only)
-  
+
 30700 (approx)
   MSDOS.SYS data & stack (32-bit only)
-  
+
 20700
   MSDOS.SYS
 10700
@@ -678,7 +678,7 @@ Protected mode switching is done as follows:
     establishing protected-mode interrupts
     reenabling interrupts
   rawprot() does the actual protected mode switch and starts
-    executing code, blissfully unaware of what it is. 
+    executing code, blissfully unaware of what it is.
 
 Note that that interface is designed to look clean, but in the case
 of runprot(), the code's function is actually split between the
@@ -809,10 +809,10 @@ on what needs to be done and how to do it.
 CONTACTING THE AUTHOR
 ---------------------
 
-If you have any enhancements to PDOS, please send 
+If you have any enhancements to PDOS, please send
 the code changes to mutazilah@gmail.com .
-Please ensure that your code changes are public 
-domain, if you create a new source file, include 
-an explicit PD notice.  It is my intention to build 
+Please ensure that your code changes are public
+domain, if you create a new source file, include
+an explicit PD notice.  It is my intention to build
 up a completely public domain system for use by EVERYONE,
 including commercial vendors of operating systems.

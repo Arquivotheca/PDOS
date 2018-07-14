@@ -469,7 +469,7 @@ To remain compatible with MSDOS 5's FORMAT, SYS + boot sector, the
 operating system has been split up into the traditional 3 programs,
 IO.SYS, MSDOS.SYS and COMMAND.COM, except they have been renamed to
 PLOAD.COM, PDOS.EXE and PCOMM.EXE respectively. The mainframe
-naming standard is quite simlar, but is PLOAD.SYS, PDOS.SYS and
+naming standard is quite similar, but is PLOAD.SYS, PDOS.SYS and
 COMMAND.EXE.
 
 As far as possible, all code has been written in C, for portability
@@ -494,24 +494,58 @@ it boots (of floppy or hard disk, including logical partitions) and prints
 "Welcome to pcomm" or similar, and then prompts for a command.  Recognized 
 commands are:
 
-"type", which will type a file, e.g. "type config.sys".
-
 "cd", which will change directories.
+
+"copy", which copies files.
+
+"date", which shows date.
+
+"del", which deletes files.
 
 "dir", which will give a directory listing.
 
-"exit", which does nothing if this is your primary shell
+"echo", which displays a message.
 
-"reboot", which reboots the computer
+"exit", which does nothing if this is your primary shell.
 
-You can also launch other programs, so long as it is a .exe in the
-current directory.  Because you can't write files (yet) using PDOS, 
-you can't run that sort of program.  Also the program can't be more 
-than 60k in size for the 16-bit version.  Also the program can't do 
-any as-yet unimplemented interrupts.  All of this means that it is not 
-useful as a general purpose operating system as yet.  The file-write 
-facility is likely to be the last thing implemented, in order to give 
-PDOS a decent test before opening up the mechanism for disk trashing!
+"help", which provides information about existing commands.
+
+"mcd", which makes new directory and changes to it.
+
+"md", which creates new directories.
+
+"path", which displays or modifies PATH variable.
+
+"pause", which waits for user to press any key.
+
+"prompt", which displays or modifies PROMPT variable.
+
+"rd", which deletes directories.
+
+"reboot", which reboots the computer.
+
+"ren", which renames files and directories.
+
+"set", which displays or modifies environment variables.
+
+"time", which shows the time.
+
+"type", which will read and display a file, e.g. "type config.sys".
+
+"unboot", which marks disk as unbootable.
+
+"ver", which displays current version of PDOS.
+
+Usable only in batch files:
+
+"goto", "rem", "option".
+
+For more information about specific commands use "help [command]".
+
+You can also launch other programs. The program can't be more than 
+60k in size for the 16-bit version.  Also the program can't do 
+any as-yet unimplemented interrupts.  This means that it is not 
+useful as a general purpose operating system as yet. 
 
 PDOS currently (even in the 32-bit version) uses the BIOS to read from
 disk and do screen I/O and keyboard input.  This should hopefully make
@@ -724,13 +758,13 @@ a PDOS disk.
 So note some important things.
 1. VM not required.
 2. Multitasking not required.
-3. Ability to support FAT-32 is required.
-4. Ability to write to disks is required.
+3. Ability to support FAT-32 is required. (done, requires testing)
+4. Ability to write to disks is required. (done!)
 5. Ability to handle Windows 32-bit executables is required.
 6. Some utilities, such as "sys" are required.
-7. Ability to handle long file names is required.
+7. Ability to handle long file names is required. (done except UCS-2 support)
 8. PDPCLIB needs to be ported to do Windows 32-bit (done!).
-9. An editor is required.
+9. An editor is required. (microemacs can now be run on PDOS)
 10. Something as simple as DOS, not as complicated as Unix, is required.
 11. PDPZM should be ported to upload/download data.
 12. All disk access via BIOS is fine and preferred.
@@ -747,7 +781,6 @@ Check to see if pdos (16 bit) static data is being initialized to 0
 Find out why floppy disks aren't working in lba mode
 See if freedos can be used to install.
 
-Ability to write files
 see how close gcc is to running
 68000 port
 support posix.1 programming interface

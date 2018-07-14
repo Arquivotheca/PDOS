@@ -625,11 +625,11 @@ a0000
   unused I suppose (16-bit only)
 
 30700 (approx)
-  MSDOS.SYS data & stack (32-bit only)
+  MSDOS.SYS data & stack (32-bit only), then below-the-line memory
 
 20700
   MSDOS.SYS
-10700
+10700 (10720 for 32-bit now because of a.out header)
   MSDOS.SYS psp
 10600
   IO.SYS stack

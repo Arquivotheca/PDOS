@@ -421,18 +421,25 @@ int BosVBESetMode(unsigned int mode, void *buffer)
     return (regsout.h.ah);
 }
 
-/* BosVBEGetPrimaryPalette - BIOS Int 10h Function 4F09h */
+/* BosVBEPaletteOps - BIOS Int 10h Function 4F09h */
 
-int BosVBEGetPrimaryPalette(unsigned int entries,
-                            unsigned int start_index,
-                            void *buffer)
+int BosVBEPaletteOps(unsigned int operation,
+                     unsigned int entries,
+                     unsigned int start_index,
+                     void *buffer)
 {
     union REGS regsin;
     union REGS regsout;
     struct SREGS sregs;
 
     regsin.x.ax = 0x4f09;
-    regsin.h.bl = 0x00;
+    /* Operations:
+     * 00h set primary palette
+     * 01h get primary palette
+     * 02h set secondary palette data
+     * 03h get secondary palette data
+     * 80h set palette during vertical retrace */
+    regsin.h.bl = operation;
     regsin.x.cx = entries;
     regsin.x.dx = start_index;
     sregs.es = FP_SEG(buffer);
@@ -440,37 +447,11 @@ int BosVBEGetPrimaryPalette(unsigned int entries,
 #ifdef __32BIT__
     sregs.es = ((unsigned long)ADDR2ABS(buffer) >> 4) & 0xffffU;
     regsin.x.di = (unsigned long)ADDR2ABS(buffer) & 0xf;
-    regsin.d.ebx = (sregs.es << 16);
+    regsin.d.ebx = (sregs.es << 16) | regsin.x.bx;
 #endif
     int86x(0x10, &regsin, &regsout, &sregs);
     return (regsout.h.ah);
 }
-
-/* BosVBESetPrimaryPalette - BIOS Int 10h Function 4F09h Subfunction 01h */
-
-int BosVBESetPrimaryPalette(unsigned int entries,
-                            unsigned int start_index,
-                            void *buffer)
-{
-    union REGS regsin;
-    union REGS regsout;
-    struct SREGS sregs;
-
-    regsin.x.ax = 0x4f09;
-    regsin.h.bl = 0x01;
-    regsin.x.cx = entries;
-    regsin.x.dx = start_index;
-    sregs.es = FP_SEG(buffer);
-    regsin.x.di = FP_OFF(buffer);
-#ifdef __32BIT__
-    sregs.es = ((unsigned long)ADDR2ABS(buffer) >> 4) & 0xffffU;
-    regsin.x.di = (unsigned long)ADDR2ABS(buffer) & 0xf;
-    regsin.d.ebx = (sregs.es << 16);
-#endif
-    int86x(0x10, &regsin, &regsout, &sregs);
-    return (regsout.h.ah);
-}
-
 
 int BosDiskReset(unsigned int drive)
 {

@@ -421,6 +421,19 @@ int BosVBESetMode(unsigned int mode, void *buffer)
     return (regsout.h.ah);
 }
 
+/* BosVBEGetMode - BIOS Int 10h Function 4F03h */
+
+int BosVBEGetMode(unsigned int *mode)
+{
+    union REGS regsin;
+    union REGS regsout;
+
+    regsin.x.ax = 0x4f03;
+    int86(0x10, &regsin, &regsout);
+    *mode = regsout.x.bx;
+    return (regsout.h.ah);
+}
+
 /* BosVBEPaletteOps - BIOS Int 10h Function 4F09h */
 
 int BosVBEPaletteOps(unsigned int operation,

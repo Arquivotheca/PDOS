@@ -66,6 +66,8 @@ int BosVBEGetModeInfo(unsigned int mode, void *buffer); /* 10:4F01 */
 
 int BosVBESetMode(unsigned int mode, void *buffer); /* 10:4F02 */
 
+int BosVBEGetMode(unsigned int *mode); /* 10:4F03 */
+
 int BosVBEPaletteOps(unsigned int operation, /* 10:4F09 */
                      unsigned int entries,
                      unsigned int start_index,

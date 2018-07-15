@@ -125,7 +125,7 @@ static int writeLBA(void *buf,
                     unsigned long sector);
 static void analyseBpb(DISKINFO *diskinfo, unsigned char *bpb);
 int pdosstrt(void);
-static void formatcwd(const char *input,char *output);
+static int formatcwd(const char *input,char *output);
 
 static MEMMGR memmgr;
 static MEMMGR btlmem;
@@ -1756,40 +1756,9 @@ int PosMakeDir(const char *dname)
 {
     int ret;
     char dirname[MAX_PATH];
-    const char *orig;
-    char *end;
 
-    orig = dname;
-    if (dname[1] == ':')
-    {
-        dname += 2;
-    }
-    if ((dname[0] == '\\') || (dname[0] == '/'))
-    {
-        strcpy(dirname,orig);
-    }
-    else
-    {
-        strcpy(dirname, cwd);
-        end = 0;
-        while (dname[0] == '.' && dname[1] == '.')
-        {
-            if (strcmp(dname, "..") != 0) dname += 3;
-            else dname += 2;
-
-            end = strrchr(dirname, '\\');
-            if (!end)
-            {
-                if (!strlen(dirname)) return (POS_ERR_PATH_NOT_FOUND);
-                end = dirname;
-            }
-            *end = '\0';
-        }
-        if (end) memset(end, '\0', sizeof(dirname) - (end - dirname));
-        strcat(dirname, "\\");
-        strcat(dirname, dname);
-    }
-
+    ret = formatcwd(dname, dirname);
+    if (ret) return (ret);
     ret = dirCreat(dirname, DIRENT_SUBDIR);
 
     return (ret);
@@ -1799,40 +1768,9 @@ int PosRemoveDir(const char *dname)
 {
     int ret;
     char dirname[MAX_PATH];
-    const char *orig;
-    char *end;
-
-    orig = dname;
-    if (dname[1] == ':')
-    {
-        dname += 2;
-    }
-    if ((dname[0] == '\\') || (dname[0] == '/'))
-    {
-        strcpy(dirname,orig);
-    }
-    else
-    {
-        strcpy(dirname, cwd);
-        end = 0;
-        while (dname[0] == '.' && dname[1] == '.')
-        {
-            if (strcmp(dname, "..") != 0) dname += 3;
-            else dname += 2;
-
-            end = strrchr(dirname, '\\');
-            if (!end)
-            {
-                if (!strlen(dirname)) return (POS_ERR_PATH_NOT_FOUND);
-                end = dirname;
-            }
-            *end = '\0';
-        }
-        if (end) memset(end, '\0', sizeof(dirname) - (end - dirname));
-        strcat(dirname, "\\");
-        strcat(dirname, dname);
-    }
-
+    
+    ret = formatcwd(dname, dirname);
+    if (ret) return (ret);
     ret = dirDelete(dirname);
 
     return (ret);
@@ -1841,58 +1779,25 @@ int PosRemoveDir(const char *dname)
 int PosChangeDir(const char *to)
 {
     char newcwd[MAX_PATH];
-    int drive = currentDrive;
-    char *end;
     int attr;
     int ret;
 
-    if (strchr(to, '/')) return (POS_ERR_PATH_NOT_FOUND);
+    ret = formatcwd(to, newcwd);
+    if (ret) return (ret);
+    /* formatcwd gave us "[drive]:\[rest]" but we want only the [rest],
+     * so we use to to point at the [rest]. */
+    to = newcwd + 3;
 
-    if (to[1] == ':')
-    {
-        drive = to[0];
-        drive = toupper(drive) - 'A';
-        to += 2;
-    }
-
-    if (to[0] == '\\')
-    {
-        strcpy(newcwd, to + 1);
-    }
-    else
-    {
-        strcpy(newcwd, disks[drive].cwd);
-        end = 0;
-        while (to[0] == '.' && to[1] == '.')
-        {
-            if (strcmp(to, "..") != 0) to += 3;
-            else to += 2;
-
-            end = strrchr(newcwd, '\\');
-            if (!end)
-            {
-                if (!strlen(newcwd)) return (POS_ERR_PATH_NOT_FOUND);
-                end = newcwd;
-            }
-            *end = '\0';
-        }
-        if (end) memset(end, '\0', sizeof(newcwd) - (end - newcwd));
-        if (strcmp(to, "") != 0 && strcmp(newcwd, "") != 0)
-        {
-            strcat(newcwd, "\\");
-        }
-        strcat(newcwd, to);
-    }
-
-    ret = fatGetFileAttributes(&disks[drive].fat, newcwd, &attr);
+    /* formatcwd also provided us with tempDrive from the path we gave it. */
+    ret = fatGetFileAttributes(&disks[tempDrive].fat, to, &attr);
     if (ret || !(attr & DIRENT_SUBDIR)) return (POS_ERR_PATH_NOT_FOUND);
 
-    /* If newcwd is "", we should just change to root
+    /* If to is "", we should just change to root
      * by copying newcwd into cwd. */
-    if (strcmp(newcwd, "") == 0) strcpy(disks[drive].cwd, newcwd);
+    if (strcmp(to, "") == 0) strcpy(disks[tempDrive].cwd, to);
     /* fatPosition provides us with corrected path with LFNs
      * where possible and correct case, so we use it as cwd. */
-    else strcpy(disks[drive].cwd, disks[drive].fat.corrected_path);
+    else strcpy(disks[tempDrive].cwd, disks[tempDrive].fat.corrected_path);
 
     return (0);
 }
@@ -1901,24 +1806,11 @@ int PosCreatFile(const char *name, int attrib, int *handle)
 {
     char filename[MAX_PATH];
     int fno;
-    const char *orig;
+    int ret;
 
-    orig = name;
-    if (name[1] == ':')
-    {
-        name += 2;
-    }
-    if ((name[0] == '\\') || (name[0] == '/'))
-    {
-        fno = fileCreat(orig, attrib);
-    }
-    else
-    {
-        strcpy(filename, cwd);
-        strcat(filename, "\\");
-        strcat(filename, name);
-        fno = fileCreat(filename, attrib);
-    }
+    ret = formatcwd(name, filename);
+    if (ret) return (ret);
+    fno = fileCreat(filename, attrib);
     if (fno < 0)
     {
         *handle = -fno;
@@ -1935,25 +1827,10 @@ int PosOpenFile(const char *name, int mode, int *handle)
     char filename[MAX_PATH];
     int fno;
     int ret;
-    const char *orig;
-
-    orig = name;
-
-    if (name[1] == ':')
-    {
-        name += 2;
-    }
-    if ((name[0] == '\\') || (name[0] == '/'))
-    {
-        fno = fileOpen(orig);
-    }
-    else
-    {
-        strcpy(filename, cwd);
-        strcat(filename, "\\");
-        strcat(filename, name);
-        fno = fileOpen(filename);
-    }
+    
+    ret = formatcwd(name, filename);
+    if (ret) return (ret);
+    fno = fileOpen(filename);
     if (fno < 0)
     {
         *handle = -fno;
@@ -2034,25 +1911,10 @@ int PosDeleteFile(const char *name)
 {
     char filename[MAX_PATH];
     int ret;
-    const char *orig;
-
-    orig = name;
-
-    if(name[1] == ':')
-    {
-        name += 2;
-    }
-    if ((name[0] == '\\') || (name[0] == '/'))
-    {
-        ret = fileDelete(orig);
-    }
-    else
-    {
-        strcpy(filename, cwd);
-        strcat(filename, "\\");
-        strcat(filename, name);
-        ret = fileDelete(filename);
-    }
+    
+    ret = formatcwd(name, filename);
+    if (ret) return (ret);
+    ret = fileDelete(filename);
     if (ret < 0)
     {
         return(ret);
@@ -2073,7 +1935,8 @@ int PosGetFileAttributes(const char *fnm,int *attr)
     int rc;
     char tempf[FILENAME_MAX];
 
-    formatcwd(fnm,tempf);
+    rc = formatcwd(fnm, tempf);
+    if (rc) return (rc);
     fnm = tempf;
     rc = fatGetFileAttributes(&disks[tempDrive].fat,tempf + 2,attr);
     return (rc);
@@ -2086,7 +1949,8 @@ int PosSetFileAttributes(const char *fnm,int attr)
     int rc;
     char tempf[FILENAME_MAX];
 
-    formatcwd(fnm,tempf);
+    rc = formatcwd(fnm, tempf);
+    if (rc) return (rc);
     fnm = tempf;
     rc = fatSetFileAttributes(&disks[tempDrive].fat,tempf + 2,attr);
     return (rc);
@@ -2291,17 +2155,8 @@ void PosExec(char *prog, void *parmblock)
     PARMBLOCK *parms = parmblock;
     char tempp[FILENAME_MAX];
 
-    if ((strchr(prog, '\\') == NULL)
-        && (strchr(prog, '/') == NULL))
-    {
-        strcpy(tempp, cwd);
-        strcat(tempp, "\\");
-        strcat(tempp, prog);
-    }
-    else
-    {
-        strcpy(tempp, prog);
-    }
+    if (formatcwd(prog, tempp)) return;
+    /* +++Add a way to let user know it failed on formatcwd. */
     prog = tempp;
     loadExe(prog, parms);
     return;
@@ -2367,7 +2222,8 @@ int PosRenameFile(const char *old, const char *new)
     char tempf2[FILENAME_MAX];
     /* +++Add support for moving files using rename. */
 
-    formatcwd(old,tempf1);
+    rc = formatcwd(old,tempf1);
+    if (rc) return (rc);
     strcpy(tempf2, new);
 
     old = tempf1;
@@ -2413,40 +2269,9 @@ int PosCreatNewFile(const char *name, int attrib)
 {
     int ret;
     char filename[MAX_PATH];
-    const char *orig;
-    char *end;
 
-    orig = name;
-    if (name[1] == ':')
-    {
-        name += 2;
-    }
-    if ((name[0] == '\\') || (name[0] == '/'))
-    {
-        strcpy(filename,orig);
-    }
-    else
-    {
-        strcpy(filename, cwd);
-        end = 0;
-        while (name[0] == '.' && name[1] == '.')
-        {
-            if (strcmp(name, "..") != 0) name += 3;
-            else name += 2;
-
-            end = strrchr(filename, '\\');
-            if (!end)
-            {
-                if (!strlen(filename)) return (POS_ERR_PATH_NOT_FOUND);
-                end = filename;
-            }
-            *end = '\0';
-        }
-        if (end) memset(end, '\0', sizeof(filename) - (end - filename));
-        strcat(filename, "\\");
-        strcat(filename, name);
-    }
-
+    ret = formatcwd(name, filename);
+    if (ret) return (ret);
     ret = newFileCreat(filename, attrib);
 
     return (ret);
@@ -4206,14 +4031,19 @@ unsigned int PosAbsoluteDiskWrite(int drive, unsigned long start_sector,
 /**/
 
 /*
- Different cases for cwd The user can input
- directory name,file name in a format convinent to
- user in each case the cwd must prepended or appended
- with the appropriate directory name,drive name and current
- working directory.
+ Different cases for cwd. The user can input
+ directory name, file name in a format convenient to
+ user. In each case the cwd must prepended or appended
+ with the appropriate directory name, drive name and current
+ working directory, ending '\' or '/' must be removed
+ and dotdots ("..") must be resolved.
 */
-static void formatcwd(const char *input,char *output)
+static int formatcwd(const char *input,char *output)
 {
+    char *p;
+    char *temp;
+    char *read;
+    char *write;
    /*
      The user only provides the <folder-name>
      e.g. \from\1.txt the function corrects it to
@@ -4280,7 +4110,75 @@ static void formatcwd(const char *input,char *output)
         strcat(output,input);
     }
     tempDrive=toupper(output[0]) - 'A';
-    return;
+    /* Checks for '\' or '/' before the null terminator and removes it. */
+    p = strchr(output, '\0') - 1;
+    if (p[0] == '\\' || p[0] == '/') p[0] = '\0'; /*+++CHECK!!!*/
+    /* Checks the output for ".."s and changes the output accordingly. */
+    read = output + 2;
+    write = read;
+    while (1)
+    {
+        read++;
+        p = strchr(read, '\\');
+        temp = strchr(read, '/');
+        if (temp && (temp < p || !p))
+        {
+            p = temp;
+            p[0] = '\\';
+        }
+        /* Checks if we are still inside the string. */
+        if (p)
+        {
+            if (p - read == 2 && strncmp(read, "..", 2) == 0)
+            {
+                write[0] = '\0';
+                /* If we would ascend above root with "..", return error. */
+                if (write == output + 2) return(POS_ERR_PATH_NOT_FOUND);
+                /* Finds last '\' and positions write on it. */
+                write = strrchr(output + 2, '\\');
+            }
+            else
+            {
+                /* Write is positioned on '\' so we move it further. */
+                write++;
+                /* Copies this part of processed string onto write. */
+                memcpy(write, read, p - read);
+                /* Increments write for it to be after the copied part. */
+                write += p - read;
+                /* Adds '\' at the end of copied part. */
+                write[0] = '\\';
+            }
+            /* Moves read further. */
+            read = p;
+            continue;
+        }
+        /* We are at the last part of string, so we set p to the end. */
+        p = strchr(read, '\0');
+        if (strcmp(read, "..") == 0)
+        {
+            write[0] = '\0';
+            /* If we would ascend above root with "..", return error. */
+            if (write == output + 2) return(POS_ERR_PATH_NOT_FOUND);
+            /* Finds last '\' and positions write on it. */
+            write = strrchr(output + 2, '\\');
+            /* If we are at the first backslash (the one in "c:\"),
+             * we add null terminator after it. */
+            if (write == output + 2) write++;
+        }
+        else
+        {
+            /* Write is positioned on '\' so we move it further. */
+            write++;
+            /* Copies this part of processed string onto write. */
+            memcpy(write, read, p - read);
+            /* Increments write for it to be after the copied part. */
+            write += p - read;
+        }
+        /* Adds null terminator at the end of the output. */
+        write[0] = '\0';
+        break;
+    }
+    return (0);
 }
 /**/
 

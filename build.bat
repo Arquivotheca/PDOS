@@ -25,7 +25,7 @@ copy pcomm.exe 16bit
 copy ..\pdpclib\pdptest.exe 16bit
 patchver %loc%\io.sys
 sys %loc% %drive%:
-copy pdpclib\pdptest.exe %drive%:
+copy ..\pdpclib\pdptest.exe %drive%:
 echo pdos16.dsk | raread -n -d A
 
 cd ..\pdpclib
@@ -43,7 +43,7 @@ md 32bit
 copy pload.com 32bit
 copy pdos.exe 32bit
 copy pcomm.exe 32bit
-copy ..\pdpclib\world.exe 32bit
+copy ..\pdpclib\pdptest.exe 32bit
 sys %loc% %drive%:
 copy ..\pdpclib\pdptest.exe %drive%:
 md %drive%:emacs

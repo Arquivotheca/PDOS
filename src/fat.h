@@ -125,6 +125,7 @@ typedef struct {
     unsigned int drive;
     unsigned int rootentries;
     unsigned int rootsize;
+    unsigned int fsinfosector;
     unsigned long rootstartcluster;
     unsigned long fatsize;
     int fat_type;

@@ -21,6 +21,7 @@
 #include "unused.h"
 #include "pos.h"
 
+static void checkFSInfoSignature(FAT *fat);
 static int fatEndCluster(FAT *fat, unsigned long cluster);
 static void fatPosition(FAT *fat, const char *fnm);
 static void fatNextSearch(FAT *fat, char *search, const char **upto);
@@ -181,11 +182,36 @@ void fatInit(FAT *fat,
         /* Drive number. 0x00 for floppy disk, 0x80 for hard disk. */
         fat->drive = bpb[53];
 
-        /* +++Add logic for FSInfo structure sector. */
+        /* FSInfo sector number. 2 bytes. */
+        fat->fsinfosector = bpb[37] | ((unsigned int)bpb[38] << 8);
+        /* Checks if the FSInfo has correct signature. */
+        if (fat->fsinfosector) checkFSInfoSignature(fat);
     }
     return;
 }
 
+/*
+ * checkFSInfoSignature - checks signature of FSInfo sector.
+ */
+static void checkFSInfoSignature(FAT *fat)
+{
+    unsigned char buf[MAXSECTSZ];
+
+    fatReadLogical(fat, fat->fsinfosector, buf);
+    /* First signature 0x52 52 61 41. Offset 0. */
+    if (buf[0] == 0x52 && buf[1] == 0x52 &&
+        buf[2] == 0x61 && buf[3] == 0x41 &&
+        /* Second signature 0x72 72 41 61. Offset 484. */
+        buf[484] == 0x72 && buf[485] == 0x72 &&
+        buf[486] == 0x41 && buf[487] == 0x61 &&
+        /* Last signature 0x00 00 55 aa. Offset 508. */
+        buf[508] == 0x00 && buf[509] == 0x00 &&
+        buf[510] == 0x55 && buf[511] == 0xaa)
+    /* If all signatures all valid, we return without changing fsinfosector. */
+    return;
+    /* Otherwise fsinfosector is set to 0 so functions know it is not valid. */
+    fat->fsinfosector = 0;
+}
 
 /*
  * fatTerm - terminate the FAT handler.
@@ -1598,6 +1624,7 @@ static void fatMarkCluster(FAT *fat, unsigned long cluster)
     unsigned long fatSector;
     static unsigned char buf[MAXSECTSZ];
     int offset;
+    unsigned long freeclusters;
 
     if (fat->fat_type == 16)
     {
@@ -1643,6 +1670,34 @@ static void fatMarkCluster(FAT *fat, unsigned long cluster)
         buf[offset + 2] = 0xff;
         buf[offset + 3] = buf[offset + 3] | 0xf;
         fatWriteLogical(fat, fatSector, buf);
+        /* If FSInfo is on the disk, we update it. */
+        if (fat->fsinfosector)
+        {
+            fatReadLogical(fat, fat->fsinfosector, buf);
+            /* Free cluster count is at offset 488. */
+            freeclusters = buf[488]
+                  | ((unsigned long)buf[489] << 8)
+                  | ((unsigned long)buf[490] << 16)
+                  | ((unsigned long)buf[491] << 24);
+            if (!(freeclusters > fat->sectors_per_disk
+                / fat->sectors_per_cluster || freeclusters == 0xffffffff))
+            {
+                /* If free cluster count is valid,
+                 * we decrement it and write into FSInfo. */
+                freeclusters--;
+                buf[488] = freeclusters & 0xff;
+                buf[489] = (freeclusters >> 8) & 0xff;
+                buf[490] = (freeclusters >> 16) & 0xff;
+                buf[491] = (freeclusters >> 24) & 0xff;
+            }
+
+            /* Last allocated cluster is at offset 492. */
+            buf[492] = cluster & 0xff;
+            buf[493] = (cluster >> 8) & 0xff;
+            buf[494] = (cluster >> 16) & 0xff;
+            buf[495] = (cluster >> 24) & 0xff;
+            fatWriteLogical(fat, fat->fsinfosector, buf);
+        }
     }
 
     return;
@@ -1720,12 +1775,34 @@ static unsigned int fatFindFreeCluster(FAT *fat)
     }
     else if (fat->fat_type == 32)
     {
-        for (fatSector = fat->fatstart;
+        ret = 0;
+        /* If FSInfo is on the disk, we read last allocated cluster from it. */
+        if (fat->fsinfosector)
+        {
+            fatReadLogical(fat, fat->fsinfosector, buf);
+            /* Last allocated cluster is at offset 492. */
+            ret = buf[492]
+                  | ((unsigned long)buf[493] << 8)
+                  | ((unsigned long)buf[494] << 16)
+                  | ((unsigned long)buf[495] << 24);
+            /* If it is 0xffffffff, we should start from cluster 0x02. */
+            if (ret == 0xffffffff) ret = 0x02;
+            /* Checks if it is a valid cluster number.
+             * If it is not, starts from cluster 0.*/
+            if (ret >= fat->sectors_per_disk / fat->sectors_per_cluster)
+            ret = 0;
+        }
+        /* Calculates from where should we start looking for clusters. */
+        fatSector = fat->fatstart + (ret * 4) / fat->sector_size;
+        x = (ret * 4) % fat->sector_size;
+
+        /* Looks for free clusters starting from the last allocated cluster. */
+        for (;
              fatSector < fat->rootstart;
              fatSector++)
         {
             fatReadLogical(fat, fatSector, buf);
-            for (x = 0; x < MAXSECTSZ; x += 4)
+            for (; x < MAXSECTSZ; x += 4)
             {
                 /* 4 highest bits are reserved, thus ignored. */
                 if ((buf[x] == 0) && (buf[x + 1] == 0) &&
@@ -1736,6 +1813,30 @@ static unsigned int fatFindFreeCluster(FAT *fat)
                 }
             }
             if (found) break;
+            /* Resets offset. */
+            x = 0;
+        }
+        /* If we started from last allocated cluster, but did not find
+         * anything, we search from fatstart to the cluster. */
+        if (!found && ret)
+        {
+            for (fatSector = fat->fatstart;
+                 fatSector <= fat->fatstart + (ret * 4) / fat->sector_size;
+                 fatSector++)
+            {
+                fatReadLogical(fat, fatSector, buf);
+                for (x = 0; x < MAXSECTSZ; x += 4)
+                {
+                    /* 4 highest bits are reserved, thus ignored. */
+                    if ((buf[x] == 0) && (buf[x + 1] == 0) &&
+                        (buf[x + 2] == 0) && ((buf[x + 3] & 0xf) == 0))
+                    {
+                        found = 1;
+                        break;
+                    }
+                }
+                if (found) break;
+            }
         }
         if (found)
         {
@@ -2071,6 +2172,8 @@ static void fatNuke(FAT *fat, unsigned long cluster)
     int offset;
     unsigned long buffered = 0;
     unsigned long oldcluster;
+    unsigned long deletedclusters = 0;
+    unsigned long freeclusters;
 
     if (cluster == 0) return;
     while (!fatEndCluster(fat, cluster))
@@ -2161,11 +2264,35 @@ static void fatNuke(FAT *fat, unsigned long cluster)
             buf[offset + 1] = 0xff;
             buf[offset + 2] = 0xff;
             buf[offset + 3] = buf[offset + 3] & 0xf0;
+            deletedclusters +=1;
         }
     }
     if (buffered != 0)
     {
         fatWriteLogical(fat, buffered, buf);
+    }
+    /* If we are on FAT-32 and have FSInfo, we update it. */
+    if (fat->fat_type == 32 && fat->fsinfosector)
+    {
+        fatReadLogical(fat, fat->fsinfosector, buf);
+        /* Free cluster count is at offset 488. */
+        freeclusters = buf[488]
+              | ((unsigned long)buf[489] << 8)
+              | ((unsigned long)buf[490] << 16)
+              | ((unsigned long)buf[491] << 24);
+        if (!(freeclusters > fat->sectors_per_disk
+            / fat->sectors_per_cluster || freeclusters == 0xffffffff))
+        {
+            /* If free cluster count is valid,
+             * we decrement it and write into FSInfo. */
+            freeclusters -= deletedclusters;
+            buf[488] = freeclusters & 0xff;
+            buf[489] = (freeclusters >> 8) & 0xff;
+            buf[490] = (freeclusters >> 16) & 0xff;
+            buf[491] = (freeclusters >> 24) & 0xff;
+        }
+
+        fatWriteLogical(fat, fat->fsinfosector, buf);
     }
     return;
 }

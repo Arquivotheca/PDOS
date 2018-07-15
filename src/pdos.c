@@ -1768,7 +1768,7 @@ int PosRemoveDir(const char *dname)
 {
     int ret;
     char dirname[MAX_PATH];
-    
+
     ret = formatcwd(dname, dirname);
     if (ret) return (ret);
     ret = dirDelete(dirname);
@@ -1827,7 +1827,7 @@ int PosOpenFile(const char *name, int mode, int *handle)
     char filename[MAX_PATH];
     int fno;
     int ret;
-    
+
     ret = formatcwd(name, filename);
     if (ret) return (ret);
     fno = fileOpen(filename);
@@ -1911,7 +1911,7 @@ int PosDeleteFile(const char *name)
 {
     char filename[MAX_PATH];
     int ret;
-    
+
     ret = formatcwd(name, filename);
     if (ret) return (ret);
     ret = fileDelete(filename);

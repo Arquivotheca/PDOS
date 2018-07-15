@@ -128,7 +128,9 @@ int pdosstrt(void);
 static int formatcwd(const char *input,char *output);
 
 static MEMMGR memmgr;
+#ifdef __32BIT__
 static MEMMGR btlmem;
+#endif
 
 /* we implement special versions of allocate and free */
 #ifndef __32BIT__
@@ -358,7 +360,9 @@ void pdosRun(void)
 #ifndef USING_EXE
     loadPcomm();
     memmgrTerm(&memmgr);
+#ifdef __32BIT__
     memmgrTerm(&btlmem);
+#endif
 #endif
     return;
 }

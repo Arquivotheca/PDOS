@@ -2284,8 +2284,8 @@ static void fatNuke(FAT *fat, unsigned long cluster)
             / fat->sectors_per_cluster || freeclusters == 0xffffffff))
         {
             /* If free cluster count is valid,
-             * we decrement it and write into FSInfo. */
-            freeclusters -= deletedclusters;
+             * we increment it and write into FSInfo. */
+            freeclusters += deletedclusters;
             buf[488] = freeclusters & 0xff;
             buf[489] = (freeclusters >> 8) & 0xff;
             buf[490] = (freeclusters >> 16) & 0xff;

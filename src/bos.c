@@ -374,6 +374,7 @@ int BosVBEGetInfo(void *buffer)
     regsin.d.ebx = (sregs.es << 16);
 #endif
     int86x(0x10, &regsin, &regsout, &sregs);
+    if (regsout.h.al != 0x4f) return (2);
     return (regsout.h.ah);
 }
 
@@ -396,6 +397,7 @@ int BosVBEGetModeInfo(unsigned int mode, void *buffer)
     regsin.d.ebx = (sregs.es << 16);
 #endif
     int86x(0x10, &regsin, &regsout, &sregs);
+    if (regsout.h.al != 0x4f) return (2);
     return (regsout.h.ah);
 }
 
@@ -418,6 +420,7 @@ int BosVBESetMode(unsigned int mode, void *buffer)
     regsin.d.ebx = (sregs.es << 16) | regsin.x.bx;
 #endif
     int86x(0x10, &regsin, &regsout, &sregs);
+    if (regsout.h.al != 0x4f) return (2);
     return (regsout.h.ah);
 }
 
@@ -430,6 +433,7 @@ int BosVBEGetMode(unsigned int *mode)
 
     regsin.x.ax = 0x4f03;
     int86(0x10, &regsin, &regsout);
+    if (regsout.h.al != 0x4f) return (2);
     *mode = regsout.x.bx;
     return (regsout.h.ah);
 }
@@ -463,6 +467,7 @@ int BosVBEPaletteOps(unsigned int operation,
     regsin.d.ebx = (sregs.es << 16) | regsin.x.bx;
 #endif
     int86x(0x10, &regsin, &regsout, &sregs);
+    if (regsout.h.al != 0x4f) return (2);
     return (regsout.h.ah);
 }
 

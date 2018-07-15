@@ -66,6 +66,14 @@ int BosVBEGetModeInfo(unsigned int mode, void *buffer); /* 10:4F01 */
 
 int BosVBESetMode(unsigned int mode, void *buffer); /* 10:4F02 */
 
+int BosVBEGetPrimaryPalette(unsigned int entries, /* 10:4F09 */
+                            unsigned int start_index,
+                            void *buffer);
+
+int BosVBESetPrimaryPalette(unsigned int entries, /* 10:4F09 subfunc 01h*/
+                            unsigned int start_index,
+                            void *buffer);
+
 int BosDiskReset(unsigned int drive); /* 13:0 */
 
 int BosDiskStatus(unsigned int drive, unsigned int *status); /* 13:1 */

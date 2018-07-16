@@ -629,7 +629,11 @@ a0000
 
 20700
   MSDOS.SYS
-10700 (10720 for 32-bit now because of a.out header)
+  Note that the 32-bit a.out has a 0x20 byte header
+  so the actual code starts at 10720. For 16-bit,
+  the header is likely to be 0xc00 long, for a
+  code start of 11300.
+10700
   MSDOS.SYS psp
 10600
   IO.SYS stack

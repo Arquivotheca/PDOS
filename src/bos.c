@@ -337,6 +337,8 @@ int BosWriteText(int page, int ch, int colour)
     regsin.h.bh = page;
     regsin.h.bl = colour;
     int86i(0x10, &regsin);
+    /* wportb(0xe9, ch); */ /* works for PDOS-16 under Bochs */
+    /* outp(0xe9, ch); */ /* works for PDOS-32 under Bochs */
     return (0);
 }
 

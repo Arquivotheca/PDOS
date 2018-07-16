@@ -270,7 +270,7 @@ unsigned long runaout(char *fnm, unsigned long absaddr, unsigned long userparm)
 
     fclose(fp);
 
-    absaddr += 0x20;
+    absaddr += sizeof firstbit; /* skip header */
 
     corrloc = absaddr + firstbit.a_text + firstbit.a_data;
     for (z = 0; z < firstbit.a_trsize; z += 8)

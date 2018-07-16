@@ -657,11 +657,10 @@ The BIOS loads sector 0 into locations 7C00 - 7DFF.
  the active partition]
 IO.SYS gets loaded between 0700 and 7BFF (58 sectors).
 The stack is at 10600 and grows down.
-MSDOS.SYS gets loaded between 20000 and 2FFFF.
-On transition to protected mode, sp gets set to 2FFFC, which is
-the equivalent of 1FFFC except that it is relative to the start
-of the program, so is more like 3FFFC absolute.  When calling
-other programs, the stack is changed and set to 32k in size.  When
+MSDOS.SYS gets loaded starting at 10700.
+On transition to protected mode, sp gets set to a value 0x8000
+above the end of the module. When calling
+other programs, the stack is changed and set to a larger amount. When
 an interrupt is done, the previous stack is restored temporarily.
 It is also restored when the program terminates.  When doing a real
 mode interrupt, ss & sp are temporarily set to what PLOAD was using.
@@ -670,7 +669,6 @@ PLOAD executable - a length of 800 to give 256 8-byte interrupts.
 For BIOS calls that require pointers, e.g. reading from disk sectors,
 a translation is done so that the data is read to a location provided
 by PLOAD and then transferred up.
-The memory used by applications under protected mode starts at 200000.
 
 Protected mode switching is done as follows:
   runaout() runs an a.out executable, by doing the following:

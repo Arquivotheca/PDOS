@@ -30,8 +30,11 @@ push cs
 pop ds
 pop es
 mov ax, cs
-mov ss, ax
-mov sp, 0fffeh
+; Keep using the pload stack until we figure
+; out something better. The below code prevents
+; a module from being more than 64k in size
+;mov ss, ax
+;mov sp, 0fffeh
 
 mov ax, DGROUP
 mov ds, ax

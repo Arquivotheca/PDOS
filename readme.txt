@@ -636,7 +636,7 @@ a0000
 10700
   MSDOS.SYS psp
 10600
-  IO.SYS stack
+  IO.SYS stack (also used by 16-bit MSDOS.SYS)
 07DFF
   sector 0 & bpb
 07C00

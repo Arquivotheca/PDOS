@@ -339,6 +339,17 @@ void pdosRun(void)
     memmgrInit(&btlmem);
     memmgrSupply(&btlmem, ABSADDR(freem_start),
                  0xa0000 - freem_start);
+    {
+        int *below = (int *)transferbuf;
+        volatile int *above = below + 0x100000;
+
+        *above = 0;
+        *below = 0xa5;
+        if (*above == 0xa5)
+        {
+            printf("A20 line not enabled - random results\n");
+        }
+    }
 #else
     /* Ok, time for some heavy hacking.  Because we want to
     be able to supply a full 64k to DOS apps, we can't

@@ -340,12 +340,12 @@ void pdosRun(void)
     memmgrSupply(&btlmem, ABSADDR(freem_start),
                  0xa0000 - freem_start);
     {
-        int *below = (int *)transferbuf;
-        volatile int *above = below + 0x100000;
+        char *below = transferbuf;
+        volatile char *above = below + 0x100000;
 
-        *above = 0;
-        *below = 0xa5;
-        if (*above == 0xa5)
+        *above = '\0';
+        *below = 'X';
+        if (*above == 'X')
         {
             printf("A20 line not enabled - random results\n");
         }

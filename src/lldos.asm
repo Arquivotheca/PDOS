@@ -151,6 +151,8 @@ a20e_ii:
         jnz a20e_ii
         mov al, 0dfh
         out 060h, al
+        mov ax, 02401h
+        int 015h
         ret
 a20e endp
 

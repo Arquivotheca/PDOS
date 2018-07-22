@@ -2183,6 +2183,13 @@ void PosTerminate(int rc)
     return;
 }
 
+#ifndef __32BIT__
+void exit(int rc)
+{
+    PosTerminate(rc);
+}
+#endif
+
 int PosGetReturnCode(void)
 {
     return (lastrc);

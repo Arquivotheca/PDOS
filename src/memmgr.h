@@ -137,7 +137,7 @@ typedef struct {
 #define memmgrDebug2 mmDbg2
 #define memmgrGetStats mmGStat
 #define memmgrGetSize mmGtSize
-#else
+#elif defined(INCLIB)
 #define memmgrDefaults __mmDef
 #define memmgrInit __mmInit
 #define memmgrTerm __mmTerm

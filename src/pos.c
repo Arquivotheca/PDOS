@@ -295,7 +295,8 @@ unsigned int PosSetSystemDate(int year, int month, int day)
             increment by 1. On some systems, DL may always return 00h.
 */
 
-void PosGetSystemTime(int *hour, int *min, int *sec, int *hundredths)
+void PosGetSystemTime(unsigned int *hour, unsigned int *min,
+                      unsigned int *sec, unsigned int *hundredths)
 {
     union REGS regsin;
     union REGS regsout;

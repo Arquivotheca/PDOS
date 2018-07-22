@@ -1908,10 +1908,10 @@ static int cmd_date_run(char *ignored)
 
 static int cmd_time_run(char *ignored)
 {
-    int hr, min, sec, hund;
+    unsigned int hr, min, sec, hund;
     CMD_HAS_NO_ARGS(ignored);
     PosGetSystemTime(&hr,&min,&sec,&hund);
-    printf("%02d:%02d:%02d\n", hr, min, sec);
+    printf("%02u:%02u:%02u\n", hr, min, sec);
     return 0;
 }
 

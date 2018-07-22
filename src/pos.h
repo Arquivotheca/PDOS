@@ -98,10 +98,10 @@ void PosGetSystemDate(int *year, int *month, int *day, int *dw); /* func 2a */
 
 unsigned int PosSetSystemDate(int year, int month, int day); /* func 2b */
 
-void PosGetSystemTime(int *hour, /* func 2c */
-                      int *min,
-                      int *sec,
-                      int *hundredths);
+void PosGetSystemTime(unsigned int *hour, /* func 2c */
+                      unsigned int *min,
+                      unsigned int *sec,
+                      unsigned int *hundredths);
 
 void PosSetVerifyFlag(int); /* func 2e
                                - set read-after-write verification flag */

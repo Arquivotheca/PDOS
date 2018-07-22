@@ -1664,7 +1664,8 @@ unsigned int PosSetSystemDate(int year, int month, int day)
 }
 
 /* INT 21/AH=2Ch */
-void PosGetSystemTime(int *hour, int *minute, int *second, int *hundredths)
+void PosGetSystemTime(unsigned int *hour, unsigned int *minute,
+                      unsigned int *second, unsigned int *hundredths)
 {
     unsigned long ticks,t;
     unsigned int midnight;
@@ -1672,13 +1673,13 @@ void PosGetSystemTime(int *hour, int *minute, int *second, int *hundredths)
     BosGetSystemTime(&ticks,&midnight);
 
     t=(ticks*1000)/182;
-    *hundredths=(int)t%100;
+    *hundredths=(unsigned int)t%100;
     t/=100;
-    *second=(int)t%60;
+    *second=(unsigned int)t%60;
     t/=60;
-    *minute=(int)t%60;
+    *minute=(unsigned int)t%60;
     t/=60;
-    *hour=(int)t;
+    *hour=(unsigned int)t;
     return;
 }
 

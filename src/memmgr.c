@@ -14,7 +14,9 @@
 
 #include <stdlib.h>
 
+#if 0
 MEMMGR __memmgr;
+#endif
 
 void memmgrDefaults(MEMMGR *memmgr)
 {

@@ -14,6 +14,7 @@
         .globl _inthdlr_13
         .globl _inthdlr_15
         .globl _inthdlr_16
+        .globl _inthdlr_1A
         .globl _inthdlr_20
         .globl _inthdlr_21
         .globl _inthdlr_25
@@ -100,6 +101,15 @@ _inthdlr_16:
         mov    %ax, %ds
         push   intnum
         movl   $0x16, intnum
+        jmp    _inthdlr_p
+_inthdlr_1A:
+        push   %eax
+        mov    %ds, %ax
+        push   %eax
+        mov    $0x10, %eax
+        mov    %ax, %ds
+        push   intnum
+        movl   $0x1A, intnum
         jmp    _inthdlr_p
 _inthdlr_20:
         push   %eax

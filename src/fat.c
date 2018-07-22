@@ -936,6 +936,10 @@ size_t fatWriteFile(FAT *fat, FATFILE *fatfile, const void *buf, size_t szbuf)
                         fatfile->dirSect,
                         bbuf);
     }
+    /* If a new cluster is not needed, fat->currcluster
+     * is restored from fatfile->startcluster because
+     * FAT structure is shared between file handles. */
+    else fat->currcluster = fatfile->startcluster;
     /* get remainder of bytes in current sector */
     rem = fat->sector_size - fatfile->lastBytes;
 
@@ -1877,6 +1881,7 @@ static void fatChain(FAT *fat, FATFILE *fatfile)
 
         /* update to new cluster */
         fat->currcluster = newcluster;
+        fatfile->startcluster = newcluster;
 
         /* update to new set of sectors */
         fatfile->sectorStart = (fat->currcluster - 2)
@@ -1915,6 +1920,7 @@ static void fatChain(FAT *fat, FATFILE *fatfile)
 
         /* update to new cluster */
         fat->currcluster = newcluster;
+        fatfile->startcluster = newcluster;
 
         /* update to new set of sectors */
         fatfile->sectorStart = (fat->currcluster - 2)
@@ -1941,6 +1947,7 @@ static void fatChain(FAT *fat, FATFILE *fatfile)
 
         /* update to new cluster */
         fat->currcluster = newcluster;
+        fatfile->startcluster = newcluster;
 
         /* update to new set of sectors */
         fatfile->sectorStart = (fat->currcluster - 2)

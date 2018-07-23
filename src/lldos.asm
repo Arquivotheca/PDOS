@@ -145,14 +145,16 @@ callwithpsp endp
 ; mods by Paul Edwards
 
 a20e proc
+        mov al, 0d1h
+        out 64h, al
 a20e_ii:
         in al, 064h
         test al, 2
         jnz a20e_ii
         mov al, 0dfh
         out 060h, al
-        mov ax, 02401h
-        int 015h
+;        mov ax, 02401h
+;        int 015h
         ret
 a20e endp
 

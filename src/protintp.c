@@ -23,6 +23,7 @@ unsigned long (*runreal_p)(unsigned long func, unsigned short *regs);
 rawprot_parms *rp_parms;
 
 void inthdlr(void);
+void inthdlr_0(void);
 void inthdlr_8(void);
 void inthdlr_9(void);
 void inthdlr_10(void);
@@ -135,6 +136,7 @@ unsigned long runprot_p(rawprot_parms *parmlist)
         int number;
         void (*handler)(void);
     } handlerlist[] = { 
+        { 0x0, inthdlr_0 },
         { 0x8, inthdlr_8 },
         { 0x9, inthdlr_9 },
         { 0x10, inthdlr_10 },
@@ -146,7 +148,7 @@ unsigned long runprot_p(rawprot_parms *parmlist)
         { 0x21, inthdlr_21 },
         { 0x25, inthdlr_25 },
         { 0x26, inthdlr_26 },
-        { 0, 0 } };
+        { -1, 0 } };
 
     __abscor = parmlist->dsbase;
     intloc = ABSADDR(parmlist->intloc);
@@ -172,7 +174,7 @@ unsigned long runprot_p(rawprot_parms *parmlist)
         *((unsigned long *)intloc + x * 2 + 1) = intdesc2;
     }
 
-    for (x = 0; handlerlist[x].number != 0; x++)
+    for (x = 0; handlerlist[x].number != -1; x++)
     {    
         intaddr = (unsigned long)handlerlist[x].handler;
         intdesc1 = (0x8 << 16) | (intaddr & 0xffff);

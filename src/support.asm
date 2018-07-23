@@ -33,6 +33,12 @@ mov si, word ptr [si + 8]
 
 push bp
 
+cmp intnum, 00h
+jne not0
+int 0h
+jmp fintry
+not0:
+
 cmp intnum, 08h
 jne not8
 int 08h

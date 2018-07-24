@@ -164,7 +164,14 @@ easier debugging during early stages of development:
 
 #Int 21/AX=F300h - PDOS - Display Integer
 #Int 21/AX=F301h - PDOS - Reboot
-#Int 21/AX=F303h - PDOS - Set Run Time
+#Int 21/AX=F302h - PDOS - Set Run Time
+#Int 21/AX=F303h - PDOS - Set DOS Version
+#Int 21/AX=F304h - PDOS - Get Log Unimplemented Flag
+#Int 21/AX=F305h - PDOS - Set Log Unimplemented Flag
+#Int 21/AX=F306h - PDOS - Get "Magic" Value
+   (distinguishes PDOS from other implementations of MS-DOS API)
+#Int 21/AX=F307h - PDOS - Get Memory Management Statistics
+#Int 21/AX=F308h - PDOS - Allocate memory (32-bit only)
 
 For a full reference of standard and non-standard DOS calls check:
 http://www.ctyme.com/intr/int-21.htm

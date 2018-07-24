@@ -1228,6 +1228,32 @@ static int cmd_copy_run(char *b)
     return rv;
 }
 
+static void showError(int ret)
+{
+    char *msg = NULL;
+    /* No error, nothing to display */
+    if (ret == POS_ERR_NO_ERROR)
+    {
+        return;
+    }
+    /* Don't try to get error message if not genuine PDOS, will return rubbish */
+    if (PosGetMagic() == PDOS_MAGIC)
+    {
+        /* Get error message */
+        msg = PosGetErrorMessageString(ret);
+    }
+    /* NULL means unknown error */
+    if (msg == NULL)
+    {
+        printf("ERROR: Operation failed due to error code %d (no message available)\n", ret);
+    }
+    /* Otherwise display the message */
+    else
+    {
+        printf("ERROR: Operation failed due to error %s (error code %d)\n", msg, ret);
+    }
+}
+
 static int cmd_cd_run(char *to)
 {
     int ret;
@@ -1244,13 +1270,11 @@ static int cmd_cd_run(char *to)
     }
 
     ret = PosChangeDir(to);
-
-    if (ret == POS_ERR_PATH_NOT_FOUND)
+    if (ret != POS_ERR_NO_ERROR)
     {
-        printf("Invalid directory\n");
+        showError(ret);
         return 1;
     }
-
     return 0;
 }
 
@@ -1579,18 +1603,11 @@ static int cmd_md_run(char *dnm)
     CMD_REQUIRES_ARGS(dnm);
 
     ret = PosMakeDir(dnm);
-
-    if (ret == POS_ERR_PATH_NOT_FOUND)
+    if (ret != POS_ERR_NO_ERROR)
     {
-        printf("Unable to create directory\n");
+        showError(ret);
         return 1;
     }
-    if (ret == POS_ERR_ACCESS_DENIED)
-    {
-        printf("Access denied\n");
-        return 1;
-    }
-
     return 0;
 }
 
@@ -1612,28 +1629,11 @@ static int cmd_rd_run(char *dnm)
     CMD_REQUIRES_ARGS(dnm);
 
     ret = PosRemoveDir(dnm);
-
-    if (ret == POS_ERR_PATH_NOT_FOUND)
+    if (ret != POS_ERR_NO_ERROR)
     {
-        printf("Invalid path, not directory,\nor directory not empty\n");
+        showError(ret);
         return 1;
     }
-    else if (ret == POS_ERR_ACCESS_DENIED)
-    {
-        printf("Access denied\n");
-        return 1;
-    }
-    else if (ret == POS_ERR_INVALID_HANDLE)
-    {
-        printf("Invalid handle\n");
-        return 1;
-    }
-    else if (ret == POS_ERR_ATTEMPTED_TO_REMOVE_CURRENT_DIRECTORY)
-    {
-        printf("Attempt to remove current directory\n");
-        return 1;
-    }
-
     return 0;
 }
 
@@ -1654,28 +1654,11 @@ static int cmd_ren_run(char *src)
     dest++;
 
     ret = PosRenameFile(src, dest);
-
-    if (ret == POS_ERR_FILE_NOT_FOUND)
+    if (ret != POS_ERR_NO_ERROR)
     {
-        printf("File not found\n");
+        showError(ret);
         return 1;
     }
-    else if (ret == POS_ERR_PATH_NOT_FOUND)
-    {
-        printf("Invalid path\n");
-        return 1;
-    }
-    else if (ret == POS_ERR_ACCESS_DENIED)
-    {
-        printf("Access denied\n");
-        return 1;
-    }
-    else if (ret == POS_ERR_FORMAT_INVALID)
-    {
-        printf("Invalid format\n");
-        return 1;
-    }
-
     return 0;
 }
 

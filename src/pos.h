@@ -30,6 +30,9 @@
 #include <stddef.h>
 
 /*Standard Error Codes for PDOS*/
+/*When adding a new error code here, also add it to PosGetErrorMessageString()
+ *in pdos.c
+ */
 #define POS_ERR_NO_ERROR 0x00
 #define POS_ERR_FUNCTION_NUMBER_INVALID 0x01
 #define POS_ERR_FILE_NOT_FOUND 0x02
@@ -243,6 +246,9 @@ int PosGetMagic(void); /* func f6.06 */
 void PosGetMemoryManagementStats(void *stats); /* func f6.07 */
 
 void *PosAllocMem(unsigned int size, unsigned int flags); /* func f6.08 */
+
+/* Given an error code return corresponding message */
+char *PosGetErrorMessageString(unsigned int errorCode); /* func f6.09 */
 
 unsigned int PosAbsoluteDiskRead(int drive, unsigned long start_sector,
                                  unsigned int sectors,void *buf); /*INT25 */

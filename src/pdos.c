@@ -1499,6 +1499,16 @@ static void int21handler(union REGS *regsin,
                 regsout->d.eax = (int)ADDRFIXSUB(regsout->d.eax);
             }
 #endif
+            else if (regsin->h.al == 9)
+            {
+                p = PosGetErrorMessageString(regsin->x.bx);
+#ifdef __32BIT__
+                regsout->d.edx = (int)ADDRFIXSUB(p);
+#else
+                regsout->x.dx = FP_OFF(p);
+                sregs->es = FP_SEG(p);
+#endif
+            }
             else
             {
                 logUnimplementedCall(0x21, regsin->h.ah, regsin->h.al);
@@ -4310,4 +4320,34 @@ void PosGetMemoryManagementStats(void *stats)
 int PosGetBootDrive(void)
 {
     return bootDriveLogical + 1;
+}
+
+#define ERR2STR(n) case POS_ERR_##n: return #n
+
+char *PosGetErrorMessageString(unsigned int errorCode) /* func f6.09 */
+{
+    switch (errorCode)
+    {
+        ERR2STR(NO_ERROR);
+        ERR2STR(FUNCTION_NUMBER_INVALID);
+        ERR2STR(FILE_NOT_FOUND);
+        ERR2STR(PATH_NOT_FOUND);
+        ERR2STR(MANY_OPEN_FILES);
+        ERR2STR(ACCESS_DENIED);
+        ERR2STR(INVALID_HANDLE);
+        ERR2STR(MEM_CONTROL_BLOCK_DESTROYED);
+        ERR2STR(INSUFFICIENT_MEMORY);
+        ERR2STR(MEMORY_BLOCK_ADDRESS_INVALID);
+        ERR2STR(ENVIRONMENT_INVALID);
+        ERR2STR(FORMAT_INVALID);
+        ERR2STR(ACCESS_CODE_INVALID);
+        ERR2STR(DATA_INVALID);
+        ERR2STR(FIXUP_OVERFLOW);
+        ERR2STR(INVALID_DRIVE);
+        ERR2STR(ATTEMPTED_TO_REMOVE_CURRENT_DIRECTORY);
+        ERR2STR(NOT_SAME_DEVICE);
+        ERR2STR(NO_MORE_FILES);
+        ERR2STR(FILE_EXISTS);
+    }
+    return NULL;
 }

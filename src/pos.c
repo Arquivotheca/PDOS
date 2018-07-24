@@ -1461,6 +1461,26 @@ void *PosAllocMem(unsigned int size, unsigned int flags)
 #endif
 }
 
+/* POS extension to get error message string */
+char *PosGetErrorMessageString(unsigned int errorCode)
+{
+    union REGS regsin;
+    union REGS regsout;
+    struct SREGS sregs;
+    char *msg;
+
+    regsin.h.ah = 0xf6;
+    regsin.h.al = 9;
+    regsin.x.bx = errorCode;
+    int86x(0x21, &regsin, &regsout, &sregs);
+#ifdef __32BIT__
+    msg = (char *)regsout.d.edx;
+#else
+    msg = (char *)(MK_FP(sregs.es, regsout.x.dx));
+#endif
+    return (msg);
+}
+
 /*int 25 function call*/
 unsigned int PosAbsoluteDiskRead(int drive,unsigned long start_sector,
                                  unsigned int sectors,void *buf)

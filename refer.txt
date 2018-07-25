@@ -400,11 +400,5 @@ Just as a place-holder, we should also implement
 BIOS Int 16 AH=01H to check for a keystroke without
 removing it from the buffer.
 
-It would be good if PDOS/x86 allowed other than
-8.3 filenames, even though FAT creates that
-limit currently. Note that it may already do
-this, just need to test a hexdump verylongname.c
-and see what happens.
-
 If first bit of executable shows that there are
 symbols, report an error

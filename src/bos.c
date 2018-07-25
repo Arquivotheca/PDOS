@@ -373,7 +373,7 @@ int BosVBEGetInfo(void *buffer)
 #ifdef __32BIT__
     sregs.es = ((unsigned long)ADDR2ABS(buffer) >> 4) & 0xffffU;
     regsin.x.di = (unsigned long)ADDR2ABS(buffer) & 0xf;
-    regsin.d.ebx = (sregs.es << 16);
+    regsin.d.edi = (sregs.es << 16) | regsin.x.di;
 #endif
     int86x(0x10, &regsin, &regsout, &sregs);
     if (regsout.h.al != 0x4f) return (2);
@@ -396,7 +396,7 @@ int BosVBEGetModeInfo(unsigned int mode, void *buffer)
 #ifdef __32BIT__
     sregs.es = ((unsigned long)ADDR2ABS(buffer) >> 4) & 0xffffU;
     regsin.x.di = (unsigned long)ADDR2ABS(buffer) & 0xf;
-    regsin.d.ebx = (sregs.es << 16);
+    regsin.d.edi = (sregs.es << 16) | regsin.x.di;
 #endif
     int86x(0x10, &regsin, &regsout, &sregs);
     if (regsout.h.al != 0x4f) return (2);
@@ -419,7 +419,7 @@ int BosVBESetMode(unsigned int mode, void *buffer)
 #ifdef __32BIT__
     sregs.es = ((unsigned long)ADDR2ABS(buffer) >> 4) & 0xffffU;
     regsin.x.di = (unsigned long)ADDR2ABS(buffer) & 0xf;
-    regsin.d.ebx = (sregs.es << 16) | regsin.x.bx;
+    regsin.d.edi = (sregs.es << 16) | regsin.x.di;
 #endif
     int86x(0x10, &regsin, &regsout, &sregs);
     if (regsout.h.al != 0x4f) return (2);
@@ -466,7 +466,7 @@ int BosVBEPaletteOps(unsigned int operation,
 #ifdef __32BIT__
     sregs.es = ((unsigned long)ADDR2ABS(buffer) >> 4) & 0xffffU;
     regsin.x.di = (unsigned long)ADDR2ABS(buffer) & 0xf;
-    regsin.d.ebx = (sregs.es << 16) | regsin.x.bx;
+    regsin.d.edi = (sregs.es << 16) | regsin.x.di;
 #endif
     int86x(0x10, &regsin, &regsout, &sregs);
     if (regsout.h.al != 0x4f) return (2);
@@ -522,7 +522,7 @@ int BosDiskSectorRead(void         *buffer,
 #ifdef __32BIT__
     sregs.es = ((unsigned long)ADDR2ABS(buffer) >> 4) & 0xffffU;
     regsin.x.bx = (unsigned long)ADDR2ABS(buffer) & 0xf;
-    regsin.d.ebx = (sregs.es << 16) | regsin.x.bx;
+    regsin.d.edi = (sregs.es << 16);
 #endif
     int86x(0x13, &regsin, &regsout, &sregs);
     return (regsout.x.cflag);
@@ -551,7 +551,7 @@ int BosDiskSectorWrite(void         *buffer,
 #ifdef __32BIT__
     sregs.es = ((unsigned long)ADDR2ABS(buffer) >> 4) & 0xffffU;
     regsin.x.bx = (unsigned long)ADDR2ABS(buffer) & 0xf;
-    regsin.d.ebx = (sregs.es << 16) | regsin.x.bx;
+    regsin.d.edi = (sregs.es << 16);
 #endif
     int86x(0x13, &regsin, &regsout, &sregs);
     return (regsout.x.cflag);
@@ -660,8 +660,8 @@ int BosDiskSectorRLBA(void         *buffer,
     sregs.ds = ((unsigned long)ADDR2ABS(packet) >> 4) & 0xffffU;
     regsin.x.si = (unsigned long)ADDR2ABS(packet) & 0xf;
 
-    /* and ds gets stored in upper edx for real mode */
-    regsin.d.edx = (sregs.ds << 16) | regsin.x.dx;
+    /* and ds gets stored in upper esi for real mode */
+    regsin.d.esi = (sregs.ds << 16) | regsin.x.si;
 #endif
 
     int86x(0x13, &regsin, &regsout, &sregs);
@@ -723,8 +723,8 @@ int BosDiskSectorWLBA(void         *buffer,
     sregs.ds = ((unsigned long)ADDR2ABS(packet) >> 4) & 0xffffU;
     regsin.x.si = (unsigned long)ADDR2ABS(packet) & 0xf;
 
-    /* and ds gets stored in upper edx for real mode */
-    regsin.d.edx = (sregs.ds << 16) | regsin.x.dx;
+    /* and ds gets stored in upper esi for real mode */
+    regsin.d.esi = (sregs.ds << 16) | regsin.x.si;
 #endif
 
     int86x(0x13, &regsin, &regsout, &sregs);

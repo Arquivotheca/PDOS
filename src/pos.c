@@ -688,7 +688,7 @@ long PosMoveFilePointer(int handle, long offset, int whence)
     regsin.h.ah = 0x42;
 #ifdef __32BIT__
     regsin.d.ebx = handle;
-    regsin.d.edx = offset;
+    regsin.d.ecx = offset;
 #else
     regsin.x.bx = handle;
     regsin.x.dx = FP_OFF(offset);
@@ -697,18 +697,9 @@ long PosMoveFilePointer(int handle, long offset, int whence)
     regsin.h.al = (char)whence;
     int86(0x21, &regsin, &regsout);
 #ifdef __32BIT__
-    if (!regsout.x.cflag)
-    {
-        regsout.d.eax = 0xffffffff;
-    }
     return (regsout.d.eax);
 #else
-    if (!regsout.x.cflag)
-    {
-        regsout.x.ax = 0xffff;
-        regsout.x.dx = 0xffff;
-    }
-    return (((unsigned long)regsout.x.dx << 16) | regsout.x.ax);
+    return (((long)regsout.x.dx << 16) | regsout.x.ax);
 #endif
 }
 

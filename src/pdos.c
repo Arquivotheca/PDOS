@@ -183,6 +183,10 @@ static void *exec_c_api;
 static int exec_subcor;
 #endif
 
+/* Error indicator for some functions
+ * which cannot signalize error other way. */
+static int errind = 0;
+
 /* DOS version reported to programs.
  * Can be changed via PosSetDosVersion() call. */
 static unsigned int reportedDosVersion = DEFAULT_DOS_VERSION;
@@ -945,13 +949,25 @@ static void int21handler(union REGS *regsin,
             regsout->d.eax = PosMoveFilePointer(regsin->d.ebx,
                                                 regsin->d.ecx,
                                                 regsin->h.al);
+            if (errind)
+            {
+                regsout->x.cflag = 1;
+            }
 #else
             readbytes = ((unsigned long)regsin->x.cx << 16) | regsin->x.dx;
             readbytes = PosMoveFilePointer(regsin->x.bx,
                                         readbytes,
                                         regsin->h.al);
-            regsout->x.cx = readbytes >> 16;
-            regsout->x.dx = readbytes & 0xffff;
+            if (errind)
+            {
+                regsout->x.cflag = 1;
+                regsout->x.ax = readbytes;
+            }
+            else
+            {
+                regsout->x.dx = readbytes >> 16;
+                regsout->x.ax = readbytes & 0xffff;
+            }
 #endif
             break;
 
@@ -1952,7 +1968,25 @@ int PosDeleteFile(const char *name)
 /* unimplemented */
 long PosMoveFilePointer(int handle, long offset, int whence)
 {
-    return (0);
+    /* Resets error indicator. */
+    errind = 0;
+    /* Checks if a valid handle was provided. */
+    if (handle < NUM_SPECIAL_FILES || handle >= MAXFILES
+        || !(fhandle[handle].inuse))
+    {
+        errind = 1;
+        return (POS_ERR_INVALID_HANDLE);
+    }
+    /* Checks if whence value is valid. */
+    if (whence != SEEK_SET && whence != SEEK_CUR && whence != SEEK_END)
+    {
+        errind = 1;
+        /* The function should return only error codes 0x1 and 0x6,
+         * but none of them fits, so 0xA0 (bad arguments) was picked. */
+        return (POS_ERR_BAD_ARGUMENTS);
+    }
+    return (fatSeek(fhandle[handle].fatptr, &(fhandle[handle].fatfile),
+                    offset, whence));
 }
 
 /*To get the attributes of a given file*/
@@ -4145,7 +4179,7 @@ static int formatcwd(const char *input,char *output)
     tempDrive=toupper(output[0]) - 'A';
     /* Checks for '\' or '/' before the null terminator and removes it. */
     p = strchr(output, '\0') - 1;
-    if (p[0] == '\\' || p[0] == '/') p[0] = '\0'; /*+++CHECK!!!*/
+    if (p[0] == '\\' || p[0] == '/') p[0] = '\0';
     /* Checks the output for ".."s and changes the output accordingly. */
     read = output + 2;
     write = read;

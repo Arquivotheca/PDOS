@@ -78,9 +78,13 @@ typedef struct {
 /**/
 
 typedef struct {
+    /* FATFILE structure is used for storing information about
+     * opened/created file for working with it and each file
+     * handle has one FATFILE which other file handles cannot
+     * access, so the information persist even if other file
+     * handle or function is used. */
     int root;
-    unsigned long startcluster; /* start cluster for this file (for reading)
-        or current cluster (for writing) */
+    unsigned long startcluster; /* start cluster for this file */
     unsigned long fileSize;
     unsigned int lastSectors; /* when opening a file for read, this
         contains the number of sectors expected in the last cluster,
@@ -90,7 +94,7 @@ typedef struct {
         when opening for write, it contains how many bytes were
         written in the last sector. */
     unsigned long currentCluster; /* cluster currently up to for
-        reading. */
+        reading or writing. */
     unsigned int ftime;
     unsigned int fdate;
     unsigned int attr;
@@ -102,11 +106,15 @@ typedef struct {
     zero-based */
     unsigned long dirSect; /* sector which contains directory entry */
     unsigned int dirOffset; /* offset in sector for this directory entry */
-    unsigned long totbytes; /* total bytes written to this file */
+    long currpos; /* current position in the file */
     int dir; /* whether this is a directory or a file */
 } FATFILE;
 
 typedef struct {
+    /* FAT structure stores general information about file system
+     * and has variables for manipulating with it (reading/modifying
+     * fat cluster table...) and also temporary variables for functions.
+     * FAT structure is shared between all handles on the same drive. */
     unsigned long num_tracks;
     unsigned int num_cylinders;
     unsigned int num_heads;
@@ -187,6 +195,7 @@ unsigned int fatCreatNewFile(FAT *fat, const char *fnm, FATFILE *fatfile,
 unsigned int fatOpenFile(FAT *fat, const char *fnm, FATFILE *fatfile);
 size_t fatReadFile(FAT *fat, FATFILE *fatfile, void *buf, size_t szbuf);
 size_t fatWriteFile(FAT *fat, FATFILE *fatfile, const void *buf, size_t szbuf);
+long fatSeek(FAT *fat, FATFILE *fatfile, long offset, int whence);
 unsigned int fatDeleteFile(FAT *fat,const char *fnm);
 /*To delete a file from a given directory*/
 unsigned int fatRenameFile(FAT *fat,const char *old,const char *new);

@@ -56,6 +56,7 @@
 /**/
 
 #define POS_ERR_FILE_EXISTS 0x50
+#define POS_ERR_BAD_ARGUMENTS 0xa0
 
 /* for use by PosAllocMem callers */
 #define LOC_MASK 0x300

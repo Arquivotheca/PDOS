@@ -680,7 +680,7 @@ int PosDeleteFile(const char *fname)
     return (regsout.x.ax);
 }
 
-long PosMoveFilePointer(int handle, long offset, int whence)
+int PosMoveFilePointer(int handle, long offset, int whence, long *newpos)
 {
     union REGS regsin;
     union REGS regsout;
@@ -697,10 +697,19 @@ long PosMoveFilePointer(int handle, long offset, int whence)
     regsin.h.al = (char)whence;
     int86(0x21, &regsin, &regsout);
 #ifdef __32BIT__
-    return (regsout.d.eax);
+    if (regsout.x.cflag)
+    {
+        return (regsout.d.eax);
+    }
+    *newpos = regsout.d.eax;
 #else
-    return (((long)regsout.x.dx << 16) | regsout.x.ax);
+    if (regsout.x.cflag)
+    {
+        return (regsout.x.ax);
+    }
+    *newpos = ((long)regsout.x.dx << 16) | regsout.x.ax;
 #endif
+    return (0);
 }
 
 /*Function to get all the file attributes from the filename*/

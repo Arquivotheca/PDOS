@@ -160,7 +160,10 @@ int PosWriteFile(int handle, /* func 40 */
 
 int PosDeleteFile(const char *fname); /* func 41 */
 
-long PosMoveFilePointer(int handle, long offset, int whence); /* func 42 */
+int PosMoveFilePointer(int handle, /* func 42 */
+                       long offset,
+                       int whence,
+                       long *newpos);
 
 int PosGetFileAttributes(const char *fnm,int *attr);/*func 43*/
 

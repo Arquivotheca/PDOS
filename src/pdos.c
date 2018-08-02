@@ -183,10 +183,6 @@ static void *exec_c_api;
 static int exec_subcor;
 #endif
 
-/* Error indicator for some functions
- * which cannot signalize error other way. */
-static int errind = 0;
-
 /* DOS version reported to programs.
  * Can be changed via PosSetDosVersion() call. */
 static unsigned int reportedDosVersion = DEFAULT_DOS_VERSION;
@@ -622,6 +618,7 @@ static void int21handler(union REGS *regsin,
     void *p;
     void *q;
     long readbytes;
+    long newpos;
     int ret;
     int attr;
     void *tempdta;
@@ -948,25 +945,27 @@ static void int21handler(union REGS *regsin,
 #ifdef __32BIT__
             regsout->d.eax = PosMoveFilePointer(regsin->d.ebx,
                                                 regsin->d.ecx,
-                                                regsin->h.al);
-            if (errind)
+                                                regsin->h.al,
+                                                &newpos);
+            if (regsout->d.eax)
             {
                 regsout->x.cflag = 1;
             }
+            else regsout->d.eax = newpos;
 #else
-            readbytes = ((unsigned long)regsin->x.cx << 16) | regsin->x.dx;
-            readbytes = PosMoveFilePointer(regsin->x.bx,
-                                        readbytes,
-                                        regsin->h.al);
-            if (errind)
+            newpos = ((unsigned long)regsin->x.cx << 16) | regsin->x.dx;
+            regsout->x.ax = PosMoveFilePointer(regsin->x.bx,
+                                               newpos,
+                                               regsin->h.al,
+                                               &newpos);
+            if (regsout->x.ax)
             {
                 regsout->x.cflag = 1;
-                regsout->x.ax = readbytes;
             }
             else
             {
-                regsout->x.dx = readbytes >> 16;
-                regsout->x.ax = readbytes & 0xffff;
+                regsout->x.dx = newpos >> 16;
+                regsout->x.ax = newpos & 0xffff;
             }
 #endif
             break;
@@ -1965,28 +1964,24 @@ int PosDeleteFile(const char *name)
 }
 /**/
 
-/* unimplemented */
-long PosMoveFilePointer(int handle, long offset, int whence)
+int PosMoveFilePointer(int handle, long offset, int whence, long *newpos)
 {
-    /* Resets error indicator. */
-    errind = 0;
     /* Checks if a valid handle was provided. */
     if (handle < NUM_SPECIAL_FILES || handle >= MAXFILES
         || !(fhandle[handle].inuse))
     {
-        errind = 1;
         return (POS_ERR_INVALID_HANDLE);
     }
     /* Checks if whence value is valid. */
     if (whence != SEEK_SET && whence != SEEK_CUR && whence != SEEK_END)
     {
-        errind = 1;
         /* The function should return only error codes 0x1 and 0x6,
          * but none of them fits, so 0xA0 (bad arguments) was picked. */
         return (POS_ERR_BAD_ARGUMENTS);
     }
-    return (fatSeek(fhandle[handle].fatptr, &(fhandle[handle].fatfile),
-                    offset, whence));
+    *newpos = fatSeek(fhandle[handle].fatptr, &(fhandle[handle].fatfile),
+                    offset, whence);
+    return (0);
 }
 
 /*To get the attributes of a given file*/

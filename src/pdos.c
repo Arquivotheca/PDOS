@@ -634,28 +634,38 @@ static void int21handler(union REGS *regsin,
 #endif
     switch (regsin->h.ah)
     {
+        /* INT 21,00 - Program terminate (no return code) */
+        case 0x00:
+            PosTerminate(0);
+            break;
+
+        /* INT 21,01 - Keyboard input (with echo) */
+        /* INT 21,02 - Display output */
         case 0x02:
             regsout->h.al = PosDisplayOutput(regsin->h.dl);
             break;
 
+        /* INT 21,03 - Wait for STDAUX input */
+        /* INT 21,04 - Output character to STDAUX */
+        /* INT 21,05 - Output character to STDPRN */
+        /* INT 21,06 - Direct console IO */
         case 0x06:
             regsout->h.al = PosDirectConsoleOutput(regsin->h.dl);
             break;
 
+        /* INT 21,07 - Direct console input without echo */
         case 0x07:
             regsout->h.al = PosDirectCharInputNoEcho();
             break;
 
+        /* INT 21,08 - Console input without echo */
         case 0x08:
             regsout->h.al = PosGetCharInputNoEcho();
             break;
 
+        /* INT 21,09 - Print $-terminated string */
         case 0x09:
             regsout->h.al = PosDisplayString(MK_FP(sregs->ds, regsin->x.dx));
-            break;
-
-        case 0x0e:
-            regsout->h.al = PosSelectDisk(regsin->h.dl);
             break;
 
         /* INT 21,0A - Buffered Input */
@@ -667,10 +677,32 @@ static void int21handler(union REGS *regsin,
 #endif
             break;
 
+        /* INT 21,0B - Check STDIN status */
+        /* INT 21,0C - Clear Keyboard Buffer then Invoke Function */
+        /* INT 21,0D - Disk Reset */
+        /* INT 21,0E - Select Disk */
+        case 0x0e:
+            regsout->h.al = PosSelectDisk(regsin->h.dl);
+            break;
+
+        /* INT 21,0F - FCB Open File */
+        /* INT 21,10 - FCB Close File */
+        /* INT 21,11 - FCB Find First */
+        /* INT 21,12 - FCB Find Next */
+        /* INT 21,13 - FCB Delete File */
+        /* INT 21,14 - FCB Sequential Read */
+        /* INT 21,15 - FCB Sequential Write */
+        /* INT 21,16 - FCB Create File */
+        /* INT 21,17 - FCB Rename File */
+        /* INT 21,18 - DOS NULL FUNCTION
+         * CP/M BDOS call DRV_LOGINVEC - Return bitmap of logged-in drives */
+
+        /* INT 21,19 - Get current default drive */
         case 0x19:
             regsout->h.al = PosGetDefaultDrive();
             break;
 
+        /* INT 21,1A - Set Disk Transfer Address (DTA) */
         case 0x1a:
 #ifdef __32BIT__
             tempdta = SUBADDRFIX(regsin->d.edx);
@@ -680,6 +712,21 @@ static void int21handler(union REGS *regsin,
             PosSetDTA(tempdta);
             break;
 
+        /* INT 21,1A - Set disk transfer address */
+        /* INT 21,1B - Get allocation table info */
+        /* INT 21,1C - Get allocation table info  */
+        /* INT 21,1D - DOS NULL FUNCTION
+         * CP/M BDOS call DRV_ROVEC - Return bitmap of read-only drives */
+        /* INT 21,1E - DOS NULL FUNCTION
+         * CP/M BDOS call F_ATTRIB - Set CP/M file attributes */
+        /* INT 21,1F - Get Drive Parameter Table (DPT) (DOS 1.0+) */
+        /* INT 21,20 - DOS NULL FUNCTION
+         * CP/M BDOS call F_USERNUM - Get/Set CP/M user number */
+        /* INT 21,21 - FCB Random Read */
+        /* INT 21,22 - FCB Random Write */
+        /* INT 21,23 - FCB Get File Size */
+        /* INT 21,24 - FCB Set Relative Record Field */
+        /* INT 21,25 - Set Interrupt Vector */
         case 0x25:
 #ifdef __32BIT__
             p = SUBADDRFIX(regsin->d.edx);
@@ -689,6 +736,11 @@ static void int21handler(union REGS *regsin,
             PosSetInterruptVector(regsin->h.al, p);
             break;
 
+        /* INT 21,26 - Create New PSP */
+        /* INT 21,27 - FCB Random Block Read */
+        /* INT 21,28 - FCB Random Block Write */
+        /* INT 21,29 - FCB Parse Filename */
+        /* INT 21,2A - Get System Date */
         case 0x2a:
             {
                 int year, month, day, dw;
@@ -701,12 +753,14 @@ static void int21handler(union REGS *regsin,
             }
             break;
 
+        /* INT 21,2B - Set System Date */
         case 0x2b:
             regsout->h.al = PosSetSystemDate(regsin->x.cx,
                                              regsin->h.dh,
                                              regsin->h.dl);
             break;
 
+        /* INT 21,2C - Get System Time */
         case 0x2c:
             {
                 int hour, minute, second, hundredths;
@@ -719,11 +773,14 @@ static void int21handler(union REGS *regsin,
             }
             break;
 
+        /* INT 21,2D - Set System Time */
+
         /* INT 21,2E - Set Verify Flag */
         case 0x2e:
             PosSetVerifyFlag(regsin->h.al);
             break;
 
+        /* INT 21,2F - Get Disk Transfer Address (DTA) */
         case 0x2f:
             tempdta = PosGetDTA();
 #ifdef __32BIT__
@@ -734,18 +791,21 @@ static void int21handler(union REGS *regsin,
 #endif
             break;
 
+        /* INT 21,30 - Get DOS Version */
         case 0x30:
             regsout->x.ax = PosGetDosVersion();
             regsout->x.bx = 0;
             regsout->x.cx = 0;
             break;
 
-        /* 21,31 is to Terminate and Stay Resident */
+        /* INT 21,31 - Terminate and Stay Resident */
         case 0x31:
             PosTerminateAndStayResident(regsin->h.al, regsin->x.dx);
             break;
 
-        /* 21,33 primary function is managing breakFlag.
+        /* INT 21,32 - Get Drive Parameter Table (DPT) (DOS 2.0+) */
+
+        /* INT 21,33 - primary function is managing breakFlag.
          * Also some other subfunctions around DOS version and boot drive.
          */
         case 0x33:
@@ -803,6 +863,8 @@ static void int21handler(union REGS *regsin,
             }
             break;
 
+        /* INT 21,34 - Get INDOS Flag Address */
+        /* INT 21,35 - Get Interrupt Vector */
         case 0x35:
             p = PosGetInterruptVector(regsin->h.al);
 #ifdef __32BIT__
@@ -813,6 +875,7 @@ static void int21handler(union REGS *regsin,
 #endif
             break;
 
+        /* INT 21,36 - Get Free Space */
         case 0x36:
 #ifdef __32BIT__
             PosGetFreeSpace(regsin->h.dl,
@@ -829,6 +892,9 @@ static void int21handler(union REGS *regsin,
 #endif
             break;
 
+        /* INT 21,37 - Get/Set Switch Character */
+        /* INT 21,38 - Get/Set Country Information */
+        /* INT 21,39 - Make Directory */
         case 0x39:
 #ifdef __32BIT__
             regsout->d.eax = PosMakeDir(SUBADDRFIX(regsin->d.edx));
@@ -839,6 +905,7 @@ static void int21handler(union REGS *regsin,
 #endif
             break;
 
+        /* INT 21,3A - Remove Directory */
         case 0x3a:
 #ifdef __32BIT__
             regsout->d.eax = PosRemoveDir(SUBADDRFIX(regsin->d.edx));
@@ -849,6 +916,7 @@ static void int21handler(union REGS *regsin,
 #endif
             break;
 
+        /* INT 21,3B - Change Directory */
         case 0x3b:
 #ifdef __32BIT__
             regsout->d.eax = PosChangeDir(SUBADDRFIX(regsin->d.edx));
@@ -859,6 +927,7 @@ static void int21handler(union REGS *regsin,
 #endif
             break;
 
+        /* INT 21,3C - Create File */
         case 0x3c:
 #ifdef __32BIT__
             p = SUBADDRFIX(regsin->d.edx);
@@ -874,6 +943,7 @@ static void int21handler(union REGS *regsin,
             }
             break;
 
+        /* INT 21,3D - Open File */
         case 0x3d:
 #ifdef __32BIT__
             p = SUBADDRFIX(regsin->d.edx);
@@ -888,6 +958,7 @@ static void int21handler(union REGS *regsin,
             }
             break;
 
+        /* INT 21,3E - Close File */
         case 0x3e:
 #ifdef __32BIT__
             regsout->d.eax = PosCloseFile(regsin->d.ebx);
@@ -896,6 +967,7 @@ static void int21handler(union REGS *regsin,
 #endif
             break;
 
+        /* INT 21,3F - Read File */
         case 0x3f:
 #ifdef __32BIT__
             p = SUBADDRFIX(regsin->d.edx);
@@ -914,6 +986,7 @@ static void int21handler(union REGS *regsin,
 #endif
             break;
 
+        /* INT 21,40 - Write File */
         case 0x40:
 #ifdef __32BIT__
             p = SUBADDRFIX(regsin->d.edx);
@@ -928,6 +1001,7 @@ static void int21handler(union REGS *regsin,
 #endif
             break;
 
+        /* INT 21,41 - Delete File */
         case 0x41:
 #ifdef __32BIT__
             p = SUBADDRFIX(regsin->d.edx);
@@ -941,6 +1015,7 @@ static void int21handler(union REGS *regsin,
             }
             break;
 
+        /* INT 21,42 - Move File Pointer */
         case 0x42:
 #ifdef __32BIT__
             regsout->d.eax = PosMoveFilePointer(regsin->d.ebx,
@@ -970,6 +1045,7 @@ static void int21handler(union REGS *regsin,
 #endif
             break;
 
+        /* INT 21,43 - Get File Attributes */
         case 0x43:
             if (regsin->h.al == 0x00)
             {
@@ -1050,6 +1126,7 @@ static void int21handler(union REGS *regsin,
             }
             break;
 
+        /* INT 21,44 - IOCTL functions */
         case 0x44:
             if (regsin->h.al == 0x00)
             {
@@ -1129,6 +1206,7 @@ static void int21handler(union REGS *regsin,
             }
             break;
 
+        /* INT 21,45 - Duplicate File Handle */
         case 0x45:
 #ifdef __32BIT__
             ret = PosDuplicateFileHandle(regsin->d.ebx);
@@ -1149,6 +1227,7 @@ static void int21handler(union REGS *regsin,
 #endif
             break;
 
+        /* INT 21,46 - Force Duplicate File Handle */
         case 0x46:
 #ifdef __32BIT__
             regsout->d.eax = PosForceDuplicateFileHandle(regsin->d.ebx,
@@ -1161,6 +1240,7 @@ static void int21handler(union REGS *regsin,
 #endif
             break;
 
+        /* INT 21,47 - Get Current Directory */
         case 0x47:
 #ifdef __32BIT__
             p = SUBADDRFIX(regsin->d.esi);
@@ -1171,6 +1251,7 @@ static void int21handler(union REGS *regsin,
 #endif
             break;
 
+        /* INT 21,48 - Allocate Memory */
         case 0x48:
 #ifndef __32BIT__
             /* This function is only useful in 16-bit PDOS */
@@ -1194,6 +1275,7 @@ static void int21handler(union REGS *regsin,
 #endif
             break;
 
+        /* INT 21,49 - Free Memory */
         case 0x49:
 #ifdef __32BIT__
             regsout->d.eax = PosFreeMem(SUBADDRFIX(regsin->d.ebx));
@@ -1206,6 +1288,7 @@ static void int21handler(union REGS *regsin,
             }
             break;
 
+        /* INT 21,4A - Resize Memory Block */
         case 0x4a:
 #ifdef __32BIT__
             regsout->d.eax = PosReallocPages(SUBADDRFIX(regsin->d.ecx),
@@ -1227,34 +1310,50 @@ static void int21handler(union REGS *regsin,
             }
             break;
 
+        /* INT 21,4B - Load and Execute Program */
         case 0x4b:
+            /* AL=00: Load and Execute */
+            if (regsin->h.al == 0)
+            {
 #ifdef __32BIT__
-            pb = SUBADDRFIX(regsin->d.ebx);
-            if (pb != NULL)
-            {
-                pb->cmdtail = SUBADDRFIX(pb->cmdtail);
-            }
-            PosExec(SUBADDRFIX(regsin->d.edx), pb);
-            if (pb != NULL)
-            {
-                pb->cmdtail = ADDRFIXSUB(pb->cmdtail);
-            }
+                pb = SUBADDRFIX(regsin->d.ebx);
+                if (pb != NULL)
+                {
+                    pb->cmdtail = SUBADDRFIX(pb->cmdtail);
+                }
+                PosExec(SUBADDRFIX(regsin->d.edx), pb);
+                if (pb != NULL)
+                {
+                    pb->cmdtail = ADDRFIXSUB(pb->cmdtail);
+                }
 #else
-            PosExec(MK_FP(sregs->ds, regsin->x.dx),
-                    MK_FP(sregs->es, regsin->x.bx));
+                PosExec(MK_FP(sregs->ds, regsin->x.dx),
+                        MK_FP(sregs->es, regsin->x.bx));
 #endif
+            }
+            /* AL=01: Load but don't execute (for use by debuggers) */
+            /* AL=03: Load overlay */
+            /* AL=04: Execute in background.
+             *        ("European" multitasking MS-DOS 4.0 only) */
+            else
+            {
+                logUnimplementedCall(0x21, regsin->h.ah, regsin->h.al);
+            }
             break;
 
+        /* INT 21,4C - Terminate (with return code) */
         case 0x4c:
 #if (!defined(USING_EXE))
             PosTerminate(regsin->h.al);
 #endif
             break;
 
+        /* INT 21,4D - Get Subprocess Return Code */
         case 0x4d:
             regsout->x.ax = PosGetReturnCode();
             break;
 
+        /* INT 21,4E - Find First File */
         case 0x4e:
 #ifdef __32BIT__
             regsout->d.eax = PosFindFirst(SUBADDRFIX(regsin->d.edx),
@@ -1273,6 +1372,7 @@ static void int21handler(union REGS *regsin,
 #endif
             break;
 
+        /* INT 21,4F - Find Next File */
         case 0x4f:
             regsout->x.ax = PosFindNext();
             if (regsout->x.ax != 0)
@@ -1281,11 +1381,18 @@ static void int21handler(union REGS *regsin,
             }
             break;
 
+        /* INT 21,50 - Set Current Process ID */
+        /* INT 21,51 - Get Current Process ID */
+        /* INT 21,52 - Get INVARS Pointer */
+        /* INT 21,53 - Generate Drive Parameter Table */
+
         /* INT 21,54 - Get Verify Flag */
         case 0x54:
             regsout->h.al = PosGetVerifyFlag();
             break;
 
+        /* INT 21,55 - Create New PSP */
+        /* INT 21,56 - Rename File */
         case 0x56:
 #ifdef __32BIT__
             p = SUBADDRFIX(regsin->d.edx);
@@ -1300,6 +1407,8 @@ static void int21handler(union REGS *regsin,
                 regsout->x.cflag = 1;
             }
             break;
+
+        /* INT 21,57 - Get/Set File Date/Time */
         case 0x57:
             if (regsin->h.al == 0x00)
             {
@@ -1374,6 +1483,10 @@ static void int21handler(union REGS *regsin,
 
             break;
 
+        /* INT 21,58 - Get/Set Memory Allocation Strategy */
+        /* INT 21,59 - Get Extended Error Information */
+        /* INT 21,5A - Create Temporary File */
+        /* INT 21,5B - Create New File */
         case 0x5b:
 #ifdef __32BIT__
             p = SUBADDRFIX(regsin->d.edx);
@@ -1396,6 +1509,11 @@ static void int21handler(union REGS *regsin,
 #endif
             break;
 
+        /* INT 21,5C - Lock/Unlock File */
+        /* INT 21,5D - Miscellaneous functions (networking, SHARE.EXE) */
+        /* INT 21,5E - Miscellaneous functions (networking, printing)  */
+        /* INT 21,5F - Device redirection */
+        /* INT 21,60 - Get True File Name */
         case 0x60:
 #ifdef __32BIT__
             p = SUBADDRFIX(regsin->d.esi);
@@ -1416,6 +1534,24 @@ static void int21handler(union REGS *regsin,
 #endif
             }
             break;
+        /* INT 21,61 - Unused (reserved for networking use) */
+        /* INT 21,62 - Get PSP address */
+        /* INT 21,63 - Double Byte Character Functions (East Asian) */
+        /* INT 21,64 - Set device driver lookahead (undocumented) */
+        /* INT 21,65 - Get Extended Country Information */
+        /* INT 21,66 - Get/Set Code Page Table */
+        /* INT 21,67 - Set Handle Count (resize Job File Table (JFT)) */
+        /* INT 21,68 - Flush Handle */
+        /* INT 21,69 - Get/Set Disk Serial Number */
+        /* INT 21,6A - same as function 68 */
+        /* INT 21,6B - legacy IFS function (DOS 4.x only) */
+        /* INT 21,6C - Extended Open/Create */
+        /* INT 21,6D - various (ROM DOS or OS/2 only) */
+        /* INT 21,6E - various (ROM DOS or OS/2 only) */
+        /* INT 21,6F - various (ROM DOS or OS/2 only) */
+        /* INT 21,70 - Windows 95 internationalization */
+        /* INT 21,71 - Windows 95 Long File Name API */
+        /* INT 21,73 - Windows 95 Drive Lock/Flush, FAT32 functions */
         /*Function call AX=7303h*/
         case 0x73:
             if(regsin->h.al==0x03)
@@ -1459,6 +1595,7 @@ static void int21handler(union REGS *regsin,
             break;
 #endif
 
+        /* INT 21,F6 - PDOS extensions */
         case 0xf6:
             if (regsin->h.al == 0)
             {

@@ -117,6 +117,8 @@ long BosExtendedMemorySize(void); /* 15:88 */
 
 void BosReadKeyboardCharacter(int *scancode, int *ascii); /* 16:0 */
 
+int BosReadKeyboardStatus(int *scancode, int *ascii); /* 16:1 */
+
 void BosSystemWarmBoot(void); /* 19: */
 
 void BosGetSystemTime(unsigned long *ticks, unsigned int *midnight);/*1A.0*/

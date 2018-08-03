@@ -776,6 +776,28 @@ void BosReadKeyboardCharacter(int *scancode, int *ascii)
     return;
 }
 
+/* BosReadKeyboardStatus - BIOS Int 16h Function 01h */
+/*
+    Input: None.
+    Returns: Scan Code and ASCII character if available.
+    Notes: None.
+*/
+
+int BosReadKeyboardStatus(int *scancode, int *ascii)
+{
+    union REGS regsin;
+    union REGS regsout;
+
+    regsin.h.ah = 0x01;
+
+    int86(0x16, &regsin, &regsout);
+
+    *scancode = regsout.h.ah;
+    *ascii = regsout.h.al;
+
+    return (regsout.x.flags); /* +++ should just return zflag */
+}
+
 /* BosSystemWarmBoot - BIOS Int 19h */
 
 void BosSystemWarmBoot(void)

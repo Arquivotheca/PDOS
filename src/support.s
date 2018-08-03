@@ -107,6 +107,9 @@ fintry:
         mov     $1, %eax
         mov     %eax, 24(%esi)
 nocarry:        
+        pushf
+        pop     %eax
+        mov     %eax, 28(%esi)
 
         pop     %edi
         pop     %esi

@@ -104,7 +104,7 @@ extern int CTYP __creat(const char *filename, int mode, int *errind);
 extern int CTYP __open(const char *filename, int mode, int *errind);
 extern int CTYP __read(int handle, void *buf, size_t len, int *errind);
 extern int CTYP __write(int handle, const void *buf, size_t len, int *errind);
-extern void CTYP __seek(int handle, long offset, int whence);
+extern int CTYP __seek(int handle, long offset, int whence);
 extern void CTYP __close(int handle);
 extern void CTYP __remove(const char *filename);
 extern void CTYP __rename(const char *old, const char *newnam);
@@ -3582,6 +3582,9 @@ __PDPCLIB_API__ int fseek(FILE *stream, long int offset, int whence)
 #ifdef __WIN32__
     DWORD retpos;
 #endif
+#ifdef __MSDOS__
+    int ret;
+#endif
 
     oldpos = stream->bufStartR + (stream->upto - stream->fbuf);
     if (stream->mode == __WRITE_MODE)
@@ -3643,7 +3646,8 @@ __PDPCLIB_API__ int fseek(FILE *stream, long int offset, int whence)
         }
 #endif
 #ifdef __MSDOS__
-        __seek(stream->hfile, newpos, whence);
+        ret = __seek(stream->hfile, newpos, whence);
+        if (ret) return (ret);
         stream->endbuf = stream->fbuf + stream->szfbuf;
         stream->upto = stream->endbuf;
         stream->bufStartR = newpos - stream->szfbuf;

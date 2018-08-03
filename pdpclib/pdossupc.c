@@ -45,10 +45,10 @@ int __write(int handle, const void *buf, size_t len, int *errind)
     return (ret);
 }
 
-void __seek(int handle, long offset, int whence)
+int __seek(int handle, long offset, int whence)
 {
-    PosMoveFilePointer(handle, offset, whence);
-    return;
+    long dummy;
+    return (PosMoveFilePointer(handle, offset, whence, &dummy));
 }
 
 void __close(int handle)

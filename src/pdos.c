@@ -160,6 +160,7 @@ static int lastrc;
 static int lba;
 static unsigned long psector; /* partition sector offset */
 static int attr;
+static unsigned char *curProc; /* currently running process */
 
 #define MAXFILES 40
 static struct {
@@ -1383,6 +1384,14 @@ static void int21handler(union REGS *regsin,
 
         /* INT 21,50 - Set Current Process ID */
         /* INT 21,51 - Get Current Process ID */
+        case 0x51:
+#ifdef __32BIT__
+            regsout->d.ebx = (int) curProc;
+#else
+            regsout->x.bx = FP_SEG(curProc);
+#endif
+            break;
+
         /* INT 21,52 - Get INVARS Pointer */
         /* INT 21,53 - Generate Drive Parameter Table */
 
@@ -1536,6 +1545,13 @@ static void int21handler(union REGS *regsin,
             break;
         /* INT 21,61 - Unused (reserved for networking use) */
         /* INT 21,62 - Get PSP address */
+        case 0x62:
+#ifdef __32BIT__
+            regsout->d.ebx = (int) curProc;
+#else
+            regsout->x.bx = FP_SEG(curProc);
+#endif
+            break;
         /* INT 21,63 - Double Byte Character Functions (East Asian) */
         /* INT 21,64 - Set device driver lookahead (undocumented) */
         /* INT 21,65 - Get Extended Country Information */
@@ -3111,6 +3127,7 @@ static void loadExe(char *prog, PARMBLOCK *parmblock)
     int y;
     int isexe = 0;
     char *olddta;
+    unsigned char *saveCurProc;
 
     fno = fileOpen(prog);
     if (fno < 0) return;
@@ -3383,13 +3400,19 @@ static void loadExe(char *prog, PARMBLOCK *parmblock)
 #if (!defined(USING_EXE) && !defined(__32BIT__))
     olddta = dta;
     dta = psp + 0x80;
+    saveCurProc = curProc;
+    curProc = psp;
     ret = callwithpsp(exeEntry, psp, ss, sp);
+    curProc = saveCurProc;
     dta = olddta;
     psp = origpsp;
     envptr = origenv;
 #endif
 #ifdef __32BIT__
+    saveCurProc = curProc;
+    curProc = psp;
     ret = fixexe32(psp, firstbit.a_entry, sp, doing_pcomm);
+    curProc = saveCurProc;
 #endif
     lastrc = ret;
 

@@ -1150,6 +1150,21 @@ int PosFindNext(void)
     }
 }
 
+/* func 51 - get current process ID */
+int PosGetCurrentProcessId(void)
+{
+    union REGS regsin;
+    union REGS regsout;
+
+    regsin.h.ah = 0x51;
+    int86(0x21, &regsin, &regsout);
+#ifdef __32BIT__
+    return (regsout.d.ebx);
+#else
+    return (regsout.x.bx);
+#endif
+}
+
 /* func 54 - get read-after-write verification flag */
 int PosGetVerifyFlag()
 {

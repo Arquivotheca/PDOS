@@ -976,6 +976,7 @@ static int cmd_ver_run(char *arg)
     printf("Reporting DOS version %d.%d\n", major, minor);
     printf("PCOMM built at %s %s\n", __DATE__, __TIME__);
     printf("Booted from drive %c\n", (PosGetBootDrive() - 1 + 'A'));
+    printf("Current process is %04X\n", PosGetCurrentProcessId());
 
     /* Test if this is genuine PDOS and not something else like MS-DOS.
      * No point calling PDOS extension APIs if not really PDOS, they will

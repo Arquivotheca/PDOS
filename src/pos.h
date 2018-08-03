@@ -206,6 +206,8 @@ int PosFindFirst(char *pat, int attrib); /* func 4e */
 
 int PosFindNext(void); /* func 4f */
 
+int PosGetCurrentProcessId(void); /* func 51 */
+
 /* func 54 - get read-after-write verification flag */
 int PosGetVerifyFlag(void);
 

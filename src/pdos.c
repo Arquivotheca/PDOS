@@ -1386,9 +1386,9 @@ static void int21handler(union REGS *regsin,
         /* INT 21,51 - Get Current Process ID */
         case 0x51:
 #ifdef __32BIT__
-            regsout->d.ebx = (int) curProc;
+            regsout->d.ebx = PosGetCurrentProcessId();
 #else
-            regsout->x.bx = FP_SEG(curProc);
+            regsout->x.bx = PosGetCurrentProcessId();
 #endif
             break;
 
@@ -1547,9 +1547,9 @@ static void int21handler(union REGS *regsin,
         /* INT 21,62 - Get PSP address */
         case 0x62:
 #ifdef __32BIT__
-            regsout->d.ebx = (int) curProc;
+            regsout->d.ebx = PosGetCurrentProcessId();
 #else
-            regsout->x.bx = FP_SEG(curProc);
+            regsout->x.bx = PosGetCurrentProcessId();
 #endif
             break;
         /* INT 21,63 - Double Byte Character Functions (East Asian) */
@@ -4509,6 +4509,16 @@ void PosGetMemoryManagementStats(void *stats)
 int PosGetBootDrive(void)
 {
     return bootDriveLogical + 1;
+}
+
+/* INT 21, function 51/62 - get current process ID */
+int PosGetCurrentProcessId(void)
+{
+#ifdef __32BIT__
+    return (int) curProc;
+#else
+    return FP_SEG(curProc);
+#endif
 }
 
 #define ERR2STR(n) case POS_ERR_##n: return #n

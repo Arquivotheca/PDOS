@@ -38,11 +38,11 @@ int __read(int handle, void *buf, size_t len, int *errind)
 
 int __write(int handle, const void *buf, size_t len, int *errind)
 {
-    int ret;
+    size_t writtenbytes;
 
-    ret = PosWriteFile(handle, buf, len);
-    *errind = 0;
-    return (ret);
+    if (PosWriteFile(handle, buf, len, &writtenbytes)) *errind = 1;
+    else *errind = 0;
+    return (writtenbytes);
 }
 
 int __seek(int handle, long offset, int whence)

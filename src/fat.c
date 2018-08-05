@@ -894,7 +894,8 @@ size_t fatReadFile(FAT *fat, FATFILE *fatfile, void *buf, size_t szbuf)
  * fatWriteFile - write to an already-open file.
  */
 
-size_t fatWriteFile(FAT *fat, FATFILE *fatfile, const void *buf, size_t szbuf)
+int fatWriteFile(FAT *fat, FATFILE *fatfile, const void *buf, size_t szbuf,
+                 size_t *writtenbytes)
 {
     static unsigned char bbuf[MAXSECTSZ];
     size_t rem; /* remaining bytes in sector */
@@ -902,10 +903,21 @@ size_t fatWriteFile(FAT *fat, FATFILE *fatfile, const void *buf, size_t szbuf)
     size_t done; /* written bytes */
     DIRENT *d;
 
-
+    if (fatfile->currpos < 0)
+    {
+        /* Position is negative, so nothing is written
+         * and error is returned. */
+        *writtenbytes = 0;
+        /* +++Find out what error should be returned. */
+        return (POS_ERR_ACCESS_DENIED);
+    }
     /* Regardless of whether szbuf is 0 or remaining bytes is 0,
        we will not break into a new sector or cluster */
-    if (szbuf == 0) return (0);
+    if (szbuf == 0)
+    {
+        *writtenbytes = 0;
+        return (0);
+    }
 
     if ((fatfile->startcluster==0)
         || ((fat->fat_type == 16) && (fatfile->startcluster == 0xfff8))
@@ -1043,6 +1055,7 @@ size_t fatWriteFile(FAT *fat, FATFILE *fatfile, const void *buf, size_t szbuf)
                         fatfile->sectorStart + fatfile->sectorUpto,
                         bbuf);
         fatfile->currpos += szbuf;
+        done = szbuf;
     }
     else
     {
@@ -1145,6 +1158,7 @@ size_t fatWriteFile(FAT *fat, FATFILE *fatfile, const void *buf, size_t szbuf)
                         fatfile->sectorStart + fatfile->sectorUpto,
                         bbuf);
         fatfile->currpos += tsz;
+        done += tsz;
     }
     /* fileSize contains the size of the entire file and it is changed
      * only if something is written after original file size. */
@@ -1165,7 +1179,8 @@ size_t fatWriteFile(FAT *fat, FATFILE *fatfile, const void *buf, size_t szbuf)
     fatWriteLogical(fat,
                     fatfile->dirSect,
                     bbuf);
-    return (szbuf);
+    *writtenbytes = done;
+    return (0);
 }
 
 /*

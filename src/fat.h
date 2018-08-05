@@ -194,7 +194,8 @@ unsigned int fatCreatNewFile(FAT *fat, const char *fnm, FATFILE *fatfile,
                           int attrib);
 unsigned int fatOpenFile(FAT *fat, const char *fnm, FATFILE *fatfile);
 size_t fatReadFile(FAT *fat, FATFILE *fatfile, void *buf, size_t szbuf);
-size_t fatWriteFile(FAT *fat, FATFILE *fatfile, const void *buf, size_t szbuf);
+int fatWriteFile(FAT *fat, FATFILE *fatfile, const void *buf, size_t szbuf,
+                 size_t *writtenbytes);
 long fatSeek(FAT *fat, FATFILE *fatfile, long offset, int whence);
 unsigned int fatDeleteFile(FAT *fat,const char *fnm);
 /*To delete a file from a given directory*/

@@ -15,20 +15,20 @@
 #include "pos.h"
 #include "support.h"
 
-/* Calls an interuppt without input or output registers */
+/* Calls an interrupt without input or output registers */
 /*
-    Input: Interuppt number
+    Input: Interrupt number
     Returns: None
     Notes: None.
 */
 
 static void int86n(unsigned int intno);
 
-/* Calls an interuppt with input or output registers specified */
+/* Calls an interrupt with input or output registers specified */
 /*
-    Input: Interuppt number and set of input or output registers.
+    Input: Interrupt number and set of input or output registers.
     Returns: None.
-    Notes: Set the output registers according to the interuppt called.
+    Notes: Set the output registers according to the interrupt called.
 */
 
 static void int86i(unsigned int intno, union REGS *regsin);
@@ -627,7 +627,8 @@ void PosReadFile(int fh, void *data, size_t bytes, size_t *readbytes)
 
 int PosWriteFile(int handle,
                  const void *data,
-                 size_t len)
+                 size_t len,
+                 size_t *writtenbytes)
 {
     union REGS regsin;
     union REGS regsout;
@@ -645,18 +646,22 @@ int PosWriteFile(int handle,
     regsin.x.dx = FP_OFF(data);
 #endif
     int86x(0x21, &regsin, &regsout, &sregs);
+#ifdef __32BIT__
     if (regsout.x.cflag)
     {
-        return (-1);
-    }
-    else
-    {
-#ifdef __32BIT__
+        *writtenbytes = 0;
         return (regsout.d.eax);
-#else
-        return (regsout.x.ax);
-#endif
     }
+    *writtenbytes = regsout.d.eax;
+#else
+    if (regsout.x.cflag)
+    {
+        *writtenbytes = 0;
+        return (regsout.x.ax);
+    }
+    *writtenbytes = regsout.x.ax;
+#endif
+    return (0);
 }
 
 int PosDeleteFile(const char *fname)

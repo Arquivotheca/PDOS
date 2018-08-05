@@ -91,7 +91,8 @@ static int fileCreat(const char *fnm, int attrib);
 static int dirCreat(const char *dnm, int attrib);
 static int newFileCreat(const char *fnm, int attrib);
 static int fileOpen(const char *fnm);
-static int fileWrite(int fno, const void *buf, size_t szbuf);
+static int fileWrite(int fno, const void *buf, size_t szbuf,
+                     size_t *writtenbytes);
 static int fileDelete(const char *fnm);
 static int dirDelete(const char *dnm);
 static int fileClose(int fno);
@@ -619,6 +620,7 @@ static void int21handler(union REGS *regsin,
     void *p;
     void *q;
     long readbytes;
+    size_t writtenbytes;
     long newpos;
     int ret;
     int attr;
@@ -992,13 +994,19 @@ static void int21handler(union REGS *regsin,
 #ifdef __32BIT__
             p = SUBADDRFIX(regsin->d.edx);
             regsout->d.eax = PosWriteFile(regsin->d.ebx,
-                                        p,
-                                        regsin->d.ecx);
+                                          p,
+                                          regsin->d.ecx,
+                                          &writtenbytes);
+            if (regsout->d.eax) regsout->x.cflag = 1;
+            else regsout->d.eax = writtenbytes;
 #else
             p = MK_FP(sregs->ds, regsin->x.dx);
             regsout->x.ax = PosWriteFile(regsin->x.bx,
-                                        p,
-                                        regsin->x.cx);
+                                         p,
+                                         regsin->x.cx,
+                                         &writtenbytes);
+            if (regsout->x.ax) regsout->x.cflag = 1;
+            else regsout->x.ax = writtenbytes;
 #endif
             break;
 
@@ -1703,9 +1711,10 @@ void PosTermNoRC(void)
 unsigned int PosDisplayOutput(unsigned int ch)
 {
     unsigned char buf[1];
+    size_t writtenbytes;
 
     buf[0] = ch;
-    PosWriteFile(1, buf, 1);
+    PosWriteFile(1, buf, 1, &writtenbytes);
 
     return ch;
 }
@@ -1714,9 +1723,10 @@ unsigned int PosDisplayOutput(unsigned int ch)
 unsigned int PosDirectConsoleOutput(unsigned int ch)
 {
     unsigned char buf[1];
+    size_t writtenbytes;
 
     buf[0] = ch;
-    PosWriteFile(1, buf, 1);
+    PosWriteFile(1, buf, 1, &writtenbytes);
 
     return ch;
 }
@@ -1762,10 +1772,11 @@ unsigned int PosGetCharInputNoEcho(void)
 unsigned int PosDisplayString(const char *buf)
 {
     const char *p;
+    size_t writtenbytes;
 
     p = memchr(buf, '$', (size_t)-1);
     if (p == NULL) p = buf;
-    PosWriteFile(1, buf, p - buf);
+    PosWriteFile(1, buf, p - buf, &writtenbytes);
     return ('$');
 }
 
@@ -2080,10 +2091,11 @@ void PosReadFile(int fh, void *data, size_t bytes, size_t *readbytes)
     return;
 }
 
-int PosWriteFile(int fh, const void *data, size_t len)
+int PosWriteFile(int fh, const void *data, size_t len, size_t *writtenbytes)
 {
     unsigned char *p;
     size_t x;
+    int ret;
 
     if (fh < NUM_SPECIAL_FILES)
     {
@@ -2092,12 +2104,14 @@ int PosWriteFile(int fh, const void *data, size_t len)
         {
             BosWriteText(0, p[x], 0);
         }
+        *writtenbytes = len;
+        ret = 0;
     }
     else
     {
-        len = fileWrite(fh, data, len);
+        ret = fileWrite(fh, data, len, writtenbytes);
     }
-    return (len);
+    return (ret);
 }
 
 /* To delete a given file with fname as its filename */
@@ -2128,9 +2142,8 @@ int PosMoveFilePointer(int handle, long offset, int whence, long *newpos)
     /* Checks if whence value is valid. */
     if (whence != SEEK_SET && whence != SEEK_CUR && whence != SEEK_END)
     {
-        /* The function should return only error codes 0x1 and 0x6,
-         * but none of them fits, so 0xA0 (bad arguments) was picked. */
-        return (POS_ERR_BAD_ARGUMENTS);
+        /* MSDOS returns 0x1 (function number invalid). */
+        return (POS_ERR_FUNCTION_NUMBER_INVALID);
     }
     *newpos = fatSeek(fhandle[handle].fatptr, &(fhandle[handle].fatfile),
                     offset, whence);
@@ -3706,12 +3719,11 @@ static int fileRead(int fno, void *buf, size_t szbuf)
 }
 
 
-static int fileWrite(int fno, const void *buf, size_t szbuf)
+static int fileWrite(int fno, const void *buf, size_t szbuf,
+                     size_t *writtenbytes)
 {
-    size_t ret;
-
-    ret = fatWriteFile(fhandle[fno].fatptr, &fhandle[fno].fatfile, buf, szbuf);
-    return (ret);
+    return (fatWriteFile(fhandle[fno].fatptr, &fhandle[fno].fatfile, buf,
+                         szbuf, writtenbytes));
 }
 
 /*Fatdelete function to delete a file when fnm is given as filename*/

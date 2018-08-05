@@ -56,7 +56,6 @@
 /**/
 
 #define POS_ERR_FILE_EXISTS 0x50
-#define POS_ERR_BAD_ARGUMENTS 0xa0
 
 /* for use by PosAllocMem callers */
 #define LOC_MASK 0x300
@@ -156,7 +155,8 @@ void PosReadFile(int fh, /* func 3f */
 
 int PosWriteFile(int handle, /* func 40 */
                  const void *data,
-                 size_t len);
+                 size_t len,
+                 size_t *writtenbytes);
 
 int PosDeleteFile(const char *fname); /* func 41 */
 

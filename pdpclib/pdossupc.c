@@ -10,30 +10,28 @@
 int __open(const char *filename, int mode, int *errind)
 {
     int handle;
-    int ret;
 
-    ret = PosOpenFile(filename, 0, &handle);
-    *errind = ret;
+    if (PosOpenFile(filename, 0, &handle)) *errind = 1;
+    else *errind = 0;
     return (handle);
 }
 
 int __creat(const char *filename, int mode, int *errind)
 {
     int handle;
-    int ret;
 
-    ret = PosCreatFile(filename, 0, &handle);
-    *errind = ret;
+    if (PosCreatFile(filename, 0, &handle)) *errind = 1;
+    else *errind = 0;
     return (handle);
 }
 
 int __read(int handle, void *buf, size_t len, int *errind)
 {
-    long readBytes;
+    size_t readbytes;
 
-    PosReadFile(handle, buf, len, &readBytes);
-    *errind = 0;
-    return (readBytes);
+    if (PosReadFile(handle, buf, len, &readbytes)) *errind = 1;
+    else *errind = 0;
+    return (readbytes);
 }
 
 int __write(int handle, const void *buf, size_t len, int *errind)

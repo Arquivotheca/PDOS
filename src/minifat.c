@@ -351,6 +351,18 @@ int fatReadFile(FAT *fat, FATFILE *fatfile, void *buf, size_t szbuf,
         /* +++Find out what error should be returned. */
         return (POS_ERR_ACCESS_DENIED);
     }
+    if (!(fatfile->dir))
+    {
+        /* +++Remove (unsigned long) after support routine
+         * is added to near.asm. */
+        fatfile->byteUpto = (unsigned long)fatfile->currpos % fat->sector_size;
+        fatfile->lastBytes = (unsigned int)
+                             (fatfile->fileSize
+                              % (fat->sectors_per_cluster
+                                 * fat->sector_size));
+        fatfile->lastSectors = fatfile->lastBytes / fat->sector_size;
+        fatfile->lastBytes = fatfile->lastBytes % fat->sector_size;
+    }
     /* until we reach the end of the chain */
     while (!fatEndCluster(fat, fatfile->currentCluster))
     {
@@ -409,6 +421,7 @@ int fatReadFile(FAT *fat, FATFILE *fatfile, void *buf, size_t szbuf,
                     memcpy((char *)buf + bytesRead,
                            bbuf + fatfile->byteUpto,
                            szbuf - bytesRead);
+                    fatfile->currpos = (szbuf - bytesRead);
                     fatfile->byteUpto += (szbuf - bytesRead);
                     bytesRead = szbuf;
                     *readbytes = bytesRead;
@@ -420,6 +433,7 @@ int fatReadFile(FAT *fat, FATFILE *fatfile, void *buf, size_t szbuf,
                            bbuf + fatfile->byteUpto,
                            bytesAvail - fatfile->byteUpto);
                     bytesRead += (bytesAvail - fatfile->byteUpto);
+                    fatfile->currpos += (bytesAvail - fatfile->byteUpto);
                     fatfile->byteUpto += (bytesAvail - fatfile->byteUpto);
                 }
             }

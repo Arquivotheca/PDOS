@@ -87,16 +87,16 @@ static void loadExe(char *prog, PARMBLOCK *parmblock);
 static int fixexe32(unsigned char *psp, unsigned long entry, unsigned int sp,
                     int doing_pcomm);
 static int bios2driv(int bios);
-static int fileCreat(const char *fnm, int attrib);
+static int fileCreat(const char *fnm, int attrib, int *handle);
 static int dirCreat(const char *dnm, int attrib);
-static int newFileCreat(const char *fnm, int attrib);
-static int fileOpen(const char *fnm);
+static int newFileCreat(const char *fnm, int attrib, int *handle);
+static int fileOpen(const char *fnm, int *handle);
 static int fileWrite(int fno, const void *buf, size_t szbuf,
                      size_t *writtenbytes);
 static int fileDelete(const char *fnm);
 static int dirDelete(const char *dnm);
 static int fileClose(int fno);
-static int fileRead(int fno, void *buf, size_t szbuf);
+static int fileRead(int fno, void *buf, size_t szbuf, size_t *readbytes);
 static void accessDisk(int drive);
 static void upper_str(char *str);
 int bcd2int(unsigned int bcd);
@@ -619,7 +619,8 @@ static void int21handler(union REGS *regsin,
 {
     void *p;
     void *q;
-    long readbytes;
+    int handle;
+    size_t readbytes;
     size_t writtenbytes;
     long newpos;
     int ret;
@@ -934,31 +935,30 @@ static void int21handler(union REGS *regsin,
         case 0x3c:
 #ifdef __32BIT__
             p = SUBADDRFIX(regsin->d.edx);
-            ret = PosCreatFile(p, regsin->x.cx, &regsout->d.eax);
+            regsout->d.eax = PosCreatFile(p, regsin->x.cx, &handle);
+            if (regsout->d.eax) regsout->x.cflag = 1;
+            else regsout->d.eax = handle;
 #else
             p = MK_FP(sregs->ds, regsin->x.dx);
-            ret = PosCreatFile(p, regsin->x.cx, &regsout->x.ax);
+            regsout->x.ax = PosCreatFile(p, regsin->x.cx, &handle);
+            if (regsout->x.ax) regsout->x.cflag = 1;
+            else regsout->x.ax = handle;
 #endif
-            if (ret < 0)
-            {
-                regsout->x.cflag = 1;
-                regsout->x.ax = -ret;
-            }
             break;
 
         /* INT 21,3D - Open File */
         case 0x3d:
 #ifdef __32BIT__
             p = SUBADDRFIX(regsin->d.edx);
-            ret = PosOpenFile(p, regsin->h.al, &regsout->d.eax);
+            regsout->d.eax = PosOpenFile(p, regsin->h.al, &handle);
+            if (regsout->d.eax) regsout->x.cflag = 1;
+            else regsout->d.eax = handle;
 #else
             p = MK_FP(sregs->ds, regsin->x.dx);
-            ret = PosOpenFile(p, regsin->h.al, &regsout->x.ax);
+            regsout->x.ax = PosOpenFile(p, regsin->h.al, &handle);
+            if (regsout->x.ax) regsout->x.cflag = 1;
+            else regsout->x.ax = handle;
 #endif
-            if (ret < 0)
-            {
-                regsout->x.cflag = 1;
-            }
             break;
 
         /* INT 21,3E - Close File */
@@ -974,18 +974,20 @@ static void int21handler(union REGS *regsin,
         case 0x3f:
 #ifdef __32BIT__
             p = SUBADDRFIX(regsin->d.edx);
-            PosReadFile(regsin->d.ebx,
-                        p,
-                        regsin->d.ecx,
-                        &readbytes);
-            regsout->d.eax = readbytes;
+            regsout->d.eax = PosReadFile(regsin->d.ebx,
+                                         p,
+                                         regsin->d.ecx,
+                                         &readbytes);
+            if (regsout->d.eax) regsout->x.cflag = 1;
+            else regsout->d.eax = readbytes;
 #else
             p = MK_FP(sregs->ds, regsin->x.dx);
-            PosReadFile(regsin->x.bx,
-                        p,
-                        regsin->x.cx,
-                        &readbytes);
-            regsout->x.ax = readbytes;
+            regsout->x.ax = PosReadFile(regsin->x.bx,
+                                        p,
+                                        regsin->x.cx,
+                                        &readbytes);
+            if (regsout->x.ax) regsout->x.cflag = 1;
+            else regsout->x.ax = readbytes;
 #endif
             break;
 
@@ -1507,22 +1509,14 @@ static void int21handler(union REGS *regsin,
         case 0x5b:
 #ifdef __32BIT__
             p = SUBADDRFIX(regsin->d.edx);
-            ret = PosCreatNewFile(p, regsin->x.cx);
-            if (ret < 0)
-            {
-                regsout->x.cflag = 1;
-                ret = -ret;
-            }
-            regsout->d.eax = ret;
+            regsout->d.eax = PosCreatNewFile(p, regsin->x.cx, &handle);
+            if (regsout->d.eax) regsout->x.cflag = 1;
+            else regsout->d.eax = handle;
 #else
             p = MK_FP(sregs->ds, regsin->x.dx);
-            ret = PosCreatNewFile(p, regsin->x.cx);
-            if (ret < 0)
-            {
-                regsout->x.cflag = 1;
-                ret = -ret;
-            }
-            regsout->x.ax = ret;
+            regsout->x.ax = PosCreatNewFile(p, regsin->x.cx, &handle);
+            if (regsout->x.ax) regsout->x.cflag = 1;
+            else regsout->x.ax = handle;
 #endif
             break;
 
@@ -2010,41 +2004,21 @@ int PosChangeDir(const char *to)
 int PosCreatFile(const char *name, int attrib, int *handle)
 {
     char filename[MAX_PATH];
-    int fno;
     int ret;
 
     ret = formatcwd(name, filename);
     if (ret) return (ret);
-    fno = fileCreat(filename, attrib);
-    if (fno < 0)
-    {
-        *handle = -fno;
-    }
-    else
-    {
-        *handle = fno;
-    }
-    return (fno);
+    return (fileCreat(filename, attrib, handle));
 }
 
 int PosOpenFile(const char *name, int mode, int *handle)
 {
     char filename[MAX_PATH];
-    int fno;
     int ret;
 
     ret = formatcwd(name, filename);
     if (ret) return (ret);
-    fno = fileOpen(filename);
-    if (fno < 0)
-    {
-        *handle = -fno;
-    }
-    else
-    {
-        *handle = fno;
-    }
-    return (fno);
+    return (fileOpen(filename, handle));
 }
 
 int PosCloseFile(int fno)
@@ -2055,10 +2029,11 @@ int PosCloseFile(int fno)
     return (ret);
 }
 
-void PosReadFile(int fh, void *data, size_t bytes, size_t *readbytes)
+int PosReadFile(int fh, void *data, size_t bytes, size_t *readbytes)
 {
     unsigned char *p;
     size_t x = 0;
+    int ret;
 
     if (fh < NUM_SPECIAL_FILES)
     {
@@ -2082,13 +2057,14 @@ void PosReadFile(int fh, void *data, size_t bytes, size_t *readbytes)
                 break;
             }
         }
+        *readbytes = x;
+        ret = 0;
     }
     else
     {
-        x = fileRead(fh, data, bytes);
+        ret = fileRead(fh, data, bytes, readbytes);
     }
-    *readbytes = x;
-    return;
+    return (ret);
 }
 
 int PosWriteFile(int fh, const void *data, size_t len, size_t *writtenbytes)
@@ -2409,11 +2385,8 @@ int PosFindFirst(char *pat, int attrib)
     attr = attrib;
     memset(dta, '\0', 0x15); /* clear out reserved area */
     make_ff(pat);
-    ff_handle = fileOpen(ff_path);
-    if (ff_handle < 0)
-    {
-        return (3);
-    }
+    ret = fileOpen(ff_path, &ff_handle);
+    if (ret) return (3);
     ret = ff_search();
     if (ret == 0x12)
     {
@@ -2493,16 +2466,14 @@ int PosSetFileLastWrittenDateAndTime(int handle,
 }
 /**/
 
-int PosCreatNewFile(const char *name, int attrib)
+int PosCreatNewFile(const char *name, int attrib, int *handle)
 {
     int ret;
     char filename[MAX_PATH];
 
     ret = formatcwd(name, filename);
     if (ret) return (ret);
-    ret = newFileCreat(filename, attrib);
-
-    return (ret);
+    return (newFileCreat(filename, attrib, handle));
 }
 
 int PosTruename(char *prename,char *postname)
@@ -2643,7 +2614,7 @@ static void scrunchf(char *dest, char *new)
 
 static int ff_search(void)
 {
-    int ret;
+    size_t readbytes;
     char file[13];
     char *p;
     DIRENT dirent;
@@ -2653,8 +2624,8 @@ static int ff_search(void)
     /* Upper lfn which is a string. */
     unsigned char testlfn[256];
 
-    ret = fileRead(ff_handle,&dirent, sizeof dirent);
-    while ((ret == sizeof dirent) && (dirent.file_name[0] != '\0'))
+    fileRead(ff_handle, &dirent, sizeof dirent, &readbytes);
+    while ((readbytes == sizeof dirent) && (dirent.file_name[0] != '\0'))
     {
         if (dirent.file_name[0] != DIRENT_DEL)
         {
@@ -2755,7 +2726,7 @@ static int ff_search(void)
                 }
             }
         }
-        ret = fileRead(ff_handle, &dirent , sizeof dirent);
+        fileRead(ff_handle, &dirent, sizeof dirent, &readbytes);
     }
     fileClose(ff_handle);
     return (0x12);
@@ -3039,18 +3010,19 @@ void int26(unsigned int *regptrs,
 
 static void loadConfig(void)
 {
-    size_t ret;
+    size_t readbytes;
     unsigned char buf[512];
     int x;
     int fh;
+    int ret;
 
-    fh = fileOpen("CONFIG.SYS");
-    if (fh >= 0)
+    ret = fileOpen("CONFIG.SYS", &fh);
+    if (!ret)
     {
         do
         {
-            ret = fileRead(fh, buf, sizeof buf);
-            for (x = 0; x < ret; x++)
+            fileRead(fh, buf, sizeof buf, &readbytes);
+            for (x = 0; x < readbytes; x++)
             {
                 if (memcmp(buf, "SHELL=", 6) == 0)
                 {
@@ -3066,7 +3038,7 @@ static void loadConfig(void)
                 }
                 BosWriteText(0, buf[x], 0);
             }
-        } while (ret == 0x200);
+        } while (readbytes == 0x200);
         fileClose(fh);
     }
     return;
@@ -3135,6 +3107,7 @@ static void loadExe(char *prog, PARMBLOCK *parmblock)
     unsigned char *exeEntry;
     unsigned int maxPages;
     int fno;
+    size_t readbytes;
     int ret;
     unsigned char *bss;
     int y;
@@ -3142,10 +3115,9 @@ static void loadExe(char *prog, PARMBLOCK *parmblock)
     char *olddta;
     unsigned char *saveCurProc;
 
-    fno = fileOpen(prog);
-    if (fno < 0) return;
+    if (fileOpen(prog, &fno)) return;
 #ifdef __32BIT__
-    fileRead(fno, &firstbit, sizeof firstbit);
+    fileRead(fno, &firstbit, sizeof firstbit, &readbytes);
     if (first)
     {
         first = 0;
@@ -3159,10 +3131,11 @@ static void loadExe(char *prog, PARMBLOCK *parmblock)
         headerLen = N_TXTOFF(firstbit);
         header = memmgrAllocate(&memmgr, headerLen, 0);
         memcpy(header, &firstbit, sizeof firstbit);
-        fileRead(fno, header + sizeof firstbit, headerLen - sizeof firstbit);
+        fileRead(fno, header + sizeof firstbit, headerLen - sizeof firstbit,
+                 &readbytes);
     }
 #else
-    fileRead(fno, firstbit, sizeof firstbit);
+    fileRead(fno, firstbit, sizeof firstbit, &readbytes);
     if (memcmp(firstbit, "MZ", 2) == 0)
     {
         isexe = 1;
@@ -3170,7 +3143,8 @@ static void loadExe(char *prog, PARMBLOCK *parmblock)
         headerLen *= 16;
         header = memmgrAllocate(&memmgr, headerLen, 0);
         memcpy(header, firstbit, sizeof firstbit);
-        fileRead(fno, header + sizeof firstbit, headerLen - sizeof firstbit);
+        fileRead(fno, header + sizeof firstbit, headerLen - sizeof firstbit,
+                 &readbytes);
     }
 #endif
 
@@ -3247,16 +3221,16 @@ static void loadExe(char *prog, PARMBLOCK *parmblock)
 #endif
 
 #ifdef __32BIT__
-    fileRead(fno, exeStart, firstbit.a_text);
+    fileRead(fno, exeStart, firstbit.a_text, &readbytes);
     if (doing_pcomm)
     {
         fileRead(fno,
                 exeStart + N_DATADDR(firstbit) - N_TXTADDR(firstbit),
-                firstbit.a_data);
+                firstbit.a_data, &readbytes);
     }
     else
     {
-        fileRead(fno, exeStart + firstbit.a_text, firstbit.a_data);
+        fileRead(fno, exeStart + firstbit.a_text, firstbit.a_data, &readbytes);
     }
 #else
     if (isexe)
@@ -3273,15 +3247,16 @@ static void loadExe(char *prog, PARMBLOCK *parmblock)
             }
             upto = ABS2ADDR(ADDR2ABS(exeStart) + totalRead);
             upto = FP_NORM(upto);
-            fileRead(fno, upto, maxread);
+            fileRead(fno, upto, maxread, &readbytes);
             totalRead += maxread;
         }
     }
     else
     {
         memcpy(exeStart, firstbit, sizeof firstbit);
-        fileRead(fno, exeStart + sizeof firstbit, 32768);
-        fileRead(fno, FP_NORM(exeStart + sizeof firstbit + 32768), 32768);
+        fileRead(fno, exeStart + sizeof firstbit, 32768, &readbytes);
+        fileRead(fno, FP_NORM(exeStart + sizeof firstbit + 32768), 32768,
+                 &readbytes);
     }
 #endif
     fileClose(fno);
@@ -3364,7 +3339,7 @@ static void loadExe(char *prog, PARMBLOCK *parmblock)
                 memmgrFree(&memmgr, psp);
                 return;
             }
-            fileRead(fno, corrections, firstbit.a_trsize);
+            fileRead(fno, corrections, firstbit.a_trsize, &readbytes);
             for (i = 0; i < firstbit.a_trsize / 4; i += 2)
             {
                 offs = corrections[i];
@@ -3387,7 +3362,7 @@ static void loadExe(char *prog, PARMBLOCK *parmblock)
                 memmgrFree(&memmgr, psp);
                 return;
             }
-            fileRead(fno, corrections, firstbit.a_drsize);
+            fileRead(fno, corrections, firstbit.a_drsize, &readbytes);
             zap = psp + 0x100 + firstbit.a_text;
             for (i = 0; i < firstbit.a_drsize / 4; i += 2)
             {
@@ -3547,7 +3522,7 @@ static int bios2driv(int bios)
     return (drive);
 }
 
-static int fileCreat(const char *fnm, int attrib)
+static int fileCreat(const char *fnm, int attrib, int *handle)
 {
     int x;
     const char *p;
@@ -3575,13 +3550,11 @@ static int fileCreat(const char *fnm, int attrib)
     }
     if (x == MAXFILES) return (-4); /* 4 = too many open files */
     rc = fatCreatFile(&disks[drive].fat, p, &fhandle[x].fatfile, attrib);
-    if (rc > 0)
-    {
-        return (-rc);
-    }
+    if (rc) return (rc);
     fhandle[x].inuse = 1;
     fhandle[x].fatptr = &disks[drive].fat;
-    return (x);
+    *handle = x;
+    return (0);
 }
 
 static int dirCreat(const char *dnm, int attrib)
@@ -3628,7 +3601,7 @@ static int dirCreat(const char *dnm, int attrib)
     return (rc);
 }
 
-static int newFileCreat(const char *fnm, int attrib)
+static int newFileCreat(const char *fnm, int attrib, int *handle)
 {
     int x;
     const char *p;
@@ -3656,16 +3629,14 @@ static int newFileCreat(const char *fnm, int attrib)
     }
     if (x == MAXFILES) return (-POS_ERR_MANY_OPEN_FILES);
     rc = fatCreatNewFile(&disks[drive].fat, p, &fhandle[x].fatfile, attrib);
-    if (rc > 0)
-    {
-        return (-rc);
-    }
+    if (rc) return (rc);
     fhandle[x].inuse = 1;
     fhandle[x].fatptr = &disks[drive].fat;
-    return (x);
+    *handle = x;
+    return (0);
 }
 
-static int fileOpen(const char *fnm)
+static int fileOpen(const char *fnm, int *handle)
 {
     int x;
     const char *p;
@@ -3693,13 +3664,11 @@ static int fileOpen(const char *fnm)
     }
     if (x == MAXFILES) return (-POS_ERR_MANY_OPEN_FILES);
     rc = fatOpenFile(&disks[drive].fat, p, &fhandle[x].fatfile);
-    if (rc != 0)
-    {
-        return (-rc);
-    }
+    if (rc) return (rc);
     fhandle[x].inuse = 1;
     fhandle[x].fatptr = &disks[drive].fat;
-    return (x);
+    *handle = x;
+    return (0);
 }
 
 static int fileClose(int fno)
@@ -3711,11 +3680,10 @@ static int fileClose(int fno)
     return (0);
 }
 
-static int fileRead(int fno, void *buf, size_t szbuf)
+static int fileRead(int fno, void *buf, size_t szbuf, size_t *readbytes)
 {
-    size_t ret;
-    ret = fatReadFile(fhandle[fno].fatptr, &fhandle[fno].fatfile, buf, szbuf);
-    return (ret);
+    return (fatReadFile(fhandle[fno].fatptr, &fhandle[fno].fatfile, buf,
+                        szbuf, readbytes));
 }
 
 
@@ -3765,9 +3733,9 @@ static int dirDelete(const char *dnm)
     int drive;
     int rc;
     int attr;
-    int ret;
     int dotcount = 0;
     int fh;
+    size_t readbytes;
     DIRENT dirent;
 
     p = strchr(dnm, ':');
@@ -3794,10 +3762,10 @@ static int dirDelete(const char *dnm)
         }
     }
 
-    fh = fileOpen(dnm);
+    fileOpen(dnm, &fh);
 
-    ret = fileRead(fh, &dirent, sizeof dirent);
-    while ((ret == sizeof dirent) && (dirent.file_name[0] != '\0'))
+    fileRead(fh, &dirent, sizeof dirent, &readbytes);
+    while ((readbytes == sizeof dirent) && (dirent.file_name[0] != '\0'))
     {
         /* LFNs should be ignored when checking if the directory is empty. */
         if (dirent.file_name[0] != DIRENT_DEL &&
@@ -3810,7 +3778,7 @@ static int dirDelete(const char *dnm)
                 return (POS_ERR_PATH_NOT_FOUND);
             }
         }
-        ret = fileRead(fh, &dirent , sizeof dirent);
+        fileRead(fh, &dirent, sizeof dirent, &readbytes);
     }
     fileClose(fh);
 

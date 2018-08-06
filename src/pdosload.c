@@ -57,7 +57,7 @@ void pdosload(void)
     FATFILE fatfile;
     static char buf[512];
     unsigned long start;
-    size_t ret;
+    size_t readbytes;
     unsigned int progentry;
     int x;
 #endif        
@@ -80,13 +80,13 @@ void pdosload(void)
     fatOpenFile(&gfat, "MSDOS.SYS", &fatfile);
     do 
     {
-        ret = fatReadFile(&gfat, &fatfile, buf, 0x200);
+        fatReadFile(&gfat, &fatfile, buf, 0x200, &readbytes);
         for (x = 0; x < 512; x++)
         {
             putabs(load + x, buf[x]);
         }
         load += 0x200;
-    } while (ret == 0x200);
+    } while (readbytes == 0x200);
     start = (unsigned long)(void far *)psp;
     start >>= 4;
     fixexe(loads, (unsigned int)start, &progentry);

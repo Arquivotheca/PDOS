@@ -267,6 +267,8 @@ unsigned int fatOpenFile(FAT *fat, const char *fnm, FATFILE *fatfile)
                           &fatfile->nextCluster);
             fatfile->sectorCount = fat->sectors_per_cluster;
         }
+        /* Sets the current position to the beginning. */
+        fatfile->currpos = 0;
     }
     else
     {
@@ -281,6 +283,7 @@ unsigned int fatOpenFile(FAT *fat, const char *fnm, FATFILE *fatfile)
                             | ((unsigned long)p->file_size[1] << 8)
                             | ((unsigned long)p->file_size[2] << 16)
                             | ((unsigned long)p->file_size[3] << 24);
+        fatfile->currpos = 0;
         /* empty files have a start cluster of 0 */
         if ((fatfile->fileSize == 0)
             && (fatfile->startcluster == 0))
@@ -332,13 +335,22 @@ unsigned int fatOpenFile(FAT *fat, const char *fnm, FATFILE *fatfile)
  * fatReadFile - read from an already-open file.
  */
 
-size_t fatReadFile(FAT *fat, FATFILE *fatfile, void *buf, size_t szbuf)
+int fatReadFile(FAT *fat, FATFILE *fatfile, void *buf, size_t szbuf,
+                size_t *readbytes)
 {
     size_t bytesRead = 0;
     static unsigned char bbuf[MAXSECTSZ];
     int bytesAvail;
     unsigned int sectorsAvail;
 
+    if (fatfile->currpos < 0)
+    {
+        /* Position is before the file,
+         * so nothing is read and error is returned. */
+        *readbytes = 0;
+        /* +++Find out what error should be returned. */
+        return (POS_ERR_ACCESS_DENIED);
+    }
     /* until we reach the end of the chain */
     while (!fatEndCluster(fat, fatfile->currentCluster))
     {
@@ -399,7 +411,8 @@ size_t fatReadFile(FAT *fat, FATFILE *fatfile, void *buf, size_t szbuf)
                            szbuf - bytesRead);
                     fatfile->byteUpto += (szbuf - bytesRead);
                     bytesRead = szbuf;
-                    return (bytesRead);
+                    *readbytes = bytesRead;
+                    return (0);
                 }
                 else
                 {
@@ -420,7 +433,8 @@ size_t fatReadFile(FAT *fat, FATFILE *fatfile, void *buf, size_t szbuf)
                           &fatfile->nextCluster);
         fatfile->sectorUpto = 0;
     }
-    return (bytesRead);
+    *readbytes = bytesRead;
+    return (0);
 }
 
 /*

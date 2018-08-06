@@ -148,10 +148,10 @@ int PosOpenFile(const char *name, /* func 3d */
 
 int PosCloseFile(int handle); /* func 3e */
 
-void PosReadFile(int fh, /* func 3f */
-                 void *data,
-                 size_t bytes,
-                 size_t *readbytes);
+int PosReadFile(int fh, /* func 3f */
+                void *data,
+                size_t bytes,
+                size_t *readbytes);
 
 int PosWriteFile(int handle, /* func 40 */
                  const void *data,
@@ -221,7 +221,7 @@ int PosSetFileLastWrittenDateAndTime(int handle,
                                      unsigned int fdate,
                                      unsigned int ftime);/*func 57 subfunc 1*/
 
-int PosCreatNewFile(const char *name, int attrib); /*func 5b*/
+int PosCreatNewFile(const char *name, int attrib, int *handle); /*func 5b*/
 
 int PosTruename(char *prename,char *postname); /*func 60*/
 

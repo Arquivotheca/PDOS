@@ -35,10 +35,10 @@ int fclose(FILE *fp)
 
 size_t fread(void *buf, size_t size, size_t nelem, FILE *fp)
 {
-    size_t ret;
+    size_t readbytes;
     
     unused(size);
     unused(fp);
-    ret = fatReadFile(&gfat, &fatfile, buf, nelem);
-    return (ret);
+    fatReadFile(&gfat, &fatfile, buf, nelem, &readbytes);
+    return (readbytes);
 }

@@ -533,11 +533,13 @@ int PosCreatFile(const char *name,
 #endif
     int86x(0x21, &regsin, &regsout, &sregs);
 #ifdef __32BIT__
+    if (regsout.x.cflag) return (regsout.d.eax);
     *handle = regsout.d.eax;
 #else
+    if (regsout.x.cflag) return (regsout.x.ax);
     *handle = regsout.x.ax;
 #endif
-    return (regsout.x.cflag);
+    return (0);
 }
 
 int PosOpenFile(const char *name,
@@ -558,11 +560,13 @@ int PosOpenFile(const char *name,
 #endif
     int86x(0x21, &regsin, &regsout, &sregs);
 #ifdef __32BIT__
+    if (regsout.x.cflag) return (regsout.d.eax);
     *handle = regsout.d.eax;
 #else
+    if (regsout.x.cflag) return (regsout.x.ax);
     *handle = regsout.x.ax;
 #endif
-    return (regsout.x.cflag);
+    return (0);
 }
 
 int PosCloseFile(int handle)
@@ -592,7 +596,7 @@ int PosCloseFile(int handle)
 #endif
 }
 
-void PosReadFile(int fh, void *data, size_t bytes, size_t *readbytes)
+int PosReadFile(int fh, void *data, size_t bytes, size_t *readbytes)
 {
     union REGS regsin;
     union REGS regsout;
@@ -610,19 +614,22 @@ void PosReadFile(int fh, void *data, size_t bytes, size_t *readbytes)
     regsin.x.dx = FP_OFF(data);
 #endif
     int86x(0x21, &regsin, &regsout, &sregs);
+#ifdef __32BIT__
     if (regsout.x.cflag)
     {
         *readbytes = 0;
+        return (regsout.d.eax);
     }
-    else
-    {
-#ifdef __32BIT__
-        *readbytes = regsout.d.eax;
+    *readbytes = regsout.d.eax;
 #else
-        *readbytes = regsout.x.ax;
-#endif
+    if (regsout.x.cflag)
+    {
+        *readbytes = 0;
+        return (regsout.x.ax);
     }
-    return;
+    *readbytes = regsout.x.ax;
+#endif
+    return (0);
 }
 
 int PosWriteFile(int handle,
@@ -1273,7 +1280,7 @@ int PosSetFileLastWrittenDateAndTime(int handle,
 #endif
 }
 
-int PosCreatNewFile(const char *name, int attrib)
+int PosCreatNewFile(const char *name, int attrib, int *handle)
 {
     union REGS regsin;
     union REGS regsout;
@@ -1289,10 +1296,13 @@ int PosCreatNewFile(const char *name, int attrib)
 #endif
     int86x(0x21, &regsin, &regsout, &sregs);
 #ifdef __32BIT__
-    return (regsout.d.eax);
+    if (regsout.x.cflag) return (regsout.d.eax);
+    *handle = regsout.d.eax;
 #else
-    return (regsout.x.ax);
+    if (regsout.x.cflag) return (regsout.x.ax);
+    *handle = regsout.x.ax;
 #endif
+    return (0);
 }
 
 /**/

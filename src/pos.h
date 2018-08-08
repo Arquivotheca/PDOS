@@ -256,6 +256,8 @@ void *PosAllocMem(unsigned int size, unsigned int flags); /* func f6.08 */
 /* Given an error code return corresponding message */
 char *PosGetErrorMessageString(unsigned int errorCode); /* func f6.09 */
 
+void PosPowerOff(void); /* func f6.0a */
+
 unsigned int PosAbsoluteDiskRead(int drive, unsigned long start_sector,
                                  unsigned int sectors,void *buf); /*INT25 */
 

@@ -172,6 +172,7 @@ CMDPROTO(md);
 CMDPROTO(option);
 CMDPROTO(path);
 CMDPROTO(pause);
+CMDPROTO(poweroff);
 CMDPROTO(prompt);
 CMDPROTO(rd);
 CMDPROTO(reboot);
@@ -230,6 +231,7 @@ static cmdBlock cmdRegistry[] =
     CMDDEF(option,"","Controls behavioural flags"),
     CMDDEF(path,"","Displays or modifies PATH variable"),
     CMDDEF(pause,"","Wait for user to press any key"),
+    CMDDEF(poweroff,"","Powers off the computer"),
     CMDDEF(prompt,"","Displays or modifies PROMPT variable"),
     CMDDEF(rd,"|rmdir","Removes directories"),
     CMDDEF(reboot,"","Reboots the computer"),
@@ -708,6 +710,15 @@ static int cmd_echo_run(char *msg)
 {
     printf("%s\n", msg);
     return 0;
+}
+
+static int cmd_poweroff_run(char *ignored)
+{
+    CMD_HAS_NO_ARGS(ignored);
+    PosPowerOff();
+    /* if we return from PosPowerOff(), we know it failed */
+    printf("ERROR: Power off failed\n");
+    return 1;
 }
 
 static int cmd_reboot_run(char *ignored)
@@ -1360,6 +1371,11 @@ static void cmd_cd_help(void)
 static void cmd_reboot_help(void)
 {
     printf("REBOOT\n");
+}
+
+static void cmd_poweroff_help(void)
+{
+    printf("POWEROFF\n");
 }
 
 static void cmd_del_help(void)

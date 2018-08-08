@@ -173,6 +173,7 @@ easier debugging during early stages of development:
 #Int 21/AX=F607h - PDOS - Get Memory Management Statistics
 #Int 21/AX=F608h - PDOS - Allocate memory (32-bit only)
 #Int 21/AX=F609h - PDOS - Get Error Message String
+#Int 21/AX=F60Ah - PDOS - Power Off
 
 For a full reference of standard and non-standard DOS calls check:
 http://www.ctyme.com/intr/int-21.htm

@@ -40,6 +40,7 @@ static void fixexe(unsigned long laddr,
 static void readLogical(void *diskptr, unsigned long sector, void *buf);
 static void analyseBpb(DISKINFO *diskinfo, unsigned char *bpb);
 static unsigned long doreboot(unsigned long parm);
+static void dopoweroff(void);
 
 void pdosload(void)
 {
@@ -74,6 +75,7 @@ void pdosload(void)
     a20e(); /* enable a20 line */
     pp.transferbuf = ADDR2ABS(transferbuf);
     pp.doreboot = (unsigned long)(void (far *)())doreboot;
+    pp.dopoweroff = (unsigned long)(void (far *)())dopoweroff;
     pp.bpb = ADDR2ABS(bpb);
     runaout("MSDOS.SYS", load, ADDR2ABS(&pp));
 #else    
@@ -198,6 +200,11 @@ static unsigned long doreboot(unsigned long parm)
     unused(parm);
     reboot();
     return (0);
+}
+
+static void dopoweroff(void)
+{
+    poweroff();
 }
 
 #ifdef NEED_DUMP

@@ -1511,6 +1511,17 @@ char *PosGetErrorMessageString(unsigned int errorCode)
     return (msg);
 }
 
+/* extension to power off computer */
+void PosPowerOff(void)
+{
+    union REGS regsin;
+
+    regsin.h.ah = 0xf6;
+    regsin.h.al = 0x0A;
+    int86i(0x21, &regsin);
+    return;
+}
+
 /*int 25 function call*/
 unsigned int PosAbsoluteDiskRead(int drive,unsigned long start_sector,
                                  unsigned int sectors,void *buf)

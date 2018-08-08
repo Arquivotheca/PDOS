@@ -231,6 +231,7 @@ static char *transferbuf;
 static long freem_start; /* start of free memory below 1 MiB,
                             absolute address */
 static unsigned long doreboot;
+static unsigned long dopoweroff;
 static char *sbrk_start = NULL;
 static char *sbrk_end;
 #else
@@ -1679,6 +1680,10 @@ static void int21handler(union REGS *regsin,
                 sregs->es = FP_SEG(p);
 #endif
             }
+            else if (regsin->h.al == 0xA)
+            {
+                PosPowerOff();
+            }
             else
             {
                 logUnimplementedCall(0x21, regsin->h.ah, regsin->h.al);
@@ -2508,6 +2513,22 @@ void PosReboot(void)
 
     *posttype = 0x1234;
     postfunc();
+    return;
+}
+#endif
+
+#ifdef __32BIT__
+void PosPowerOff(void)
+{
+    unsigned short newregs[11];
+
+    runreal_p(dopoweroff, 0);
+    return;
+}
+#else
+void PosPowerOff(void)
+{
+    poweroff();
     return;
 }
 #endif
@@ -4092,6 +4113,7 @@ int pdosstrt(void)
     pp = ABSADDR(__userparm);
     transferbuf = ABSADDR(pp->transferbuf);
     doreboot = pp->doreboot;
+    dopoweroff = pp->dopoweroff;
     bootBPB = ABSADDR(pp->bpb);
     protintHandler(0x20, int20);
     protintHandler(0x21, int21);

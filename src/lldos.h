@@ -40,5 +40,6 @@ void DOSPREF a20e(void);
 void DOSPREF reboot(void);
 int DOSPREF getabs(long address);
 void DOSPREF putabs(long address, unsigned ch);
+void DOSPREF poweroff(void);
 
 #endif

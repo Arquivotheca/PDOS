@@ -6,7 +6,7 @@
 
 public getfar, putfar, rportb, wportb, enable, disable
 public callfar, callwithpsp, callwithbypass, a20e
-public reboot, putabs, getabs
+public reboot, putabs, getabs, poweroff
 
         .code
 getfar proc, address: dword
@@ -206,5 +206,27 @@ putabs proc, address4: dword, character: word
         pop ds
         ret
 putabs endp
+
+poweroff proc
+        mov ax, 5300h    ; APM Installation Check
+        mov bx, 0000h    ; Power Device ID
+        int 15h
+        jc poweroff_err  ; CF=0: APM not installed
+        cmp bx, 504dh    ; magic value not in BX: APM not installed
+        jne poweroff_err ; useful in case something else is sitting
+                         ; on int 15,AX=5300
+
+        mov ax, 5301h    ; 15,AX=5301: Interface Connect
+        mov bx, 0000h    ; BX=0000 (Power Device ID = System BIOS)
+        int 15h
+        jc poweroff_err
+
+        mov ax, 5307h    ; 15,AX=5307: Set Power State
+        mov bx, 0000h    ; BX=0000 (Power Device ID = System BIOS)
+        mov cx, 0003h    ; CX=0003 (Power State = Off)
+        int 15h
+poweroff_err:
+        ret
+poweroff endp
 
 end

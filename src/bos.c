@@ -884,6 +884,33 @@ void BosSetSystemDate(int century,int year,int month,int day)
     return;
 }
 
+/* BosPCICheck - BIOS Int 1Ah/AX=B101h */
+/* Requires at least 1024 bytes stack. */
+
+int BosPCICheck(unsigned char *hwcharacteristics,
+                unsigned char *majorversion,
+                unsigned char *minorversion,
+                unsigned char *lastbus)
+{
+    union REGS regsin;
+    union REGS regsout;
+    struct SREGS sregs;
+
+    regsin.x.ax = 0xb101;
+#ifdef __32BIT__
+    regsin.d.edi = 0;
+#endif
+    int86x(0x1a, &regsin, &regsout, &sregs);
+    /* Bit 0 - configuration space access mechanism 1 supported.
+     * Bit 1 - configuration space access mechanism 2 supported. */
+    *hwcharacteristics = regsout.h.al;
+    /* Major and minor versions are in BCD format. */
+    *majorversion = regsout.h.bh;
+    *minorversion = regsout.h.bl;
+    *lastbus = regsout.h.cl;
+    return (regsout.h.ah);
+}
+
 /* int86n - do an interrupt with no registers */
 
 static void int86n(unsigned int intno)

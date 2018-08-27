@@ -128,3 +128,8 @@ unsigned int BosGetSystemDate(int *century,int *year,int *month,
 
 void BosSetSystemDate(int century,int year,int month,
                               int day);/*1A.5*/
+
+int BosPCICheck(unsigned char *hwcharacteristics, /*1A:B101*/
+                unsigned char *majorversion,
+                unsigned char *minorversion,
+                unsigned char *lastbus);

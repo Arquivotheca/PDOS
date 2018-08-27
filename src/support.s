@@ -9,7 +9,11 @@
         .globl ___setj
         .globl ___longj
         .globl _inp
+        .globl _inpw
+        .globl _inpd
         .globl _outp
+        .globl _outpw
+        .globl _outpd
 
         .text
 
@@ -140,6 +144,30 @@ _inp:
         pop     %ebp
         ret
 
+/ read a word from a port
+_inpw:
+        push    %ebp
+        mov     %esp, %ebp
+        push    %edx
+        mov     8(%ebp), %edx
+        mov     $0, %eax
+        inw     %dx, %ax
+        pop     %edx
+        pop     %ebp
+        ret
+
+/ read a dword from a port
+_inpd:
+        push    %ebp
+        mov     %esp, %ebp
+        push    %edx
+        mov     8(%ebp), %edx
+        mov     $0, %eax
+        inl     %dx, %eax
+        pop     %edx
+        pop     %ebp
+        ret
+
 / write a character to a port
 _outp:
         push    %ebp
@@ -152,7 +180,29 @@ _outp:
         pop     %ebp
         ret
 
+/ write a word to a port
+_outpw:
+        push    %ebp
+        mov     %esp, %ebp
+        push    %edx
+        mov     8(%ebp), %edx
+        mov     12(%ebp), %eax
+        outw    %ax, %dx
+        pop     %edx
+        pop     %ebp
+        ret
 
+/ write a dword to a port
+_outpd:
+        push    %ebp
+        mov     %esp, %ebp
+        push    %edx
+        mov     8(%ebp), %edx
+        mov     12(%ebp), %eax
+        outl    %eax, %dx
+        pop     %edx
+        pop     %ebp
+        ret
 
 / setjmp and longjmp are untested under PDOS32 due to the
 / test environment currently not being available

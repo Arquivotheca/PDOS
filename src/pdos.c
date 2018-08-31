@@ -1684,6 +1684,15 @@ static void int21handler(union REGS *regsin,
             {
                 PosPowerOff();
             }
+            else if (regsin->h.al == 0xb)
+            {
+#ifdef __32BIT__
+                p = (void *) regsin->d.edx;
+#else
+                p = MK_FP(sregs->ds, regsin->x.dx);
+#endif
+                PosInstallInterruptHandler(regsin->x.bx, p);
+            }
             else
             {
                 logUnimplementedCall(0x21, regsin->h.ah, regsin->h.al);
@@ -2544,6 +2553,15 @@ void PosSetRunTime(void *pstart, void *c_api)
     return;
 }
 #endif
+
+void PosInstallInterruptHandler(int interrupt,
+                                int (*func)(unsigned int *))
+{
+#ifdef __32BIT__
+    protintHandler(interrupt, func);
+#endif
+    return;
+}
 
 /* !!! END OF POS FUNCTIONS !!! */
 

@@ -1522,6 +1522,25 @@ void PosPowerOff(void)
     return;
 }
 
+/* Pos extension for installing interrupt handler. */
+void PosInstallInterruptHandler(int interrupt,
+                                int (*func)(unsigned int *))
+{
+    union REGS regsin;
+
+    regsin.h.ah = 0xf6;
+    regsin.h.al = 0x0b;
+    regsin.x.bx = interrupt;
+#ifdef __32BIT__
+    regsin.d.edx = (unsigned int) func;
+#else
+    sregs.ds = FP_SEG(func);
+    regsin.x.dx = FP_OFF(func);
+#endif
+    int86i(0x21, &regsin);
+    return;
+}
+
 /*int 25 function call*/
 unsigned int PosAbsoluteDiskRead(int drive,unsigned long start_sector,
                                  unsigned int sectors,void *buf)

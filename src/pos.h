@@ -258,7 +258,7 @@ char *PosGetErrorMessageString(unsigned int errorCode); /* func f6.09 */
 
 void PosPowerOff(void); /* func f6.0a */
 
-void PosInstallInterruptHandler(int interrupt, /* func f6.0b */
+void PosInstallInterruptHandler(int interrupt_number, /* func f6.0b */
                                 int (*func)(unsigned int *));
 
 unsigned int PosAbsoluteDiskRead(int drive, unsigned long start_sector,

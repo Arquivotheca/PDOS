@@ -1523,21 +1523,23 @@ void PosPowerOff(void)
 }
 
 /* Pos extension for installing interrupt handler. */
-void PosInstallInterruptHandler(int interrupt,
+void PosInstallInterruptHandler(int interrupt_number,
                                 int (*func)(unsigned int *))
 {
     union REGS regsin;
+    union REGS regsout;
+    struct SREGS sregs;
 
     regsin.h.ah = 0xf6;
     regsin.h.al = 0x0b;
-    regsin.x.bx = interrupt;
+    regsin.x.bx = interrupt_number;
 #ifdef __32BIT__
     regsin.d.edx = (unsigned int) func;
 #else
     sregs.ds = FP_SEG(func);
     regsin.x.dx = FP_OFF(func);
 #endif
-    int86i(0x21, &regsin);
+    int86x(0x21, &regsin, &regsout, &sregs);
     return;
 }
 

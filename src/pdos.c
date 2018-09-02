@@ -1691,7 +1691,8 @@ static void int21handler(union REGS *regsin,
 #else
                 p = MK_FP(sregs->ds, regsin->x.dx);
 #endif
-                PosInstallInterruptHandler(regsin->x.bx, p);
+                PosInstallInterruptHandler(regsin->x.bx,
+                                           (int (*)(unsigned int *))p);
             }
             else
             {
@@ -2554,11 +2555,13 @@ void PosSetRunTime(void *pstart, void *c_api)
 }
 #endif
 
-void PosInstallInterruptHandler(int interrupt,
+void PosInstallInterruptHandler(int interrupt_number,
                                 int (*func)(unsigned int *))
 {
 #ifdef __32BIT__
-    protintHandler(interrupt, func);
+    protintHandler(interrupt_number, func);
+#else
+    *(long *)(interrupt_number * sizeof(long)) = (long)func;
 #endif
     return;
 }

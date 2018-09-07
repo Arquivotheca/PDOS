@@ -127,6 +127,7 @@ static int writeLBA(void *buf,
 static void analyseBpb(DISKINFO *diskinfo, unsigned char *bpb);
 int pdosstrt(void);
 static int formatcwd(const char *input,char *output);
+static int pdosWriteText(int ch);
 
 static MEMMGR memmgr;
 #ifdef __32BIT__
@@ -215,6 +216,15 @@ static void logUnimplementedCall(int intNum, int ah, int al);
 /* If > 0, program is a TSR, don't deallocate its memory on exit. */
 static int tsrFlag;
 
+/* Tick count at boot time. Can be used to compute system uptime. */
+static unsigned long bootedAt;
+
+/* Current color to use */
+static unsigned int currentAttrib = 7;
+
+/* Current video page */
+static unsigned int currentPage = 0;
+
 #ifdef __32BIT__
 extern char *__vidptr;
 /* SUBADDRFIX - given a pointer from the subprogram, convert
@@ -264,13 +274,18 @@ void pdosRun(void)
 #if (!defined(USING_EXE) && !defined(__32BIT__))
     instint();
 #endif
-    printf("welcome to PDOS-"
+    PosSetVideoAttribute(0x1E);
+    printf("Welcome to PDOS-"
 #ifdef __32BIT__
         "32"
 #else
         "16"
 #endif
         "\n");
+    PosSetVideoAttribute(0x7);
+
+    /* Initialise BIOS tick count at startup. */
+    bootedAt = BosGetClockTickCount();
 
 #ifndef __32BIT__
     bootBPB = (unsigned char *)ABSADDR(0x7c00 + 11);
@@ -1694,6 +1709,64 @@ static void int21handler(union REGS *regsin,
                 PosInstallInterruptHandler(regsin->x.bx,
                                            (int (*)(unsigned int *))p);
             }
+            else if (regsin->h.al == 0x30)
+            {
+                PosClearScreen();
+            }
+            else if (regsin->h.al == 0x31)
+            {
+                PosMoveCursor(regsin->h.bh, regsin->h.bl);
+            }
+            else if (regsin->h.al == 0x32)
+            {
+#ifdef __32BIT__
+                p = (void *) regsin->d.edx;
+                regsin->d.eax = PosGetVideoInfo(p, regsin->d.ecx);
+#else
+                p = MK_FP(sregs->ds, regsin->x.dx);
+                regsin->x.ax = PosGetVideoInfo(p, regsin->x.cx);
+#endif
+            }
+            else if (regsin->h.al == 0x33)
+            {
+                regsout->x.ax = PosKeyboardHit();
+            }
+            else if (regsin->h.al == 0x34)
+            {
+                PosYield();
+            }
+            else if (regsin->h.al == 0x35)
+            {
+#ifdef __32BIT__
+                unsigned long seconds = regsin->d.edx;
+#else
+                unsigned long seconds = (regsin->x.dx) << 16UL;
+                seconds |= regsin->x.bx;
+#endif
+                PosSleep(seconds);
+            }
+            else if (regsin->h.al == 0x36)
+            {
+                unsigned long ticks = PosGetClockTickCount();
+#ifdef __32BIT__
+                regsout->d.edx = ticks;
+#else
+                regsout->x.dx = (ticks >> 16UL);
+                regsout->x.bx = ticks;
+#endif
+            }
+            else if (regsin->h.al == 0x37)
+            {
+                PosSetVideoAttribute(regsin->x.bx);
+            }
+            else if (regsin->h.al == 0x38)
+            {
+                regsout->x.ax = PosSetVideoMode(regsin->x.bx);
+            }
+            else if (regsin->h.al == 0x39)
+            {
+                regsout->x.ax = PosSetVideoPage(regsin->x.bx);
+            }
             else
             {
                 logUnimplementedCall(0x21, regsin->h.ah, regsin->h.al);
@@ -2060,10 +2133,10 @@ int PosReadFile(int fh, void *data, size_t bytes, size_t *readbytes)
 
             BosReadKeyboardCharacter(&scan, &ascii);
             p[x] = ascii;
-            BosWriteText(0, ascii, 0);
+            pdosWriteText(ascii);
             if (ascii == '\r')
             {
-                BosWriteText(0, '\n', 0);
+                pdosWriteText('\n');
                 /* NB: this will need to be fixed, potential
                 buffer overflow - bummer! */
                 x++;
@@ -2093,7 +2166,7 @@ int PosWriteFile(int fh, const void *data, size_t len, size_t *writtenbytes)
         p = (unsigned char *)data;
         for (x = 0; x < len; x++)
         {
-            BosWriteText(0, p[x], 0);
+            pdosWriteText(p[x]);
         }
         *writtenbytes = len;
         ret = 0;
@@ -3078,7 +3151,7 @@ static void loadConfig(void)
                         *p = '\0';
                     }
                 }
-                BosWriteText(0, buf[x], 0);
+                pdosWriteText(buf[x]);
             }
         } while (readbytes == 0x200);
         fileClose(fh);
@@ -3905,7 +3978,7 @@ void dumpbuf(unsigned char *buf, int len)
 
     for (x = 0; x < len; x++)
     {
-        BosWriteText(0, buf[x], 0);
+        pdosWriteText(buf[x]);
     }
     return;
 }
@@ -4572,4 +4645,120 @@ char *PosGetErrorMessageString(unsigned int errorCode) /* func f6.09 */
         ERR2STR(FILE_EXISTS);
     }
     return NULL;
+}
+
+void PosClearScreen()
+{
+    BosClearScreen(currentAttrib);
+}
+
+void PosMoveCursor(int row, int col) /* func f6.31 */
+{
+    BosSetCursorPosition(currentPage, row, col);
+}
+
+int PosGetVideoInfo(pos_video_info *info, size_t size) /* func f6.32 */
+{
+    if (info == NULL || size != sizeof(pos_video_info))
+        return POS_ERR_DATA_INVALID;
+    BosGetVideoMode(&(info->cols), &(info->mode), &(info->page));
+    info->rows = BosGetTextModeRows();
+    BosReadCursorPosition(
+        info->page,
+        &(info->cursorStart),
+        &(info->cursorEnd),
+        &(info->row),
+        &(info->col)
+    );
+    info->currentAttrib = currentAttrib;
+    currentPage = info->page;
+    return POS_ERR_NO_ERROR;
+}
+
+int PosKeyboardHit(void) /* func f6.33 */
+{
+    int scancode, ascii;
+    BosReadKeyboardStatus(&scancode,&ascii);
+    return scancode != 0 || ascii != 0;
+}
+
+void PosYield(void) /* func f6.34 */
+{
+    /* Reduce battery consumption on laptops - tell BIOS we are doing nothing */
+    BosCpuIdle();
+}
+
+/* INT 21,F6,35 - Sleep */
+void PosSleep(unsigned long seconds)
+{
+    BosSleep(seconds);
+}
+
+/* INT 21,F6,36 - Get tick count */
+unsigned long PosGetClockTickCount(void)
+{
+    return BosGetClockTickCount();
+}
+
+static int pdosWriteText(int ch)
+{
+    unsigned int cursorStart;
+    unsigned int cursorEnd;
+    unsigned int row;
+    unsigned int column;
+    if (ch == 8)
+    {
+        BosReadCursorPosition(currentPage,&cursorStart,&cursorEnd,&row,&column);
+        if (column > 0)
+        {
+            column--;
+            BosSetCursorPosition(currentPage,row,column);
+            BosWriteCharAttrib(currentPage, ' ', currentAttrib, 1);
+        }
+    }
+    else if (ch == 7 || ch == 0xA || ch == 0xD)
+        BosWriteText(currentPage,ch,0);
+    else
+    {
+        BosReadCursorPosition(currentPage,&cursorStart,&cursorEnd,&row,&column);
+        if (column == BosGetTextModeCols())
+        {
+            BosWriteText(currentPage,'\r',0);
+            BosWriteText(currentPage,'\n',0);
+            BosReadCursorPosition(currentPage,
+                    &cursorStart,&cursorEnd,&row,&column);
+        }
+        BosWriteCharAttrib(currentPage, ch, currentAttrib, 1);
+        column++;
+        BosSetCursorPosition(currentPage,row,column);
+    }
+}
+
+void PosSetVideoAttribute(unsigned int attr) /* func f6.37 */
+{
+    currentAttrib = attr;
+}
+
+int PosSetVideoMode(unsigned int mode) /* func f6.38 */
+{
+    int actual, cols, page;
+    BosSetVideoMode(mode);
+    BosGetVideoMode(&cols, &actual, &page);
+    if (mode == actual) {
+        currentPage = page;
+        return POS_ERR_NO_ERROR;
+    }
+    return POS_ERR_ACCESS_DENIED;
+}
+
+int PosSetVideoPage(unsigned int page) /* func f6.39 */
+{
+    int mode, cols, actual;
+    BosSetActiveDisplayPage(page);
+    BosGetVideoMode(&cols, &mode, &actual);
+    if (page == actual) {
+        currentPage = page;
+        return POS_ERR_NO_ERROR;
+    }
+    return POS_ERR_ACCESS_DENIED;
 }

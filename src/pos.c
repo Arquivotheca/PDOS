@@ -1522,6 +1522,149 @@ void PosPowerOff(void)
     return;
 }
 
+/* extension to clear screen */
+void PosClearScreen(void)
+{
+    union REGS regsin;
+
+    regsin.h.ah = 0xf6;
+    regsin.h.al = 0x30;
+    int86i(0x21, &regsin);
+    return;
+}
+
+void PosMoveCursor(int row, int col) /* func f6.31 */
+{
+    union REGS regsin;
+
+    regsin.h.ah = 0xf6;
+    regsin.h.al = 0x31;
+    regsin.h.bh = row;
+    regsin.h.bl = col;
+    int86i(0x21, &regsin);
+    return;
+}
+
+int PosGetVideoInfo(pos_video_info *info, size_t size) /* func f6.32 */
+{
+    union REGS regsin;
+    union REGS regsout;
+    struct SREGS sregs;
+
+    regsin.h.ah = 0xf6;
+    regsin.h.al = 0x32;
+#ifdef __32BIT__
+    regsin.d.edx = (unsigned int) info;
+    regsin.d.ecx = size;
+#else
+    sregs.ds = FP_SEG(info);
+    regsin.x.dx = FP_OFF(info);
+    regsin.x.cx = size;
+#endif
+    int86x(0x21, &regsin, &regsout, &sregs);
+#ifdef __32BIT__
+    return regsout.d.eax;
+#else
+    return regsout.x.ax;
+#endif
+}
+
+int PosKeyboardHit(void) /* func f6.33 */
+{
+    union REGS regsin;
+    union REGS regsout;
+    struct SREGS sregs;
+
+    regsin.h.ah = 0xf6;
+    regsin.h.al = 0x33;
+    int86x(0x21, &regsin, &regsout, &sregs);
+    return regsout.x.ax;
+}
+
+void PosYield(void) /* func f6.34 */
+{
+    union REGS regsin;
+
+    regsin.h.ah = 0xf6;
+    regsin.h.al = 0x34;
+    int86i(0x21, &regsin);
+    return;
+}
+
+void PosSleep(unsigned long seconds) /* func f6.35 */
+{
+    union REGS regsin;
+
+    regsin.h.ah = 0xf6;
+    regsin.h.al = 0x35;
+#ifdef __32BIT__
+    regsin.d.edx = seconds;
+#else
+    regsin.x.dx = seconds >> 16;
+    regsin.x.bx = seconds;
+#endif
+    int86i(0x21, &regsin);
+    return;
+}
+
+/* INT 21,F6,36 - Get tick count */
+unsigned long PosGetClockTickCount(void)
+{
+    union REGS regsin;
+    union REGS regsout;
+    struct SREGS sregs;
+    unsigned long ticks;
+
+    regsin.h.ah = 0xf6;
+    regsin.h.al = 0x36;
+    int86x(0x21, &regsin, &regsout, &sregs);
+#ifdef __32BIT__
+    ticks = regsout.d.edx;
+#else
+    ticks = regsout.x.dx;
+    ticks = ticks << 16UL;
+    ticks |= regsout.x.bx;
+#endif
+    return ticks;
+}
+
+void PosSetVideoAttribute(unsigned int attr) /* func f6.37 */
+{
+    union REGS regsin;
+
+    regsin.h.ah = 0xf6;
+    regsin.h.al = 0x37;
+    regsin.x.bx = attr;
+    int86i(0x21, &regsin);
+    return;
+}
+
+int PosSetVideoMode(unsigned int mode) /* func f6.38 */
+{
+    union REGS regsin;
+    union REGS regsout;
+    struct SREGS sregs;
+
+    regsin.h.ah = 0xf6;
+    regsin.h.al = 0x38;
+    regsin.x.bx = mode;
+    int86x(0x21, &regsin, &regsout, &sregs);
+    return regsout.x.ax;
+}
+
+int PosSetVideoPage(unsigned int page) /* func f6.39 */
+{
+    union REGS regsin;
+    union REGS regsout;
+    struct SREGS sregs;
+
+    regsin.h.ah = 0xf6;
+    regsin.h.al = 0x39;
+    regsin.x.bx = page;
+    int86x(0x21, &regsin, &regsout, &sregs);
+    return regsout.x.ax;
+}
+
 /* Pos extension for installing interrupt handler. */
 void PosInstallInterruptHandler(int interrupt_number,
                                 int (*func)(unsigned int *))

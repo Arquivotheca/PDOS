@@ -174,6 +174,16 @@ easier debugging during early stages of development:
 #Int 21/AX=F608h - PDOS - Allocate memory (32-bit only)
 #Int 21/AX=F609h - PDOS - Get Error Message String
 #Int 21/AX=F60Ah - PDOS - Power Off
+#Int 21/AX=F630h - PDOS - Clear Screen
+#Int 21/AX=F631h - PDOS - Move Cursor
+#Int 21/AX=F632h - PDOS - Get Video Information
+#Int 21/AX=F633h - PDOS - Is Keyboard Hit?
+#Int 21/AX=F634h - PDOS - Yield CPU
+#Int 21/AX=F635h - PDOS - Sleep for some seconds
+#Int 21/AX=F636h - PDOS - Get tick count
+#Int 21/AX=F637h - PDOS - Set Video Attribute
+#Int 21/AX=F638h - PDOS - Set Video Mode
+#Int 21/AX=F639h - PDOS - Set Video Page
 
 For a full reference of standard and non-standard DOS calls check:
 http://www.ctyme.com/intr/int-21.htm

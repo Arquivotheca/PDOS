@@ -12,6 +12,21 @@
 
 #define BOS_ERROR 1 
 
+/* We multiply the BIOS tick count by 10. This enables 182 clock ticks per a
+ * second rather than 18.2, which means we can do clock calculations
+ * without having to use floating point.
+ */
+#define BOS_TICK_SCALE 10UL
+
+/* Number of (scaled) BIOS clock ticks per a second */
+#define BOS_TICK_PER_SECOND 182UL
+
+/* Number of SI seconds per a day = 86,400 */
+#define BOS_SECOND_PER_DAY 86400UL
+
+/* Number of scaled BIOS clock ticks per a day */
+#define BOS_TICK_PER_DAY (BOS_SECOND_PER_DAY*BOS_TICK_PER_SECOND)
+
 void BosPrintScreen(void); /* 5: */
 unsigned int BosSetVideoMode(unsigned int mode); /* 10:0 */
 void BosSetCursorType(unsigned int top, unsigned int bottom); /* 10:1 */
@@ -133,3 +148,28 @@ int BosPCICheck(unsigned char *hwcharacteristics, /*1A:B101*/
                 unsigned char *majorversion,
                 unsigned char *minorversion,
                 unsigned char *lastbus);
+
+/* Reads an arbitrary byte from BIOS Data Area (segment 0x40) */
+unsigned char BosGetBiosDataAreaByte(int offset);
+
+/* Reads an arbitrary 16-bit word from BIOS Data Area (segment 0x40) */
+unsigned short BosGetBiosDataArea16(int offset);
+
+/* Reads an arbitrary 32-bit DWORD from BIOS Data Area (segment 0x40) */
+unsigned long BosGetBiosDataArea32(int offset);
+
+/* Get BIOS text mode screen dimensions */
+int BosGetTextModeCols(void);
+int BosGetTextModeRows(void);
+void BosClearScreen(unsigned int attr);
+
+/* INT 15,5305 - APM 1.0+ CPU IDLE */
+void BosCpuIdle(void);
+
+/* Get BIOS clock tick count (DWORD at 40:6C).
+ * Note this is not the raw value, it is multiplied by BOS_TICK_SCALE.
+ */
+unsigned long BosGetClockTickCount(void);
+
+/* Sleep for given number of seconds */
+void BosSleep(unsigned long seconds);

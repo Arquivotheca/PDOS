@@ -18,6 +18,7 @@
 #include "pos.h"
 #include "dostime.h"
 #include "memmgr.h"
+#include "support.h"
 
 /* In C99 or higher we would just include <stdbool.h>. But, we need to
  * support older C compilers (C89/C90) which don't come with <stdbool.h>
@@ -45,13 +46,7 @@ static struct {
 static size_t len;
 static char drive[2] = "A";
 static char cwd[65];
-/* Sometimes I test PCOMM under MS-DOS.
- * And then I get confused about whether I am in PCOMM or COMMAND.COM.
- * Making the default prompt for PCOMM different from that of COMMAND.COM
- * Helps avoid that confusion.
- * - Simon Kissane
- */
-static char prompt[50] = "$_$P]";
+static char prompt[50];
 static int singleCommand = 0;
 static int primary = 0;
 static int term = 0;
@@ -74,8 +69,17 @@ static int abortFlag = 0;
 /* Flag indicating batch file currently running */
 static int inBatch = 0;
 
+/* FILE handle for current batch file (used by SAVE command) */
+static FILE * currentBatchFp = NULL;
+
 /* PDPCLIB defines this as pointer to environment */
 extern char **__envptr;
+
+/* Flag set to true if genuine PDOS detected */
+static int genuine_pdos = 0;
+
+/* Save the video state to restore it */
+static pos_video_info savedVideoState;
 
 static void parseArgs(int argc, char **argv);
 static int processInput(void);
@@ -159,6 +163,7 @@ static optBlock optRegistry[] =
 
 /* Prototypes for command do/help routines */
 CMDPROTO(cd);
+CMDPROTO(cls);
 CMDPROTO(copy);
 CMDPROTO(date);
 CMDPROTO(del);
@@ -172,16 +177,20 @@ CMDPROTO(md);
 CMDPROTO(option);
 CMDPROTO(path);
 CMDPROTO(pause);
+CMDPROTO(peek);
 CMDPROTO(poweroff);
 CMDPROTO(prompt);
 CMDPROTO(rd);
 CMDPROTO(reboot);
 CMDPROTO(rem);
 CMDPROTO(ren);
+CMDPROTO(save);
 CMDPROTO(set);
+CMDPROTO(sleep);
 CMDPROTO(time);
 CMDPROTO(type);
 CMDPROTO(unboot);
+CMDPROTO(v);
 CMDPROTO(ver);
 
 /* Function signature for command implementation functions */
@@ -218,6 +227,7 @@ cmdBlock;
 static cmdBlock cmdRegistry[] =
 {
     CMDDEF(cd,"|chdir","Changes the current directory"),
+    CMDDEF(cls,"","Clears the screen"),
     CMDDEF(copy,"","Copies files and directories"),
     CMDDEF(date,"","Shows the date"),
     CMDDEF(del,"|erase","Deletes files"),
@@ -231,16 +241,20 @@ static cmdBlock cmdRegistry[] =
     CMDDEF(option,"","Controls behavioural flags"),
     CMDDEF(path,"","Displays or modifies PATH variable"),
     CMDDEF(pause,"","Wait for user to press any key"),
+    CMDDEF(peek,"","Peek at some memory location"),
     CMDDEF(poweroff,"","Powers off the computer"),
     CMDDEF(prompt,"","Displays or modifies PROMPT variable"),
     CMDDEF(rd,"|rmdir","Removes directories"),
     CMDDEF(reboot,"","Reboots the computer"),
     CMDDEF(rem,"","Comment in a batch file"),
     CMDDEF(ren,"|rename","Renames files and directories"),
+    CMDDEF(save,"","Saves user input to file"),
     CMDDEF(set,"","Show/modify environment variables"),
+    CMDDEF(sleep,"","Sleep for some seconds"),
     CMDDEF(time,"","Shows the time"),
     CMDDEF(type,"","Reads and displays a text file"),
     CMDDEF(unboot,"","Marks a disk as non-bootable"),
+    CMDDEF(v,"","Video control"),
     CMDDEF(ver,"","Displays the current version of PDOS"),
     CMD_REGISTRY_END
 };
@@ -248,11 +262,11 @@ static cmdBlock cmdRegistry[] =
 /*===== PROMPT SYMBOL REGISTRY =====*/
 
 /* Function signature for PROMPT symbol display func */
-typedef void (*promptSymProc)(void);
+typedef void (*promptSymProc)(char *prompt, int *index);
 
 /* Macro to generate prototype for PROMPT symbol procedure */
 #define PROMPTSYMPROTO(name) \
-    static void promptSymProc_##name(void)
+    static void promptSymProc_##name(char *prompt, int *index)
 
 /* PROMPT symbol procedure prototypes */
 PROMPTSYMPROTO(dollar);
@@ -267,7 +281,9 @@ PROMPTSYMPROTO(P);
 PROMPTSYMPROTO(Q);
 PROMPTSYMPROTO(T);
 PROMPTSYMPROTO(V);
+PROMPTSYMPROTO(X);
 PROMPTSYMPROTO(underscore);
+PROMPTSYMPROTO(lbracket);
 
 /* Defines a prompt symbol */
 typedef struct promptSym
@@ -307,7 +323,9 @@ static promptSym promptSymRegistry[] =
     PROMPTSYMDEF('Q',Q,"= (equal sign)"),
     PROMPTSYMDEF('T',T,"Current time"),
     PROMPTSYMDEF('V',V,"DOS version number"),
+    PROMPTSYMDEF('X',X,"Current PID"),
     PROMPTSYMDEF('_',underscore,"CR+LF"),
+    PROMPTSYMDEF('[',lbracket,"Run command terminated by ]"),
     PROMPT_SYM_REGISTRY_END
 };
 
@@ -334,8 +352,29 @@ static void showArgsUnsupportedMsg(void)
 /* utility function - show an error if command requires arguments */
 static void showArgsRequiredMsg(void)
 {
-    printf("ERROR: Command '%s' requires arguments, but none supplied\n", 
+    printf("ERROR: Command '%s' requires arguments, but none supplied\n",
             curCmdName);
+}
+
+/* utility function - show an error if command requires genuine PDOS */
+static void showGenuineRequiredMsg(void)
+{
+    printf("ERROR: Command '%s' requires genuine PDOS, which is not detected\n",
+            curCmdName);
+}
+
+/* utility function - show an error if command argument syntax incorrect */
+static void showArgBadSyntaxMsg(char *argName)
+{
+    printf("ERROR: Command '%s' argument '%s' syntax incorrect\n",
+            curCmdName, argName);
+}
+
+/* utility function - show an error if command argument unknown */
+static void showUnrecognisedArgsMsg(char *args)
+{
+    printf("ERROR: Unrecognized arguments '%s' to %s command\n",
+            args, curCmdName);
 }
 
 /* utility macro - fail command if non-blank arguments supplied */
@@ -352,6 +391,15 @@ static void showArgsRequiredMsg(void)
     do { \
         if (isBlankString(args)) { \
             showArgsRequiredMsg(); \
+            return 1; \
+        } \
+    }  while (0)
+
+/* utility macro - fail command if not genuine PDOS */
+#define CMD_REQUIRES_GENUINE() \
+    do { \
+        if (!genuine_pdos) { \
+            showGenuineRequiredMsg(); \
             return 1; \
         } \
     }  while (0)
@@ -427,6 +475,30 @@ int main(int argc, char **argv)
 #ifdef __32BIT__
     install_runtime();
 #endif
+    /* Save whether this is genuine PDOS or not */
+    genuine_pdos = (PosGetMagic() == PDOS_MAGIC);
+    /* Save video state at startup */
+    if (genuine_pdos)
+    {
+        PosGetVideoInfo(&savedVideoState, sizeof(pos_video_info));
+    }
+    /* Support colourful prompt.
+     * Sometimes I test PCOMM under MS-DOS.
+     * And then I get confused about whether I am in PCOMM or COMMAND.COM.
+     * Making the default prompt for PCOMM different from that of COMMAND.COM
+     * Helps avoid that confusion.
+     * Also, lets have a colourful prompt, because we can.
+     * - Simon Kissane
+     */
+    if (genuine_pdos)
+    {
+        strcpy(prompt,"$_$[V SAVE=FG FG=14]$P]$[V RESTORE=FG]");
+    }
+    else
+    {
+        strcpy(prompt,"$_$P]");
+    }
+    /* Parse our arguments */
     parseArgs(argc, argv);
     if (singleCommand)
     {
@@ -435,12 +507,16 @@ int main(int argc, char **argv)
     }
     if (primary)
     {
-        printf("welcome to pcomm\n");
+        if (genuine_pdos) PosSetVideoAttribute(0x0A);
+        printf("Welcome to PCOMM\n");
+        if (genuine_pdos) PosSetVideoAttribute(savedVideoState.currentAttrib);
         readBat("AUTOEXEC.BAT");
     }
     else
     {
-        printf("welcome to pcomm - exit to return\n");
+        if (genuine_pdos) PosSetVideoAttribute(0x0A);
+        printf("Welcome to PCOMM - EXIT to return\n");
+        if (genuine_pdos) PosSetVideoAttribute(savedVideoState.currentAttrib);
     }
     while (!term)
     {
@@ -449,7 +525,9 @@ int main(int argc, char **argv)
 
         processInput();
     }
-    printf("thankyou for using pcomm!\n");
+    if (genuine_pdos) PosSetVideoAttribute(0x0C);
+    printf("Thankyou for using PCOMM!\n");
+    if (genuine_pdos) PosSetVideoAttribute(savedVideoState.currentAttrib);
     return (0);
 }
 
@@ -569,19 +647,19 @@ static int processInput(void)
 }
 
 /* $$ - prints dollar sign */
-static void promptSymProc_dollar(void)
+static void promptSymProc_dollar(char *prompt, int *index)
 {
     fputc('$', stdout);
 }
 
 /* $B - prints pipe symbol */
-static void promptSymProc_B(void)
+static void promptSymProc_B(char *prompt, int *index)
 {
     fputc('|', stdout);
 }
 
 /* $D - prints current date */
-static void promptSymProc_D(void)
+static void promptSymProc_D(char *prompt, int *index)
 {
     int y, m, d, dw;
     PosGetSystemDate(&y,&m,&d,&dw);
@@ -589,50 +667,50 @@ static void promptSymProc_D(void)
 }
 
 /* $E - prints escape character */
-static void promptSymProc_E(void)
+static void promptSymProc_E(char *prompt, int *index)
 {
     fputc(27, stdout);
 }
 
 /* $G - prints greater than sign */
-static void promptSymProc_G(void)
+static void promptSymProc_G(char *prompt, int *index)
 {
     fputc('>', stdout);
 }
 
 /* $H - prints backspace */
-static void promptSymProc_H(void)
+static void promptSymProc_H(char *prompt, int *index)
 {
     fputc('\b', stdout);
 }
 
 /* $L - prints less-than sign */
-static void promptSymProc_L(void)
+static void promptSymProc_L(char *prompt, int *index)
 {
     fputc('<', stdout);
 }
 
 /* $N - prints current drive letter */
-static void promptSymProc_N(void)
+static void promptSymProc_N(char *prompt, int *index)
 {
     fputc(PosGetDefaultDrive() + 'A', stdout);
 }
 
 /* $P - prints current drive and directory */
-static void promptSymProc_P(void)
+static void promptSymProc_P(char *prompt, int *index)
 {
     PosGetCurDir(0, cwd);
     printf("%c:\\%s", 'A' + PosGetDefaultDrive(), cwd);
 }
 
 /* $Q - prints equal sign */
-static void promptSymProc_Q(void)
+static void promptSymProc_Q(char *prompt, int *index)
 {
     fputc('=', stdout);
 }
 
 /* $T - prints time */
-static void promptSymProc_T(void)
+static void promptSymProc_T(char *prompt, int *index)
 {
     int hr, min, sec, hund;
     PosGetSystemTime(&hr,&min,&sec,&hund);
@@ -640,7 +718,7 @@ static void promptSymProc_T(void)
 }
 
 /* $V - prints DOS version number */
-static void promptSymProc_V(void)
+static void promptSymProc_V(char *prompt, int *index)
 {
     int ver, major, minor;
     ver = PosGetDosVersion();
@@ -649,13 +727,50 @@ static void promptSymProc_V(void)
     printf("DOS %d.%d", major, minor);
 }
 
+/* $X - print current PID */
+static void promptSymProc_X(char *prompt, int *index)
+{
+    printf("%X",PosGetCurrentProcessId());
+}
+
 /* $_ - prints underscore symbol */
-static void promptSymProc_underscore(void)
+static void promptSymProc_underscore(char *prompt, int *index)
 {
     fputs("\r\n", stdout);
 }
 
-static void putPromptSymbol(char ch)
+/* Runs command */
+static int runCmdLine(char *cmdLine)
+{
+    int rc;
+    char savebuf[256];
+    strncpy(savebuf,buf,sizeof savebuf);
+    strncpy(buf,cmdLine,sizeof buf);
+    rc = processInput();
+    strncpy(buf,savebuf,sizeof buf);
+    return rc;
+}
+
+/* $[ - run command terminated by ] */
+static void promptSymProc_lbracket(char *prompt, int *index)
+{
+    char cbuf[256];
+    int j = 0;
+    while (prompt[*index] != 0 && prompt[*index] != ']')
+    {
+        cbuf[j++] = prompt[*index];
+        (*index)++;
+    }
+    cbuf[j] = 0;
+    fflush(stdout);
+    if (runCmdLine(cbuf+1) != 0)
+    {
+        printf("\n\n");
+    }
+    fflush(stdout);
+}
+
+static void putPromptSymbol(char ch, char *prompt, int *index)
 {
     int i;
     ch = toupper(ch);
@@ -663,7 +778,7 @@ static void putPromptSymbol(char ch)
     {
         if (promptSymRegistry[i].symbol == ch)
         {
-            promptSymRegistry[i].proc();
+            promptSymRegistry[i].proc(prompt, index);
             return;
         }
     }
@@ -686,7 +801,7 @@ static void putPrompt(void)
         /* Character beginning of prompt symbol, call output routine */
         else if (prompt[i+1] != 0)
         {
-            putPromptSymbol(prompt[++i]);
+            putPromptSymbol(prompt[++i], prompt, &i);
         }
     }
     fflush(stdout);
@@ -832,14 +947,7 @@ static int cmd_dir_run(char *pattern)
     char *p;
     time_t tt;
     struct tm *tms;
-    int genuine_pdos;
 
-    /* We only print LFN if genuine PDOS. So if testing under
-     * some DOS that doesn't support LFNs, we don't print garbage.
-     * (Actually maybe check should be if current DOS supports
-     * LFNs, i.e. INT 21,71, but PDOS doesn't implement that yet.)
-     */
-    genuine_pdos = (PosGetMagic() == PDOS_MAGIC);
     dta = PosGetDTA();
     if (isBlankString(pattern))
     {
@@ -864,6 +972,11 @@ static int cmd_dir_run(char *pattern)
                tms->tm_hour,
                tms->tm_min,
                tms->tm_sec,
+               /* We only print LFN if genuine PDOS. So if testing under
+                * some DOS that doesn't support LFNs, we don't print garbage.
+                * (Actually maybe check should be if current DOS supports
+                * LFNs, i.e. INT 21,71, but PDOS doesn't implement that yet.)
+                */
                genuine_pdos ? (char *)dta->lfn : "");
         ret = PosFindNext();
     }
@@ -923,9 +1036,11 @@ static void errorBadDosVersion(void)
 
 static int cmd_ver_run(char *arg)
 {
-    int ver, major, minor, genuine;
+    int ver, major, minor;
     unsigned int maxPages;
     MEMMGRSTATS stats;
+    pos_video_info videoInfo;
+    unsigned long ticks;
 
     /* Only supported param is DOS=x.yy to set DOS version */
     if (!isBlankString(arg))
@@ -993,7 +1108,7 @@ static int cmd_ver_run(char *arg)
      * No point calling PDOS extension APIs if not really PDOS, they will
      * return meaningless values.
      */
-    if (PosGetMagic() != PDOS_MAGIC)
+    if (!genuine_pdos)
     {
         printf("WARNING: PDOS not detected, "
                 "PCOMM running under another DOS\n");
@@ -1020,6 +1135,16 @@ static int cmd_ver_run(char *arg)
     printf(" (largest block %d KB)\n",
             PARAS_TO_KB(stats.maxAllocated > stats.maxFree ?
                 stats.maxAllocated : stats.maxFree));
+    /* Show video subsystem info */
+    PosGetVideoInfo(&videoInfo, sizeof(pos_video_info));
+    printf("Video mode %Xh (%dx%d), page %d\n",
+            videoInfo.mode,
+            videoInfo.cols,
+            videoInfo.rows,
+            videoInfo.page);
+    /* Show tick count */
+    ticks = PosGetClockTickCount();
+    printf("Tick count %lu\n", ticks);
     return 0;
 }
 
@@ -1249,7 +1374,7 @@ static void showError(int ret)
         return;
     }
     /* Don't try to get error message if not genuine PDOS, will return rubbish */
-    if (PosGetMagic() == PDOS_MAGIC)
+    if (genuine_pdos)
     {
         /* Get error message */
         msg = PosGetErrorMessageString(ret);
@@ -1347,6 +1472,22 @@ static void cmd_dir_help(void)
     printf("DIR\n");
 }
 
+static void cmd_v_help(void)
+{
+    printf("V STATUS\n");
+    printf("    Shows video information\n");
+    printf("V {SAVE|RESTORE}={MODE|PAGE|COLOR|POS}\n");
+    printf("    Push/pop video settings\n");
+    printf("V {FG|BG}={0-15}\n");
+    printf("    Set foreground/background color\n");
+    printf("V {ROW|COL|PAGE}=n\n");
+    printf("    Set row/column/page\n");
+    printf("V MODE=x\n");
+    printf("    Set video mode (hexadecimal)\n");
+    printf("Multiple options can be combined in a single invocation\n");
+    printf("If no options supplied, STATUS is the default\n");
+}
+
 static void cmd_ver_help(void)
 {
     printf("VER\n");
@@ -1366,6 +1507,11 @@ static void cmd_echo_help(void)
 static void cmd_cd_help(void)
 {
     printf("CD [path]\n");
+}
+
+static void cmd_cls_help(void)
+{
+    printf("CLS\n");
 }
 
 static void cmd_reboot_help(void)
@@ -1440,11 +1586,42 @@ static void cmd_pause_help(void)
     printf("PAUSE\n");
 }
 
+static void cmd_peek_help(void)
+{
+    printf("PEEK location [#][quantity]\n");
+#ifdef __32BIT__
+    printf("location is flat 32-bit hex memory address, e.g. 46C\n");
+#else
+    printf("location is segment:offset hex memory address, e.g. 40:6C\n");
+#endif
+    printf("optional quantity is how many bytes to dump:\n");
+    printf("B = dump byte\n");
+    printf("W = dump 16-bit word\n");
+    printf("D = dump 32-bit double word\n");
+    printf("# will trigger decimal output, default is hex\n");
+}
+
+static void cmd_save_help(void)
+{
+    printf("SAVE filename [options...]\n\n");
+    printf("Writes user input to a file.\n");
+    printf("Options:\n");
+    printf("/Dstr - Terminate input using string str\n");
+    printf("/I    - Interactive: read from user, not from the batch file\n");
+    printf("/O    - Overwrite existing file\n");
+    printf("/Q    - Quiet mode, suppress all prompts/messages\n");
+}
+
 static void cmd_set_help(void)
 {
     printf("SET\n\n");
     printf("Limitations (may be removed in future versions):\n");
     printf("- Setting environment variables not presently supported\n");
+}
+
+static void cmd_sleep_help(void)
+{
+    printf("SLEEP seconds\n");
 }
 
 static void cmd_option_help(void)
@@ -1726,6 +1903,7 @@ static int readBat(char *fnm)
     fp = fopen(fnm, "r");
     if (fp != NULL)
     {
+        currentBatchFp = fp;
         while (fgets(buf, sizeof buf, fp) != NULL)
         {
             /* If GOTO target set, scan for matching label */
@@ -1747,6 +1925,7 @@ static int readBat(char *fnm)
                 printf("%s\n", buf);
             }
             rc = processInput();
+            currentBatchFp = fp; /* In case we ran some other batch file */
             /* Abort if OPTION +A and batch file command failed */
             if (abortFlag && rc != 0)
             {
@@ -1761,6 +1940,7 @@ static int readBat(char *fnm)
             {
                 fclose(fp);
                 fp = fopen(fnm, "r");
+                currentBatchFp = fp;
                 executeGoto = 0;
             }
         }
@@ -1778,6 +1958,7 @@ static int readBat(char *fnm)
     }
 
     inBatch = 0;
+    currentBatchFp = NULL;
     return rc;
 }
 
@@ -1929,6 +2110,117 @@ static int cmd_pause_run(char *ignored)
     return 0;
 }
 
+static int ishexdigit(char ch)
+{
+    ch = toupper(ch);
+    return isdigit(ch) || (ch >= 'A' && ch <= 'F');
+}
+
+static int cmd_peek_run(char *arg)
+{
+    unsigned long loc1;
+    void *ptr;
+    char addr[10];
+    char quantity = 'B';
+    int decimal = 0;
+#ifdef __32BIT__
+    unsigned long loc;
+#else
+    unsigned int seg, off;
+#endif
+    CMD_REQUIRES_ARGS(arg);
+    arg = stringTrimBoth(arg);
+    if (!ishexdigit(arg[0]))
+    {
+        printf("ERROR: PEEK command requires valid hex memory location\n");
+        return 1;
+    }
+#ifdef __32BIT__
+    loc = strtoul(arg,&arg,16);
+    ptr = (void*)loc;
+    sprintf(addr,"%08lX", loc);
+#else
+    seg = (unsigned int)strtoul(arg,&arg,16);
+    if (arg[0] != ':' || !ishexdigit(arg[1]))
+    {
+        printf("ERROR: PEEK command needs SEGMENT:OFFSET address\n");
+        return 1;
+    }
+    arg++;
+    off = (unsigned int)strtoul(arg,&arg,16);
+    ptr = MK_FP(seg,off);
+    sprintf(addr,"%04X:%04X", seg, off);
+#endif
+    arg = stringTrimBoth(arg);
+    if (arg[0] == '#')
+    {
+        decimal = 1;
+        arg++;
+        arg = stringTrimBoth(arg);
+    }
+    switch (toupper(arg[0]))
+    {
+        case 0:
+        case 'B':
+            quantity = 'B';
+            break;
+        case 'W':
+            quantity = 'W';
+            break;
+        case 'D':
+            quantity = 'D';
+            break;
+        default:
+            printf("ERROR: PEEK command illegal quantity '%c'\n", arg[0]);
+            return 1;
+    }
+    if (arg[0] != 0)
+        arg++;
+    if (arg[0] != 0)
+    {
+        printf("ERROR: Junk at end of PEEK command\n");
+        return 1;
+    }
+    switch (quantity)
+    {
+        case 'B':
+        {
+            unsigned char *b = ptr;
+            printf(decimal ? "%s = %u\n" : "%s = %02X\n",
+                    addr, (unsigned int)(*b));
+            break;
+        }
+        case 'W':
+        {
+            unsigned short *w = ptr;
+            printf(decimal ? "%s = %u\n" : "%s = %02X\n",
+                    addr, (unsigned int)(*w));
+            break;
+        }
+        case 'D':
+        {
+            unsigned long *d = ptr;
+            unsigned long v = *d;
+#ifdef __32BIT__
+            printf(decimal ? "%s = %lu\n" : "%s = %08X\n", addr, v);
+#else
+            if (decimal)
+            {
+                printf("%s = %lu\n", addr, v);
+            }
+            else
+            {
+                unsigned int hi = (unsigned int)(v >> 16UL);
+                unsigned int lo = (unsigned int)(v);
+                printf("%s = %04X%04X\n", addr, hi, lo);
+            }
+#endif
+            break;
+        }
+    }
+    return 0;
+}
+
 static int cmd_set_run(char *ignored)
 {
     char *env = (char*)__envptr;
@@ -1947,6 +2239,27 @@ static int cmd_set_run(char *ignored)
         printf("%s\n", env);
         env += (len + 1);
     }
+}
+
+static int cmd_sleep_run(char *arg)
+{
+    unsigned long seconds;
+    CMD_REQUIRES_ARGS(arg);
+    CMD_REQUIRES_GENUINE();
+    arg = stringTrimBoth(arg);
+    if (!isdigit(arg[0]))
+    {
+        printf("ERROR: SLEEP command argument not valid seconds count\n");
+        return 1;
+    }
+    seconds = strtol(arg, &arg, 10);
+    if (arg[0] != 0)
+    {
+        printf("ERROR: SLEEP command argument not valid seconds count\n");
+        return 1;
+    }
+    PosSleep(seconds);
+    return 0;
 }
 
 /* Find option in options registry */
@@ -1968,7 +2281,7 @@ static optBlock *findOption(char optKey)
 static int opt_logunimp_get(void)
 {
     /* If not PDOS, no such flag, just always return 0=off */
-    if (PosGetMagic() != PDOS_MAGIC)
+    if (!genuine_pdos)
     {
         return 0;
     }
@@ -1978,7 +2291,7 @@ static int opt_logunimp_get(void)
 static void opt_logunimp_set(int flag)
 {
     /* Only try set flag if PDOS, API doesn't exist otherwise */
-    if (PosGetMagic() == PDOS_MAGIC)
+    if (genuine_pdos)
     {
         PosSetLogUnimplemented(!!flag);
     }
@@ -2234,5 +2547,465 @@ static int cmd_goto_run(char *arg)
     gotoTarget[0] = ':';
     strcpy(gotoTarget + 1, arg);
     executeGoto = 1;
+    return 0;
+}
+
+static int cmd_cls_run(char *ignored)
+{
+    CMD_HAS_NO_ARGS(ignored);
+    PosClearScreen();
+    return 0;
+}
+
+/* Splits first word from input. Inserts a NUL byte at the first space
+ * character after a non-space character.
+ */
+static char *splitFirstWord(char *str)
+{
+    /* Skip any initial whitespace */
+    while (*str != 0 && isspace(*str))
+        str++;
+    /* Now skip all non-whitespace */
+    while (*str != 0 && !isspace(*str))
+        str++;
+    /* Have we reached a NUL? - then nothing after initial token */
+    if (*str == 0)
+        return str;
+    /* Not a NUL, must be a space - zero it out then move forward */
+    *str = 0;
+    str++;
+    /* Strip any whitespace before second token */
+    while (*str != 0 && isspace(*str))
+        str++;
+    /* Return start of second token */
+    return str;
+
+}
+
+static bool isDelimiterLine(char *line, char *delimiter)
+{
+    int len = strlen(delimiter);
+    /* If delimiter not at start, not a delimiter line */
+    if (ins_strncmp(line, delimiter, len) != 0)
+        return false;
+    /* Skip past the delimiter */
+    line += len;
+    /* Allow whitespace between delimiter and end of line */
+    while (isspace(*line))
+        line++;
+    /* Not a delimiter line if non-whitespace after delimiter */
+    return *line == 0;
+}
+
+static int cmd_save_run(char *arg)
+{
+    char *fileName = NULL;    /* Holds the file name */
+    bool interactive = false; /* Option /I - Interactive mode */
+    bool overwrite = false;   /* Option /O - Overwrite */
+    bool quiet = false;       /* Option /Q - Quiet Mode */
+    char *delimiter = NULL;   /* Option /D... - Set Delimiter */
+    bool exists = false;      /* Does file exist? */
+    bool attrs = false;       /* Attributes of existing file */
+    FILE *fh;                 /* File to which we will write */
+    int lineCount = 0;        /* How many lines processed so far */
+    char line[256];           /* Buffer for read lines */
+
+    /* Strip out the file name */
+    CMD_REQUIRES_ARGS(arg);
+    arg = stringTrimBoth(arg);
+    fileName = arg;
+    arg = splitFirstWord(arg);
+
+    /* Process the options */
+    while (*arg != 0)
+    {
+        /* Skip whitespace */
+        if (isspace(*arg))
+        {
+            arg++;
+            continue;
+        }
+        /* Option /I - Interactive */
+        if (ins_strncmp(arg,"/I",2) == 0) {
+            interactive = 1;
+            arg += 2;
+            continue;
+        }
+        /* Option /O - Overwrite */
+        if (ins_strncmp(arg,"/O",2) == 0) {
+            overwrite = 1;
+            arg += 2;
+            continue;
+        }
+        /* Option /Q - Quiet */
+        if (ins_strncmp(arg,"/Q",2) == 0) {
+            quiet = 1;
+            arg += 2;
+            continue;
+        }
+        /* Option /Dx - Set Delimiter to x */
+        if (ins_strncmp(arg,"/D",2) == 0) {
+            arg += 2;
+            /* Delimiter starts after /D */
+            delimiter = arg;
+            /* End delimiter with a NUL */
+            while (true)
+            {
+                if (*arg == 0)
+                    break;
+                if (isspace(*arg)) {
+                    *arg = 0;
+                    arg++;
+                    break;
+                }
+                arg++;
+            }
+            continue;
+        }
+        /* Something else */
+        showUnrecognisedArgsMsg(arg);
+        return 1;
+    }
+
+    /* Validate delimiter */
+    if (delimiter != NULL && *delimiter == 0)
+    {
+        printf("ERROR: /D option requires argument\n");
+        return 1;
+    }
+
+    /* If no delimiter, use the default */
+    if (delimiter == NULL)
+    {
+        delimiter = ".";
+    }
+
+    /* In batch file, if interactive mode not requested, turn on quiet */
+    if (inBatch && !interactive)
+        quiet = true;
+
+    /* Check if the file already exists */
+    exists = PosGetFileAttributes(fileName,&attrs) == POS_ERR_NO_ERROR;
+
+    /* If file already exists, and not overwrite mode, raise error */
+    if (exists && !overwrite)
+    {
+        printf("ERROR: File '%s' exists but /O not specified\n",
+                fileName);
+        return 1;
+    }
+
+    /* Open the file */
+    fh = fopen(fileName, "w");
+    if (!fh)
+    {
+        printf("ERROR: Failed to open file '%s' for writing\n", fileName);
+        return 1;
+    }
+
+    /* If not quiet mode, display the instructions */
+    if (!quiet)
+    {
+        printf("Enter lines to write to file '%s'\n", fileName);
+        printf("Terminate input with %s on a line by itself\n", delimiter);
+    }
+
+    /* Now we start looping, reading in the lines */
+    for (;;)
+    {
+        /* If not quiet mode, show the prompt */
+        if (!quiet)
+        {
+            printf("%d: ", lineCount+1);
+            fflush(stdout);
+        }
+
+        /* Read one line */
+        if (inBatch && !interactive)
+        {
+            if (fgets(line, sizeof line, currentBatchFp) == NULL)
+            {
+                printf("ERROR: Unexpected end of batch file during SAVE\n");
+                fclose(fh);
+                return 1;
+            }
+        }
+        else
+        {
+            safegets(line, sizeof line);
+        }
+
+        /* If delimiter line, exit loop */
+        if (isDelimiterLine(line, delimiter))
+            break;
+
+        /* Send out that line */
+        fprintf(fh, "%s\n", line);
+
+        /* Increment line counter */
+        lineCount++;
+    }
+
+    /* Close the file */
+    fflush(fh);
+    fclose(fh);
+
+    /* Success message if not quiet mode */
+    if (!quiet)
+    {
+        printf("SUCCESS: Wrote %d lines to file '%s'\n",
+                lineCount, fileName);
+    }
+
+    /* Report success */
+    return 0;
+}
+
+static void showVideoSetError(char *attr, int n, bool hex)
+{
+    printf("ERROR: Setting video %s=", attr);
+    printf(hex ? "%X" : "%d", n);
+    printf(" failed\n");
+} 
+
+static int cmd_v_run(char *arg)
+{
+    pos_video_info videoInfo;
+    unsigned int n;
+    char *token;
+
+    CMD_REQUIRES_GENUINE();
+    PosGetVideoInfo(&videoInfo, sizeof(pos_video_info));
+    arg = stringTrimBoth(arg);
+    if (*arg == 0)
+    {
+        /* No args, print video mode status */
+        arg = "STATUS";
+    }
+
+    for (;;)
+    {
+        if (isBlankString(arg))
+            break;
+        token = arg;
+        arg = splitFirstWord(arg);
+        if (ins_strcmp("STATUS",token)==0)
+        {
+            printf("V MODE=%X PAGE=%d FG=%d BG=%d ROW=%d COL=%d\n",
+                    videoInfo.mode,
+                    videoInfo.page,
+                    videoInfo.currentAttrib & 0xf,
+                    videoInfo.currentAttrib >> 4,
+                    videoInfo.row,
+                    videoInfo.col
+            );
+            printf("    ROWS=%d COLS=%d CSTART=%d CEND=%d\n",
+                    videoInfo.rows,
+                    videoInfo.cols,
+                    videoInfo.cursorStart,
+                    videoInfo.cursorEnd
+            );
+            continue;
+        }
+        if (ins_strncmp("FG=",token,3)==0)
+        {
+            token += 3;
+            if (!isdigit(*token))
+            {
+                showArgBadSyntaxMsg("FG=");
+                return 1;
+            }
+            n = strtol(token,&token,10);
+            if (*token != 0 || n < 0 || n > 15)
+            {
+                showArgBadSyntaxMsg("FG=");
+                return 1;
+            }
+            videoInfo.currentAttrib &= 0xf0;
+            videoInfo.currentAttrib |= n;
+            PosSetVideoAttribute(videoInfo.currentAttrib);
+            continue;
+        }
+        if (ins_strncmp("ROW=",token,4)==0)
+        {
+            token += 4;
+            if (!isdigit(*token))
+            {
+                showArgBadSyntaxMsg("ROW=");
+                return 1;
+            }
+            n = strtol(token,&token,10);
+            if (*token != 0 || n < 0)
+            {
+                showArgBadSyntaxMsg("ROW=");
+                return 1;
+            }
+            PosGetVideoInfo(&videoInfo, sizeof(pos_video_info));
+            PosMoveCursor(n, videoInfo.col);
+            PosGetVideoInfo(&videoInfo, sizeof(pos_video_info));
+            if (videoInfo.row != n)
+            {
+                showVideoSetError("ROW",n,false);
+                return 1;
+            }
+            continue;
+        }
+        if (ins_strncmp("COL=",token,4)==0)
+        {
+            token += 4;
+            if (!isdigit(*token))
+            {
+                showArgBadSyntaxMsg("COL=");
+                return 1;
+            }
+            n = strtol(token,&token,10);
+            if (*token != 0 || n < 0)
+            {
+                showArgBadSyntaxMsg("COL=");
+                return 1;
+            }
+            PosGetVideoInfo(&videoInfo, sizeof(pos_video_info));
+            PosMoveCursor(videoInfo.row, n);
+            PosGetVideoInfo(&videoInfo, sizeof(pos_video_info));
+            if (videoInfo.col != n)
+            {
+                showVideoSetError("COL",n,false);
+                return 1;
+            }
+            continue;
+        }
+        if (ins_strncmp("BG=",token,3)==0)
+        {
+            token += 3;
+            if (!isdigit(*token))
+            {
+                showArgBadSyntaxMsg("BG=");
+                return 1;
+            }
+            n = strtol(token,&token,10);
+            if (*token != 0 || n < 0 || n > 15)
+            {
+                showArgBadSyntaxMsg("BG=");
+                return 1;
+            }
+            videoInfo.currentAttrib &= 0x0f;
+            videoInfo.currentAttrib |= (n<<4);
+            PosSetVideoAttribute(videoInfo.currentAttrib);
+            continue;
+        }
+        if (ins_strncmp("MODE=",token,5)==0)
+        {
+            token += 5;
+            if (!isdigit(*token) && !(*token >= 'A' && *token <= 'F') &&
+                                    !(*token >= 'a' && *token <= 'f'))
+            {
+                showArgBadSyntaxMsg("MODE=");
+                return 1;
+            }
+            n = strtol(token,&token,16);
+            if (*token != 0 || n < 0 || n > 255)
+            {
+                showArgBadSyntaxMsg("MODE=");
+                return 1;
+            }
+            videoInfo.mode = n;
+            if (PosSetVideoMode(videoInfo.mode) != 0)
+            {
+                printf("ERROR: Setting video MODE=%X failed\n", n);
+                showVideoSetError("MODE",n,true);
+                return 1;
+            }
+            continue;
+        }
+        if (ins_strncmp("PAGE=",token,5)==0)
+        {
+            token += 5;
+            if (!isdigit(*token))
+            {
+                showArgBadSyntaxMsg("PAGE=");
+                return 1;
+            }
+            n = strtol(token,&token,10);
+            if (*token != 0 || n < 0 || n > 4)
+            {
+                showArgBadSyntaxMsg("PAGE=");
+                return 1;
+            }
+            videoInfo.page = n;
+            if (PosSetVideoPage(videoInfo.page) != 0)
+            {
+                showVideoSetError("PAGE",n,false);
+                return 1;
+            }
+            continue;
+        }
+        if (ins_strcmp("SAVE=MODE",token) == 0)
+        {
+            savedVideoState.mode = videoInfo.mode;
+            continue;
+        }
+        if (ins_strcmp("RESTORE=MODE",token) == 0)
+        {
+            if (PosSetVideoMode(savedVideoState.mode) != 0)
+            {
+                showVideoSetError("MODE",savedVideoState.mode,true);
+                return 1;
+            }
+            continue;
+        }
+        if (ins_strcmp("SAVE=PAGE",token) == 0)
+        {
+            savedVideoState.page = videoInfo.page;
+            continue;
+        }
+        if (ins_strcmp("RESTORE=PAGE",token) == 0)
+        {
+            if (PosSetVideoPage(savedVideoState.page) != 0)
+            {
+                showVideoSetError("PAGE",savedVideoState.page,false);
+                return 1;
+            }
+            continue;
+        }
+        if (ins_strcmp("SAVE=POS",token) == 0)
+        {
+            savedVideoState.row = videoInfo.row;
+            savedVideoState.col = videoInfo.col;
+            continue;
+        }
+        if (ins_strcmp("RESTORE=POS",token) == 0)
+        {
+            PosMoveCursor(savedVideoState.row,savedVideoState.col);
+            continue;
+        }
+        if (ins_strcmp("SAVE=FG",token) == 0)
+        {
+            savedVideoState.currentAttrib &= 0xf0;
+            savedVideoState.currentAttrib |= (videoInfo.currentAttrib&0x0f);
+            continue;
+        }
+        if (ins_strcmp("RESTORE=FG",token) == 0)
+        {
+            videoInfo.currentAttrib &= 0xf0;
+            videoInfo.currentAttrib |= (savedVideoState.currentAttrib&0x0f);
+            PosSetVideoAttribute(videoInfo.currentAttrib);
+            continue;
+        }
+        if (ins_strcmp("SAVE=BG",token) == 0)
+        {
+            savedVideoState.currentAttrib &= 0x0f;
+            savedVideoState.currentAttrib |= (videoInfo.currentAttrib&0xf0);
+            continue;
+        }
+        if (ins_strcmp("RESTORE=BG",token) == 0)
+        {
+            videoInfo.currentAttrib &= 0x0f;
+            videoInfo.currentAttrib |= (savedVideoState.currentAttrib&0xf0);
+            PosSetVideoAttribute(videoInfo.currentAttrib);
+            continue;
+        }
+        showUnrecognisedArgsMsg(token);
+        return 1;
+    }
     return 0;
 }

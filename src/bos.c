@@ -933,3 +933,175 @@ static void int86i(unsigned int intno, union REGS *regsin)
     return;
 }
 
+/* Reads an arbitrary byte from BIOS Data Area (segment 0x40) */
+unsigned char BosGetBiosDataAreaByte(int offset)
+{
+    unsigned char *ptr;
+#ifdef __32BIT__
+    ptr = (unsigned char*)(0x40 << 4);
+#else
+    ptr = MK_FP(0x40,0);
+#endif
+
+    return ptr[offset];
+}
+
+/* Reads an arbitrary 16-bit word from BIOS Data Area (segment 0x40) */
+unsigned short BosGetBiosDataArea16(int offset)
+{
+    unsigned char *cptr;
+    unsigned short *ptr;
+#ifdef __32BIT__
+    cptr = (unsigned char*)(0x40 << 4);
+#else
+    cptr = MK_FP(0x40,0);
+#endif
+
+    cptr += offset;
+    ptr = (unsigned short*)cptr;
+    return *ptr;
+}
+
+/* Reads an arbitrary 32-bit word from BIOS Data Area (segment 0x40) */
+unsigned long BosGetBiosDataArea32(int offset)
+{
+    unsigned char *cptr;
+    unsigned long *ptr;
+#ifdef __32BIT__
+    cptr = (unsigned char*)(0x40 << 4);
+#else
+    cptr = MK_FP(0x40,0);
+#endif
+
+    cptr += offset;
+    ptr = (unsigned long*)cptr;
+    return *ptr;
+}
+
+int BosGetTextModeCols(void)
+{
+    return BosGetBiosDataAreaByte(0x4A);
+}
+
+int BosGetTextModeRows(void)
+{
+    return BosGetBiosDataAreaByte(0x84);
+}
+
+void BosClearScreen(unsigned int attr)
+{
+    int rows, cols, mode, page;
+    rows = BosGetTextModeRows();
+    cols = BosGetTextModeCols();
+    BosScrollWindowUp(0, attr, 0, 0, rows, cols);
+    BosGetVideoMode(&cols, &mode, &page);
+    BosSetCursorPosition(page, 0, 0);
+}
+
+/* INT 15,5305 - APM 1.0+ CPU IDLE */
+void BosCpuIdle(void)
+{
+    union REGS regsin;
+    regsin.x.ax = 0x5305;
+    int86i(0x15, &regsin);
+}
+
+/* Get scaled BIOS tick count. This internal function gets the scaled tick
+ * count without the midnight logic.
+ */
+static unsigned long BosGetClockTickCount0(void) {
+    unsigned long v1, v2;
+    for (;;)
+    {
+        /* We read it twice to make sure it gets same value both time. This
+         * is just in case the BIOS is trying to update it while we are in
+         * the middle of reading it, which might cause it to have some wrong
+         * value.
+         */
+        v1 = BosGetBiosDataArea32(0x6C);
+        v2 = BosGetBiosDataArea32(0x6C);
+        if (v1 == v2)
+        {
+            return v1 * BOS_TICK_SCALE;
+        }
+    }
+}
+
+/* Get BIOS clock tick count (DWORD at 40:6C).
+ * Note we scale the value by BOS_TICK_SCALE (10). This enables 182 clock ticks
+ * per a second rather than 18.2, which means we can do clock calculations
+ * without having to use floating point. We also keep track of the passage
+ * of local midnight (when count resets to zero) and keep a day counter based
+ * on how many times we see it hit zero (i.e. how many days we've been up.)
+ * So the returned value is actually the combination of ticks since midnight
+ * and days since the day we started.
+ * Note that this function must be called at least once every 24 hours,
+ * otherwise we might miss a day.
+ */
+unsigned long BosGetClockTickCount(void) {
+    /* Flag to check if we have ever been called before */
+    static int init = 0;
+    /* Number of days we have been up */
+    static unsigned long days = 0;
+    /* Last value we got */
+    static unsigned long last = 0;
+    /* Current value we are getting now */
+    unsigned long cur = BosGetClockTickCount0();
+
+    /* Skip midnight check on first ever call since last will be invalid */
+    if (!init)
+    {
+        init = 1;
+    }
+    /* Has midnight passed since last call? */
+    else if (cur < last)
+    {
+        /* Yes, midnight has passed, increment day counter */
+        days++;
+    }
+
+    /* Save current as last */
+    last = cur;
+
+    /* Return the tick count include number of days passed */
+    return (days * BOS_TICK_PER_DAY) + cur;
+}
+
+/* Sleep until given number of seconds has elapsed */
+void BosSleep(unsigned long seconds) {
+    /* Initial tick count at start of sleep */
+    unsigned long start = 0;
+    /* Number of ticks we are going to sleep for */
+    unsigned long ticks = 0;
+    /* Current tick count */
+    unsigned long cur = 0;
+
+    /* Don't sleep if asked to sleep for zero seconds */
+    if (seconds == 0) {
+        /* Some programs use sleep(0) as an idiom for yielding the CPU.
+         * Let us support that idiom.
+         */
+        BosCpuIdle();
+        return;
+    }
+
+    /* How many ticks we have to wait for */
+    ticks = seconds * BOS_TICK_PER_SECOND;
+
+    /* Get the initial tick count */
+    start = BosGetClockTickCount();
+
+    for (;;)
+    {
+        /* Get current tick count */
+        cur = BosGetClockTickCount();
+        /* Huh, clock has gone backwards?? Just give up. */
+        if (cur < start)
+            return;
+        /* Sleep time time expired, return. */
+        if ((cur - start) >= ticks)
+            return;
+        /* Don't drain battery, pause CPU until next timer tick */
+        BosCpuIdle();
+    }
+}

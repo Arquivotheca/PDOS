@@ -63,6 +63,19 @@
 #define LOC32 0x200
 #define LOC64 0x300
 
+/* Video subsystem information */
+typedef struct pos_video_info {
+    unsigned int mode;
+    unsigned int page;
+    unsigned int rows;
+    unsigned int cols;
+    unsigned int cursorStart;
+    unsigned int cursorEnd;
+    unsigned int row;
+    unsigned int col;
+    unsigned int currentAttrib;
+} pos_video_info;
+
 /* Input buffer used for INT 21,A */
 typedef struct pos_input_buffer {
     unsigned char maxChars; /* Maximum number of chars buffer can hold */
@@ -260,6 +273,34 @@ void PosPowerOff(void); /* func f6.0a */
 
 void PosInstallInterruptHandler(int interrupt_number, /* func f6.0b */
                                 int (*func)(unsigned int *));
+
+void PosClearScreen(void); /* func f6.30 */
+
+void PosMoveCursor(int row, int col); /* func f6.31 */
+
+int PosGetVideoInfo(pos_video_info *info, size_t size); /* func f6.32 */
+
+int PosKeyboardHit(void); /* func f6.33 */
+
+/* F6,34 - Yield the CPU. Currently calls APM BIOS to reduce CPU usage.
+ * One day it might be used for multi-tasking.
+ */
+void PosYield(void);
+
+/* F6,35 - Sleep for given number of seconds */
+void PosSleep(unsigned long seconds);
+
+/* F6,36 - Get tick count */
+unsigned long PosGetClockTickCount(void);
+
+/* F6,37 - Set Video Attribute */
+void PosSetVideoAttribute(unsigned int attribute);
+
+/* F6,38 - Set Video Mode */
+int PosSetVideoMode(unsigned int mode);
+
+/* F6,39 - Set Video Page */
+int PosSetVideoPage(unsigned int page);
 
 unsigned int PosAbsoluteDiskRead(int drive, unsigned long start_sector,
                                  unsigned int sectors,void *buf); /*INT25 */

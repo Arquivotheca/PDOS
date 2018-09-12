@@ -218,6 +218,10 @@ level10:
         pop    %ebx
 / above is actually flags
         cmp    $0, %eax
+/ +++ We shouldn't actually need these different paths for
+/ carry set and clear, but for some reason the flags do
+/ not appear to have carry set properly, but the carry
+/ flag value is set properly
         je     clear
         jmp    notclear
 clear:

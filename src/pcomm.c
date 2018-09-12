@@ -162,6 +162,7 @@ static optBlock optRegistry[] =
     static void cmd_##name##_help(void);
 
 /* Prototypes for command do/help routines */
+CMDPROTO(attrib);
 CMDPROTO(cd);
 CMDPROTO(cls);
 CMDPROTO(copy);
@@ -226,6 +227,7 @@ cmdBlock;
  */
 static cmdBlock cmdRegistry[] =
 {
+    CMDDEF(attrib,"","View or change file attributes"),
     CMDDEF(cd,"|chdir","Changes the current directory"),
     CMDDEF(cls,"","Clears the screen"),
     CMDDEF(copy,"","Copies files and directories"),
@@ -1436,6 +1438,15 @@ static void cmd_exit_help(void)
     printf("EXIT\n");
 }
 
+static void cmd_attrib_help(void)
+{
+    printf("ATTRIB filename {{+|-}{A|H|R|S}}*\n");
+    printf("A = Archive\n");
+    printf("H = Hidden\n");
+    printf("R = Read-Only\n");
+    printf("S = System\n");
+}
+
 static void cmd_path_help(void)
 {
     printf("PATH variable provides a list of directories\n");
@@ -2605,7 +2616,7 @@ static int cmd_save_run(char *arg)
     bool quiet = false;       /* Option /Q - Quiet Mode */
     char *delimiter = NULL;   /* Option /D... - Set Delimiter */
     bool exists = false;      /* Does file exist? */
-    bool attrs = false;       /* Attributes of existing file */
+    int attrs;                /* Attributes of existing file */
     FILE *fh;                 /* File to which we will write */
     int lineCount = 0;        /* How many lines processed so far */
     char line[256];           /* Buffer for read lines */
@@ -3007,5 +3018,77 @@ static int cmd_v_run(char *arg)
         showUnrecognisedArgsMsg(token);
         return 1;
     }
+    return 0;
+}
+
+static int getAttrMask(char attr)
+{
+    switch (toupper(attr))
+    {
+        case 'R':
+            return FILE_ATTR_READONLY;
+        case 'H':
+            return FILE_ATTR_HIDDEN;
+        case 'S':
+            return FILE_ATTR_SYSTEM;
+        case 'A':
+            return FILE_ATTR_ARCHIVE;
+        default:
+            return 0;
+    }
+}
+
+static int cmd_attrib_run(char *arg)
+{
+    char *fileName;
+    char c;
+    int rc;
+    int attrs;
+    int mask;
+
+    CMD_REQUIRES_ARGS(arg);
+    arg = stringTrimBoth(arg);
+    fileName = arg;
+    arg = splitFirstWord(arg);
+    rc = PosGetFileAttributes(fileName,&attrs);
+    if (rc != POS_ERR_NO_ERROR)
+    {
+        showError(rc);
+        return 1;
+    }
+    for (;;)
+    {
+        arg = stringTrimBoth(arg);
+        if (*arg == 0)
+            break;
+        if (arg[0] != '+' && arg[0] != '-')
+        {
+            showUnrecognisedArgsMsg(arg);
+            return 1;
+        }
+        mask = getAttrMask(arg[1]);
+        if (mask == 0)
+        {
+            showUnrecognisedArgsMsg(arg);
+            return 1;
+        }
+        attrs &= ~mask;
+        if (arg[0] == '+')
+            attrs |= mask;
+        rc = PosSetFileAttributes(fileName,attrs);
+        if (rc != POS_ERR_NO_ERROR)
+        {
+            showError(rc);
+            return 1;
+        }
+        arg += 2;
+    }
+    printf("%c%c%c%c%c %s\n",
+        ((attrs&FILE_ATTR_ARCHIVE)!=0)?'A':'-',
+        ((attrs&FILE_ATTR_DIRECTORY)!=0)?'D':'-',
+        ((attrs&FILE_ATTR_HIDDEN)!=0)?'H':'-',
+        ((attrs&FILE_ATTR_READONLY)!=0)?'R':'-',
+        ((attrs&FILE_ATTR_SYSTEM)!=0)?'S':'-',
+        fileName);
     return 0;
 }

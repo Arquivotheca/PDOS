@@ -130,8 +130,8 @@ call ReadSingleSector  ; Read the first DataEntry of our root directory so we ca
 
 ;Cluster high = 0x14 (20)
 ;Cluster low = 0x18 (24)
-mov si, word [7c00h + 512 + 14h]   ; Store high word of cluster in si
-mov di, word [7c00h + 512 + 18h]   ; Store low word of cluster in di
+mov si, word ptr [7c00h + 512 + 14h]   ; Store high word of cluster in si
+mov di, word ptr [7c00h + 512 + 18h]   ; Store low word of cluster in di
 
 call CalculateCluster ; Take our cluster # stored in si:di, and return sector in dx:ax
 mov cx, 3 ;Load 3 sectors
@@ -189,11 +189,11 @@ xor dx, dx                 ; Zeroize dx
 mov ax, dx                 ; Zeroize ax
 mov cl, [FatCount]		   ; # of copies of the FAT
 
-repeat_loop:               ; FatSize32 * FatCount = total size of our fat table(s)
+repeat_loop2:              ; FatSize32 * FatCount = total size of our fat table(s)
 add ax, [FatSize32Low]     ; Low word
 adc dx, [FatSize32High]    ; High word
 dec cl
-jnz repeat_loop            ; When cl is zero we are done
+jnz repeat_loop2           ; When cl is zero we are done
 
 pop cx
 

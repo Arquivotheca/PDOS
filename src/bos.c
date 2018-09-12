@@ -780,6 +780,7 @@ void BosReadKeyboardCharacter(int *scancode, int *ascii)
 /*
     Input: None.
     Returns: Scan Code and ASCII character if available.
+    Values will be intdeterminate unless return code is zero
     Notes: None.
 */
 
@@ -795,7 +796,7 @@ int BosReadKeyboardStatus(int *scancode, int *ascii)
     *scancode = regsout.h.ah;
     *ascii = regsout.h.al;
 
-    return (regsout.x.flags); /* +++ should just return zflag */
+    return (regsout.x.flags & 0x40);
 }
 
 /* BosSystemWarmBoot - BIOS Int 19h */

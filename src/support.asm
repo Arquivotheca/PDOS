@@ -256,6 +256,9 @@ mov word ptr [si + 12], 0
 jnc xflagclear
 mov word ptr [si + 12], 1
 xflagclear:
+pushf
+pop ax
+mov word ptr [si + 14], ax
 
 if @DataSize
   lds si, sregs

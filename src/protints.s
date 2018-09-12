@@ -230,8 +230,7 @@ level10_c:
         mov    %ax, %ss
         push   %ebp
         mov    %esp, %ebp
-/ +++ next line doesn't work
-/       mov    %bl, 40(%ebp)
+        mov    %bl, 44(%ebp)
         mov    saveebx, %ebx
         mov    %ebx, 12(%ebp)
         push   %eax
@@ -266,8 +265,7 @@ level10_nc:
         mov    %ax, %ss
         push   %ebp
         mov    %esp, %ebp
-/ +++ next line doesn't work
-/       mov    %bl, 40(%ebp)
+        mov    %bl, 44(%ebp)
         mov    saveebx, %ebx
         mov    %ebx, 12(%ebp)
         push   %eax

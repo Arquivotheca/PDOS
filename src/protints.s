@@ -154,6 +154,7 @@ _inthdlr_26:
 _inthdlr_p:
         push   saveess
         push   saveesp
+        push   %ebx
         push   saveeax
         push   saveebx
         mov    $0, %eax
@@ -164,8 +165,8 @@ _inthdlr_p:
         push   %ebp
         mov    %esp, %ebp        
 / Restore original eax (at time of interrupt) which is now located
-/ at offset 28 thanks to the above pushes
-        mov    28(%ebp), %eax
+/ at offset 32 thanks to the above pushes
+        mov    32(%ebp), %eax
         mov    %eax, saveeax
         pop    %ebp
         cmp    $0x10, saveess
@@ -216,8 +217,6 @@ level10:
         mov    %ebx, saveebx
         pop    %ebx
 / above is actually flags
-/ we don't use flags currently
-        mov    saveebx, %ebx
         cmp    $0, %eax
         je     clear
         jmp    notclear
@@ -231,9 +230,11 @@ level10_c:
         mov    %ax, %ss
         push   %ebp
         mov    %esp, %ebp
+        mov    saveebx, %ebx
+        mov    %ebx, 12(%ebp)
         push   %eax
         mov    saveeax, %eax
-        mov    %eax, 28(%ebp)
+        mov    %eax, 32(%ebp)
         pop    %eax
         pop    %ebp
         mov    %ax, %es
@@ -241,6 +242,7 @@ level10_c:
         mov    %ax, %gs
         pop    saveebx
         pop    saveeax
+        pop    %ebx
         pop    saveesp
         pop    saveess
         pop    intnum
@@ -262,9 +264,11 @@ level10_nc:
         mov    %ax, %ss
         push   %ebp
         mov    %esp, %ebp
+        mov    saveebx, %ebx
+        mov    %ebx, 12(%ebp)
         push   %eax
         mov    saveeax, %eax
-        mov    %eax, 28(%ebp)
+        mov    %eax, 32(%ebp)
         pop    %eax
         pop    %ebp
         mov    %ax, %es
@@ -272,6 +276,7 @@ level10_nc:
         mov    %ax, %gs
         pop    saveebx
         pop    saveeax
+        pop    %ebx
         pop    saveesp
         pop    saveess
         pop    intnum

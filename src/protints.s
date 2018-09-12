@@ -176,6 +176,8 @@ _inthdlr_p:
 level10:
         mov    saveeax, %eax
         push   %edx
+/ above is actually room for flags
+        push   %edx
 / above is actually room for cflag
         push   %edi
         push   %esi
@@ -207,6 +209,11 @@ level10:
         mov    %eax, saveeax
         pop    %eax
 / above is actually cflag
+        mov    %ebx, saveebx
+        pop    %ebx
+/ above is actually flags
+/ we don't use flags currently
+        mov    saveebx, %ebx
         cmp    $0, %eax
         je     clear
         jmp    notclear
@@ -280,6 +287,9 @@ _int_enable:
 .data
         .p2align 2
 saveeax:
+        .space 4
+        .p2align 2
+saveebx:
         .space 4
         .p2align 2
 saveess:

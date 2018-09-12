@@ -46,14 +46,14 @@ static struct {
 
 /* registers come in as eax, ebx, ecx, edx, esi, edi */
 /* When translating to a real mode routine we need to set up
-   ax, bx, cx, dx, si, di, cflag, es, blank, blank, ds */
+   ax, bx, cx, dx, si, di, cflag, flags, es, blank, blank, ds */
 /* also note that since it is inappropriate to be using segment
    registers in protected mode, we use the upper 16 bits of esi
    for ds, and the upper 16 bits of edi for es, when translating
    to real mode */
 void gotint(int intno, unsigned int *save)
 {
-    unsigned short newregs[11];
+    unsigned short newregs[12];
     unsigned short *ssave;
     int x;
 
@@ -90,10 +90,11 @@ void gotint(int intno, unsigned int *save)
     newregs[4] = (unsigned short)save[4]; /* si */
     newregs[5] = (unsigned short)save[5]; /* di */
     newregs[6] = 0;                       /* cflag */
-    newregs[7] = (unsigned short)(save[5] >> 16); /* es = top edi */
-    newregs[8] = 0;                       /*  */
+    newregs[7] = 0;                       /* flags */
+    newregs[8] = (unsigned short)(save[5] >> 16); /* es = top edi */
     newregs[9] = 0;                       /*  */
-    newregs[10] = (unsigned short)(save[4] >> 16); /* ds = top esi */
+    newregs[10] = 0;                       /*  */
+    newregs[11] = (unsigned short)(save[4] >> 16); /* ds = top esi */
     *intbuffer = intno;
     memcpy(intbuffer + 1, newregs, sizeof newregs);
     runreal_p(dorealint, 0);
@@ -104,10 +105,11 @@ void gotint(int intno, unsigned int *save)
     ssave[2*2] = newregs[2]; /* cx */
     ssave[3*2] = newregs[3]; /* dx */
     ssave[4*2] = newregs[4]; /* si */
-    ssave[4*2 + 1] = newregs[10]; /* ds */
+    ssave[4*2 + 1] = newregs[11]; /* ds */
     ssave[5*2] = newregs[5]; /* di */
-    ssave[5*2 + 1] = newregs[7]; /* es */
+    ssave[5*2 + 1] = newregs[8]; /* es */
     save[6] = newregs[6]; /* cflag */
+    save[7] = newregs[7]; /* flags */
     return;
 }
 

@@ -74,7 +74,8 @@ descptr idtinfo = { 0x7ff };
    interrupts.  We allow room for 256 interrupts. */
 descptr ridtinfo = { 0x3ff, 0L };
 
-static unsigned short intbuffer[12];
+/* interrupt number, 6 registers, cflag, flags, 4 segment registers */
+static unsigned short intbuffer[1 + 6 + 1 + 1 + 4];
 
 static unsigned long mycbase;
 static unsigned long mydbase;
@@ -423,6 +424,6 @@ static unsigned long dorealint(unsigned long parm)
     int86x(*genshort, 
            (union REGS *)(genshort + 1),
            (union REGS *)(genshort + 1),
-           (struct SREGS *)(genshort + 8));
+           (struct SREGS *)(genshort + 9));
     return (0);
 }

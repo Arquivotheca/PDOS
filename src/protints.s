@@ -154,6 +154,8 @@ _inthdlr_26:
 _inthdlr_p:
         push   saveess
         push   saveesp
+        push   saveeax
+        push   saveebx
         mov    $0, %eax
         mov    %ss, %ax
         mov    %eax, saveess
@@ -161,7 +163,9 @@ _inthdlr_p:
         mov    %eax, saveesp
         push   %ebp
         mov    %esp, %ebp        
-        mov    20(%ebp), %eax
+/ Restore original eax (at time of interrupt) which is now located
+/ at offset 28 thanks to the above pushes
+        mov    28(%ebp), %eax
         mov    %eax, saveeax
         pop    %ebp
         cmp    $0x10, saveess
@@ -229,12 +233,14 @@ level10_c:
         mov    %esp, %ebp
         push   %eax
         mov    saveeax, %eax
-        mov    %eax, 20(%ebp)
+        mov    %eax, 28(%ebp)
         pop    %eax
         pop    %ebp
         mov    %ax, %es
         mov    %ax, %fs
         mov    %ax, %gs
+        pop    saveebx
+        pop    saveeax
         pop    saveesp
         pop    saveess
         pop    intnum
@@ -258,12 +264,14 @@ level10_nc:
         mov    %esp, %ebp
         push   %eax
         mov    saveeax, %eax
-        mov    %eax, 20(%ebp)
+        mov    %eax, 28(%ebp)
         pop    %eax
         pop    %ebp
         mov    %ax, %es
         mov    %ax, %fs
         mov    %ax, %gs
+        pop    saveebx
+        pop    saveeax
         pop    saveesp
         pop    saveess
         pop    intnum

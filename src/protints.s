@@ -244,8 +244,8 @@ level10_c:
         pop    saveesp
         pop    saveess
         pop    intnum
-        mov    %ax, %ds
         pop    %eax
+        mov    %ax, %ds
         pop    %eax
         push   %ebp
         mov    %esp, %ebp
@@ -275,8 +275,8 @@ level10_nc:
         pop    saveesp
         pop    saveess
         pop    intnum
-        mov    %ax, %ds
         pop    %eax
+        mov    %ax, %ds
         pop    %eax
         push   %ebp
         mov    %esp, %ebp

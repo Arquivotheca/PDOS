@@ -4677,9 +4677,10 @@ int PosGetVideoInfo(pos_video_info *info, size_t size) /* func f6.32 */
 
 int PosKeyboardHit(void) /* func f6.33 */
 {
-    int scancode, ascii;
-    BosReadKeyboardStatus(&scancode,&ascii);
-    return scancode != 0 || ascii != 0;
+    int scancode, ascii, ret;
+
+    ret = BosReadKeyboardStatus(&scancode, &ascii);
+    return (ret == 0);
 }
 
 void PosYield(void) /* func f6.34 */

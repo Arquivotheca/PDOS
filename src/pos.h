@@ -63,6 +63,14 @@
 #define LOC32 0x200
 #define LOC64 0x300
 
+/* File attribute bits */
+#define FILE_ATTR_READONLY 0x01
+#define FILE_ATTR_HIDDEN 0x02
+#define FILE_ATTR_SYSTEM 0x04
+#define FILE_ATTR_LABEL 0x08
+#define FILE_ATTR_DIRECTORY 0x10
+#define FILE_ATTR_ARCHIVE 0x20
+
 /* Video subsystem information */
 typedef struct pos_video_info {
     unsigned int mode;

@@ -127,3 +127,24 @@ void pciConfigWriteDWord(unsigned int bus, unsigned int slot,
     pciSetAddress(bus, slot, function, offset);
     outpd(CONFIG_DATA, data);
 }
+
+int pciFindDevice(unsigned int vendor, unsigned int device,
+                  unsigned int index,
+                  unsigned int *bus, unsigned int *slot)
+{
+    for (*bus = 0; *bus < MAXBUS; (*bus)++)
+    {
+        for (*slot = 0; *slot < MAXSLOT; (*slot)++)
+        {
+            if (pciConfigReadWord(*bus, *slot, 0, 0) == vendor)
+            {
+                if (pciConfigReadWord(*bus, *slot, 0, 2) == device)
+                {
+                    if (index == 0) return (0);
+                    index--;
+                }
+            }
+        }
+    }
+    return (1);
+}

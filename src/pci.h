@@ -11,6 +11,8 @@
 /*                                                                   */
 /*********************************************************************/
 
+#define MAXBUS 256
+#define MAXSLOT 32
 #define CONFIG_ADDRESS 0xcf8
 #define CONFIG_DATA 0xcfc
 
@@ -36,3 +38,7 @@ void pciConfigWriteWord(unsigned int bus, unsigned int slot,
 void pciConfigWriteDWord(unsigned int bus, unsigned int slot,
                          unsigned int function, unsigned int offset,
                          unsigned long data);
+
+int pciFindDevice(unsigned int vendor, unsigned int device,
+                  unsigned int index,
+                  unsigned int *bus, unsigned int *slot);

@@ -941,7 +941,7 @@ unsigned char BosGetBiosDataAreaByte(int offset)
 #ifdef __32BIT__
     ptr = (unsigned char*)(0x40 << 4);
 #else
-    ptr = MK_FP(0x40,0);
+    ptr = (unsigned char*)MK_FP(0x40,0);
 #endif
 
     return ptr[offset];
@@ -955,7 +955,7 @@ unsigned short BosGetBiosDataArea16(int offset)
 #ifdef __32BIT__
     cptr = (unsigned char*)(0x40 << 4);
 #else
-    cptr = MK_FP(0x40,0);
+    cptr = (unsigned char*)MK_FP(0x40,0);
 #endif
 
     cptr += offset;
@@ -971,7 +971,7 @@ unsigned long BosGetBiosDataArea32(int offset)
 #ifdef __32BIT__
     cptr = (unsigned char*)(0x40 << 4);
 #else
-    cptr = MK_FP(0x40,0);
+    cptr = (unsigned char*)MK_FP(0x40,0);
 #endif
 
     cptr += offset;

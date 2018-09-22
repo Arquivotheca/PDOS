@@ -60,6 +60,9 @@ memmgrRealloc(&memmgr, ptr, 1000); /* resize the object to be 1000
 /* #define __MEMMGR_DEBUG 1 */
 
 typedef struct memmgrn {
+    char magic[4]; /* Magic value, must be 'MCB\0'.
+                      Used to distinguish memory control block (MCB)
+                      from process control block (PCB). */
 #ifdef __MEMMGR_INTEGRITY
     int eyecheck1;
 #endif
@@ -71,6 +74,9 @@ typedef struct memmgrn {
     size_t size; /* size of memory available to user */
     int allocated;
     int id;
+    unsigned long owner; /* PID of process which owns this memory.
+                            =0 for memory owned by no process
+                            (system memory) */
 #ifdef __MEMMGR_INTEGRITY
     int eyecheck2;
 #endif
@@ -136,6 +142,9 @@ typedef struct {
 #define memmgrDebug mmDebug
 #define memmgrDebug2 mmDbg2
 #define memmgrGetStats mmGStat
+#define memmgrGetOwner mmGOwner
+#define memmgrSetOwner mmSOwner
+#define memmgrGetOwnerStats mmGOStat
 #define memmgrGetSize mmGtSize
 #elif defined(INCLIB)
 #define memmgrDefaults __mmDef
@@ -152,6 +161,9 @@ typedef struct {
 #define memmgrDebug __mmDebug
 #define memmgrDebug2 __mmDbg2
 #define memmgrGetStats __mmGS
+#define memmgrGetOwner __mmGO
+#define memmgrSetOwner __mmSO
+#define memmgrGetOwnerStats __mmGOS
 #define memmgrGetSize __mmGtS
 #endif
 
@@ -168,6 +180,11 @@ void memmgrIntegrity(MEMMGR *memmgr);
 int memmgrRealloc(MEMMGR *memmgr, void *ptr, size_t newsize);
 void memmgrGetStats(MEMMGR *memmgr, MEMMGRSTATS *stats);
 size_t memmgrGetSize(MEMMGR *memmgr, void *ptr);
+int memmgrIsBlockPtr(void *ptr);
+void memmgrSetOwner(MEMMGR *memmgr, void *ptr, unsigned long owner);
+unsigned long memmgrGetOwner(MEMMGR *memmgr, void *ptr);
+void memmgrGetOwnerStats(MEMMGR *memmgr, unsigned long owner,
+                         MEMMGRSTATS *stats);
 
 extern int memmgrDebug;
 extern int memmgrDebug2;

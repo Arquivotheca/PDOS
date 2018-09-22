@@ -56,6 +56,37 @@ typedef struct {
     int lba;
 } DISKINFO;
 
+/* ===== BEGINS PROCESS MANAGEMENT DATA STRUCTURES ===== */
+
+/* PDOS_PROCESS: data structure with info about a process */
+typedef struct _PDOS_PROCESS {
+    char magic[4]; /* 'PCB\0' magic, to distinguish PCB (Process Control Block)
+                      from MCB (Memory Control Block) */
+    char exeName[PDOS_PROCESS_EXENAMESZ]; /* ASCIIZ short name of executable */
+    unsigned long pid; /* The process ID.
+                        * Under PDOS-32, this is pointer to PSP.
+                        * Under PDOS-16, this is segment of PSP.
+                        * Should match PosGetCurrentProcessId() if this is the
+                        * current process.
+                        */
+    PDOS_PROCSTATUS status;
+    struct _PDOS_PROCESS *parent; /* NULL for root process */
+    struct _PDOS_PROCESS *prev; /* Previous process */
+    struct _PDOS_PROCESS *next; /* Next process */
+} PDOS_PROCESS;
+
+/* What boundary we want the process control block to be a multiple of */
+#define PDOS_PROCESS_ALIGN 16
+
+#define PDOS_PROCESS_SIZE \
+  ((sizeof(PDOS_PROCESS) % PDOS_PROCESS_ALIGN == 0) ? \
+   sizeof(PDOS_PROCESS) : \
+   ((sizeof(PDOS_PROCESS) / PDOS_PROCESS_ALIGN + 1) * PDOS_PROCESS_ALIGN))
+
+#define PDOS_PROCESS_SIZE_PARAS ((PDOS_PROCESS_SIZE)/16)
+
+/* ===== ENDING PROCESS MANAGEMENT DATA STRUCTURES ===== */
+
 void pdosRun(void);
 static void initdisks(void);
 static void scanPartition(int drive);
@@ -139,6 +170,7 @@ static MEMMGR btlmem;
 #define PDOS16_MEMSTART 0x3000
 #define memmgrAllocate(m,b,i) pdos16MemmgrAllocate(m,b,i)
 #define memmgrFree(m,p) pdos16MemmgrFree(m,p)
+#define memmgrSetOwner(m,p,o) pdos16MemmgrSetOwner(m,p,o)
 static void pdos16MemmgrFree(MEMMGR *memmgr, void *ptr);
 static void *pdos16MemmgrAllocate(MEMMGR *memmgr, size_t bytes, int id);
 static void *pdos16MemmgrAllocPages(MEMMGR *memmgr, size_t pages, int id);
@@ -146,6 +178,8 @@ static void pdos16MemmgrFreePages(MEMMGR *memmgr, size_t page);
 static int pdos16MemmgrReallocPages(MEMMGR *memmgr,
                                     void *ptr,
                                     size_t newpages);
+static void pdos16MemmgrSetOwner(MEMMGR *memmgr, void *ptr,
+                                 unsigned long owner);
 #endif
 
 #define MAXDISKS 20
@@ -162,7 +196,9 @@ static int lastrc;
 static int lba;
 static unsigned long psector; /* partition sector offset */
 static int attr;
-static unsigned char *curProc; /* currently running process */
+static PDOS_PROCESS *initProc = NULL; /* initial process; beginning of process
+                                         control block chain */
+static PDOS_PROCESS *curPCB = NULL; /* PCB of process running right now */
 
 #define MAXFILES 40
 static struct {
@@ -643,6 +679,8 @@ static void int21handler(union REGS *regsin,
     int attr;
     void *tempdta;
     PARMBLOCK *pb;
+    unsigned long pid;
+    size_t sz;
 
 #if 0
     if (debugcnt < 200)
@@ -1297,6 +1335,7 @@ static void int21handler(union REGS *regsin,
             }
             else
             {
+                memmgrSetOwner(&memmgr, p, FP_SEG(curPCB));
                 regsout->x.ax = FP_SEG(p) + (FP_OFF(p) >> 4);
             }
 #endif
@@ -1682,6 +1721,8 @@ static void int21handler(union REGS *regsin,
             else if (regsin->h.al == 8)
             {
                 regsout->d.eax = (int)PosAllocMem(regsin->d.ebx, regsin->d.ecx);
+                memmgrSetOwner(&memmgr, (void*)regsout->d.eax,
+                               (unsigned long)curPCB);
                 regsout->d.eax = (int)ADDRFIXSUB(regsout->d.eax);
             }
 #endif
@@ -1708,6 +1749,30 @@ static void int21handler(union REGS *regsin,
 #endif
                 PosInstallInterruptHandler(regsin->x.bx,
                                            (int (*)(unsigned int *))p);
+            }
+            else if (regsin->h.al == 0xC)
+            {
+#ifdef __32BIT__
+                p = SUBADDRFIX(regsin->d.edx);
+                sz = regsin->d.ecx;
+                pid = regsin->d.ebx;
+#else
+                p = MK_FP(sregs->ds, regsin->x.dx);
+                sz = regsin->x.cx;
+                pid = regsin->x.bx;
+#endif
+                regsout->x.ax = PosProcessGetInfo(pid, p, sz);
+            }
+            else if (regsin->h.al == 0xD)
+            {
+#ifdef __32BIT__
+                p = SUBADDRFIX(regsin->d.edx);
+                pid = regsin->d.ecx;
+#else
+                p = MK_FP(sregs->ds, regsin->x.dx);
+                pid = regsin->x.cx;
+#endif
+                PosProcessGetMemoryStats(pid, p);
             }
             else if (regsin->h.al == 0x30)
             {
@@ -2394,8 +2459,80 @@ void *PosAllocMemPages(unsigned int pages, unsigned int *maxpages)
 }
 #endif
 
+/* Is there a process control block just before this pointer? */
+static int isProcessPtr(void *ptr)
+{
+    unsigned long abs;
+    PDOS_PROCESS *p;
+    if (ptr == NULL)
+        return 0;
+#ifndef __32BIT__
+    abs = ADDR2ABS(ptr);
+    abs -= PDOS_PROCESS_SIZE;
+    ptr = FP_NORM(ABS2ADDR(abs));
+    p = (PDOS_PROCESS*)ptr;
+#else
+    p = (PDOS_PROCESS*)(((char *)ptr) - PDOS_PROCESS_SIZE);
+#endif
+    return p->magic[0] == 'P' &&
+           p->magic[1] == 'C' &&
+           p->magic[2] == 'B' &&
+           p->magic[3] == 0;
+}
+
+static int pdosMemmgrIsBlockPtr(void *ptr)
+{
+#ifndef __32BIT__
+    unsigned long abs;
+
+    abs = ADDR2ABS(ptr);
+    abs -= 0x10000UL;
+    abs -= (unsigned long)PDOS16_MEMSTART * 16;
+    abs /= 16;
+    abs += (unsigned long)PDOS16_MEMSTART * 16;
+    ptr = ABS2ADDR(abs);
+#endif
+    return memmgrIsBlockPtr(ptr);
+}
+
+/* Before process control blocks were implemented, the memory layout looked
+ * like this:
+ *    Main Code Segment:   |MEMMGRN|PSP|Program code...
+ *    Other Segments:      |MEMMGRN|Code or data...
+ * However, with the implementation of PCBs, it now looks like this:
+ *    Main Code Segment:   |MEMMGRN|PCB|PSP|Program code...
+ *    Other Segments:      |MEMMGRN|Code or data...
+ * The memory management APIs expect to get the PSP pointer, and subtract the
+ * MEMMGRN size, to get the MEMMGRN pointer. But, with the PCB in between the
+ * MEMMGRN and PSP, that won't work. So, this method detects when there is a
+ * PCB immediately before the pointer instead of a MEMMGRN, and in that case
+ * it returns the PCB pointer (so the memory manager finds the MEMMGRN before
+ * it). Otherwise, it just returns the input pointer.
+ */
+static void *translateProcessPtr(void *ptr)
+{
+    void *prev;
+    unsigned long abs;
+
+#ifdef __32BIT__
+    prev = (void*)(((char*)ptr)-PDOS_PROCESS_SIZE);
+#else
+    abs = ADDR2ABS(ptr);
+    abs -= PDOS_PROCESS_SIZE;
+    prev = FP_NORM(ABS2ADDR(abs));
+#endif
+
+    if (!pdosMemmgrIsBlockPtr(ptr) && isProcessPtr(ptr) &&
+            pdosMemmgrIsBlockPtr(prev))
+    {
+        return prev;
+    }
+    return ptr;
+}
+
 int PosFreeMem(void *ptr)
 {
+    ptr = translateProcessPtr(ptr);
 #ifdef __32BIT__
     if ((unsigned long)ptr < 0x0100000)
     {
@@ -2412,6 +2549,7 @@ int PosReallocPages(void *ptr, unsigned int newpages, unsigned int *maxp)
 {
     int ret;
 
+    ptr = translateProcessPtr(ptr);
     ret = memmgrRealloc(&memmgr, ptr, newpages * 16);
     if (ret != 0)
     {
@@ -2425,6 +2563,7 @@ int PosReallocPages(void *ptr, unsigned int newpages, unsigned int *maxp)
 {
     int ret;
 
+    ptr = translateProcessPtr(ptr);
     ret = pdos16MemmgrReallocPages(&memmgr, ptr, newpages);
     if (ret != 0)
     {
@@ -3175,6 +3314,104 @@ static void loadPcomm(void)
     return;
 }
 
+/* initPCB - Initialize process control block.
+ * Sets the magic, flags, etc.
+ */
+static void initPCB(PDOS_PROCESS *pcb, unsigned long pid, char *prog)
+{
+    char *tmp;
+
+    /* Skip any drive or directory in the program name */
+    for (;;)
+    {
+        tmp = strchr(prog,':');
+        if (tmp == NULL)
+            tmp = strchr(prog,'\\');
+        if (tmp == NULL)
+            tmp = strchr(prog,'/');
+        if (tmp == NULL)
+            break;
+        prog = tmp+1;
+        continue;
+    }
+
+    /* Clear the PCB before using it.
+     * This will set all fields to 0 except those we set explicitly below.
+     */
+    memset(pcb, 0, PDOS_PROCESS_SIZE);
+
+    /* Set the PCB magic. This helps identify PCBs in memory */
+    pcb->magic[0] = 'P';
+    pcb->magic[1] = 'C';
+    pcb->magic[2] = 'B';
+    pcb->magic[3] = 0;
+
+    /* Set the exe name */
+    strncpy(pcb->exeName, prog, PDOS_PROCESS_EXENAMESZ-1);
+    upper_str(pcb->exeName);
+
+    /* Set the PID */
+    pcb->pid = pid;
+
+    /* Set the parent */
+    pcb->parent = curPCB;
+}
+
+/* Process has terminated, remove it from chain */
+void removeFromProcessChain(PDOS_PROCESS *pcb)
+{
+    PDOS_PROCESS *cur;
+    PDOS_PROCESS *prev = pcb->prev;
+    PDOS_PROCESS *next = pcb->next;
+
+    /* We don't support removing the init process, it can't terminate. */
+    if (prev == NULL)
+        return;
+
+    /* Patch this PCB out of the chain. */
+    prev->next = next;
+    if (next != NULL)
+        next->prev = prev;
+    pcb->next = NULL;
+    pcb->prev = NULL;
+
+    /* Walk through chain, any of our surviving children are reparented
+       to the init process. */
+    cur = initProc;
+    while (cur != NULL)
+    {
+        if (cur->parent == pcb)
+        {
+            cur->parent = initProc;
+        }
+        cur = cur->next;
+    }
+}
+
+/* Add some new process to process chain */
+void addToProcessChain(PDOS_PROCESS *pcb)
+{
+    PDOS_PROCESS *last = NULL;
+
+    /* This is first process ever, it starts the chain. */
+    if (initProc == NULL)
+    {
+        initProc = pcb;
+        return;
+    }
+
+    /* Find last process in chain, this process goes in end. */
+    last = initProc;
+    while (last->next != NULL)
+    {
+        last = last->next;
+    }
+
+    /* We have last process, stick new process after it. */
+    last->next = pcb;
+    pcb->prev = last;
+}
+
 
 /* loadExe - load an executable into memory */
 /* 1. read first 10 bytes of header to get header len */
@@ -3209,7 +3446,8 @@ static void loadExe(char *prog, PARMBLOCK *parmblock)
     unsigned char *envptr;
     unsigned long exeLen;
     unsigned char *psp;
-    unsigned char *origpsp;
+    unsigned char *pcb;
+    PDOS_PROCESS *newProc;
     unsigned char *origenv;
     unsigned char *exeStart;
     unsigned int numReloc;
@@ -3228,7 +3466,6 @@ static void loadExe(char *prog, PARMBLOCK *parmblock)
     int y;
     int isexe = 0;
     char *olddta;
-    unsigned char *saveCurProc;
 
     if (fileOpen(prog, &fno)) return;
 #ifdef __32BIT__
@@ -3282,8 +3519,19 @@ static void loadExe(char *prog, PARMBLOCK *parmblock)
     {
         exeLen = firstbit.a_text + firstbit.a_data + firstbit.a_bss;
     }
-    /* allocate exeLen + 0x100 (psp) + stack + extra (safety margin) */
-    psp = memmgrAllocate(&memmgr, exeLen + 0x100 + STACKSZ32 + 0x100, 0);
+    /* allocate exeLen + 0x100 (psp) + PDOS_PROCESS_SIZE (PCB) +
+     * stack + extra (safety margin) */
+    pcb = memmgrAllocate(&memmgr, exeLen + 0x100 + PDOS_PROCESS_SIZE +
+            STACKSZ32 + 0x100, 0);
+    if (pcb != NULL)
+    {
+        psp = pcb + PDOS_PROCESS_SIZE;
+        newProc = (PDOS_PROCESS*)pcb;
+        initPCB(newProc, (unsigned long)psp, prog);
+        memmgrSetOwner(&memmgr, pcb, (unsigned long)psp);
+        memmgrSetOwner(&memmgr, envptr, (unsigned long)psp);
+        memmgrSetOwner(&memmgr, header, (unsigned long)psp);
+    }
 #else
     if (isexe)
     {
@@ -3295,20 +3543,29 @@ static void loadExe(char *prog, PARMBLOCK *parmblock)
         exeLen = 0x10000;
     }
     maxPages = memmgrMaxSize(&memmgr);
-    if ((long)maxPages * 16 < exeLen)
+    if (((long)maxPages * 16) < (exeLen+PDOS_PROCESS_SIZE))
     {
         printf("insufficient memory to load program\n");
         printf("required %ld, available %ld\n",
-            exeLen, (long)maxPages * 16);
+            (exeLen+PDOS_PROCESS_SIZE), (long)maxPages * 16);
         memmgrFree(&memmgr, header);
         memmgrFree(&memmgr, envptr);
         return;
     }
-    psp = pdos16MemmgrAllocPages(&memmgr, maxPages, 0);
-    origpsp = psp;
+    pcb = pdos16MemmgrAllocPages(&memmgr, maxPages, 0);
+    if (pcb != NULL)
+    {
+        psp = pcb + PDOS_PROCESS_SIZE;
+        psp = (unsigned char *)FP_NORM(psp);
+        newProc = (PDOS_PROCESS*)pcb;
+        initPCB(newProc, FP_SEG(psp), prog);
+        memmgrSetOwner(&memmgr, pcb, FP_SEG(psp));
+        memmgrSetOwner(&memmgr, envptr, FP_SEG(psp));
+        memmgrSetOwner(&memmgr, header, FP_SEG(psp));
+    }
     psp = (unsigned char *)FP_NORM(psp);
 #endif
-    if (psp == NULL)
+    if (pcb == NULL)
     {
         printf("insufficient memory to load program\n");
         if (header != NULL) memmgrFree(&memmgr, header);
@@ -3323,7 +3580,8 @@ static void loadExe(char *prog, PARMBLOCK *parmblock)
     *(unsigned int *)&psp[0x2c] = FP_SEG(envptr);
 #endif
     /* set to say 640k in use */
-    *(unsigned int *)(psp + 2) = FP_SEG(psp) + maxPages;
+    *(unsigned int *)(psp + 2) = FP_SEG(psp) +
+            (maxPages-PDOS_PROCESS_SIZE_PARAS);
     if (parmblock != NULL)
     {
         /* 1 for the count and 1 for the return */
@@ -3451,7 +3709,7 @@ static void loadExe(char *prog, PARMBLOCK *parmblock)
             {
                 printf("insufficient memory %d\n", firstbit.a_trsize);
                 memmgrFree(&memmgr, envptr);
-                memmgrFree(&memmgr, psp);
+                memmgrFree(&memmgr, pcb);
                 return;
             }
             fileRead(fno, corrections, firstbit.a_trsize, &readbytes);
@@ -3474,7 +3732,7 @@ static void loadExe(char *prog, PARMBLOCK *parmblock)
             {
                 printf("insufficient memory %d\n", firstbit.a_drsize);
                 memmgrFree(&memmgr, envptr);
-                memmgrFree(&memmgr, psp);
+                memmgrFree(&memmgr, pcb);
                 return;
             }
             fileRead(fno, corrections, firstbit.a_drsize, &readbytes);
@@ -3500,24 +3758,34 @@ static void loadExe(char *prog, PARMBLOCK *parmblock)
      */
     tsrFlag = 0;
 
+    /* Add this process to the process chain */
+    addToProcessChain(newProc);
+
+    /* Set this process as the running process */
+    curPCB = newProc;
+
 #if (!defined(USING_EXE) && !defined(__32BIT__))
     olddta = dta;
     dta = psp + 0x80;
-    saveCurProc = curProc;
-    curProc = psp;
+    newProc->status = PDOS_PROCSTATUS_ACTIVE;
+    if (newProc->parent != NULL)
+        newProc->parent->status = PDOS_PROCSTATUS_CHILDWAIT;
     ret = callwithpsp(exeEntry, psp, ss, sp);
-    curProc = saveCurProc;
     dta = olddta;
-    psp = origpsp;
     envptr = origenv;
 #endif
 #ifdef __32BIT__
-    saveCurProc = curProc;
-    curProc = psp;
+    newProc->status = PDOS_PROCSTATUS_ACTIVE;
+    if (newProc->parent != NULL)
+        newProc->parent->status = PDOS_PROCSTATUS_CHILDWAIT;
     ret = fixexe32(psp, firstbit.a_entry, sp, doing_pcomm);
-    curProc = saveCurProc;
 #endif
     lastrc = ret;
+
+    /* Process finished, parent becomes current */
+    curPCB = newProc->parent;
+    if (curPCB != NULL && curPCB->status == PDOS_PROCSTATUS_CHILDWAIT)
+        curPCB->status = PDOS_PROCSTATUS_ACTIVE;
 
     /*
      * Don't free all of program's memory if it is a TSR. Only the
@@ -3525,13 +3793,21 @@ static void loadExe(char *prog, PARMBLOCK *parmblock)
      */
     if (tsrFlag == 0)
     {
+        newProc->status = PDOS_PROCSTATUS_TERMINATED;
         if (header != NULL) memmgrFree(&memmgr, header);
-        memmgrFree(&memmgr, psp);
+        removeFromProcessChain(newProc);
+        memmgrFree(&memmgr, pcb);
         memmgrFree(&memmgr, envptr);
     }
     else
     {
-        PosReallocPages(psp, tsrFlag, &maxPages);
+        /* PDOS EXTENSION: tsrFlag=-1 means free no memory */
+        if (tsrFlag != -1)
+        {
+            PosReallocPages(pcb, tsrFlag, &maxPages);
+        }
+        /* Mark process as a TSR. */
+        newProc->status = PDOS_PROCSTATUS_TSR;
     }
 
     /* Set TSR flag back to 0 */
@@ -4320,6 +4596,21 @@ static int pdos16MemmgrReallocPages(MEMMGR *memmgr,
     return (ret);
 }
 
+static void pdos16MemmgrSetOwner(MEMMGR *memmgr, void *ptr,
+                                 unsigned long owner)
+{
+    unsigned long abs;
+
+    abs = ADDR2ABS(ptr);
+    abs -= 0x10000UL;
+    abs -= (unsigned long)PDOS16_MEMSTART * 16;
+    abs /= 16;
+    abs += (unsigned long)PDOS16_MEMSTART * 16;
+    ptr = ABS2ADDR(abs);
+    (memmgrSetOwner)(memmgr, ptr, owner);
+    return;
+}
+
 #endif
 
 /*int 25 function call*/
@@ -4601,6 +4892,22 @@ void PosGetMemoryManagementStats(void *stats)
 #endif
 }
 
+void PosProcessGetMemoryStats(unsigned long pid, void *stats)
+{
+    MEMMGRSTATS *s = (MEMMGRSTATS*)stats;
+    memmgrGetOwnerStats(&memmgr, pid, stats);
+#ifdef __32BIT__
+    /* In 32-bit, divide bytes by 16 before returning.
+     * This is so we use consistent units of paragraphs (16 bytes)
+     * for both PDOS-16 and PDOS-32.
+     */
+    s->maxFree = s->maxFree >> 4;
+    s->maxAllocated = s->maxAllocated >> 4;
+    s->totalFree = s->totalFree >> 4;
+    s->totalAllocated = s->totalAllocated >> 4;
+#endif
+}
+
 /* INT 21, function 33, subfunc 05 - get boot drive */
 int PosGetBootDrive(void)
 {
@@ -4610,11 +4917,7 @@ int PosGetBootDrive(void)
 /* INT 21, function 51/62 - get current process ID */
 int PosGetCurrentProcessId(void)
 {
-#ifdef __32BIT__
-    return (int) curProc;
-#else
-    return FP_SEG(curProc);
-#endif
+    return curPCB != NULL ? curPCB->pid : 0;
 }
 
 #define ERR2STR(n) case POS_ERR_##n: return #n
@@ -4645,6 +4948,53 @@ char *PosGetErrorMessageString(unsigned int errorCode) /* func f6.09 */
         ERR2STR(FILE_EXISTS);
     }
     return NULL;
+}
+
+/* Find process with given PID */
+PDOS_PROCESS *findProc(unsigned long pid)
+{
+    PDOS_PROCESS *cur = initProc;
+
+    if (pid == 0)
+        return cur;
+    while (cur != NULL)
+    {
+        if (cur->pid == pid)
+            return cur;
+        cur = cur->next;
+    }
+    return NULL;
+}
+
+/* Func F6.0B - Get info about a process. */
+int PosProcessGetInfo(unsigned long pid, PDOS_PROCINFO *info, size_t infoSz)
+{
+    /* Find the process */
+    PDOS_PROCESS *proc = findProc(pid);
+
+    /* We reuse FILE_NOT_FOUND error for process not found.
+     * Maybe we should create PROC_NOT_FOUND instead??? */
+    if (proc == NULL)
+    {
+        return POS_ERR_FILE_NOT_FOUND;
+    }
+
+    /* Validate structure */
+    if (info == NULL || infoSz != sizeof(PDOS_PROCINFO))
+    {
+        return POS_ERR_DATA_INVALID;
+    }
+
+    /* Populate structure */
+    strncpy(info->exeName, proc->exeName, PDOS_PROCESS_EXENAMESZ-1);
+    info->status = proc->status;
+    info->pid = proc->pid;
+    info->ppid = proc->parent==NULL?0:proc->parent->pid;
+    info->prevPid = proc->prev==NULL?0:proc->prev->pid;
+    info->nextPid = proc->next==NULL?0:proc->next->pid;
+
+    /* Report success */
+    return POS_ERR_NO_ERROR;
 }
 
 void PosClearScreen()

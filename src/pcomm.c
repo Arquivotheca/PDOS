@@ -181,6 +181,7 @@ CMDPROTO(pause);
 CMDPROTO(peek);
 CMDPROTO(poweroff);
 CMDPROTO(prompt);
+CMDPROTO(ps);
 CMDPROTO(rd);
 CMDPROTO(reboot);
 CMDPROTO(rem);
@@ -246,6 +247,7 @@ static cmdBlock cmdRegistry[] =
     CMDDEF(peek,"","Peek at some memory location"),
     CMDDEF(poweroff,"","Powers off the computer"),
     CMDDEF(prompt,"","Displays or modifies PROMPT variable"),
+    CMDDEF(ps,"","Shows running processes"),
     CMDDEF(rd,"|rmdir","Removes directories"),
     CMDDEF(reboot,"","Reboots the computer"),
     CMDDEF(rem,"","Comment in a batch file"),
@@ -810,9 +812,45 @@ static void putPrompt(void)
     return;
 }
 
-static int cmd_exit_run(char *ignored)
+static void errorBadArgs(void)
 {
-    CMD_HAS_NO_ARGS(ignored);
+    printf("ERROR: Bad arguments to %s command\n", curCmdName);
+}
+
+static int cmd_exit_run(char *options)
+{
+    int doTSR = 0;
+
+    /* Argument parsing code - /TSR only allowed option at present */
+    if (!isBlankString(options))
+    {
+        options = stringTrimBoth(options);
+        if (ins_strcmp(options,"/TSR") == 0)
+        {
+            doTSR = 1;
+        }
+        else
+        {
+            errorBadArgs();
+            return 1;
+        }
+    }
+
+    /* Handle exit with /TSR flag */
+    if (doTSR)
+    {
+        if (primary)
+        {
+            printf("ERROR: EXIT /TSR not allowed from primary shell\n");
+            return 1;
+        }
+        /* -1 is PDOS extension, means don't free any memory */
+        PosTerminateAndStayResident(0, -1);
+        printf("ERROR: PosTerminateAndStayResident failed\n");
+        return 1;
+    }
+
+    /* Handle non-TSR exit */
 #ifdef CONTINUOUS_LOOP
     primary = 0;
 #endif
@@ -1015,11 +1053,6 @@ static char *stringTrimLeft(char *s)
 static char *stringTrimBoth(char *s)
 {
     return stringTrimLeft(stringTrimRight(s));
-}
-
-static void errorBadArgs(void)
-{
-    printf("ERROR: Bad arguments to %s command\n", curCmdName);
 }
 
 static void errorBatchOnly(void)
@@ -1375,7 +1408,8 @@ static void showError(int ret)
     {
         return;
     }
-    /* Don't try to get error message if not genuine PDOS, will return rubbish */
+    /* Don't try to get error message if not genuine PDOS,
+       will return rubbish */
     if (genuine_pdos)
     {
         /* Get error message */
@@ -1384,12 +1418,14 @@ static void showError(int ret)
     /* NULL means unknown error */
     if (msg == NULL)
     {
-        printf("ERROR: Operation failed due to error code %d (no message available)\n", ret);
+        printf("ERROR: Operation failed due to error code %d "
+                "(no message available)\n", ret);
     }
     /* Otherwise display the message */
     else
     {
-        printf("ERROR: Operation failed due to error %s (error code %d)\n", msg, ret);
+        printf("ERROR: Operation failed due to error %s (error code %d)\n",
+                msg, ret);
     }
 }
 
@@ -1435,7 +1471,11 @@ static int changedisk(int drive)
  */
 static void cmd_exit_help(void)
 {
-    printf("EXIT\n");
+    printf("EXIT [/TSR]\n");
+    printf("/TSR = Terminate and Stay Resident\n");
+    printf("(Note, PCOMM is not a real TSR, and so keeping it resident\n");
+    printf("after exit serves little purpose. However, it does help in\n");
+    printf("testing the TSR functionality of PDOS\n");
 }
 
 static void cmd_attrib_help(void)
@@ -1657,6 +1697,11 @@ static void cmd_goto_help(void)
     printf("Transfer batch file execution to :label\n");
     printf("Option /16 means only take branch if running PDOS-16\n");
     printf("Option /32 means only take branch if running PDOS-32\n");
+}
+
+static void cmd_ps_help(void)
+{
+    printf("PS\n\n");
 }
 
 /* Modify string in-place to be all upper case */
@@ -2558,6 +2603,63 @@ static int cmd_goto_run(char *arg)
     gotoTarget[0] = ':';
     strcpy(gotoTarget + 1, arg);
     executeGoto = 1;
+    return 0;
+}
+
+static char *describeProcStatus(PDOS_PROCSTATUS status)
+{
+    switch (status)
+    {
+        case PDOS_PROCSTATUS_LOADED:
+            return "LOADED    ";
+        case PDOS_PROCSTATUS_ACTIVE:
+            return "ACTIVE    ";
+        case PDOS_PROCSTATUS_CHILDWAIT:
+            return "CHILDWAIT ";
+        case PDOS_PROCSTATUS_TSR:
+            return "TSR       ";
+        case PDOS_PROCSTATUS_SUSPENDED:
+            return "SUSPENDED ";
+        case PDOS_PROCSTATUS_TERMINATED:
+            return "TERMINATED";
+        default:
+            return "UNKNOWN   ";
+    }
+}
+
+static int cmd_ps_run(char *ignored)
+{
+    unsigned long pid = 0;
+    int rc;
+    PDOS_PROCINFO info;
+    MEMMGRSTATS stats;
+
+    CMD_HAS_NO_ARGS(ignored);
+
+    printf("     PID   PARENT STATUS            USED  #BLOCKS NAME\n");
+    for (;;)
+    {
+        rc = PosProcessGetInfo(pid, &info, sizeof(PDOS_PROCINFO));
+        if (rc != POS_ERR_NO_ERROR)
+        {
+            showError(rc);
+            return 1;
+        }
+        printf("% 8X ",info.pid);
+        if (info.ppid == 0)
+            printf("         ");
+        else
+            printf("% 8X ",info.ppid);
+        printf("%s ",describeProcStatus(info.status));
+
+        PosProcessGetMemoryStats(info.pid,&stats);
+        printf("% 8d KB ", PARAS_TO_KB(stats.totalAllocated));
+        printf("% 8d ", stats.countAllocated);
+        printf("%s\n",info.exeName);
+        if (info.nextPid == 0)
+            break;
+        pid = info.nextPid;
+    }
     return 0;
 }
 

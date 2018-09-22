@@ -1457,6 +1457,50 @@ void PosGetMemoryManagementStats(void *stats)
     return;
 }
 
+/* pos extension to get per-process memory manager statistics */
+void PosProcessGetMemoryStats(unsigned long pid, void *stats) /* func f6.0d */
+{
+    union REGS regsin;
+    union REGS regsout;
+    struct SREGS sregs;
+
+    regsin.h.ah = 0xf6;
+    regsin.h.al = 0xd;
+#ifdef __32BIT__
+    regsin.d.edx = (int)stats;
+    regsin.d.ecx = pid;
+#else
+    sregs.ds = FP_SEG(stats);
+    regsin.x.dx = FP_OFF(stats);
+    regsin.x.cx = (int)pid;
+#endif
+    int86x(0x21, &regsin, &regsout, &sregs);
+    return;
+}
+
+/* func f6.0c - pos extension to get info about a process */
+int PosProcessGetInfo(unsigned long pid, PDOS_PROCINFO *info, size_t infoSz)
+{
+    union REGS regsin;
+    union REGS regsout;
+    struct SREGS sregs;
+
+    regsin.h.ah = 0xf6;
+    regsin.h.al = 0x0c;
+#ifdef __32BIT__
+    regsin.d.ebx = pid;
+    regsin.d.ecx = infoSz;
+    regsin.d.edx = (unsigned long)info;
+#else
+    regsin.x.bx = pid;
+    regsin.x.cx = infoSz;
+    sregs.ds = FP_SEG(info);
+    regsin.x.dx = FP_OFF(info);
+#endif
+    int86x(0x21, &regsin, &regsout, &sregs);
+    return regsout.x.ax;
+}
+
 void *PosAllocMem(unsigned int size, unsigned int flags)
 {
     union REGS regsin;

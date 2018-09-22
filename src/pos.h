@@ -93,6 +93,38 @@ typedef struct pos_input_buffer {
                      incomplete arrays */
 } pos_input_buffer;
 
+/* ===== BEGINS PROCESS MANAGEMENT DATA STRUCTURES ===== */
+
+/* Process status enumeration. */
+typedef enum {
+    /* Process has been loaded but not yet executed. */
+    PDOS_PROCSTATUS_LOADED,
+    /* Process is the current foreground process. */
+    PDOS_PROCSTATUS_ACTIVE,
+    /* Process is waiting for child process to finish. */
+    PDOS_PROCSTATUS_CHILDWAIT,
+    /* Process is a TSR */
+    PDOS_PROCSTATUS_TSR,
+    /* Process has voluntarily suspended itself. */
+    PDOS_PROCSTATUS_SUSPENDED,
+    /* Process has terminated */
+    PDOS_PROCSTATUS_TERMINATED
+} PDOS_PROCSTATUS;
+
+#define PDOS_PROCESS_EXENAMESZ 13
+
+/* PDOS_PROCINFO: data structure with info about a process */
+typedef struct _PDOS_PROCINFO {
+    char exeName[PDOS_PROCESS_EXENAMESZ]; /* ASCIIZ short name of executable */
+    unsigned long pid; /* Process ID */
+    unsigned long ppid; /* Parent Process ID; 0 if none */
+    unsigned long prevPid; /* Prev PID in chain; 0 if start of chain */
+    unsigned long nextPid; /* Next PID in chain; 0 if end of chain */
+    PDOS_PROCSTATUS status; /* Process status */
+} PDOS_PROCINFO;
+
+/* ===== ENDING PROCESS MANAGEMENT DATA STRUCTURES ===== */
+
 /* API functions */
 
 void PosTermNoRC(void); /* int 20h */
@@ -281,6 +313,19 @@ void PosPowerOff(void); /* func f6.0a */
 
 void PosInstallInterruptHandler(int interrupt_number, /* func f6.0b */
                                 int (*func)(unsigned int *));
+
+/* Func F6.0C - Get info about a process.
+ * pid = PID to get info on (0=get info on init process)
+ * infoSz should be sizeof(PDOS_PROCINFO). It is passed for future-proofing
+ * (future versions might make the structure bigger, we know whether client
+ * wants old or new version based on the passed size)
+ */
+int PosProcessGetInfo(unsigned long pid, PDOS_PROCINFO *info, size_t infoSz);
+
+/* Func F6.0D - Get memory usage stats for given process
+ * pid=0 for current process
+ */
+void PosProcessGetMemoryStats(unsigned long pid, void *stats);
 
 void PosClearScreen(void); /* func f6.30 */
 

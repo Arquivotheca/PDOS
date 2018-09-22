@@ -62,6 +62,11 @@ void memmgrSupply(MEMMGR *memmgr, void *buffer, size_t szbuf)
     }
 
     b = (MEMMGRN *)buffer;
+    b->magic[0] = 'M';
+    b->magic[1] = 'C';
+    b->magic[2] = 'B';
+    b->magic[3] = 0;
+    b->owner = 0;
 
     b->prev = l;
     b->next = p;
@@ -159,6 +164,11 @@ void *memmgrAllocate(MEMMGR *memmgr, size_t bytes, int id)
             if ((p->size - bytes) >= MEMMGR_MINFRTOT)
             {
                 n = (MEMMGRN *)((char *)p + bytes);
+                n->magic[0] = 'M';
+                n->magic[1] = 'C';
+                n->magic[2] = 'B';
+                n->magic[3] = 0;
+                n->owner = 0;
                 n->next = p->next;
                 if (n->next != NULL)
                 {
@@ -295,6 +305,7 @@ void memmgrFree(MEMMGR *memmgr, void *ptr)
     }
 
     p->allocated = 0;
+    p->owner = 0;
     /* let's hope we're in the middle of a valid chain */
     l = p->prev;
     n = p->next;
@@ -743,6 +754,11 @@ int memmgrRealloc(MEMMGR *memmgr, void *ptr, size_t newsize)
                 /* we have room for a new node - so, construct the new
                    node first */
                 z = (MEMMGRN *)((char *)p + newsize);
+                z->magic[0] = 'M';
+                z->magic[1] = 'C';
+                z->magic[2] = 'B';
+                z->magic[3] = 0;
+                z->owner = 0;
                 z->allocated = 0;
                 z->fixed = 0;
 #ifdef __MEMMGR_INTEGRITY
@@ -793,6 +809,11 @@ int memmgrRealloc(MEMMGR *memmgr, void *ptr, size_t newsize)
     {
         /* yep, let's insert new node */
         n = (MEMMGRN *)((char *)p + newsize);
+        n->magic[0] = 'M';
+        n->magic[1] = 'C';
+        n->magic[2] = 'B';
+        n->magic[3] = 0;
+        n->owner = 0;
         n->next = p->next;
         if (n->next != NULL)
         {
@@ -909,7 +930,6 @@ void memmgrGetStats(MEMMGR *memmgr, MEMMGRSTATS *stats)
         }
         p = p->next;
     }
-
 }
 
 /* Get size of given memory block */
@@ -922,4 +942,62 @@ size_t memmgrGetSize(MEMMGR *memmgr, void *ptr)
             return 0;
     }
     return p->size;
+}
+
+/* Test if pointer appears to be to memory block */
+int memmgrIsBlockPtr(void *ptr)
+{
+    MEMMGRN *p;
+    p = (MEMMGRN*)(((char *)ptr) - MEMMGRN_SZ);
+    return p->magic[0] == 'M' &&
+           p->magic[1] == 'C' &&
+           p->magic[2] == 'B' &&
+           p->magic[3] == 0;
+}
+
+/* Get owner of given memory block */
+unsigned long memmgrGetOwner(MEMMGR *memmgr, void *ptr)
+{
+    MEMMGRN *p;
+    p = (MEMMGRN*)(((char *)ptr) - MEMMGRN_SZ);
+    if (p == NULL)
+    {
+            return 0;
+    }
+    return p->owner;
+}
+
+/* Set owner of given memory block */
+void memmgrSetOwner(MEMMGR *memmgr, void *ptr, unsigned long owner)
+{
+    MEMMGRN *p;
+    p = (MEMMGRN*)(((char *)ptr) - MEMMGRN_SZ);
+    if (p != NULL)
+    {
+        p->owner = owner;
+    }
+}
+
+/* gather memory management statistics per owner */
+void memmgrGetOwnerStats(MEMMGR *memmgr, unsigned long owner,
+                         MEMMGRSTATS *stats)
+{
+    MEMMGRN *p;
+    memset(stats, 0, sizeof(MEMMGRSTATS));
+
+    p = memmgr->start;
+
+    while (p != NULL)
+    {
+        if (p->allocated && p->owner == owner)
+        {
+            stats->countAllocated++;
+            stats->totalAllocated += p->size;
+            if (p->size > stats->maxAllocated)
+            {
+                stats->maxAllocated = p->size;
+            }
+        }
+        p = p->next;
+    }
 }

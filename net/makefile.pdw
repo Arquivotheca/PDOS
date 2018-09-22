@@ -1,0 +1,20 @@
+CC=gcc386
+COPTS=-S -Os -fno-common -ansi -I. -I../pdos/pdpclib -I../pdos/src -D__32BIT__
+
+all: nettest.o pcnetii.o net.o eth.o arp.o ip.o udp.o ../pdos/src/pci.o
+  ld386 -s -e ___pdosst32 -o nettest.exe ../pdos/pdpclib/pdosst32.o nettest.o pcnetii.o net.o eth.o arp.o ip.o udp.o ../pdos/src/pci.o ../pdos/pdpclib/pdos.a
+  ld386 -r -s -e ___pdosst32 -o nettest.exe ../pdos/pdpclib/pdosst32.o nettest.o pcnetii.o net.o eth.o arp.o ip.o udp.o ../pdos/src/pci.o ../pdos/pdpclib/pdos.a
+  strip386 --strip-unneeded nettest.exe
+
+.c.o:
+  $(CC) $(COPTS) -o $&.s $<
+  as386 -o $@ $&.s
+  rm -f $&.s
+
+../pdos/src/pci.o: ../pdos/src/pci.c
+  $(CC) $(COPTS) -o $&.s ../pdos/src/pci.c
+  as386 -o $@ $&.s
+  rm -f $&.s
+
+.s.o:
+  as386 -o $@ $<

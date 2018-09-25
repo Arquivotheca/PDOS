@@ -70,7 +70,7 @@ typedef struct _PDOS_PROCESS {
                         * current process.
                         */
     PDOS_PROCSTATUS status;
-    void *envSegment; /* Environment segment of this process */
+    void *envBlock; /* Environment block of this process */
     struct _PDOS_PROCESS *parent; /* NULL for root process */
     struct _PDOS_PROCESS *prev; /* Previous process */
     struct _PDOS_PROCESS *next; /* Next process */
@@ -160,8 +160,8 @@ static void analyseBpb(DISKINFO *diskinfo, unsigned char *bpb);
 int pdosstrt(void);
 static int formatcwd(const char *input,char *output);
 static int pdosWriteText(int ch);
-static size_t envSegSize(char *envptr);
-static char *envSegTail(char *envptr);
+static size_t envBlockSize(char *envptr);
+static char *envBlockTail(char *envptr);
 static char *envCopy(char *previous, char *progName);
 static char *envAllocateEmpty(char *progName);
 static char *envModify(char *envPtr, char *name, char *value);
@@ -1854,7 +1854,7 @@ static void int21handler(union REGS *regsin,
             }
             else if (regsin->h.al == 0x3B)
             {
-                p = PosGetEnvSeg();
+                p = PosGetEnvBlock();
 #ifdef __32BIT__
                 regsout->d.eax = 0;
                 regsout->d.ebx = (int)p;
@@ -3391,8 +3391,8 @@ static void initPCB(PDOS_PROCESS *pcb, unsigned long pid, char *prog,
     /* Set the parent */
     pcb->parent = curPCB;
 
-    /* Set the environment segment */
-    pcb->envSegment = envPtr;
+    /* Set the environment block */
+    pcb->envBlock = envPtr;
 }
 
 /* Process has terminated, remove it from chain */
@@ -3552,7 +3552,7 @@ static void loadExe(char *prog, PARMBLOCK *parmblock)
     else
     {
         /* Launching a child process, copy parent's environment */
-        envptr = envCopy(curPCB->envSegment,prog);
+        envptr = envCopy(curPCB->envBlock,prog);
     }
 
 #ifdef __32BIT__
@@ -3839,7 +3839,7 @@ static void loadExe(char *prog, PARMBLOCK *parmblock)
     {
         newProc->status = PDOS_PROCSTATUS_TERMINATED;
         if (header != NULL) memmgrFree(&memmgr, header);
-        memmgrFree(&memmgr, newProc->envSegment);
+        memmgrFree(&memmgr, newProc->envBlock);
         removeFromProcessChain(newProc);
         memmgrFree(&memmgr, pcb);
     }
@@ -5161,7 +5161,7 @@ int PosSetVideoPage(unsigned int page) /* func f6.39 */
 /*======== ENVIRONMENT MANAGEMENT FUNCTIONS ========*/
 
 /*
- * Structure of DOS environment segment is as follows:
+ * Structure of DOS environment block is as follows:
  * NAME=VALUE\0NAME=VALUE\0NAME=VALUE\0\0 - this is env vars
  * Note that it must always terminate with two NULs \0\0 even if empty. After
  * this comes the "footer" or tail", which starts with a 16 bit value which is
@@ -5172,8 +5172,8 @@ int PosSetVideoPage(unsigned int page) /* func f6.39 */
  * support such future extensibility.
  */
 
-/* Get variable defined in given environment segment */
-static char * envSegGetVar(char *envptr, char *name)
+/* Get variable defined in given environment block */
+static char * envBlockGetVar(char *envptr, char *name)
 {
     size_t namelen = strlen(name);
     for (;;)
@@ -5189,8 +5189,8 @@ static char * envSegGetVar(char *envptr, char *name)
     }
 }
 
-/* Return environment segment tail start (footer count pointer) */
-static char *envSegTail(char *envptr)
+/* Return environment block tail start (footer count pointer) */
+static char *envBlockTail(char *envptr)
 {
     size_t size = 0;
     for (;;)
@@ -5204,8 +5204,8 @@ static char *envSegTail(char *envptr)
     }
 }
 
-/* Count variables in environment segment */
-static int envSegVarCount(char *envptr)
+/* Count variables in environment block */
+static int envBlockVarCount(char *envptr)
 {
     size_t size = 0;
     int count = 0;
@@ -5221,8 +5221,8 @@ static int envSegVarCount(char *envptr)
     }
 }
 
-/* Computes the size of an environment segment */
-static size_t envSegSize(char *envptr)
+/* Computes the size of an environment block */
+static size_t envBlockSize(char *envptr)
 {
     size_t size = 0;
     int footers, i;
@@ -5282,20 +5282,20 @@ static char * envCopy(char *previous, char *progName)
     char *envptr = NULL;
     unsigned char *envTail;
     size_t  envSize =
-        strlen(progName) + 1 + sizeof(unsigned short) + envSegSize(previous);
+        strlen(progName) + 1 + sizeof(unsigned short) + envBlockSize(previous);
 
     envptr = memmgrAllocate(&memmgr, envSize, 0);
 #ifndef __32BIT__
     envptr = (unsigned char *)FP_NORM(envptr);
 #endif
     memcpy(envptr,previous,envSize);
-    envTail = envSegTail(envptr);
+    envTail = envBlockTail(envptr);
     *((unsigned short *)(envTail)) = 1;
     strcpy(envTail + sizeof(unsigned short), progName);
     return envptr;
 }
 
-static void envSegCopyWithMods(char *src, char *dest, char *name, char *value)
+static void envBlockCopyWithMods(char *src, char *dest, char *name, char *value)
 {
     /* Did we find the variable to modify? */
     int found = 0;
@@ -5306,7 +5306,7 @@ static void envSegCopyWithMods(char *src, char *dest, char *name, char *value)
     unsigned short footerCount = 0;
     /* Loop counter */
     int i;
-    int count = envSegVarCount(src);
+    int count = envBlockVarCount(src);
 
     if (count == 0)
     {
@@ -5389,9 +5389,9 @@ static void envSegCopyWithMods(char *src, char *dest, char *name, char *value)
 
 static char *envModify(char *envPtr, char *name, char *value)
 {
-    size_t size = envSegSize(envPtr);
-    int count = envSegVarCount(envPtr);
-    char *existing = envSegGetVar(envPtr,name);
+    size_t size = envBlockSize(envPtr);
+    int count = envBlockVarCount(envPtr);
+    char *existing = envBlockGetVar(envPtr,name);
     int offset;
     char *newPtr;
 
@@ -5402,7 +5402,7 @@ static char *envModify(char *envPtr, char *name, char *value)
         if (existing == NULL)
             return envPtr;
         /* Removing doesn't require any extra memory, so we can use the
-         * current environment segment. We just have to update the existing
+         * current environment block. We just have to update the existing
          * segment.
          */
         /* Handle case when we are emptying the environment.
@@ -5435,7 +5435,7 @@ static char *envModify(char *envPtr, char *name, char *value)
     memmgrSetOwner(&memmgr, newPtr, curPCB->pid);
 
     /* Populate new segment */
-    envSegCopyWithMods(envPtr, newPtr, name, value);
+    envBlockCopyWithMods(envPtr, newPtr, name, value);
 
     /* Free old segment */
     PosFreeMem(envPtr);
@@ -5447,10 +5447,10 @@ static char *envModify(char *envPtr, char *name, char *value)
 /* F6,3A - Set Environment Variable */
 int PosSetEnv(char *name, char *value)
 {
-    char *envPtr = curPCB->envSegment;
-    size_t size = envSegSize(envPtr);
-    int count = envSegVarCount(envPtr);
-    char *existing = envSegGetVar(envPtr,name);
+    char *envPtr = curPCB->envBlock;
+    size_t size = envBlockSize(envPtr);
+    int count = envBlockVarCount(envPtr);
+    char *existing = envBlockGetVar(envPtr,name);
     int offset;
     char *newPtr;
 #ifndef __32BIT__
@@ -5464,7 +5464,7 @@ int PosSetEnv(char *name, char *value)
     }
 
     /* Update PCB */
-    curPCB->envSegment = envPtr;
+    curPCB->envBlock = envPtr;
 #ifndef __32BIT__
     /* Update the PSP (in 16-bit only) */
     psp = MK_FP(curPCB->pid, 0);
@@ -5475,8 +5475,8 @@ int PosSetEnv(char *name, char *value)
     return POS_ERR_NO_ERROR;
 }
 
-/* F6,3B - Get Environment Segment */
-void * PosGetEnvSeg(void)
+/* F6,3B - Get Environment Block */
+void * PosGetEnvBlock(void)
 {
-    return curPCB->envSegment;
+    return curPCB->envBlock;
 }

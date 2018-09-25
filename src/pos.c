@@ -1730,8 +1730,8 @@ int PosSetEnv(char *name, char *value)
     return regsout.x.ax;
 }
 
-/* F6,3B - Get Environment Segment */
-void * PosGetEnvSeg(void)
+/* F6,3B - Get Environment Block */
+void * PosGetEnvBlock(void)
 {
     union REGS regsin;
     union REGS regsout;

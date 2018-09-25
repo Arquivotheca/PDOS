@@ -493,7 +493,7 @@ int main(int argc, char **argv)
     sPROMPT = getenv("PROMPT");
     if (sPROMPT != NULL)
     {
-        strncpy(prompt,sPROMPT,PROMPT_MAX);
+        strncpy(prompt,sPROMPT,PROMPT_MAX-1);
     }
     else
     {
@@ -507,13 +507,14 @@ int main(int argc, char **argv)
          */
         if (genuine_pdos)
         {
-            strncpy(prompt,"$_$[V SAVE=FG FG=14]$P]$[V RESTORE=FG]",PROMPT_MAX);
+            strncpy(prompt,"$_$[V SAVE=FG FG=14]$P]$[V RESTORE=FG]",
+                    PROMPT_MAX-1);
             PosSetEnv("PROMPT",prompt);
-            __envptr = PosGetEnvSeg();
+            __envptr = PosGetEnvBlock();
         }
         else
         {
-            strncpy(prompt,"$_$P]",PROMPT_MAX);
+            strncpy(prompt,"$_$P]",PROMPT_MAX-1);
         }
     }
     /* Parse our arguments */
@@ -1234,7 +1235,7 @@ static int cmd_path_run(char *s)
         if (genuine_pdos)
         {
              PosSetEnv("PATH",path);
-             __envptr = PosGetEnvSeg();
+             __envptr = PosGetEnvBlock();
         }
     }
     return 0;
@@ -1249,11 +1250,11 @@ static int cmd_prompt_run(char *s)
 
      else
      {
-        strncpy(prompt, s, PROMPT_MAX);
+        strncpy(prompt, s, PROMPT_MAX-1);
         if (genuine_pdos)
         {
             PosSetEnv("PROMPT",prompt);
-            __envptr = PosGetEnvSeg();
+            __envptr = PosGetEnvBlock();
         }
      }
      return 0;
@@ -2338,7 +2339,7 @@ static int cmd_set_run(char *arg)
             showError(ret);
             return 1;
         }
-        __envptr = PosGetEnvSeg();
+        __envptr = PosGetEnvBlock();
         return 0;
     }
 

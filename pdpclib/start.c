@@ -130,7 +130,7 @@ __PDPCLIB_API__ int CTYP __start(char *p)
     __abscor = exep->abscor;
     __vidptr = ABSADDR(0xb8000);
 #ifdef __32BIT__
-    __envptr = PosGetEnvSeg();
+    __envptr = PosGetEnvBlock();
 #endif
 #endif
 

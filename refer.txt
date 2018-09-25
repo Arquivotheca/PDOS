@@ -188,7 +188,7 @@ easier debugging during early stages of development:
 #Int 21/AX=F638h - PDOS - Set Video Mode
 #Int 21/AX=F639h - PDOS - Set Video Page
 #Int 21/AX=F63Ah - PDOS - Set Environment Variable
-#Int 21/AX=F63Bh - PDOS - Get Environment Segment
+#Int 21/AX=F63Bh - PDOS - Get Environment Block
 
 For a full reference of standard and non-standard DOS calls check:
 http://www.ctyme.com/intr/int-21.htm

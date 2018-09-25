@@ -355,6 +355,18 @@ int PosSetVideoMode(unsigned int mode);
 /* F6,39 - Set Video Page */
 int PosSetVideoPage(unsigned int page);
 
+/* F6,3A - Set Environment Variable
+ * To unset a variable, pass NULL for the value. The name and value string
+ * will be copied into the environment segment, so are not required after
+ * this call.
+ */
+int PosSetEnv(char *name, char *value);
+
+/* F6,3B - Get Environment Segment
+ * Returns the environment segment for the current process.
+ */
+void * PosGetEnvSeg(void);
+
 unsigned int PosAbsoluteDiskRead(int drive, unsigned long start_sector,
                                  unsigned int sectors,void *buf); /*INT25 */
 

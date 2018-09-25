@@ -1709,6 +1709,45 @@ int PosSetVideoPage(unsigned int page) /* func f6.39 */
     return regsout.x.ax;
 }
 
+/* F6,3A - Set Environment Variable */
+int PosSetEnv(char *name, char *value)
+{
+    union REGS regsin;
+    union REGS regsout;
+    struct SREGS sregs;
+    regsin.h.ah = 0xf6;
+    regsin.h.al = 0x3A;
+#ifdef __32BIT__
+    regsin.d.ebx = (int)name;
+    regsin.d.edx = (int)value;
+#else
+    regsin.x.bx = FP_OFF(name);
+    sregs.ds = FP_SEG(name);
+    regsin.x.dx = FP_OFF(value);
+    sregs.es = FP_SEG(value);
+#endif
+    int86x(0x21, &regsin, &regsout, &sregs);
+    return regsout.x.ax;
+}
+
+/* F6,3B - Get Environment Segment */
+void * PosGetEnvSeg(void)
+{
+    union REGS regsin;
+    union REGS regsout;
+    struct SREGS sregs;
+    regsin.h.ah = 0xf6;
+    regsin.h.al = 0x3B;
+    int86x(0x21, &regsin, &regsout, &sregs);
+    if (regsout.x.ax != 0)
+        return NULL;
+#ifdef __32BIT__
+    return (void*) regsout.d.ebx;
+#else
+    return MK_FP(sregs.ds, regsout.x.bx);
+#endif
+}
+
 /* Pos extension for installing interrupt handler. */
 void PosInstallInterruptHandler(int interrupt_number,
                                 int (*func)(unsigned int *))

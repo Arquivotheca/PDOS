@@ -11,6 +11,7 @@
 /*********************************************************************/
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
 #include <time.h>
@@ -36,7 +37,8 @@ void safegets(char *buffer, int size);
 
 static char buf[200];
 static unsigned char cmdt[140];
-static char path[500] = ";" ; /* Used to store path */
+#define PATH_MAX 500
+static char path[PATH_MAX] = ";" ; /* Used to store path */
 static struct {
     int env;
     unsigned char *cmdtail;
@@ -46,7 +48,8 @@ static struct {
 static size_t len;
 static char drive[2] = "A";
 static char cwd[65];
-static char prompt[50];
+#define PROMPT_MAX 256
+static char prompt[PROMPT_MAX];
 static int singleCommand = 0;
 static int primary = 0;
 static int term = 0;
@@ -473,6 +476,7 @@ cmdBlock *findCommand(char *cmdName)
 
 int main(int argc, char **argv)
 {
+    char *sPROMPT;
 #ifdef USING_EXE
     pdosRun();
 #endif
@@ -486,21 +490,31 @@ int main(int argc, char **argv)
     {
         PosGetVideoInfo(&savedVideoState, sizeof(pos_video_info));
     }
-    /* Support colourful prompt.
-     * Sometimes I test PCOMM under MS-DOS.
-     * And then I get confused about whether I am in PCOMM or COMMAND.COM.
-     * Making the default prompt for PCOMM different from that of COMMAND.COM
-     * Helps avoid that confusion.
-     * Also, lets have a colourful prompt, because we can.
-     * - Simon Kissane
-     */
-    if (genuine_pdos)
+    sPROMPT = getenv("PROMPT");
+    if (sPROMPT != NULL)
     {
-        strcpy(prompt,"$_$[V SAVE=FG FG=14]$P]$[V RESTORE=FG]");
+        strncpy(prompt,sPROMPT,PROMPT_MAX);
     }
     else
     {
-        strcpy(prompt,"$_$P]");
+        /* Support colourful prompt.
+         * Sometimes I test PCOMM under MS-DOS.
+         * And then I get confused about whether I am in PCOMM or COMMAND.COM.
+         * Making the default prompt for PCOMM different from that of
+         * COMMAND.COM helps avoid that confusion.
+         * Also, lets have a colourful prompt, because we can.
+         * - Simon Kissane
+         */
+        if (genuine_pdos)
+        {
+            strncpy(prompt,"$_$[V SAVE=FG FG=14]$P]$[V RESTORE=FG]",PROMPT_MAX);
+            PosSetEnv("PROMPT",prompt);
+            __envptr = PosGetEnvSeg();
+        }
+        else
+        {
+            strncpy(prompt,"$_$P]",PROMPT_MAX);
+        }
     }
     /* Parse our arguments */
     parseArgs(argc, argv);
@@ -1205,19 +1219,25 @@ static int cmd_path_run(char *s)
         {
             printf("%s\n", t);
         }
-     }
-
-     else if (*s == ';')
-     {
-        strcpy(path, s);
-     }
-
-     else
-     {
-        strcpy(path, ";");
-        strcat(path, s);
-     }
-     return 0;
+    }
+    else
+    {
+        if (*s == ';')
+        {
+            strcpy(path, s);
+        }
+        else
+        {
+            strcpy(path, ";");
+            strcat(path, s);
+        }
+        if (genuine_pdos)
+        {
+             PosSetEnv("PATH",path);
+             __envptr = PosGetEnvSeg();
+        }
+    }
+    return 0;
 }
 
 static int cmd_prompt_run(char *s)
@@ -1229,7 +1249,12 @@ static int cmd_prompt_run(char *s)
 
      else
      {
-        strcpy(prompt, s);
+        strncpy(prompt, s, PROMPT_MAX);
+        if (genuine_pdos)
+        {
+            PosSetEnv("PROMPT",prompt);
+            __envptr = PosGetEnvSeg();
+        }
      }
      return 0;
 }
@@ -1666,8 +1691,10 @@ static void cmd_save_help(void)
 static void cmd_set_help(void)
 {
     printf("SET\n\n");
-    printf("Limitations (may be removed in future versions):\n");
-    printf("- Setting environment variables not presently supported\n");
+    printf("SET NAME=[VALUE]\n\n");
+    printf("Called without arguments, will print current environment\n");
+    printf("Pass NAME=VALUE to set variable NAME to that VALUE\n");
+    printf("Leave the VALUE blank to delete that environment variable\n");
 }
 
 static void cmd_sleep_help(void)
@@ -2277,24 +2304,75 @@ static int cmd_peek_run(char *arg)
     return 0;
 }
 
-static int cmd_set_run(char *ignored)
+static int cmd_set_run(char *arg)
 {
     char *env = (char*)__envptr;
     size_t len;
+    char *name, *value;
+    int ret, i;
+    unsigned short footerCount;
+    bool empty;
+
+    /* If argument passed, we have something to set NAME=VALUE */
+    if (!isBlankString(arg))
+    {
+        CMD_REQUIRES_GENUINE();
+        name = stringTrimBoth(arg);
+        value = strchr(name,'=');
+        /* No equal sign is taken to mean UNSET */
+        if (value != NULL)
+        {
+            *value = 0;
+            value++;
+            value = stringTrimBoth(value);
+            if (*value == 0)
+            {
+                /* Nothing but blanks after = sign means UNSET */
+                value = NULL;
+            }
+        }
+        strtoupper(name);
+        ret = PosSetEnv(name,value);
+        if (ret != POS_ERR_NO_ERROR)
+        {
+            showError(ret);
+            return 1;
+        }
+        __envptr = PosGetEnvSeg();
+        return 0;
+    }
+
+    /* No argument was passed, time to display environment */
     if (env == NULL)
     {
         return 0;
     }
+    /* Empty environment must contain two NUL bytes */
+    empty = env[0] == 0 && env[1] == 0;
     for (;;)
     {
         len = strlen(env);
         if (len == 0)
         {
-            return 0;
+            env++;
+            break;
         }
         printf("%s\n", env);
         env += (len + 1);
     }
+    if (empty)
+        env++;
+    /* Display the environment footers. There should only be one, which is
+     * ARGV[0]. But more could be added in future.
+     */
+    footerCount = *((unsigned short *)env);
+    env += sizeof(unsigned short);
+    for (i = 0; i < footerCount; i++)
+    {
+        printf("; %s\n", env);
+        env += strlen(env) + 1;
+    }
+    return 0;
 }
 
 static int cmd_sleep_run(char *arg)
@@ -2478,6 +2556,8 @@ static int cmd_unboot_run(char *arg)
     int drive, rc, i;
     unsigned char buf[512];
 
+    /* In theory, command should work on MS-DOS. In practice, crashes. */
+    CMD_REQUIRES_GENUINE();
     CMD_REQUIRES_ARGS(arg);
     arg = stringTrimBoth(arg);
 

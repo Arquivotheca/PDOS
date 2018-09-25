@@ -70,6 +70,7 @@ typedef struct _PDOS_PROCESS {
                         * current process.
                         */
     PDOS_PROCSTATUS status;
+    void *envSegment; /* Environment segment of this process */
     struct _PDOS_PROCESS *parent; /* NULL for root process */
     struct _PDOS_PROCESS *prev; /* Previous process */
     struct _PDOS_PROCESS *next; /* Next process */
@@ -159,6 +160,11 @@ static void analyseBpb(DISKINFO *diskinfo, unsigned char *bpb);
 int pdosstrt(void);
 static int formatcwd(const char *input,char *output);
 static int pdosWriteText(int ch);
+static size_t envSegSize(char *envptr);
+static char *envSegTail(char *envptr);
+static char *envCopy(char *previous, char *progName);
+static char *envAllocateEmpty(char *progName);
+static char *envModify(char *envPtr, char *name, char *value);
 
 static MEMMGR memmgr;
 #ifdef __32BIT__
@@ -1832,6 +1838,32 @@ static void int21handler(union REGS *regsin,
             {
                 regsout->x.ax = PosSetVideoPage(regsin->x.bx);
             }
+            else if (regsin->h.al == 0x3A)
+            {
+#ifdef __32BIT__
+                regsout->d.eax = PosSetEnv(
+                        (char*)regsin->d.ebx,
+                        (char*)regsin->d.edx
+                    );
+#else
+                regsout->x.ax = PosSetEnv(
+                        (char*)MK_FP(sregs->ds,regsin->x.bx),
+                        (char*)MK_FP(sregs->es,regsin->x.dx)
+                    );
+#endif
+            }
+            else if (regsin->h.al == 0x3B)
+            {
+                p = PosGetEnvSeg();
+#ifdef __32BIT__
+                regsout->d.eax = 0;
+                regsout->d.ebx = (int)p;
+#else
+                regsout->x.ax = 0;
+                regsout->x.bx = FP_OFF(p);
+                sregs->ds = FP_SEG(p);
+#endif
+            }
             else
             {
                 logUnimplementedCall(0x21, regsin->h.ah, regsin->h.al);
@@ -2439,7 +2471,7 @@ void *PosAllocMemPages(unsigned int pages, unsigned int *maxpages)
     void *p;
 
     p = memmgrAllocate(&memmgr, pages * 16, 0);
-    if (p == NULL)
+    if (p == NULL && maxpages != NULL)
     {
         *maxpages = memmgrMaxSize(&memmgr) / 16;
     }
@@ -2451,7 +2483,7 @@ void *PosAllocMemPages(unsigned int pages, unsigned int *maxpages)
     void *p;
 
     p = pdos16MemmgrAllocPages(&memmgr, pages, 0);
-    if (p == NULL)
+    if (p == NULL && maxpages != NULL)
     {
         *maxpages = memmgrMaxSize(&memmgr);
     }
@@ -3305,7 +3337,9 @@ static void loadPcomm(void)
 
     if (strcmp(shell, "") == 0)
     {
-        loadExe("COMMAND.COM", &p);
+        strcpy(shell,"?:\\COMMAND.COM");
+        shell[0] = bootDriveLogical + 'A';
+        loadExe(shell, &p);
     }
     else
     {
@@ -3317,7 +3351,8 @@ static void loadPcomm(void)
 /* initPCB - Initialize process control block.
  * Sets the magic, flags, etc.
  */
-static void initPCB(PDOS_PROCESS *pcb, unsigned long pid, char *prog)
+static void initPCB(PDOS_PROCESS *pcb, unsigned long pid, char *prog,
+                    char *envPtr)
 {
     char *tmp;
 
@@ -3355,6 +3390,9 @@ static void initPCB(PDOS_PROCESS *pcb, unsigned long pid, char *prog)
 
     /* Set the parent */
     pcb->parent = curPCB;
+
+    /* Set the environment segment */
+    pcb->envSegment = envPtr;
 }
 
 /* Process has terminated, remove it from chain */
@@ -3448,7 +3486,6 @@ static void loadExe(char *prog, PARMBLOCK *parmblock)
     unsigned char *psp;
     unsigned char *pcb;
     PDOS_PROCESS *newProc;
-    unsigned char *origenv;
     unsigned char *exeStart;
     unsigned int numReloc;
     unsigned long *relocStart;
@@ -3500,15 +3537,23 @@ static void loadExe(char *prog, PARMBLOCK *parmblock)
     }
 #endif
 
-    envptr = memmgrAllocate(&memmgr,
-                            strlen(prog) + 7 + sizeof(unsigned short), 0);
-#ifndef __32BIT__
-    origenv = envptr;
-    envptr = (unsigned char *)FP_NORM(envptr);
-#endif
-    memcpy(envptr, "A=B\0\0", 5);
-    *((unsigned short *)(envptr + 5)) = 1; /* who knows why */
-    memcpy(envptr + 5 + sizeof(unsigned short), prog, strlen(prog) + 1);
+    /* If curPCB == NULL, we are launching init process (PCOMM),
+     * setup initial environment.
+     */
+    if (curPCB == NULL)
+    {
+        char sBOOTDRIVE[2];
+        sBOOTDRIVE[0] = 'A' + bootDriveLogical;
+        sBOOTDRIVE[1] = 0;
+        envptr = envAllocateEmpty(prog);
+        envptr = envModify(envptr, "COMSPEC", prog);
+        envptr = envModify(envptr, "BOOTDRIVE", sBOOTDRIVE);
+    }
+    else
+    {
+        /* Launching a child process, copy parent's environment */
+        envptr = envCopy(curPCB->envSegment,prog);
+    }
 
 #ifdef __32BIT__
     if (doing_pcomm)
@@ -3527,7 +3572,7 @@ static void loadExe(char *prog, PARMBLOCK *parmblock)
     {
         psp = pcb + PDOS_PROCESS_SIZE;
         newProc = (PDOS_PROCESS*)pcb;
-        initPCB(newProc, (unsigned long)psp, prog);
+        initPCB(newProc, (unsigned long)psp, prog, envptr);
         memmgrSetOwner(&memmgr, pcb, (unsigned long)psp);
         memmgrSetOwner(&memmgr, envptr, (unsigned long)psp);
         memmgrSetOwner(&memmgr, header, (unsigned long)psp);
@@ -3558,7 +3603,7 @@ static void loadExe(char *prog, PARMBLOCK *parmblock)
         psp = pcb + PDOS_PROCESS_SIZE;
         psp = (unsigned char *)FP_NORM(psp);
         newProc = (PDOS_PROCESS*)pcb;
-        initPCB(newProc, FP_SEG(psp), prog);
+        initPCB(newProc, FP_SEG(psp), prog, envptr);
         memmgrSetOwner(&memmgr, pcb, FP_SEG(psp));
         memmgrSetOwner(&memmgr, envptr, FP_SEG(psp));
         memmgrSetOwner(&memmgr, header, FP_SEG(psp));
@@ -3772,7 +3817,6 @@ static void loadExe(char *prog, PARMBLOCK *parmblock)
         newProc->parent->status = PDOS_PROCSTATUS_CHILDWAIT;
     ret = callwithpsp(exeEntry, psp, ss, sp);
     dta = olddta;
-    envptr = origenv;
 #endif
 #ifdef __32BIT__
     newProc->status = PDOS_PROCSTATUS_ACTIVE;
@@ -3795,9 +3839,9 @@ static void loadExe(char *prog, PARMBLOCK *parmblock)
     {
         newProc->status = PDOS_PROCSTATUS_TERMINATED;
         if (header != NULL) memmgrFree(&memmgr, header);
+        memmgrFree(&memmgr, newProc->envSegment);
         removeFromProcessChain(newProc);
         memmgrFree(&memmgr, pcb);
-        memmgrFree(&memmgr, envptr);
     }
     else
     {
@@ -5112,4 +5156,327 @@ int PosSetVideoPage(unsigned int page) /* func f6.39 */
         return POS_ERR_NO_ERROR;
     }
     return POS_ERR_ACCESS_DENIED;
+}
+
+/*======== ENVIRONMENT MANAGEMENT FUNCTIONS ========*/
+
+/*
+ * Structure of DOS environment segment is as follows:
+ * NAME=VALUE\0NAME=VALUE\0NAME=VALUE\0\0 - this is env vars
+ * Note that it must always terminate with two NULs \0\0 even if empty. After
+ * this comes the "footer" or tail", which starts with a 16 bit value which is
+ * the number of ASCIIZ strings following. Then that many ASCIIZ strings. That
+ * 16-bit value is almost always 1 (maybe it is always 1?). The first such
+ * ASCIIZ string is full path to the application. I don't think any further
+ * such ASCIIZ strings were ever used, although the format was designed to
+ * support such future extensibility.
+ */
+
+/* Get variable defined in given environment segment */
+static char * envSegGetVar(char *envptr, char *name)
+{
+    size_t namelen = strlen(name);
+    for (;;)
+    {
+        size_t n = strlen(envptr);
+        if (n == 0)
+            return NULL;
+        if (strncmp(envptr,name,namelen) == 0 && envptr[namelen] == '=')
+        {
+            return envptr;
+        }
+        envptr += n + 1;
+    }
+}
+
+/* Return environment segment tail start (footer count pointer) */
+static char *envSegTail(char *envptr)
+{
+    size_t size = 0;
+    for (;;)
+    {
+        size_t n = strlen(envptr + size);
+        if (n == 0)
+        {
+            return envptr + size + 1 + (size == 0 ? 1 : 0);
+        }
+        size += n + 1;
+    }
+}
+
+/* Count variables in environment segment */
+static int envSegVarCount(char *envptr)
+{
+    size_t size = 0;
+    int count = 0;
+    for (;;)
+    {
+        size_t n = strlen(envptr + size);
+        if (n == 0)
+        {
+            return count;
+        }
+        size += n + 1;
+        count ++;
+    }
+}
+
+/* Computes the size of an environment segment */
+static size_t envSegSize(char *envptr)
+{
+    size_t size = 0;
+    int footers, i;
+
+    /* Skip over the environment variables */
+    for (;;)
+    {
+        size_t n = strlen(envptr + size);
+        if (n == 0)
+        {
+            size++;
+            break;
+        }
+        size += n + 1;
+    }
+    if (size < 2)
+        size = 2;
+    /* envptr is now a 16-bit word count of footer ASCIIZ strings. This is
+     * always 1, but the format technically allows more than one such string,
+     * but the meaning of the second and subsequent strings isn't defined.
+     * The first such string is full path to program executable.
+     */
+    footers = *((unsigned short *)&(envptr[size]));
+    size += sizeof(unsigned short);
+    /* Now skip over the footer strings */
+    for (i = 0; i < footers; i++)
+    {
+        size_t n = strlen(envptr + size);
+        size += n + 1;
+    }
+    /* Return overall size */
+    return size;
+}
+
+static char * envAllocateEmpty(char *progName)
+{
+    char *envptr = NULL;
+    size_t  envSize =
+        2 /* \0\0 empty variables marker */ +
+        sizeof(unsigned short) /* footer string count */ +
+        strlen(progName) /* the program name (footer string 1) */ +
+        1; /* \0 terminator of program name */
+    envptr = memmgrAllocate(&memmgr, envSize, 0);
+#ifndef __32BIT__
+    envptr = (unsigned char *)FP_NORM(envptr);
+#endif
+    /* Empty environment is two NUL bytes */
+    envptr[0] = 0;
+    envptr[1] = 0;
+    *((unsigned short *)(envptr + 2)) = 1; /* footer count */
+    strcpy(envptr + 2 + sizeof(unsigned short), progName);
+    return envptr;
+}
+
+static char * envCopy(char *previous, char *progName)
+{
+    char *envptr = NULL;
+    unsigned char *envTail;
+    size_t  envSize =
+        strlen(progName) + 1 + sizeof(unsigned short) + envSegSize(previous);
+
+    envptr = memmgrAllocate(&memmgr, envSize, 0);
+#ifndef __32BIT__
+    envptr = (unsigned char *)FP_NORM(envptr);
+#endif
+    memcpy(envptr,previous,envSize);
+    envTail = envSegTail(envptr);
+    *((unsigned short *)(envTail)) = 1;
+    strcpy(envTail + sizeof(unsigned short), progName);
+    return envptr;
+}
+
+static void envSegCopyWithMods(char *src, char *dest, char *name, char *value)
+{
+    /* Did we find the variable to modify? */
+    int found = 0;
+    /* Size of name, value */
+    size_t nameLen = strlen(name);
+    size_t valueLen = value == NULL ? 0 : strlen(value);
+    /* Count of footers */
+    unsigned short footerCount = 0;
+    /* Loop counter */
+    int i;
+    int count = envSegVarCount(src);
+
+    if (count == 0)
+    {
+        strcpy(dest,name);
+        dest[nameLen] = '=';
+        dest += nameLen + 1;
+        strcpy(dest,value);
+        dest += valueLen + 1;
+        *dest = 0;
+        dest++;
+        src += 2;
+    }
+    else
+    {
+        /* Copy the environment variables */
+        for (i=0;;i++)
+        {
+            size_t n = strlen(src);
+            if (n > 0)
+            {
+                if (strncmp(src,name,nameLen) == 0 && src[nameLen] == '=')
+                {
+                    if (value != NULL)
+                    {
+                        memcpy(dest,src,nameLen+1);
+                        dest += nameLen + 1;
+                        strcpy(dest,value);
+                        dest += valueLen + 1;
+                    }
+                    found = 1;
+                }
+                else
+                {
+                    strcpy(dest,src);
+                    dest += n + 1;
+                }
+                src += n + 1;
+            }
+            else
+            {
+                if (!found && value != NULL)
+                {
+                    strcpy(dest,name);
+                    dest[nameLen] = '=';
+                    dest += nameLen + 1;
+                    strcpy(dest,value);
+                    dest += valueLen + 1;
+                }
+                *dest = 0;
+                dest++;
+                src++;
+                /*
+                if (i == 0)
+                {
+                    *dest = 0;
+                    dest++;
+                    src++;
+                }
+                */
+                break;
+            }
+        }
+    }
+
+    /* Copy footer count */
+    footerCount = *((unsigned short *)src);
+    *((unsigned short *)dest) = footerCount;
+    src += sizeof(unsigned short);
+    dest += sizeof(unsigned short);
+
+    /* Copy the footers */
+    for (i = 0; i < footerCount; i++)
+    {
+        size_t n = strlen(src);
+        strcpy(dest, src);
+        dest += n + 1;
+        src += n + 1;
+    }
+}
+
+static char *envModify(char *envPtr, char *name, char *value)
+{
+    size_t size = envSegSize(envPtr);
+    int count = envSegVarCount(envPtr);
+    char *existing = envSegGetVar(envPtr,name);
+    int offset;
+    char *newPtr;
+
+    /* Remove when value is NULL */
+    if (value == NULL)
+    {
+        /* If name to be removed not in environment, just return success */
+        if (existing == NULL)
+            return envPtr;
+        /* Removing doesn't require any extra memory, so we can use the
+         * current environment segment. We just have to update the existing
+         * segment.
+         */
+        /* Handle case when we are emptying the environment.
+         * This is special-cased because we still need two NUL bytes even
+         * in an empty environment.
+        */
+        if (count == 1)
+        {
+            memmove(envPtr, envPtr + strlen(existing),
+                    size - strlen(existing));
+            /* Return success */
+            return envPtr;
+        }
+        /* Find offset */
+        offset = existing - envPtr;
+        /* Remove the variable */
+        memmove(existing, existing + strlen(existing) + 1,
+                size - strlen(existing) - 1);
+        /* Return success */
+        return envPtr;
+    }
+
+    /* We need to allocate a new segment */
+    size += strlen(name) + strlen(value) + 2;
+    newPtr = PosAllocMemPages(((size/16)+1), NULL);
+    if (newPtr == NULL)
+    {
+        return NULL;
+    }
+    memmgrSetOwner(&memmgr, newPtr, curPCB->pid);
+
+    /* Populate new segment */
+    envSegCopyWithMods(envPtr, newPtr, name, value);
+
+    /* Free old segment */
+    PosFreeMem(envPtr);
+
+    /* Return success */
+    return newPtr;
+}
+
+/* F6,3A - Set Environment Variable */
+int PosSetEnv(char *name, char *value)
+{
+    char *envPtr = curPCB->envSegment;
+    size_t size = envSegSize(envPtr);
+    int count = envSegVarCount(envPtr);
+    char *existing = envSegGetVar(envPtr,name);
+    int offset;
+    char *newPtr;
+#ifndef __32BIT__
+    char *psp;
+#endif
+
+    envPtr = envModify(envPtr, name, value);
+    if (envPtr == NULL)
+    {
+        return POS_ERR_INSUFFICIENT_MEMORY;
+    }
+
+    /* Update PCB */
+    curPCB->envSegment = envPtr;
+#ifndef __32BIT__
+    /* Update the PSP (in 16-bit only) */
+    psp = MK_FP(curPCB->pid, 0);
+    *(unsigned int *)&psp[0x2c] = FP_SEG(envPtr);
+#endif
+
+    /* Return success */
+    return POS_ERR_NO_ERROR;
+}
+
+/* F6,3B - Get Environment Segment */
+void * PosGetEnvSeg(void)
+{
+    return curPCB->envSegment;
 }

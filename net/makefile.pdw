@@ -1,5 +1,5 @@
 CC=gcc386
-COPTS=-S -Os -fno-common -ansi -I. -I../pdpclib -I../src -D__32BIT__
+COPTS=-S -Os -fno-common -ansi -I. -I../pdpclib -I../src
 
 all: nettest.o pcnetii.o net.o eth.o arp.o ip.o udp.o ../src/pci.o
   ld386 -s -e ___pdosst32 -o nettest.exe ../pdpclib/pdosst32.o nettest.o pcnetii.o net.o eth.o arp.o ip.o udp.o ../src/pci.o ../pdpclib/pdos.a

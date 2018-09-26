@@ -1,9 +1,9 @@
-gcc386 -S -Os -fno-common -I../pdpclib -D__32BIT__ pdos.c
-gcc386 -S -Os -fno-common -I../pdpclib -D__32BIT__ bos.c
-gcc386 -S -Os -fno-common -I../pdpclib -D__32BIT__ fat.c
-gcc386 -S -Os -fno-common -I../pdpclib -D__32BIT__ patmat.c
-gcc386 -S -Os -fno-common -I../pdpclib -D__32BIT__ memmgr.c
-gcc386 -S -Os -fno-common -I../pdpclib -D__32BIT__ protintp.c
+gcc386 -S -Os -fno-common -I../pdpclib pdos.c
+gcc386 -S -Os -fno-common -I../pdpclib bos.c
+gcc386 -S -Os -fno-common -I../pdpclib fat.c
+gcc386 -S -Os -fno-common -I../pdpclib patmat.c
+gcc386 -S -Os -fno-common -I../pdpclib memmgr.c
+gcc386 -S -Os -fno-common -I../pdpclib protintp.c
 
 as386 -o pdos.o pdos.s
 del pdos.s

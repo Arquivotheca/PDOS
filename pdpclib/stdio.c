@@ -768,18 +768,20 @@ static void osfopen(void)
     int mode;
     int errind;
 
-    if ((modeType == 1) || (modeType == 4))
+    if ((modeType == 1) || (modeType == 4)
+        || (modeType == 7) || (modeType == 10))
     {
         mode = 0; /* read */
     }
-    else if ((modeType == 2) || (modeType == 5))
+    else if ((modeType == 2) || (modeType == 5)
+             || (modeType == 8) || (modeType == 11))
     {
         mode = 1; /* write */
     }
     else
     {
-        mode = 2; /* update or otherwise unsupported */
-        /* because we don't have the ability to update files
+        mode = 2; /* append or otherwise unsupported */
+        /* because we don't have append mode implemented
            at the moment on MSDOS, just return with an
            error immediately */
         err = 1;

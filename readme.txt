@@ -207,8 +207,9 @@ refer to gccdos.txt for documentation
 binutils 2.14a to do cross-assembly etc from Windows:
 https://sourceforge.net/projects/gccmvs/files/GCCMVS/binu214a-stage5.zip/download
 
+dmake with -B option allows space instead of tabs in makefiles
 https://github.com/mohawk2/dmake/releases
-I use 4_12_2_2 with the -B option to allow spaces instead of tabs
+I use 4_12_2_2
 
 Not used:
 MASM 6.15:

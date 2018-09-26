@@ -200,6 +200,10 @@ configuration to test PDOS.
 
 raread/rawrite (unknown origin)
 
+GCC 3.2.3 to do cross-compile from Windows:
+https://sourceforge.net/projects/gccmvs/files/GCCMVS/gcc-stage296.zip/download
+refer to gccdos.txt for documentation
+
 Not used:
 MASM 6.15:
 http://msdn2.microsoft.com/en-us/vstudio/aa718349.aspx

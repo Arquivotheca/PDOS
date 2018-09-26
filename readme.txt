@@ -204,6 +204,12 @@ GCC 3.2.3 to do cross-compile from Windows:
 https://sourceforge.net/projects/gccmvs/files/GCCMVS/gcc-stage296.zip/download
 refer to gccdos.txt for documentation
 
+binutils 2.14a to do cross-assembly etc from Windows:
+https://sourceforge.net/projects/gccmvs/files/GCCMVS/binu214a-stage5.zip/download
+
+https://github.com/mohawk2/dmake/releases
+I use 4_12_2_2 with the -B option to allow spaces instead of tabs
+
 Not used:
 MASM 6.15:
 http://msdn2.microsoft.com/en-us/vstudio/aa718349.aspx

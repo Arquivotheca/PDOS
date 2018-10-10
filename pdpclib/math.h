@@ -65,7 +65,7 @@ double log10(double x);
 #pragma intrinsic(cos, sin, tan, exp, log, log10, sqrt)
 #endif
 
-#ifdef __IBMC__
+#if defined(__IBMC__) && defined(__OS2__)
 double _Builtin __fabs(double x);
 #define fabs(x) (__fabs((x)))
 double _Builtin __fsin(double x);

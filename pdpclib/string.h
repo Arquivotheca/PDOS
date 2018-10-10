@@ -54,7 +54,7 @@ size_t strlen(const char *s);
 #endif
 #endif
 
-#ifdef __IBMC__
+#if defined(__IBMC__) && defined(__OS2__)
 char * _Builtin __strcat(char *s1, const char *s2);
 #define strcat(s1,s2) (__strcat((s1),(s2)))
 char * _Builtin __strchr(const char *s, int c);

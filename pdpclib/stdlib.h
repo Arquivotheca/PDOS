@@ -88,7 +88,7 @@ void *bsearch(const void *key, const void *base,
 #pragma intrinsic (abs,labs,div,ldiv)
 #endif
 
-#ifdef __IBMC__
+#if defined(__IBMC__) && defined(__OS2__)
 int _Builtin __abs(int j);
 #define abs(j) (__abs((j)))
 long int _Builtin __labs(long int j);

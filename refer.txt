@@ -174,7 +174,7 @@ easier debugging during early stages of development:
 #Int 21/AX=F608h - PDOS - Allocate memory (32-bit only)
 #Int 21/AX=F609h - PDOS - Get Error Message String
 #Int 21/AX=F60Ah - PDOS - Power Off
-#Int 21/AX=F60Bh - PDOS - Install Interrupt
+
 #Int 21/AX=F60Ch - PDOS - Get Info About Process
 #Int 21/AX=F60Dh - PDOS - Get Per-Process Memory Usage Stats
 #Int 21/AX=F630h - PDOS - Clear Screen

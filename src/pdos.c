@@ -1746,16 +1746,6 @@ static void int21handler(union REGS *regsin,
             {
                 PosPowerOff();
             }
-            else if (regsin->h.al == 0xb)
-            {
-#ifdef __32BIT__
-                p = (void *) regsin->d.edx;
-#else
-                p = MK_FP(sregs->ds, regsin->x.dx);
-#endif
-                PosInstallInterruptHandler(regsin->x.bx,
-                                           (int (*)(unsigned int *))p);
-            }
             else if (regsin->h.al == 0xC)
             {
 #ifdef __32BIT__
@@ -1997,11 +1987,15 @@ void PosSetDTA(void *p)
 }
 
 /* INT 21/AH=25h */
-void PosSetInterruptVector(int intnum, void *handler)
+void PosSetInterruptVector(unsigned int intnum, void *handler)
 {
+#ifdef __32BIT__
+    protintHandler(intnum, handler);
+#else
     disable();
     *((void **)0 + intnum) = handler;
     enable();
+#endif
 }
 
 /* INT 21/AH=2Ah */
@@ -2798,17 +2792,6 @@ void PosSetRunTime(void *pstart, void *c_api)
     return;
 }
 #endif
-
-void PosInstallInterruptHandler(int interrupt_number,
-                                int (*func)(unsigned int *))
-{
-#ifdef __32BIT__
-    protintHandler(interrupt_number, func);
-#else
-    *(long *)(interrupt_number * sizeof(long)) = (long)func;
-#endif
-    return;
-}
 
 /* !!! END OF POS FUNCTIONS !!! */
 

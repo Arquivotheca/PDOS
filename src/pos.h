@@ -148,7 +148,7 @@ unsigned int PosGetDefaultDrive(void); /* func 19 */
 
 void PosSetDTA(void *dta); /* func 1a */
 
-void PosSetInterruptVector(int intnum, void *handler); /* func 25 */
+void PosSetInterruptVector(unsigned int intnum, void *handler); /* func 25 */
 
 void PosGetSystemDate(int *year, int *month, int *day, int *dw); /* func 2a */
 
@@ -310,9 +310,6 @@ void *PosAllocMem(unsigned int size, unsigned int flags); /* func f6.08 */
 char *PosGetErrorMessageString(unsigned int errorCode); /* func f6.09 */
 
 void PosPowerOff(void); /* func f6.0a */
-
-void PosInstallInterruptHandler(int interrupt_number, /* func f6.0b */
-                                int (*func)(unsigned int *));
 
 /* Func F6.0C - Get info about a process.
  * pid = PID to get info on (0=get info on init process)

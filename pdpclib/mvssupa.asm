@@ -314,7 +314,7 @@ ZZ&SYSNDX.X DS 0H
 &NM      L     &R,&A         LOAD PARM ADDRESS
          AIF   ('&COMP' EQ 'GCC').MEND
 .* THIS LINE IS FOR ANYTHING NOT GCC: C/370
-         L     &R,0(,&R)     LOAD ADDRESS
+*        L     &R,0(,&R)     LOAD ADDRESS
 .MEND    MEND  ,
 *
 *

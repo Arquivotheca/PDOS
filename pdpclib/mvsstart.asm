@@ -55,9 +55,9 @@ SUBPOOL  EQU   0
          ENTRY @@CRT0    make this globally visible
 @@CRT0   DS    0H        defacto entry point
          AIF ('&COMP' NE 'C370').NOCEES
-         ENTRY CEESTART  I don't think IBM should be polluting
+*         ENTRY CEESTART  I don't think IBM should be polluting
 *                        the namespace with this
-CEESTART DS    0H
+*CEESTART DS    0H
 .NOCEES  ANOP
 * For this next line to work there must be no intervening instructions
 * since it is based on reference to @@CRT0
@@ -103,7 +103,7 @@ CEESTART DS    0H
 *                                predictable spot - offset 76 from R13
 *                                It seems that GCC and IBM C share this
 *                                convention.
-         LA    R12,ANCHOR        R12 is presumably reserved by IBM C
+         LA    R12,ANCHOR        R12 seems to be reserved by IBM C
 *                                for its answer to the SAS/C CRAB
 *                                apparently called an "ANCHOR"
          ST    R14,EXITADDR      possibly used by IBM C for early
@@ -112,7 +112,7 @@ CEESTART DS    0H
 *                                code to call this in case of error
          L     R3,=A(MAINLEN)    get length of the main stack
          AR    R2,R3             point to top of the stack
-         ST    R2,12(,R12)       IBM C needs to know stack end
+         ST    R2,788(,R12)      IBM C needs to know stack end
 *                                (GCC not currently checking overflow)
          LA    R2,0
          ST    R2,116(,R12)      IBM C probably calls this offset when
@@ -183,9 +183,16 @@ RETURNMS DS    0H
 SAVER13  DS    A      So that everyone can find the start of the stack
          LTORG
          DS    0H
-* Not sure if IBM C needs this entry point
-*         ENTRY CEESG003
-*CEESG003 DS    0H
+         AIF ('&COMP' NE 'C370').NOCEES2
+         ENTRY CEESG003
+CEESG003 DS    0H
+         ENTRY CEEBETBL
+CEEBETBL DS    0H
+         ENTRY CEEROOTA
+CEEROOTA DS    0H
+         ENTRY EDCINPL
+EDCINPL  DS    0H
+.NOCEES2 ANOP
 * This function enables GCC and probably IBM C programs to do an
 * early exit, ie callable from anywhere.
          ENTRY @@EXITA
@@ -247,10 +254,10 @@ EXITADDR DS    F     This seems to be the address that a module built
 *                    ignores the entire ANCHOR. Unless this offset is
 *                    automatically referenced in IBM C generated
 *                    assembler.
-         DS    49F   Not sure how big ANCHOR should be, but
+         DS    200F  Not sure how big ANCHOR should be, but
 *                    this is enough to cover what we actually
 *                    populate in this startup code, which in turn is
-*                    probably determined by what I observed IBM C
+*                    determined by what I observed IBM C
 *                    generated assembler actually producing in the
 *                    prolog.
 MAINSTK  DS    65536F   Hardcoded stack size while we decide how a

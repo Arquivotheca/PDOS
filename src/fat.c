@@ -1062,9 +1062,14 @@ int fatWriteFile(FAT *fat, FATFILE *fatfile, const void *buf, size_t szbuf,
     /* get remainder of bytes in current sector */
     rem = fat->sector_size - fatfile->lastBytes;
 
-    /* If the last written bytes were 0, or the remainder 0, we
-       don't need to update (and thus read) this sector */
-    if ((fatfile->lastBytes != 0) && (rem != 0))
+    /* If the current position is before the end of file,
+     * we must always update (and thus read) this sector.
+     * If the current position and the end of file are the same,
+     * we check if the last written bytes were 0,
+     * or the remainder is 0. If that is true, we do not
+     * need to update (and thus read) this sector. */
+    if ((fatfile->currpos < fatfile->fileSize) ||
+        ((fatfile->lastBytes != 0) && (rem != 0)))
     {
         fatReadLogical(fat,
                        fatfile->sectorStart + fatfile->sectorUpto,
@@ -1233,15 +1238,18 @@ long fatSeek(FAT *fat, FATFILE *fatfile, long offset, int whence)
         fatfile->currpos = newpos;
         return (newpos);
     }
-    /* If the new position is negative, we seek at the start of the file,
-     * but change the current position to negative as DOS systems should. */
-    if (newpos < 0)
+    /* If the new position is zero or negative,
+     * we seek to the start of the file. */
+    if (newpos <= 0)
     {
         fatfile->currentCluster = fatfile->startcluster;
         fatfile->sectorStart = (fatfile->currentCluster - 2)
         * (long)fat->sectors_per_cluster
         + fat->filestart;
         fatfile->sectorUpto = 0;
+        /* Even if the new position is negative, we change the current position
+         * to the new position, because DOS systems should accept
+         * negative position as a valid position. */
         fatfile->currpos = newpos;
         return (newpos);
     }

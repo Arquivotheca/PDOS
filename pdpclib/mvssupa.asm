@@ -3365,10 +3365,10 @@ GETMEX   FUNEXIT RC=(R5)                                        GP15017
          LR    R9,R1              SAVE PARAMETER LIST ADDRESS
          SPACE 1
          MVC   0(4,R11),=X'14000002'  PRESET FOR PARM ERROR
-         LDADD R4,0(,R9)          REQUEST TYPE
-         LDADD R5,4(,R9)          LENGTH OF PROGRAM NAME
+         LDINT R4,0(,R9)          REQUEST TYPE
+         LDINT R5,4(,R9)          LENGTH OF PROGRAM NAME
          L     R6,8(,R9)          -> PROGRAM NAME
-         LDADD R7,12(,R9)         LENGTH OF PARM
+         LDINT R7,12(,R9)         LENGTH OF PARM
          L     R8,16(,R9)         -> PARM TEXT
          SPACE 1
 *   NOTE THAT THE CALLER IS EITHER COMPILER CODE, OR A COMPILER
@@ -3553,7 +3553,7 @@ XIDCAMS  STM   R14,R12,12(R13)
 XIDCGET  TM    EXFLAGS,EXFGET            X'01' = PRIOR GET ISSUED ?
          BNZ   XIDCGET4                  YES, SET RET CODE = 04
          L     R1,IDC@REQ         GET REQUEST ADDRESS
-         LDADD R3,0(,R1)          LOAD LENGTH
+         LDINT R3,0(,R1)          LOAD LENGTH
          L     R2,4(,R1)          LOAD TEXT POINTER
          LA    R2,0(,R2)          CLEAR HIGH
          STM   R2,R3,0(R5)        PLACE INTO IDCAMS LIST
@@ -3679,9 +3679,9 @@ DYNALHAV ST    R1,8(,R13)         LINK OURS TO CALLER'S SAVE AREA
          USING DYNALWRK,R13
          MVC   0(4,R11),=X'14000001'  PRESET FOR PARM LIST ERROR
          MVC   DYNLIST(ALLDYNLN),PATLIST  INITIALIZE EVERYTHING
-         LDADD R4,0(,R9)          DD NAME LENGTH
+         LDINT R4,0(,R9)          DD NAME LENGTH
          L     R5,4(,R9)          -> DD NAME
-         LDADD R6,8(,R9)          DSN LENGTH
+         LDINT R6,8(,R9)          DSN LENGTH
          L     R7,12(,R9)         -> DATA SET NAME
 *   NOTE THAT THE CALLER IS EITHER COMPILER CODE, OR A COMPILER
 *   LIBRARY ROUTINE, SO WE DO MINIMAL VALIDITY CHECKING

@@ -312,9 +312,17 @@ ZZ&SYSNDX.X DS 0H
 &NM      LDADD &R,&A         GET ADDRESS FROM PARM LIST
          GBLC  &COMP         COMPILER GCC OR C/370
 &NM      L     &R,&A         LOAD PARM ADDRESS
+.MEND    MEND  ,
+*
+*
+*
+         MACRO ,             COMPILER DEPENDENT LOAD INT ONLY
+&NM      LDINT &R,&A         LOAD INTEGER FROM PARM LIST
+         GBLC  &COMP         COMPILER GCC OR C/370
+&NM      L     &R,&A         LOAD PARM VALUE
          AIF   ('&COMP' EQ 'GCC').MEND
 .* THIS LINE IS FOR ANYTHING NOT GCC: C/370
-*        L     &R,0(,&R)     LOAD ADDRESS
+         L     &R,0(,&R)     LOAD VALUE
 .MEND    MEND  ,
 *
 *
@@ -3230,7 +3238,7 @@ TRUNCOEX L     R13,4(,R13)
 *                                                                     *
 ***********************************************************************
 @@GETM   FUNHEAD ,
-         LDADD R3,0(,R1)          LOAD REQUESTED STORAGE SIZE
+         LDINT R3,0(,R1)          LOAD REQUESTED STORAGE SIZE
          SLR   R5,R5              PRESET IN CASE OF ERROR       GP15017
          LTR   R4,R3              CHECK REQUEST
          BNP   GETMEX             QUIT IF INVALID

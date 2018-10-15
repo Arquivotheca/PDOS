@@ -358,6 +358,17 @@ int BosGetVideoMode(int *columns, int *mode, int *page)
     return (0);
 }
 
+/* BosLoadTextModeRomFont - BIOS Int 10h Function 11h */
+int BosLoadTextModeRomFont(int font, int block)
+{
+    union REGS regsin;
+    regsin.h.ah = 0x11;
+    regsin.h.al = font;
+    regsin.x.bx = 0;
+    regsin.h.bl = block;
+    int86i(0x10, &regsin);
+    return (0);
+}
 
 /* BosVBEGetInfo - BIOS Int 10h Function 4F00h */
 
@@ -986,7 +997,7 @@ int BosGetTextModeCols(void)
 
 int BosGetTextModeRows(void)
 {
-    return BosGetBiosDataAreaByte(0x84);
+    return BosGetBiosDataAreaByte(0x84) + 1;
 }
 
 void BosClearScreen(unsigned int attr)

@@ -1854,6 +1854,18 @@ static void int21handler(union REGS *regsin,
                 sregs->ds = FP_SEG(p);
 #endif
             }
+            else if (regsin->h.al == 0x3C)
+            {
+#ifdef __32BIT__
+                regsout->d.eax = PosSetNamedFont(
+                        (char*)regsin->d.ebx
+                    );
+#else
+                regsout->x.ax = PosSetNamedFont(
+                        (char*)MK_FP(sregs->ds,regsin->x.bx)
+                    );
+#endif
+            }
             else
             {
                 logUnimplementedCall(0x21, regsin->h.ah, regsin->h.al);
@@ -5462,4 +5474,45 @@ int PosSetEnv(char *name, char *value)
 void * PosGetEnvBlock(void)
 {
     return curPCB->envBlock;
+}
+
+static int ins_strcmp(char *one, char *two)
+{
+    while (toupper(*one) == toupper(*two))
+    {
+        if (*one == '\0')
+        {
+            return (0);
+        }
+        one++;
+        two++;
+    }
+    if (toupper(*one) < toupper(*two))
+    {
+        return (-1);
+    }
+    return (1);
+}
+
+/* F6,3C - Set Named Font */
+int PosSetNamedFont(char *fontName)
+{
+    if (fontName == NULL)
+        return POS_ERR_DATA_INVALID;
+    if (ins_strcmp(fontName,"8x14") == 0)
+    {
+        if (BosLoadTextModeRomFont(BOS_TEXTMODE_ROMFONT_8X14,0) == 0)
+            return POS_ERR_NO_ERROR;
+    }
+    if (ins_strcmp(fontName,"8x8") == 0)
+    {
+        if (BosLoadTextModeRomFont(BOS_TEXTMODE_ROMFONT_8X8,0) == 0)
+            return POS_ERR_NO_ERROR;
+    }
+    if (ins_strcmp(fontName,"8x16") == 0)
+    {
+        if (BosLoadTextModeRomFont(BOS_TEXTMODE_ROMFONT_8X16,0) == 0)
+            return POS_ERR_NO_ERROR;
+    }
+    return POS_ERR_FILE_NOT_FOUND;
 }

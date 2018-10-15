@@ -364,6 +364,9 @@ int PosSetEnv(char *name, char *value);
  */
 void * PosGetEnvBlock(void);
 
+/* F6,3C - Set Named Font */
+int PosSetNamedFont(char *fontName);
+
 unsigned int PosAbsoluteDiskRead(int drive, unsigned long start_sector,
                                  unsigned int sectors,void *buf); /*INT25 */
 

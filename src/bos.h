@@ -27,6 +27,10 @@
 /* Number of scaled BIOS clock ticks per a day */
 #define BOS_TICK_PER_DAY (BOS_SECOND_PER_DAY*BOS_TICK_PER_SECOND)
 
+#define BOS_TEXTMODE_ROMFONT_8X14 0x11
+#define BOS_TEXTMODE_ROMFONT_8X8  0x12
+#define BOS_TEXTMODE_ROMFONT_8X16 0x14
+
 void BosPrintScreen(void); /* 5: */
 unsigned int BosSetVideoMode(unsigned int mode); /* 10:0 */
 void BosSetCursorType(unsigned int top, unsigned int bottom); /* 10:1 */
@@ -74,6 +78,8 @@ int BosReadGraphicsPixel(int page, /* 10:D */
                          int *colour);
 int BosWriteText(int page, int ch, int colour); /* 10:E */
 int BosGetVideoMode(int *columns, int *mode, int *page); /* 10:F */
+
+int BosLoadTextModeRomFont(int font, int block); /* 10:11:{11,12,14} */
 
 int BosVBEGetInfo(void *buffer); /* 10:4F00 */
 

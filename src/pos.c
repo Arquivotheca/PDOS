@@ -1748,6 +1748,24 @@ void * PosGetEnvBlock(void)
 #endif
 }
 
+/* F6,3C - Set Named Font */
+int PosSetNamedFont(char *fontName)
+{
+    union REGS regsin;
+    union REGS regsout;
+    struct SREGS sregs;
+    regsin.h.ah = 0xf6;
+    regsin.h.al = 0x3C;
+#ifdef __32BIT__
+    regsin.d.ebx = (int)fontName;
+#else
+    regsin.x.bx = FP_OFF(fontName);
+    sregs.ds = FP_SEG(fontName);
+#endif
+    int86x(0x21, &regsin, &regsout, &sregs);
+    return regsout.x.ax;
+}
+
 /*int 25 function call*/
 unsigned int PosAbsoluteDiskRead(int drive,unsigned long start_sector,
                                  unsigned int sectors,void *buf)

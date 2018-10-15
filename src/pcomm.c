@@ -1561,6 +1561,8 @@ static void cmd_v_help(void)
     printf("    Set row/column/page\n");
     printf("V MODE=x\n");
     printf("    Set video mode (hexadecimal)\n");
+    printf("V FONT=[8x8|8x14|8x16]\n");
+    printf("    Use named font in text mode\n");
     printf("Multiple options can be combined in a single invocation\n");
     printf("If no options supplied, STATUS is the default\n");
 }
@@ -2967,6 +2969,7 @@ static int cmd_v_run(char *arg)
     pos_video_info videoInfo;
     unsigned int n;
     char *token;
+    int ret;
 
     CMD_REQUIRES_GENUINE();
     PosGetVideoInfo(&videoInfo, sizeof(pos_video_info));
@@ -3196,6 +3199,24 @@ static int cmd_v_run(char *arg)
             videoInfo.currentAttrib &= 0x0f;
             videoInfo.currentAttrib |= (savedVideoState.currentAttrib&0xf0);
             PosSetVideoAttribute(videoInfo.currentAttrib);
+            continue;
+        }
+        if (ins_strncmp("FONT=",token,5)==0)
+        {
+            token += 5;
+            if (isBlankString(token))
+            {
+                showArgBadSyntaxMsg("FONT=");
+                return 1;
+            }
+            ret = PosSetNamedFont(token);
+            if (ret != POS_ERR_NO_ERROR)
+            {
+                showError(ret);
+                return 1;
+            }
+            /* Clear screen after setting font */
+            PosClearScreen();
             continue;
         }
         showUnrecognisedArgsMsg(token);

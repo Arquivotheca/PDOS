@@ -1944,7 +1944,7 @@ static int cmd_ren_run(char *src)
 
 static int ins_strcmp(char *one, char *two)
 {
-    while (toupper(*one) == toupper(*two))
+    while (toupper((unsigned char)*one) == toupper((unsigned char)*two))
     {
         if (*one == '\0')
         {
@@ -1953,7 +1953,7 @@ static int ins_strcmp(char *one, char *two)
         one++;
         two++;
     }
-    if (toupper(*one) < toupper(*two))
+    if (toupper((unsigned char)*one) < toupper((unsigned char)*two))
     {
         return (-1);
     }

@@ -298,19 +298,14 @@ ZZ&SYSNDX.X DS 0H
 *
          MACRO ,             COMPILER DEPENDENT LOAD INTEGER
 &NM      LDVAL &R,&A         LOAD VALUE FROM PARM LIST
-         GBLC  &COMP         COMPILER GCC OR C/370
 &NM      L     &R,&A         LOAD PARM VALUE
-         AIF ('&COMP' EQ 'GCC').LVAL
-         L     &R,0(,&R)     LOAD ADDRESS
-.* THIS LINE IS FOR ANYTHING NOT GCC: C/370
-.LVAL    L     &R,0(,&R)     LOAD VALUE
+         L     &R,0(,&R)     LOAD VALUE
 .MEND    MEND  ,
 *
 *
 *
          MACRO ,             COMPILER DEPENDENT LOAD PARM ADDRESS
 &NM      LDADD &R,&A         GET ADDRESS FROM PARM LIST
-         GBLC  &COMP         COMPILER GCC OR C/370
 &NM      L     &R,&A         LOAD PARM ADDRESS
 .MEND    MEND  ,
 *

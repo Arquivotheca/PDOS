@@ -152,7 +152,7 @@ SUBPOOL  EQU   0
 * R5 free again
 * THIS LINE IS FOR GCC
          LR    R6,R4
-* THIS LINE IS FOR C/370
+* THIS LINE IS FOR IBM C
 *         L     R6,0(R4)
          LTR   R6,R6
          BNZ   WRITING
@@ -552,7 +552,7 @@ RETURNGA DS    0H
          L     R2,0(R1)
 * THIS LINE IS FOR GCC
          LR    R3,R2
-* THIS LINE IS FOR C/370
+* THIS LINE IS FOR IBM C
 *         L     R3,0(R2)
          LR    R4,R3
          A     R3,=F'8'

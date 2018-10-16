@@ -9,7 +9,7 @@
 *
 *  MUSSUPA - Support routines for PDPCLIB under MUSIC
 *
-*  It is currently coded for GCC, but C/370 functionality is
+*  It is currently coded for GCC, but IBM C functionality is
 *  still there, it's just not being tested after any change.
 *
 ***********************************************************************
@@ -136,7 +136,7 @@ $$AOPEN  DS    0H
 * R5 free again
 * THIS LINE IS FOR GCC
          LR    R6,R4
-* THIS LINE IS FOR C/370
+* THIS LINE IS FOR IBM C
 *         L     R6,0(R4)
          LTR   R6,R6
          BNZ   WRITING
@@ -469,7 +469,7 @@ $$GETM   DS    0H
          LR    R3,R2
          AGO   .GETMEND
 .GETMC   ANOP
-* THIS LINE IS FOR C/370
+* THIS LINE IS FOR IBM C
          L     R3,0(,R2)
 .GETMEND ANOP
          LR    R4,R3

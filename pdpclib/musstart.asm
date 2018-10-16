@@ -44,10 +44,6 @@ SUBPOOL  EQU   0
 $CSTART  DS    0H
          ENTRY @@CRT0
 @@CRT0   DS    0H
-         AIF ('&COMP' NE 'C370').NOCEES
-         ENTRY CEESTART
-CEESTART DS    0H
-.NOCEES  ANOP
          SAVE  (14,12),,@@CRT0
          LR    R10,R15
          USING @@CRT0,R10

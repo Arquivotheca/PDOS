@@ -8,8 +8,8 @@ MVSSTART TITLE 'M V S S T A R T  ***  STARTUP ROUTINE FOR C'
 ***********************************************************************
 *                                                                     *
 *  MVSSTART - startup code for MVS.                                   *
-*  It is currently known to work with GCCMVS, but it also used to     *
-*  work with IBM C/370. To choose which compiler you are using,       *
+*  It is mainly tested with GCCMVS, but it should also                *
+*  work with IBM C. To choose which compiler you are using,           *
 *  change the "&COMP" switch in PDPTOP                                *
 *                                                                     *
 ***********************************************************************
@@ -48,13 +48,14 @@ SUBPOOL  EQU   0
 * plain MAIN), but that simply does an immediate branch to
 * @@CRT0, so for all practical purposes, @@CRT0 is the
 * actual entry point. But don't code that in linkage
-* editor statements, code @@MAIN instead.
+* editor statements, code @@MAIN instead. For IBM C you
+* need to code @@CRT0.
 *
          DC    C'PDPCLIB!'
 *
          ENTRY @@CRT0    make this globally visible
 @@CRT0   DS    0H        defacto entry point
-         AIF ('&COMP' NE 'C370').NOCEES
+         AIF ('&COMP' NE 'IBMC').NOCEES
          ENTRY CEESTART  I don't think IBM should be polluting
 *                        the namespace with this
 CEESTART DS    0H
@@ -183,7 +184,7 @@ RETURNMS DS    0H
 SAVER13  DS    A      So that everyone can find the start of the stack
          LTORG
          DS    0H
-         AIF ('&COMP' NE 'C370').NOCEES2
+         AIF ('&COMP' NE 'IBMC').NOCEES2
          ENTRY CEESG003
 CEESG003 DS    0H
          ENTRY CEEBETBL

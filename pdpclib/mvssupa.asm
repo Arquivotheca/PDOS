@@ -11,7 +11,7 @@ MVSSUPA  TITLE 'M V S S U P A  ***  MVS VERSION OF PDP CLIB SUPPORT'
 *                                                                     *
 *  MVSSUPA - Support routines for PDPCLIB under MVS                   *
 *    Additional macros in (EDWARDS.)PDPCLIB.MACLIB                    *
-*  It is currently coded for GCC, but C/370 functionality is          *
+*  It is currently coded for GCC, but IBM C functionality is          *
 *  still there, it's just not being tested after each change.         *
 *                                                                     *
 ***********************************************************************
@@ -313,10 +313,10 @@ ZZ&SYSNDX.X DS 0H
 *
          MACRO ,             COMPILER DEPENDENT LOAD INT ONLY
 &NM      LDINT &R,&A         LOAD INTEGER FROM PARM LIST
-         GBLC  &COMP         COMPILER GCC OR C/370
+         GBLC  &COMP         COMPILER GCC OR IBM C
 &NM      L     &R,&A         LOAD PARM VALUE
          AIF   ('&COMP' EQ 'GCC').MEND
-.* THIS LINE IS FOR ANYTHING NOT GCC: C/370
+.* THIS LINE IS FOR ANYTHING NOT GCC: IBM C
          L     &R,0(,&R)     LOAD VALUE
 .MEND    MEND  ,
 *
@@ -455,12 +455,8 @@ ZZ&SYSNDX.X DS 0H
 *
          MACRO ,             COMPILER DEPENDENT LOAD INTEGER
 &NM      STVAL &R,&A,&S=R14  STORE VALUE FROM PARM LIST
-         GBLC  &COMP         COMPILER GCC OR C/370
 &NM      L     &S,&A         LOAD PARM VALUE
-         AIF   ('&COMP' EQ 'GCC').LVAL
-         L     &S,0(,&S)     LOAD ADDRESS
-.* THIS LINE IS FOR ANYTHING NOT GCC: C/370
-.LVAL    ST    &R,0(,&S)     RETURN VALUE
+         ST    &R,0(,&S)     RETURN VALUE
 .MEND    MEND  ,
 *
 *

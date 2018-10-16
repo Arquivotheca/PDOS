@@ -12,7 +12,7 @@
 *                                                                    *
 **********************************************************************
 *
-* Is the GCC or C/370 calling convention being used?
+* Is the GCC or IBM C calling convention being used?
 *
          GBLC &COMP               Declare compiler switch
 *
@@ -34,8 +34,8 @@
 *
 *
 *
-&COMP    SETC 'GCC'               Indicate that this is for GCC
-* &COMP    SETC 'C370'            Indicate that this is for C/370
+* &COMP    SETC 'GCC'             Indicate that this is for GCC
+&COMP    SETC 'IBMC'              Indicate that this is for IBM C
 &ZSYS    SETC 'S380'              Define either S370, S380 or S390
 &STEPD   SETC 'YES'               Indicate we want to step down
 &OUTM    SETC 'M'                 Indicate move mode

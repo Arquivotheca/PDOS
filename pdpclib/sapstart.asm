@@ -8,7 +8,7 @@ SAPSTART TITLE 'S A P S T A R T  ***  STARTUP ROUTINE FOR C'
 ***********************************************************************
 *                                                                     *
 *  SAPSTART - startup routines for standalone programs                *
-*  It is currently coded to work with GCC. To activate the C/370      *
+*  It is currently coded to work with GCC. To activate the IBM C      *
 *  version change the "&COMP" switch.                                 *
 *                                                                     *
 *  These routines are designed to work in conjunction with the        *
@@ -242,7 +242,7 @@ HPLOC    DC    A(HEAPLOC)        Heap location
          ENTRY @@CONSDN
 @@CONSDN DC    F'0'
          DS    0H
-         AIF ('&COMP' NE 'C370').NOCEES
+         AIF ('&COMP' NE 'IBMC').NOCEES
          ENTRY CEESTART
 CEESTART DS    0H
 .NOCEES  ANOP

@@ -55,9 +55,9 @@ SUBPOOL  EQU   0
          ENTRY @@CRT0    make this globally visible
 @@CRT0   DS    0H        defacto entry point
          AIF ('&COMP' NE 'C370').NOCEES
-*         ENTRY CEESTART  I don't think IBM should be polluting
+         ENTRY CEESTART  I don't think IBM should be polluting
 *                        the namespace with this
-*CEESTART DS    0H
+CEESTART DS    0H
 .NOCEES  ANOP
 * For this next line to work there must be no intervening instructions
 * since it is based on reference to @@CRT0

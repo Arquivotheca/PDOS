@@ -7,8 +7,7 @@
 **********************************************************************
 *                                                                    *
 *  MUSSTART - startup routines for MUSIC/SP                          *
-*  It is currently coded to work with GCC. To activate the C/370     *
-*  version change the "&COMP" switch.                                *
+*  It is currently coded to work with GCC.                           *
 *                                                                    *
 **********************************************************************
 *

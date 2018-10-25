@@ -251,14 +251,14 @@ void initCsrs()
     writeCSR(2, 0);
 }
 
-void initPCI(unsigned int bus, unsigned int slot)
+void initPCI(unsigned int bus, unsigned int slot, unsigned int function)
 {
     /* Reads information from PCI Configuration Space
      * and sets proper PCI configuration. */
     
     /* First base address is the card I/O port (first bit is set),
      * so first two bytes must ANDed out. */
-    controller_port = pciConfigReadDWord(bus, slot, 0, 16) & 0xfffffffc;
+    controller_port = pciConfigReadDWord(bus, slot, function, 16) & 0xfffffffc;
     /* Configures PCI command register
      * so the controller can be used.
      * Bit 0 - I/O space access enable (IOEN)
@@ -270,7 +270,7 @@ void initPCI(unsigned int bus, unsigned int slot)
      * after the base address (BAR) will not be changed anymore.
      * BMEN must be enabled so the controller can perform bus master
      * operations. It must be enabled before controller initialization. */
-    pciConfigWriteWord(bus, slot, 0, 4, 0x5);
+    pciConfigWriteWord(bus, slot, function, 4, 0x5);
 }
 
 void preinitController()
@@ -374,6 +374,7 @@ int nicInit()
     unsigned char hwc;
     unsigned int bus;
     unsigned int slot;
+    unsigned int function;
     int ret;
 
     if (ret = pciCheck(&hwc))
@@ -387,13 +388,13 @@ int nicInit()
                "not supported\n");
         return (1);
     }
-    if (pciFindDevice(VENDORID, DEVICEID, 0, &bus, &slot))
+    if (pciFindDevice(VENDORID, DEVICEID, 0, &bus, &slot, &function))
     {
         printf("(NIC) PCnet-PCI II not found\n");
         return (1);
     }
 
-    initPCI(bus, slot);
+    initPCI(bus, slot, function);
     preinitController();
     initController();
     startController();

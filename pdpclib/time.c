@@ -122,7 +122,6 @@ __PDPCLIB_API__ time_t time(time_t *timer)
         int year;
         int month;
         int day;
-        int dow;
         int hours;
         int minutes;
         int seconds;

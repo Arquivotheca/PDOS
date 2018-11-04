@@ -99,12 +99,11 @@ void __datetime(void *ptr)
     iptr[0] = year;
     iptr[1] = month;
     iptr[2] = day;
-    iptr[3] = dow;
     PosGetSystemTime(&hour, &minute, &second, &hundredths);
-    iptr[4] = hour;
-    iptr[5] = minute;
-    iptr[6] = second;
-    iptr[7] = hundredths;
+    iptr[3] = hour;
+    iptr[4] = minute;
+    iptr[5] = second;
+    iptr[6] = hundredths;
     return;
 }
 

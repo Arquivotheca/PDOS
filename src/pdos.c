@@ -393,6 +393,7 @@ void pdosRun(void)
     memavail -= 0x500000; /* room for disk cache */
     memmgrSupply(&memmgr, ABSADDR(0x700000), memavail);
 #else
+    memavail = 30000000; /* assume 32 MiB available, for use by GCC */
     memmgrSupply(&memmgr, ABSADDR(0x200000), memavail);
 #endif
     memmgrDefaults(&btlmem);

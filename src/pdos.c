@@ -117,7 +117,7 @@ static void loadConfig(void);
 static void loadPcomm(void);
 static void loadExe(char *prog, PARMBLOCK *parmblock);
 static int fixexe32(unsigned char *psp, unsigned long entry, unsigned int sp,
-                    int doing_pcomm);
+                    int doing_zmagic);
 static int bios2driv(int bios);
 static int fileCreat(const char *fnm, int attrib, int *handle);
 static int dirCreat(const char *dnm, int attrib);
@@ -3468,7 +3468,7 @@ void addToProcessChain(PDOS_PROCESS *pcb)
 static void loadExe(char *prog, PARMBLOCK *parmblock)
 {
     static int first = 1;
-    int doing_pcomm = 0;
+    int doing_zmagic = 0;
 #ifdef __32BIT__
     struct exec firstbit;
 #else
@@ -3505,13 +3505,14 @@ static void loadExe(char *prog, PARMBLOCK *parmblock)
     if (first)
     {
         first = 0;
-        doing_pcomm = 0;
+        doing_zmagic = 0;
     }
-    if (doing_pcomm)
+    if (doing_zmagic)
     {
-        /* this logic only applies to executables built with EMX,
-           ie only PCOMM. All other cross-compiled apps do not
-           have NULs after the firstbit that need to be skipped */
+        /* this logic only applies to executables built using
+           EMX as non-relocatable ZMAGIC. We no longer use any
+           such executables so this code may be deleted at a
+           later stage. */
         headerLen = N_TXTOFF(firstbit);
         header = memmgrAllocate(&memmgr, headerLen, 0);
         memcpy(header, &firstbit, sizeof firstbit);
@@ -3551,7 +3552,7 @@ static void loadExe(char *prog, PARMBLOCK *parmblock)
     }
 
 #ifdef __32BIT__
-    if (doing_pcomm)
+    if (doing_zmagic)
     {
         exeLen = N_BSSADDR(firstbit) - N_TXTADDR(firstbit) + firstbit.a_bss;
     }
@@ -3635,7 +3636,7 @@ static void loadExe(char *prog, PARMBLOCK *parmblock)
 
 #ifdef __32BIT__
     fileRead(fno, exeStart, firstbit.a_text, &readbytes);
-    if (doing_pcomm)
+    if (doing_zmagic)
     {
         fileRead(fno,
                 exeStart + N_DATADDR(firstbit) - N_TXTADDR(firstbit),
@@ -3711,7 +3712,7 @@ static void loadExe(char *prog, PARMBLOCK *parmblock)
         exeEntry, psp, ss, sp); */
 #else
     /* initialise BSS */
-    if (doing_pcomm)
+    if (doing_zmagic)
     {
         bss = exeStart + N_BSSADDR(firstbit);
     }
@@ -3723,7 +3724,7 @@ static void loadExe(char *prog, PARMBLOCK *parmblock)
     {
         bss[y] = '\0';
     }
-    if (doing_pcomm)
+    if (doing_zmagic)
     {
         sp = N_BSSADDR(firstbit) + firstbit.a_bss + 0x8000;
     }
@@ -3731,7 +3732,7 @@ static void loadExe(char *prog, PARMBLOCK *parmblock)
     {
         sp = (unsigned int)bss + firstbit.a_bss + STACKSZ32;
     }
-    if (!doing_pcomm)
+    if (!doing_zmagic)
     {
         unsigned int *corrections;
         unsigned int i;
@@ -3817,7 +3818,7 @@ static void loadExe(char *prog, PARMBLOCK *parmblock)
     newProc->status = PDOS_PROCSTATUS_ACTIVE;
     if (newProc->parent != NULL)
         newProc->parent->status = PDOS_PROCSTATUS_CHILDWAIT;
-    ret = fixexe32(psp, firstbit.a_entry, sp, doing_pcomm);
+    ret = fixexe32(psp, firstbit.a_entry, sp, doing_zmagic);
 #endif
     lastrc = ret;
 
@@ -3857,7 +3858,7 @@ static void loadExe(char *prog, PARMBLOCK *parmblock)
 
 #ifdef __32BIT__
 static int fixexe32(unsigned char *psp, unsigned long entry, unsigned int sp,
-                    int doing_pcomm)
+                    int doing_zmagic)
 {
     char *source;
     char *dest;
@@ -3880,7 +3881,7 @@ static int fixexe32(unsigned char *psp, unsigned long entry, unsigned int sp,
 
     commandLine = psp + 0x80;
 
-    if (doing_pcomm)
+    if (doing_zmagic)
     {
         exeStart = (unsigned long)psp + 0x100 - 0x10000;
     }
@@ -3891,7 +3892,7 @@ static int fixexe32(unsigned char *psp, unsigned long entry, unsigned int sp,
     }
 
     dataStart = exeStart;
-    if (doing_pcomm)
+    if (doing_zmagic)
     {
         dataStart = (unsigned long)ADDR2ABS(dataStart);
     }
@@ -3900,7 +3901,7 @@ static int fixexe32(unsigned char *psp, unsigned long entry, unsigned int sp,
     oldsubcor = subcor;
     subcor = dataStart;
 
-    if (doing_pcomm)
+    if (doing_zmagic)
     {
         exeStart = (unsigned long)ADDR2ABS(exeStart);
     }

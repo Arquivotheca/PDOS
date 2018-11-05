@@ -23,6 +23,6 @@ as386 -o support.o support.s
 as386 -o protints.o protints.s
 as386 -o pdoss.o pdoss.s
 
-ld386 -s -e start --oformat a.out-i386 -o pdos.exe strt32.o pdos.o bos.o fat.o memmgr.o patmat.o support.o protintp.o protints.o pdoss.o ../pdpclib/pdos.a
-ld386 -r -s -e start --oformat a.out-i386 -o pdos.exe strt32.o pdos.o bos.o fat.o memmgr.o patmat.o support.o protintp.o protints.o pdoss.o ../pdpclib/pdos.a
+ld386 -s -e start -o pdos.exe strt32.o pdos.o bos.o fat.o memmgr.o patmat.o support.o protintp.o protints.o pdoss.o ../pdpclib/pdos.a
+ld386 -r -s -e start -o pdos.exe strt32.o pdos.o bos.o fat.o memmgr.o patmat.o support.o protintp.o protints.o pdoss.o ../pdpclib/pdos.a
 strip386 --strip-unneeded pdos.exe

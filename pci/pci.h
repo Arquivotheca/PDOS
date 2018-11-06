@@ -44,10 +44,85 @@ int pciFindDevice(unsigned int vendor, unsigned int device,
                   unsigned int index, unsigned int *bus,
                   unsigned int *slot, unsigned int *function);
 
+int pciFindClassCode(unsigned char class, unsigned char subclass,
+                     unsigned char prog_IF, unsigned int index,
+                     unsigned int *bus, unsigned int *slot,
+                     unsigned int *function);
+
+/* Macros for reading specific registers in PCI Configuration Space. */
+#define pciConfigReadVendor(bus, slot, function) \
+(pciConfigReadWord((bus), (slot), (function), 0x0))
+#define pciConfigReadDevice(bus, slot, function) \
+(pciConfigReadWord((bus), (slot), (function), 0x2))
+#define pciConfigReadCommand(bus, slot, function) \
+(pciConfigReadWord((bus), (slot), (function), 0x4))
+#define pciConfigReadStatus(bus, slot, function) \
+(pciConfigReadWord((bus), (slot), (function), 0x6))
+#define pciConfigReadRevision(bus, slot, function) \
+(pciConfigReadByte((bus), (slot), (function), 0x8))
+#define pciConfigReadProg_IF(bus, slot, function) \
+(pciConfigReadByte((bus), (slot), (function), 0x9))
+#define pciConfigReadSubclass(bus, slot, function) \
+(pciConfigReadByte((bus), (slot), (function), 0xa))
+#define pciConfigReadClass(bus, slot, function) \
+(pciConfigReadByte((bus), (slot), (function), 0xb))
+#define pciConfigReadCachelineSize(bus, slot, function) \
+(pciConfigReadByte((bus), (slot), (function), 0xc))
+#define pciConfigReadLatencyTimer(bus, slot, function) \
+(pciConfigReadByte((bus), (slot), (function), 0xd))
+#define pciConfigReadHeaderType(bus, slot, function) \
+(pciConfigReadByte((bus), (slot), (function), 0xe))
+#define pciConfigReadBIST(bus, slot, function) \
+(pciConfigReadByte((bus), (slot), (function), 0xf))
+/* With Header Type 0 there are 6 addresses starting from 0. */
+#define pciConfigReadBaseAddress(bus, slot, function, address) \
+(pciConfigReadDWord((bus), (slot), (function), 0x10 + 4 * (address)))
+#define pciConfigReadCardbusCISPointer(bus, slot, function) \
+(pciConfigReadDWord((bus), (slot), (function), 0x28))
+/* Subsystem Vendor and Device codes are used to identify subsystem
+ * or add-in card.
+ * Each company has the same Vendor and Subsystem Vendor code. */
+#define pciConfigReadSubsystemVendor(bus, slot, function) \
+(pciConfigReadWord((bus), (slot), (function), 0x2c))
+#define pciConfigReadSubsystemDevice(bus, slot, function) \
+(pciConfigReadWord((bus), (slot), (function), 0x2e))
+#define pciConfigReadExpansionROMBaseAddress(bus, slot, function) \
+(pciConfigReadDWord((bus), (slot), (function), 0x30))
+/* Points to start of linked list of capabilities inside of PCI Configuration
+ * space. This structure only exists if Capabilities List bit (bit 4)
+ * is set in Status Register. */
+#define pciConfigReadCapabilitiesPointer(bus, slot, function) \
+(pciConfigReadByte((bus), (slot), (function), 0x34))
+#define pciConfigReadInterruptLine(bus, slot, function) \
+(pciConfigReadByte((bus), (slot), (function), 0x3c))
+#define pciConfigReadInterruptPin(bus, slot, function) \
+(pciConfigReadByte((bus), (slot), (function), 0x3d))
+#define pciConfigReadMin_Gnt(bus, slot, function) \
+(pciConfigReadByte((bus), (slot), (function), 0x3e))
+#define pciConfigReadMax_Lat(bus, slot, function) \
+(pciConfigReadByte((bus), (slot), (function), 0x3f))
+
+/* Macros for writing specific registers in PCI Configuration Space. */
+#define pciConfigWriteCommand(bus, slot, function, data) \
+(pciConfigWriteWord((bus), (slot), (function), 0x4, (data)))
+#define pciConfigWriteCachelineSize(bus, slot, function, data) \
+(pciConfigWriteByte((bus), (slot), (function), 0xc, (data)))
+#define pciConfigWriteLatencyTimer(bus, slot, function, data) \
+(pciConfigWriteByte((bus), (slot), (function), 0xd, (data)))
+#define pciConfigWriteBIST(bus, slot, function, data) \
+(pciConfigWriteByte((bus), (slot), (function), 0xf, (data)))
+/* With Header Type 0 there are 6 addresses starting from 0. */
+#define pciConfigWriteBaseAddress(bus, slot, function, address, data) \
+(pciConfigWriteDWord((bus), (slot), (function), 0x10 + 4 * (address), (data)))
+#define pciConfigWriteInterruptLine(bus, slot, function, data) \
+(pciConfigWriteByte((bus), (slot), (function), 0x3c, (data)))
+
 /* Vendor (offset 0x0, 2 bytes) and device (offset 0x2, 2 bytes) codes. */
 #define PCI_VENDOR_NO_DEVICE 0xffff
 
-/* Header types (offset 0xe). */
+/* Header types (offset 0xe). PCI to PCI bridges and Cardbus bridges
+ * have different register layout with different meanings,
+ * so not all of the function macros above are usable for them. */
 #define PCI_HEADER_TYPE_SINGLE_FUNCTION 0x00
 #define PCI_HEADER_TYPE_PCI_TO_PCI_BRIDGE 0x01
 #define PCI_HEADER_TYPE_CARDBUS_BRIGE 0x02
@@ -183,3 +258,95 @@ int pciFindDevice(unsigned int vendor, unsigned int device,
 #define PCI_CLASS_PROCESSING_ACCELERATOR 0x12
 #define PCI_CLASS_NONESSENTIAL_INSTUMENTATION 0x13
 #define PCI_CLASS_COPROCESSOR 0x40
+/* Wildcards used only for broader search with pciFindClassCode().
+ * Not specified in any documentation. */
+#define PCI_CLASS_WILDCARD 0xff
+ #define PCI_SUBCLASS_WILDCARD 0xff
+  #define PCI_PROG_IF_WILDCARD 0xff
+
+/* Command (offset 0x4, 2 bytes, writable). Reserved bits must be preserved. */
+#define PCI_COMMAND_DISABLE_ALL 0x0000
+#define PCI_COMMAND_IO_SPACE 0x0001
+#define PCI_COMMAND_MEMORY_SPACE 0x0002
+#define PCI_COMMAND_BUS_MASTER 0x0004
+#define PCI_COMMAND_SPECIAL_CYCLES 0x0008
+#define PCI_COMMAND_MEMORY_WRITE_AND_INVALIDATE_ENABLE 0x0010
+#define PCI_COMMAND_VGA_PALETTE_SNOOP 0x0020
+#define PCI_COMMAND_PARITY_ERROR_RESPONSE 0x0040
+/* Bit 7 is reserved and should be hardwired to 0 on newer devices. */
+#define PCI_COMMAND_SERR_ENABLE 0x0100
+#define PCI_COMMAND_FAST_BACKTOBACK_ENABLE 0x0200
+#define PCI_COMMAND_INTERRUPT_DISABLE 0x0400
+/* Rest is reserved. */
+
+/* Status (offset 0x6, 2 bytes). Bits cannot be set,
+ * but can be reset by writing them. */
+/* First three bits are reserved. */
+#define PCI_STATUS_INTERRUPT_STATUS 0x0008
+#define PCI_STATUS_CAPABILITIES_LIST 0x0010
+#define PCI_STATUS_66_MHZ_CAPABLE 0x0020
+/* Bit 6 is reserved. */
+#define PCI_STATUS_FAST_BACKTOBACK_CAPABLE 0x0080
+#define PCI_STATUS_MASTER_DATA_PARITY_ERROR 0x0100
+/* Bits 9-10 specify DEVSEL timing, which has 3 allowed timings,
+ * 00b - fast, 01b - medium, 10b - slow. 11b is reserved. */
+#define PCI_STATUS_DEVSEL_TIMING_MASK 0x0600 /* Extracts the 2 bits. */
+#define PCI_STATUS_SIGNALED_TARGET_ABORT 0x0800
+#define PCI_STATUS_RECEIVED_TARGET_ABORT 0x1000
+#define PCI_STATUS_RECEIVED_MASTER_ABORT 0x2000
+#define PCI_STATUS_SIGNALED_SYSTEM_ERROR 0x4000
+#define PCI_STATUS_DETECTED_PARITY_ERROR 0x8000
+
+/* Base Address Registers (offset 0x10 + 4 * address_number, 4 bytes).
+ * Before manipulating with the registers IO space / Memory space access
+ * for the device should be disabled in the Command Register. */
+/* Base Address in Memory space has bit 0 always 0.
+ * Bits 1-2 specify if the address is 32-bit, 16-bit or 64-bit.
+ * 64-bit addresses use the next DWord (one higher Base Address Register)
+ * for the rest of the address (higher 32 bits).*/
+#define PCI_BASE_ADDRESS_MEMORY_SPACE 0x00
+#define PCI_BASE_ADDRESS_MEMORY_32BIT_SPACE 0x00
+#define PCI_BASE_ADDRESS_MEMORY_16BIT_SPACE 0x02
+#define PCI_BASE_ADDRESS_MEMORY_64BIT_SPACE 0x04
+#define PCI_BASE_ADDRESS_MEMORY_PREFETCHABLE 0x08
+#define PCI_BASE_ADDRESS_MEMORY_ADDRESS 0xfffffff0
+/* Base Address in IO space has bit 0 always set and bit 1 always 0.
+ * To obtain the usable address, those bits must be ANDed out. */
+#define PCI_BASE_ADDRESS_IO_SPACE 0x01
+#define PCI_BASE_ADDRESS_IO_ADDRESS 0xfffffffc
+
+/* Capabilities Pointer (offset 0x34, 1 byte) points to linked list
+ * of capabilities. The format of each entry is Capability ID (byte),
+ * Pointer to next entry and additional registers. */
+#define PCI_CAPABILITIES_POINTER_ADDRESS 0xfc /* First 2 bits are reserved. */
+#define PCI_CAPABILITIES_POINTER_LAST_ENTRY 0x00
+#define pciConfigReadCapability(bus, slot, function, pointer) \
+(pciConfigReadByte((bus), (slot), (function), (pointer))
+#define pciConfigReadCapabilitiesNextPointer(bus, slot, function, pointer) \
+(pciConfigReadByte((bus), (slot), (function), (pointer) + 1)
+/* Capabilities codes (offset 0 from the pointer address, 1 byte). */
+#define PCI_CAPABILITY_PCI_POWER_MANAGEMENT_INTERFACE 0x01
+#define PCI_CAPABILITY_AGP 0x02
+#define PCI_CAPABILITY_VPD 0x03
+#define PCI_CAPABILITY_SLOT_IDENTIFICATION 0x04
+#define PCI_CAPABILITY_MESSAGE_SIGNALED_INTERRUPTS 0x05
+#define PCI_CAPABILITY_COMPACTPCI_HOT_SWAP 0x06
+#define PCI_CAPABILITY_PCIX 0x07
+#define PCI_CAPABILITY_HYPERTRANSPORT 0x08
+/* With this Capability code, the byte after the pointer is length field. */
+#define PCI_CAPABILITY_VENDOR_SPECIFIC 0x09
+#define PCI_CAPABILITY_DEBUG_PORT 0x0a
+#define PCI_CAPABILITY_COMPACTPCI_CENTRAL_RESOURCE_CONTROL 0x0b
+#define PCI_CAPABILITY_PCI_HOTPLUG 0x0c
+#define PCI_CAPABILITY_PCI_BRIDGE_SUBSYSTEM_VENDOR_ID 0x0d
+#define PCI_CAPABILITY_AGP_8X 0x0e
+#define PCI_CAPABILITY_SECURE_DEVICE 0x0f
+#define PCI_CAPABILITY_PCI_EXPRESS 0x10
+#define PCI_CAPABILITY_MSIX 0x11
+
+/* Interrupt pin (offset 0x3d, 1 byte). */
+#define PCI_INTERRUPT_PIN_NONE 0
+#define PCI_INTERRUPT_PIN_INTA 1
+#define PCI_INTERRUPT_PIN_INTB 2
+#define PCI_INTERRUPT_PIN_INTC 3
+#define PCI_INTERRUPT_PIN_INTD 4

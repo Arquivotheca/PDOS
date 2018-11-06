@@ -256,9 +256,9 @@ void initPCI(unsigned int bus, unsigned int slot, unsigned int function)
     /* Reads information from PCI Configuration Space
      * and sets proper PCI configuration. */
     
-    /* First base address is the card I/O port (first bit is set),
-     * so first two bytes must ANDed out. */
-    controller_port = pciConfigReadDWord(bus, slot, function, 16) & 0xfffffffc;
+    /* First base address is the card I/O port address. */
+    controller_port = (pciConfigReadBaseAddress(bus, slot, function, 0)
+                       & PCI_BASE_ADDRESS_IO_ADDRESS);
     /* Configures PCI command register
      * so the controller can be used.
      * Bit 0 - I/O space access enable (IOEN)
@@ -270,7 +270,8 @@ void initPCI(unsigned int bus, unsigned int slot, unsigned int function)
      * after the base address (BAR) will not be changed anymore.
      * BMEN must be enabled so the controller can perform bus master
      * operations. It must be enabled before controller initialization. */
-    pciConfigWriteWord(bus, slot, function, 4, 0x5);
+    pciConfigWriteCommand(bus, slot, function, (PCI_COMMAND_IO_SPACE
+                                                | PCI_COMMAND_BUS_MASTER));
 }
 
 void preinitController()

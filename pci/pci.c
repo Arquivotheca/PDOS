@@ -139,23 +139,23 @@ int pciFindDevice(unsigned int vendor, unsigned int device,
     {
         for (*slot = 0; *slot < PCI_MAX_SLOT; (*slot)++)
         {
-            read_vendor = pciConfigReadWord(*bus, *slot, 0, 0);
+            read_vendor = pciConfigReadVendor(*bus, *slot, 0);
             if (read_vendor != PCI_VENDOR_NO_DEVICE)
             {
                 /* In case it is a multifunction device,
                  * all functions must always be checked
                  * as they do not have to be in order. */
-                read_header = pciConfigReadByte(*bus, *slot, 0, 0xe);
+                read_header = pciConfigReadHeaderType(*bus, *slot, 0);
                 if (read_header & PCI_HEADER_TYPE_MULTI_FUNCTION)
                 {
                     for (*function = 0;
                          *function < PCI_MAX_FUNCTION;
-                         *function++)
+                         (*function)++)
                     {
-                        if (pciConfigReadByte(*bus, *slot, *function, 0)
+                        if (pciConfigReadVendor(*bus, *slot, *function)
                             == vendor)
                         {
-                            if (pciConfigReadWord(*bus, *slot, *function, 2)
+                            if (pciConfigReadDevice(*bus, *slot, *function)
                                 == device)
                             {
                                 if (index == 0) return (0);
@@ -168,7 +168,7 @@ int pciFindDevice(unsigned int vendor, unsigned int device,
                  * and we check only the first function. */
                 else if (read_vendor == vendor)
                 {
-                    if (pciConfigReadWord(*bus, *slot, 0, 2) == device)
+                    if (pciConfigReadDevice(*bus, *slot, 0) == device)
                     {
                         if (index == 0)
                         {
@@ -179,6 +179,57 @@ int pciFindDevice(unsigned int vendor, unsigned int device,
                     }
                 }
                     
+            }
+        }
+    }
+    return (1);
+}
+
+int pciFindClassCode(unsigned char class, unsigned char subclass,
+                     unsigned char prog_IF, unsigned int index,
+                     unsigned int *bus, unsigned int *slot,
+                     unsigned int *function)
+{
+    unsigned int max_function;
+    for (*bus = 0; *bus < PCI_MAX_BUS; (*bus)++)
+    {
+        for (*slot = 0; *slot < PCI_MAX_SLOT; (*slot)++)
+        {
+            if (pciConfigReadVendor(*bus, *slot, 0) != PCI_VENDOR_NO_DEVICE)
+            {
+                /* In case it is a multifunction device,
+                 * all functions must always be checked
+                 * as they do not have to be in order. */
+                if (pciConfigReadHeaderType(*bus, *slot, 0)
+                    & PCI_HEADER_TYPE_MULTI_FUNCTION)
+                {
+                    max_function = PCI_MAX_FUNCTION;
+                }
+                /* Otherwise it must be a single function device
+                 * and we check only the first function. */
+                else max_function = 1;
+                for (*function = 0;
+                     *function < max_function;
+                     (*function)++)
+                {
+                    if (class == PCI_CLASS_WILDCARD ||
+                        (pciConfigReadClass(*bus, *slot, *function)
+                        == class))
+                    {
+                        if (subclass == PCI_SUBCLASS_WILDCARD ||
+                            (pciConfigReadSubclass(*bus, *slot, *function)
+                            == subclass))
+                        {
+                            if (prog_IF == PCI_PROG_IF_WILDCARD ||
+                                (pciConfigReadProg_IF(*bus, *slot, *function)
+                                == prog_IF))
+                            {
+                                if (index == 0) return (0);
+                                index--;
+                            }
+                        }
+                    }
+                }
             }
         }
     }

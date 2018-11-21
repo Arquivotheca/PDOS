@@ -1,8 +1,8 @@
           GOALS OF THE PUBLIC DOMAIN PROJECT
           ----------------------------------
             
-Version:  1.7
-Date:     2015-11-16
+Version:  1.8
+Date:     2018-11-21
 Author:   Paul Edwards
 Internet: mutazilah@gmail.com
 Status:   This document is released to the public domain
@@ -56,6 +56,12 @@ instead, the commercial operation needs to develop the entire
 equivalent of the GPL wordprocessor, and THEN add italics.  But it
 is too expensive for the company to do that, so the technology is
 simply never developed!
+
+Another factor is that people writing freeware often solicit
+donations of time or money from the public. If you expect
+random members of the public to assist your project, then how
+about doing the courtesy of letting the public actualaly own
+the code that they are funding, by making it public domain.
 
 GPL code will eventually become as useful as public domain code - 50 
 years after the death of the original author, when it becomes public 

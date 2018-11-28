@@ -82,12 +82,12 @@ MVSSUPA  TITLE 'M V S S U P A  ***  MVS VERSION OF PDP CLIB SUPPORT'
 *
          MACRO ,
 &NM      GAMOS
-         GBLC  &ZSYS
+         GBLC  &STEPD
 .*
 .*   GAMOS sets addressing mode to 24 or 31 or
 .*   potentially bypasses the BSM
 .*
-         AIF   ('&ZSYS' NE 'S380').OTHSYS2
+         AIF   ('&STEPD' NE 'YES').OTHSYS2
 &NM      DS    0H
          L     R15,=A(NEEDBF)
          TM    0(R15),NEEDBANY   Need AM switching?
@@ -109,12 +109,12 @@ ZZ&SYSNDX.X DS 0H
 *
          MACRO ,
 &NM      GAMAPP
-         GBLC  &ZSYS
+         GBLC  &STEPD
 .*
 .*   GAMAPP sets addressing mode to 31 or 64 or
 .*   potentially bypasses the BSM
 .*
-         AIF   ('&ZSYS' NE 'S380').OTHSYS3
+         AIF   ('&STEPD' NE 'YES').OTHSYS3
 &NM      DS    0H
          L     R15,=A(NEEDBF)
          TM    0(R15),NEEDBANY   Did we previously need a switch?

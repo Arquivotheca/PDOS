@@ -18,6 +18,12 @@ struct exec {
     unsigned long a_drsize;
 };
 
+/* First 2 bytes of a_info are magic number identifying the format.
+ * Mask 0xffff can be used on the a_info for checking the numbers. */
+#define OMAGIC 0407
+#define NMAGIC 0410
+#define ZMAGIC 0413
+
 #define N_TXTOFF(e) (0x400)
 #define N_TXTADDR(e) (SEGMENT_SIZE)
 /* this formula doesn't work when the text size is exactly 64k */

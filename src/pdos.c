@@ -3468,7 +3468,6 @@ void addToProcessChain(PDOS_PROCESS *pcb)
 
 static void loadExe(char *prog, PARMBLOCK *parmblock)
 {
-    static int first = 1;
     int doing_zmagic = 0;
 #ifdef __32BIT__
     struct exec firstbit;
@@ -3503,17 +3502,39 @@ static void loadExe(char *prog, PARMBLOCK *parmblock)
     if (fileOpen(prog, &fno)) return;
 #ifdef __32BIT__
     fileRead(fno, &firstbit, sizeof firstbit, &readbytes);
-    if (first)
+    /* Identifies the executable using first few bytes.
+     * Currently only a.out OMAGIC and ZMAGIC are supported. */
+    if ((firstbit.a_info & 0xffff) == ZMAGIC)
     {
-        first = 0;
-        doing_zmagic = 0;
+        doing_zmagic = 1;
+    }
+    else if ((firstbit.a_info & 0xffff) == NMAGIC)
+    {
+        fileClose(fno);
+        printf("a.out NMAGIC is not supported\n");
+        return;
+    }
+    else if ((firstbit.a_info & 0xffff) != OMAGIC)
+    {
+        fileClose(fno);
+        if (memcmp(&firstbit, "MZ", 2) == 0)
+        {
+            printf("MZ, NE, LE and PE format is not supported\n");
+        }
+        else if ((firstbit.a_info & 0xff == 0x7f) &&
+                 memcmp((&firstbit) + 1, "ELF", 3) == 0)
+        {
+            printf("ELF format is not supported\n");
+        }
+        else
+        {
+            printf("Cannot identify executable file, first dword: %08x\n",
+                   firstbit.a_info);
+        }
+        return;
     }
     if (doing_zmagic)
     {
-        /* this logic only applies to executables built using
-           EMX as non-relocatable ZMAGIC. We no longer use any
-           such executables so this code may be deleted at a
-           later stage. */
         headerLen = N_TXTOFF(firstbit);
         header = memmgrAllocate(&memmgr, headerLen, 0);
         memcpy(header, &firstbit, sizeof firstbit);

@@ -3469,6 +3469,7 @@ void addToProcessChain(PDOS_PROCESS *pcb)
 static void loadExe(char *prog, PARMBLOCK *parmblock)
 {
     int doing_zmagic = 0;
+    int doing_nmagic = 0;
 #ifdef __32BIT__
     struct exec firstbit;
 #else
@@ -3503,15 +3504,19 @@ static void loadExe(char *prog, PARMBLOCK *parmblock)
 #ifdef __32BIT__
     fileRead(fno, &firstbit, sizeof firstbit, &readbytes);
     /* Identifies the executable using first few bytes.
-     * Currently only a.out OMAGIC and ZMAGIC are supported. */
+     * Currently only a.out OMAGIC, NMAGIC and ZMAGIC are supported. */
     if ((firstbit.a_info & 0xffff) == ZMAGIC)
     {
         doing_zmagic = 1;
     }
     else if ((firstbit.a_info & 0xffff) == NMAGIC)
     {
+        doing_nmagic = 1;
+    }
+    else if ((firstbit.a_info & 0xffff) == QMAGIC)
+    {
         fileClose(fno);
-        printf("a.out NMAGIC is not supported\n");
+        printf("a.out QMAGIC is not supported\n");
         return;
     }
     else if ((firstbit.a_info & 0xffff) != OMAGIC)
@@ -3574,7 +3579,7 @@ static void loadExe(char *prog, PARMBLOCK *parmblock)
     }
 
 #ifdef __32BIT__
-    if (doing_zmagic)
+    if (doing_zmagic || doing_nmagic)
     {
         exeLen = N_BSSADDR(firstbit) - N_TXTADDR(firstbit) + firstbit.a_bss;
     }
@@ -3658,7 +3663,7 @@ static void loadExe(char *prog, PARMBLOCK *parmblock)
 
 #ifdef __32BIT__
     fileRead(fno, exeStart, firstbit.a_text, &readbytes);
-    if (doing_zmagic)
+    if (doing_zmagic || doing_nmagic)
     {
         fileRead(fno,
                 exeStart + N_DATADDR(firstbit) - N_TXTADDR(firstbit),
@@ -3734,7 +3739,7 @@ static void loadExe(char *prog, PARMBLOCK *parmblock)
         exeEntry, psp, ss, sp); */
 #else
     /* initialise BSS */
-    if (doing_zmagic)
+    if (doing_zmagic || doing_nmagic)
     {
         bss = exeStart + N_BSSADDR(firstbit);
     }
@@ -3746,7 +3751,7 @@ static void loadExe(char *prog, PARMBLOCK *parmblock)
     {
         bss[y] = '\0';
     }
-    if (doing_zmagic)
+    if (doing_zmagic || doing_nmagic)
     {
         sp = N_BSSADDR(firstbit) + firstbit.a_bss + 0x8000;
     }
@@ -3754,7 +3759,7 @@ static void loadExe(char *prog, PARMBLOCK *parmblock)
     {
         sp = (unsigned int)bss + firstbit.a_bss + STACKSZ32;
     }
-    if (!doing_zmagic)
+    if (!doing_zmagic && !doing_nmagic)
     {
         unsigned int *corrections;
         unsigned int i;
@@ -3840,7 +3845,7 @@ static void loadExe(char *prog, PARMBLOCK *parmblock)
     newProc->status = PDOS_PROCSTATUS_ACTIVE;
     if (newProc->parent != NULL)
         newProc->parent->status = PDOS_PROCSTATUS_CHILDWAIT;
-    ret = fixexe32(psp, firstbit.a_entry, sp, doing_zmagic);
+    ret = fixexe32(psp, firstbit.a_entry, sp, doing_zmagic || doing_nmagic);
 #endif
     lastrc = ret;
 

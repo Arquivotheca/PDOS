@@ -19,10 +19,12 @@ struct exec {
 };
 
 /* First 2 bytes of a_info are magic number identifying the format.
- * Mask 0xffff can be used on the a_info for checking the numbers. */
+ * Mask 0xffff can be used on the a_info for checking the numbers.
+ * Top word should be 0x0064. */
 #define OMAGIC 0407
 #define NMAGIC 0410
 #define ZMAGIC 0413
+#define QMAGIC 0314
 
 #define N_TXTOFF(e) (0x400)
 #define N_TXTADDR(e) (SEGMENT_SIZE)

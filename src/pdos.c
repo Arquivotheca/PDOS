@@ -3526,8 +3526,7 @@ static void loadExe(char *prog, PARMBLOCK *parmblock)
         {
             printf("MZ, NE, LE and PE format is not supported\n");
         }
-        else if ((firstbit.a_info & 0xff == 0x7f) &&
-                 memcmp((&firstbit) + 1, "ELF", 3) == 0)
+        else if (memcmp((&firstbit), "\x7f""ELF", 4) == 0)
         {
             printf("ELF format is not supported\n");
         }

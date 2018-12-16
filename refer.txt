@@ -9,7 +9,7 @@
            http://pdos.sf.net/
 
 
- If you are working on PDOS, check your e-mail regulary
+ If you are working on PDOS, check your e-mail regularly
  for important news, updates, and progress reports from
  Paul Edwards, the project manager of PDOS.
 
@@ -20,7 +20,7 @@ What is PDOS?
 -------------
 
 PDOS is a Public Domain and Open Source clone of MS-DOS,
-currently in developement. The name PDOS is an acryonmn
+currently in development. The name PDOS is an acronym
 for "Public Domain Operating System".
 
 
@@ -91,13 +91,13 @@ the correct order, with a comment next to it saying
 what function and subfunction it uses, like the
 other prototypes in "pos.h".
 
-Thats how to implement the DOS call, but the actual implementation
+That's how to implement the DOS call, but the actual implementation
 in high level programming of the DOS call you do in "pdos.c", you
 do not need to update "pdos.h", only "pdos.c".
 
 When adding the high level implementation to "pdos.c", write
 the function using the same declaration you did in "pos.h".
-How does this work you ask? well "pdos.obj" and "pos.obj"
+How does this work you ask? Well "pdos.obj" and "pos.obj"
 aren't linked together so it's possible to do that.
 
 After you have finished writing the high level implementation of
@@ -138,7 +138,7 @@ DOS interrupt Handlers
 #int 20h - Program terminate
 +int 21h - DOS Function Dispatcher
 int 22h - Program Terminate
-int 23h - Ctl-break exit address
+int 23h - Ctrl-break exit address
 int 24h - Critical error handler address
 int 25h - Absolute disk read
 int 26h - Absolute disk write
@@ -325,7 +325,7 @@ Int 21/AH=FFh - DOS v2.11-2.13 - OEM FUNCTION
 INT 21h STANDARD MS-DOS CALLS WITH SUBFUNCTION:
 -----------------------------------------------
 
-Int 21/AX=3302h - DOS 3.x+ intrnl - GET+SET EXTENDED CNTRL-BREAK CHECK STATE
+Int 21/AX=3302h - DOS 3.x+ internal - GET+SET EXTENDED CNTRL-BREAK CHECK STATE
 Int 21/AX=3303h - DOS 3.4/4.0 - GET CURRENT CPSW STATE
 Int 21/AX=3304h - DOS 3.4/4.0 - SET CPSW STATE
 Int 21/AX=3305h - DOS 4.0+ - GET BOOT DRIVE
@@ -337,7 +337,7 @@ Int 21/AX=3701h - DOS 2+ - SWITCHAR - SET SWITCH CHARACTER
 Int 21/AX=4301h - DOS 2+ - CHMOD - SET FILE ATTRIBUTES
 Int 21/AX=4302h - MS-DOS 7 - GET COMPRESSED FILE SIZE
 Int 21/AX=43FFh/BP=5053h - MS-DOS 7.20 (Win98) - EXTENDED-LENGTH FILENAME OP
-#Int 21/AX=4400h  - Get Device Information
+#Int 21/AX=4400h - Get Device Information
 Int 21/AX=4401h - DOS 2+ - IOCTL - SET DEVICE INFORMATION
 Int 21/AX=4402h - DOS 2+ - IOCTL - READ FROM CHARACTER DEVICE CONTROL CHANNEL
 Int 21/AX=4402h - MS-DOS 7.0+ - CONFIG$ device - GET CONFIGURATION INFO
@@ -412,10 +412,6 @@ Int 21/AX=71A7h/BL=00h - Windows95 - LONG FILENAME - FILE TIME TO DOS TIME
 Int 21/AX=71A7h/BL=01h - Windows95 - LONG FILENAME - DOS TIME TO FILE TIME
 
 
-
-Just as a place-holder, we should also implement
-BIOS Int 16 AH=01H to check for a keystroke without
-removing it from the buffer.
 
 If first bit of executable shows that there are
 symbols, report an error

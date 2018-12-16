@@ -74,7 +74,7 @@ program and allow you to read files, and perhaps then
 take over the whole computer, maybe a game, then PDOS will
 allow you to do this without having to pay licensing fees.
 In addition, you can modify the source and not be bound
-by or worry you are breaking, any licencing restrictions.
+by or worry you are breaking, any licensing restrictions.
 The PDOS floppy disk contains 100% public domain code,
 including the boot sector, the loader, the operating
 system and the command processor.  A 32-bit version can
@@ -204,7 +204,7 @@ GCC 3.2.3 to do cross-compile from Windows:
 https://sourceforge.net/projects/gccmvs/files/GCCMVS/gcc-stage296.zip/download
 refer to gccdos.txt for documentation
 
-binutils 2.14a to do cross-assembly etc from Windows:
+binutils 2.14a to do cross-assembly etc. from Windows:
 https://sourceforge.net/projects/gccmvs/files/GCCMVS/binu214a-stage5.zip/download
 
 dmake with -B option allows space instead of tabs in makefiles
@@ -272,7 +272,7 @@ Some years ago (circa 1988?) someone made a comment "until DOS is made
 comment at the time, and I'm still not sure what's classified as a
 "kludge".  A few years later (circa 1994?) I was in a job where I was
 battling to try to get some DOS applications to run in 640k, moving
-around device drivers, making use of the high memory area etc, all
+around device drivers, making use of the high memory area etc., all
 very frustrating.  On a machine with 32 meg of memory on it!  I thought
 it would make more sense to have DOS reside outside of real mode
 memory, making more room for applications.  Nothing had been done about
@@ -287,7 +287,7 @@ And there's not much I actually wanted to do with DOS.  So I decided
 to port another one of my projects (PDPCLIB) to DOS.  After that was
 done, the only other thing that I could do under DOS was write my own
 DOS, so I proceeded to write a 16-bit version of DOS, but nice and
-clean, ie don't use near/far pointers.  With the intention that when
+clean, i.e. don't use near/far pointers.  With the intention that when
 finished, all I needed to do was recompile under a 32-bit compiler and
 voila!
 
@@ -444,7 +444,7 @@ interface to INT 13 function 2, you should not expect to get more out of it
 than INT 13 will give you.  E.g. even though the sector number above is
 given as an unsigned int, the interrupt has a limit of 255 for sector
 number, so that's all you will get.  The unsigned int is designed for
-future expansion (ie where this interrupt is bypassed).
+future expansion (i.e. where this interrupt is bypassed).
 
 Potentially there will be multiple things that happen when you call
 BosDiskSectorRead.
@@ -498,7 +498,7 @@ it has the switch to/from protected mode facility.
 
 PDOS.EXE is a large model EXE program (16-bit) or an a.out program
 in 32-bit.  It uses special startup code to ensure that it doesn't
-attempt to access the non-existant PSP etc.
+attempt to access the non-existent PSP etc.
 
 So far I have written cut-down versions of all three executables, so that
 it boots (of floppy or hard disk, including logical partitions) and prints
@@ -635,7 +635,7 @@ a0000
 30000
   unused I suppose (16-bit only)
 
-30700 (approx)
+30700 (approx.)
   MSDOS.SYS data & stack (32-bit only), then below-the-line memory
 
 20700

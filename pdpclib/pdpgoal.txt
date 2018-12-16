@@ -38,7 +38,7 @@ The second is that encourages others to join the dog-in-the-manger
 brigade.  Someone who ordinarily would be happy to contribute something
 to the public domain, once and for all, now instead goes and spends their 
 effort on a GPL product, meaning the world still doesn't get the code 
-freely available for ALL use (ie in public domain projects AND commercial 
+freely available for ALL use (i.e. in public domain projects AND commercial
 projects, not JUST other GPL projects).
 
 The third is that it is actually technology-inhibitive.  E.g. let's
@@ -60,7 +60,7 @@ simply never developed!
 Another factor is that people writing freeware often solicit
 donations of time or money from the public. If you expect
 random members of the public to assist your project, then how
-about doing the courtesy of letting the public actualaly own
+about doing the courtesy of letting the public actually own
 the code that they are funding, by making it public domain.
 
 GPL code will eventually become as useful as public domain code - 50 

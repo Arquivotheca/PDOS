@@ -728,6 +728,14 @@ pdos.c, protintp.c, protints.s, support.asm, support.s.
 FUTURE DEVELOPMENT
 ------------------
 
+The Linux INT 80H calls could be supported by PDOS/386.
+Along with ELF modules. To implement sbrk() PDPCLIB
+needs to have MEMMGR defined and implement a ReSupply
+function. PDOS needs to use memmgrRealloc(). However,
+Linux only supports brk() as a syscall (sys_brk,
+function 45 decimal) so it is not clear how that is
+supposed to work.
+
 Use INT 15 AX=E820 to see how much memory is available.
 http://www.ctyme.com/intr/rb-1741.htm
 This has a problem in that protintp.c is only expecting

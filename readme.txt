@@ -728,6 +728,12 @@ pdos.c, protintp.c, protints.s, support.asm, support.s.
 FUTURE DEVELOPMENT
 ------------------
 
+It would be good to have a boot manager that runs
+under PDOS/86 so that a PDOS boot floppy can be
+flashed onto BIOS and allow the user to choose
+what to boot. Note that the drive names are in
+the boot sector of each partition, not in the MBR.
+
 The Linux INT 80H calls could be supported by PDOS/386.
 Along with ELF modules. To implement sbrk() PDPCLIB
 needs to have MEMMGR defined and implement a ReSupply

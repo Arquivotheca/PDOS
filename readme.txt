@@ -728,6 +728,11 @@ pdos.c, protintp.c, protints.s, support.asm, support.s.
 FUTURE DEVELOPMENT
 ------------------
 
+MSGED 4.00 and maybe later versions have support
+for 80386 DOS programming and Usenet/UUCP. Look
+at porting this and redefining PDOS/386 to match
+this API.
+
 It would be good to have a boot manager that runs
 under PDOS/86 so that a PDOS boot floppy can be
 flashed onto BIOS and allow the user to choose

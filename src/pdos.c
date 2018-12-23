@@ -127,6 +127,7 @@ static int fileWrite(int fno, const void *buf, size_t szbuf,
                      size_t *writtenbytes);
 static int fileDelete(const char *fnm);
 static int dirDelete(const char *dnm);
+static int fileSeek(int fno, long offset, int whence, long *newpos);
 static int fileClose(int fno);
 static int fileRead(int fno, void *buf, size_t szbuf, size_t *readbytes);
 static void accessDisk(int drive);
@@ -2307,15 +2308,7 @@ int PosMoveFilePointer(int handle, long offset, int whence, long *newpos)
     {
         return (POS_ERR_INVALID_HANDLE);
     }
-    /* Checks if whence value is valid. */
-    if (whence != SEEK_SET && whence != SEEK_CUR && whence != SEEK_END)
-    {
-        /* MSDOS returns 0x1 (function number invalid). */
-        return (POS_ERR_FUNCTION_NUMBER_INVALID);
-    }
-    *newpos = fatSeek(fhandle[handle].fatptr, &(fhandle[handle].fatfile),
-                    offset, whence);
-    return (0);
+    return (fileSeek(handle, offset, whence, newpos));
 }
 
 /*To get the attributes of a given file*/
@@ -4242,6 +4235,19 @@ static int dirDelete(const char *dnm)
     rc = fatDeleteFile(&disks[drive].fat, p);
     if (rc == POS_ERR_FILE_NOT_FOUND) return (POS_ERR_PATH_NOT_FOUND);
     return (rc);
+}
+
+static int fileSeek(int fno, long offset, int whence, long *newpos)
+{
+    /* Checks if whence value is valid. */
+    if (whence != SEEK_SET && whence != SEEK_CUR && whence != SEEK_END)
+    {
+        /* MSDOS returns 0x1 (function number invalid). */
+        return (POS_ERR_FUNCTION_NUMBER_INVALID);
+    }
+    *newpos = fatSeek(fhandle[fno].fatptr, &(fhandle[fno].fatfile),
+                      offset, whence);
+    return (0);
 }
 /**/
 

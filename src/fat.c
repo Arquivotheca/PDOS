@@ -886,7 +886,7 @@ int fatReadFile(FAT *fat, FATFILE *fatfile, void *buf, size_t szbuf,
                     memcpy((char *)buf + bytesRead,
                            bbuf + fatfile->byteUpto,
                            szbuf - bytesRead);
-                    fatfile->currpos = (szbuf - bytesRead);
+                    fatfile->currpos += (szbuf - bytesRead);
                     fatfile->byteUpto += (szbuf - bytesRead);
                     bytesRead = szbuf;
                     *readbytes = bytesRead;
@@ -905,11 +905,14 @@ int fatReadFile(FAT *fat, FATFILE *fatfile, void *buf, size_t szbuf,
             fatfile->sectorUpto++;
             fatfile->byteUpto = 0;
         }
-        fatfile->currentCluster = fatfile->nextCluster;
         fatClusterAnalyse(fat,
                           fatfile->currentCluster,
                           &fatfile->sectorStart,
                           &fatfile->nextCluster);
+        fatfile->currentCluster = fatfile->nextCluster;
+        fatfile->sectorStart = (fatfile->currentCluster - 2)
+            * (long)fat->sectors_per_cluster
+            + fat->filestart;
         fatfile->sectorUpto = 0;
     }
     *readbytes = bytesRead;

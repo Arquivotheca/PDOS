@@ -3457,14 +3457,21 @@ void addToProcessChain(PDOS_PROCESS *pcb)
 
 #ifdef __32BIT__
 #include "a_out.h"
+#include "elf.h"
 #endif
 
 static void loadExe(char *prog, PARMBLOCK *parmblock)
 {
     int doing_zmagic = 0;
     int doing_nmagic = 0;
+    int doing_elf = 0;
 #ifdef __32BIT__
     struct exec firstbit;
+    Elf32_Ehdr *elfHdr;
+    Elf32_Shdr *section_table;
+    Elf32_Shdr *section;
+    unsigned char *elf_other_sections;
+    long newpos;
 #else
     unsigned char firstbit[10];
 #endif
@@ -3512,16 +3519,148 @@ static void loadExe(char *prog, PARMBLOCK *parmblock)
         printf("a.out QMAGIC is not supported\n");
         return;
     }
+    else if (memcmp((&firstbit), "\x7f""ELF", 4) == 0)
+    {
+        int elf_invalid = 0;
+
+        doing_elf = 1;
+        /* Loads entire ELF header into memory. */
+        elfHdr = memmgrAllocate(&memmgr, sizeof(Elf32_Ehdr), 0);
+        if (elfHdr == NULL)
+        {
+            printf("Insufficient memory for ELF header\n");
+            fileClose(fno);
+            return;
+        }
+        memcpy(elfHdr, &firstbit, sizeof(firstbit));
+        if (fileRead(fno, ((void *)elfHdr) + sizeof(firstbit),
+                 sizeof(Elf32_Ehdr) - sizeof(firstbit), &readbytes)
+            || (readbytes != (sizeof(Elf32_Ehdr) - sizeof(firstbit))))
+        {
+            printf("Error occured while reading ELF header\n");
+            memmgrFree(&memmgr, elfHdr);
+            fileClose(fno);
+            return;
+        }
+
+        /* Checks e_ident if the program can be used on PDOS-32. */
+        if (elfHdr->e_ident[EI_CLASS] != ELFCLASS32)
+        {
+            if (elfHdr->e_ident[EI_CLASS] == ELFCLASS64)
+            {
+                printf("64-bit ELF is not supported\n");
+            }
+            else if (elfHdr->e_ident[EI_CLASS] == ELFCLASSNONE)
+            {
+                printf("Invalid ELF class\n");
+            }
+            else
+            {
+                printf("Unknown ELF class: %u\n", elfHdr->e_ident[EI_CLASS]);
+            }
+            elf_invalid = 1;
+        }
+        if (elfHdr->e_ident[EI_DATA] != ELFDATA2LSB)
+        {
+            if (elfHdr->e_ident[EI_DATA] == ELFDATA2MSB)
+            {
+                printf("Big-endian ELF encoding is not supported\n");
+            }
+            else if (elfHdr->e_ident[EI_DATA] == ELFDATANONE)
+            {
+                printf("Invalid ELF data encoding\n");
+            }
+            else
+            {
+                printf("Unknown ELF data encoding: %u\n",
+                       elfHdr->e_ident[EI_DATA]);
+            }
+            elf_invalid = 1;
+        }
+        if (elfHdr->e_ident[EI_OSABI] != ELFOSABI_NONE)
+        {
+            printf("No OS or ABI specific extensions for ELF supported\n");
+            elf_invalid = 1;
+        }
+        /* Checks other parts of the header if the file can be loaded. */
+        if (elfHdr->e_type != ET_REL)
+        {
+            printf("Only ELF relocatable files are supported\n");
+            elf_invalid = 1;
+        }
+        if (elfHdr->e_machine != EM_386)
+        {
+            printf("Only Intel 386 architecture is supported\n");
+            elf_invalid = 1;
+        }
+        if (elfHdr->e_entry != 0)
+        {
+            /* For now we assume that the program starts at 0. */
+            printf("Invalid entry point or program header is present\n");
+            printf("Entry point is %08x\n", elfHdr->e_entry);
+            elf_invalid = 1;
+        }
+        if (elfHdr->e_phoff != 0)
+        {
+            printf("Program header is present\n");
+            elf_invalid = 1;
+        }
+        if (elfHdr->e_shoff == 0 || elfHdr->e_shnum == 0)
+        {
+            printf("Section Header Table is not present\n");
+            elf_invalid = 1;
+        }
+        if (elfHdr->e_shnum >= SHN_LORESERVE)
+        {
+            printf("Reserved indexes for e_shnum are not supported\n");
+            printf("e_shnum is %04x\n", elfHdr->e_shnum);
+            elf_invalid = 1;
+        }
+        if (elfHdr->e_shentsize != sizeof(Elf32_Shdr))
+        {
+            printf("Section Header Table entries have unsupported size\n");
+            printf("e_shentsize: %u supported size: %u\n",
+                   elfHdr->e_shentsize, sizeof(Elf32_Shdr));
+            elf_invalid = 1;
+        }
+        if (elf_invalid)
+        {
+            /* All problems with ELF header are reported
+             * and loading is stopped. */
+            printf("This ELF file cannot be loaded\n");
+            memmgrFree(&memmgr, elfHdr);
+            fileClose(fno);
+            return;
+        }
+        /* Loads Section Header Table. */
+        section_table = memmgrAllocate(&memmgr,
+                                       elfHdr->e_shnum * elfHdr->e_shentsize,
+                                       0);
+        if (section_table == NULL)
+        {
+            printf("Insufficient memory for ELF Section Header Table\n");
+            memmgrFree(&memmgr, elfHdr);
+            fileClose(fno);
+            return;
+        }
+        fileSeek(fno, elfHdr->e_shoff, SEEK_SET, &newpos);
+        if (fileRead(fno, section_table,
+                     elfHdr->e_shnum * elfHdr->e_shentsize, &readbytes)
+            || (readbytes != (elfHdr->e_shnum * elfHdr->e_shentsize)))
+        {
+            printf("Error occured while reading ELF Section Header Table\n");
+            memmgrFree(&memmgr, elfHdr);
+            memmgrFree(&memmgr, section_table);
+            fileClose(fno);
+            return;
+        }
+    }
     else if ((firstbit.a_info & 0xffff) != OMAGIC)
     {
         fileClose(fno);
         if (memcmp(&firstbit, "MZ", 2) == 0)
         {
             printf("MZ, NE, LE and PE format is not supported\n");
-        }
-        else if (memcmp((&firstbit), "\x7f""ELF", 4) == 0)
-        {
-            printf("ELF format is not supported\n");
         }
         else
         {
@@ -3571,7 +3710,48 @@ static void loadExe(char *prog, PARMBLOCK *parmblock)
     }
 
 #ifdef __32BIT__
-    if (doing_zmagic || doing_nmagic)
+    if (doing_elf)
+    {
+        /* Calculates how much memory is needed for all sections
+         * and allocates memory for sections used only for loading. */
+        unsigned long otherLen = 0;
+        unsigned long section_size;
+
+        exeLen = 0;
+        for (section = section_table;
+             section < section_table + elfHdr->e_shnum;
+             section++)
+        {
+            section_size = section->sh_size;
+            if (section->sh_addralign > 1)
+            {
+                /* Some sections must be aligned
+                 * on sh_addralign byte boundaries.
+                 * 0 and 1 mean no alignment restrictions. */
+                section_size += section->sh_addralign;
+            }
+            if (section->sh_flags & SHF_ALLOC)
+            {
+                /* Section is needed while the program is running. */
+                exeLen += section_size;
+            }
+            else
+            {
+                /* Section is used only for loading. */
+               otherLen += section_size;
+            }
+        }
+        elf_other_sections = memmgrAllocate(&memmgr, otherLen, 0);
+        if (elf_other_sections == NULL)
+        {
+            printf("Insufficient memory to load ELF sections\n");
+            memmgrFree(&memmgr, elfHdr);
+            memmgrFree(&memmgr, section_table);
+            fileClose(fno);
+            return;
+        }
+    }
+    else if (doing_zmagic || doing_nmagic)
     {
         exeLen = N_BSSADDR(firstbit) - N_TXTADDR(firstbit) + firstbit.a_bss;
     }
@@ -3630,6 +3810,13 @@ static void loadExe(char *prog, PARMBLOCK *parmblock)
         printf("insufficient memory to load program\n");
         if (header != NULL) memmgrFree(&memmgr, header);
         memmgrFree(&memmgr, envptr);
+        if (doing_elf)
+        {
+            memmgrFree(&memmgr, elfHdr);
+            memmgrFree(&memmgr, section_table);
+            memmgrFree(&memmgr, elf_other_sections);
+        }
+        fileClose(fno);
         return;
     }
 
@@ -3654,16 +3841,117 @@ static void loadExe(char *prog, PARMBLOCK *parmblock)
 #endif
 
 #ifdef __32BIT__
-    fileRead(fno, exeStart, firstbit.a_text, &readbytes);
-    if (doing_zmagic || doing_nmagic)
+    if (doing_elf)
     {
-        fileRead(fno,
-                exeStart + N_DATADDR(firstbit) - N_TXTADDR(firstbit),
-                firstbit.a_data, &readbytes);
+        /* Loads all sections of ELF file with proper alignment,
+         * clears all SHT_NOBITS sections and stores the addresses
+         * in sh_addr of each section.
+         * bss and sp are set now too. */
+        void *exe_addr = exeStart;
+        void *other_addr = elf_other_sections;
+
+        bss = 0;
+        for (section = section_table;
+             section < section_table + elfHdr->e_shnum;
+             section++)
+        {
+            if (section->sh_flags & SHF_ALLOC)
+            {
+                if (section->sh_addralign > 1)
+                {
+                    exe_addr = (void *)((((unsigned long)exe_addr
+                                          / (section->sh_addralign)) + 1)
+                                        * (section->sh_addralign));
+                }
+                if (section->sh_type != SHT_NOBITS)
+                {
+                    fileSeek(fno, section->sh_offset, SEEK_SET, &newpos);
+                    if (fileRead(fno, exe_addr, section->sh_size, &readbytes)
+                        || (readbytes != (section->sh_size)))
+                    {
+                        printf("Error occured while reading ELF section\n");
+                        memmgrFree(&memmgr, envptr);
+                        memmgrFree(&memmgr, elfHdr);
+                        memmgrFree(&memmgr, section_table);
+                        memmgrFree(&memmgr, elf_other_sections);
+                        fileClose(fno);
+                        return;
+                    }
+                }
+                else
+                {
+                    /* The section is probably BSS. */
+                    if (bss != 0)
+                    {
+                        printf("Multiple SHT_NOBITS with SHF_ALLOC "
+                               "present in ELF file\n");
+                    }
+                    bss = exe_addr;
+                    /* All SHT_NOBITS should be cleared to 0. */
+                    for (y = 0; y < section->sh_size; y++)
+                    {
+                        bss[y] = '\0';
+                    }
+                }
+                /* sh_addr is 0 in relocatable files,
+                 * so we can use it to store the real address. */
+                section->sh_addr = (Elf32_Addr)exe_addr;
+                exe_addr += section->sh_size;
+            }
+            else
+            {
+                if (section->sh_addralign > 1)
+                {
+                    other_addr = (void *)((((unsigned long)other_addr
+                                            / (section->sh_addralign)) + 1)
+                                          * (section->sh_addralign));
+                }
+                if (section->sh_type != SHT_NOBITS)
+                {
+                    fileSeek(fno, section->sh_offset, SEEK_SET, &newpos);
+                    if (fileRead(fno, other_addr, section->sh_size, &readbytes)
+                        || (readbytes != (section->sh_size)))
+                    {
+                        printf("Error occured while reading ELF section\n");
+                        memmgrFree(&memmgr, envptr);
+                        memmgrFree(&memmgr, elfHdr);
+                        memmgrFree(&memmgr, section_table);
+                        memmgrFree(&memmgr, elf_other_sections);
+                        fileClose(fno);
+                        return;
+                    }
+                }
+                else
+                {
+                    /* All SHT_NOBITS should be cleared to 0. */
+                    for (y = 0; y < section->sh_size; y++)
+                    {
+                        ((unsigned char *)other_addr)[y] = '\0';
+                    }
+                }
+                /* sh_addr is 0 in relocatable files,
+                 * so we can use it to store the real address. */
+                section->sh_addr = (Elf32_Addr)other_addr;
+                other_addr += section->sh_size;
+            }
+        }
+        sp = (unsigned long)exe_addr + STACKSZ32;
+        printf("exeStart: %08x exe_addr: %08x first_byte: %02x\n",
+               exeStart, exe_addr, *(unsigned char *)exeStart);
     }
     else
     {
-        fileRead(fno, exeStart + firstbit.a_text, firstbit.a_data, &readbytes);
+        fileRead(fno, exeStart, firstbit.a_text, &readbytes);
+        if (doing_zmagic || doing_nmagic)
+        {
+            fileRead(fno,
+                    exeStart + N_DATADDR(firstbit) - N_TXTADDR(firstbit),
+                    firstbit.a_data, &readbytes);
+        }
+        else
+        {
+            fileRead(fno, exeStart + firstbit.a_text, firstbit.a_data, &readbytes);
+        }
     }
 #else
     if (isexe)
@@ -3730,28 +4018,123 @@ static void loadExe(char *prog, PARMBLOCK *parmblock)
     /* printf("exeEntry: %lx, psp: %lx, ss: %x, sp: %x\n",
         exeEntry, psp, ss, sp); */
 #else
-    /* initialise BSS */
-    if (doing_zmagic || doing_nmagic)
+    /* bss and sp were prepared earlier for ELF files. */
+    if (!doing_elf)
     {
-        bss = exeStart + N_BSSADDR(firstbit);
+        /* initialise BSS */
+        if (doing_zmagic || doing_nmagic)
+        {
+            bss = exeStart + N_BSSADDR(firstbit);
+        }
+        else
+        {
+            bss = exeStart + firstbit.a_text + firstbit.a_data;
+        }
+        for (y = 0; y < firstbit.a_bss; y++)
+        {
+            bss[y] = '\0';
+        }
+        if (doing_zmagic || doing_nmagic)
+        {
+            sp = N_BSSADDR(firstbit) + firstbit.a_bss + 0x8000;
+        }
+        else
+        {
+            sp = (unsigned int)bss + firstbit.a_bss + STACKSZ32;
+        }
     }
-    else
+    /* Relocations. */
+    if (doing_elf)
     {
-        bss = exeStart + firstbit.a_text + firstbit.a_data;
+        for (section = section_table;
+             section < section_table + elfHdr->e_shnum;
+             section++)
+        {
+            if (section->sh_type == SHT_RELA)
+            {
+                printf("ELF Relocations with explicit addend "
+                       "are not supported\n");
+            }
+            else if (section->sh_type == SHT_REL)
+            {
+                /* sh_link specifies the symbol table
+                 * and sh_info section being modified. */
+                Elf32_Sym *sym_table = (Elf32_Sym *)(section_table
+                                        + (section->sh_link))->sh_addr;
+                void *target_base = (void *)(section_table
+                                     + (section->sh_info))->sh_addr;
+                Elf32_Rel *startrel = (Elf32_Rel *)section->sh_addr;
+                Elf32_Rel *currel;
+
+                if (section->sh_entsize != sizeof(Elf32_Rel))
+                {
+                    printf("Invalid size of relocation entries in ELF file\n");
+                    continue;
+                }
+
+                for (currel = startrel;
+                     currel < (startrel
+                               + ((section->sh_size) / (section->sh_entsize)));
+                     currel++)
+                {
+                    long *target = target_base + currel->r_offset;
+                    Elf32_Sym *symbol = (sym_table
+                                         + ELF32_R_SYM(currel->r_info));
+                    Elf32_Addr sym_value = 0;
+
+                    if (ELF32_R_SYM(currel->r_info) != STN_UNDEF)
+                    {
+                        if (symbol->st_shndx == SHN_ABS)
+                        {
+                            /* Absolute symbol, stores absolute value. */
+                            sym_value = symbol->st_value;
+                        }
+                        else if (symbol->st_shndx == SHN_UNDEF)
+                        {
+                            /* Dynamic linker should fill this symbol. */
+                            printf("Undefined symbol in ELF file\n");
+                            continue;
+                        }
+                        else if (symbol->st_shndx == SHN_XINDEX)
+                        {
+                            printf("Unsupported value in ELF symbol\n");
+                            printf("symbol->st_shndx: %x\n", symbol->st_shndx);
+                            continue;
+                        }
+                        else
+                        {
+                            /* Internal symbol. Offset of the related section
+                             * from load address must be added to it.*/
+                            sym_value = ((symbol->st_value) +
+                                         ((unsigned long)((section_table
+                                                           + symbol->st_shndx)
+                                                          ->sh_addr)));
+                            sym_value -= (unsigned long)exeStart;
+                        }
+                    }
+                    switch (ELF32_R_TYPE(currel->r_info))
+                    {
+                        case R_386_NONE:
+                            break;
+                        case R_386_32:
+                            /* Symbol value + offset. */
+                            *target = sym_value + *target;
+                            break;
+                        case R_386_PC32:
+                            /* Symbol value + offset - offset of modified
+                             * field from load address. */
+                            *target = (sym_value + *target
+                                           - ((unsigned long)target
+                                              - (unsigned long)exeStart));
+                            break;
+                        default:
+                            printf("Unknown relocation type in ELF file\n");
+                    }
+                }
+            }
+        }
     }
-    for (y = 0; y < firstbit.a_bss; y++)
-    {
-        bss[y] = '\0';
-    }
-    if (doing_zmagic || doing_nmagic)
-    {
-        sp = N_BSSADDR(firstbit) + firstbit.a_bss + 0x8000;
-    }
-    else
-    {
-        sp = (unsigned int)bss + firstbit.a_bss + STACKSZ32;
-    }
-    if (!doing_zmagic && !doing_nmagic)
+    else if (!doing_zmagic && !doing_nmagic)
     {
         unsigned int *corrections;
         unsigned int i;
@@ -3837,7 +4220,22 @@ static void loadExe(char *prog, PARMBLOCK *parmblock)
     newProc->status = PDOS_PROCSTATUS_ACTIVE;
     if (newProc->parent != NULL)
         newProc->parent->status = PDOS_PROCSTATUS_CHILDWAIT;
-    ret = fixexe32(psp, firstbit.a_entry, sp, doing_zmagic || doing_nmagic);
+    if (doing_elf)
+    {
+        /* Frees memory not needed by the process. */
+        memmgrFree(&memmgr, elfHdr);
+        memmgrFree(&memmgr, section_table);
+        memmgrFree(&memmgr, elf_other_sections);
+        printf("Launching ELF, entry %08x\n",
+               (unsigned long)exeStart + elfHdr->e_entry);
+        ret = fixexe32(psp, (unsigned long)exeStart + (elfHdr->e_entry),
+                       sp, 0);
+    }
+    else
+    {
+        ret = fixexe32(psp, firstbit.a_entry, sp,
+                       doing_zmagic || doing_nmagic);
+    }
 #endif
     lastrc = ret;
 

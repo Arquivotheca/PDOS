@@ -3496,7 +3496,6 @@ static void loadExe(char *prog, PARMBLOCK *parmblock)
     size_t readbytes;
     int ret;
     unsigned char *bss;
-    int y;
     int isexe = 0;
     char *olddta;
 
@@ -3888,10 +3887,7 @@ static void loadExe(char *prog, PARMBLOCK *parmblock)
                     }
                     bss = exe_addr;
                     /* All SHT_NOBITS should be cleared to 0. */
-                    for (y = 0; y < section->sh_size; y++)
-                    {
-                        bss[y] = '\0';
-                    }
+                    memset(bss, '\0', section->sh_size);
                 }
                 /* sh_addr is 0 in relocatable files,
                  * so we can use it to store the real address. */
@@ -3924,10 +3920,7 @@ static void loadExe(char *prog, PARMBLOCK *parmblock)
                 else
                 {
                     /* All SHT_NOBITS should be cleared to 0. */
-                    for (y = 0; y < section->sh_size; y++)
-                    {
-                        ((unsigned char *)other_addr)[y] = '\0';
-                    }
+                    memset(other_addr, '\0', section->sh_size);
                 }
                 /* sh_addr is 0 in relocatable files,
                  * so we can use it to store the real address. */
@@ -3936,8 +3929,6 @@ static void loadExe(char *prog, PARMBLOCK *parmblock)
             }
         }
         sp = (unsigned long)exe_addr + STACKSZ32;
-        printf("exeStart: %08x exe_addr: %08x first_byte: %02x\n",
-               exeStart, exe_addr, *(unsigned char *)exeStart);
     }
     else
     {
@@ -4030,10 +4021,7 @@ static void loadExe(char *prog, PARMBLOCK *parmblock)
         {
             bss = exeStart + firstbit.a_text + firstbit.a_data;
         }
-        for (y = 0; y < firstbit.a_bss; y++)
-        {
-            bss[y] = '\0';
-        }
+        memset(bss, '\0', firstbit.a_bss);
         if (doing_zmagic || doing_nmagic)
         {
             sp = N_BSSADDR(firstbit) + firstbit.a_bss + 0x8000;
@@ -4103,14 +4091,13 @@ static void loadExe(char *prog, PARMBLOCK *parmblock)
                         }
                         else
                         {
-                            /* Internal symbol. Offset of the related section
-                             * from load address must be added to it.*/
+                            /* Internal symbol. Must be converted
+                             * to absolute symbol.*/
                             sym_value = symbol->st_value;
-                            /* Adds the offset of the related section
-                             * from the start of the loaded executable. */
+                            /* Adds the address of the related section
+                             * so the symbol stores absolute address. */
                             sym_value += ((section_table
-                                           + symbol->st_shndx)->sh_addr
-                                          - (unsigned long)exeStart);
+                                           + symbol->st_shndx)->sh_addr);
                         }
                     }
                     switch (ELF32_R_TYPE(currel->r_info))
@@ -4122,11 +4109,10 @@ static void loadExe(char *prog, PARMBLOCK *parmblock)
                             *target = sym_value + *target;
                             break;
                         case R_386_PC32:
-                            /* Symbol value + offset - offset of modified
-                             * field from the load address. */
+                            /* Symbol value + offset - absolute address
+                             * of the modified field. */
                             *target = (sym_value + (*target)
-                                           - ((unsigned long)target
-                                              - (unsigned long)exeStart));
+                                       - (unsigned long)target);
                             break;
                         default:
                             printf("Unknown relocation type in ELF file\n");
@@ -4227,8 +4213,6 @@ static void loadExe(char *prog, PARMBLOCK *parmblock)
         memmgrFree(&memmgr, elfHdr);
         memmgrFree(&memmgr, section_table);
         memmgrFree(&memmgr, elf_other_sections);
-        printf("Launching ELF, entry %08x\n",
-               (unsigned long)exeStart + elfHdr->e_entry);
         ret = fixexe32(psp, (unsigned long)exeStart + (elfHdr->e_entry),
                        sp, 0);
     }

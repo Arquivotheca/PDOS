@@ -3533,7 +3533,7 @@ static void loadExe(char *prog, PARMBLOCK *parmblock)
             return;
         }
         memcpy(elfHdr, &firstbit, sizeof(firstbit));
-        if (fileRead(fno, ((void *)elfHdr) + sizeof(firstbit),
+        if (fileRead(fno, ((char *)elfHdr) + sizeof(firstbit),
                  sizeof(Elf32_Ehdr) - sizeof(firstbit), &readbytes)
             || (readbytes != (sizeof(Elf32_Ehdr) - sizeof(firstbit))))
         {
@@ -3847,8 +3847,8 @@ static void loadExe(char *prog, PARMBLOCK *parmblock)
          * clears all SHT_NOBITS sections and stores the addresses
          * in sh_addr of each section.
          * bss and sp are set now too. */
-        void *exe_addr = exeStart;
-        void *other_addr = elf_other_sections;
+        unsigned char *exe_addr = exeStart;
+        unsigned char *other_addr = elf_other_sections;
 
         bss = 0;
         for (section = section_table;
@@ -4061,8 +4061,8 @@ static void loadExe(char *prog, PARMBLOCK *parmblock)
                  * and sh_info section being modified. */
                 Elf32_Sym *sym_table = (Elf32_Sym *)(section_table
                                         + (section->sh_link))->sh_addr;
-                void *target_base = (void *)(section_table
-                                     + (section->sh_info))->sh_addr;
+                unsigned char *target_base = (unsigned char *)(section_table
+                                             + (section->sh_info))->sh_addr;
                 Elf32_Rel *startrel = (Elf32_Rel *)section->sh_addr;
                 Elf32_Rel *currel;
 
@@ -4077,7 +4077,7 @@ static void loadExe(char *prog, PARMBLOCK *parmblock)
                                + ((section->sh_size) / (section->sh_entsize)));
                      currel++)
                 {
-                    long *target = target_base + currel->r_offset;
+                    long *target = (long *)(target_base + currel->r_offset);
                     Elf32_Sym *symbol = (sym_table
                                          + ELF32_R_SYM(currel->r_info));
                     Elf32_Addr sym_value = 0;
@@ -4105,11 +4105,12 @@ static void loadExe(char *prog, PARMBLOCK *parmblock)
                         {
                             /* Internal symbol. Offset of the related section
                              * from load address must be added to it.*/
-                            sym_value = ((symbol->st_value) +
-                                         ((unsigned long)((section_table
-                                                           + symbol->st_shndx)
-                                                          ->sh_addr)));
-                            sym_value -= (unsigned long)exeStart;
+                            sym_value = symbol->st_value;
+                            /* Adds the offset of the related section
+                             * from the start of the loaded executable. */
+                            sym_value += ((section_table
+                                           + symbol->st_shndx)->sh_addr
+                                          - (unsigned long)exeStart);
                         }
                     }
                     switch (ELF32_R_TYPE(currel->r_info))
@@ -4122,8 +4123,8 @@ static void loadExe(char *prog, PARMBLOCK *parmblock)
                             break;
                         case R_386_PC32:
                             /* Symbol value + offset - offset of modified
-                             * field from load address. */
-                            *target = (sym_value + *target
+                             * field from the load address. */
+                            *target = (sym_value + (*target)
                                            - ((unsigned long)target
                                               - (unsigned long)exeStart));
                             break;
@@ -4277,11 +4278,7 @@ static void loadExe(char *prog, PARMBLOCK *parmblock)
 static int fixexe32(unsigned char *psp, unsigned long entry, unsigned int sp,
                     int doing_zmagic)
 {
-    char *source;
-    char *dest;
     unsigned long dataStart;
-    unsigned int *header;
-    void *abs;
     struct {
         unsigned short limit_15_0;
         unsigned short base_15_0;
@@ -4348,6 +4345,7 @@ static int fixexe32(unsigned char *psp, unsigned long entry, unsigned int sp,
     realdata->base_31_24 = (dataStart >> 24) & 0xff;
 
     ret = call32(entry, ADDRFIXSUB(&exeparms), sp);
+
     subcor = oldsubcor;
     *realcode = savecode;
     *realdata = savedata;

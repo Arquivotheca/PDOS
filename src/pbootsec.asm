@@ -133,7 +133,7 @@ DriveNum    db  0     ;Drive number (0x0x - floppy, 0x8x - hd
 ; offset 25
 Reserved    db  0     ;Reserved, set to 0
 ; offset 26
-BootSig     db  0x29    ;Set to 0x29 if next 3 values are present
+BootSig     db  029h    ;Set to 0x29 if next 3 values are present
 ; offset 27
 VolumeID    dd  0     ;Volume's ID, we don't care for it ;)
 ; offset 2b
@@ -312,7 +312,7 @@ ReadSingleSector proc
  RetryRead:
   call ResetDrive   ;Get drive ready..
   mov  dl, [BootDisk]  ;Grab our boot disk
-  mov  ax, 0x0201   ;Read function, one sector
+  mov  ax, 0201h   ;Read function, one sector
   int  13h
   jc   RetryRead
  pop es

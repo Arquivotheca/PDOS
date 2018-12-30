@@ -16,6 +16,8 @@
 ; that the CS:IP will have an IP of 0 when it is called.
 ; It also expects some sort of stack to be set up.
 
+% .model memodel
+
 _DATA segment word public USE16 'DATA'
 _DATA ends
 _BSS segment word public USE16 'BSS'

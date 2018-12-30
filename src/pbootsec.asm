@@ -165,6 +165,7 @@ bypass:
   mov  es, ax
  Skip:
  xor  ax, ax   ;Zeroize ax
+;setting ss and sp must be paired
  mov  ss, ax
  mov  sp, 07c00h
 
@@ -209,7 +210,7 @@ CalculateLocation proc
  push ax
  push dx
 
-;Zeroize dx before our multiply
+;Zero dx before our multiply
  xor dx, dx
  mov ax, [RootEntries]
  mov cx, 32
@@ -219,14 +220,14 @@ CalculateLocation proc
 ; AX = RootEntries * 32 / BytesPerSector
 ; DX = RootEntries * 32 % BytesPerSector
 
- pop dx ;Restor DX to original value
+ pop dx ;Restore DX to original value
  pop bx ;Restore old value of AX into BX
 
 ;So, we must add BX into AX to combine the numbers
  add ax, bx
 
 ;But, if it overflows (carry flag set), we must increment DX to compensate
- xor cx, cx ;Zeroize cx
+ xor cx, cx ;Zero cx
  adc dx, cx ;ADC will add 0 (cx) and if carry flag set add 1
 
 ;Now we must add our reserved and hidden sectors

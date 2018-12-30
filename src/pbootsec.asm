@@ -164,7 +164,7 @@ bypass:
   mov  ax, 0
   mov  es, ax
  Skip:
- xor  ax, ax   ;Zeroize ax
+ xor  ax, ax   ;Zero ax
 ;setting ss and sp must be paired
  mov  ss, ax
  mov  sp, 07c00h

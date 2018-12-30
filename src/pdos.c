@@ -637,7 +637,9 @@ static void processExtended(int drive, unsigned char *prm)
         systemId = buf[PT_OFFSET + 0 * PT_LEN + PTO_SYSID];
         if ((systemId == PTS_FAT12)
             || (systemId == PTS_FAT16S)
-            || (systemId == PTS_FAT16B))
+            || (systemId == PTS_FAT16B)
+            || (systemId == PTS_FAT32)
+            || (systemId == PTS_FAT32L))
         {
             psector = sector;
             processPartition(drive, buf + PT_OFFSET);
@@ -3809,12 +3811,14 @@ static void loadExe(char *prog, PARMBLOCK *parmblock)
         printf("insufficient memory to load program\n");
         if (header != NULL) memmgrFree(&memmgr, header);
         memmgrFree(&memmgr, envptr);
+#ifdef __32BIT__
         if (doing_elf)
         {
             memmgrFree(&memmgr, elfHdr);
             memmgrFree(&memmgr, section_table);
             memmgrFree(&memmgr, elf_other_sections);
         }
+#endif
         fileClose(fno);
         return;
     }

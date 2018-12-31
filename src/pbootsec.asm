@@ -326,7 +326,7 @@ ReadSingleSector endp
 
 ;Read multiple sectors
 ;Inputs:
-; dx:ax - sector to read
+; dx:ax - starting LBA sector
 ; es:bx - dest
 ; cx - # of sectors
 ;Outputs:
@@ -337,10 +337,8 @@ ReadSectors proc
  ReadNextSector:
   call ReadSingleSector
   add  bx,  [BytesPerSector] ;Next sector
-  inc  ax                    ;Next LBA
-  jnc SkipInc                ;If no overflow, don't increment dx
-   inc dx                    ;If we had a carry, we must increment dx
-SkipInc:
+  add  ax,1                  ;Next LBA
+  adc  dx,0                  ;If we had a carry, we must increment dx
   loop ReadNextSector        ;Until cx = 0
  pop  bx
  pop  ax

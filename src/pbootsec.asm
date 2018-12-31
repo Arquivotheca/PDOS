@@ -9,7 +9,7 @@
 ; We set the stack at 07C00h and make it grow down
 
 ; Registers at entry are:
-; CS:IP = 07c00H, probably 0000:7c00
+; CS:IP = 07c00H, almost always 0000:7c00
 ; DL = drive number
 ; nothing else guaranteed
 

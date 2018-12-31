@@ -205,7 +205,7 @@ int main(int argc, char **argv)
         /* Copies jump code and OEM info. */
         memcpy(buf, fat32bootsec, 11);
         /* FAT-32 has boot code at offset 90. */
-        memcpy(buf + 90, fat32bootsec + 62, 512 - 90);
+        memcpy(buf + 90, fat32bootsec + 90, 512 - 90);
         /* We should change the backup boot sector,
          * which location can be known from offset 50-51. */
         backup_sector = buf[50] | ((unsigned int)buf[51] << 8);

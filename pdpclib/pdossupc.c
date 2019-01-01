@@ -92,7 +92,7 @@ void __exec(char *cmd, void *env)
 void __datetime(void *ptr)
 {
     int year, month, day, dow;
-    int hour, minute, second, hundredths;
+    unsigned int hour, minute, second, hundredths;
     int *iptr = ptr;
 
     PosGetSystemDate(&year, &month, &day, &dow);

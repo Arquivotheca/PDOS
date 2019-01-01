@@ -14,6 +14,7 @@
         .globl _outp
         .globl _outpw
         .globl _outpd
+/        .globl _main
 
         .text
 
@@ -275,3 +276,6 @@ ___longj:
 
         pop     %ebp
         ret
+
+/_main:
+/        jmp     main_

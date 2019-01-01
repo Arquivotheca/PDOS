@@ -32,7 +32,7 @@ extern FILE *__userFiles[__NFILE];
 #include <windows.h>
 #endif
 
-#if (defined(__MSDOS__) && defined(__WATCOMC__))
+#if defined(__WATCOMC__)
 #define CTYP __cdecl
 #else
 #define CTYP

@@ -7,6 +7,12 @@
 #include <pos.h>
 #include <support.h>
 
+#if defined(__WATCOMC__)
+#define CTYP __cdecl
+#else
+#define CTYP
+#endif
+
 int __open(const char *filename, int mode, int *errind)
 {
     int handle;
@@ -134,7 +140,7 @@ void __main(void)
 }
 #endif
 
-void __exita(int retcode)
+void CTYP __exita(int retcode)
 {
 #ifndef PDOS_RET_EXIT
      PosTerminate(retcode);
@@ -153,15 +159,15 @@ void __displayc(void)
 /* this is invoked by long double manipulations
    in stdio.c and needs to be done properly */
 
-int _CHP(void)
+int CTYP _CHP(void)
 {
     return (0);
 }
 
 /* don't know what these are */
 
-void cstart_(void) { return; }
-void _argc(void) { return; }
-void _8087(void) { return; }
+void CTYP cstart_(void) { return; }
+void CTYP _argc(void) { return; }
+void CTYP _8087(void) { return; }
 
 #endif

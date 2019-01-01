@@ -747,7 +747,11 @@ __PDPCLIB_API__ int CTYP __start(char *p)
 #ifdef __MAIN_FP__
     rc = __main_fp(argc, argv);
 #else
+#if defined(__WATCOMC__) && defined(__32BIT__)
+    rc = __fakemain(argc, argv);
+#else
     rc = main(argc, argv);
+#endif
 #endif
     __exit(rc);
     return (rc);

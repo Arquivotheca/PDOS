@@ -147,3 +147,21 @@ void __displayc(void)
     *__vidptr = 'C';
     return;
 }
+
+#if defined(__WATCOMC__) && defined(__32BIT__)
+
+/* this is invoked by long double manipulations
+   in stdio.c and needs to be done properly */
+
+int _CHP(void)
+{
+    return (0);
+}
+
+/* don't know what these are */
+
+void cstart_(void) { return; }
+void _argc(void) { return; }
+void _8087(void) { return; }
+
+#endif

@@ -14,7 +14,7 @@
         .globl _outp
         .globl _outpw
         .globl _outpd
-        .globl ___fakemain2
+/        .globl _main
 
         .text
 
@@ -277,5 +277,5 @@ ___longj:
         pop     %ebp
         ret
 
-___fakemain2:
-        jmp     main_
+/_main:
+/        jmp     main_

@@ -164,9 +164,4 @@ void cstart_(void) { return; }
 void _argc(void) { return; }
 void _8087(void) { return; }
 
-int __fakemain(int argc, char **argv)
-{
-    return (__fakemain2(argc, argv));
-}
-
 #endif

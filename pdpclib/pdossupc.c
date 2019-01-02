@@ -168,6 +168,7 @@ int CTYP _CHP(void)
 
 void CTYP cstart_(void) { return; }
 void CTYP _argc(void) { return; }
+void CTYP argc(void) { return; }
 void CTYP _8087(void) { return; }
 
 #endif

@@ -13,6 +13,8 @@
 #define CTYP
 #endif
 
+int __start(int *i1, int *i2, int *i3, POS_EPARMS *exep);
+
 int __open(const char *filename, int mode, int *errind)
 {
     int handle;

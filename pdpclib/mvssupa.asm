@@ -3295,7 +3295,7 @@ GETMEX   FUNEXIT RC=(R5)                                        GP15017
          SL    R4,=X'0007D910'
          D     R4,=F'1000000'
          SL    R5,=F'1220'
-         LR    R15,R5             return resuolt                GP17274
+         LR    R15,R5             return result                 GP17274
          LM    R2,R5,12(R13)      restore modified registers    GP17274
          BR    R14                  return to caller            GP17274
 *

@@ -3236,7 +3236,7 @@ TRUNCOEX L     R13,4(,R13)
 *
 * To reduce fragmentation, round up size to 64 byte multiple
 *
-         A     R3,=A(8+(64-1))    OVERHEAD PLUS ROUNDING
+         AL    R3,=A(8+(64-1))    OVERHEAD PLUS ROUNDING
          N     R3,=X'FFFFFFC0'    MULTIPLE OF 64
          AIF   ('&ZSYS' NE 'S380').NOANY
          GETMAIN RC,LV=(R3),SP=SUBPOOL,LOC=ANY                  GP15019

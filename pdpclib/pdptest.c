@@ -40,13 +40,22 @@ int main(int argc, char **argv)
     printf("first byte of main is %x\n", *z);
     printf("running as amode %d\n", __getam());
 #endif
+
+#if 1
     printf("allocating 10 bytes\n");
     m1 = malloc(10);
+#else
+    printf("allocating 3 GiB\n");
+    m1 = malloc(3U*1024*1024*1024);
+#endif
     printf("m1 is %p\n", m1);
+    if (m1 == NULL) return(EXIT_FAILURE);
     strcpy(m1, "ABCDE");
     printf("allocating 20 bytes\n");
     m2 = malloc(20);
     printf("m2 is %p\n", m2);
+    if (m2 == NULL) return (EXIT_FAILURE);
+    strcpy(m2, "1234");
     printf("stack is around %p\n", &c);
 /*    printf("calling pdptst31\n");
     system("pdptst31");

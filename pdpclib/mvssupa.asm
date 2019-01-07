@@ -3231,8 +3231,7 @@ TRUNCOEX L     R13,4(,R13)
 @@GETM   FUNHEAD ,
          LDINT R3,0(,R1)          LOAD REQUESTED STORAGE SIZE
          SLR   R5,R5              PRESET IN CASE OF ERROR       GP15017
-         LTR   R4,R3              CHECK REQUEST
-*        BNP   GETMEX             QUIT IF INVALID
+         LR    R4,R3              COPY ORIGINAL VALUE
 *
 * To reduce fragmentation, round up size to 64 byte multiple
 *

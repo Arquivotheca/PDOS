@@ -177,6 +177,9 @@ pop cx
 add ax, [DataStartLow]
 adc dx, [DataStartHigh]
 
+pop si
+pop di
+
 ret
 CalculateCluster endp
 

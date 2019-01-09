@@ -72,7 +72,7 @@ FatSize32High       dw 0               ; Size of a single Fat in sectors
 ; offset 28
 ExtFlags            dw 0               ; Used for mirroring, leave this alone
 ; offset 2a
-FSVersion			dw 0               ; Our version is 0.0 :)
+FSVersion           dw 0               ; Our version is 0.0 :)
 ; offset 2b
 RootClusterLow      dw 2               ; Cluster # of root, normally 2
 RootClusterHigh     dw 0
@@ -83,17 +83,17 @@ BkBootSector        dw 0               ; Backup boot sector... unused for us ;)
 ; offset 34
 Reserved1           db 12 dup(0)       ; Reserve 12 bytes
 ; offset 40
-DriveNum			db 0               ;We don't care for this
+DriveNum            db 0               ;We don't care for this
 ; offset 41
-Reserved2			db 0               ;Reserved
+Reserved2           db 0               ;Reserved
 ; offset 42
-BootSig				db 29h             ;0x29 - next 3 things exist
+BootSig             db 29h             ;0x29 - next 3 things exist
 ; offset 43
-VolumeID			dd 0				;Volume's ID, we don't care for it ;)
+VolumeID            dd 0                ;Volume's ID, we don't care for it ;)
 ; offset 47
-VolumeLabel         db 'PDOS Volume'	;11 bytes
+VolumeLabel         db 'PDOS Volume'    ;11 bytes
 ; offset 52
-FileSystem			db 'FAT32   '      ;File system
+FileSystem          db 'FAT32   '      ;File system
 
 ; Used to store our boot disk when we first start
 BootDisk db 0
@@ -192,7 +192,7 @@ CalculateLocation proc
 push cx                    ; Save this value so we don't mess it up
 xor dx, dx                 ; Zeroize dx
 mov ax, dx                 ; Zeroize ax
-mov cl, [FatCount]		   ; # of copies of the FAT
+mov cl, [FatCount]         ; # of copies of the FAT
 
 repeat_loop2:              ; FatSize32 * FatCount = total size of our fat table(s)
 add ax, [FatSize32Low]     ; Low word

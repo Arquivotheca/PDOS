@@ -168,7 +168,7 @@ void fatInit(FAT *fat,
         /* Drive number. 0x00 for floppy disk, 0x80 for hard disk. */
         fat->drive = bpb[53];
 
-        /* +++Add logic for FSInfo structure sector. */
+        /* FSInfo structure sector is not needed for minifat. */
     }
     return;
 }
@@ -195,15 +195,15 @@ static int fatEndCluster(FAT *fat, unsigned long cluster)
 {
     if (fat->fat_type == 16)
     {
-        /* if(cluster==0) return (1); */
-        if (cluster >= 0xfff8U)
+        if ((cluster >= 0xfff8U) || (cluster < 0x2U))
         {
             return (1);
         }
     }
     else if (fat->fat_type == 12)
     {
-        if ((cluster >= 0xff8U) || (cluster == 0xff0U))
+        if ((cluster >= 0xff8U) || (cluster == 0xff0U)
+            || (cluster < 0x2U))
         {
             return (1);
         }
@@ -212,7 +212,8 @@ static int fatEndCluster(FAT *fat, unsigned long cluster)
     {
         /* "UL" at the end makes it unsigned long,
          * the same type as the variable. */
-        if ((cluster & 0x0fffffff) >= 0x0ffffff8UL)
+        if (((cluster & 0x0fffffff) >= 0x0ffffff8UL)
+            || ((cluster & 0x0fffffff) < 0x2UL))
         {
             return (1);
         }
@@ -363,8 +364,10 @@ int fatReadFile(FAT *fat, FATFILE *fatfile, void *buf, size_t szbuf,
         fatfile->lastSectors = fatfile->lastBytes / fat->sector_size;
         fatfile->lastBytes = fatfile->lastBytes % fat->sector_size;
     }
-    /* until we reach the end of the chain */
-    while (!fatEndCluster(fat, fatfile->currentCluster))
+    /* until we reach the end of the chain
+     * (ignored if we are reading a fixed size root directory) */
+    while (!fatEndCluster(fat, fatfile->currentCluster)
+           || ((fatfile->root) && (fat->rootsize)))
     {
         /* assume all sectors in cluster are available */
         sectorsAvail = fatfile->sectorCount;
@@ -421,7 +424,7 @@ int fatReadFile(FAT *fat, FATFILE *fatfile, void *buf, size_t szbuf,
                     memcpy((char *)buf + bytesRead,
                            bbuf + fatfile->byteUpto,
                            szbuf - bytesRead);
-                    fatfile->currpos = (szbuf - bytesRead);
+                    fatfile->currpos += (szbuf - bytesRead);
                     fatfile->byteUpto += (szbuf - bytesRead);
                     bytesRead = szbuf;
                     *readbytes = bytesRead;
@@ -440,11 +443,14 @@ int fatReadFile(FAT *fat, FATFILE *fatfile, void *buf, size_t szbuf,
             fatfile->sectorUpto++;
             fatfile->byteUpto = 0;
         }
-        fatfile->currentCluster = fatfile->nextCluster;
         fatClusterAnalyse(fat,
                           fatfile->currentCluster,
                           &fatfile->sectorStart,
                           &fatfile->nextCluster);
+        fatfile->currentCluster = fatfile->nextCluster;
+        fatfile->sectorStart = (fatfile->currentCluster - 2)
+            * (long)fat->sectors_per_cluster
+            + fat->filestart;
         fatfile->sectorUpto = 0;
     }
     *readbytes = bytesRead;

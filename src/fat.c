@@ -234,15 +234,15 @@ static int fatEndCluster(FAT *fat, unsigned long cluster)
 {
     if (fat->fat_type == 16)
     {
-        /* if(cluster==0) return (1); */
-        if (cluster >= 0xfff8U)
+        if ((cluster >= 0xfff8U) || (cluster < 0x2U))
         {
             return (1);
         }
     }
     else if (fat->fat_type == 12)
     {
-        if ((cluster >= 0xff8U) || (cluster == 0xff0U))
+        if ((cluster >= 0xff8U) || (cluster == 0xff0U)
+            || (cluster < 0x2U))
         {
             return (1);
         }
@@ -251,7 +251,8 @@ static int fatEndCluster(FAT *fat, unsigned long cluster)
     {
         /* "UL" at the end makes it unsigned long,
          * the same type as the variable. */
-        if ((cluster & 0x0fffffff) >= 0x0ffffff8UL)
+        if (((cluster & 0x0fffffff) >= 0x0ffffff8UL)
+            || ((cluster & 0x0fffffff) < 0x2UL))
         {
             return (1);
         }
@@ -828,8 +829,10 @@ int fatReadFile(FAT *fat, FATFILE *fatfile, void *buf, size_t szbuf,
         fatfile->lastSectors = fatfile->lastBytes / fat->sector_size;
         fatfile->lastBytes = fatfile->lastBytes % fat->sector_size;
     }
-    /* until we reach the end of the chain */
-    while (!fatEndCluster(fat, fatfile->currentCluster))
+    /* until we reach the end of the chain
+     * (ignored if we are reading a fixed size root directory) */
+    while (!fatEndCluster(fat, fatfile->currentCluster)
+           || ((fatfile->root) && (fat->rootsize)))
     {
         /* assume all sectors in cluster are available */
         sectorsAvail = fatfile->sectorCount;
@@ -2541,11 +2544,11 @@ static void fatNuke(FAT *fat, unsigned long cluster)
                        | ((unsigned long)buf[offset + 3] << 24))
                        & 0x0fffffff;
             /* 4 highest bits are reserved and must not be changed. */
-            buf[offset] = 0xff;
-            buf[offset + 1] = 0xff;
-            buf[offset + 2] = 0xff;
+            buf[offset] = 0x00;
+            buf[offset + 1] = 0x00;
+            buf[offset + 2] = 0x00;
             buf[offset + 3] = buf[offset + 3] & 0xf0;
-            deletedclusters +=1;
+            deletedclusters++;
         }
     }
     if (buffered != 0)
@@ -2814,7 +2817,8 @@ static int createLFNs(FAT *fat, unsigned char *lfn, unsigned int lfn_len)
      * conflicts were found. */
     checksum = generateChecksum(shortname);
     buf = fat->dbuf;
-    while (!fatEndCluster(fat, fat->currcluster))
+    while (!fatEndCluster(fat, fat->currcluster)
+           || ((fat->processing_root) && (fat->rootsize)))
     {
         /* If we are in fixed size root, we set the startSector
          * to fat->rootstart. */
@@ -2926,6 +2930,12 @@ static int createLFNs(FAT *fat, unsigned char *lfn, unsigned int lfn_len)
             /* If we ended using this sector, it is written
              * so the LFN entries created will be stored. */
             fatWriteLogical(fat, fat->startSector + x, buf);
+        }
+        /* We are working with a fixed size root directory
+         * and we ran out of sectors, so we must return an error. */
+        if ((fat->processing_root) && (fat->rootsize))
+        {
+            return (POS_ERR_PATH_NOT_FOUND);
         }
         /* Advances to the next cluster. */
         fat->currcluster = nextCluster;

@@ -22,17 +22,18 @@ Mainframe:
 
 1. PDOS/390 - runs on an IBM mainframe (S/390 architecture).
 Predominantly designed to be compatible with a subset of the
-31-bit MVS interface, so that it can run RMODE ANY, AMODE 31
-programs. Also intended to support Posix interface.
+31-bit MVS interface, so it can run programs as AMODE 31,
+RMODE ANY. Also intended to support Posix interface.
 
 2. PDOS/370 - runs on an IBM mainframe (S/370 architecture).
 Predominantly designed to be compatible with a subset of the
-24-bit MVS interface, so that it can run RMODE 24, AMODE 24
-programs.
+24-bit MVS interface, so that it can run programs as
+RMODE 24, AMODE 24.
 
 3. PDOS/380 - runs on Hercules/380 (S/380 architecture).
 Predominantly designed to be compatible with a subset of the
-MVS/380 interface, so that it can run RMODE 24, AMODE 31 programs.
+MVS/380 interface, so that it can run programs as
+AMODE 32 (not just 31), RMODE ANY.
 
 
 PC:

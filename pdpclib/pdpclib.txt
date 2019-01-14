@@ -36,7 +36,7 @@ notable exception that the I/O is mostly divided into mainframe
 and non-mainframe versions.
 
 Anyone wishing to contribute to this project, please contact
-Paul Edwards at fight.subjugation@gmail.com.
+Paul Edwards at mutazilah@gmail.com.
 
 The official method for obtaining PDPCLIB is to download it from:
 http://pdos.sourceforge.net

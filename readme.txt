@@ -729,6 +729,11 @@ pdos.c, protintp.c, protints.s, support.asm, support.s.
 FUTURE DEVELOPMENT
 ------------------
 
+PDOS/386 could actually execute 16-bit MSDOS
+programs by dropping down to real mode and
+executing until interrupt, then returning to
+protected mode to execute that function.
+
 MSGED 4.00 and maybe later versions have support
 for 80386 DOS programming and Usenet/UUCP. Look
 at porting this and redefining PDOS/386 to match

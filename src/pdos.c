@@ -117,7 +117,7 @@ static void loadConfig(void);
 static void loadPcomm(void);
 static void loadExe(char *prog, PARMBLOCK *parmblock);
 static int fixexe32(unsigned char *psp, unsigned long entry, unsigned int sp,
-                    int doing_zmagic);
+                    unsigned long exeStart, unsigned long dataStart);
 static int bios2driv(int bios);
 static int fileCreat(const char *fnm, int attrib, int *handle);
 static int dirCreat(const char *dnm, int attrib);
@@ -3466,13 +3466,18 @@ static void loadExe(char *prog, PARMBLOCK *parmblock)
 {
     int doing_zmagic = 0;
     int doing_nmagic = 0;
-    int doing_elf = 0;
+    int doing_elf_rel = 0;
+    int doing_elf_exec = 0;
 #ifdef __32BIT__
     struct exec firstbit;
     Elf32_Ehdr *elfHdr;
-    Elf32_Shdr *section_table;
+    Elf32_Phdr *program_table = NULL;
+    Elf32_Phdr *segment;
+    Elf32_Shdr *section_table = NULL;
     Elf32_Shdr *section;
     unsigned char *elf_other_sections;
+    Elf32_Addr lowest_p_vaddr = 0;
+    Elf32_Word lowest_segment_align;
     long newpos;
 #else
     unsigned char firstbit[10];
@@ -3524,7 +3529,6 @@ static void loadExe(char *prog, PARMBLOCK *parmblock)
     {
         int elf_invalid = 0;
 
-        doing_elf = 1;
         /* Loads entire ELF header into memory. */
         elfHdr = memmgrAllocate(&memmgr, sizeof(Elf32_Ehdr), 0);
         if (elfHdr == NULL)
@@ -3535,7 +3539,7 @@ static void loadExe(char *prog, PARMBLOCK *parmblock)
         }
         memcpy(elfHdr, &firstbit, sizeof(firstbit));
         if (fileRead(fno, ((char *)elfHdr) + sizeof(firstbit),
-                 sizeof(Elf32_Ehdr) - sizeof(firstbit), &readbytes)
+                     sizeof(Elf32_Ehdr) - sizeof(firstbit), &readbytes)
             || (readbytes != (sizeof(Elf32_Ehdr) - sizeof(firstbit))))
         {
             printf("Error occured while reading ELF header\n");
@@ -3584,9 +3588,18 @@ static void loadExe(char *prog, PARMBLOCK *parmblock)
             elf_invalid = 1;
         }
         /* Checks other parts of the header if the file can be loaded. */
-        if (elfHdr->e_type != ET_REL)
+        if (elfHdr->e_type == ET_REL)
         {
-            printf("Only ELF relocatable files are supported\n");
+            doing_elf_rel = 1;
+        }
+        else if (elfHdr->e_type == ET_EXEC)
+        {
+            doing_elf_exec = 1;
+        }
+        else
+        {
+            printf("Only ELF relocatable and executable "
+                   "files are supported\n");
             elf_invalid = 1;
         }
         if (elfHdr->e_machine != EM_386)
@@ -3594,35 +3607,47 @@ static void loadExe(char *prog, PARMBLOCK *parmblock)
             printf("Only Intel 386 architecture is supported\n");
             elf_invalid = 1;
         }
-        if (elfHdr->e_entry != 0)
+        if (doing_elf_exec)
         {
-            /* For now we assume that the program starts at 0. */
-            printf("Invalid entry point or program header is present\n");
-            printf("Entry point is %08x\n", elfHdr->e_entry);
-            elf_invalid = 1;
+            if (elfHdr->e_phoff == 0 || elfHdr->e_phnum == 0)
+            {
+                printf("Executable file is missing Program Header Table\n");
+                elf_invalid = 1;
+            }
+            if (elfHdr->e_phnum >= SHN_LORESERVE)
+            {
+                printf("Reserved indexes for e_phnum are not supported\n");
+                printf("e_phnum is %04x\n", elfHdr->e_phnum);
+                elf_invalid = 1;
+            }
+            if (elfHdr->e_phentsize != sizeof(Elf32_Phdr))
+            {
+                printf("Program Header Table entries have unsupported size\n");
+                printf("e_phentsize: %u supported size: %u\n",
+                       elfHdr->e_phentsize, sizeof(Elf32_Phdr));
+                elf_invalid = 1;
+            }
         }
-        if (elfHdr->e_phoff != 0)
+        else if (doing_elf_rel)
         {
-            printf("Program header is present\n");
-            elf_invalid = 1;
-        }
-        if (elfHdr->e_shoff == 0 || elfHdr->e_shnum == 0)
-        {
-            printf("Section Header Table is not present\n");
-            elf_invalid = 1;
-        }
-        if (elfHdr->e_shnum >= SHN_LORESERVE)
-        {
-            printf("Reserved indexes for e_shnum are not supported\n");
-            printf("e_shnum is %04x\n", elfHdr->e_shnum);
-            elf_invalid = 1;
-        }
-        if (elfHdr->e_shentsize != sizeof(Elf32_Shdr))
-        {
-            printf("Section Header Table entries have unsupported size\n");
-            printf("e_shentsize: %u supported size: %u\n",
-                   elfHdr->e_shentsize, sizeof(Elf32_Shdr));
-            elf_invalid = 1;
+            if (elfHdr->e_shoff == 0 || elfHdr->e_shnum == 0)
+            {
+                printf("Relocatable file is missing Section Header Table\n");
+                elf_invalid = 1;
+            }
+            if (elfHdr->e_shnum >= SHN_LORESERVE)
+            {
+                printf("Reserved indexes for e_shnum are not supported\n");
+                printf("e_shnum is %04x\n", elfHdr->e_shnum);
+                elf_invalid = 1;
+            }
+            if (elfHdr->e_shentsize != sizeof(Elf32_Shdr))
+            {
+                printf("Section Header Table entries have unsupported size\n");
+                printf("e_shentsize: %u supported size: %u\n",
+                       elfHdr->e_shentsize, sizeof(Elf32_Shdr));
+                elf_invalid = 1;
+            }
         }
         if (elf_invalid)
         {
@@ -3633,27 +3658,59 @@ static void loadExe(char *prog, PARMBLOCK *parmblock)
             fileClose(fno);
             return;
         }
-        /* Loads Section Header Table. */
-        section_table = memmgrAllocate(&memmgr,
-                                       elfHdr->e_shnum * elfHdr->e_shentsize,
-                                       0);
-        if (section_table == NULL)
+        /* Loads Program Header Table if it is present. */
+        if (!(elfHdr->e_phoff == 0 || elfHdr->e_phnum == 0))
         {
-            printf("Insufficient memory for ELF Section Header Table\n");
-            memmgrFree(&memmgr, elfHdr);
-            fileClose(fno);
-            return;
+            program_table = memmgrAllocate(&memmgr,
+                                           elfHdr->e_phnum
+                                           * elfHdr->e_phentsize,
+                                           0);
+            if (program_table == NULL)
+            {
+                printf("Insufficient memory for ELF Program Header Table\n");
+                memmgrFree(&memmgr, elfHdr);
+                fileClose(fno);
+                return;
+            }
+            fileSeek(fno, elfHdr->e_phoff, SEEK_SET, &newpos);
+            if (fileRead(fno, program_table,
+                         elfHdr->e_phnum * elfHdr->e_phentsize, &readbytes)
+                || (readbytes != (elfHdr->e_phnum * elfHdr->e_phentsize)))
+            {
+                printf("Error occured while reading "
+                       "ELF Program Header Table\n");
+                memmgrFree(&memmgr, elfHdr);
+                memmgrFree(&memmgr, program_table);
+                fileClose(fno);
+                return;
+            }
         }
-        fileSeek(fno, elfHdr->e_shoff, SEEK_SET, &newpos);
-        if (fileRead(fno, section_table,
-                     elfHdr->e_shnum * elfHdr->e_shentsize, &readbytes)
-            || (readbytes != (elfHdr->e_shnum * elfHdr->e_shentsize)))
+        /* Loads Section Header Table if it is present. */
+        if (!(elfHdr->e_shoff == 0 || elfHdr->e_shnum == 0))
         {
-            printf("Error occured while reading ELF Section Header Table\n");
-            memmgrFree(&memmgr, elfHdr);
-            memmgrFree(&memmgr, section_table);
-            fileClose(fno);
-            return;
+            section_table = memmgrAllocate(&memmgr,
+                                           elfHdr->e_shnum
+                                           * elfHdr->e_shentsize,
+                                           0);
+            if (section_table == NULL)
+            {
+                printf("Insufficient memory for ELF Section Header Table\n");
+                memmgrFree(&memmgr, elfHdr);
+                fileClose(fno);
+                return;
+            }
+            fileSeek(fno, elfHdr->e_shoff, SEEK_SET, &newpos);
+            if (fileRead(fno, section_table,
+                         elfHdr->e_shnum * elfHdr->e_shentsize, &readbytes)
+                || (readbytes != (elfHdr->e_shnum * elfHdr->e_shentsize)))
+            {
+                printf("Error occured while reading "
+                       "ELF Section Header Table\n");
+                memmgrFree(&memmgr, elfHdr);
+                memmgrFree(&memmgr, section_table);
+                fileClose(fno);
+                return;
+            }
         }
     }
     else if ((firstbit.a_info & 0xffff) != OMAGIC)
@@ -3711,45 +3768,87 @@ static void loadExe(char *prog, PARMBLOCK *parmblock)
     }
 
 #ifdef __32BIT__
-    if (doing_elf)
+    if (doing_elf_rel || doing_elf_exec)
     {
-        /* Calculates how much memory is needed for all sections
+        /* Calculates how much memory is needed
          * and allocates memory for sections used only for loading. */
         unsigned long otherLen = 0;
-        unsigned long section_size;
 
         exeLen = 0;
-        for (section = section_table;
-             section < section_table + elfHdr->e_shnum;
-             section++)
+        if (doing_elf_exec)
         {
-            section_size = section->sh_size;
-            if (section->sh_addralign > 1)
+            unsigned long segment_size;
+            Elf32_Addr highest_p_vaddr = 0;
+            Elf32_Word highest_segment_memsz = 0;
+
+            for (segment = program_table;
+                 segment < program_table + elfHdr->e_phnum;
+                 segment++)
             {
-                /* Some sections must be aligned
-                 * on sh_addralign byte boundaries.
+                if (segment->p_type == PT_LOAD)
+                {
+                    if (!lowest_p_vaddr || lowest_p_vaddr > segment->p_vaddr)
+                    {
+                        lowest_p_vaddr = segment->p_vaddr;
+                        lowest_segment_align = segment->p_align;
+                    }
+                    if (highest_p_vaddr < segment->p_vaddr)
+                    {
+                        highest_p_vaddr = segment->p_vaddr;
+                        highest_segment_memsz = segment->p_memsz;
+                    }
+                }
+                else
+                {
+                    printf("Unknown segment p_type: %u\n", segment->p_type);
+                }
+            }
+            exeLen = highest_p_vaddr - lowest_p_vaddr + highest_segment_memsz;
+            if (lowest_segment_align > 1)
+            {
+                /* Ensures aligment of the lowest segment.
                  * 0 and 1 mean no alignment restrictions. */
-                section_size += section->sh_addralign;
-            }
-            if (section->sh_flags & SHF_ALLOC)
-            {
-                /* Section is needed while the program is running. */
-                exeLen += section_size;
-            }
-            else
-            {
-                /* Section is used only for loading. */
-               otherLen += section_size;
+                exeLen += lowest_segment_align;
             }
         }
-        elf_other_sections = memmgrAllocate(&memmgr, otherLen, 0);
-        if (elf_other_sections == NULL)
+        if (section_table)
         {
-            printf("Insufficient memory to load ELF sections\n");
-            memmgrFree(&memmgr, elfHdr);
-            memmgrFree(&memmgr, section_table);
-            fileClose(fno);
-            return;
+            for (section = section_table;
+                 section < section_table + elfHdr->e_shnum;
+                 section++)
+            {
+                unsigned long section_size = section->sh_size;
+                if (section->sh_addralign > 1)
+                {
+                    /* Some sections must be aligned
+                     * on sh_addralign byte boundaries.
+                     * 0 and 1 mean no alignment restrictions. */
+                    section_size += section->sh_addralign;
+                }
+                if (section->sh_flags & SHF_ALLOC)
+                {
+                    /* Section is needed while the program is running,
+                     * but if we are loading an executable file,
+                     * the memory is already counted
+                     * using Program Header Table. */
+                    if (doing_elf_exec) continue;
+                    exeLen += section_size;
+                }
+                else
+                {
+                    /* Section is used only for loading. */
+                   otherLen += section_size;
+                }
+            }
+            elf_other_sections = memmgrAllocate(&memmgr, otherLen, 0);
+            if (elf_other_sections == NULL)
+            {
+                printf("Insufficient memory to load ELF sections\n");
+                memmgrFree(&memmgr, elfHdr);
+                memmgrFree(&memmgr, section_table);
+                fileClose(fno);
+                return;
+            }
         }
     }
     else if (doing_zmagic || doing_nmagic)
@@ -3812,11 +3911,15 @@ static void loadExe(char *prog, PARMBLOCK *parmblock)
         if (header != NULL) memmgrFree(&memmgr, header);
         memmgrFree(&memmgr, envptr);
 #ifdef __32BIT__
-        if (doing_elf)
+        if (doing_elf_rel || doing_elf_exec)
         {
             memmgrFree(&memmgr, elfHdr);
-            memmgrFree(&memmgr, section_table);
-            memmgrFree(&memmgr, elf_other_sections);
+            if (program_table) memmgrFree(&memmgr, program_table);
+            if (section_table)
+            {
+                memmgrFree(&memmgr, section_table);
+                memmgrFree(&memmgr, elf_other_sections);
+            }
         }
 #endif
         fileClose(fno);
@@ -3844,7 +3947,7 @@ static void loadExe(char *prog, PARMBLOCK *parmblock)
 #endif
 
 #ifdef __32BIT__
-    if (doing_elf)
+    if (doing_elf_rel || doing_elf_exec)
     {
         /* Loads all sections of ELF file with proper alignment,
          * clears all SHT_NOBITS sections and stores the addresses
@@ -3854,12 +3957,61 @@ static void loadExe(char *prog, PARMBLOCK *parmblock)
         unsigned char *other_addr = elf_other_sections;
 
         bss = 0;
+        if (doing_elf_exec)
+        {
+            sp = (unsigned long)exeStart + exeLen + STACKSZ32;
+            /* Aligns the exeStart on lowest segment alignment boundary. */
+            /*exeStart = (unsigned char *)((((unsigned long)exeStart
+                                           / lowest_segment_align) + 1)
+                                         * lowest_segment_align);*/
+            /* +++Enable aligning. */
+            for (segment = program_table;
+                 segment < program_table + elfHdr->e_phnum;
+                 segment++)
+            {
+                if (segment->p_type == PT_LOAD)
+                {
+                    exe_addr = exeStart + (segment->p_vaddr - lowest_p_vaddr);
+
+                    fileSeek(fno, segment->p_offset, SEEK_SET, &newpos);
+                    if (fileRead(fno, exe_addr, segment->p_filesz, &readbytes)
+                        || (readbytes != (segment->p_filesz)))
+                    {
+                        printf("Error occured while reading ELF segment\n");
+                        memmgrFree(&memmgr, envptr);
+                        memmgrFree(&memmgr, program_table);
+                        if (section_table)
+                        {
+                            memmgrFree(&memmgr, section_table);
+                            memmgrFree(&memmgr, elf_other_sections);
+                        }
+                        fileClose(fno);
+                        return;
+                    }
+                    /* Bytes that are not present in file,
+                     * but must be present in memory must be set to 0. */
+                    if (segment->p_filesz < segment->p_memsz)
+                    {
+                        bss = exe_addr + (segment->p_filesz);
+                        memset(bss, '\0',
+                               segment->p_memsz - segment->p_filesz);
+                    }
+                }
+                else
+                {
+                    printf("Unknown segment p_type: %u\n", segment->p_type);
+                }
+            }
+        }
         for (section = section_table;
              section < section_table + elfHdr->e_shnum;
              section++)
         {
             if (section->sh_flags & SHF_ALLOC)
             {
+                /* If we are loading executable file,
+                 * SHF_ALLOC sections are already loaded in segments. */
+                if (doing_elf_exec) continue;
                 if (section->sh_addralign > 1)
                 {
                     exe_addr = (void *)((((unsigned long)exe_addr
@@ -3875,6 +4027,7 @@ static void loadExe(char *prog, PARMBLOCK *parmblock)
                         printf("Error occured while reading ELF section\n");
                         memmgrFree(&memmgr, envptr);
                         memmgrFree(&memmgr, elfHdr);
+                        if (program_table) memmgrFree(&memmgr, program_table);
                         memmgrFree(&memmgr, section_table);
                         memmgrFree(&memmgr, elf_other_sections);
                         fileClose(fno);
@@ -3915,6 +4068,7 @@ static void loadExe(char *prog, PARMBLOCK *parmblock)
                         printf("Error occured while reading ELF section\n");
                         memmgrFree(&memmgr, envptr);
                         memmgrFree(&memmgr, elfHdr);
+                        if (program_table) memmgrFree(&memmgr, program_table);
                         memmgrFree(&memmgr, section_table);
                         memmgrFree(&memmgr, elf_other_sections);
                         fileClose(fno);
@@ -3932,7 +4086,10 @@ static void loadExe(char *prog, PARMBLOCK *parmblock)
                 other_addr += section->sh_size;
             }
         }
-        sp = (unsigned long)exe_addr + STACKSZ32;
+        if (doing_elf_rel)
+        {
+            sp = (unsigned long)exe_addr + STACKSZ32;
+        }
     }
     else
     {
@@ -4014,7 +4171,7 @@ static void loadExe(char *prog, PARMBLOCK *parmblock)
         exeEntry, psp, ss, sp); */
 #else
     /* bss and sp were prepared earlier for ELF files. */
-    if (!doing_elf)
+    if (!(doing_elf_rel || doing_elf_exec))
     {
         /* initialise BSS */
         if (doing_zmagic || doing_nmagic)
@@ -4036,7 +4193,7 @@ static void loadExe(char *prog, PARMBLOCK *parmblock)
         }
     }
     /* Relocations. */
-    if (doing_elf)
+    if (doing_elf_rel)
     {
         for (section = section_table;
              section < section_table + elfHdr->e_shnum;
@@ -4125,6 +4282,11 @@ static void loadExe(char *prog, PARMBLOCK *parmblock)
             }
         }
     }
+    else if (doing_elf_exec)
+    {
+        /* +++Implement relocations for ELF Executables. */
+        ;
+    }
     else if (!doing_zmagic && !doing_nmagic)
     {
         unsigned int *corrections;
@@ -4211,19 +4373,53 @@ static void loadExe(char *prog, PARMBLOCK *parmblock)
     newProc->status = PDOS_PROCSTATUS_ACTIVE;
     if (newProc->parent != NULL)
         newProc->parent->status = PDOS_PROCSTATUS_CHILDWAIT;
-    if (doing_elf)
+    if (doing_zmagic || doing_nmagic)
     {
+        /* a.out ZMAGIC and NMAGIC must be loaded at 0x10000. */
+        exeStart = psp + 0x100 - 0x10000;
+        exeStart = ADDR2ABS(exeStart);
+        ret = fixexe32(psp, firstbit.a_entry, sp,
+                       (unsigned long)exeStart,
+                       (unsigned long)exeStart);
+    }
+    else if (doing_elf_rel)
+    {
+        /* ELF Relocatable files can be loaded anywhere. */
+        sp = (unsigned int)ADDR2ABS(sp);
         /* Frees memory not needed by the process. */
         memmgrFree(&memmgr, elfHdr);
+        if (program_table) memmgrFree(&memmgr, program_table);
         memmgrFree(&memmgr, section_table);
         memmgrFree(&memmgr, elf_other_sections);
-        ret = fixexe32(psp, (unsigned long)exeStart + (elfHdr->e_entry),
-                       sp, 0);
+        ret = fixexe32(psp, (unsigned long)exeStart + (elfHdr->e_entry), sp,
+                       0,
+                       0);
+    }
+    else if (doing_elf_exec)
+    {
+        /* ELF Executable files are loaded at the lowest p_vaddr. */
+        exeStart -= lowest_p_vaddr;
+        exeStart = ADDR2ABS(exeStart);
+        /* Frees memory not needed by the process. */
+        memmgrFree(&memmgr, elfHdr);
+        memmgrFree(&memmgr, program_table);
+        if (section_table)
+        {
+            memmgrFree(&memmgr, section_table);
+            memmgrFree(&memmgr, elf_other_sections);
+        }
+        ret = fixexe32(psp, elfHdr->e_entry, sp,
+                       (unsigned long)exeStart,
+                       (unsigned long)exeStart);
     }
     else
     {
+        /* a.out OMAGIC can be loaded anywhere. */
+        exeStart = 0;
+        sp = (unsigned int)ADDR2ABS(sp);
         ret = fixexe32(psp, firstbit.a_entry, sp,
-                       doing_zmagic || doing_nmagic);
+                       (unsigned long)exeStart,
+                       (unsigned long)exeStart);
     }
 #endif
     lastrc = ret;
@@ -4264,9 +4460,8 @@ static void loadExe(char *prog, PARMBLOCK *parmblock)
 
 #ifdef __32BIT__
 static int fixexe32(unsigned char *psp, unsigned long entry, unsigned int sp,
-                    int doing_zmagic)
+                    unsigned long exeStart, unsigned long dataStart)
 {
-    unsigned long dataStart;
     struct {
         unsigned short limit_15_0;
         unsigned short base_15_0;
@@ -4279,34 +4474,12 @@ static int fixexe32(unsigned char *psp, unsigned long entry, unsigned int sp,
     int oldsubcor;
     unsigned char *commandLine;
     POS_EPARMS exeparms;
-    unsigned long exeStart;
 
     commandLine = psp + 0x80;
-
-    if (doing_zmagic)
-    {
-        exeStart = (unsigned long)psp + 0x100 - 0x10000;
-    }
-    else
-    {
-        exeStart = 0;
-        sp = (unsigned int)ADDR2ABS(sp);
-    }
-
-    dataStart = exeStart;
-    if (doing_zmagic)
-    {
-        dataStart = (unsigned long)ADDR2ABS(dataStart);
-    }
 
     /* now we need to record the subroutine's absolute offset fix */
     oldsubcor = subcor;
     subcor = dataStart;
-
-    if (doing_zmagic)
-    {
-        exeStart = (unsigned long)ADDR2ABS(exeStart);
-    }
 
     exeparms.len = sizeof exeparms;
     exeparms.abscor = subcor;

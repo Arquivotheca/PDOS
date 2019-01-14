@@ -67,6 +67,21 @@ typedef struct {
 #define EM_386 3 /* Intel 80386. */
 
 typedef struct {
+    Elf32_Word p_type;
+    Elf32_Off p_offset;
+    Elf32_Addr p_vaddr;
+    Elf32_Addr p_paddr;
+    Elf32_Word p_filesz;
+    Elf32_Word p_memsz;
+    Elf32_Word p_flags;
+    Elf32_Word p_align;
+} Elf32_Phdr;
+
+/* Segment types. */
+#define PT_NULL 0
+#define PT_LOAD 1
+
+typedef struct {
     Elf32_Word sh_name;
     Elf32_Word sh_type;
     Elf32_Word sh_flags;

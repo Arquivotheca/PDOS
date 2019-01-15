@@ -3800,13 +3800,14 @@ static void loadExe(char *prog, PARMBLOCK *parmblock)
                 }
                 else
                 {
-                    printf("Unknown segment p_type: %u\n", segment->p_type);
+                    printf("Warning: Ignoring unknown segment, p_type: %u\n",
+                           segment->p_type);
                 }
             }
             exeLen = highest_p_vaddr - lowest_p_vaddr + highest_segment_memsz;
             if (lowest_segment_align > 1)
             {
-                /* Ensures aligment of the lowest segment.
+                /* Ensures alignment of the lowest segment.
                  * 0 and 1 mean no alignment restrictions. */
                 exeLen += lowest_segment_align;
             }
@@ -3999,7 +4000,8 @@ static void loadExe(char *prog, PARMBLOCK *parmblock)
                 }
                 else
                 {
-                    printf("Unknown segment p_type: %u\n", segment->p_type);
+                    printf("Warning: Ignoring unknown segment, p_type: %u\n",
+                           segment->p_type);
                 }
             }
         }
@@ -4384,6 +4386,8 @@ static void loadExe(char *prog, PARMBLOCK *parmblock)
     }
     else if (doing_elf_rel)
     {
+        unsigned long entry_point = elfHdr->e_entry;
+
         /* ELF Relocatable files can be loaded anywhere. */
         sp = (unsigned int)ADDR2ABS(sp);
         /* Frees memory not needed by the process. */
@@ -4391,13 +4395,16 @@ static void loadExe(char *prog, PARMBLOCK *parmblock)
         if (program_table) memmgrFree(&memmgr, program_table);
         memmgrFree(&memmgr, section_table);
         memmgrFree(&memmgr, elf_other_sections);
-        ret = fixexe32(psp, (unsigned long)exeStart + (elfHdr->e_entry), sp,
+        ret = fixexe32(psp, (unsigned long)exeStart + entry_point, sp,
                        0,
                        0);
     }
     else if (doing_elf_exec)
     {
+        unsigned long entry_point = elfHdr->e_entry;
+
         /* ELF Executable files are loaded at the lowest p_vaddr. */
+        if (entry_point == 0) entry_point = (unsigned long)exeStart;
         exeStart -= lowest_p_vaddr;
         exeStart = ADDR2ABS(exeStart);
         /* Frees memory not needed by the process. */
@@ -4408,7 +4415,7 @@ static void loadExe(char *prog, PARMBLOCK *parmblock)
             memmgrFree(&memmgr, section_table);
             memmgrFree(&memmgr, elf_other_sections);
         }
-        ret = fixexe32(psp, elfHdr->e_entry, sp,
+        ret = fixexe32(psp, entry_point, sp,
                        (unsigned long)exeStart,
                        (unsigned long)exeStart);
     }

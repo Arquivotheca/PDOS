@@ -4404,8 +4404,10 @@ static void loadExe(char *prog, PARMBLOCK *parmblock)
         unsigned long entry_point = elfHdr->e_entry;
 
         /* ELF Executable files are loaded at the lowest p_vaddr. */
-        if (entry_point == 0) entry_point = (unsigned long)exeStart;
+        /* if (entry_point == 0) entry_point = (unsigned long)exeStart; */
         exeStart -= lowest_p_vaddr;
+        entry_point += lowest_p_vaddr;
+        sp += lowest_p_vaddr;
         exeStart = ADDR2ABS(exeStart);
         /* Frees memory not needed by the process. */
         memmgrFree(&memmgr, elfHdr);
@@ -4513,6 +4515,7 @@ static int fixexe32(unsigned char *psp, unsigned long entry, unsigned int sp,
     realdata->base_31_24 = (dataStart >> 24) & 0xff;
 
     ret = call32(entry, ADDRFIXSUB(&exeparms), sp);
+    /* printf("ret is %x\n", ret); */
 
     subcor = oldsubcor;
     *realcode = savecode;

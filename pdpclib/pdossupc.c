@@ -78,9 +78,9 @@ void __rename(const char *old, const char *new)
 void __allocmem(size_t size, void **ptr)
 {
 #ifdef __32BIT__
-    *ptr = PosAllocMem(size, LOC32);
+    *ptr = PosAllocMem(size, POS_LOC32);
 #else
-    *ptr = PosAllocMem(size, LOC20);
+    *ptr = PosAllocMem(size, POS_LOC20);
 #endif
     return;
 }

@@ -1660,7 +1660,7 @@ static void int21handler(union REGS *regsin,
             {
                 if (sbrk_start == NULL)
                 {
-                    sbrk_start = PosAllocMem(0x100000, LOC32);
+                    sbrk_start = PosAllocMem(0x100000, POS_LOC32);
                     sbrk_end = sbrk_start + 0x10000;
                 }
                 regsout->d.eax = (unsigned int)sbrk_end;
@@ -2459,7 +2459,7 @@ void *PosAllocMem(unsigned int size, unsigned int flags)
     unsigned int subpool;
 
     subpool = flags & 0xff;
-    if ((flags & LOC_MASK) == LOC20)
+    if ((flags & POS_LOC_MASK) == POS_LOC20)
     {
         return (memmgrAllocate(&btlmem, size, subpool));
     }

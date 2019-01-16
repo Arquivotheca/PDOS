@@ -58,10 +58,10 @@
 #define POS_ERR_FILE_EXISTS 0x50
 
 /* for use by PosAllocMem callers */
-#define LOC_MASK 0x300
-#define LOC20 0x100
-#define LOC32 0x200
-#define LOC64 0x300
+#define POS_LOC_MASK 0x300
+#define POS_LOC20 0x100
+#define POS_LOC32 0x200
+#define POS_LOC64 0x300
 
 /* File attribute bits */
 #define FILE_ATTR_READONLY 0x01

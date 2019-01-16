@@ -3798,11 +3798,6 @@ static void loadExe(char *prog, PARMBLOCK *parmblock)
                         highest_segment_memsz = segment->p_memsz;
                     }
                 }
-                else
-                {
-                    printf("Warning: Ignoring unknown segment, p_type: %u\n",
-                           segment->p_type);
-                }
             }
             exeLen = highest_p_vaddr - lowest_p_vaddr + highest_segment_memsz;
             if (lowest_segment_align > 1)
@@ -3997,11 +3992,6 @@ static void loadExe(char *prog, PARMBLOCK *parmblock)
                         memset(bss, '\0',
                                segment->p_memsz - segment->p_filesz);
                     }
-                }
-                else
-                {
-                    printf("Warning: Ignoring unknown segment, p_type: %u\n",
-                           segment->p_type);
                 }
             }
         }
@@ -4404,9 +4394,8 @@ static void loadExe(char *prog, PARMBLOCK *parmblock)
         unsigned long entry_point = elfHdr->e_entry;
 
         /* ELF Executable files are loaded at the lowest p_vaddr. */
-        /* if (entry_point == 0) entry_point = (unsigned long)exeStart; */
         exeStart -= lowest_p_vaddr;
-        entry_point += lowest_p_vaddr;
+        if (entry_point == 0) entry_point = lowest_p_vaddr;
         sp += lowest_p_vaddr;
         exeStart = ADDR2ABS(exeStart);
         /* Frees memory not needed by the process. */

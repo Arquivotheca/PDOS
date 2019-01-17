@@ -53,7 +53,7 @@ static unsigned int isLFN(const char *fnm, unsigned int length);
 static unsigned int cicmp(const unsigned char *first,
                           const unsigned char *second,
                           unsigned int length);
-static int createLFNs(FAT *fat, unsigned char *lfn, unsigned int lfn_len);
+static int createLFNs(FAT *fat, char *lfn, unsigned int lfn_len);
 static void generate83Name(unsigned char *lfn, unsigned int lfn_len,
                            unsigned char *shortname);
 static int checkNumericTail(FAT *fat, char *shortname);
@@ -1234,11 +1234,16 @@ long fatSeek(FAT *fat, FATFILE *fatfile, long offset, int whence)
     if (whence == SEEK_SET) newpos = offset;
     else if (whence == SEEK_CUR) newpos = fatfile->currpos + offset;
     else if (whence == SEEK_END) newpos = fatfile->fileSize + offset;
+    /* Invalid whence was passed although the caller should ensure
+     * that it is valid as error cannot be reported from here.
+     * newpos is set to -1 to cause errors on read
+     * and write to prevent data corruption. */
+    else newpos = -1;
 
     /* If the current position is at the end or after the end of file
      * and the new position is at the end or after the end, we only need to
      * update fatfile->currpos and let fatReadFile and fatWriteFile deal
-     * with it as seeking must not modify the file.
+     * with it as seeking must not modify the file. */
     if (newpos >= fatfile->fileSize && fatfile->currpos >= fatfile->fileSize)
     {
         fatfile->currpos = newpos;
@@ -1442,7 +1447,7 @@ static void fatNextSearch(FAT *fat, char *search, const char **upto)
             /* Uppers the name part. */
             for (i = 0; i < q - *upto; i++)
             {
-                search[i] = toupper((*upto)[i]);
+                search[i] = toupper((unsigned int)((*upto)[i]));
                 /* Checks if the 8.3 name containts lowercase
                  * if this is the last part of path and if yes,
                  * stores length of original path part. */
@@ -1456,7 +1461,7 @@ static void fatNextSearch(FAT *fat, char *search, const char **upto)
             /* Uppers the extension part. */
             for (i = 0; i < p - q - 1; i++)
             {
-                (search + 8)[i] = toupper((q + 1)[i]);
+                (search + 8)[i] = toupper((unsigned int)((q + 1)[i]));
                 /* Checks if the 8.3 extension containts lowercase
                  * if this is the last part of path and if yes,
                  * stores length of original path part. */
@@ -1473,7 +1478,7 @@ static void fatNextSearch(FAT *fat, char *search, const char **upto)
             /* Uppers the name part. */
             for (i = 0; i < p - *upto; i++)
             {
-                search[i] = toupper((*upto)[i]);
+                search[i] = toupper((unsigned int)((*upto)[i]));
                 /* Checks if the 8.3 name containts lowercase
                  * if this is the last part of path and if yes,
                  * stores length of original path part. */
@@ -1854,8 +1859,8 @@ static void fatDirSectorSearch(FAT *fat,
                             for (i = 0; i < fat->path_part_len; i++)
                             {
                                 fat->c_path[i] =
-                                toupper((fat->upto
-                                         - fat->path_part_len)[i]);
+                                toupper((unsigned int)((fat->upto
+                                               - fat->path_part_len)[i]));
                             }
                         }
                         fat->c_path += fat->path_part_len;
@@ -2022,6 +2027,7 @@ static unsigned int fatFindFreeCluster(FAT *fat)
     {
         /* FAT-12 is complicated, so we iterate over clusters instead of
          * sectors and offsets. */
+        fatSector = 0;
         for (ret = 0;
              ret <= (fat->rootstart - fat->fatstart)*fat->sector_size*2/3;
              ret++)
@@ -2757,7 +2763,7 @@ static unsigned int cicmp(const unsigned char *first,
 /* Creates LFN entries, generates 8.3 name and
  * sets all variables so 8.3 entry will be properly
  * created. */
-static int createLFNs(FAT *fat, unsigned char *lfn, unsigned int lfn_len)
+static int createLFNs(FAT *fat, char *lfn, unsigned int lfn_len)
 {
     char shortname[11];
     char orig_lfn[MAXFILENAME]; /* +++Add UCS-2 support. */
@@ -2767,7 +2773,6 @@ static int createLFNs(FAT *fat, unsigned char *lfn, unsigned int lfn_len)
     unsigned int numsectors;
     unsigned char *buf;
     unsigned long nextCluster;
-    unsigned long temp_startSector;
     unsigned int x;
     DIRENT *p;
     unsigned int i;
@@ -2854,7 +2859,7 @@ static int createLFNs(FAT *fat, unsigned char *lfn, unsigned int lfn_len)
                     fat->dirSect = fat->startSector + x;
                     /* If we ended on deleted slot, we let the
                      * function that called this function know
-                     * it.
+                     * it. */
                     if (p->file_name[0] == DIRENT_DEL) fat->found_deleted = 1;
                     /* Copies final 8.3 name into fat->search,
                      * because other functions use it from there. */

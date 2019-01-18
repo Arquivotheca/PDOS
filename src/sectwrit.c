@@ -59,7 +59,7 @@ int main(int argc, char **argv)
     drive = strtol(*(argv + 1), NULL, 16);
     if (strchr(*(argv + 2), '/') != NULL)
     {
-        sscanf(*(argv +2), "%d/%d/%d", &trk, &hd, &sec);
+        sscanf(*(argv + 2), "%d/%d/%d", &trk, &hd, &sec);
     }
     else
     {

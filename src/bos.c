@@ -1021,8 +1021,10 @@ void BosCpuIdle(void)
 /* Get scaled BIOS tick count. This internal function gets the scaled tick
  * count without the midnight logic.
  */
-static unsigned long BosGetClockTickCount0(void) {
+static unsigned long BosGetClockTickCount0(void)
+{
     unsigned long v1, v2;
+
     for (;;)
     {
         /* We read it twice to make sure it gets same value both time. This
@@ -1050,7 +1052,8 @@ static unsigned long BosGetClockTickCount0(void) {
  * Note that this function must be called at least once every 24 hours,
  * otherwise we might miss a day.
  */
-unsigned long BosGetClockTickCount(void) {
+unsigned long BosGetClockTickCount(void)
+{
     /* Flag to check if we have ever been called before */
     static int init = 0;
     /* Number of days we have been up */
@@ -1080,7 +1083,8 @@ unsigned long BosGetClockTickCount(void) {
 }
 
 /* Sleep until given number of seconds has elapsed */
-void BosSleep(unsigned long seconds) {
+void BosSleep(unsigned long seconds)
+{
     /* Initial tick count at start of sleep */
     unsigned long start = 0;
     /* Number of ticks we are going to sleep for */
@@ -1089,7 +1093,8 @@ void BosSleep(unsigned long seconds) {
     unsigned long cur = 0;
 
     /* Don't sleep if asked to sleep for zero seconds */
-    if (seconds == 0) {
+    if (seconds == 0)
+    {
         /* Some programs use sleep(0) as an idiom for yielding the CPU.
          * Let us support that idiom.
          */

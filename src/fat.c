@@ -1863,7 +1863,7 @@ static void fatDirSectorSearch(FAT *fat,
                             for (i = 0; i < fat->path_part_len; i++)
                             {
                                 fat->c_path[i] =
-                                toupper((fat->upto - 1
+                                toupper((unsigned)(fat->upto - 1
                                          - fat->path_part_len)[i]);
                             }
                         }

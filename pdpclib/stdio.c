@@ -228,10 +228,12 @@ static int    spareSpot;
 static int    err;
 static int    inreopen = 0;
 
+#if defined(__VSE__)
 /* for VSE library files being punched */
 #define VSE_LIB_LIM 1000000
 static char *__vsepb = NULL;
 FILE *__stdpch = NULL;
+#endif
 
 static const char *fnm;
 static const char *modus;
@@ -5733,7 +5735,7 @@ static struct {
   short parm1_len;
   char parm1[98];
   /* parm2_len etc would theoretically follow, but we
-  /* can't define them, because the length of 98 is probably
+     can't define them, because the length of 98 is probably
      not correct in the first place */
 } tu[10];
 

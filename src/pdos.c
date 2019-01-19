@@ -4848,7 +4848,7 @@ static void upper_str(char *str)
 
     for (x = 0; str[x] != '\0'; x++)
     {
-        str[x] = toupper(str[x]);
+        str[x] = toupper((unsigned char)str[x]);
     }
     return;
 }

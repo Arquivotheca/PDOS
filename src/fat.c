@@ -1463,7 +1463,7 @@ static void fatNextSearch(FAT *fat, char *search, const char **upto)
             /* Uppers the name part. */
             for (i = 0; i < q - *upto; i++)
             {
-                search[i] = toupper((unsigned int)((*upto)[i]));
+                search[i] = toupper((unsigned char)((*upto)[i]));
                 /* Checks if the 8.3 name containts lowercase
                  * if this is the last part of path and if yes,
                  * stores length of original path part. */
@@ -1477,7 +1477,7 @@ static void fatNextSearch(FAT *fat, char *search, const char **upto)
             /* Uppers the extension part. */
             for (i = 0; i < p - q - 1; i++)
             {
-                (search + 8)[i] = toupper((unsigned int)((q + 1)[i]));
+                (search + 8)[i] = toupper((unsigned char)((q + 1)[i]));
                 /* Checks if the 8.3 extension containts lowercase
                  * if this is the last part of path and if yes,
                  * stores length of original path part. */
@@ -1494,7 +1494,7 @@ static void fatNextSearch(FAT *fat, char *search, const char **upto)
             /* Uppers the name part. */
             for (i = 0; i < p - *upto; i++)
             {
-                search[i] = toupper((unsigned int)((*upto)[i]));
+                search[i] = toupper((unsigned char)((*upto)[i]));
                 /* Checks if the 8.3 name containts lowercase
                  * if this is the last part of path and if yes,
                  * stores length of original path part. */
@@ -1863,7 +1863,7 @@ static void fatDirSectorSearch(FAT *fat,
                             for (i = 0; i < fat->path_part_len; i++)
                             {
                                 fat->c_path[i] =
-                                toupper((unsigned)(fat->upto - 1
+                                toupper((unsigned char)(fat->upto - 1
                                          - fat->path_part_len)[i]);
                             }
                         }
@@ -1875,7 +1875,7 @@ static void fatDirSectorSearch(FAT *fat,
                             for (i = 0; i < fat->path_part_len; i++)
                             {
                                 fat->c_path[i] =
-                                toupper((unsigned int)((fat->upto
+                                toupper((unsigned char)((fat->upto
                                                - fat->path_part_len)[i]));
                             }
                         }

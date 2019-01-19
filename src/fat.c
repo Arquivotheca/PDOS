@@ -829,6 +829,20 @@ int fatReadFile(FAT *fat, FATFILE *fatfile, void *buf, size_t szbuf,
         fatfile->lastSectors = fatfile->lastBytes / fat->sector_size;
         fatfile->lastBytes = fatfile->lastBytes % fat->sector_size;
     }
+    if (!((fatfile->root) && (fat->rootsize)))
+    {
+        /* fatfile->nextCluster has invalid value
+         * because fatWriteFile was modifing the file
+         * or fatSeek was used,
+         * so we obtain the correct value again. */
+        if (fatfile->nextCluster == 0)
+        {
+            fatClusterAnalyse(fat,
+                              fatfile->currentCluster,
+                              &fatfile->sectorStart,
+                              &fatfile->nextCluster);
+        }
+    }
     /* until we reach the end of the chain
      * (ignored if we are reading a fixed size root directory) */
     while (!fatEndCluster(fat, fatfile->currentCluster)
@@ -908,14 +922,11 @@ int fatReadFile(FAT *fat, FATFILE *fatfile, void *buf, size_t szbuf,
             fatfile->sectorUpto++;
             fatfile->byteUpto = 0;
         }
+        fatfile->currentCluster = fatfile->nextCluster;
         fatClusterAnalyse(fat,
                           fatfile->currentCluster,
                           &fatfile->sectorStart,
                           &fatfile->nextCluster);
-        fatfile->currentCluster = fatfile->nextCluster;
-        fatfile->sectorStart = (fatfile->currentCluster - 2)
-            * (long)fat->sectors_per_cluster
-            + fat->filestart;
         fatfile->sectorUpto = 0;
     }
     *readbytes = bytesRead;
@@ -951,6 +962,9 @@ int fatWriteFile(FAT *fat, FATFILE *fatfile, const void *buf, size_t szbuf,
         *writtenbytes = 0;
         return (0);
     }
+    /* Marks fatfile->nextCluster invalid
+     * as it is not kept updated during write. */
+    fatfile->nextCluster = 0;
 
     if ((fatfile->startcluster==0)
         || ((fat->fat_type == 16) && (fatfile->startcluster == 0xfff8))
@@ -986,7 +1000,7 @@ int fatWriteFile(FAT *fat, FATFILE *fatfile, const void *buf, size_t szbuf,
                         bbuf);
     }
     /* If a new cluster is not needed, fat->currcluster
-     * is restored from fatfile->startcluster because
+     * is restored from fatfile->currentCluster because
      * FAT structure is shared between file handles. */
     else fat->currcluster = fatfile->currentCluster;
     /* Current position in file is larger than size of file,
@@ -1297,6 +1311,8 @@ long fatSeek(FAT *fat, FATFILE *fatfile, long offset, int whence)
     fatfile->sectorStart = (fatfile->currentCluster - 2)
     * (long)fat->sectors_per_cluster
     + fat->filestart;
+    /* Marks fatfile->nextCluster as invalid so fatReadFile will update it. */
+    fatfile->nextCluster = 0;
     if (fatfile->fileSize < newpos)
     {
         /* If the set sector would be after the end of file,

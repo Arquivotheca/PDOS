@@ -70,6 +70,10 @@ void gotint(int intno, unsigned int *save)
                through and call the real-mode interrupt. */
             if (userInt[x].func(save) == 0)
             {
+                if (save[6])
+                {
+                    save[7] |= 1;
+                }
                 return;
             }
             break;

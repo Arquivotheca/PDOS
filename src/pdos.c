@@ -308,7 +308,7 @@ void pdosRun(void)
     int mc;
 #endif
 #ifdef __32BIT__
-    long memavail;
+    unsigned long memavail;
 #endif
 
 #ifdef __32BIT__
@@ -385,16 +385,17 @@ void pdosRun(void)
     the A20 line is disabled, so this way they get at least 1 meg
     they can use. */
     memavail = BosExtendedMemorySize();
-    if (memavail < 3000000)
+    if (memavail < 4*1024*1024)
     {
-        memavail = 3000000; /* assume they've got 4 meg installed */
+        printf("less than 4 MiB available - system halting\n");
+        for (;;) ;
     }
-    memavail -= 0x100000; /* subtract a meg to be unused */
+    memavail -= 0x100000; /* subtract a meg to be unused for safety */
 #ifdef EXE32
     memavail -= 0x500000; /* room for disk cache */
     memmgrSupply(&memmgr, ABSADDR(0x700000), memavail);
 #else
-    memavail = 30000000; /* assume 32 MiB available, for use by GCC */
+    memavail -= 0x200000; /* skip the first 2 MiB */
     memmgrSupply(&memmgr, ABSADDR(0x200000), memavail);
 #endif
     memmgrDefaults(&btlmem);

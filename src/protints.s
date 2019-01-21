@@ -47,7 +47,7 @@ _inthdlr:
         mov    %ax, %ds
         push   intnum
         movl   $0x0, intnum
-        jmp    _inthdlr_p
+        jmp    _inthdlr_q
 _inthdlr_8:
         push   %eax
         mov    %ds, %ax

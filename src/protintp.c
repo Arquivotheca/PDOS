@@ -57,6 +57,9 @@ void gotint(int intno, unsigned int *save)
     unsigned short *ssave;
     int x;
 
+    /* clear all flags by default */
+    save[6] = 0; /* cflag */
+    save[7] = 0; /* flags */
     for (x = 0; x < numUserInts; x++)
     {
         if (userInt[x].intno == intno)

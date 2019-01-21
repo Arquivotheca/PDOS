@@ -226,10 +226,10 @@ level10b:
         mov    %ax, %ss
         push   %ebp
         mov    %esp, %ebp
-/ update flags. We should really be updating
-/ a couple of more bits as well, not just the
-/ last 8
-        mov    %bl, 44(%ebp)
+/ update the bottom 8 bits plus bit 11 (OF) of the flags
+        andl   $0xfffff700, 44(%ebp)
+        and    $0x8ff, %ebx
+        or     %ebx, 44(%ebp)
         mov    saveebx, %ebx
         mov    %ebx, 12(%ebp)
         push   %eax

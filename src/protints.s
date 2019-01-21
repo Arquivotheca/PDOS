@@ -1,4 +1,4 @@
-/ startup code for 32 bit version of pdos
+/ protected mode interrupt handlers
 / written by Paul Edwards
 / released to the public domain
 
@@ -217,23 +217,18 @@ level10:
         mov    %ebx, saveebx
         pop    %ebx
 / above is actually flags
-        cmp    $0, %eax
-/ +++ We shouldn't actually need these different paths for
-/ carry set and clear, but for some reason the flags do
-/ not appear to have carry set properly, but the carry
-/ flag value is set properly
-        je     clear
-        jmp    notclear
-clear:
         cmp    $0x10, saveess
-        je     level10_c
+        je     level10b
         mov    saveesp, %eax
         mov    %eax, %esp
-level10_c:
+level10b:
         mov    saveess, %eax
         mov    %ax, %ss
         push   %ebp
         mov    %esp, %ebp
+/ update flags. We should really be updating
+/ a couple of more bits as well, not just the
+/ last 8
         mov    %bl, 44(%ebp)
         mov    saveebx, %ebx
         mov    %ebx, 12(%ebp)
@@ -256,42 +251,6 @@ level10_c:
         pop    %eax
         push   %ebp
         mov    %esp, %ebp
-        and    $0xfffffffe, 12(%ebp)
-        pop    %ebp
-        iret        
-notclear:
-        cmp    $0x10, saveess
-        je     level10_nc
-        mov    saveesp, %eax
-        mov    %eax, %esp
-level10_nc:
-        mov    saveess, %eax
-        mov    %ax, %ss
-        push   %ebp
-        mov    %esp, %ebp
-        mov    %bl, 44(%ebp)
-        mov    saveebx, %ebx
-        mov    %ebx, 12(%ebp)
-        push   %eax
-        mov    saveeax, %eax
-        mov    %eax, 32(%ebp)
-        pop    %eax
-        pop    %ebp
-        mov    %ax, %es
-        mov    %ax, %fs
-        mov    %ax, %gs
-        pop    saveebx
-        pop    saveeax
-        pop    %ebx
-        pop    saveesp
-        pop    saveess
-        pop    intnum
-        pop    %eax
-        mov    %ax, %ds
-        pop    %eax
-        push   %ebp
-        mov    %esp, %ebp
-        or     $1, 12(%ebp)
         pop    %ebp
         iret        
 
@@ -316,7 +275,7 @@ _inthdlr_q:
         mov    %eax, saveeax
         pop    %ebp
         cmp    $0x10, saveess
-        je     level10b
+        je     level10c
         mov    $0x10, %eax
         mov    %ax, %ss
         mov    %ax, %es
@@ -324,7 +283,7 @@ _inthdlr_q:
         mov    %ax, %gs
         mov    call32_esp, %eax
         mov    %eax, %esp
-level10b:
+level10c:
         mov    saveeax, %eax
         push   %edx
 / above is actually room for flags
@@ -364,10 +323,10 @@ level10b:
         pop    %ebx
 / above is actually flags
         cmp    $0x10, saveess
-        je     level10_cb
+        je     level10d
         mov    saveesp, %eax
         mov    %eax, %esp
-level10_cb:
+level10d:
         mov    saveess, %eax
         mov    %ax, %ss
         push   %ebp
@@ -395,8 +354,6 @@ level10_cb:
         pop    %eax
         push   %ebp
         mov    %esp, %ebp
-/ Don't alter carry bit
-/        and    $0xfffffffe, 12(%ebp)
         pop    %ebp
         iret
 

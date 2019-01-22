@@ -490,6 +490,14 @@ static void fopen3(void)
 #else
         myfile->bufStartR = -(long)myfile->szfbuf;
 #endif
+        if (myfile->permfile)
+        {
+            myfile->bufTech = _IOLBF;
+        }
+        else
+        {
+            myfile->bufTech = _IOFBF;
+        }
         myfile->errorInd = 0;
         myfile->eofInd = 0;
         myfile->ungetCh = -1;

@@ -253,6 +253,8 @@ int BosWriteCharAttrib(int page, int ch, int attrib, unsigned int num)
     regsin.h.bl = attrib;
     regsin.x.cx = (unsigned int)num;
     int86i(0x10, &regsin);
+    /* wportb(0xe9, ch); */ /* works for PDOS-16 under Bochs */
+    /* outp(0xe9, ch); */ /* works for PDOS-32 under Bochs */
     return (0);
 }
 

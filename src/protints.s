@@ -65,7 +65,7 @@ _inthdlr_9:
         mov    %ax, %ds
         push   intnum
         movl   $0x9, intnum
-        jmp    _inthdlr_p
+        jmp    _inthdlr_q
 _inthdlr_10:
         push   %eax
         mov    %ds, %ax

@@ -390,7 +390,6 @@ void pdosRun(void)
         printf("less than 4 MiB available - system halting\n");
         for (;;) ;
     }
-    memavail -= 0x100000; /* subtract a meg to be unused for safety */
 #ifdef EXE32
     memavail -= 0x500000; /* room for disk cache */
     memmgrSupply(&memmgr, ABSADDR(0x700000), memavail);

@@ -24,6 +24,12 @@ else
   mov si, regsin
 endif
 
+pushf
+pop ax
+and ax, 0f700h  ; clear relevant flag bits
+push ax
+popf
+
 mov ax, word ptr [si + 0]
 mov bx, word ptr [si + 2]
 mov cx, word ptr [si + 4]
@@ -154,6 +160,12 @@ if @DataSize
 else
   mov si, regsin
 endif
+
+pushf
+pop ax
+and ax, 0f700h  ; clear relevant flag bits
+push ax
+popf
 
 mov ax, word ptr [si + 0]
 mov bx, word ptr [si + 2]

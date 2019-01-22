@@ -201,6 +201,7 @@ static unsigned char *bootBPB;
 static char *cwd;
 static int lastrc;
 static int lba;
+static int memId = 0; /* give each program a unique ID for their memory */
 static unsigned long psector; /* partition sector offset */
 static int attr;
 static PDOS_PROCESS *initProc = NULL; /* initial process; beginning of process
@@ -2461,9 +2462,9 @@ void *PosAllocMem(unsigned int size, unsigned int flags)
     subpool = flags & 0xff;
     if ((flags & POS_LOC_MASK) == POS_LOC20)
     {
-        return (memmgrAllocate(&btlmem, size, subpool));
+        return (memmgrAllocate(&btlmem, size, memId + subpool));
     }
-    return (memmgrAllocate(&memmgr, size, subpool));
+    return (memmgrAllocate(&memmgr, size, memId + subpool));
 }
 #endif
 
@@ -2472,7 +2473,7 @@ void *PosAllocMemPages(unsigned int pages, unsigned int *maxpages)
 {
     void *p;
 
-    p = memmgrAllocate(&memmgr, pages * 16, 0);
+    p = memmgrAllocate(&memmgr, pages * 16, memId);
     if (p == NULL && maxpages != NULL)
     {
         *maxpages = memmgrMaxSize(&memmgr) / 16;
@@ -2484,7 +2485,7 @@ void *PosAllocMemPages(unsigned int pages, unsigned int *maxpages)
 {
     void *p;
 
-    p = pdos16MemmgrAllocPages(&memmgr, pages, 0);
+    p = pdos16MemmgrAllocPages(&memmgr, pages, memId);
     if (p == NULL && maxpages != NULL)
     {
         *maxpages = memmgrMaxSize(&memmgr);
@@ -4358,7 +4359,11 @@ static void loadExe(char *prog, PARMBLOCK *parmblock)
     newProc->status = PDOS_PROCSTATUS_ACTIVE;
     if (newProc->parent != NULL)
         newProc->parent->status = PDOS_PROCSTATUS_CHILDWAIT;
+    memId += 256;
     ret = callwithpsp(exeEntry, psp, ss, sp);
+    /* printf("ret is %x\n", ret); */
+    memmgrFreeId(&memmgr, memId);
+    memId -= 256;
     dta = olddta;
 #endif
 #ifdef __32BIT__
@@ -4503,8 +4508,12 @@ static int fixexe32(unsigned char *psp, unsigned long entry, unsigned int sp,
     realdata->base_23_16 = (dataStart >> 16) & 0xff;
     realdata->base_31_24 = (dataStart >> 24) & 0xff;
 
+    memId += 256;
     ret = call32(entry, ADDRFIXSUB(&exeparms), sp);
     /* printf("ret is %x\n", ret); */
+    memmgrFreeId(&memmgr, memId);
+    memmgrFreeId(&btlmem, memId);
+    memId -= 256;
 
     subcor = oldsubcor;
     *realcode = savecode;

@@ -490,6 +490,7 @@ static void fopen3(void)
 #else
         myfile->bufStartR = -(long)myfile->szfbuf;
 #endif
+        myfile->justseeked = 0;
         if (myfile->permfile)
         {
             myfile->bufTech = _IOLBF;
@@ -1549,6 +1550,15 @@ __PDPCLIB_API__ size_t fread(void *ptr,
     }
     if (!stream->quickBin)
     {
+        /* if we were previously writing and then
+           we seeked, and now we're reading, we need to
+           correct things */
+        if (stream->justseeked)
+        {
+            stream->bufStartR -= (stream->endbuf - stream->fbuf);
+            stream->upto = stream->endbuf;
+            stream->mode = __READ_MODE;
+        }
         if (stream->textMode)
         {
             freadSlowT(ptr, stream, toread, &actualRead);
@@ -2055,15 +2065,7 @@ static void fwriteSlow(const void *ptr,
 {
     size_t actualWritten;
 
-    /* Normally, on output, there will never be a situation where
-       the write buffer is full, but it hasn't been written out.
-       If we find this to be the case, then it is because we have
-       done an fseek, and didn't know whether we were going to do
-       a read or a write after it, so now that we know, we switch
-       the buffer to being set up for write.  We could use a flag,
-       but I thought it would be better to just put some magic
-       code in with a comment */
-    if (stream->upto == stream->endbuf)
+    if (stream->justseeked)
     {
         stream->bufStartR += (stream->endbuf - stream->fbuf);
         stream->upto = stream->fbuf;
@@ -3673,6 +3675,7 @@ __PDPCLIB_API__ int fseek(FILE *stream, long int offset, int whence)
             stream->upto = stream->fbuf;
             stream->bufStartR = newpos;
         }
+        stream->justseeked = 1;
 #endif
 #if defined(__MVS__) || defined(__CMS__)
         char fnm[FILENAME_MAX];

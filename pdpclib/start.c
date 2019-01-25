@@ -154,6 +154,7 @@ __PDPCLIB_API__ int CTYP __start(char *p)
     stdin->textMode = 1;
     stdin->intFno = 0;
     stdin->bufStartR = 0;
+    stdin->justseeked = 0;
     stdin->bufTech = _IOLBF;
     stdin->intBuffer = buffer1;
     stdin->fbuf = stdin->intBuffer + 2;
@@ -186,6 +187,7 @@ __PDPCLIB_API__ int CTYP __start(char *p)
     stdout->noNl = 0;
     stdout->upto = stdout->fbuf;
     stdout->bufStartR = 0;
+    stdout->justseeked = 0;
     stdout->mode = __WRITE_MODE;
     stdout->update = 0;
     stdout->theirBuffer = 0;
@@ -206,6 +208,7 @@ __PDPCLIB_API__ int CTYP __start(char *p)
     stderr->noNl = 0;
     stderr->upto = stderr->fbuf;
     stderr->bufStartR = 0;
+    stderr->justseeked = 0;
     stderr->mode = __WRITE_MODE;
     stderr->update = 0;
     stderr->theirBuffer = 0;

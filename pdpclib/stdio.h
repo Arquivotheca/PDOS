@@ -94,6 +94,7 @@ typedef struct
         currently reading from the 3rd buffer, then the first
         character in the buffer would be 1024, so that is what is
         put in bufStartR. */
+    int justseeked; /* 1 = last operation was a seek */
     char *fbuf;     /* file buffer - this is what all the routines
                        look at. */
     size_t szfbuf;  /* size of file buffer (the one that the routines
@@ -230,6 +231,7 @@ int ferror(FILE *stream);
     ((stream)->quickBin = 0), \
     ((stream)->quickText = 0), \
     (((stream)->tempch == '\n') \
+        || (stream)->justseeked \
         || (((stream)->upto + 1) >= (stream)->endbuf)) ? \
         (fputc((stream)->tempch, (stream))) : \
         (*(stream)->upto++ = (stream)->tempch) \

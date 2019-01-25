@@ -1555,6 +1555,7 @@ __PDPCLIB_API__ size_t fread(void *ptr,
            correct things */
         if (stream->justseeked)
         {
+            stream->justseeked = 0;
             stream->bufStartR -= (stream->endbuf - stream->fbuf);
             stream->upto = stream->endbuf;
             stream->mode = __READ_MODE;
@@ -2067,6 +2068,7 @@ static void fwriteSlow(const void *ptr,
 
     if (stream->justseeked)
     {
+        stream->justseeked = 0;
         stream->bufStartR += (stream->endbuf - stream->fbuf);
         stream->upto = stream->fbuf;
         stream->mode = __WRITE_MODE;

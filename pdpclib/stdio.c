@@ -3639,32 +3639,7 @@ __PDPCLIB_API__ int fseek(FILE *stream, long int offset, int whence)
             errno = rc;
             return (-1);
         }
-        else
-        {
-            stream->endbuf = stream->fbuf + stream->szfbuf;
-            stream->upto = stream->endbuf;
-            stream->bufStartR = newpos - stream->szfbuf;
-        }
-#endif
-#ifdef __WIN32__
-        retpos = SetFilePointer(stream->hfile, newpos, NULL, FILE_BEGIN);
-        if (retpos != newpos)
-        {
-            errno = GetLastError();
-            return (-1);
-        }
-        else
-        {
-            stream->endbuf = stream->fbuf + stream->szfbuf;
-            stream->upto = stream->endbuf;
-            stream->bufStartR = newpos - stream->szfbuf;
-        }
-#endif
-#ifdef __MSDOS__
-        ret = __seek(stream->hfile, newpos, whence);
-        if (ret) return (ret);
         stream->endbuf = stream->fbuf + stream->szfbuf;
-        /* +++ this fix should apply for other platforms too */
         if (stream->mode == __READ_MODE)
         {
             stream->upto = stream->endbuf;
@@ -3675,7 +3650,40 @@ __PDPCLIB_API__ int fseek(FILE *stream, long int offset, int whence)
             stream->upto = stream->fbuf;
             stream->bufStartR = newpos;
         }
-        stream->justseeked = 1;
+#endif
+#ifdef __WIN32__
+        retpos = SetFilePointer(stream->hfile, newpos, NULL, FILE_BEGIN);
+        if (retpos != newpos)
+        {
+            errno = GetLastError();
+            return (-1);
+        }
+        stream->endbuf = stream->fbuf + stream->szfbuf;
+        if (stream->mode == __READ_MODE)
+        {
+            stream->upto = stream->endbuf;
+            stream->bufStartR = newpos - stream->szfbuf;
+        }
+        else
+        {
+            stream->upto = stream->fbuf;
+            stream->bufStartR = newpos;
+        }
+#endif
+#ifdef __MSDOS__
+        ret = __seek(stream->hfile, newpos, whence);
+        if (ret) return (ret);
+        stream->endbuf = stream->fbuf + stream->szfbuf;
+        if (stream->mode == __READ_MODE)
+        {
+            stream->upto = stream->endbuf;
+            stream->bufStartR = newpos - stream->szfbuf;
+        }
+        else
+        {
+            stream->upto = stream->fbuf;
+            stream->bufStartR = newpos;
+        }
 #endif
 #if defined(__MVS__) || defined(__CMS__)
         char fnm[FILENAME_MAX];
@@ -3713,6 +3721,7 @@ __PDPCLIB_API__ int fseek(FILE *stream, long int offset, int whence)
         }
 #endif
     }
+    stream->justseeked = 1;
     stream->quickBin = 0;
     stream->quickText = 0;
     stream->ungetCh = -1;

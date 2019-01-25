@@ -3623,6 +3623,7 @@ __PDPCLIB_API__ int fseek(FILE *stream, long int offset, int whence)
     }
     else if ((newpos >= stream->bufStartR)
         && (newpos < (stream->bufStartR + (stream->endbuf - stream->fbuf)))
+        && !stream->update
         && (stream->mode == __READ_MODE))
     {
         stream->upto = stream->fbuf + (size_t)(newpos - stream->bufStartR);
@@ -3661,8 +3662,17 @@ __PDPCLIB_API__ int fseek(FILE *stream, long int offset, int whence)
         ret = __seek(stream->hfile, newpos, whence);
         if (ret) return (ret);
         stream->endbuf = stream->fbuf + stream->szfbuf;
-        stream->upto = stream->endbuf;
-        stream->bufStartR = newpos - stream->szfbuf;
+        /* +++ this fix should apply for other platforms too */
+        if (stream->mode == __READ_MODE)
+        {
+            stream->upto = stream->endbuf;
+            stream->bufStartR = newpos - stream->szfbuf;
+        }
+        else
+        {
+            stream->upto = stream->fbuf;
+            stream->bufStartR = newpos;
+        }
 #endif
 #if defined(__MVS__) || defined(__CMS__)
         char fnm[FILENAME_MAX];

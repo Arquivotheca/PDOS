@@ -1261,6 +1261,9 @@ long fatSeek(FAT *fat, FATFILE *fatfile, long offset, int whence)
     if (newpos >= fatfile->fileSize && fatfile->currpos >= fatfile->fileSize)
     {
         fatfile->currpos = newpos;
+        /* Marks fatfile->nextCluster as invalid so fatReadFile will
+           update it. */
+        fatfile->nextCluster = 0;
         return (newpos);
     }
     /* If the new position is zero or negative,
@@ -1276,6 +1279,9 @@ long fatSeek(FAT *fat, FATFILE *fatfile, long offset, int whence)
          * to the new position, because DOS systems should accept
          * negative position as a valid position. */
         fatfile->currpos = newpos;
+        /* Marks fatfile->nextCluster as invalid so fatReadFile will
+           update it. */
+        fatfile->nextCluster = 0;
         return (newpos);
     }
     /* (fat->sectors_per_cluster * MAXSECTSZ) is size of cluster in bytes. */

@@ -923,10 +923,13 @@ int fatReadFile(FAT *fat, FATFILE *fatfile, void *buf, size_t szbuf,
             fatfile->byteUpto = 0;
         }
         fatfile->currentCluster = fatfile->nextCluster;
-        fatClusterAnalyse(fat,
-                          fatfile->currentCluster,
-                          &fatfile->sectorStart,
-                          &fatfile->nextCluster);
+        if (!fatEndCluster(fat, fatfile->currentCluster))
+        {
+            fatClusterAnalyse(fat,
+                              fatfile->currentCluster,
+                              &fatfile->sectorStart,
+                              &fatfile->nextCluster);
+        }
         fatfile->sectorUpto = 0;
     }
     *readbytes = bytesRead;

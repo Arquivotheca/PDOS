@@ -1639,6 +1639,9 @@ static void fatClusterAnalyse(FAT *fat,
     static unsigned char buf[MAXSECTSZ];
     int offset;
 
+    /* protect against EOF */
+    if (fatEndCluster(fat, cluster)) return;
+
     *startSector = (cluster - 2) * (long)fat->sectors_per_cluster
                    + fat->filestart;
     if (fat->fat_type == 16)

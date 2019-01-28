@@ -3679,7 +3679,7 @@ __PDPCLIB_API__ int fseek(FILE *stream, long int offset, int whence)
         }
 #endif
 #ifdef __MSDOS__
-        ret = __seek(stream->hfile, newpos, whence);
+        ret = __seek(stream->hfile, newpos, SEEK_SET);
         if (ret) return (ret);
         stream->endbuf = stream->fbuf + stream->szfbuf;
         if (stream->mode == __READ_MODE)

@@ -3626,6 +3626,10 @@ __PDPCLIB_API__ int fseek(FILE *stream, long int offset, int whence)
     {
         char buf[1000];
 
+        if (stream->mode == __WRITE_MODE)
+        {
+            fseek(stream, oldpos, SEEK_SET);
+        }
         while (fread(buf, sizeof buf, 1, stream) == 1)
         {
             /* do nothing */

@@ -1292,36 +1292,39 @@ long fatSeek(FAT *fat, FATFILE *fatfile, long offset, int whence)
     reqclusters = newpos / (fat->sectors_per_cluster * MAXSECTSZ);
     /* Using this comparison, we optimize for the case
      * that we are seeking in the current cluster. */
-    if (reqclusters >= currclusters)
+    if (reqclusters != currclusters)
     {
-        if (fatfile->fileSize < newpos)
+        if (reqclusters > currclusters)
         {
-            reqclusters = fatfile->fileSize
-                            / (fat->sectors_per_cluster * MAXSECTSZ);
+            if (fatfile->fileSize < newpos)
+            {
+                reqclusters = fatfile->fileSize
+                                / (fat->sectors_per_cluster * MAXSECTSZ);
+            }
+            /* We need to seek fewer clusters because we are starting
+             * from the current cluster. */
+            reqclusters -= currclusters;
         }
-        /* We need to seek fewer clusters because we are starting
-         * from the current cluster. */
-        reqclusters -= currclusters;
+        else
+        {
+            /* We are seeking before the current cluster,
+             * so we have to go from the start cluster. */
+            fatfile->currentCluster = fatfile->startcluster;
+        }
+        /* Seeks clusters until the required cluster is found. */
+        for(; reqclusters > 0; reqclusters--)
+        {
+            fat->currcluster = fatfile->currentCluster;
+            fatClusterAnalyse(fat, fat->currcluster, &(fatfile->sectorStart),
+                              &(fatfile->currentCluster));
+        }
+        /* Calculates sectorStart for the found cluster. */
+        fatfile->sectorStart = (fatfile->currentCluster - 2)
+        * (long)fat->sectors_per_cluster
+        + fat->filestart;
+        /* Marks fatfile->nextCluster as invalid so fatReadFile will update it. */
+        fatfile->nextCluster = 0;
     }
-    else
-    {
-        /* We are seeking before the current cluster,
-         * so we have to go from the start cluster. */
-        fatfile->currentCluster = fatfile->startcluster;
-    }
-    /* Seeks clusters until the required cluster is found. */
-    for(; reqclusters > 0; reqclusters--)
-    {
-        fat->currcluster = fatfile->currentCluster;
-        fatClusterAnalyse(fat, fat->currcluster, &(fatfile->sectorStart),
-                          &(fatfile->currentCluster));
-    }
-    /* Calculates sectorStart for the found cluster. */
-    fatfile->sectorStart = (fatfile->currentCluster - 2)
-    * (long)fat->sectors_per_cluster
-    + fat->filestart;
-    /* Marks fatfile->nextCluster as invalid so fatReadFile will update it. */
-    fatfile->nextCluster = 0;
     if (fatfile->fileSize < newpos)
     {
         /* If the set sector would be after the end of file,

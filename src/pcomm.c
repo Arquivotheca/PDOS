@@ -1015,12 +1015,18 @@ static int cmd_dir_run(char *pattern)
     ret = PosFindFirst(p, 0x10);
     while (ret == 0)
     {
+        char dirdisp[6] = "";
+
+        if ((dta->attrib & FILE_ATTR_DIRECTORY) != 0)
+        {
+            strcpy(dirdisp, "<DIR>");
+        }
         tt = dos_to_timet(dta->file_date,dta->file_time);
         tms = localtime(&tt);
-        printf("%-13s %9ld %02x %04d-%02d-%02d %02d:%02d:%02d %s\n",
+        printf("%-13s %9ld %5.5s %04d-%02d-%02d %02d:%02d:%02d %s\n",
                dta->file_name,
                dta->file_size,
-               dta->attrib,
+               dirdisp,
                tms->tm_year + 1900,
                tms->tm_mon + 1,
                tms->tm_mday,

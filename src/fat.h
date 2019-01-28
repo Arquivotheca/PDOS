@@ -191,7 +191,7 @@ unsigned int fatCreatFile(FAT *fat, const char *fnm, FATFILE *fatfile,
 unsigned int fatCreatDir(FAT *fat, const char *dnm, const char *parentname,
                          int attrib);
 unsigned int fatCreatNewFile(FAT *fat, const char *fnm, FATFILE *fatfile,
-                          int attrib);
+                             int attrib);
 unsigned int fatOpenFile(FAT *fat, const char *fnm, FATFILE *fatfile);
 int fatReadFile(FAT *fat, FATFILE *fatfile, void *buf, size_t szbuf,
                 size_t *readbytes);
@@ -212,7 +212,7 @@ unsigned int fatUpdateDateAndTime(FAT *fat,FATFILE *fatfile);
 /*LFN functions that are used by ff_search.*/
 /*Reads LFN entry and returns checksum.*/
 unsigned char readLFNEntry(DIRENT *p, unsigned char *lfn,
-                                  unsigned int *length);
+                           unsigned int *length);
 /*Generates checksum from 8.3 name. */
 unsigned char generateChecksum(const char *fnm);
 #endif

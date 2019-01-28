@@ -351,7 +351,7 @@ unsigned int fatCreatFile(FAT *fat, const char *fnm, FATFILE *fatfile,
             memcpy(p->file_name, fat->search,
                   (sizeof(p->file_name)+sizeof(p->file_ext)));
         }
-        p->file_attr = (unsigned char)attrib;
+        p->file_attr = ((unsigned char)attrib) | DIRENT_ARCHIVE;
         fatfile->fileSize = 0;
         p->file_size[0] = fatfile->fileSize;
         p->file_size[1] = (fatfile->fileSize >> 8) & 0xff ;
@@ -487,7 +487,7 @@ unsigned int fatCreatDir(FAT *fat, const char *dnm, const char *parentname,
         memset(p, '\0', sizeof(DIRENT));
         memcpy(p->file_name, fat->search,
               (sizeof(p->file_name)+sizeof(p->file_ext)));
-        p->file_attr = (unsigned char)attrib;
+        p->file_attr = ((unsigned char)attrib) | DIRENT_SUBDIR;
         p->start_cluster[1] = (startcluster >> 8) & 0xff;
         p->start_cluster[0] = startcluster & 0xff;
         if (fat->fat_type == 32)
@@ -577,7 +577,7 @@ unsigned int fatCreatDir(FAT *fat, const char *dnm, const char *parentname,
 }
 
 unsigned int fatCreatNewFile(FAT *fat, const char *fnm, FATFILE *fatfile,
-                          int attrib)
+                             int attrib)
 {
     DIRENT *p;
     unsigned char lbuf[MAXSECTSZ];
@@ -643,7 +643,7 @@ unsigned int fatCreatNewFile(FAT *fat, const char *fnm, FATFILE *fatfile,
         memset(p, '\0', sizeof(DIRENT));
         memcpy(p->file_name, fat->search,
               (sizeof(p->file_name)+sizeof(p->file_ext)));
-        p->file_attr = (unsigned char)attrib;
+        p->file_attr = ((unsigned char)attrib) | DIRENT_ARCHIVE;
         fatfile->fileSize = 0;
         p->file_size[0] = fatfile->fileSize;
         p->file_size[1] = (fatfile->fileSize >> 8) & 0xff ;
@@ -1230,6 +1230,7 @@ int fatWriteFile(FAT *fat, FATFILE *fatfile, const void *buf, size_t szbuf,
     d->file_size[1]=(fatfile->fileSize >> 8) & 0xff;
     d->file_size[2]=(fatfile->fileSize >> 16) & 0xff;
     d->file_size[3]=(fatfile->fileSize >> 24)  & 0xff;
+    d->file_attr |= DIRENT_ARCHIVE;
 
     fatWriteLogical(fat,
                     fatfile->dirSect,
@@ -2355,6 +2356,11 @@ unsigned int fatRenameFile(FAT *fat,const char *old,const char *new)
     {
         /* It is 8.3 to 8.3 rename, so no entries are created or deleted. */
         memcpy(fat->de->file_name, fat->new_file, 11);
+        /* If the file is not a subdirectory, we must set the Archive attribute. */
+        if (!((fat->de->file_attr) & DIRENT_SUBDIR))
+        {
+            fat->de->file_attr |= DIRENT_ARCHIVE;
+        }
         fatWriteLogical(fat, fat->dirSect, fat->dbuf);
         return (0);
     }
@@ -2414,9 +2420,14 @@ unsigned int fatRenameFile(FAT *fat,const char *old,const char *new)
         memcpy(fat->de, &old_dirent, sizeof(DIRENT));
         memcpy(fat->de, fat->search, 11);
     }
+    /* If the file is not a subdirectory, we must set the Archive attribute. */
+    if (!((fat->de->file_attr) & DIRENT_SUBDIR))
+    {
+        fat->de->file_attr |= DIRENT_ARCHIVE;
+    }
     fatWriteLogical(fat, fat->dirSect, fat->dbuf);
-    return (0);
 
+    return (0);
 }
 /**/
 

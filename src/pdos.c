@@ -2154,7 +2154,7 @@ int PosMakeDir(const char *dname)
 
     ret = formatcwd(dname, dirname);
     if (ret) return (ret);
-    ret = dirCreat(dirname, DIRENT_SUBDIR);
+    ret = dirCreat(dirname, 0);
 
     return (ret);
 }

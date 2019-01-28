@@ -2234,13 +2234,21 @@ int PosReadFile(int fh, void *data, size_t bytes, size_t *readbytes)
     if (fh < NUM_SPECIAL_FILES)
     {
         p = (unsigned char *)data;
-        for (; x < bytes; x++)
+        while (x < bytes)
         {
             int scan;
             int ascii;
 
             BosReadKeyboardCharacter(&scan, &ascii);
-            p[x] = ascii;
+            if ((ascii == '\b') && (x > 0))
+            {
+                x--;
+                p[x] = '\0';
+            }
+            else
+            {
+                p[x] = ascii;
+            }
             pdosWriteText(ascii);
             if (ascii == '\r')
             {
@@ -2251,6 +2259,10 @@ int PosReadFile(int fh, void *data, size_t bytes, size_t *readbytes)
                 p[x] = '\n';
                 x++;
                 break;
+            }
+            if (ascii != '\b')
+            {
+                x++;
             }
         }
         *readbytes = x;

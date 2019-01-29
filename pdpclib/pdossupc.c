@@ -112,6 +112,11 @@ void __datetime(void *ptr)
     iptr[4] = minute;
     iptr[5] = second;
     iptr[6] = hundredths;
+    PosGetSystemDate(&year, &month, &day, &dow);
+    if (day != iptr[2])
+    {
+        __datetime(ptr);
+    }
     return;
 }
 

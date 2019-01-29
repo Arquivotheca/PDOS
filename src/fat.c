@@ -47,6 +47,7 @@ static void fatMarkCluster(FAT *fat, unsigned long cluster);
 static unsigned int fatFindFreeCluster(FAT *fat);
 static void fatChain(FAT *fat, FATFILE *fatfile);
 static void fatNuke(FAT *fat, unsigned long cluster);
+static void fatPopulateDateTime(FAT *fat, DIRENT *d);
 
 /* Functions for LFNs. */
 static unsigned int isLFN(const char *fnm, unsigned int length);
@@ -91,11 +92,14 @@ void fatInit(FAT *fat,
                                  void *buf),
              void (*writeLogical)(void *diskptr, unsigned long sector,
                                   void *buf),
-             void *parm)
+             void *parm,
+             void (*getDateTime)(FAT_DATETIME *ptr)
+             )
 {
     fat->readLogical = readLogical;
     fat->writeLogical = writeLogical;
     fat->parm = parm;
+    fat->getDateTime = getDateTime;
     /* BPB passed by PDOS is already at offset 11
      * (skipping jump code and OEM info). */
     fat->sector_size = bpb[0] | ((unsigned int)bpb[1] << 8);
@@ -1231,12 +1235,36 @@ int fatWriteFile(FAT *fat, FATFILE *fatfile, const void *buf, size_t szbuf,
     d->file_size[2]=(fatfile->fileSize >> 16) & 0xff;
     d->file_size[3]=(fatfile->fileSize >> 24)  & 0xff;
     d->file_attr |= DIRENT_ARCHIVE;
+    fatPopulateDateTime(fat, d);
 
     fatWriteLogical(fat,
                     fatfile->dirSect,
                     bbuf);
     *writtenbytes = done;
     return (0);
+}
+
+static void fatPopulateDateTime(FAT *fat, DIRENT *d)
+{
+    FAT_DATETIME dt;
+    unsigned int moddate;
+    unsigned int modtime;
+    unsigned int modhund;
+
+    fat->getDateTime(&dt);
+    moddate = ((dt.year - 1980) << 9)
+               | (dt.month << 5)
+               | dt.day;
+    modtime = (dt.hours << 11)
+              | (dt.minutes << 5)
+              | dt.seconds / 2;
+    modhund = (dt.seconds % 2) * 100 + dt.hundredths;
+    d->last_moddate[1] = (moddate >> 8);
+    d->last_moddate[0] = moddate & 0xff;
+    d->last_modtime[1] = (modtime >> 8);
+    d->last_modtime[0] = modtime & 0xff;
+    d->first_char = (unsigned char)modhund;
+    return;
 }
 
 /*

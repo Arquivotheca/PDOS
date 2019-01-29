@@ -57,6 +57,16 @@
 #define DIRENT_ACCESSB11 0x0800
 /**/
 
+typedef struct {
+    int year;
+    int month;
+    int day;
+    int hours;
+    int minutes;
+    int seconds;
+    int hundredths;
+} FAT_DATETIME;
+
 /*Structure for Directory Entry */
 typedef struct {
     unsigned char file_name[8]; /*Short file name (0x00)*/
@@ -152,6 +162,7 @@ typedef struct {
     void (*readLogical)(void *diskptr, unsigned long sector, void *buf);
     void (*writeLogical)(void *diskptr, unsigned long sector, void *buf);
     void *parm;
+    void (*getDateTime)(FAT_DATETIME *ptr);
     /* +++Add support for UCS-2. */
     char new_file[MAXFILENAME]; /*new filename for rename*/
     int last;
@@ -184,7 +195,9 @@ void fatInit(FAT *fat,
              unsigned char *bpb,
              void (*readLogical)(void *diskptr, unsigned long sector, void *buf),
              void (*writeLogical)(void *diskptr, unsigned long sector, void *buf),
-             void *parm);
+             void *parm,
+             void (*getDateTime)(FAT_DATETIME *ptr)
+             );
 void fatTerm(FAT *fat);
 unsigned int fatCreatFile(FAT *fat, const char *fnm, FATFILE *fatfile,
                           int attrib);

@@ -166,6 +166,7 @@ static char *envBlockTail(char *envptr);
 static char *envCopy(char *previous, char *progName);
 static char *envAllocateEmpty(char *progName);
 static char *envModify(char *envPtr, char *name, char *value);
+static void getDateTime(FAT_DATETIME *ptr);
 
 static MEMMGR memmgr;
 #ifdef __32BIT__
@@ -363,7 +364,8 @@ void pdosRun(void)
                 bootBPB,
                 readLogical,
                 writeLogical,
-                &disks[bootDriveLogical]);
+                &disks[bootDriveLogical],
+                getDateTime);
         strcpy(disks[bootDriveLogical].cwd, "");
         disks[bootDriveLogical].accessed = 1;
     }
@@ -585,7 +587,7 @@ static void processPartition(int drive, unsigned char *prm)
     disks[lastDrive].drive = drive;
     fatDefaults(&disks[lastDrive].fat);
     fatInit(&disks[lastDrive].fat, bpb, readLogical,
-        writeLogical, &disks[lastDrive]);
+        writeLogical, &disks[lastDrive], getDateTime);
     strcpy(disks[lastDrive].cwd, "");
     disks[lastDrive].accessed = 1;
     lastDrive++;
@@ -4857,7 +4859,8 @@ static void accessDisk(int drive)
     analyseBpb(&disks[drive], bpb);
     disks[drive].lba = 0;
     fatDefaults(&disks[drive].fat);
-    fatInit(&disks[drive].fat, bpb, readLogical, writeLogical, &disks[drive]);
+    fatInit(&disks[drive].fat, bpb, readLogical, writeLogical, &disks[drive],
+            getDateTime);
     strcpy(disks[drive].cwd, "");
     disks[drive].accessed = 1;
     return;
@@ -6125,4 +6128,19 @@ int PosSetNamedFont(char *fontName)
             return POS_ERR_NO_ERROR;
     }
     return POS_ERR_FILE_NOT_FOUND;
+}
+
+static void getDateTime(FAT_DATETIME *ptr)
+{
+    int dow1, dow2;
+
+    PosGetSystemDate(&ptr->year, &ptr->month, &ptr->day, &dow1);
+    PosGetSystemTime(&ptr->hours, &ptr->minutes, &ptr->seconds,
+                     &ptr->hundredths);
+    PosGetSystemDate(&ptr->year, &ptr->month, &ptr->day, &dow2);
+    if (dow1 != dow2)
+    {
+        getDateTime(ptr);
+    }
+    return;
 }

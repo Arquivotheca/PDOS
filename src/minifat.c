@@ -77,11 +77,14 @@ void fatInit(FAT *fat,
                                  void *buf),
              void (*writeLogical)(void *diskptr, unsigned long sector,
                                   void *buf),
-             void *parm)
+             void *parm,
+             void (*getDateTime)(FAT_DATETIME *ptr)
+             )
 {
     fat->readLogical = readLogical;
     fat->writeLogical = writeLogical;
     fat->parm = parm;
+    fat->getDateTime = getDateTime;
     /* BPB passed by PDOS is already at offset 11
      * (skipping jump code and OEM info). */
     fat->sector_size = bpb[0] | ((unsigned int)bpb[1] << 8);

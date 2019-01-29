@@ -1249,7 +1249,7 @@ static void fatPopulateDateTime(FAT *fat, DIRENT *d)
     FAT_DATETIME dt;
     unsigned int moddate;
     unsigned int modtime;
-    unsigned int modhund;
+    /* unsigned int modhund; */
 
     fat->getDateTime(&dt);
     moddate = ((dt.year - 1980) << 9)
@@ -1258,12 +1258,13 @@ static void fatPopulateDateTime(FAT *fat, DIRENT *d)
     modtime = (dt.hours << 11)
               | (dt.minutes << 5)
               | dt.seconds / 2;
-    modhund = (dt.seconds % 2) * 100 + dt.hundredths;
+    /* modhund = (dt.seconds % 2) * 100 + dt.hundredths; */
     d->last_moddate[1] = (moddate >> 8);
     d->last_moddate[0] = moddate & 0xff;
     d->last_modtime[1] = (modtime >> 8);
     d->last_modtime[0] = modtime & 0xff;
-    d->first_char = (unsigned char)modhund;
+    /* modhund would be used for creation time */
+    /* d->first_char = (unsigned char)modhund; */
     return;
 }
 

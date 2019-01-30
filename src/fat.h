@@ -13,6 +13,10 @@
 #define FATPOS_ONEMPTY 2
 #define FATPOS_ENDCLUSTER 3
 
+#define FATDATETIME_UPDATE_MODIFY 0x1
+#define FATDATETIME_UPDATE_CREATE 0x2
+#define FATDATETIME_UPDATE_ACCESS 0x4
+
 /*File name special values*/
 #define DIRENT_AVA 0x00
 #define DIRENT_IC 0x05

@@ -47,7 +47,8 @@ static void fatMarkCluster(FAT *fat, unsigned long cluster);
 static unsigned int fatFindFreeCluster(FAT *fat);
 static void fatChain(FAT *fat, FATFILE *fatfile);
 static void fatNuke(FAT *fat, unsigned long cluster);
-static void fatPopulateDateTime(FAT *fat, DIRENT *d);
+static void fatPopulateDateTime(FAT *fat, DIRENT *d,
+                                unsigned char update_time);
 
 /* Functions for LFNs. */
 static unsigned int isLFN(const char *fnm, unsigned int length);
@@ -361,6 +362,9 @@ unsigned int fatCreatFile(FAT *fat, const char *fnm, FATFILE *fatfile,
         p->file_size[1] = (fatfile->fileSize >> 8) & 0xff ;
         p->file_size[2] = (fatfile->fileSize >> 16) & 0xff ;
         p->file_size[3] = (fatfile->fileSize >> 24) & 0xff ;
+        fatPopulateDateTime(fat, p, (FATDATETIME_UPDATE_MODIFY |
+                                     FATDATETIME_UPDATE_CREATE |
+                                     FATDATETIME_UPDATE_ACCESS));
 
         fatfile->dirSect = fat->dirSect;
         fatfile->dirOffset = ((unsigned char*)p - fat->dbuf);
@@ -502,6 +506,9 @@ unsigned int fatCreatDir(FAT *fat, const char *dnm, const char *parentname,
 
         p->file_size[0] = p->file_size[1] = p->file_size[2]
             = p->file_size[3] = 0;
+        fatPopulateDateTime(fat, p, (FATDATETIME_UPDATE_MODIFY |
+                                     FATDATETIME_UPDATE_CREATE |
+                                     FATDATETIME_UPDATE_ACCESS));
 
         /* if deleted entry was found, don't mark next entry as null */
         if (fat->found_deleted)
@@ -653,6 +660,9 @@ unsigned int fatCreatNewFile(FAT *fat, const char *fnm, FATFILE *fatfile,
         p->file_size[1] = (fatfile->fileSize >> 8) & 0xff ;
         p->file_size[2] = (fatfile->fileSize >> 16) & 0xff ;
         p->file_size[3] = (fatfile->fileSize >> 24) & 0xff ;
+        fatPopulateDateTime(fat, p, (FATDATETIME_UPDATE_MODIFY |
+                                     FATDATETIME_UPDATE_CREATE |
+                                     FATDATETIME_UPDATE_ACCESS));
 
         fatfile->dirSect = fat->dirSect;
         fatfile->dirOffset = ((unsigned char*)p - fat->dbuf);
@@ -1235,7 +1245,8 @@ int fatWriteFile(FAT *fat, FATFILE *fatfile, const void *buf, size_t szbuf,
     d->file_size[2]=(fatfile->fileSize >> 16) & 0xff;
     d->file_size[3]=(fatfile->fileSize >> 24)  & 0xff;
     d->file_attr |= DIRENT_ARCHIVE;
-    fatPopulateDateTime(fat, d);
+    fatPopulateDateTime(fat, d, (FATDATETIME_UPDATE_MODIFY
+                                 | FATDATETIME_UPDATE_ACCESS));
 
     fatWriteLogical(fat,
                     fatfile->dirSect,
@@ -1244,12 +1255,12 @@ int fatWriteFile(FAT *fat, FATFILE *fatfile, const void *buf, size_t szbuf,
     return (0);
 }
 
-static void fatPopulateDateTime(FAT *fat, DIRENT *d)
+static void fatPopulateDateTime(FAT *fat, DIRENT *d,
+                                unsigned char update_type)
 {
     FAT_DATETIME dt;
     unsigned int moddate;
     unsigned int modtime;
-    /* unsigned int modhund; */
 
     fat->getDateTime(&dt);
     moddate = ((dt.year - 1980) << 9)
@@ -1258,13 +1269,28 @@ static void fatPopulateDateTime(FAT *fat, DIRENT *d)
     modtime = (dt.hours << 11)
               | (dt.minutes << 5)
               | dt.seconds / 2;
-    /* modhund = (dt.seconds % 2) * 100 + dt.hundredths; */
-    d->last_moddate[1] = (moddate >> 8);
-    d->last_moddate[0] = moddate & 0xff;
-    d->last_modtime[1] = (modtime >> 8);
-    d->last_modtime[0] = modtime & 0xff;
-    /* modhund would be used for creation time */
-    /* d->first_char = (unsigned char)modhund; */
+    if (update_type & FATDATETIME_UPDATE_MODIFY)
+    {
+        d->last_moddate[1] = (moddate >> 8);
+        d->last_moddate[0] = moddate & 0xff;
+        d->last_modtime[1] = (modtime >> 8);
+        d->last_modtime[0] = modtime & 0xff;
+    }
+    if (update_type & FATDATETIME_UPDATE_CREATE)
+    {
+        unsigned int modhund = (dt.seconds % 2) * 100 + dt.hundredths;
+
+        d->first_char = (unsigned char)modhund;
+        d->create_date[1] = (moddate >> 8);
+        d->create_date[0] = moddate & 0xff;
+        d->create_time[1] = (modtime >> 8);
+        d->create_time[0] = modtime & 0xff;
+    }
+    if (update_type & FATDATETIME_UPDATE_ACCESS)
+    {
+        d->last_access[1] = (moddate >> 8);
+        d->last_access[0] = moddate & 0xff;
+    }
     return;
 }
 

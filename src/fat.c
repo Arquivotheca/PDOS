@@ -366,6 +366,8 @@ unsigned int fatCreatFile(FAT *fat, const char *fnm, FATFILE *fatfile,
         fatPopulateDateTime(fat, p, (FATDATETIME_UPDATE_MODIFY |
                                      FATDATETIME_UPDATE_CREATE |
                                      FATDATETIME_UPDATE_ACCESS));
+        fatfile->last_access = (p->last_access[0]
+                                | ((unsigned int) p->last_access[1] << 8));
 
         fatfile->dirSect = fat->dirSect;
         fatfile->dirOffset = ((unsigned char*)p - fat->dbuf);
@@ -664,6 +666,8 @@ unsigned int fatCreatNewFile(FAT *fat, const char *fnm, FATFILE *fatfile,
         fatPopulateDateTime(fat, p, (FATDATETIME_UPDATE_MODIFY |
                                      FATDATETIME_UPDATE_CREATE |
                                      FATDATETIME_UPDATE_ACCESS));
+        fatfile->last_access = (p->last_access[0]
+                                | ((unsigned int) p->last_access[1] << 8));
 
         fatfile->dirSect = fat->dirSect;
         fatfile->dirOffset = ((unsigned char*)p - fat->dbuf);
@@ -1255,6 +1259,8 @@ int fatWriteFile(FAT *fat, FATFILE *fatfile, const void *buf, size_t szbuf,
     d->file_attr |= DIRENT_ARCHIVE;
     fatPopulateDateTime(fat, d, (FATDATETIME_UPDATE_MODIFY
                                  | FATDATETIME_UPDATE_ACCESS));
+    fatfile->last_access = (d->last_access[0]
+                            | ((unsigned int) d->last_access[1] << 8));
 
     fatWriteLogical(fat,
                     fatfile->dirSect,

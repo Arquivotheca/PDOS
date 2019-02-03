@@ -111,6 +111,7 @@ typedef struct {
         reading or writing. */
     unsigned int ftime;
     unsigned int fdate;
+    unsigned int last_access;
     unsigned int attr;
     unsigned int sectorCount; /* how many sectors in the current cluster */
     unsigned long sectorStart; /* starting sector for this cluster */

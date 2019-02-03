@@ -49,6 +49,7 @@ static void fatChain(FAT *fat, FATFILE *fatfile);
 static void fatNuke(FAT *fat, unsigned long cluster);
 static void fatPopulateDateTime(FAT *fat, DIRENT *d,
                                 unsigned char update_time);
+static void fatUpdateLastAccess(FAT *fat, FATFILE *fatfile);
 
 /* Functions for LFNs. */
 static unsigned int isLFN(const char *fnm, unsigned int length);
@@ -766,7 +767,8 @@ unsigned int fatOpenFile(FAT *fat, const char *fnm, FATFILE *fatfile)
                             | ((unsigned long)p->file_size[2] << 16)
                             | ((unsigned long)p->file_size[3] << 24);
         fatfile->currpos = 0;
-        /* empty files have a start cluster of 0 */
+        /* empty files have a start cluster of 0,
+         * directories can never have a start cluster of 0 */
         if ((fatfile->fileSize == 0)
             && (fatfile->startcluster == 0))
         {
@@ -783,7 +785,9 @@ unsigned int fatOpenFile(FAT *fat, const char *fnm, FATFILE *fatfile)
                 fat->currcluster = fatfile->startcluster
                 = (unsigned long) 0xffffff8;
             }
+            fatfile->dir = 0;
         }
+        else fatfile->dir = (fatfile->fileSize == 0);
 
         fatfile->attr = p->file_attr;
 
@@ -793,13 +797,15 @@ unsigned int fatOpenFile(FAT *fat, const char *fnm, FATFILE *fatfile)
         fatfile->fdate= p->last_moddate[0]
                     | ((unsigned int) p->last_moddate[1] << 8);
 
+        fatfile->last_access = (p->last_access[0]
+                                | ((unsigned int) p->last_access[1] << 8));
+
         fatfile->lastBytes = (unsigned int)
                              (fatfile->fileSize
                               % (fat->sectors_per_cluster
                                  * fat->sector_size));
         fatfile->lastSectors = fatfile->lastBytes / fat->sector_size;
         fatfile->lastBytes = fatfile->lastBytes % fat->sector_size;
-        fatfile->dir = (fatfile->fileSize == 0);
         fatClusterAnalyse(fat,
                           fat->currcluster,
                           &fatfile->sectorStart,
@@ -842,6 +848,8 @@ int fatReadFile(FAT *fat, FATFILE *fatfile, void *buf, size_t szbuf,
                                  * fat->sector_size));
         fatfile->lastSectors = fatfile->lastBytes / fat->sector_size;
         fatfile->lastBytes = fatfile->lastBytes % fat->sector_size;
+        /* Only files have the last access date updated. */
+        fatUpdateLastAccess(fat, fatfile);
     }
     if (!((fatfile->root) && (fat->rootsize)))
     {
@@ -1291,6 +1299,39 @@ static void fatPopulateDateTime(FAT *fat, DIRENT *d,
         d->last_access[1] = (moddate >> 8);
         d->last_access[0] = moddate & 0xff;
     }
+    return;
+}
+
+static void fatUpdateLastAccess(FAT *fat, FATFILE *fatfile)
+{
+    FAT_DATETIME dt;
+    unsigned int access_date;
+    static unsigned char bbuf[MAXSECTSZ];
+    DIRENT *d;
+
+    fat->getDateTime(&dt);
+    access_date = (((dt.year - 1980) << 9)
+                   | (dt.month << 5)
+                   | dt.day);
+
+    /* Directory entry is not updated if the date is correct. */
+    if (fatfile->last_access == access_date) return;
+
+    /* Updates the date stored in FATFILE. */
+    fatfile->last_access = access_date;
+
+    fatReadLogical(fat,
+                   fatfile->dirSect,
+                   bbuf);
+
+    d = (DIRENT *) (bbuf + fatfile->dirOffset);
+    d->last_access[1] = (access_date >> 8);
+    d->last_access[0] = access_date & 0xff;
+
+    fatWriteLogical(fat,
+                    fatfile->dirSect,
+                    bbuf);
+
     return;
 }
 

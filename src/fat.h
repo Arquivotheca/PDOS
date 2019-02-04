@@ -192,6 +192,10 @@ typedef struct {
     unsigned long dirSect; /* sector which contains directory entry */
     unsigned long temp_dirSect;
     int fnd;
+    /* Flag deciding whether Last access date should be recorded or not.
+     * Affects creation and modification of files, not only reading.
+     * Default is 0, value is later changed externally. */
+    int last_access_recording;
 } FAT;
 
 

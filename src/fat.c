@@ -193,6 +193,8 @@ void fatInit(FAT *fat,
         /* Checks if the FSInfo has correct signature. */
         if (fat->fsinfosector) checkFSInfoSignature(fat);
     }
+    /* Sets the externally set flag to default value. */
+    fat->last_access_recording = 0;
     return;
 }
 
@@ -853,7 +855,10 @@ int fatReadFile(FAT *fat, FATFILE *fatfile, void *buf, size_t szbuf,
         fatfile->lastSectors = fatfile->lastBytes / fat->sector_size;
         fatfile->lastBytes = fatfile->lastBytes % fat->sector_size;
         /* Only files have the last access date updated. */
-        fatUpdateLastAccess(fat, fatfile);
+        if (fat->last_access_recording)
+        {
+            fatUpdateLastAccess(fat, fatfile);
+        }
     }
     if (!((fatfile->root) && (fat->rootsize)))
     {
@@ -1302,8 +1307,11 @@ static void fatPopulateDateTime(FAT *fat, DIRENT *d,
     }
     if (update_type & FATDATETIME_UPDATE_ACCESS)
     {
-        d->last_access[1] = (moddate >> 8);
-        d->last_access[0] = moddate & 0xff;
+        if (fat->last_access_recording)
+        {
+            d->last_access[1] = (moddate >> 8);
+            d->last_access[0] = moddate & 0xff;
+        }
     }
     return;
 }

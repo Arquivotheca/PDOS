@@ -3328,7 +3328,45 @@ static void loadConfig(void)
                         *p = '\0';
                     }
                 }
-                pdosWriteText(buf[x]);
+                /* Sets if the Last access date should be recorded.
+                 * Syntax is "[drive][sign]", '+' for yes,
+                 * '-' for no, '[drive]' is the drive letter.
+                 * Default option is no.
+                 * Only the last entry and the last sign
+                 * for drive are important.
+                 * Invalid values or combinations are ignored. */
+                else if (memcmp(buf + x, "ACCDATE=", 8) == 0)
+                {
+                    int drive = -1;
+
+                    for (;
+                         ((buf[x] != '\r') &&
+                          (buf[x] != '\n') &&
+                          (x < readbytes));
+                         x++)
+                    {
+                        if ((buf[x] >= 'a' && buf[x] <= 'z') ||
+                            (buf[x] >= 'A' && buf[x] <= 'Z'))
+                        {
+                            drive = toupper((unsigned char)buf[x]) - 'A';
+                        }
+                        else if (buf[x] == '+')
+                        {
+                            if (drive >= 0 && drive < MAXDISKS)
+                            {
+                                disks[drive].fat.last_access_recording = 1;
+                            }
+                        }
+                        else if (buf[x] == '-')
+                        {
+                            if (drive >= 0 && drive < MAXDISKS)
+                            {
+                                disks[drive].fat.last_access_recording = 0;
+                            }
+                        }
+                    }
+                }
+                /*pdosWriteText(buf[x]);*/
             }
         } while (readbytes == 0x200);
         fileClose(fh);

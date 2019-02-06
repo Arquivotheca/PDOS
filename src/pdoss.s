@@ -116,6 +116,8 @@ _call32_ret:
         mov    %bx, %gs
         mov    %bx, %fs
         mov    %bx, %es
+/ reenable interrupts
+        sti
 
 _call32_pops:
         pop    saveesp2

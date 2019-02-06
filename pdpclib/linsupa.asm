@@ -117,8 +117,6 @@ ret
 
 
 
-.globl __creat
-__creat:
 .globl __open
 __open:
 push %ebp

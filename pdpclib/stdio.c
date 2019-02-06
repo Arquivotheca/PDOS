@@ -801,7 +801,11 @@ static void osfopen(void)
     }
     if (mode)
     {
+#ifdef __gnu_linux__
+        myfile->hfile = __open(fnm, 1, &errind);
+#else
         myfile->hfile = __creat(fnm, 0, &errind);
+#endif
     }
     else
     {

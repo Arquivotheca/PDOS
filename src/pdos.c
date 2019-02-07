@@ -100,6 +100,10 @@ static void int21handler(union REGS *regsin,
                         union REGS *regsout,
                         struct SREGS *sregs);
 
+static void int80handler(union REGS *regsin,
+                        union REGS *regsout,
+                        struct SREGS *sregs);
+
 static void make_ff(char *pat);
 static void scrunchf(char *dest, char *new);
 static int ff_search(void);
@@ -1887,6 +1891,48 @@ static void int21handler(union REGS *regsin,
 }
 
 
+#ifdef __32BIT__
+static void int80handler(union REGS *regsin,
+                        union REGS *regsout,
+                        struct SREGS *sregs)
+{
+    void *p;
+    size_t writtenbytes;
+
+#if 0
+    if (debugcnt < 200)
+    {
+        printf("ZZZ %d %04x YYY\n",debugcnt, regsin->x.ax);
+        /*dumplong(regsin->x.ax);*/
+        debugcnt++;
+    }
+#endif
+    switch (regsin->d.eax)
+    {
+        /* Terminate (with return code) */
+        case 0x1:
+            PosTerminate(regsin->d.ebx);
+            break;
+
+        /* Write */
+        case 0x4:
+            p = SUBADDRFIX(regsin->d.ecx);
+            regsout->d.eax = PosWriteFile(regsin->d.ebx,
+                                          p,
+                                          regsin->d.edx,
+                                          &writtenbytes);
+            if (regsout->d.eax) regsout->x.cflag = 1;
+            else regsout->d.eax = writtenbytes;
+            break;
+
+        default:
+            printf("got int 80H call %x\n", regsin->d.eax);
+            break;
+    }
+    return;
+}
+#endif
+
 /* !!! START OF POS FUNCTIONS !!! */
 
 /* INT 20 */
@@ -2288,6 +2334,11 @@ int PosWriteFile(int fh, const void *data, size_t len, size_t *writtenbytes)
         p = (unsigned char *)data;
         for (x = 0; x < len; x++)
         {
+            /* need this for Linux calls */
+            if (p[x] == '\n')
+            {
+                pdosWriteText('\r');
+            }
             pdosWriteText(p[x]);
         }
         *writtenbytes = len;
@@ -3134,6 +3185,33 @@ int int26(unsigned int *regs)
     regs[6] = regsout.d.cflag;
     return (0);
 }
+
+int int80(unsigned int *regs)
+{
+    static union REGS regsin;
+    static union REGS regsout;
+    static struct SREGS sregs;
+
+    regsin.d.eax = regs[0];
+    regsin.d.ebx = regs[1];
+    regsin.d.ecx = regs[2];
+    regsin.d.edx = regs[3];
+    regsin.d.esi = regs[4];
+    regsin.d.edi = regs[5];
+    regsin.d.cflag = 0;
+    memcpy(&regsout, &regsin, sizeof regsout);
+    int80handler(&regsin, &regsout, &sregs);
+    regs[0] = regsout.d.eax;
+    regs[1] = regsout.d.ebx;
+    regs[2] = regsout.d.ecx;
+    regs[3] = regsout.d.edx;
+    regs[4] = regsout.d.esi;
+    regs[5] = regsout.d.edi;
+    regs[6] = regsout.d.cflag;
+    return (0);
+}
+
+
 /**/
 #else
 void int20(unsigned int *regptrs,
@@ -5179,6 +5257,7 @@ int pdosstrt(void)
     protintHandler(0x21, int21);
     protintHandler(0x25, int25);
     protintHandler(0x26, int26);
+    protintHandler(0x80, int80);
     psp[0x80] = 0;
     psp[0x81] = 0;
     eparms.psp = psp;

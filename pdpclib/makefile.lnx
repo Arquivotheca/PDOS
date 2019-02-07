@@ -11,7 +11,7 @@ pdptest: linstart.o linsupa.o pdptest.o stdio.o string.o stdlib.o \
 	ar r pdplinux.a linstart.o linsupa.o stdio.o string.o stdlib.o
 	ar r pdplinux.a start.o time.o errno.o assert.o signal.o
 	ar r pdplinux.a locale.o ctype.o setjmp.o math.o __memmgr.o
-	gcc -nostdlib -o pdptest linstart.o linsupa.o pdptest.o pdplinux.a -lgcc
+	gcc -nostdlib -o pdptest linstart.o linsupa.o pdptest.o pdplinux.a
 
 .c.o:
 	$(CC) $(COPTS) $<

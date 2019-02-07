@@ -93,6 +93,12 @@ not25:
         jmp     fintry
 not26:
 
+        cmpl    $0x80, 8(%ebp)
+        jne     not80
+        int     $0x80
+        jmp     fintry
+not80:
+
 fintry:
         push    %esi
         mov     16(%ebp), %esi

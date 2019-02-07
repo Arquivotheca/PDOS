@@ -219,8 +219,14 @@ ret
 .globl __exita
 __exita:
 # exit/terminate
+push %ebp
+mov %esp, %ebp
+push %ebx
+movl 8(%ebp), %ebx
 movl $1, %eax
 int $0x80
+pop %ebx
+pop %ebp
 ret
 
 

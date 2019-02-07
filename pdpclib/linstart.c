@@ -7,7 +7,7 @@
 
 
 extern int __start(int argc, char **argv);
-extern int __exit(int rc);
+extern int __exita(int rc);
 
 
 /* We can get away with a minimal startup code, plus make it
@@ -19,7 +19,7 @@ int _start(char *p)
     int rc;
 
     rc = __start(*(int *)(&p - 1), &p);
-    __exit(rc);
+    __exita(rc);
     return (rc);
 }
 

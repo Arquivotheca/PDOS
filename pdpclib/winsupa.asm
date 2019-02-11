@@ -71,6 +71,14 @@ __longj proc env:dword
 __longj endp
 
 
+; For compiling with GCC 4 we don't want to
+; have to link the GCC library in
+public __chkstk_ms
+__chkstk_ms proc
+        ret
+__chkstk_ms endp
+
+
 _TEXT ends
 
 end

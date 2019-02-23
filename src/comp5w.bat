@@ -4,6 +4,7 @@ gcc386 -S -Os -fno-common -I../pdpclib fat.c
 gcc386 -S -Os -fno-common -I../pdpclib patmat.c
 gcc386 -S -Os -fno-common -I../pdpclib memmgr.c
 gcc386 -S -Os -fno-common -I../pdpclib protintp.c
+gcc386 -S -Os -fno-common -I../pdpclib exeload.c
 
 as386 -o pdos.o pdos.s
 del pdos.s
@@ -17,12 +18,14 @@ as386 -o memmgr.o memmgr.s
 del memmgr.s
 as386 -o protintp.o protintp.s
 del protintp.s
+as386 -o exeload.o exeload.s
+del exeload.s
 
 as386 -o strt32.o strt32.s
 as386 -o support.o support.s
 as386 -o protints.o protints.s
 as386 -o pdoss.o pdoss.s
 
-ld386 -s -e start -o pdos.exe strt32.o pdos.o bos.o fat.o memmgr.o patmat.o support.o protintp.o protints.o pdoss.o ../pdpclib/pdos.a
-ld386 -r -s -e start -o pdos.exe strt32.o pdos.o bos.o fat.o memmgr.o patmat.o support.o protintp.o protints.o pdoss.o ../pdpclib/pdos.a
+ld386 -s -e start -o pdos.exe strt32.o pdos.o bos.o fat.o memmgr.o patmat.o support.o protintp.o exeload.o protints.o pdoss.o ../pdpclib/pdos.a
+ld386 -r -s -e start -o pdos.exe strt32.o pdos.o bos.o fat.o memmgr.o patmat.o support.o protintp.o exeload.o protints.o pdoss.o ../pdpclib/pdos.a
 strip386 --strip-unneeded pdos.exe

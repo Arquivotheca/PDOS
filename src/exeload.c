@@ -19,10 +19,16 @@
 #include "support.h"
 #include "a_out.h"
 #include "elf.h"
+#include "mz.h"
+#include "pecoff.h"
 
 static int exeloadLoadAOUT(EXELOAD *exeload, FILE *fp);
 static int exeloadLoadELF(EXELOAD *exeload, FILE *fp);
 static int exeloadLoadMZ(EXELOAD *exeload, FILE *fp);
+/* Subfunctions of exeloadLoadMZ() for loading extensions to MZ. */
+static int exeloadLoadPE(EXELOAD *exeload, FILE *fp, unsigned long e_lfanew);
+static int exeloadLoadLX(EXELOAD *exeload, FILE *fp, unsigned long e_lfanew);
+static int exeloadLoadNE(EXELOAD *exeload, FILE *fp, unsigned long e_lfanew);
 
 int exeloadDoload(EXELOAD *exeload, char *prog)
 {
@@ -541,7 +547,7 @@ static int exeloadLoadELF(EXELOAD *exeload, FILE *fp)
                         }
                         return (2);
                     }
-                    
+
                     /* Bytes that are not present in file,
                      * but must be present in memory must be set to 0. */
                     if (segment->p_filesz < segment->p_memsz)
@@ -553,7 +559,7 @@ static int exeloadLoadELF(EXELOAD *exeload, FILE *fp)
                 }
             }
         }
-        
+
         for (section = section_table;
              section < section_table + elfHdr->e_shnum;
              section++)
@@ -781,27 +787,232 @@ static int exeloadLoadELF(EXELOAD *exeload, FILE *fp)
         exeload->cs_address = (unsigned long)exeStart;
         exeload->ds_address = (unsigned long)exeStart;
     }
-    
+
     return (0);
 }
 
 static int exeloadLoadMZ(EXELOAD *exeload, FILE *fp)
 {
-    unsigned long exeLen;
-    unsigned char *exeStart;
-    unsigned int sp;
-    unsigned char *bss;
-    unsigned char firstbit[2];
+    Mz_hdr firstbit;
 
     rewind(fp);
-    if ((fread(&firstbit, 1, sizeof(firstbit), fp) != 2)
-        || (memcmp(firstbit, "MZ", 2) != 0
-            && memcmp(&firstbit, "ZM", 2) != 0))
+
+    /* The header size is in paragraphs,
+     * so the smallest possible header is 16 bytes (paragraph) long.
+     * Next is the magic number checked. */
+    if ((fread(&firstbit, 1, 16, fp) != 16)
+        || (memcmp(firstbit.magic, "MZ", 2) != 0
+            && memcmp(&firstbit.magic, "ZM", 2) != 0))
     {
         return (1);
     }
+    if (firstbit.header_size == 0)
+    {
+        printf("MZ Header has 0 size\n");
+        return (2);
+    }
+    if (firstbit.header_size * 16 > sizeof(firstbit))
+    {
+        printf("MZ Header is too large, size: %u\n",
+               firstbit.header_size * 16);
+        return (2);
+    }
+    /* Loads the rest of the header. */
+    if (fread(((char *)&firstbit) + 16, 1,
+              (firstbit.header_size - 1) * 16, fp)
+        != (firstbit.header_size - 1) * 16)
+    {
+        printf("Error occured while reading MZ header\n");
+        return (2);
+    }
+    /* Determines whether the executable has extensions or is a pure MZ.
+     * Extensions are at offset in e_lfanew,
+     * so the header must have at least 4 paragraphs. */
+    if ((firstbit.header_size >= 4)
+        && (firstbit.e_lfanew != 0))
+    {
+        int ret;
 
-    printf("MZ, NE, LE and PE format is not supported\n");
-    
+        /* Same logic as in exeloadDoload(). */
+        ret = exeloadLoadPE(exeload, fp, firstbit.e_lfanew);
+        if (ret == 1)
+            ret = exeloadLoadLX(exeload, fp, firstbit.e_lfanew);
+        if (ret == 1)
+            ret = exeloadLoadNE(exeload, fp, firstbit.e_lfanew);
+        if (ret == 1)
+            printf("Unknown MZ extension\n");
+        return (ret);
+    }
+    /* Pure MZ executables are for 16-bit DOS, so we cannot run them. */
+    printf("Pure MZ executables are not supported\n");
+
+    return (2);
+}
+
+static int exeloadLoadPE(EXELOAD *exeload, FILE *fp, unsigned long e_lfanew)
+{
+    Coff_hdr coff_hdr;
+    Pe32_optional_hdr *optional_hdr;
+    Coff_section *section_table, *section;
+    unsigned char *exeStart;
+    unsigned int sp;
+
+    {
+        unsigned char firstbit[4];
+
+        if (fseek(fp, e_lfanew, SEEK_SET)
+            || (fread(firstbit, 1, 4, fp) != 4)
+            || (memcmp(firstbit, "PE\0\0", 4) != 0))
+        {
+            return (1);
+        }
+    }
+    if (fread(&coff_hdr, 1, sizeof(coff_hdr), fp) != sizeof(coff_hdr))
+    {
+        printf("Error occured while reading COFF header\n");
+        return (2);
+    }
+    if ((coff_hdr.Machine != IMAGE_FILE_MACHINE_UNKNOWN)
+        && (coff_hdr.Machine != IMAGE_FILE_MACHINE_I386))
+    {
+        if (coff_hdr.Machine == IMAGE_FILE_MACHINE_AMD64)
+        {
+            printf("64-bit PE programs are not supported\n");
+        }
+        else
+        {
+            printf("Unknown PE machine type: %04x\n", coff_hdr.Machine);
+        }
+        return (2);
+    }
+
+    optional_hdr = malloc(coff_hdr.SizeOfOptionalHeader);
+    if (optional_hdr == NULL)
+    {
+        printf("Insufficient memory to load PE optional header\n");
+        return (2);
+    }
+    if (fread(optional_hdr, 1, coff_hdr.SizeOfOptionalHeader, fp)
+        != coff_hdr.SizeOfOptionalHeader)
+    {
+        printf("Error occured while reading PE optional header\n");
+        free(optional_hdr);
+        return (2);
+    }
+    if (optional_hdr->Magic != MAGIC_PE32)
+    {
+        printf("Unknown PE optional header magic: %04x\n",
+               optional_hdr->Magic);
+        free(optional_hdr);
+        return (2);
+    }
+
+    section_table = malloc(coff_hdr.NumberOfSections * sizeof(Coff_section));
+    if (section_table == NULL)
+    {
+        printf("Insufficient memory to load PE section headers\n");
+        return (2);
+    }
+    if (fread(section_table, 1,
+              coff_hdr.NumberOfSections * sizeof(Coff_section), fp)
+        != (coff_hdr.NumberOfSections * sizeof(Coff_section)))
+    {
+        printf("Error occured while reading PE optional header\n");
+        free(section_table);
+        free(optional_hdr);
+        return (2);
+    }
+
+    /* Allocates memory for the control structures and the process.
+     * Size of image is obtained from the optional header. */
+    exeload->memStart = malloc(optional_hdr->SizeOfImage
+                               + exeload->extra_memory_before
+                               + exeload->extra_memory_after);
+    exeload->exeStart = exeload->memStart + exeload->extra_memory_before;
+    exeStart = exeload->exeStart;
+
+    /* Loads all sections at their addresses. */
+    for (section = section_table;
+         section < section_table + (coff_hdr.NumberOfSections);
+         section++)
+    {
+        unsigned long size_in_file;
+
+        /* Virtual size of a section is larger than in file,
+         * so the difference is filled with 0. */
+        if ((section->VirtualSize) > (section->SizeOfRawData))
+        {
+            memset((exeStart
+                    + (section->VirtualAddress)
+                    + (section->SizeOfRawData)),
+                   0,
+                   (section->VirtualSize) - (section->SizeOfRawData));
+            size_in_file = section->SizeOfRawData;
+        }
+        /* SizeOfRawData is rounded up,
+         * so it can be larger than VirtualSize. */
+        else
+        {
+            size_in_file = section->VirtualSize;
+        }
+        if (fseek(fp, section->PointerToRawData, SEEK_SET)
+            || (fread(exeStart + section->VirtualAddress, 1,
+                      size_in_file, fp) != size_in_file))
+        {
+            printf("Error occured while reading PE section\n");
+            free(section_table);
+            free(optional_hdr);
+            return (2);
+        }
+    }
+    fclose(fp);
+
+    /* PE executable files are loaded at their preferred address. */
+    exeload->entry_point = ((optional_hdr->ImageBase)
+                             + (optional_hdr->AddressOfEntryPoint));
+    sp = ((unsigned long)exeStart
+          + (optional_hdr->SizeOfImage)
+          + (exeload->stack_size));
+    sp += optional_hdr->ImageBase;
+    exeload->sp = sp;
+    exeStart -= optional_hdr->ImageBase;
+    exeStart = ADDR2ABS(exeStart);
+    /* Frees memory not needed by the process. */
+    free(section_table);
+    free(optional_hdr);
+    exeload->cs_address = (unsigned long)exeStart;
+    exeload->ds_address = (unsigned long)exeStart;
+
+    return (0);
+}
+
+static int exeloadLoadLX(EXELOAD *exeload, FILE *fp, unsigned long e_lfanew)
+{
+    unsigned char firstbit[2];
+
+    if (fseek(fp, e_lfanew, SEEK_SET)
+        || (fread(firstbit, 1, sizeof(firstbit), fp) != sizeof(firstbit))
+        || (memcmp(firstbit, "LX", 2) != 0))
+    {
+        return (1);
+    }
+    /* LX seems to be called LE sometimes. */
+    printf("LX (other name LE) is not supported\n");
+
+    return (2);
+}
+
+static int exeloadLoadNE(EXELOAD *exeload, FILE *fp, unsigned long e_lfanew)
+{
+    unsigned char firstbit[2];
+
+    if (fseek(fp, e_lfanew, SEEK_SET)
+        || (fread(firstbit, 1, sizeof(firstbit), fp) != sizeof(firstbit))
+        || (memcmp(firstbit, "NE", 2) != 0))
+    {
+        return (1);
+    }
+    printf("NE is not supported\n");
+
     return (2);
 }

@@ -753,6 +753,7 @@ static DCB *gendcb = NULL; /* +++ need to eliminate this state info */
 static IOB geniob; /* +++ move this somewhere */
 static char lastds[FILENAME_MAX]; /* needs to be in TIOT */
 static int memid = 256; /* this really belongs in the address space */
+static int cons_type; /* do we have a 1052 or 3215? */
 
 void gotret(void);
 int adisp(void);
@@ -900,13 +901,22 @@ int pdosInit(PDOS *pdos)
                 *q = '\0';
                 if (isdigit((unsigned char)p[0]))
                 {
-                    if (strstr(p, "3215") != NULL)
+                    if ((strstr(p, "3215") != NULL)
+                        || (strstr(p, "1052") != NULL))
                     {
 #if defined(S390)
                         __consdn = 0x10000 + ctr;
 #else
                         sscanf(p, "%x", &__consdn);
 #endif
+                        if (strstr(p, "3215") != NULL)
+                        {
+                            cons_type = 3215;
+                        }
+                        else
+                        {
+                            cons_type = 1052;
+                        }
                         break;
                     }
                     ctr++;
@@ -1153,7 +1163,7 @@ static int pdosDispatchUntilInterrupt(PDOS *pdos)
                        "\x00\x00\x00\x00\x00\x00\x00\x00", 8) == 0)
             {
                 cnt = __consrd(300, tbuf);
-                if (cnt >= 0)
+                if ((cnt >= 0) && (cons_type == 3215))
                 {
                     tbuf[cnt++] = '\n';
                 }

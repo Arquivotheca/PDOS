@@ -54,6 +54,7 @@ typedef struct {
     unsigned long hidden;
     int drive;
     int lba;
+    int valid;
 } DISKINFO;
 
 /* ===== BEGINS PROCESS MANAGEMENT DATA STRUCTURES ===== */
@@ -174,6 +175,7 @@ static char *envCopy(char *previous, char *progName);
 static char *envAllocateEmpty(char *progName);
 static char *envModify(char *envPtr, char *name, char *value);
 static void getDateTime(FAT_DATETIME *ptr);
+static int isDriveValid(int drive);
 
 static MEMMGR memmgr;
 #ifdef __32BIT__
@@ -375,6 +377,7 @@ void pdosRun(void)
                 getDateTime);
         strcpy(disks[bootDriveLogical].cwd, "");
         disks[bootDriveLogical].accessed = 1;
+        disks[bootDriveLogical].valid = 1;
     }
     currentDrive = bootDriveLogical;
     cwd = disks[currentDrive].cwd;
@@ -597,6 +600,7 @@ static void processPartition(int drive, unsigned char *prm)
         writeLogical, &disks[lastDrive], getDateTime);
     strcpy(disks[lastDrive].cwd, "");
     disks[lastDrive].accessed = 1;
+    disks[lastDrive].valid = 1;
     lastDrive++;
     return;
 }
@@ -2022,14 +2026,16 @@ unsigned int PosSelectDisk(unsigned int drive)
 {
     unsigned int ret;
 
-    currentDrive = drive;
-
     if (drive < 2)
     {
         accessDisk(drive);
     }
+    if (isDriveValid(drive))
+    {
+        currentDrive = drive;
 
-    cwd = disks[drive].cwd;
+        cwd = disks[drive].cwd;
+    }
 
     ret = lastDrive;
 
@@ -4060,6 +4066,11 @@ static int fileCreat(const char *fnm, int attrib, int *handle)
     return (0);
 }
 
+static int isDriveValid(int drive)
+{
+    return drive >= 0 && drive < MAXDISKS && disks[drive].valid;
+}
+
 static int dirCreat(const char *dnm, int attrib)
 {
     const char *p;
@@ -4099,7 +4110,8 @@ static int dirCreat(const char *dnm, int attrib)
     {
         strncpy(parentname,p,(end-p));
     }
-
+    if (!isDriveValid(drive))
+        return POS_ERR_INVALID_DRIVE;
     rc = fatCreatDir(&disks[drive].fat, p, parentname, attrib);
     return (rc);
 }
@@ -4166,6 +4178,8 @@ static int fileOpen(const char *fnm, int *handle)
         }
     }
     if (x == MAXFILES) return (-POS_ERR_MANY_OPEN_FILES);
+    if (!isDriveValid(drive))
+        return POS_ERR_INVALID_DRIVE;
     rc = fatOpenFile(&disks[drive].fat, p, &fhandle[x].fatfile);
     if (rc) return (rc);
     fhandle[x].inuse = 1;
@@ -4221,6 +4235,8 @@ static int fileDelete(const char *fnm)
 
     /* Checks if the file that should be deleted is not a directory.
      * Directories must be deleted using dirDelete instead. */
+    if (!isDriveValid(drive))
+        return POS_ERR_INVALID_DRIVE;
     rc = fatGetFileAttributes(&disks[drive].fat, p, &attr);
     if (rc || (attr & DIRENT_SUBDIR)) return (POS_ERR_FILE_NOT_FOUND);
 
@@ -4254,6 +4270,8 @@ static int dirDelete(const char *dnm)
         p++;
     }
 
+    if (!isDriveValid(drive))
+        return POS_ERR_INVALID_DRIVE;
     rc = fatGetFileAttributes(&disks[drive].fat, p, &attr);
     if (rc || !(attr & DIRENT_SUBDIR)) return (POS_ERR_PATH_NOT_FOUND);
 
@@ -4337,6 +4355,7 @@ static void accessDisk(int drive)
             getDateTime);
     strcpy(disks[drive].cwd, "");
     disks[drive].accessed = 1;
+    disks[drive].valid = 1;
     return;
 }
 
@@ -4846,6 +4865,10 @@ static int formatcwd(const char *input,char *output)
         strcat(output,input);
     }
     tempDrive=toupper(output[0]) - 'A';
+    if (!isDriveValid(tempDrive))
+    {
+        return POS_ERR_INVALID_DRIVE;
+    }
     /* Checks for '\' or '/' before the null terminator and removes it. */
     p = strchr(output, '\0') - 1;
     if (p[0] == '\\' || p[0] == '/') p[0] = '\0';

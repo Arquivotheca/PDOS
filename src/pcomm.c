@@ -832,6 +832,35 @@ static void errorBadArgs(void)
     printf("ERROR: Bad arguments to %s command\n", curCmdName);
 }
 
+static void showError(int ret)
+{
+    char *msg = NULL;
+    /* No error, nothing to display */
+    if (ret == POS_ERR_NO_ERROR)
+    {
+        return;
+    }
+    /* Don't try to get error message if not genuine PDOS,
+       will return rubbish */
+    if (genuine_pdos)
+    {
+        /* Get error message */
+        msg = PosGetErrorMessageString(ret);
+    }
+    /* NULL means unknown error */
+    if (msg == NULL)
+    {
+        printf("ERROR: Operation failed due to error code %d "
+                "(no message available)\n", ret);
+    }
+    /* Otherwise display the message */
+    else
+    {
+        printf("ERROR: Operation failed due to error %s (error code %d)\n",
+                msg, ret);
+    }
+}
+
 static int cmd_exit_run(char *options)
 {
     int doTSR = 0;
@@ -1013,6 +1042,10 @@ static int cmd_dir_run(char *pattern)
         p = pattern;
     }
     ret = PosFindFirst(p, 0x10);
+    if (ret != 0 && ret != POS_ERR_NO_MORE_FILES) {
+        showError(ret);
+        return 1;
+    }
     while (ret == 0)
     {
         char dirdisp[6] = "";
@@ -1430,35 +1463,6 @@ static int cmd_copy_run(char *b)
     }
 
     return rv;
-}
-
-static void showError(int ret)
-{
-    char *msg = NULL;
-    /* No error, nothing to display */
-    if (ret == POS_ERR_NO_ERROR)
-    {
-        return;
-    }
-    /* Don't try to get error message if not genuine PDOS,
-       will return rubbish */
-    if (genuine_pdos)
-    {
-        /* Get error message */
-        msg = PosGetErrorMessageString(ret);
-    }
-    /* NULL means unknown error */
-    if (msg == NULL)
-    {
-        printf("ERROR: Operation failed due to error code %d "
-                "(no message available)\n", ret);
-    }
-    /* Otherwise display the message */
-    else
-    {
-        printf("ERROR: Operation failed due to error %s (error code %d)\n",
-                msg, ret);
-    }
 }
 
 static int cmd_cd_run(char *to)

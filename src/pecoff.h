@@ -80,6 +80,25 @@ typedef struct {
 #define MAGIC_PE32PLUS 0x20B
 
 typedef struct {
+    unsigned long VirtualAddress;
+    unsigned long Size;
+} IMAGE_DATA_DIRECTORY;
+
+/* Indexes of data directories. */
+#define DATA_DIRECTORY_EXPORT_TABLE 0
+#define DATA_DIRECTORY_IMPORT_TABLE 1
+#define DATA_DIRECTORY_REL 5
+
+typedef struct {
+    unsigned long PageRva;
+    unsigned long BlockSize; /* Number of all bytes in the block. */
+} Base_relocation_block;
+
+/* Relocation types. */
+#define IMAGE_REL_BASED_ABSOLUTE 0 /* Skip this relocation. */
+#define IMAGE_REL_BASED_HIGHLOW  3
+
+typedef struct {
     unsigned char Name[8];
     unsigned long VirtualSize;
     unsigned long VirtualAddress;

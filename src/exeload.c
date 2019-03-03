@@ -967,6 +967,82 @@ static int exeloadLoadPE(EXELOAD *exeload, FILE *fp, unsigned long e_lfanew)
     }
     fclose(fp);
 
+    if (!(coff_hdr.Characteristics & IMAGE_FILE_RELOCS_STRIPPED))
+    {
+        /* Relocations are not stripped, so the executable can be relocated. */
+        if (optional_hdr->NumberOfRvaAndSizes > DATA_DIRECTORY_REL)
+        {
+            IMAGE_DATA_DIRECTORY *data_dir = (((IMAGE_DATA_DIRECTORY *)
+                                               (optional_hdr + 1))
+                                              + DATA_DIRECTORY_REL);
+            /* Difference between preferred address and real address. */
+            unsigned long image_diff = (optional_hdr->ImageBase
+                                        - (unsigned long)exeStart);
+            int lower_exeStart = 0;
+            Base_relocation_block *rel_block = ((Base_relocation_block *)
+                                                (exeStart
+                                                 + (data_dir
+                                                    ->VirtualAddress)));
+            Base_relocation_block *end_rel_block;
+
+            if (optional_hdr->ImageBase > (unsigned long)exeStart)
+            {
+                /* Image is loaded  at lower address than preferred. */
+                lower_exeStart = 1;
+            }
+            end_rel_block = rel_block + ((data_dir->Size)
+                                         / sizeof(Base_relocation_block));
+
+            for (; rel_block < end_rel_block;)
+            {
+                unsigned short *cur_rel = (unsigned short *)rel_block;
+                unsigned short *end_rel;
+
+                end_rel = (cur_rel
+                           + ((rel_block->BlockSize)
+                              / sizeof(unsigned short)));
+                cur_rel = (unsigned short *)(rel_block + 1);
+
+                for (; cur_rel < end_rel; cur_rel++)
+                {
+                    /* Top 4 bits indicate the type of relocation. */
+                    unsigned char rel_type = (*cur_rel) >> 12;
+                    void *rel_target = (exeStart + (rel_block->PageRva)
+                                        + ((*cur_rel) & 0x0fff));
+
+                    if (rel_type == IMAGE_REL_BASED_ABSOLUTE) continue;
+                    if (rel_type == IMAGE_REL_BASED_HIGHLOW)
+                    {
+                        if (lower_exeStart)
+                            (*((unsigned long *)rel_target)) -= image_diff;
+                        else (*((unsigned long *)rel_target)) += image_diff;
+                    }
+                    else
+                    {
+                        printf("Unknown PE relocation type: %u\n",
+                               rel_type);
+                    }
+                }
+
+                rel_block = (Base_relocation_block *)cur_rel;
+            }
+        }
+        /* Relocatable files can be loaded anywhere. */
+        exeload->entry_point = ((unsigned long)exeStart
+                                + (optional_hdr->AddressOfEntryPoint));
+        sp = ((unsigned long)exeStart
+              + (optional_hdr->SizeOfImage)
+              + (exeload->stack_size));
+        exeload->sp = (unsigned int)ADDR2ABS(sp);
+        /* Frees memory not needed by the process. */
+        free(section_table);
+        free(optional_hdr);
+        exeload->cs_address = 0;
+        exeload->ds_address = 0;
+
+        return (0);
+    }
+
     /* PE executable files are loaded at their preferred address. */
     exeload->entry_point = ((optional_hdr->ImageBase)
                              + (optional_hdr->AddressOfEntryPoint));

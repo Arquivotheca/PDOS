@@ -105,7 +105,17 @@ void gotint(int intno, unsigned int *save)
     newregs[11] = (unsigned short)(save[4] >> 16); /* ds = top esi */
     *intbuffer = intno;
     memcpy(intbuffer + 1, newregs, sizeof newregs);
-    runreal_p(dorealint, 0);
+    {
+        /* Saves CR3 (Page Directory address) as the switch zeroes it. */
+        unsigned long saved_cr3 = saveCR3();
+        runreal_p(dorealint, 0);
+        /* If CR3 was not 0, it should be restored and paging enabled. */
+        if (saved_cr3)
+        {
+            loadPageDirectory(saved_cr3);
+            enablePaging();
+        }
+    }
     memcpy(newregs, intbuffer + 1, sizeof newregs);
     ssave = (unsigned short *)save;
     ssave[0*2] = newregs[0]; /* ax */

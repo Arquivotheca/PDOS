@@ -9,6 +9,9 @@
 / symbols defined here that are accessed from elsewhere
         .globl _call32
         .globl _callwithbypass
+        .globl _loadPageDirectory
+        .globl _saveCR3
+        .globl _enablePaging
 
         .text
 
@@ -148,6 +151,38 @@ _callwithbypass:
         pop     %eax
         jmp     _call32_ret
 
+/////////////////////////////////////////////////////////////
+/ void loadPageDirectory(unsigned long page_directory_address);
+/ Loads Page Directory address into CR3.
+_loadPageDirectory:
+        push    %ebp
+        mov     %esp, %ebp
+        mov     8(%ebp), %eax
+        mov     %eax, %cr3
+        pop     %ebp
+        ret
+
+/////////////////////////////////////////////////////////////
+/ unsigned long saveCR3(void);
+/ Returns the content of CR3.
+_saveCR3:
+        push    %ebp
+        mov     %esp, %ebp
+        mov     %cr3, %eax
+        pop     %ebp
+        ret
+
+/////////////////////////////////////////////////////////////
+/ void enablePaging(void);
+/ Sets the Paging bit of CR0.
+_enablePaging:
+        push    %ebp
+        mov     %esp, %ebp
+        mov     %cr0, %eax
+        or      $0x80000000, %eax
+        mov     %eax, %cr0
+        pop     %ebp
+        ret
 
 .bss
         .p2align 2

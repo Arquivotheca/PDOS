@@ -10,11 +10,10 @@
 
 ; The process for switching to real mode from protected mode is:
 
-; 1. Disable paging (make sure the running code is in 1:1 page), zero CR3
-; 2. Set DS, ES etc to have a limit of 64k.
-; 3. Set CS to have a limit of 64k via a far jump
-; 4. Switch off the protected mode bit
-; 5. Do a far jump to wherever in real memory you want
+; 1. Set DS, ES etc to have a limit of 64k.
+; 2. Set CS to have a limit of 64k via a far jump
+; 3. Switch off the protected mode bit
+; 4. Do a far jump to wherever in real memory you want
 
 ; For more information see 386INTEL.ZIP on the internet.
 
@@ -54,9 +53,6 @@ oldss   dw ?
 oldsp   dw ?
 
 newstack dd ?
-
-savecr3 dd ?
-firstswitch db 01h
 
 oldds   dw ?
 _DATA   ends
@@ -249,36 +245,6 @@ assume cs:_TEXT32
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 rtop_stage2:
-; In case this is the first switch from real to protected mode
-; special logic is needed to prevent a problem with savecr3
-; (savecr3 not being 0, although it was initialized to 0).
-        mov al, firstswitch
-        cmp firstswitch, 01h
-        je firstswitch_rtop_stage2
-; Loads the segment registers
-        mov ax, 0010h
-        mov ss, ax
-        mov gs, ax
-        mov fs, ax
-        mov es, ax
-        mov ds, ax
-; Checks if paging was enabled before (page directory address != 0)
-        mov eax, savecr3
-        cmp eax, 00h
-        je rtop_stage2_cont
-; It was enabled, so CR3 is restored and paging is enabled again
-        mov cr3, eax
-        mov eax, cr0
-        or eax, 080000000h
-        mov cr0, eax
-rtop_stage2_cont:
-        jmp ebx
-
-; Same as rtop_stage2, but without accessing savecr3
-; after loading segment registers.
-firstswitch_rtop_stage2:
-        xor al, al
-        mov firstswitch, al
         mov ax, 0010h 
         mov ss, ax
         mov gs, ax
@@ -286,6 +252,7 @@ firstswitch_rtop_stage2:
         mov es, ax
         mov ds, ax
         jmp ebx
+        
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; ptor - go from protected mode to real mode
@@ -297,22 +264,12 @@ firstswitch_rtop_stage2:
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ptor:
         cli
-; Saves CR3, disables paging and zeroes CR3
-        mov eax, cr3
-        mov savecr3, eax
-        mov eax, cr0
-        and eax, 07fffffffh
-        mov cr0, eax
-        xor eax, eax
-        mov cr3, eax
-; Loads segment registers with the required selector
         mov ax, 020h
         mov ss, ax
         mov gs, ax
         mov fs, ax
         mov es, ax
         mov ds, ax
-; Clears the protected mode bit in CR0 (continues in ptor_stage2)
         mov eax, cr0
         and eax, 0fffffffeh
         

@@ -2893,8 +2893,10 @@ DCBF002  SLR   R0,R0              for non-DASD or no fit        GP17079
          MVI   ZWORK,1                                          GP17079
          MVC   ZWORK+1(1),ZPKEYL+L'ZPKEYL-1    Copy key length  GP17079
          MVC   ZWORK+2(2),ZPBLKSZ+L'ZPBLKSZ-2    and block size GP17079
+         GAMOS
          TRKCALC FUNCTN=TRKCAP,UCB=(R3),BALANCE=0,RKDD=ZWORK,          *
                REGSAVE=YES,MF=(E,TRKLIST)  Get blocks per track GP17079
+         GAMAPP
 *NEXT*   BXH   R15,R15,DCBF002B   SIZE TOO LARGE FOR TRACK      GP17079
 DCBF002B STC   R0,ZPBLKPT         Remeber blocks per track      GP17079
          IC    R0,ZPBLKPT                                       GP17079

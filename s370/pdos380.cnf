@@ -5,6 +5,7 @@ MAINSIZE             600
 # S/370 actually gives us S/380 under Hercules/380
 ARCHMODE             S/370
 
+AM24MODE             32
 AM31MODE             32
 
 CPUSERIAL            000611

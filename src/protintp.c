@@ -106,8 +106,15 @@ void gotint(int intno, unsigned int *save)
     *intbuffer = intno;
     memcpy(intbuffer + 1, newregs, sizeof newregs);
     {
-        /* Saves CR3 (Page Directory address) as the switch zeroes it. */
+        /* Saves CR3 (Page Directory address). */
         unsigned long saved_cr3 = saveCR3();
+        /* If paging is enabled,
+         * it must be disabled and CR3 zeroed before the switch. */
+        if (saved_cr3)
+        {
+            disablePaging();
+            loadPageDirectory(0);
+        }
         runreal_p(dorealint, 0);
         /* If CR3 was not 0, it should be restored and paging enabled. */
         if (saved_cr3)

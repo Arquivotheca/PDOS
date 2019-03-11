@@ -12,6 +12,7 @@
         .globl _loadPageDirectory
         .globl _saveCR3
         .globl _enablePaging
+        .globl _disablePaging
 
         .text
 
@@ -180,6 +181,18 @@ _enablePaging:
         mov     %esp, %ebp
         mov     %cr0, %eax
         or      $0x80000000, %eax
+        mov     %eax, %cr0
+        pop     %ebp
+        ret
+
+/////////////////////////////////////////////////////////////
+/ void disablePaging(void);
+/ Clears the Paging bit of CR0.
+_disablePaging:
+        push    %ebp
+        mov     %esp, %ebp
+        mov     %cr0, %eax
+        and     $0x7fffffff, %eax
         mov     %eax, %cr0
         pop     %ebp
         ret

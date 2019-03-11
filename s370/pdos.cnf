@@ -19,7 +19,9 @@ PGMPRDOS             RESTRICTED
 
 # Ideally put the console first. It can be either an integrated
 # console (3215-C) or a "normal" telnet console (3215). The address
-# can be anything.
+# can be anything. For micro-emacs to work make it a 1052 instead,
+# but not a 1052-C as PDOS doesn't support that, because it thinks
+# it is in character mode when it isn't.
 
 0009      3215-C     noprompt
 

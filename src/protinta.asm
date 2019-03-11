@@ -245,6 +245,7 @@ assume cs:_TEXT32
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 rtop_stage2:
+; Loads the segment registers
         mov ax, 0010h 
         mov ss, ax
         mov gs, ax
@@ -264,12 +265,14 @@ rtop_stage2:
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ptor:
         cli
+; Loads the segment registers with the required selector
         mov ax, 020h
         mov ss, ax
         mov gs, ax
         mov fs, ax
         mov es, ax
         mov ds, ax
+; Clears the protected mode bit in CR0 (continues in ptor_stage2)
         mov eax, cr0
         and eax, 0fffffffeh
         

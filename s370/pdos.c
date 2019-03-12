@@ -793,6 +793,8 @@ static int pdosLoadPcomm(PDOS *pdos);
 static void split_cchhr(char *cchhr, int *cyl, int *head, int *rec);
 static void join_cchhr(char *cchhr, int cyl, int head, int rec);
 
+static void write3270(char *buf, size_t lenbuf, int cr);
+
 
 int __consrd(int len, char *buf);
 int __conswr(int len, char *buf, int cr);
@@ -902,6 +904,7 @@ int pdosInit(PDOS *pdos)
                 if (isdigit((unsigned char)p[0]))
                 {
                     if ((strstr(p, "3215") != NULL)
+                        || (strstr(p, "3270") != NULL)
                         || (strstr(p, "1052") != NULL))
                     {
 #if defined(S390)
@@ -912,6 +915,10 @@ int pdosInit(PDOS *pdos)
                         if (strstr(p, "3215") != NULL)
                         {
                             cons_type = 3215;
+                        }
+                        else if (strstr(p, "3270") != NULL)
+                        {
+                            cons_type = 3270;
                         }
                         else
                         {
@@ -1065,8 +1072,15 @@ static int pdosDispatchUntilInterrupt(PDOS *pdos)
                     {
                         cr = 1; /* assembler needs to do with CR */
                     }
-                    memcpy(tbuf, p, q - p);
-                    __conswr(q - p, tbuf, cr);
+                    if (cons_type == 3270)
+                    {
+                        write3270(p, q - p, cr);
+                    }
+                    else
+                    {
+                        memcpy(tbuf, p, q - p);
+                        __conswr(q - p, tbuf, cr);
+                    }
                     p = q;
                     if (cr)
                     {
@@ -2932,7 +2946,23 @@ static void join_cchhr(char *cchhr, int cyl, int head, int rec)
     return;
 }
 
+static void write3270(char *buf, size_t lenbuf, int cr)
+{
+    static char intbuf[24*80+6];
+    static int first = 1;
+    static int lineupto = 0;
 
+    if (first)
+    {
+        first = 0;
+        memset(intbuf, ' ', sizeof intbuf);
+        memcpy(intbuf, "\xc3\x11\x5d\x7f\x1d\xf8", 6);
+    }
+    memset(intbuf + 6 + lineupto * 80, ' ', 80);
+    memcpy(intbuf + 6 + lineupto * 80, buf, lenbuf);
+    __conswr(sizeof intbuf, intbuf, 0);
+    lineupto++;
+}
 
 
 #if 0

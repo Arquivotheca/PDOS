@@ -2948,7 +2948,7 @@ static void join_cchhr(char *cchhr, int cyl, int head, int rec)
 
 static void write3270(char *buf, size_t lenbuf, int cr)
 {
-    static char intbuf[6+22*80+2];
+    static char intbuf[6+22*80+3];
     static int first = 1;
     static int lineupto = 0;
 
@@ -2957,7 +2957,7 @@ static void write3270(char *buf, size_t lenbuf, int cr)
         first = 0;
         memset(intbuf, ' ', sizeof intbuf);
         memcpy(intbuf, "\xc3\x11\x5d\x7f\x1d\xf0", 6);
-        memcpy(intbuf + 6 + 22 * 80, "\x1d\x00", 2);
+        memcpy(intbuf + 6 + 22 * 80, "\x1d\x00\x13", 3);
     }
     memset(intbuf + 6 + lineupto * 80, ' ', 80);
     memcpy(intbuf + 6 + lineupto * 80, buf, lenbuf);

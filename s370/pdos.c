@@ -2962,6 +2962,11 @@ static void write3270(char *buf, size_t lenbuf, int cr)
     memcpy(intbuf + 6 + lineupto * 80, buf, lenbuf);
     __conswr(sizeof intbuf, intbuf, 0);
     lineupto++;
+    if (lineupto == 22)
+    {
+        lineupto--;
+        memmove(intbuf + 6, intbuf + 6 + 80, lineupto * 80);
+    }
 }
 
 

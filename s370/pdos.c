@@ -794,6 +794,7 @@ static void split_cchhr(char *cchhr, int *cyl, int *head, int *rec);
 static void join_cchhr(char *cchhr, int cyl, int head, int rec);
 
 static void write3270(char *buf, size_t lenbuf, int cr);
+static int cprintf(char *format, ...);
 
 
 int __consrd(int len, char *buf);
@@ -1059,35 +1060,7 @@ static int pdosDispatchUntilInterrupt(PDOS *pdos)
                 /* although this was specified to be a unit record
                    device, some applications ignore that, so be prepared
                    for more than one NL */
-                fin = buf + len;
-                p = buf;
-                while (p < fin)
-                {
-                    q = memchr(p, '\n', fin - p);
-                    if (q == NULL)
-                    {
-                        cr = 0;
-                        q = fin;
-                    }
-                    else
-                    {
-                        cr = 1; /* assembler needs to do with CR */
-                    }
-                    if (cons_type == 3270)
-                    {
-                        write3270(p, q - p, cr);
-                    }
-                    else
-                    {
-                        memcpy(tbuf, p, q - p);
-                        __conswr(q - p, tbuf, cr);
-                    }
-                    p = q;
-                    if (cr)
-                    {
-                        p++;
-                    }
-                }
+                cprintf("%.*s", len, buf);
             }
             else
             {
@@ -2982,6 +2955,53 @@ static void write3270(char *buf, size_t lenbuf, int cr)
         memmove(intbuf + 6, intbuf + 6 + 80, lineupto * 80);
     }
 }
+
+static int cprintf(char *format, ...)
+{
+    static char buf[3000];
+    char tbuf[300];
+    va_list args;
+    int len;
+    char *fin;
+    char *p;
+    char *q;
+    int cr;
+
+    va_start(args, format);
+    len = vsprintf(buf, format, args);
+    va_end(args);
+    fin = buf + len;
+    p = buf;
+    while (p < fin)
+    {
+        q = memchr(p, '\n', fin - p);
+        if (q == NULL)
+        {
+            cr = 0;
+            q = fin;
+        }
+        else
+        {
+            cr = 1; /* assembler needs to do with CR */
+        }
+        if (cons_type == 3270)
+        {
+            write3270(p, q - p, cr);
+        }
+        else
+        {
+            memcpy(tbuf, p, q - p);
+            __conswr(q - p, tbuf, cr);
+        }
+        p = q;
+        if (cr)
+        {
+            p++;
+        }
+    }
+    return (len);
+}
+
 
 
 #if 0

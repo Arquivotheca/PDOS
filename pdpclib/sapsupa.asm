@@ -818,6 +818,127 @@ CRNEWIO  DC    X'000C0000'  machine check, EC, DAT off
 *
 *
 *
+**********************************************************************
+*                                                                    *
+*  @@C3270R - read from 3270 console                                 *
+*                                                                    *
+*  parameter 1 = buffer length                                       *
+*  parameter 2 = buffer                                              *
+*                                                                    *
+**********************************************************************
+         ENTRY @@C3270R
+@@C3270R DS    0H
+         SAVE  (14,12),,@@C3270R
+         LR    R12,R15
+         USING @@C3270R,R12
+         USING PSA,R0
+*
+         L     R10,=V(@@CONSDN) Device number
+         L     R10,0(R10)
+         L     R7,0(R1)        Bytes to read
+         L     R2,4(R1)        Buffer to read into
+         AIF   ('&ZSYS' EQ 'S390').C3R390G
+         STCM  R2,B'0111',C3RCHN+1   This requires BTL buffer
+         STH   R7,C3RCHN+6     Store length in READ CCW
+         AGO   .C3R390H
+.C3R390G ANOP
+         ST    R2,C3RCHN+4
+         STH   R7,C3RCHN+2
+.C3R390H ANOP
+*
+* Interrupt needs to point to CUCONT now, for an
+* unsolicited interrupt.
+*
+         MVC   FLCINPSW(8),CUNEWIO
+         STOSM FLCINPSW,X'00'  Work with DAT on or OFF
+*
+         LPSW  C3RWTNER     Wait for an interrupt
+         DC    H'0'
+CUCONT   DS    0H           Interrupt will automatically come here
+*
+* Interrupt needs to point to C3CONT now. Again, I would hope for
+* something more sophisticated in PDOS than this continual
+* initialization.
+*
+         MVC   FLCINPSW(8),C3NEWIO
+         STOSM FLCINPSW,X'00'  Work with DAT on or OFF
+* R3 points to CCW chain
+         LA    R3,C3RCHN
+         ST    R3,FLCCAW    Store in CAW
+*
+*
+         AIF   ('&ZSYS' EQ 'S390').C3R31M
+         SIO   0(R10)
+*         TIO   0(R10)
+         AGO   .C3R24M
+.C3R31M  ANOP
+         LR    R1,R10       R1 needs to contain subchannel
+         LA    R9,C3RIRB
+         TSCH  0(R9)        Clear pending interrupts
+         LA    R10,C3RORB
+         MSCH  0(R10)
+         TSCH  0(R9)        Clear pending interrupts
+         SSCH  0(R10)
+.C3R24M  ANOP
+*
+*
+         LPSW  C3RWTNER     Wait for an interrupt
+         DC    H'0'
+C3RCONT  DS    0H           Interrupt will automatically come here
+         AIF   ('&ZSYS' EQ 'S390').C3R31N
+         SH    R7,FLCCSW+6  Subtract residual count to get bytes read
+         LR    R15,R7
+* After a successful CCW chain, CSW should be pointing to end
+         CLC   FLCCSW(4),=A(C3RFCHN)
+         BE    C3RALFIN
+         AGO   .C3R24N
+.C3R31N  ANOP
+         TSCH  0(R9)
+         SH    R7,10(R9)
+         LR    R15,R7
+         CLC   4(4,R9),=A(C3RFCHN)
+         BE    C3RALFIN
+.C3R24N  ANOP
+         L     R15,=F'-1'   error return
+C3RALFIN DS    0H
+         RETURN (14,12),RC=(15)
+         LTORG
+*
+*
+         AIF   ('&ZSYS' NE 'S390').C3R390P
+         DS    0F
+C3RIRB   DS    24F
+C3RORB   DS    0F
+         DC    F'0'
+         DC    X'0080FF00'  Logical-Path Mask (enable all?) + format-1
+         DC    A(C3RCHN)
+         DC    5F'0'
+.C3R390P ANOP
+*
+*
+         DS    0D
+         AIF   ('&ZSYS' EQ 'S390').C3R390I
+* X'06' = read modified
+C3RCHN   CCW   X'06',0,X'20',0    20 = ignore length issues
+         AGO   .C3R390J
+.C3R390I ANOP
+C3RCHN   CCW1  X'06',0,X'20',0    20 = ignore length issues
+.C3R390J ANOP
+C3RFCHN  EQU   *
+         DS    0D
+C3RWTNER DC    X'060E0000'  I/O, machine check, EC, wait, DAT on
+         DC    A(AMBIT)     no error
+C3NEWIO  DC    X'000C0000'  machine check, EC, DAT off
+         DC    A(AMBIT+C3RCONT)  continuation after I/O request
+CUNEWIO  DC    X'000C0000'  machine check, EC, DAT off
+         DC    A(AMBIT+CUCONT)  continuation after I/O request
+*
+         DROP  ,
+*
+*
+*
+*
+*
 ***********************************************************************
 *                                                                     *
 *  CALL @@DYNAL,(rb)                                                  *

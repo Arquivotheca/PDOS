@@ -934,7 +934,7 @@ int pdosInit(PDOS *pdos)
             }
         }
     }
-    printf("Welcome to PDOS!!!\n");
+    cprintf("Welcome to PDOS!!!\n");
 #if 0
     printf("CR0 is %08X\n", cr0);
     printf("PDOS structure is %d bytes\n", sizeof(PDOS));
@@ -2272,10 +2272,10 @@ static int pdosDoDIR(PDOS *pdos, char *parm)
             }
             blk = ((dscb1.ds1recfm & DS1RECFB) != 0) ? "B" : "";
             
-            printf("%-44s %04d-%02d-%02d %c%s %d %d (%d %d %d)\n",
-                   dscb1.ds1dsnam, year, month, day,
-                   recfm, blk, dscb1.ds1lrecl, dscb1.ds1blkl,
-                   c, h, r);
+            cprintf("%-44s %04d-%02d-%02d %c%s %d %d (%d %d %d)\n",
+                    dscb1.ds1dsnam, year, month, day,
+                    recfm, blk, dscb1.ds1lrecl, dscb1.ds1blkl,
+                    c, h, r);
             rec++;
         }
     }

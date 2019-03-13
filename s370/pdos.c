@@ -797,6 +797,7 @@ static void write3270(char *buf, size_t lenbuf, int cr);
 
 
 int __consrd(int len, char *buf);
+int __c3270r(int len, char *buf);
 int __conswr(int len, char *buf, int cr);
 
 int main(int argc, char **argv)
@@ -1176,8 +1177,20 @@ static int pdosDispatchUntilInterrupt(PDOS *pdos)
             if (memcmp(dcb->dcbfdad,
                        "\x00\x00\x00\x00\x00\x00\x00\x00", 8) == 0)
             {
-                cnt = __consrd(300, tbuf);
-                if ((cnt >= 0) && (cons_type == 3215))
+                if (cons_type == 3270)
+                {
+                    cnt = __c3270r(300, tbuf);
+                    if (cnt >= 6)
+                    {
+                        memmove(tbuf, tbuf + 6, cnt - 6);
+                        cnt -= 6;
+                    }
+                }
+                else
+                {
+                    cnt = __consrd(300, tbuf);
+                }
+                if ((cnt >= 0) && ((cons_type == 3215) || (cons_type == 3270)))
                 {
                     tbuf[cnt++] = '\n';
                 }

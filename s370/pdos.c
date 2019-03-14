@@ -258,6 +258,12 @@ old virtual memory map:
 #define BTL_PRIVSTART PCOMM_LOAD /* private region starts at 5 MB */
 #define BTL_PRIVLEN 10 /* how many MB to give to private region */
 
+/* trim down storage requirements for S/390 */
+#if defined(S390)
+#define MAXASIZE 32
+#define MAXANUM 1
+#endif
+
 #ifndef MAXASIZE
 #if defined(S390)
 #define MAXASIZE 160
@@ -795,7 +801,7 @@ static void join_cchhr(char *cchhr, int cyl, int head, int rec);
 
 static void write3270(char *buf, size_t lenbuf, int cr);
 static int cprintf(char *format, ...);
-
+#define printf cprintf
 
 int __consrd(int len, char *buf);
 int __c3270r(int len, char *buf);
@@ -934,7 +940,7 @@ int pdosInit(PDOS *pdos)
             }
         }
     }
-    cprintf("Welcome to PDOS!!!\n");
+    printf("Welcome to PDOS!!!\n");
 #if 0
     printf("CR0 is %08X\n", cr0);
     printf("PDOS structure is %d bytes\n", sizeof(PDOS));
@@ -1060,7 +1066,7 @@ static int pdosDispatchUntilInterrupt(PDOS *pdos)
                 /* although this was specified to be a unit record
                    device, some applications ignore that, so be prepared
                    for more than one NL */
-                cprintf("%.*s", len, buf);
+                printf("%.*s", len, buf);
             }
             else
             {
@@ -1679,7 +1685,9 @@ static void pdosProcessSVC(PDOS *pdos)
             {
                 len &= 0xffffff;
             }
-#ifdef S370
+/* If PCOMM is using MEMMGR it will request a size
+   that is way too large, so we kludge it here */
+#if 1 /* #ifdef S370 */
             if (len >= (16 * 1024 * 1024))
             {
                 len = PDOS_STORINC;
@@ -2272,10 +2280,10 @@ static int pdosDoDIR(PDOS *pdos, char *parm)
             }
             blk = ((dscb1.ds1recfm & DS1RECFB) != 0) ? "B" : "";
             
-            cprintf("%-44s %04d-%02d-%02d %c%s %d %d (%d %d %d)\n",
-                    dscb1.ds1dsnam, year, month, day,
-                    recfm, blk, dscb1.ds1lrecl, dscb1.ds1blkl,
-                    c, h, r);
+            printf("%-44s %04d-%02d-%02d %c%s %d %d (%d %d %d)\n",
+                   dscb1.ds1dsnam, year, month, day,
+                   recfm, blk, dscb1.ds1lrecl, dscb1.ds1blkl,
+                   c, h, r);
             rec++;
         }
     }

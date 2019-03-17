@@ -130,14 +130,23 @@ STAGE2B  DS    0H
          ST    R7,READREC
          L     R15,=A(RDBLOCK)
          BALR  R14,R15
+         LTR   R15,R15
+         BM    FIRSTERR
+         B     DOTESTS
+FIRSTERR DS    0H
+         LA    R7,1
+         LA    R6,1(R6)
+         ST    R6,READHEAD
+         ST    R7,READREC
+         L     R15,=A(RDBLOCK)
+         BALR  R14,R15
+DOTESTS  DS    0H
+         LTR   R15,R15
+         BZ    STAGE3
+         BM    STAGE3
 *
          A     R5,=A(CHUNKSZ)
          LA    R7,1(R7)
-         C     R7,=F'3'   3 = Don't read more than 2 blocks per track
-         BL    INRANGE
-         LA    R7,1
-         LA    R6,1(R6)
-INRANGE  DS    0H
          LA    R4,1(R4)
 * Ideally we want to read up until we have a short block, or
 * an I/O error, but it's simpler to just force-read up to a

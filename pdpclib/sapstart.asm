@@ -79,32 +79,17 @@ POSTIPL  DS    0H
 * case something unexpected happens, to give us some visibility
 * into the problem.
 *
-         MVC   FLCINPSW(8),NEWIO
+         MVC   FLCINPSW(8),WAITER4
          MVC   FLCMNPSW(8),WAITER1
          MVC   FLCSNPSW(8),WAITER2
          MVC   FLCPNPSW(8),WAITER3
 * Save IPL address in R10
          SLR   R10,R10
          ICM   R10,B'1111',FLCIOA
-* R3 points to CCW chain
-         LA    R3,SEEK
-         ST    R3,FLCCAW    Store in CAW
-         LA    R4,1         R4 = Number of blocks read so far
-         L     R5,=A(CHUNKSZ) Current address
-         LA    R6,1         R6 = head
-         LA    R7,2         R7 = record
-         AIF   ('&ZSYS' EQ 'S390').SIO31A
-         SIO   0(R10)
-         AGO   .SIO24A
-.SIO31A  ANOP
-         LR    R1,R10       IPL subchannel needs to be in R1
+         AIF   ('&ZSYS' NE 'S390').SIO31A
          LCTL  6,6,ALLIOINT CR6 needs to enable all interrupts
-         LA    R9,IRB
-         TSCH  0(R9)
-         LA    R10,ORB      R10 needs to point to ORB
-         SSCH  0(R10)
-.SIO24A  ANOP
-         LPSW  WAITNOER     Wait for an I/O interrupt
+.SIO31A  ANOP
+         B     STAGE2
          LTORG
 *
 *
@@ -112,71 +97,66 @@ POSTIPL  DS    0H
          AIF   ('&ZSYS' NE 'S390').NOT390A
          DS    0F
 ALLIOINT DC    X'FF000000'
-IRB      DS    24F
-ORB      DS    0F
-         DC    F'0'
-         DC    X'0000FF00'  Logical-Path Mask (enable all?)
-         DC    A(SEEK)
-         DC    5F'0'
 .NOT390A ANOP
 *
 *
 *
          DS    0D
-WAITNOER DC    X'020E0000'  I/O, machine check, EC, wait
-         DC    A(AMBIT)      no error
-NEWIO    DC    X'000C0000'  machine check enabled + EC
-         DC    A(AMBIT+STAGE2)
 WAITER1  DC    X'000E0000'  machine check, EC, wait
          DC    A(AMBIT+X'00000111')  error 111
 WAITER2  DC    X'000E0000'  machine check, EC, wait
          DC    A(AMBIT+X'00000222')  error 222
 WAITER3  DC    X'000E0000'  machine check, EC, wait
          DC    A(AMBIT+X'00000333')  error 333
+WAITER4  DC    X'000E0000'  machine check, EC, wait
+         DC    A(AMBIT+X'00000333')  error 333
          DS    0D
-SEEK     CCW   7,BBCCHH,X'40',6
-SEARCH   CCW   X'31',CCHHR,X'40',5
-         CCW   8,SEARCH,0,0
-LOADCCW  CCW   6,CHUNKSZ,X'20',32767
-         DS    0H
-BBCCHH   DC    X'000000000001'
-         ORG   *-2
-HH1      DS    CL2
-CCHHR    DC    X'0000000102'
-         ORG   *-3
-HH2      DS    CL2
-R        DS    C
 *
 STAGE2   DS    0H
+         LA    R1,PARMLST2
+         LA    R13,SAVEAR2
+         ST    R10,READDEV
+         LA    R8,0
+         ST    R8,READCYL
+         L     R8,=A(CHUNKSZ)
+         ST    R8,READSIZE
+         LA    R4,1         R4 = Number of blocks read so far
+         L     R5,=A(CHUNKSZ) Current address
+         LA    R6,1         R6 = head
+         LA    R7,2         R7 = record
+STAGE2B  DS    0H
+         ST    R5,READBUF
+         ST    R6,READHEAD
+         ST    R7,READREC
+         L     R15,=A(RDBLOCK)
+         BALR  R14,R15
+*
          A     R5,=A(CHUNKSZ)
-         STCM  R5,B'0111',LOADCCW+1
          LA    R7,1(R7)
          C     R7,=F'3'   3 = Don't read more than 2 blocks per track
          BL    INRANGE
          LA    R7,1
          LA    R6,1(R6)
 INRANGE  DS    0H
-         STC   R7,R         
-         STCM  R6,B'0011',HH1
-         STCM  R6,B'0011',HH2
          LA    R4,1(R4)
 * Ideally we want to read up until we have a short block, or
 * an I/O error, but it's simpler to just force-read up to a
 * set maximum.
          C     R4,=A(MAXBLKS)  R4=Maximum blocks to read
          BH    STAGE3
-         AIF   ('&ZSYS' EQ 'S390').SIO31B
-         SIO   0(R10)       Read next block
-         AGO   .SIO24B
-.SIO31B  ANOP
-         TSCH  0(R9)
-         SSCH  0(R10)
-.SIO24B  ANOP
-         LPSW  WAITNOER
+         B     STAGE2B
 STAGE3   DS    0H
 * Go back to the original state, with I/O disabled, so that we
 * don't get any more noise unless explicitly requested
          LPSW  ST4PSW
+PARMLST2 DS    0F
+READDEV  DS    F
+READCYL  DS    F
+READHEAD DS    F
+READREC  DS    F
+READBUF  DS    A
+READSIZE DS    F
+SAVEAR2  DS    18F
          DS    0D
 ST4PSW   DC    X'000C0000'  EC mode + Machine Check enabled
          DC    A(AMBIT+STAGE4)

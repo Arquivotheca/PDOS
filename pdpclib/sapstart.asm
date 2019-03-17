@@ -275,33 +275,10 @@ FEN1     DS    0H
          LA    R5,SAVEAREA
          ST    R5,SAVER13
 *
-         AIF   ('&ZSYS' NE 'S380').N380ST1
-*
-* Set R4 to true if we were called in 31-bit mode
-*
-         LA    R4,0
-         BSM   R4,R0
-         ST    R4,SAVER4
-* If we were called in AMODE 31, don't bother setting mode now
-         LTR   R4,R4
-         BNZ   IN31
-         CALL  @@SETM31
-IN31     DS    0H
-.N380ST1 ANOP
-*
          CALL  @@START
-*
-         AIF   ('&ZSYS' NE 'S380').N380ST2
-* If we were called in AMODE 31, don't switch back to 24-bit
-         LTR   R4,R4
-         BNZ   IN31B
-         CALL  @@SETM24
-IN31B    DS    0H
-.N380ST2 ANOP
 *
 RETURNMS DS    0H
          PDPEPIL
-SAVER4   DC    F'0'
 SAVER13  DC    F'0'
          LTORG
 *
@@ -319,16 +296,6 @@ SAVER13  DC    F'0'
          L     R9,0(R1)
          L     R13,=A(SAVER13)
          L     R13,0(R13)
-*
-         AIF   ('&ZSYS' NE 'S380').N380ST3
-         L     R4,=A(SAVER4)
-         L     R4,0(R4)
-* If we were called in AMODE 31, don't switch back to 24-bit
-         LTR   R4,R4
-         BNZ   IN31C
-         CALL  @@SETM24
-IN31C    DS    0H
-.N380ST3 ANOP
 *
          PDPEPIL
          LTORG

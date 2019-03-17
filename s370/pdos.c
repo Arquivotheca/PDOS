@@ -1724,13 +1724,21 @@ static void pdosProcessSVC(PDOS *pdos)
                 len, pdos->context->regs[1],
                 pdos->context->regs[15]);
 #endif
+
+#if 0
             if (getmain == 0)
             {
                 printf("out of memory, above is %d, len is %d - looping\n",
                        above, len);
                 for (;;) ;
             }
+#endif
+
             pdos->context->regs[1] = getmain;
+            if (getmain == 0)
+            {
+                pdos->context->regs[15] = 4;
+            }
         }
         /* freemain */
         else

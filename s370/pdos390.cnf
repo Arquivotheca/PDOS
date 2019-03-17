@@ -1,6 +1,6 @@
-# PDOS sort of needs 592 MB. The first address space only
-# needs 160 MB though. And even that isn't really required.
-MAINSIZE             600
+# PDOS/390 has been configured to use only
+# 32 MiB so that it can run on a P390
+MAINSIZE             32
 
 ARCHMODE             ESA/390
 
@@ -13,12 +13,13 @@ OSTAILOR             QUIET
 PANRATE              MEDIUM
 PGMPRDOS             RESTRICTED
 
+CNSLPORT  3270
 
 # Ideally put the console first. It can be either an integrated
 # console (3215-C) or a "normal" telnet console (3215). The address
 # can be anything.
 
-0009      3215-C     noprompt
+0009      3215-C     / noprompt
 
 
 # This is the IPL disk and can be any address

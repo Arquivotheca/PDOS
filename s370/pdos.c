@@ -243,6 +243,19 @@ old virtual memory map:
   this assumes that PLOAD and PDOS are less than 1 cylinder in
   size and that they have been allocated on cylinder boundaries */
 
+/* trim down storage requirements for S/390 */
+#if defined(S390)
+#define MAXASIZE 32
+#define MAXANUM 1
+#endif
+
+/* trim down storage requirements for S/370 */
+#if defined(S370)
+#define MAXASIZE 16
+#define MAXANUM 1
+#define EA_ON 0
+#endif
+
 #ifndef EA_ON
 #ifndef S390
 #define EA_ON 1 /* use extended addressing in 370 and 380 mode */
@@ -257,12 +270,6 @@ old virtual memory map:
 
 #define BTL_PRIVSTART PCOMM_LOAD /* private region starts at 5 MB */
 #define BTL_PRIVLEN 10 /* how many MB to give to private region */
-
-/* trim down storage requirements for S/390 */
-#if defined(S390)
-#define MAXASIZE 32
-#define MAXANUM 1
-#endif
 
 #ifndef MAXASIZE
 #if defined(S390)

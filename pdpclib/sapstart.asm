@@ -109,7 +109,7 @@ WAITER2  DC    X'000E0000'  machine check, EC, wait
 WAITER3  DC    X'000E0000'  machine check, EC, wait
          DC    A(AMBIT+X'00000333')  error 333
 WAITER4  DC    X'000E0000'  machine check, EC, wait
-         DC    A(AMBIT+X'00000333')  error 333
+         DC    A(AMBIT+X'00000444')  error 444
          DS    0D
 *
 STAGE2   DS    0H

@@ -1705,7 +1705,7 @@ static void pdosProcessSVC(PDOS *pdos)
                     len,
                     memid);
             }
-            else
+            if (!above || (getmain == 0))
             {
                 getmain = (int)memmgrAllocate(
                     &pdos->aspaces[pdos->curr_aspace].o.btlmem,

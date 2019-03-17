@@ -1673,12 +1673,16 @@ static void pdosProcessSVC(PDOS *pdos)
                 above = 1;
             }
 #endif
-#ifdef S390
+
+/* we should support RMODE 24 programs instead of assuming
+   they are RMODE ANY */
+/* #ifdef S390
             if ((svc == 120) && ((pdos->context->regs[15] & 0x30) != 0x10))
             {
                 above = 1;
             }
-#endif
+#endif */
+
             pdos->context->regs[15] = 0;
             len = pdos->context->regs[0];
             if (svc == 10)

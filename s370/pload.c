@@ -105,19 +105,21 @@ int main(int argc, char **argv)
         printf("loading to %p from %d, %d, %d\n", load, cyl, head, rec);
 #endif
         cnt = rdblock(ipldev, cyl, head, rec, load, CHUNKSZ);
-        load += CHUNKSZ;
-        rec++;
-        if (rec >= 4)
+        if (cnt < 0)
         {
             rec = 1;
             head++;
+            cnt = rdblock(ipldev, cyl, head, rec, load, CHUNKSZ);
+            if (cnt < 0)
+            {
+                head = 0;
+                cyl++;
+                cnt = rdblock(ipldev, cyl, head, rec, load, CHUNKSZ);
+            }
         }
-        if (head >= 15)
-        {
-            head = 0;
-            cyl++;
-        }
-        if (cnt == 0) break; /* reached EOF */
+        if (cnt <= 0) break; /* reached EOF or error */
+        load += CHUNKSZ;
+        rec++;
     }
     cnt = load - start;
     if (fixPE(start, &cnt, (int *)&entry, (int)start) != 0)

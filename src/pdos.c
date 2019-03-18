@@ -302,6 +302,15 @@ static char *sbrk_end;
 #define ABSADDR(x) ((void *)(x))
 #endif
 
+#ifdef __32BIT__
+#include "physmem.h"
+/* How much memory in bytes is provided to physical memory manager.
+ * Default is zero as it is used only for testing now. */
+#define MEMORY_FOR_PHYSMEMMGR 0
+
+PHYSMEMMGR physmemmgr;
+#endif
+
 #ifndef USING_EXE
 int main(void)
 {
@@ -319,6 +328,7 @@ void pdosRun(void)
     int mc;
 #endif
 #ifdef __32BIT__
+    unsigned long memstart;
     unsigned long memavail;
 #endif
 
@@ -407,8 +417,16 @@ void pdosRun(void)
     memavail -= 0x500000; /* room for disk cache */
     memmgrSupply(&memmgr, ABSADDR(0x700000), memavail);
 #else
-    memavail -= 0x200000; /* skip the first 2 MiB */
-    memmgrSupply(&memmgr, ABSADDR(0x200000), memavail);
+    /* skip the first 2 MiB */
+    memstart = 0x200000;
+    memavail -= 0x200000;
+    /* Provides memory to physical memory manager. */
+    physmemmgrInit(&physmemmgr);
+    physmemmgrSupply(&physmemmgr, memstart, MEMORY_FOR_PHYSMEMMGR);
+    memstart += MEMORY_FOR_PHYSMEMMGR;
+    memavail -= MEMORY_FOR_PHYSMEMMGR;
+    /* Provides the rest of memory to memmgr. */
+    memmgrSupply(&memmgr, ABSADDR(memstart), memavail);
 #endif
     memmgrDefaults(&btlmem);
     memmgrInit(&btlmem);

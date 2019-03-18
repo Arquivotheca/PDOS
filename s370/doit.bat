@@ -57,6 +57,7 @@ copy world.txt world.exe
 copy sample.txt sample.c
 copy wtoworld.txt wtoworld.exe
 copy diff.txt diff.exe
+copy uemacs.txt uemacs.exe
 copy gcc.txt gcc.exe
 copy copyfile.txt copyfile.exe
 copy hexdump.txt hexdump.exe

@@ -12,6 +12,7 @@ NUMCPU               1
 OSTAILOR             QUIET
 PANRATE              MEDIUM
 PGMPRDOS             RESTRICTED
+CODEPAGE             819/1047
 
 # Ideally put the console first. It can be either an integrated
 # console (3215-C) or a "normal" telnet console (3215). The address

@@ -24,9 +24,9 @@ CODEPAGE             819/1047
 # The address can be anything.
 
 0009      3215-C     / noprompt
-#0009      3215       / noprompt
+#0009      3215       noprompt
 #0009      3270
-#0009      1052       / noprompt
+#0009      1052       noprompt
 
 # This is the IPL disk and can be any address
 

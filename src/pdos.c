@@ -305,10 +305,15 @@ static char *sbrk_end;
 #ifdef __32BIT__
 #include "physmem.h"
 /* How much memory in bytes is provided to physical memory manager.
- * Default is zero as it is used only for testing now. */
-#define MEMORY_FOR_PHYSMEMMGR 0
+ * 2 Page Frames are needed for the current paging. */
+#define MEMORY_FOR_PHYSMEMMGR 2 * PAGE_FRAME_SIZE
 
 PHYSMEMMGR physmemmgr;
+
+#define PAGE_SIZE 0x1000
+/* Flags for Page Table/Directory entries. */
+#define PAGE_PRESENT 0x1
+#define PAGE_RW      0x2
 #endif
 
 #ifndef USING_EXE
@@ -427,6 +432,33 @@ void pdosRun(void)
     memavail -= MEMORY_FOR_PHYSMEMMGR;
     /* Provides the rest of memory to memmgr. */
     memmgrSupply(&memmgr, ABSADDR(memstart), memavail);
+    /* Sets up paging. */
+    {
+        unsigned long *page_directory = physmemmgrAllocPageFrame(&physmemmgr);
+        unsigned long *page_table = physmemmgrAllocPageFrame(&physmemmgr);
+        unsigned long *pt_entry;
+        unsigned long paddr;
+
+        /* Marks all Page Directory entries as not present. */
+        memset(page_directory, 0, PAGE_FRAME_SIZE);
+        /* Identity paging for the first 4 MiB. */
+        for (paddr = PAGE_RW | PAGE_PRESENT, pt_entry = page_table;
+             paddr < 0x400000;
+             paddr += PAGE_FRAME_SIZE, pt_entry++)
+        {
+            *pt_entry = paddr;
+        }
+        /* Puts the first Page Table into the Page Directory. */
+        page_directory[0] = (((unsigned long)page_table)
+                             | PAGE_RW | PAGE_PRESENT);
+        /* Maps the Page Directory into itself
+         * so all Page Tables can be accessed at 0xffc00000.
+         * The Page Directory itself is at 0xfffff000. */
+        page_directory[1023] = (((unsigned long)page_directory)
+                                | PAGE_RW | PAGE_PRESENT);
+        loadPageDirectory(page_directory);
+        enablePaging();
+    }
 #endif
     memmgrDefaults(&btlmem);
     memmgrInit(&btlmem);

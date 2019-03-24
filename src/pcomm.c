@@ -2194,12 +2194,6 @@ static int cmd_pause_run(char *ignored)
     return 0;
 }
 
-static int ishexdigit(char ch)
-{
-    ch = toupper((unsigned char)ch);
-    return isdigit((unsigned char)ch) || (ch >= 'A' && ch <= 'F');
-}
-
 static int cmd_peek_run(char *arg)
 {
     void *ptr;
@@ -2213,7 +2207,7 @@ static int cmd_peek_run(char *arg)
 #endif
     CMD_REQUIRES_ARGS(arg);
     arg = stringTrimBoth(arg);
-    if (!ishexdigit(arg[0]))
+    if (!isxdigit((unsigned char)(arg[0])))
     {
         printf("ERROR: PEEK command requires valid hex memory location\n");
         return 1;
@@ -2224,7 +2218,7 @@ static int cmd_peek_run(char *arg)
     sprintf(addr,"%08lX", loc);
 #else
     seg = (unsigned int)strtoul(arg,&arg,16);
-    if (arg[0] != ':' || !ishexdigit(arg[1]))
+    if (arg[0] != ':' || !isxdigit((unsigned char)(arg[1])))
     {
         printf("ERROR: PEEK command needs SEGMENT:OFFSET address\n");
         return 1;
@@ -3090,9 +3084,7 @@ static int cmd_v_run(char *arg)
         if (ins_strncmp("MODE=",token,5)==0)
         {
             token += 5;
-            if (!isdigit((unsigned char)*token)
-                && !(*token >= 'A' && *token <= 'F')
-                && !(*token >= 'a' && *token <= 'f'))
+            if (!isxdigit((unsigned char)*token))
             {
                 showArgBadSyntaxMsg("MODE=");
                 return 1;

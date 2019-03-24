@@ -21,6 +21,9 @@
 #include "memmgr.h"
 #include "support.h"
 
+/* Prototype for function from pcommrt.c. */
+void install_runtime(void);
+
 /* In C99 or higher we would just include <stdbool.h>. But, we need to
  * support older C compilers (C89/C90) which don't come with <stdbool.h>
  */
@@ -137,7 +140,7 @@ typedef struct optBlock
 /* Macro to generate prototypes for option get/set routines */
 #define OPTPROTO(name) \
     static int opt_##name##_get(void); \
-    static void opt_##name##_set(int);
+    static void opt_##name##_set(int)
 
 /* Prototypes for option get/set routines */
 OPTPROTO(abort);
@@ -162,7 +165,7 @@ static optBlock optRegistry[] =
 /* Macro to generate prototypes for command do/help routines */
 #define CMDPROTO(name) \
     static int cmd_##name##_run(char *arg); \
-    static void cmd_##name##_help(void);
+    static void cmd_##name##_help(void)
 
 /* Prototypes for command do/help routines */
 CMDPROTO(attrib);
@@ -341,7 +344,7 @@ static bool isBlankString(char *str)
 {
     while (*str != 0)
     {
-        if (!isspace(*str))
+        if (!isspace((unsigned char)*str))
         {
             return false;
         }
@@ -420,7 +423,7 @@ cmdBlock *findCommand(char *cmdName)
     cmdBlock *block;
 
     /* Ignore initial whitespace */
-    while (isspace(*cmdName))
+    while (isspace((unsigned char)*cmdName))
     {
         cmdName++;
     }
@@ -428,7 +431,7 @@ cmdBlock *findCommand(char *cmdName)
     /* Ignore final whitespace */
     for (i = 0; cmdName[i] != 0; i++)
     {
-        if (isspace(cmdName[i]))
+        if (isspace((unsigned char)(cmdName[i])))
         {
             cmdName[i] = 0;
             break;
@@ -731,7 +734,7 @@ static void promptSymProc_Q(char *prompt, int *index)
 /* $T - prints time */
 static void promptSymProc_T(char *prompt, int *index)
 {
-    int hr, min, sec, hund;
+    unsigned int hr, min, sec, hund;
     PosGetSystemTime(&hr,&min,&sec,&hund);
     printf("%02d:%02d:%02d", hr, min, sec);
 }
@@ -792,7 +795,7 @@ static void promptSymProc_lbracket(char *prompt, int *index)
 static void putPromptSymbol(char ch, char *prompt, int *index)
 {
     int i;
-    ch = toupper(ch);
+    ch = toupper((unsigned char)ch);
     for (i = 0; promptSymRegistry[i].symbol != 0; i++)
     {
         if (promptSymRegistry[i].symbol == ch)
@@ -820,7 +823,8 @@ static void putPrompt(void)
         /* Character beginning of prompt symbol, call output routine */
         else if (prompt[i+1] != 0)
         {
-            putPromptSymbol(prompt[++i], prompt, &i);
+            i++;
+            putPromptSymbol(prompt[i], prompt, &i);
         }
     }
     fflush(stdout);
@@ -1086,7 +1090,7 @@ static int cmd_dir_run(char *pattern)
 /* Trim whitespace from end of string */
 static char *stringTrimRight(char *s)
 {
-    while (strlen(s) > 0 && isspace(s[strlen(s)-1]))
+    while (strlen(s) > 0 && isspace((unsigned char)(s[strlen(s)-1])))
     {
         s[strlen(s)-1] = 0;
     }
@@ -1096,7 +1100,7 @@ static char *stringTrimRight(char *s)
 /* Trim whitespace from start of string */
 static char *stringTrimLeft(char *s)
 {
-    while (*s != 0 && isspace(*s))
+    while (*s != 0 && isspace((unsigned char)*s))
     {
         s++;
     }
@@ -1126,7 +1130,6 @@ static void errorBadDosVersion(void)
 static int cmd_ver_run(char *arg)
 {
     int ver, major, minor;
-    unsigned int maxPages;
     MEMMGRSTATS stats;
     pos_video_info videoInfo;
     unsigned long ticks;
@@ -1146,7 +1149,7 @@ static int cmd_ver_run(char *arg)
         /* Strip the "DOS=" prefix */
         arg += 4;
         /* Expect start of major version */
-        if (!isdigit(*arg))
+        if (!isdigit((unsigned char)*arg))
         {
             errorBadDosVersion();
             return 1;
@@ -1154,7 +1157,7 @@ static int cmd_ver_run(char *arg)
         /* Parse major version */
         major = strtol(arg, &arg, 10);
         /* Expect dot (.) */
-        if (arg[0] != '.' || !isdigit(arg[1]))
+        if (arg[0] != '.' || !isdigit((unsigned char)(arg[1])))
         {
             errorBadDosVersion();
             return 1;
@@ -1210,20 +1213,21 @@ static int cmd_ver_run(char *arg)
     PosGetMemoryManagementStats(&stats);
     /* Weird printf bug, only first two %d work, the third becomes 0.
      * Workaround is split printf calls up */
-    printf("%d KB memory free in %d blocks",
-            PARAS_TO_KB(stats.totalFree), stats.countFree);
-    printf(" (largest free block %d KB)\n",
-            PARAS_TO_KB(stats.maxFree));
-    printf("%d KB memory allocated in %d blocks",
-            PARAS_TO_KB(stats.totalAllocated), stats.countAllocated);
-    printf(" (largest allocated block %d KB)\n",
-            PARAS_TO_KB(stats.maxAllocated));
-    printf("%d KB memory total in %d blocks",
-            PARAS_TO_KB(stats.totalAllocated+stats.totalFree),
-            stats.countAllocated+stats.countFree);
-    printf(" (largest block %d KB)\n",
-            PARAS_TO_KB(stats.maxAllocated > stats.maxFree ?
-                stats.maxAllocated : stats.maxFree));
+    printf("%lu KB memory free in %ld blocks",
+           (unsigned long)PARAS_TO_KB(stats.totalFree), stats.countFree);
+    printf(" (largest free block %lu KB)\n",
+           (unsigned long)PARAS_TO_KB(stats.maxFree));
+    printf("%lu KB memory allocated in %ld blocks",
+           (unsigned long)PARAS_TO_KB(stats.totalAllocated),
+           stats.countAllocated);
+    printf(" (largest allocated block %lu KB)\n",
+           (unsigned long)PARAS_TO_KB(stats.maxAllocated));
+    printf("%lu KB memory total in %ld blocks",
+           (unsigned long)PARAS_TO_KB(stats.totalAllocated+stats.totalFree),
+           stats.countAllocated+stats.countFree);
+    printf(" (largest block %lu KB)\n",
+           (unsigned long)PARAS_TO_KB(stats.maxAllocated > stats.maxFree ?
+                                      stats.maxAllocated : stats.maxFree));
     /* Show video subsystem info */
     PosGetVideoInfo(&videoInfo, sizeof(pos_video_info));
     printf("Video mode %Xh (%dx%d), page %d\n",
@@ -1301,7 +1305,6 @@ static int cmd_prompt_run(char *s)
 
 static int doExec(char *b,char *p)
 {
-    char *r;
     char *s;
     char *t;
     size_t ln;
@@ -1749,7 +1752,7 @@ static void strtoupper(char *s)
 {
     while (*s != 0)
     {
-        *s = toupper(*s);
+        *s = toupper((unsigned char)*s);
         s++;
     }
 }
@@ -1868,7 +1871,7 @@ static int cmd_help_run(char *cmd)
             pipe++;
             for (i = 0; pipe[i] != 0; i++)
             {
-                pipe[i] = toupper(pipe[i]);
+                pipe[i] = toupper((unsigned char)(pipe[i]));
                 if (pipe[i] == '|')
                 {
                     pipe[i] = ' ';
@@ -1975,7 +1978,8 @@ static int ins_strncmp(char *one, char *two, size_t len)
     size_t x = 0;
 
     if (len == 0) return (0);
-    while ((x < len) && (toupper(*one) == toupper(*two)))
+    while ((x < len)
+           && (toupper((unsigned char)*one) == toupper((unsigned char)*two)))
     {
         if (*one == '\0')
         {
@@ -1986,13 +1990,13 @@ static int ins_strncmp(char *one, char *two, size_t len)
         x++;
     }
     if (x == len) return (0);
-    return (toupper(*one) - toupper(*two));
+    return (toupper((unsigned char)*one) - toupper((unsigned char)*two));
 }
 
 static int readBat(char *fnm)
 {
     FILE *fp;
-    int rc;
+    int rc = 0;
 
     inBatch = 1;
 
@@ -2092,28 +2096,12 @@ void bell(void)
 void safegets(char *buffer, int size)
 {
     int a;
-    int shift;
     int i = 0;
 
     while (1)
     {
 
         a = PosGetCharInputNoEcho();
-
-/*
-        shift = BosGetShiftStatus();
-
-        if (shift == 1)
-        {
-            if ((a != '\n') && (a != '\r') && (a != '\b'))
-            if (islower(a))
-            a -= 32;
-
-            else if ((a >= '0') && (a <= '9'))
-            a -= 16;
-        }
-
-*/
 
         if (i == size)
         {
@@ -2208,13 +2196,12 @@ static int cmd_pause_run(char *ignored)
 
 static int ishexdigit(char ch)
 {
-    ch = toupper(ch);
-    return isdigit(ch) || (ch >= 'A' && ch <= 'F');
+    ch = toupper((unsigned char)ch);
+    return isdigit((unsigned char)ch) || (ch >= 'A' && ch <= 'F');
 }
 
 static int cmd_peek_run(char *arg)
 {
-    unsigned long loc1;
     void *ptr;
     char addr[10];
     char quantity = 'B';
@@ -2254,7 +2241,7 @@ static int cmd_peek_run(char *arg)
         arg++;
         arg = stringTrimBoth(arg);
     }
-    switch (toupper(arg[0]))
+    switch (toupper((unsigned char)(arg[0])))
     {
         case 0:
         case 'B':
@@ -2298,7 +2285,7 @@ static int cmd_peek_run(char *arg)
             unsigned long *d = ptr;
             unsigned long v = *d;
 #ifdef __32BIT__
-            printf(decimal ? "%s = %lu\n" : "%s = %08X\n", addr, v);
+            printf(decimal ? "%s = %lu\n" : "%s = %08lX\n", addr, v);
 #else
             if (decimal)
             {
@@ -2394,7 +2381,7 @@ static int cmd_sleep_run(char *arg)
     CMD_REQUIRES_ARGS(arg);
     CMD_REQUIRES_GENUINE();
     arg = stringTrimBoth(arg);
-    if (!isdigit(arg[0]))
+    if (!isdigit((unsigned char)(arg[0])))
     {
         printf("ERROR: SLEEP command argument not valid seconds count\n");
         return 1;
@@ -2507,7 +2494,7 @@ static int cmd_option_run(char *arg)
     for (i = 0; arg[i] != 0; i++)
     {
         /* Skip whitespace */
-        if (isspace(arg[i]))
+        if (isspace((unsigned char)(arg[i])))
         {
             continue;
         }
@@ -2524,7 +2511,7 @@ static int cmd_option_run(char *arg)
 
         /* Next character must be option key */
         i++;
-        if (arg[i] == 0 || !isalpha(arg[i]))
+        if (arg[i] == 0 || !isalpha((unsigned char)(arg[i])))
         {
             printf("ERROR: Bad syntax in OPTION command "
                     "(expected option character)\n");
@@ -2532,7 +2519,7 @@ static int cmd_option_run(char *arg)
         }
 
         /* Find option with that key */
-        key = toupper(arg[i]);
+        key = toupper((unsigned char)(arg[i]));
         cur = findOption(key);
         if (cur == NULL)
         {
@@ -2575,12 +2562,12 @@ static int cmd_unboot_run(char *arg)
     arg = stringTrimBoth(arg);
 
     /* Validate parameters - X: is drive to make unbootable */
-    if (!isalpha(arg[0]) || arg[1] != ':' || arg[2] != 0)
+    if (!isalpha((unsigned char)(arg[0])) || arg[1] != ':' || arg[2] != 0)
     {
             errorBadArgs();
             return 1;
     }
-    drive = toupper(arg[0]) - 'A';
+    drive = toupper((unsigned char)(arg[0])) - 'A';
 
     /* Read the boot sector */
     rc = PosAbsoluteDiskRead(drive, 0, 1, buf);
@@ -2738,16 +2725,16 @@ static int cmd_ps_run(char *ignored)
             showError(rc);
             return 1;
         }
-        printf("% 8X ",info.pid);
+        printf("%8lX ", info.pid);
         if (info.ppid == 0)
             printf("         ");
         else
-            printf("% 8X ",info.ppid);
+            printf("%8lX ", info.ppid);
         printf("%s ",describeProcStatus(info.status));
 
         PosProcessGetMemoryStats(info.pid,&stats);
-        printf("% 8d KB ", PARAS_TO_KB(stats.totalAllocated));
-        printf("% 8d ", stats.countAllocated);
+        printf("%8lu KB ", (unsigned long)PARAS_TO_KB(stats.totalAllocated));
+        printf("% 8ld ", stats.countAllocated);
         printf("%s\n",info.exeName);
         if (info.nextPid == 0)
             break;
@@ -2769,10 +2756,10 @@ static int cmd_cls_run(char *ignored)
 static char *splitFirstWord(char *str)
 {
     /* Skip any initial whitespace */
-    while (*str != 0 && isspace(*str))
+    while (*str != 0 && isspace((unsigned char)*str))
         str++;
     /* Now skip all non-whitespace */
-    while (*str != 0 && !isspace(*str))
+    while (*str != 0 && !isspace((unsigned char)*str))
         str++;
     /* Have we reached a NUL? - then nothing after initial token */
     if (*str == 0)
@@ -2781,7 +2768,7 @@ static char *splitFirstWord(char *str)
     *str = 0;
     str++;
     /* Strip any whitespace before second token */
-    while (*str != 0 && isspace(*str))
+    while (*str != 0 && isspace((unsigned char)*str))
         str++;
     /* Return start of second token */
     return str;
@@ -2797,7 +2784,7 @@ static bool isDelimiterLine(char *line, char *delimiter)
     /* Skip past the delimiter */
     line += len;
     /* Allow whitespace between delimiter and end of line */
-    while (isspace(*line))
+    while (isspace((unsigned char)*line))
         line++;
     /* Not a delimiter line if non-whitespace after delimiter */
     return *line == 0;
@@ -2826,7 +2813,7 @@ static int cmd_save_run(char *arg)
     while (*arg != 0)
     {
         /* Skip whitespace */
-        if (isspace(*arg))
+        if (isspace((unsigned char)*arg))
         {
             arg++;
             continue;
@@ -2859,7 +2846,7 @@ static int cmd_save_run(char *arg)
             {
                 if (*arg == 0)
                     break;
-                if (isspace(*arg)) {
+                if (isspace((unsigned char)*arg)) {
                     *arg = 0;
                     arg++;
                     break;
@@ -3017,7 +3004,7 @@ static int cmd_v_run(char *arg)
         if (ins_strncmp("FG=",token,3)==0)
         {
             token += 3;
-            if (!isdigit(*token))
+            if (!isdigit((unsigned char)*token))
             {
                 showArgBadSyntaxMsg("FG=");
                 return 1;
@@ -3036,7 +3023,7 @@ static int cmd_v_run(char *arg)
         if (ins_strncmp("ROW=",token,4)==0)
         {
             token += 4;
-            if (!isdigit(*token))
+            if (!isdigit((unsigned char)*token))
             {
                 showArgBadSyntaxMsg("ROW=");
                 return 1;
@@ -3060,7 +3047,7 @@ static int cmd_v_run(char *arg)
         if (ins_strncmp("COL=",token,4)==0)
         {
             token += 4;
-            if (!isdigit(*token))
+            if (!isdigit((unsigned char)*token))
             {
                 showArgBadSyntaxMsg("COL=");
                 return 1;
@@ -3084,7 +3071,7 @@ static int cmd_v_run(char *arg)
         if (ins_strncmp("BG=",token,3)==0)
         {
             token += 3;
-            if (!isdigit(*token))
+            if (!isdigit((unsigned char)*token))
             {
                 showArgBadSyntaxMsg("BG=");
                 return 1;
@@ -3103,8 +3090,9 @@ static int cmd_v_run(char *arg)
         if (ins_strncmp("MODE=",token,5)==0)
         {
             token += 5;
-            if (!isdigit(*token) && !(*token >= 'A' && *token <= 'F') &&
-                                    !(*token >= 'a' && *token <= 'f'))
+            if (!isdigit((unsigned char)*token)
+                && !(*token >= 'A' && *token <= 'F')
+                && !(*token >= 'a' && *token <= 'f'))
             {
                 showArgBadSyntaxMsg("MODE=");
                 return 1;
@@ -3127,7 +3115,7 @@ static int cmd_v_run(char *arg)
         if (ins_strncmp("PAGE=",token,5)==0)
         {
             token += 5;
-            if (!isdigit(*token))
+            if (!isdigit((unsigned char)*token))
             {
                 showArgBadSyntaxMsg("PAGE=");
                 return 1;
@@ -3237,7 +3225,7 @@ static int cmd_v_run(char *arg)
 
 static int getAttrMask(char attr)
 {
-    switch (toupper(attr))
+    switch (toupper((unsigned char)attr))
     {
         case 'R':
             return FILE_ATTR_READONLY;
@@ -3255,7 +3243,6 @@ static int getAttrMask(char attr)
 static int cmd_attrib_run(char *arg)
 {
     char *fileName;
-    char c;
     int rc;
     int attrs;
     int mask;

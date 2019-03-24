@@ -10,6 +10,7 @@
         .globl _inthdlr
         .globl _inthdlr_8
         .globl _inthdlr_9
+        .globl _inthdlr_E
         .globl _inthdlr_10
         .globl _inthdlr_13
         .globl _inthdlr_15
@@ -66,6 +67,15 @@ _inthdlr_9:
         mov    %ax, %ds
         push   intnum
         movl   $0x9, intnum
+        jmp    _inthdlr_q
+_inthdlr_E:
+        push   %eax
+        mov    %ds, %ax
+        push   %eax
+        mov    $0x10, %eax
+        mov    %ax, %ds
+        push   intnum
+        movl   $0xE, intnum
         jmp    _inthdlr_q
 _inthdlr_10:
         push   %eax

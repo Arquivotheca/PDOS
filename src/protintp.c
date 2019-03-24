@@ -25,6 +25,7 @@ rawprot_parms *rp_parms;
 void inthdlr(void);
 void inthdlr_8(void);
 void inthdlr_9(void);
+void inthdlr_E(void);
 void inthdlr_10(void);
 void inthdlr_13(void);
 void inthdlr_15(void);
@@ -164,6 +165,7 @@ unsigned long runprot_p(rawprot_parms *parmlist)
     } handlerlist[] = { 
         { 0x8, inthdlr_8 },
         { 0x9, inthdlr_9 },
+        { 0xE, inthdlr_E },
         { 0x10, inthdlr_10 },
         { 0x13, inthdlr_13 },
         { 0x15, inthdlr_15 },
@@ -184,6 +186,7 @@ unsigned long runprot_p(rawprot_parms *parmlist)
     runreal_p = (unsigned long (*)(unsigned long func, unsigned short *regs))
              ABSADDR(runparm->runreal);
 
+    /* Configures the Interrupt Descriptor Table (IDT). */
     memset(intloc, 0, 8 * 32);
     
     intaddr = (unsigned long)(&inthdlr);
@@ -200,6 +203,7 @@ unsigned long runprot_p(rawprot_parms *parmlist)
         *((unsigned long *)intloc + x * 2 + 1) = intdesc2;
     }
 
+    /* Installs the handlers from handlerlist. */
     for (x = 0; handlerlist[x].number != 0; x++)
     {    
         intaddr = (unsigned long)handlerlist[x].handler;
@@ -207,6 +211,7 @@ unsigned long runprot_p(rawprot_parms *parmlist)
         *((unsigned long *)intloc + handlerlist[x].number * 2) = intdesc1;
         *((unsigned long *)intloc + handlerlist[x].number * 2 + 1) = intdesc2;
     }
+    /* End of IDT configuration. */
     rawprot_p(parmlist);
     numUserInts = 0;
     int_enable();

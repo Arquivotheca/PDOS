@@ -13,6 +13,7 @@
         .globl _saveCR3
         .globl _enablePaging
         .globl _disablePaging
+        .globl _readCR2
 
         .text
 
@@ -194,6 +195,16 @@ _disablePaging:
         mov     %cr0, %eax
         and     $0x7fffffff, %eax
         mov     %eax, %cr0
+        pop     %ebp
+        ret
+
+/////////////////////////////////////////////////////////////
+/ unsigned long readCR2(void);
+/ Returns the content of CR2.
+_readCR2:
+        push    %ebp
+        mov     %esp, %ebp
+        mov     %cr2, %eax
         pop     %ebp
         ret
 

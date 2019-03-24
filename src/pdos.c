@@ -110,6 +110,7 @@ static void scrunchf(char *dest, char *new);
 static int ff_search(void);
 
 #ifdef __32BIT__
+int int0E(unsigned int *regs);
 int int20(unsigned int *regs);
 int int21(unsigned int *regs);
 /* INT 25 - Absolute Disk Read */
@@ -3136,6 +3137,16 @@ static int ff_search(void)
 
 #ifdef __32BIT__
 /* registers come in as eax, ebx, ecx, edx, esi, edi, cflag */
+int int0E(unsigned int *regs)
+{
+    printf("Page Fault occured (Protected Mode Exception 0xE)\n");
+    printf("while accessing virtual address 0x%08x\n", readCR2());
+    printf("System halting\n");
+    for (;;);
+
+    return (0);
+}
+
 int int20(unsigned int *regs)
 {
     static union REGS regsin;
@@ -4680,6 +4691,7 @@ int pdosstrt(void)
     doreboot = pp->doreboot;
     dopoweroff = pp->dopoweroff;
     bootBPB = ABSADDR(pp->bpb);
+    protintHandler(0x0E, int0E);
     protintHandler(0x20, int20);
     protintHandler(0x21, int21);
     protintHandler(0x25, int25);

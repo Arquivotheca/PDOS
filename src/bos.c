@@ -13,6 +13,12 @@
 #include "bos.h"
 #include "support.h"
 
+#ifdef __32BIT__
+#define BIOS_INT_OFFSET 0x90 /* BIOS interrupt 0x10 is moved to 0xA0. */
+#else
+#define BIOS_INT_OFFSET 0
+#endif
+
 /* x86 interrupt call with no input registers */
 static void int86n(unsigned int intno);
 /* x86 interrupt call with registers */
@@ -51,7 +57,7 @@ unsigned int BosSetVideoMode(unsigned int mode)
     regsin.h.ah = 0x00;
     regsin.h.al = (unsigned char)mode;
     
-    int86(0x10,&regsin,&regsout);
+    int86(0x10 + BIOS_INT_OFFSET, &regsin, &regsout);
     
     return (regsout.h.al);
 }
@@ -72,7 +78,7 @@ void BosSetCursorType(unsigned int top, unsigned int bottom)
     regsin.h.ch = top;
     regsin.h.cl = bottom;
     
-    int86i(0x10, &regsin);
+    int86i(0x10 + BIOS_INT_OFFSET, &regsin);
     
     return;
 }
@@ -95,7 +101,7 @@ void BosSetCursorPosition(unsigned int page, unsigned int row,
     regsin.h.dh = row;
     regsin.h.dl = column;
     
-    int86i(0x10, &regsin);
+    int86i(0x10 + BIOS_INT_OFFSET, &regsin);
     
     return;
 }
@@ -122,7 +128,7 @@ void BosReadCursorPosition(unsigned int page,
     regs.h.ah = 0x03;
     regs.h.bh = page;
     
-    int86(0x10, &regs, &regs);
+    int86(0x10 + BIOS_INT_OFFSET, &regs, &regs);
     
     *cursorStart = regs.h.ch;
     *cursorEnd = regs.h.cl;
@@ -153,7 +159,7 @@ void BosReadLightPen(int *trigger,
 
     regs.h.ah = 0x04;
     
-    int86(0x10, &regs, &regs);
+    int86(0x10 + BIOS_INT_OFFSET, &regs, &regs);
     
     *trigger = regs.h.ah;
     *pcolumn = regs.x.bx;
@@ -174,7 +180,7 @@ int BosSetActiveDisplayPage(int page)
 
     regsin.h.ah = 0x05;
     regsin.h.al = page;
-    int86i(0x10, &regsin);
+    int86i(0x10 + BIOS_INT_OFFSET, &regsin);
     return (0);
 }
 
@@ -197,7 +203,7 @@ int BosScrollWindowUp(int numLines,
     regsin.h.cl = startCol;
     regsin.h.dh = endRow;
     regsin.h.dl = endCol;
-    int86i(0x10, &regsin);
+    int86i(0x10 + BIOS_INT_OFFSET, &regsin);
     return (0);
 }
 
@@ -220,7 +226,7 @@ int BosScrollWindowDown(int numLines,
     regsin.h.cl = startCol;
     regsin.h.dh = endRow;
     regsin.h.dl = endCol;
-    int86i(0x10, &regsin);
+    int86i(0x10 + BIOS_INT_OFFSET, &regsin);
     return (0);
 }
 
@@ -234,7 +240,7 @@ int BosReadCharAttrib(int page, int *ch, int *attrib)
 
     regsin.h.ah = 0x08;
     regsin.h.bh = page;
-    int86(0x10, &regsin, &regsout);
+    int86(0x10 + BIOS_INT_OFFSET, &regsin, &regsout);
     *attrib = regsout.h.ah;
     *ch = regsout.h.al;
     return (0);
@@ -252,7 +258,7 @@ int BosWriteCharAttrib(int page, int ch, int attrib, unsigned int num)
     regsin.h.bh = page;
     regsin.h.bl = attrib;
     regsin.x.cx = (unsigned int)num;
-    int86i(0x10, &regsin);
+    int86i(0x10 + BIOS_INT_OFFSET, &regsin);
     /* wportb(0xe9, ch); */ /* works for PDOS-16 under Bochs */
     /* outp(0xe9, ch); */ /* works for PDOS-32 under Bochs */
     return (0);
@@ -270,7 +276,7 @@ int BosWriteCharCursor(int page, int ch, int col, unsigned int num)
     regsin.h.bh = page;
     regsin.h.bl = col;
     regsin.x.cx = (unsigned int)num;
-    int86i(0x10, &regsin);
+    int86i(0x10 + BIOS_INT_OFFSET, &regsin);
     return (0);
 }
 
@@ -284,7 +290,7 @@ int BosSetColourPalette(int id, int val)
     regsin.h.ah = 0x0b;
     regsin.h.bh = id;
     regsin.h.bl = val;
-    int86i(0x10, &regsin);
+    int86i(0x10 + BIOS_INT_OFFSET, &regsin);
     return (0);
 }
 
@@ -303,7 +309,7 @@ int BosWriteGraphicsPixel(int page,
     regsin.h.bh = page;
     regsin.x.cx = (unsigned int)column;
     regsin.x.dx = (unsigned int)row;
-    int86i(0x10, &regsin);
+    int86i(0x10 + BIOS_INT_OFFSET, &regsin);
     return (0);
 }
 
@@ -322,7 +328,7 @@ int BosReadGraphicsPixel(int page,
     regsin.h.bh = page;
     regsin.x.cx = (unsigned int)column;
     regsin.x.dx = (unsigned int)row;
-    int86(0x10, &regsin, &regsout);
+    int86(0x10 + BIOS_INT_OFFSET, &regsin, &regsout);
     *colour = regsout.h.al;
     return (0);
 }
@@ -338,7 +344,7 @@ int BosWriteText(int page, int ch, int colour)
     regsin.h.al = ch;
     regsin.h.bh = page;
     regsin.h.bl = colour;
-    int86i(0x10, &regsin);
+    int86i(0x10 + BIOS_INT_OFFSET, &regsin);
     /* wportb(0xe9, ch); */ /* works for PDOS-16 under Bochs */
     /* outp(0xe9, ch); */ /* works for PDOS-32 under Bochs */
     return (0);
@@ -353,7 +359,7 @@ int BosGetVideoMode(int *columns, int *mode, int *page)
     union REGS regsout;
 
     regsin.h.ah = 0x0f;
-    int86(0x10, &regsin, &regsout);
+    int86(0x10 + BIOS_INT_OFFSET, &regsin, &regsout);
     *columns = regsout.h.ah;
     *mode = regsout.h.al;
     *page = regsout.h.bh;
@@ -368,7 +374,7 @@ int BosLoadTextModeRomFont(int font, int block)
     regsin.h.al = font;
     regsin.x.bx = 0;
     regsin.h.bl = block;
-    int86i(0x10, &regsin);
+    int86i(0x10 + BIOS_INT_OFFSET, &regsin);
     return (0);
 }
 
@@ -388,7 +394,7 @@ int BosVBEGetInfo(void *buffer)
     regsin.x.di = (unsigned long)ADDR2ABS(buffer) & 0xf;
     regsin.d.edi = (sregs.es << 16) | regsin.x.di;
 #endif
-    int86x(0x10, &regsin, &regsout, &sregs);
+    int86x(0x10 + BIOS_INT_OFFSET, &regsin, &regsout, &sregs);
     if (regsout.h.al != 0x4f) return (2);
     return (regsout.h.ah);
 }
@@ -411,7 +417,7 @@ int BosVBEGetModeInfo(unsigned int mode, void *buffer)
     regsin.x.di = (unsigned long)ADDR2ABS(buffer) & 0xf;
     regsin.d.edi = (sregs.es << 16) | regsin.x.di;
 #endif
-    int86x(0x10, &regsin, &regsout, &sregs);
+    int86x(0x10 + BIOS_INT_OFFSET, &regsin, &regsout, &sregs);
     if (regsout.h.al != 0x4f) return (2);
     return (regsout.h.ah);
 }
@@ -434,7 +440,7 @@ int BosVBESetMode(unsigned int mode, void *buffer)
     regsin.x.di = (unsigned long)ADDR2ABS(buffer) & 0xf;
     regsin.d.edi = (sregs.es << 16) | regsin.x.di;
 #endif
-    int86x(0x10, &regsin, &regsout, &sregs);
+    int86x(0x10 + BIOS_INT_OFFSET, &regsin, &regsout, &sregs);
     if (regsout.h.al != 0x4f) return (2);
     return (regsout.h.ah);
 }
@@ -447,7 +453,7 @@ int BosVBEGetMode(unsigned int *mode)
     union REGS regsout;
 
     regsin.x.ax = 0x4f03;
-    int86(0x10, &regsin, &regsout);
+    int86(0x10 + BIOS_INT_OFFSET, &regsin, &regsout);
     if (regsout.h.al != 0x4f) return (2);
     *mode = regsout.x.bx;
     return (regsout.h.ah);
@@ -481,7 +487,7 @@ int BosVBEPaletteOps(unsigned int operation,
     regsin.x.di = (unsigned long)ADDR2ABS(buffer) & 0xf;
     regsin.d.edi = (sregs.es << 16) | regsin.x.di;
 #endif
-    int86x(0x10, &regsin, &regsout, &sregs);
+    int86x(0x10 + BIOS_INT_OFFSET, &regsin, &regsout, &sregs);
     if (regsout.h.al != 0x4f) return (2);
     return (regsout.h.ah);
 }

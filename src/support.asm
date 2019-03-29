@@ -107,6 +107,13 @@ int 026h
 jmp fintry
 not26:
 
+; Copied BIOS interrupts for PDOS-32.
+cmp intnum, 0A0h
+jne notA0
+int 0A0h
+jmp fintry
+notA0:
+
 fintry:
 
 pop bp
@@ -236,6 +243,13 @@ jne xnot26
 int 026h
 jmp xfintry
 xnot26:
+
+; Copied BIOS interrupts for PDOS-32.
+cmp intnum, 0A0h
+jne xnotA0
+int 0A0h
+jmp xfintry
+xnotA0:
 
 xfintry:
 

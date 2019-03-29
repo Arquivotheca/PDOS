@@ -99,6 +99,13 @@ not26:
         jmp     fintry
 not80:
 
+/ Copied BIOS interrupts.
+        cmpl    $0xA0, 8(%ebp)
+        jne     notA0
+        int     $0xA0
+        jmp     fintry
+notA0:
+
 fintry:
         push    %esi
         mov     16(%ebp), %esi

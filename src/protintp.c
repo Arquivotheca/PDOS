@@ -36,6 +36,7 @@ void inthdlr_21(void);
 void inthdlr_25(void);
 void inthdlr_26(void);
 void inthdlr_80(void);
+void inthdlr_A0(void);
 void int_enable(void);
 
 static unsigned short *intbuffer;
@@ -176,6 +177,7 @@ unsigned long runprot_p(rawprot_parms *parmlist)
         { 0x25, inthdlr_25 },
         { 0x26, inthdlr_26 },
         { 0x80, inthdlr_80 },
+        { 0xA0, inthdlr_A0 },
         { 0, 0 } };
 
     __abscor = parmlist->dsbase;
@@ -187,8 +189,6 @@ unsigned long runprot_p(rawprot_parms *parmlist)
              ABSADDR(runparm->runreal);
 
     /* Configures the Interrupt Descriptor Table (IDT). */
-    memset(intloc, 0, 8 * 32);
-    
     intaddr = (unsigned long)(&inthdlr);
     intdesc1 = (0x8 << 16) | (intaddr & 0xffff);
     intdesc2 = (intaddr & 0xffff0000)

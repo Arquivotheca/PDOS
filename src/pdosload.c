@@ -61,7 +61,27 @@ void pdosload(void)
     size_t readbytes;
     unsigned int progentry;
     int x;
-#endif        
+#endif
+
+#ifdef PDOS32
+    /* Copies BIOS interrupt vectors from 0x10 to 0xA0
+     * so they do not conflict with protected mode exceptions. */
+    {
+        /* To access the IVT far pointers must be used. */
+        unsigned long far *old_ivt = ((unsigned long far *)
+                                      (0x10 * sizeof(unsigned long)));
+        unsigned long far *new_ivt = ((unsigned long far *)
+                                      (0xA0 * sizeof(unsigned long)));
+        int i;
+
+        disable();
+        for (i = 0; i < 0xf; i++, old_ivt++, new_ivt++)
+        {
+            *new_ivt = *old_ivt;
+        }
+        enable();
+    }
+#endif
 
     /* start loading PDOS straight after PLOAD, ie 0x600 + 64k */
     psp = 0x10600UL;

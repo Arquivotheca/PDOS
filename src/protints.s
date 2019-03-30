@@ -22,6 +22,10 @@
         .globl _inthdlr_26
         .globl _inthdlr_80
         .globl _inthdlr_A0
+        .globl _inthdlr_A3
+        .globl _inthdlr_A5
+        .globl _inthdlr_A6
+        .globl _inthdlr_AA
         .globl _int_enable
 
         .text
@@ -177,6 +181,42 @@ _inthdlr_A0:
         mov    %ax, %ds
         push   intnum
         movl   $0xA0, intnum
+        jmp    _inthdlr_p
+_inthdlr_A3:
+        push   %eax
+        mov    %ds, %ax
+        push   %eax
+        mov    $0x10, %eax
+        mov    %ax, %ds
+        push   intnum
+        movl   $0xA3, intnum
+        jmp    _inthdlr_p
+_inthdlr_A5:
+        push   %eax
+        mov    %ds, %ax
+        push   %eax
+        mov    $0x10, %eax
+        mov    %ax, %ds
+        push   intnum
+        movl   $0xA5, intnum
+        jmp    _inthdlr_p
+_inthdlr_A6:
+        push   %eax
+        mov    %ds, %ax
+        push   %eax
+        mov    $0x10, %eax
+        mov    %ax, %ds
+        push   intnum
+        movl   $0xA6, intnum
+        jmp    _inthdlr_p
+_inthdlr_AA:
+        push   %eax
+        mov    %ds, %ax
+        push   %eax
+        mov    $0x10, %eax
+        mov    %ax, %ds
+        push   intnum
+        movl   $0xAA, intnum
         jmp    _inthdlr_p
         
 / by the time we get here, the following things are on the stack:

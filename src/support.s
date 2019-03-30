@@ -106,6 +106,30 @@ not80:
         jmp     fintry
 notA0:
 
+        cmpl    $0xA3, 8(%ebp)
+        jne     notA3
+        int     $0xA3
+        jmp     fintry
+notA3:
+
+        cmpl    $0xA5, 8(%ebp)
+        jne     notA5
+        int     $0xA5
+        jmp     fintry
+notA5:
+
+        cmpl    $0xA6, 8(%ebp)
+        jne     notA6
+        int     $0xA6
+        jmp     fintry
+notA6:
+
+        cmpl    $0xAA, 8(%ebp)
+        jne     notAA
+        int     $0xAA
+        jmp     fintry
+notAA:
+
 fintry:
         push    %esi
         mov     16(%ebp), %esi

@@ -65,7 +65,6 @@ not13:
 
 cmp intnum, 015h
 jne not15
-clc  ; interrupt doesn't set it it seems
 int 015h
 jmp fintry
 not15:
@@ -76,10 +75,9 @@ int 016h
 jmp fintry
 not16:
 
-cmp intnum, 1Ah
+cmp intnum, 01Ah
 jne not1A
-clc  ; interrupt doesn't set it it seems
-int 1Ah
+int 01Ah
 jmp fintry
 not1A:
 
@@ -113,6 +111,30 @@ jne notA0
 int 0A0h
 jmp fintry
 notA0:
+
+cmp intnum, 0A3h
+jne notA3
+int 0A3h
+jmp fintry
+notA3:
+
+cmp intnum, 0A5h
+jne notA5
+int 0A5h
+jmp fintry
+notA5:
+
+cmp intnum, 0A6h
+jne notA6
+int 0A6h
+jmp fintry
+notA6:
+
+cmp intnum, 0AAh
+jne notAA
+int 0AAh
+jmp fintry
+notAA:
 
 fintry:
 
@@ -209,7 +231,6 @@ xnot13:
 
 cmp intnum, 015h
 jne xnot15
-clc ; interrupt doesn't set it it seems
 int 015h
 jmp xfintry
 xnot15:
@@ -220,9 +241,9 @@ int 016h
 jmp xfintry
 xnot16:
 
-cmp intnum, 1Ah
+cmp intnum, 01Ah
 jne xnot1A
-int 1Ah
+int 01Ah
 jmp xfintry
 xnot1A:
 
@@ -250,6 +271,30 @@ jne xnotA0
 int 0A0h
 jmp xfintry
 xnotA0:
+
+cmp intnum, 0A3h
+jne xnotA3
+int 0A3h
+jmp xfintry
+xnotA3:
+
+cmp intnum, 0A5h
+jne xnotA5
+int 0A5h
+jmp xfintry
+xnotA5:
+
+cmp intnum, 0A6h
+jne xnotA6
+int 0A6h
+jmp xfintry
+xnotA6:
+
+cmp intnum, 0AAh
+jne xnotAA
+int 0AAh
+jmp xfintry
+xnotAA:
 
 xfintry:
 

@@ -499,7 +499,7 @@ int BosDiskReset(unsigned int drive)
 
     regsin.h.ah = 0x00;
     regsin.h.dl = (unsigned char)drive;
-    int86(0x13, &regsin, &regsout);
+    int86(0x13 + BIOS_INT_OFFSET, &regsin, &regsout);
     return (regsout.x.cflag);
 }
 
@@ -510,7 +510,7 @@ int BosDiskStatus(unsigned int drive, unsigned int *status)
 
     regsin.h.ah = 0x01;
     regsin.h.dl = drive;
-    int86(0x13, &regsin, &regsout);
+    int86(0x13 + BIOS_INT_OFFSET, &regsin, &regsout);
     *status = regsout.h.ah;
     return (0);
 }
@@ -543,7 +543,7 @@ int BosDiskSectorRead(void         *buffer,
     regsin.x.bx = (unsigned long)ADDR2ABS(buffer) & 0xf;
     regsin.d.edi = (sregs.es << 16);
 #endif
-    int86x(0x13, &regsin, &regsout, &sregs);
+    int86x(0x13 + BIOS_INT_OFFSET, &regsin, &regsout, &sregs);
     return (regsout.x.cflag);
 }
 
@@ -572,7 +572,7 @@ int BosDiskSectorWrite(void         *buffer,
     regsin.x.bx = (unsigned long)ADDR2ABS(buffer) & 0xf;
     regsin.d.edi = (sregs.es << 16);
 #endif
-    int86x(0x13, &regsin, &regsout, &sregs);
+    int86x(0x13 + BIOS_INT_OFFSET, &regsin, &regsout, &sregs);
     return (regsout.x.cflag);
 }
 
@@ -591,7 +591,7 @@ int BosDriveParms(unsigned int drive,
     regsin.h.ah = 0x08;
     regsin.h.dl = (unsigned char)drive;
 
-    int86x(0x13, &regsin, &regsout, &sregs);
+    int86x(0x13 + BIOS_INT_OFFSET, &regsin, &regsout, &sregs);
     *tracks = (((regsout.h.cl & 0xC0U) << 2) | regsout.h.ch) + 1;
     *sectors = (regsout.h.cl & 0x3F);
     *heads = regsout.h.dh + 1;
@@ -615,7 +615,7 @@ int BosFixedDiskStatus(unsigned int drive)
 
     regsin.h.ah = 0x10;
     regsin.h.dl = (unsigned char)drive;
-    int86(0x13, &regsin, &regsout);
+    int86(0x13 + BIOS_INT_OFFSET, &regsin, &regsout);
     if (regsout.x.cflag)
     {
         return (regsout.x.ax);
@@ -683,7 +683,7 @@ int BosDiskSectorRLBA(void         *buffer,
     regsin.d.esi = (sregs.ds << 16) | regsin.x.si;
 #endif
 
-    int86x(0x13, &regsin, &regsout, &sregs);
+    int86x(0x13 + BIOS_INT_OFFSET, &regsin, &regsout, &sregs);
     return (regsout.h.ah);
 }
 
@@ -746,7 +746,7 @@ int BosDiskSectorWLBA(void         *buffer,
     regsin.d.esi = (sregs.ds << 16) | regsin.x.si;
 #endif
 
-    int86x(0x13, &regsin, &regsout, &sregs);
+    int86x(0x13 + BIOS_INT_OFFSET, &regsin, &regsout, &sregs);
     return (regsout.h.ah);
 }
 
@@ -756,7 +756,7 @@ long BosExtendedMemorySize(void)
     union REGS regsout;
 
     regsin.h.ah = 0x88;
-    int86(0x15, &regsin, &regsout);
+    int86(0x15 + BIOS_INT_OFFSET, &regsin, &regsout);
 
     /* unfortunately it appears as if the carry flag is normally
        not changed by this interrupt, so what we want is to clear
@@ -787,7 +787,7 @@ void BosReadKeyboardCharacter(int *scancode, int *ascii)
 
     regsin.h.ah = 0x00;
     
-    int86(0x16, &regsin, &regsout);
+    int86(0x16 + BIOS_INT_OFFSET, &regsin, &regsout);
     
     *scancode = regsout.h.ah;
     *ascii = regsout.h.al;
@@ -810,7 +810,7 @@ int BosReadKeyboardStatus(int *scancode, int *ascii)
 
     regsin.h.ah = 0x01;
 
-    int86(0x16, &regsin, &regsout);
+    int86(0x16 + BIOS_INT_OFFSET, &regsin, &regsout);
 
     *scancode = regsout.h.ah;
     *ascii = regsout.h.al;
@@ -840,7 +840,7 @@ void BosGetSystemTime(unsigned long *ticks, unsigned int *midnight)
 
     regsin.h.ah = 0x00;
     
-    int86(0x1A,&regsin,&regsout);
+    int86(0x1A + BIOS_INT_OFFSET, &regsin, &regsout);
     
     *ticks = ((unsigned long)regsout.x.cx << 16 | regsout.x.dx);
     *midnight = regsout.h.al;
@@ -864,7 +864,7 @@ unsigned int BosGetSystemDate(int *century,int *year,int *month,int *day)
     regsin.h.ah = 0x04;
     /*regsin.x.cflag = 0x00; TODO: Clearing the Carry flag.*/
     
-    int86(0x1A,&regsin,&regsout);
+    int86(0x1A + BIOS_INT_OFFSET, &regsin, &regsout);
     
     *century = regsout.h.ch;
     *year = regsout.h.cl;
@@ -899,7 +899,7 @@ void BosSetSystemDate(int century,int year,int month,int day)
     regsin.h.dh = month;
     regsin.h.dl = day;
     
-    int86i(0x1A,&regsin);
+    int86i(0x1A + BIOS_INT_OFFSET, &regsin);
     
     return;
 }
@@ -920,7 +920,7 @@ int BosPCICheck(unsigned char *hwcharacteristics,
 #ifdef __32BIT__
     regsin.d.edi = 0;
 #endif
-    int86x(0x1a, &regsin, &regsout, &sregs);
+    int86x(0x1a + BIOS_INT_OFFSET, &regsin, &regsout, &sregs);
     /* Bit 0 - configuration space access mechanism 1 supported.
      * Bit 1 - configuration space access mechanism 2 supported. */
     *hwcharacteristics = regsout.h.al;
@@ -1023,7 +1023,7 @@ void BosCpuIdle(void)
 {
     union REGS regsin;
     regsin.x.ax = 0x5305;
-    int86i(0x15, &regsin);
+    int86i(0x15 + BIOS_INT_OFFSET, &regsin);
 }
 
 /* Get scaled BIOS tick count. This internal function gets the scaled tick

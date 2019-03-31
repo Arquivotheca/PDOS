@@ -176,7 +176,7 @@ _inp:
         push    %edx
         mov     8(%ebp), %edx
         mov     $0, %eax
-        in      %dx, %al
+        inb     %dx, %al
         pop     %edx
         pop     %ebp
         ret
@@ -212,7 +212,7 @@ _outp:
         push    %edx
         mov     8(%ebp), %edx
         mov     12(%ebp), %eax
-        out     %al, %dx
+        outb    %al, %dx
         pop     %edx
         pop     %ebp
         ret

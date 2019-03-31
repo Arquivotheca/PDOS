@@ -136,6 +136,19 @@ int 0AAh
 jmp fintry
 notAA:
 
+; Copied BIOS IRQ handler interrupts for PDOS-32.
+cmp intnum, 0B0h
+jne notB0
+int 0B0h
+jmp fintry
+notB0:
+
+cmp intnum, 0B1h
+jne notB1
+int 0B1h
+jmp fintry
+notB1:
+
 fintry:
 
 pop bp
@@ -295,6 +308,19 @@ jne xnotAA
 int 0AAh
 jmp xfintry
 xnotAA:
+
+; Copied BIOS IRQ handler interrupts for PDOS-32.
+cmp intnum, 0B0h
+jne xnotB0
+int 0B0h
+jmp xfintry
+xnotB0:
+
+cmp intnum, 0B1h
+jne xnotB1
+int 0B1h
+jmp xfintry
+xnotB1:
 
 xfintry:
 

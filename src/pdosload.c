@@ -41,6 +41,10 @@ static void readLogical(void *diskptr, unsigned long sector, void *buf);
 static void analyseBpb(DISKINFO *diskinfo, unsigned char *bpb);
 static unsigned long doreboot(unsigned long parm);
 static void dopoweroff(void);
+#ifdef PDOS32
+static void ivtCopyEntries(int dest, int orig, int count);
+static void picRemap(int master_offset, int slave_offset);
+#endif
 
 void pdosload(void)
 {
@@ -64,21 +68,17 @@ void pdosload(void)
 #endif
 
 #ifdef PDOS32
-    /* Copies BIOS interrupt vectors from 0x10 to 0xA0
+    /* Copies BIOS interrupt vectors and remaps IRQs
      * so they do not conflict with protected mode exceptions. */
     {
-        /* To access the IVT far pointers must be used. */
-        unsigned long far *old_ivt = ((unsigned long far *)
-                                      (0x10 * sizeof(unsigned long)));
-        unsigned long far *new_ivt = ((unsigned long far *)
-                                      (0xA0 * sizeof(unsigned long)));
-        int i;
-
         disable();
-        for (i = 0; i < 0xf; i++, old_ivt++, new_ivt++)
-        {
-            *new_ivt = *old_ivt;
-        }
+        /* 16 vectors from 0x10 to 0xA0. (BIOS calls) */
+        ivtCopyEntries(0xA0, 0x10, 16);
+        /* 8 vectors from 0x08 to 0xB0. (BIOS IRQ handlers 0 - 7) */
+        ivtCopyEntries(0xB0, 0x08, 8);
+        /* 8 vectors from 0x70 to 0xB8. (BIOS IRQ handlers 8 - 15) */
+        ivtCopyEntries(0xB8, 0x70, 8);
+        picRemap(0xB0, 0xB8);
         enable();
     }
 #endif
@@ -253,5 +253,66 @@ void dumplong(unsigned long x)
     buf[8] = '\0';
     dumpbuf(buf, 8);
     return;
+}
+#endif
+
+#ifdef PDOS32
+static void ivtCopyEntries(int dest, int orig, int count)
+{
+    /* To access the IVT far pointers must be used. */
+    unsigned long far *new_ivt;
+    unsigned long far *old_ivt;
+
+    new_ivt = (unsigned long far *) (long)(dest * sizeof(unsigned long));
+    old_ivt = (unsigned long far *) (long)(orig * sizeof(unsigned long));
+    for (; count > 0; count--)
+    {
+        *new_ivt = *old_ivt;
+        new_ivt++;
+        old_ivt++;
+    }
+}
+
+/* Code for remapping Programmable Interrupt Controller (PIC). */
+#define PIC1         0x20
+#define PIC2         0xA0
+#define PIC1_COMMAND PIC1
+#define PIC1_DATA    (PIC1 + 1)
+#define PIC2_COMMAND PIC2
+#define PIC2_DATA    (PIC2 + 1)
+
+#define ICW1_ICW4_NEEDED 0x01
+#define ICW1_INIT        0x10
+
+#define ICW4_8086_MODE 0x1
+
+static void picRemap(int master_offset, int slave_offset)
+{
+    unsigned char master_mask, slave_mask;
+
+    /* Saves the masks so they can be restored after remapping. */
+    master_mask = rportb(PIC1_DATA);
+    slave_mask = rportb(PIC2_DATA);
+
+    /* Starts the initialization (ICW1). */
+    wportb(PIC1_COMMAND, ICW1_INIT | ICW1_ICW4_NEEDED);
+    wportb(PIC2_COMMAND, ICW1_INIT | ICW1_ICW4_NEEDED);
+
+    /* Sends the offsets to PICs (ICW2). */
+    wportb(PIC1_DATA, master_offset);
+    wportb(PIC2_DATA, slave_offset);
+
+    /* Tells the master that the slave is at IRQ2 (ICW3). */
+    wportb(PIC1_DATA, 0x1U << 2);
+    /* Tells the slave that it is at IRQ2 (ICW3). */
+    wportb(PIC2_DATA, 2);
+
+    /* Sets the 8086 mode (ICW4). */
+    wportb(PIC1_DATA, ICW4_8086_MODE);
+    wportb(PIC2_DATA, ICW4_8086_MODE);
+
+    /* Restores the masks. */
+    wportb(PIC1_DATA, master_mask);
+    wportb(PIC2_DATA, slave_mask);
 }
 #endif

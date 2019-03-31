@@ -26,6 +26,8 @@
         .globl _inthdlr_A5
         .globl _inthdlr_A6
         .globl _inthdlr_AA
+        .globl _inthdlr_B0
+        .globl _inthdlr_B1
         .globl _int_enable
 
         .text
@@ -218,6 +220,25 @@ _inthdlr_AA:
         push   intnum
         movl   $0xAA, intnum
         jmp    _inthdlr_p
+/ IRQ handlers.
+_inthdlr_B0:
+        push   %eax
+        mov    %ds, %ax
+        push   %eax
+        mov    $0x10, %eax
+        mov    %ax, %ds
+        push   intnum
+        movl   $0xB0, intnum
+        jmp    _inthdlr_q
+_inthdlr_B1:
+        push   %eax
+        mov    %ds, %ax
+        push   %eax
+        mov    $0x10, %eax
+        mov    %ax, %ds
+        push   intnum
+        movl   $0xB1, intnum
+        jmp    _inthdlr_q
         
 / by the time we get here, the following things are on the stack:
 / original eax, original ds (stored as doubleword), original intnum

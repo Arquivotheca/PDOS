@@ -351,7 +351,7 @@ unsigned int fatCreatFile(FAT *fat, const char *fnm, FATFILE *fatfile,
         fatfile->startcluster=0;
         if (found)
         /* If the file already exists, name is not cleared and written again. */
-        memset(p + sizeof(p->file_name) + sizeof(p->file_ext), '\0',
+        memset(p->file_name + sizeof(p->file_name) + sizeof(p->file_ext), '\0',
                sizeof(DIRENT) - sizeof(p->file_name) - sizeof(p->file_ext));
         else
         {

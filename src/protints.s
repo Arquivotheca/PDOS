@@ -83,7 +83,7 @@ _inthdlr_E:
         mov    %ax, %ds
         push   intnum
         movl   $0xE, intnum
-        jmp    _inthdlr_q
+        jmp    _inthdlr_r
 _inthdlr_10:
         push   %eax
         mov    %ds, %ax
@@ -449,6 +449,117 @@ level10d:
         pop    %ebp
         iret
 
+/ This is for exceptions that have an error code pushed when they occur.
+_inthdlr_r:
+        push   saveess
+        push   saveesp
+        push   %ebx
+        push   saveeax
+        push   saveebx
+        mov    $0, %eax
+        mov    %ss, %ax
+        mov    %eax, saveess
+        mov    %esp, %eax
+        mov    %eax, saveesp
+        push   %ebp
+        mov    %esp, %ebp
+/ Restore original eax (at time of interrupt) which is now located
+/ at offset 32 thanks to the above pushes
+        mov    32(%ebp), %eax
+        mov    %eax, saveeax
+/ Saves the error code pushed after the data for iret.
+        mov    36(%ebp), %eax
+        mov    %eax, saveerrorcode
+        pop    %ebp
+        cmp    $0x10, saveess
+        je     level10e
+        mov    $0x10, %eax
+        mov    %ax, %ss
+        mov    %ax, %es
+        mov    %ax, %fs
+        mov    %ax, %gs
+        mov    call32_esp, %eax
+        mov    %eax, %esp
+level10e:
+        push   saveerrorcode
+/ above is duplicated error code
+        mov    saveeax, %eax
+        push   %edx
+/ above is actually room for flags
+        push   %edx
+/ above is actually room for cflag
+        push   %edi
+        push   %esi
+        push   %edx
+        push   %ecx
+        push   %ebx
+        push   %eax
+        mov    %eax, %esi
+        mov    %ebx, %edi
+        mov    %esp, %eax
+/ above is pointer to saved registers
+        push   %eax
+        mov    intnum, %edx
+        push   %edx
+/ above interrupt number
+        call   _gotint
+        pop    %edx
+        pop    %eax
+/  signal pic to reenable interrupts
+        mov    $0x20, %dx
+        mov    $0x20, %al
+        outb   %al, %dx
+        pop    %eax
+        pop    %ebx
+        pop    %ecx
+        pop    %edx
+        pop    %esi
+        pop    %edi
+        mov    %eax, saveeax
+        pop    %eax
+/ above is actually cflag
+        mov    %ebx, saveebx
+        pop    %ebx
+/ above is actually flags
+        addl   $4, %esp
+/ above is the duplicated error code
+        cmp    $0x10, saveess
+        je     level10f
+        mov    saveesp, %eax
+        mov    %eax, %esp
+level10f:
+        mov    saveess, %eax
+        mov    %ax, %ss
+        push   %ebp
+        mov    %esp, %ebp
+/ Don't set the flags
+/        mov    %bl, 44(%ebp)
+        mov    saveebx, %ebx
+        mov    %ebx, 12(%ebp)
+        push   %eax
+        mov    saveeax, %eax
+        mov    %eax, 32(%ebp)
+        pop    %eax
+        pop    %ebp
+        mov    %ax, %es
+        mov    %ax, %fs
+        mov    %ax, %gs
+        pop    saveebx
+        pop    saveeax
+        pop    %ebx
+        pop    saveesp
+        pop    saveess
+        pop    intnum
+        pop    %eax
+        mov    %ax, %ds
+        pop    %eax
+        push   %ebp
+        mov    %esp, %ebp
+        pop    %ebp
+/ Removes the error code pushed when the exception occured.
+        addl   $4, %esp
+        iret
+
 /////////////////////////////////////////////////////////////
 / void int_enable(void);
 /
@@ -465,6 +576,9 @@ saveebx:
         .space 4
         .p2align 2
 saveess:
+        .space 4
+        .p2align 2
+saveerrorcode:
         .space 4
         .p2align 2
 intnum:

@@ -3141,6 +3141,7 @@ int int0E(unsigned int *regs)
 {
     printf("Page Fault occured (Protected Mode Exception 0xE)\n");
     printf("while accessing virtual address 0x%08x\n", readCR2());
+    printf("Error code is %08x\n", regs[8]);
     printf("System halting\n");
     for (;;);
 

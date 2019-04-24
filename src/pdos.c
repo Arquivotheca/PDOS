@@ -2733,16 +2733,10 @@ int PosFreeMem(void *ptr)
 #ifdef __32BIT__
 int PosReallocPages(void *ptr, unsigned int newpages, unsigned int *maxp)
 {
-    int ret;
-
-    ptr = translateProcessPtr(ptr);
-    ret = krealloc(ptr, newpages * 16);
-    if (ret != 0)
-    {
-        *maxp = 0;
-        ret = 8;
-    }
-    return (ret);
+    /* Incompatible with krealloc() (and realloc() as well)
+     * because the address of the memory cannot be changed.
+     * Error is always returned to prevent memory corruption. */
+    return (POS_ERR_INSUFFICIENT_MEMORY);
 }
 #else
 int PosReallocPages(void *ptr, unsigned int newpages, unsigned int *maxp)
@@ -4029,8 +4023,8 @@ static int loadExe32(char *prog, PARMBLOCK *parmblock)
         /* PDOS EXTENSION: tsrFlag=-1 means free no memory */
         if (tsrFlag != -1)
         {
-            unsigned int maxPages;
-            PosReallocPages(pcb, tsrFlag, &maxPages);
+            /* tsrFlag is in paragraphs (16 bytes). */
+            krealloc(pcb, tsrFlag * 16);
         }
         /* Mark process as a TSR. */
         newProc->status = PDOS_PROCSTATUS_TSR;

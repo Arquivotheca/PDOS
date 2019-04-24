@@ -305,16 +305,41 @@ static char *sbrk_end;
 
 #ifdef __32BIT__
 #include "physmem.h"
-/* How much memory in bytes is provided to physical memory manager.
- * 2 Page Frames are needed for the current paging. */
-#define MEMORY_FOR_PHYSMEMMGR 2 * PAGE_FRAME_SIZE
+#include "vmm.h"
+#include "liballoc.h"
 
 PHYSMEMMGR physmemmgr;
+VMM kernel_vmm;
 
-#define PAGE_SIZE 0x1000
-/* Flags for Page Table/Directory entries. */
-#define PAGE_PRESENT 0x1
-#define PAGE_RW      0x2
+#define KERNEL_HEAP_ADDR 0xE0000000
+#define KERNEL_HEAP_SIZE 0x10000000
+
+/* Liballoc hooks. */
+/* Locking functions disable and enable interrupts
+ * as a better way is not yet implemented. */
+int liballoc_lock()
+{
+    disable();
+    return (0);
+}
+
+int liballoc_unlock()
+{
+    enable();
+    return (0);
+}
+
+void *liballoc_alloc(size_t num_pages)
+{
+    return (vmmAllocPages(&kernel_vmm, num_pages));
+}
+
+int liballoc_free(void *addr, size_t num_pages)
+{
+    vmmFreePages(&kernel_vmm, addr, num_pages);
+
+    return (0);
+}
 #endif
 
 #ifndef USING_EXE
@@ -428,11 +453,7 @@ void pdosRun(void)
     memavail -= 0x200000;
     /* Provides memory to physical memory manager. */
     physmemmgrInit(&physmemmgr);
-    physmemmgrSupply(&physmemmgr, memstart, MEMORY_FOR_PHYSMEMMGR);
-    memstart += MEMORY_FOR_PHYSMEMMGR;
-    memavail -= MEMORY_FOR_PHYSMEMMGR;
-    /* Provides the rest of memory to memmgr. */
-    memmgrSupply(&memmgr, ABSADDR(memstart), memavail);
+    physmemmgrSupply(&physmemmgr, memstart, memavail);
     /* Sets up paging. */
     {
         unsigned long *page_directory = physmemmgrAllocPageFrame(&physmemmgr);
@@ -460,6 +481,9 @@ void pdosRun(void)
         loadPageDirectory(page_directory);
         enablePaging();
     }
+    /* Sets up the kernel VMM. */
+    vmmInit(&kernel_vmm, &physmemmgr);
+    vmmBootstrap(&kernel_vmm, (void *)KERNEL_HEAP_ADDR, KERNEL_HEAP_SIZE);
 #endif
     memmgrDefaults(&btlmem);
     memmgrInit(&btlmem);
@@ -496,7 +520,9 @@ void pdosRun(void)
 #endif
 #ifndef USING_EXE
     loadPcomm();
+#ifndef __32BIT__
     memmgrTerm(&memmgr);
+#endif
 #ifdef __32BIT__
     memmgrTerm(&btlmem);
 #endif
@@ -1796,8 +1822,6 @@ static void int21handler(union REGS *regsin,
             else if (regsin->h.al == 8)
             {
                 regsout->d.eax = (int)PosAllocMem(regsin->d.ebx, regsin->d.ecx);
-                memmgrSetOwner(&memmgr, (void*)regsout->d.eax,
-                               (unsigned long)curPCB);
                 regsout->d.eax = (int)ADDRFIXSUB(regsout->d.eax);
             }
 #endif
@@ -2589,7 +2613,7 @@ void *PosAllocMem(unsigned int size, unsigned int flags)
     {
         return (memmgrAllocate(&btlmem, size, memId + subpool));
     }
-    return (memmgrAllocate(&memmgr, size, memId + subpool));
+    return (kmalloc(size));
 }
 #endif
 
@@ -2598,10 +2622,10 @@ void *PosAllocMemPages(unsigned int pages, unsigned int *maxpages)
 {
     void *p;
 
-    p = memmgrAllocate(&memmgr, pages * 16, memId);
+    p = kmalloc(pages * 16);
     if (p == NULL && maxpages != NULL)
     {
-        *maxpages = memmgrMaxSize(&memmgr) / 16;
+        *maxpages = 0;
     }
     return (p);
 }
@@ -2699,6 +2723,8 @@ int PosFreeMem(void *ptr)
         memmgrFree(&btlmem, ptr);
         return (0);
     }
+    kfree(ptr);
+    return (0);
 #endif
     memmgrFree(&memmgr, ptr);
     return (0);
@@ -2710,10 +2736,10 @@ int PosReallocPages(void *ptr, unsigned int newpages, unsigned int *maxp)
     int ret;
 
     ptr = translateProcessPtr(ptr);
-    ret = memmgrRealloc(&memmgr, ptr, newpages * 16);
+    ret = krealloc(ptr, newpages * 16);
     if (ret != 0)
     {
-        *maxp = memmgrMaxSize(&memmgr) / 16;
+        *maxp = 0;
         ret = 8;
     }
     return (ret);
@@ -3914,7 +3940,7 @@ static int loadExe32(char *prog, PARMBLOCK *parmblock)
     EXELOAD *exeload;
     int ret;
 
-    exeload = memmgrAllocate(&memmgr, sizeof(EXELOAD), 0);
+    exeload = kmalloc(sizeof(EXELOAD));
     /* allocate exeLen + 0x100 (psp) + PDOS_PROCESS_SIZE (PCB) +
      * stack + extra (safety margin) */
     exeload->extra_memory_before = 0x100 + PDOS_PROCESS_SIZE;
@@ -3924,7 +3950,7 @@ static int loadExe32(char *prog, PARMBLOCK *parmblock)
     ret = exeloadDoload(exeload, prog);
     if (ret)
     {
-        memmgrFree(&memmgr, exeload);
+        kfree(exeload);
         return (1);
     }
 
@@ -3950,8 +3976,6 @@ static int loadExe32(char *prog, PARMBLOCK *parmblock)
     psp = pcb + PDOS_PROCESS_SIZE;
     newProc = (PDOS_PROCESS*)pcb;
     initPCB(newProc, (unsigned long)psp, prog, envptr);
-    memmgrSetOwner(&memmgr, pcb, (unsigned long)psp);
-    memmgrSetOwner(&memmgr, envptr, (unsigned long)psp);
 
     /* set various values in the psp */
     psp[0] = 0xcd;
@@ -3982,7 +4006,7 @@ static int loadExe32(char *prog, PARMBLOCK *parmblock)
                    exeload->ds_address);
     lastrc = ret;
 
-    memmgrFree(&memmgr, exeload);
+    kfree(exeload);
 
     /* Process finished, parent becomes current */
     curPCB = newProc->parent;
@@ -3996,9 +4020,9 @@ static int loadExe32(char *prog, PARMBLOCK *parmblock)
     if (tsrFlag == 0)
     {
         newProc->status = PDOS_PROCSTATUS_TERMINATED;
-        memmgrFree(&memmgr, newProc->envBlock);
+        kfree(newProc->envBlock);
         removeFromProcessChain(newProc);
-        memmgrFree(&memmgr, pcb);
+        kfree(pcb);
     }
     else
     {
@@ -4067,8 +4091,6 @@ static int fixexe32(unsigned char *psp, unsigned long entry, unsigned int sp,
     memId += 256;
     ret = call32(entry, ADDRFIXSUB(&exeparms), sp);
     /* printf("ret is %x\n", ret); */
-    memmgrFreeId(&memmgr, memId);
-    memmgrFreeId(&btlmem, memId);
     memId -= 256;
 
     subcor = oldsubcor;
@@ -5092,7 +5114,9 @@ void PosTerminateAndStayResident(int exitCode, int paragraphs)
 void PosGetMemoryManagementStats(void *stats)
 {
     MEMMGRSTATS *s = (MEMMGRSTATS*)stats;
+#ifndef __32BIT__
     memmgrGetStats(&memmgr, stats);
+#endif
 #ifdef __32BIT__
     /* In 32-bit, divide bytes by 16 before returning.
      * This is so we use consistent units of paragraphs (16 bytes)
@@ -5108,7 +5132,9 @@ void PosGetMemoryManagementStats(void *stats)
 void PosProcessGetMemoryStats(unsigned long pid, void *stats)
 {
     MEMMGRSTATS *s = (MEMMGRSTATS*)stats;
+#ifndef __32BIT__
     memmgrGetOwnerStats(&memmgr, pid, stats);
+#endif
 #ifdef __32BIT__
     /* In 32-bit, divide bytes by 16 before returning.
      * This is so we use consistent units of paragraphs (16 bytes)
@@ -5434,8 +5460,10 @@ static char * envAllocateEmpty(char *progName)
         sizeof(unsigned short) /* footer string count */ +
         strlen(progName) /* the program name (footer string 1) */ +
         1; /* \0 terminator of program name */
+#ifdef __32BIT__
+    envptr = kmalloc(envSize);
+#else
     envptr = memmgrAllocate(&memmgr, envSize, 0);
-#ifndef __32BIT__
     envptr = (unsigned char *)FP_NORM(envptr);
 #endif
     /* Empty environment is two NUL bytes */
@@ -5453,8 +5481,10 @@ static char * envCopy(char *previous, char *progName)
     size_t  envSize =
         strlen(progName) + 1 + sizeof(unsigned short) + envBlockSize(previous);
 
+#ifdef __32BIT__
+    envptr = kmalloc(envSize);
+#else
     envptr = memmgrAllocate(&memmgr, envSize, 0);
-#ifndef __32BIT__
     envptr = (unsigned char *)FP_NORM(envptr);
 #endif
     memcpy(envptr,previous,envSize);
@@ -5601,7 +5631,9 @@ static char *envModify(char *envPtr, char *name, char *value)
     {
         return NULL;
     }
+#ifndef __32BIT__
     memmgrSetOwner(&memmgr, newPtr, curPCB->pid);
+#endif
 
     /* Populate new segment */
     envBlockCopyWithMods(envPtr, newPtr, name, value);

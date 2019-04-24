@@ -11,6 +11,9 @@
 /*                                                                   */
 /*********************************************************************/
 
+#ifndef PHYSMEM_INCLUDED
+#define PHYSMEM_INCLUDED
+
 #define PAGE_FRAME_SIZE 0x1000
 
 typedef struct {
@@ -22,4 +25,6 @@ void physmemmgrSupply(PHYSMEMMGR *physmemmgr,
                       unsigned long addr,
                       unsigned long size);
 void *physmemmgrAllocPageFrame(PHYSMEMMGR *physmemmgr);
-void physmemmgrFreePageFrame(PHYSMEMMGR *physmemmgr, unsigned long addr);
+void physmemmgrFreePageFrame(PHYSMEMMGR *physmemmgr, void *addr);
+
+#endif /* PHYSMEM_INCLUDED */

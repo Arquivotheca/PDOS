@@ -17,7 +17,7 @@
 
 #include "physmem.h"
 
-#define BITMAP_OFFSET(addr) (addr / PAGE_FRAME_SIZE / 8)
+#define BITMAP_OFFSET(addr) ((addr) / PAGE_FRAME_SIZE / 8)
 
 void physmemmgrInit(PHYSMEMMGR *physmemmgr)
 {
@@ -95,7 +95,9 @@ void *physmemmgrAllocPageFrame(PHYSMEMMGR *physmemmgr)
     return (0);
 }
 
-void physmemmgrFreePageFrame(PHYSMEMMGR *physmemmgr, unsigned long addr)
+void physmemmgrFreePageFrame(PHYSMEMMGR *physmemmgr, void *addr)
 {
-    physmemmgr->pages[BITMAP_OFFSET(addr)] |= 1U << ((addr >> 12) & 0x7);
+    unsigned long offset = BITMAP_OFFSET((unsigned long)addr);
+
+    physmemmgr->pages[offset] |= 1U << ((((unsigned long)addr) >> 12) & 0x7);
 }

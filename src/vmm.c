@@ -117,6 +117,27 @@ void vmmSupply(VMM *vmm, void *addr, unsigned long size_supplied)
     vmmAddNode(vmm, node);
 }
 
+void *vmmAlloc(VMM *vmm, void *addr, unsigned long size)
+{
+    unsigned long num_pages = size / PAGE_SIZE;
+
+    if (size % PAGE_SIZE) num_pages++;
+
+    /* +++Add a way to allocate at specific addresses. */
+    if (addr != NULL) return (NULL);
+
+    return (vmmAllocPages(vmm, num_pages));
+}
+
+void vmmFree(VMM *vmm, void *addr, unsigned long size)
+{
+    unsigned long num_pages = size / PAGE_SIZE;
+
+    if (size % PAGE_SIZE) num_pages++;
+
+    vmmFreePages(vmm, addr, num_pages);
+}
+
 void *vmmAllocPages(VMM *vmm, unsigned long num_pages)
 {
     VMM_NODE *node;

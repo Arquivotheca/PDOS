@@ -1959,6 +1959,18 @@ static void int21handler(union REGS *regsin,
                     );
 #endif
             }
+#ifdef __32BIT__
+            else if (regsin->h.al == 0x3D)
+            {
+                regsout->d.eax = (unsigned long)PosVirtualAlloc(
+                    (void *)(regsin->d.ebx), regsin->d.ecx
+                    );
+            }
+            else if (regsin->h.al == 0x3E)
+            {
+                PosVirtualFree((void *)(regsin->d.ebx), regsin->d.ecx);
+            }
+#endif
             else
             {
                 logUnimplementedCall(0x21, regsin->h.ah, regsin->h.al);
@@ -5716,6 +5728,20 @@ int PosSetNamedFont(char *fontName)
     }
     return POS_ERR_FILE_NOT_FOUND;
 }
+
+#ifdef __32BIT__
+/* F6,3D - Allocate Virtual Memory */
+void *PosVirtualAlloc(void *addr, size_t size)
+{
+    return (vmmAlloc(&kernel_vmm, addr, size));
+}
+
+/* F6,3E - Free Virtual Memory */
+void PosVirtualFree(void *addr, size_t size)
+{
+    vmmFree(&kernel_vmm, addr, size);
+}
+#endif
 
 static void getDateTime(FAT_DATETIME *ptr)
 {

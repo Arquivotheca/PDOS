@@ -367,6 +367,12 @@ void * PosGetEnvBlock(void);
 /* F6,3C - Set Named Font */
 int PosSetNamedFont(char *fontName);
 
+/* F6,3D - Allocate Virtual Memory */
+void *PosVirtualAlloc(void *addr, size_t size);
+
+/* F6,3E - Free Virtual Memory */
+void PosVirtualFree(void *addr, size_t size);
+
 unsigned int PosAbsoluteDiskRead(int drive, unsigned long start_sector,
                                  unsigned int sectors,void *buf); /*INT25 */
 

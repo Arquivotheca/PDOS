@@ -21,6 +21,8 @@
 
 /* Prefixes malloc, realloc, calloc and free. */
 #define LIBALLOC_PREFIX(func) k ## func
+/* Prefixes liballoc hooks. */
+#define LIBALLOC_HOOK_PREFIX(func) liballoc_ ## func
 
 #ifdef __cplusplus
 extern "C" {
@@ -35,15 +37,15 @@ extern "C" {
  *
  * Return 0 if the lock was acquired successfully.
  * Anything else is failure. */
-extern int liballoc_lock();
+extern int LIBALLOC_HOOK_PREFIX(lock)();
 
 /* This function unlocks what was previously locked
- * by the liballoc_lock function.
+ * by the lock function.
  * If it disabled interrupts, it enables interrupts,
  * if it had acquired a spinlock, it releases the spinlock...
  *
  * Return 0 if the lock was successfully released. */
-extern int liballoc_unlock();
+extern int LIBALLOC_HOOK_PREFIX(unlock)();
 
 /* This is the hook into the local system which allocates pages.
  * It accepts an integer parameter which is the number of pages required.
@@ -51,17 +53,17 @@ extern int liballoc_unlock();
  *
  * Return NULL if the pages were not allocated.
  * Return a pointer to the allocated memory. */
-extern void *liballoc_alloc(size_t);
+extern void *LIBALLOC_HOOK_PREFIX(alloc)(size_t);
 
 /* This frees previously allocated memory.
  * The void * parameter passed to the function
  * is the exact same value returned
- * from a previous liballoc_alloc call.
+ * from a previous alloc call.
  *
  * The integer value is the number of pages to free.
  *
  * Return 0 if the memory was successfully freed. */
-extern int liballoc_free(void *, size_t);
+extern int LIBALLOC_HOOK_PREFIX(free)(void *, size_t);
       
 /* The standard functions (with the optional prefix). */
 extern void *LIBALLOC_PREFIX(malloc)(size_t);

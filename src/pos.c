@@ -1766,6 +1766,38 @@ int PosSetNamedFont(char *fontName)
     return regsout.x.ax;
 }
 
+#ifdef __32BIT__
+/* F6,3D - Allocate Virtual Memory */
+void *PosVirtualAlloc(void *addr, size_t size)
+{
+    union REGS regsin;
+    union REGS regsout;
+
+    regsin.h.ah = 0xF6;
+    regsin.h.al = 0x3D;
+
+    regsin.d.ebx = (unsigned long)addr;
+    regsin.d.ecx = size;
+
+    int86(0x21, &regsin, &regsout);
+    return ((void *)(regsout.d.eax));
+}
+
+/* F6,3E - Free Virtual Memory */
+void PosVirtualFree(void *addr, size_t size)
+{
+    union REGS regsin;
+
+    regsin.h.ah = 0xF6;
+    regsin.h.al = 0x3E;
+
+    regsin.d.ebx = (unsigned long)addr;
+    regsin.d.ecx = size;
+
+    int86i(0x21, &regsin);
+}
+#endif
+
 /*int 25 function call*/
 unsigned int PosAbsoluteDiskRead(int drive,unsigned long start_sector,
                                  unsigned int sectors,void *buf)

@@ -36,7 +36,7 @@
 #define USE_CASE4
 #define USE_CASE5
 
-/* This macro will aligns the provided pointer upwards. */
+/* This macro will align the provided pointer upwards. */
 #define ALIGN(ptr) \
     if (ALIGNMENT > 1) \
     { \
@@ -222,14 +222,15 @@ static struct liballoc_major *allocate_new_page(unsigned int size)
     /* Ensures it is at least the minimum size. */
     if (st < l_pageCount) st = l_pageCount;
 
-    maj = (struct liballoc_major *)liballoc_alloc(st);
+    maj = (struct liballoc_major *)LIBALLOC_HOOK_PREFIX(alloc)(st);
 
     if (maj == NULL) 
     {
         /* Allocation of pages failed, ran out of memory. */
         l_warningCount += 1;
 #if defined DEBUG || defined INFO
-        printf("liballoc: WARNING: liballoc_alloc(%i) returned NULL\n", st);
+        printf("liballoc: WARNING: LIBALLOC_HOOK_PREFIX(alloc)(%i)"
+               " returned NULL\n", st);
         FLUSH();
 #endif
         return (NULL);
@@ -274,7 +275,7 @@ void *LIBALLOC_PREFIX(malloc)(size_t req_size)
         size += ALIGNMENT + ALIGN_INFO;
     }
 
-    liballoc_lock();
+    LIBALLOC_HOOK_PREFIX(lock)();
 
     if (size == 0)
     {
@@ -284,7 +285,7 @@ void *LIBALLOC_PREFIX(malloc)(size_t req_size)
                __builtin_return_address(0));
         FLUSH();
 #endif
-        liballoc_unlock();
+        LIBALLOC_HOOK_PREFIX(unlock)();
         return (LIBALLOC_PREFIX(malloc)(1));
     }
 
@@ -302,7 +303,7 @@ void *LIBALLOC_PREFIX(malloc)(size_t req_size)
         l_memRoot = allocate_new_page(size);
         if (l_memRoot == NULL)
         {
-            liballoc_unlock();
+            LIBALLOC_HOOK_PREFIX(unlock)();
 #ifdef DEBUG
             printf("liballoc: initial l_memRoot initialization failed\n", p); 
             FLUSH();
@@ -412,7 +413,7 @@ void *LIBALLOC_PREFIX(malloc)(size_t req_size)
             printf("CASE 2: returning %p\n", p); 
             FLUSH();
 #endif
-            liballoc_unlock();
+            LIBALLOC_HOOK_PREFIX(unlock)();
             return (p);
         }
 #endif /* USE_CASE2 */
@@ -449,7 +450,7 @@ void *LIBALLOC_PREFIX(malloc)(size_t req_size)
             printf("CASE 3: returning %p\n", p); 
             FLUSH();
 #endif
-            liballoc_unlock();
+            LIBALLOC_HOOK_PREFIX(unlock)();
             return (p);
         }
         
@@ -499,7 +500,7 @@ void *LIBALLOC_PREFIX(malloc)(size_t req_size)
                     printf("CASE 4.1: returning %p\n", p); 
                     FLUSH();
 #endif
-                    liballoc_unlock();
+                    LIBALLOC_HOOK_PREFIX(unlock)();
                     return (p);
                 }
             }
@@ -541,7 +542,7 @@ void *LIBALLOC_PREFIX(malloc)(size_t req_size)
                     printf("CASE 4.2: returning %p\n", p); 
                     FLUSH();
 #endif
-                    liballoc_unlock();
+                    LIBALLOC_HOOK_PREFIX(unlock)();
                     return (p);
                 }
             }
@@ -587,7 +588,7 @@ void *LIBALLOC_PREFIX(malloc)(size_t req_size)
     liballoc_dump();
     FLUSH();
 #endif
-    liballoc_unlock();
+    LIBALLOC_HOOK_PREFIX(unlock)();
     return (NULL);
 }
 
@@ -610,7 +611,7 @@ void LIBALLOC_PREFIX(free)(void *ptr)
 
     UNALIGN(ptr);
 
-    liballoc_lock();
+    LIBALLOC_HOOK_PREFIX(lock)();
 
     min = (struct liballoc_minor *)(((uintptr_t)ptr)
                                     - sizeof(struct liballoc_minor));
@@ -651,7 +652,7 @@ void LIBALLOC_PREFIX(free)(void *ptr)
 #endif
         }
 
-        liballoc_unlock();
+        LIBALLOC_HOOK_PREFIX(unlock)();
         return;
     }
 
@@ -687,7 +688,7 @@ void LIBALLOC_PREFIX(free)(void *ptr)
         if (maj->next != NULL) maj->next->prev = maj->prev;
         l_allocated -= maj->size;
 
-        liballoc_free(maj, maj->pages);
+        LIBALLOC_HOOK_PREFIX(free)(maj, maj->pages);
     }
     else
     {
@@ -705,7 +706,7 @@ void LIBALLOC_PREFIX(free)(void *ptr)
     FLUSH();
 #endif
     
-    liballoc_unlock();
+    LIBALLOC_HOOK_PREFIX(unlock)();
 }
 
 void *LIBALLOC_PREFIX(calloc)(size_t nobj, size_t size)
@@ -742,7 +743,7 @@ void *LIBALLOC_PREFIX(realloc)(void *p, size_t size)
     ptr = p;
     UNALIGN(ptr);
 
-    liballoc_lock();
+    LIBALLOC_HOOK_PREFIX(lock)();
 
     min = (struct liballoc_minor *)(((uintptr_t)ptr)
                                     - sizeof(struct liballoc_minor));
@@ -785,7 +786,7 @@ void *LIBALLOC_PREFIX(realloc)(void *p, size_t size)
 #endif
         }
 
-        liballoc_unlock();
+        LIBALLOC_HOOK_PREFIX(unlock)();
         return (NULL);
     }   
     
@@ -794,11 +795,11 @@ void *LIBALLOC_PREFIX(realloc)(void *p, size_t size)
     if (real_size >= size) 
     {
         min->req_size = size;
-        liballoc_unlock();
+        LIBALLOC_HOOK_PREFIX(unlock)();
         return (p);
     }
 
-    liballoc_unlock();
+    LIBALLOC_HOOK_PREFIX(unlock)();
 
     /* Reallocates to a bigger block than the one provided. */
     ptr = LIBALLOC_PREFIX(malloc)(size);

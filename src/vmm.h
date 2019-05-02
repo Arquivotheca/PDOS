@@ -54,6 +54,12 @@ void vmmBootstrap(VMM *vmm, void *addr, unsigned long size_supplied);
 /* Provides address space at the specified address to VMM. */
 void vmmSupply(VMM *vmm, void *addr, unsigned long size_supplied);
 
+/* Allocates virtual memory at the specified address (NULL = any). */
+void *vmmAlloc(VMM *vmm, void *addr, unsigned long size);
+
+/* Frees virtual memory. */
+void vmmFree(VMM *vmm, void *addr, unsigned long size);
+
 /* Allocates pages of address space at an arbitrary address. */
 void *vmmAllocPages(VMM *vmm, unsigned long num_pages);
 

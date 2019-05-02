@@ -70,8 +70,13 @@ void *__lastsup = NULL; /* last thing supplied to memmgr */
 #else
 #define CTYP
 #endif
+#ifdef __32BIT__
+/* For PDOS-32 liballoc is used for memory management. */
+#include "liballoc.h"
+#else
 void CTYP __allocmem(size_t size, void **ptr);
 void CTYP __freemem(void *ptr);
+#endif
 extern unsigned char *__envptr;
 void CTYP __exec(char *cmd, void *env);
 #endif
@@ -99,10 +104,14 @@ __PDPCLIB_API__ void *malloc(size_t size)
     return ((void *)BaseAddress);
 #endif
 #ifdef __MSDOS__
+#ifdef __32BIT__
+    return (__malloc(size));
+#else
     void *ptr;
 
     __allocmem(size, &ptr);
     return (ptr);
+#endif
 #endif
 #if USE_MEMMGR
     void *ptr;
@@ -233,6 +242,9 @@ __PDPCLIB_API__ void *calloc(size_t nmemb, size_t size)
 
 __PDPCLIB_API__ void *realloc(void *ptr, size_t size)
 {
+#if defined(__PDOS__) && defined(__32BIT__)
+    return (__realloc(ptr, size));
+#else
     char *newptr;
     size_t oldsize;
 
@@ -263,6 +275,7 @@ __PDPCLIB_API__ void *realloc(void *ptr, size_t size)
         free(ptr);
     }
     return (newptr);
+#endif
 }
 
 __PDPCLIB_API__ void free(void *ptr)
@@ -275,10 +288,14 @@ __PDPCLIB_API__ void free(void *ptr)
     }
 #endif
 #ifdef __MSDOS__
+#ifdef __32BIT__
+    __free(ptr);
+#else
     if (ptr != NULL)
     {
         __freemem(ptr);
     }
+#endif
 #endif
 #if USE_MEMMGR
     if (ptr != NULL)

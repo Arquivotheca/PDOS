@@ -30,11 +30,29 @@
 #include "unused.h"
 #include "dow.h"
 
+#ifdef __32BIT__
+#include "physmem.h"
+#include "vmm.h"
+#include "liballoc.h"
+
+/* Address space layout.
+ * Kernel space contents are the same for every process. */
+#define KERNEL_SPACE_START  0xC0000000
+#define KERNEL_SPACE_SIZE   0x30000000
+#define KERNEL_HEAP_ADDR    0xE0000000
+#define KERNEL_HEAP_SIZE    0x10000000
+/* After 0xF0000000 are paging structures etc. */
+/* Kernel still uses some memory under 4 MiB. */
+#define PROCESS_SPACE_START 0x400000
+#define PROCESS_SPACE_SIZE  KERNEL_SPACE_START - PROCESS_SPACE_START
+
+#define STACKSZ32 0x40000 /* stack size for 32-bit version */
+#endif
+
 #define MAX_PATH 260 /* With trailing '\0' included. */
 #define DEFAULT_DOS_VERSION 0x0004 /* 0004 = DOS 4.0, 2206 = DOS 6.22, etc. */
 #define NUM_SPECIAL_FILES 5
     /* stdin, stdout, stderr, stdaux, stdprn */
-#define STACKSZ32 0x40000 /* stack size for 32-bit version */
 
 typedef struct {
     int env;
@@ -65,18 +83,24 @@ typedef struct _PDOS_PROCESS {
                       from MCB (Memory Control Block) */
     char exeName[PDOS_PROCESS_EXENAMESZ]; /* ASCIIZ short name of executable */
     unsigned long pid; /* The process ID.
-                        * Under PDOS-32, this is pointer to PSP.
+                        * Under PDOS-32, this is pointer to PCB itself.
                         * Under PDOS-16, this is segment of PSP.
                         * Should match PosGetCurrentProcessId() if this is the
                         * current process.
                         */
     PDOS_PROCSTATUS status;
     void *envBlock; /* Environment block of this process */
+#ifdef __32BIT__
+    VMM *vmm;
+#endif
     struct _PDOS_PROCESS *parent; /* NULL for root process */
     struct _PDOS_PROCESS *prev; /* Previous process */
     struct _PDOS_PROCESS *next; /* Next process */
 } PDOS_PROCESS;
 
+#ifdef __32BIT__
+#define PDOS_PROCESS_SIZE sizeof(PDOS_PROCESS)
+#else
 /* What boundary we want the process control block to be a multiple of */
 #define PDOS_PROCESS_ALIGN 16
 
@@ -86,6 +110,7 @@ typedef struct _PDOS_PROCESS {
    ((sizeof(PDOS_PROCESS) / PDOS_PROCESS_ALIGN + 1) * PDOS_PROCESS_ALIGN))
 
 #define PDOS_PROCESS_SIZE_PARAS ((PDOS_PROCESS_SIZE)/16)
+#endif
 
 /* ===== ENDING PROCESS MANAGEMENT DATA STRUCTURES ===== */
 
@@ -123,7 +148,7 @@ static void loadConfig(void);
 static void loadPcomm(void);
 static void loadExe(char *prog, PARMBLOCK *parmblock);
 #ifdef __32BIT__
-static int loadExe32(char *prog, PARMBLOCK *parmblock);
+static void loadExe32(char *prog, PARMBLOCK *parmblock);
 static int fixexe32(unsigned char *psp, unsigned long entry, unsigned int sp,
                     unsigned long exeStart, unsigned long dataStart);
 #endif
@@ -304,15 +329,8 @@ static char *sbrk_end;
 #endif
 
 #ifdef __32BIT__
-#include "physmem.h"
-#include "vmm.h"
-#include "liballoc.h"
-
-PHYSMEMMGR physmemmgr;
-VMM kernel_vmm;
-
-#define KERNEL_HEAP_ADDR 0xE0000000
-#define KERNEL_HEAP_SIZE 0x10000000
+static PHYSMEMMGR physmemmgr;
+static VMM kernel_vmm;
 
 /* Liballoc hooks. */
 /* Locking functions disable and enable interrupts
@@ -454,8 +472,8 @@ void pdosRun(void)
     /* Provides memory to physical memory manager. */
     physmemmgrInit(&physmemmgr);
     physmemmgrSupply(&physmemmgr, memstart, memavail);
-    /* Sets up paging. */
     {
+        /* Sets up temporary addres space. */
         unsigned long *page_directory = physmemmgrAllocPageFrame(&physmemmgr);
         unsigned long *page_table = physmemmgrAllocPageFrame(&physmemmgr);
         unsigned long *pt_entry;
@@ -480,10 +498,22 @@ void pdosRun(void)
                                 | PAGE_RW | PAGE_PRESENT);
         loadPageDirectory(page_directory);
         enablePaging();
+
+        /* Sets up the kernel VMM. */
+        vmmInit(&kernel_vmm, &physmemmgr);
+        /* Copies only the needed address range. */
+        vmmCopyCurrentMapping(&kernel_vmm,
+                              (void *)KERNEL_SPACE_START,
+                              KERNEL_SPACE_SIZE);
+        /* Loads the new address space. */
+        loadPageDirectory(kernel_vmm.pd_physaddr);
+        /* Provides kernel heap address range to the VMM,
+         * so kmalloc() can be used. */
+        vmmBootstrap(&kernel_vmm, (void *)KERNEL_HEAP_ADDR, KERNEL_HEAP_SIZE);
+
+        /* Frees memory used for the temporary address space mapping. */
+        physmemmgrFreePageFrame(&physmemmgr, page_directory);
     }
-    /* Sets up the kernel VMM. */
-    vmmInit(&kernel_vmm, &physmemmgr);
-    vmmBootstrap(&kernel_vmm, (void *)KERNEL_HEAP_ADDR, KERNEL_HEAP_SIZE);
 #endif
     memmgrDefaults(&btlmem);
     memmgrInit(&btlmem);
@@ -3937,8 +3967,9 @@ static void loadExe(char *prog, PARMBLOCK *parmblock)
 #include "elf.h"
 #include "exeload.h"
 
-static int loadExe32(char *prog, PARMBLOCK *parmblock)
+static void loadExe32(char *prog, PARMBLOCK *parmblock)
 {
+    char *cmdtail = NULL;
     unsigned char *envptr;
     unsigned char *psp;
     unsigned char *pcb;
@@ -3946,18 +3977,18 @@ static int loadExe32(char *prog, PARMBLOCK *parmblock)
     EXELOAD *exeload;
     int ret;
 
-    exeload = kmalloc(sizeof(EXELOAD));
-    /* allocate exeLen + 0x100 (psp) + PDOS_PROCESS_SIZE (PCB) +
-     * stack + extra (safety margin) */
-    exeload->extra_memory_before = 0x100 + PDOS_PROCESS_SIZE;
-    exeload->extra_memory_after = STACKSZ32 + 0x100;
-    exeload->stack_size = STACKSZ32;
-
-    ret = exeloadDoload(exeload, prog);
-    if (ret)
+    if (parmblock)
     {
-        kfree(exeload);
-        return (1);
+        /* Copies cmdtail from the provided parmblock,
+         * so it persists across address space changes. */
+        /* 1 for the count and 1 for the return */
+        cmdtail = kmalloc(parmblock->cmdtail[0] + 1 + 1);
+        if (cmdtail == NULL)
+        {
+            printf("Insufficient memory for cmdtail\n");
+            return;
+        }
+        memcpy(cmdtail, parmblock->cmdtail, parmblock->cmdtail[0] + 1 + 1);
     }
 
     /* If curPCB == NULL, we are launching init process (PCOMM),
@@ -3975,27 +4006,24 @@ static int loadExe32(char *prog, PARMBLOCK *parmblock)
     else
     {
         /* Launching a child process, copy parent's environment */
-        envptr = envCopy(curPCB->envBlock,prog);
+        envptr = envCopy(curPCB->envBlock, prog);
     }
 
-    pcb = exeload->memStart;
-    psp = pcb + PDOS_PROCESS_SIZE;
+    pcb = kmalloc(sizeof(PDOS_PROCESS));
     newProc = (PDOS_PROCESS*)pcb;
-    initPCB(newProc, (unsigned long)psp, prog, envptr);
+    initPCB(newProc, (unsigned long)pcb, prog, envptr);
 
-    /* set various values in the psp */
-    psp[0] = 0xcd;
-    psp[1] = 0x20;
-    if (parmblock != NULL)
-    {
-        /* 1 for the count and 1 for the return */
-        memcpy(psp + 0x80, parmblock->cmdtail, parmblock->cmdtail[0] + 1 + 1);
-    }
-
-    /* Before executing program, set tsrFlag = 0.
-     * If program is a TSR, it will change this to non-zero.
-     */
-    tsrFlag = 0;
+    /* Creates a new VMM with new address space. */
+    newProc->vmm = kmalloc(sizeof(VMM));
+    vmmInit(newProc->vmm, &physmemmgr);
+    /* Copies kernel mappings. */
+    vmmCopyCurrentMapping(newProc->vmm,
+                          (void *)KERNEL_SPACE_START,
+                          KERNEL_SPACE_SIZE);
+    /* Loads the new address space. */
+    loadPageDirectory(newProc->vmm->pd_physaddr);
+    /* Tells the new VMM what address range can it use. */
+    vmmSupply(newProc->vmm, (void *)PROCESS_SPACE_START, PROCESS_SPACE_SIZE);
 
     /* Add this process to the process chain */
     addToProcessChain(newProc);
@@ -4007,11 +4035,34 @@ static int loadExe32(char *prog, PARMBLOCK *parmblock)
     if (newProc->parent != NULL)
         newProc->parent->status = PDOS_PROCSTATUS_CHILDWAIT;
 
-    ret = fixexe32(psp, exeload->entry_point, exeload->sp,
-                   exeload->cs_address,
-                   exeload->ds_address);
-    lastrc = ret;
+    exeload = kmalloc(sizeof(EXELOAD));
+    /* allocate exeLen + 0x100 (psp)
+     * + stack + extra (safety margin) */
+    exeload->extra_memory_before = 0x100;
+    exeload->extra_memory_after = STACKSZ32 + 0x100;
+    exeload->stack_size = STACKSZ32;
 
+    ret = exeloadDoload(exeload, prog);
+    if (ret == 0)
+    {
+        /* Program has been successfully loaded. */
+        psp = exeload->memStart;
+
+        /* set various values in the psp */
+        psp[0] = 0xcd;
+        psp[1] = 0x20;
+        if (cmdtail != NULL)
+        {
+            /* 1 for the count and 1 for the return */
+            memcpy(psp + 0x80, cmdtail, cmdtail[0] + 1 + 1);
+        }
+
+        ret = fixexe32(psp, exeload->entry_point, exeload->sp,
+                       exeload->cs_address,
+                       exeload->ds_address);
+        lastrc = ret;
+    }
+    if (cmdtail) kfree(cmdtail);
     kfree(exeload);
 
     /* Process finished, parent becomes current */
@@ -4019,33 +4070,23 @@ static int loadExe32(char *prog, PARMBLOCK *parmblock)
     if (curPCB != NULL && curPCB->status == PDOS_PROCSTATUS_CHILDWAIT)
         curPCB->status = PDOS_PROCSTATUS_ACTIVE;
 
-    /*
-     * Don't free all of program's memory if it is a TSR. Only the
-     * "un-reserved" portion.
-     */
-    if (tsrFlag == 0)
-    {
-        newProc->status = PDOS_PROCSTATUS_TERMINATED;
-        kfree(newProc->envBlock);
-        removeFromProcessChain(newProc);
-        kfree(pcb);
-    }
-    else
-    {
-        /* PDOS EXTENSION: tsrFlag=-1 means free no memory */
-        if (tsrFlag != -1)
-        {
-            /* tsrFlag is in paragraphs (16 bytes). */
-            krealloc(pcb, tsrFlag * 16);
-        }
-        /* Mark process as a TSR. */
-        newProc->status = PDOS_PROCSTATUS_TSR;
-    }
+    /* Terminates the process. */
+    newProc->status = PDOS_PROCSTATUS_TERMINATED;
+    /* Copies modified kernel mappings to the VMM of the current process. */
+    vmmCopyCurrentMapping(curPCB->vmm,
+                          (void *)KERNEL_SPACE_START,
+                          KERNEL_SPACE_SIZE);
+    /* Frees the process address space. */
+    vmmFree(newProc->vmm, (void *)PROCESS_SPACE_START, PROCESS_SPACE_SIZE);
+    /* Loads the address space of the current process. */
+    loadPageDirectory(curPCB->vmm->pd_physaddr);
+    /* Terminates the VMM belonging to the terminated process. */
+    vmmTerm(newProc->vmm);
+    kfree(newProc->vmm);
 
-    /* Set TSR flag back to 0 */
-    tsrFlag = 0;
-
-    return (0);
+    kfree(newProc->envBlock);
+    removeFromProcessChain(newProc);
+    kfree(pcb);
 }
 
 static int fixexe32(unsigned char *psp, unsigned long entry, unsigned int sp,
@@ -5733,13 +5774,13 @@ int PosSetNamedFont(char *fontName)
 /* F6,3D - Allocate Virtual Memory */
 void *PosVirtualAlloc(void *addr, size_t size)
 {
-    return (vmmAlloc(&kernel_vmm, addr, size));
+    return (vmmAlloc(curPCB->vmm, addr, size));
 }
 
 /* F6,3E - Free Virtual Memory */
 void PosVirtualFree(void *addr, size_t size)
 {
-    vmmFree(&kernel_vmm, addr, size);
+    vmmFree(curPCB->vmm, addr, size);
 }
 #endif
 

@@ -16,7 +16,11 @@
 #include <string.h>
 
 #include "exeload.h"
+#include "pos.h"
+#include "liballoc.h" /* For kmalloc() and kfree(). */
 #include "support.h"
+
+/* Headers for executable support. */
 #include "a_out.h"
 #include "elf.h"
 #include "mz.h"
@@ -46,7 +50,6 @@ int exeloadDoload(EXELOAD *exeload, char *prog)
     if (ret == 1) ret = exeloadLoadMZ(exeload, fp);
     if (ret != 0)
     {
-        if (exeload->memStart) free(exeload->memStart);
         fclose(fp);
         return (1);
     }
@@ -92,7 +95,7 @@ static int exeloadLoadAOUT(EXELOAD *exeload, FILE *fp)
     if (doing_zmagic)
     {
         headerLen = N_TXTOFF(firstbit);
-        header = malloc(headerLen);
+        header = kmalloc(headerLen);
         memcpy(header, &firstbit, sizeof firstbit);
         fread(header + sizeof firstbit, 1, headerLen - sizeof firstbit, fp);
     }
@@ -106,9 +109,9 @@ static int exeloadLoadAOUT(EXELOAD *exeload, FILE *fp)
         exeLen = firstbit.a_text + firstbit.a_data + firstbit.a_bss;
     }
     /* Allocates memory for the control structures and the process. */
-    exeload->memStart = malloc(exeLen
-                               + exeload->extra_memory_before
-                               + exeload->extra_memory_after);
+    exeload->memStart = PosVirtualAlloc(0, (exeLen
+                                            + (exeload->extra_memory_before)
+                                            + (exeload->extra_memory_after)));
     exeload->exeStart = exeload->memStart + exeload->extra_memory_before;
     exeStart = exeload->exeStart;
 
@@ -124,7 +127,7 @@ static int exeloadLoadAOUT(EXELOAD *exeload, FILE *fp)
     }
     /* Closes the file for ZMAGIC and NMAGIC as there is no need for it now. */
     if (doing_zmagic || doing_nmagic) fclose(fp);
-    if (doing_zmagic) free(header);
+    if (doing_zmagic) kfree(header);
 
     /* initialise BSS */
     if (doing_zmagic || doing_nmagic)
@@ -158,7 +161,7 @@ static int exeloadLoadAOUT(EXELOAD *exeload, FILE *fp)
         zapdata = (unsigned int)ADDR2ABS(zap);
         if (firstbit.a_trsize != 0)
         {
-            corrections = malloc(firstbit.a_trsize);
+            corrections = kmalloc(firstbit.a_trsize);
             if (corrections == NULL)
             {
                 printf("insufficient memory %lu\n", firstbit.a_trsize);
@@ -175,11 +178,11 @@ static int exeloadLoadAOUT(EXELOAD *exeload, FILE *fp)
                 }
                 *(unsigned int *)(zap + offs) += zapdata;
             }
-            free(corrections);
+            kfree(corrections);
         }
         if (firstbit.a_drsize != 0)
         {
-            corrections = malloc(firstbit.a_drsize);
+            corrections = kmalloc(firstbit.a_drsize);
             if (corrections == NULL)
             {
                 printf("insufficient memory %lu\n", firstbit.a_drsize);
@@ -197,7 +200,7 @@ static int exeloadLoadAOUT(EXELOAD *exeload, FILE *fp)
                 }
                 *(unsigned int *)(zap + offs) += zapdata;
             }
-            free(corrections);
+            kfree(corrections);
         }
         firstbit.a_entry += (unsigned long)ADDR2ABS(exeStart);
         fclose(fp);
@@ -254,7 +257,7 @@ static int exeloadLoadELF(EXELOAD *exeload, FILE *fp)
         int elf_invalid = 0;
 
         /* Loads entire ELF header into memory. */
-        elfHdr = malloc(sizeof(Elf32_Ehdr));
+        elfHdr = kmalloc(sizeof(Elf32_Ehdr));
         if (elfHdr == NULL)
         {
             printf("Insufficient memory for ELF header\n");
@@ -266,7 +269,7 @@ static int exeloadLoadELF(EXELOAD *exeload, FILE *fp)
             != sizeof(Elf32_Ehdr))
         {
             printf("Error occured while reading ELF header\n");
-            free(elfHdr);
+            kfree(elfHdr);
             return (2);
         }
 
@@ -376,17 +379,17 @@ static int exeloadLoadELF(EXELOAD *exeload, FILE *fp)
             /* All problems with ELF header are reported
              * and loading is stopped. */
             printf("This ELF file cannot be loaded\n");
-            free(elfHdr);
+            kfree(elfHdr);
             return (2);
         }
         /* Loads Program Header Table if it is present. */
         if (!(elfHdr->e_phoff == 0 || elfHdr->e_phnum == 0))
         {
-            program_table = malloc(elfHdr->e_phnum * elfHdr->e_phentsize);
+            program_table = kmalloc(elfHdr->e_phnum * elfHdr->e_phentsize);
             if (program_table == NULL)
             {
                 printf("Insufficient memory for ELF Program Header Table\n");
-                free(elfHdr);
+                kfree(elfHdr);
                 return (2);
             }
             fseek(fp, elfHdr->e_phoff, SEEK_SET);
@@ -396,19 +399,19 @@ static int exeloadLoadELF(EXELOAD *exeload, FILE *fp)
             {
                 printf("Error occured while reading "
                        "ELF Program Header Table\n");
-                free(elfHdr);
-                free(program_table);
+                kfree(elfHdr);
+                kfree(program_table);
                 return (2);
             }
         }
         /* Loads Section Header Table if it is present. */
         if (!(elfHdr->e_shoff == 0 || elfHdr->e_shnum == 0))
         {
-            section_table = malloc(elfHdr->e_shnum * elfHdr->e_shentsize);
+            section_table = kmalloc(elfHdr->e_shnum * elfHdr->e_shentsize);
             if (section_table == NULL)
             {
                 printf("Insufficient memory for ELF Section Header Table\n");
-                free(elfHdr);
+                kfree(elfHdr);
                 return (2);
             }
             fseek(fp, elfHdr->e_shoff, SEEK_SET);
@@ -418,8 +421,8 @@ static int exeloadLoadELF(EXELOAD *exeload, FILE *fp)
             {
                 printf("Error occured while reading "
                        "ELF Section Header Table\n");
-                free(elfHdr);
-                free(section_table);
+                kfree(elfHdr);
+                kfree(section_table);
                 return (2);
             }
         }
@@ -492,20 +495,20 @@ static int exeloadLoadELF(EXELOAD *exeload, FILE *fp)
                    otherLen += section_size;
                 }
             }
-            elf_other_sections = malloc(otherLen);
+            elf_other_sections = kmalloc(otherLen);
             if (elf_other_sections == NULL)
             {
                 printf("Insufficient memory to load ELF sections\n");
-                free(elfHdr);
-                free(section_table);
+                kfree(elfHdr);
+                kfree(section_table);
                 return (2);
             }
         }
     }
     /* Allocates memory for the control structures and the process. */
-    exeload->memStart = malloc(exeLen
-                               + exeload->extra_memory_before
-                               + exeload->extra_memory_after);
+    exeload->memStart = PosVirtualAlloc(0, (exeLen
+                                            + (exeload->extra_memory_before)
+                                            + (exeload->extra_memory_after)));
     exeload->exeStart = exeload->memStart + exeload->extra_memory_before;
     exeStart = exeload->exeStart;
 
@@ -539,11 +542,11 @@ static int exeloadLoadELF(EXELOAD *exeload, FILE *fp)
                         != (segment->p_filesz))
                     {
                         printf("Error occured while reading ELF segment\n");
-                        free(program_table);
+                        kfree(program_table);
                         if (section_table)
                         {
-                            free(section_table);
-                            free(elf_other_sections);
+                            kfree(section_table);
+                            kfree(elf_other_sections);
                         }
                         return (2);
                     }
@@ -582,10 +585,10 @@ static int exeloadLoadELF(EXELOAD *exeload, FILE *fp)
                         != (section->sh_size))
                     {
                         printf("Error occured while reading ELF section\n");
-                        free(elfHdr);
-                        if (program_table) free(program_table);
-                        free(section_table);
-                        free(elf_other_sections);
+                        kfree(elfHdr);
+                        if (program_table) kfree(program_table);
+                        kfree(section_table);
+                        kfree(elf_other_sections);
                         return (2);
                     }
                 }
@@ -621,10 +624,10 @@ static int exeloadLoadELF(EXELOAD *exeload, FILE *fp)
                         != (section->sh_size))
                     {
                         printf("Error occured while reading ELF section\n");
-                        free(elfHdr);
-                        if (program_table) free(program_table);
-                        free(section_table);
-                        free(elf_other_sections);
+                        kfree(elfHdr);
+                        if (program_table) kfree(program_table);
+                        kfree(section_table);
+                        kfree(elf_other_sections);
                         return (2);
                     }
                 }
@@ -756,10 +759,10 @@ static int exeloadLoadELF(EXELOAD *exeload, FILE *fp)
         /* ELF Relocatable files can be loaded anywhere. */
         sp = (unsigned int)ADDR2ABS(sp);
         /* Frees memory not needed by the process. */
-        free(elfHdr);
-        if (program_table) free(program_table);
-        free(section_table);
-        free(elf_other_sections);
+        kfree(elfHdr);
+        if (program_table) kfree(program_table);
+        kfree(section_table);
+        kfree(elf_other_sections);
         exeload->entry_point = (unsigned long)exeStart + entry_point;
         exeload->sp = sp;
         exeload->cs_address = 0;
@@ -775,12 +778,12 @@ static int exeloadLoadELF(EXELOAD *exeload, FILE *fp)
         sp += lowest_p_vaddr;
         exeStart = ADDR2ABS(exeStart);
         /* Frees memory not needed by the process. */
-        free(elfHdr);
-        free(program_table);
+        kfree(elfHdr);
+        kfree(program_table);
         if (section_table)
         {
-            free(section_table);
-            free(elf_other_sections);
+            kfree(section_table);
+            kfree(elf_other_sections);
         }
         exeload->entry_point = entry_point;
         exeload->sp = sp;
@@ -886,7 +889,7 @@ static int exeloadLoadPE(EXELOAD *exeload, FILE *fp, unsigned long e_lfanew)
         return (2);
     }
 
-    optional_hdr = malloc(coff_hdr.SizeOfOptionalHeader);
+    optional_hdr = kmalloc(coff_hdr.SizeOfOptionalHeader);
     if (optional_hdr == NULL)
     {
         printf("Insufficient memory to load PE optional header\n");
@@ -896,18 +899,18 @@ static int exeloadLoadPE(EXELOAD *exeload, FILE *fp, unsigned long e_lfanew)
         != coff_hdr.SizeOfOptionalHeader)
     {
         printf("Error occured while reading PE optional header\n");
-        free(optional_hdr);
+        kfree(optional_hdr);
         return (2);
     }
     if (optional_hdr->Magic != MAGIC_PE32)
     {
         printf("Unknown PE optional header magic: %04x\n",
                optional_hdr->Magic);
-        free(optional_hdr);
+        kfree(optional_hdr);
         return (2);
     }
 
-    section_table = malloc(coff_hdr.NumberOfSections * sizeof(Coff_section));
+    section_table = kmalloc(coff_hdr.NumberOfSections * sizeof(Coff_section));
     if (section_table == NULL)
     {
         printf("Insufficient memory to load PE section headers\n");
@@ -918,16 +921,16 @@ static int exeloadLoadPE(EXELOAD *exeload, FILE *fp, unsigned long e_lfanew)
         != (coff_hdr.NumberOfSections * sizeof(Coff_section)))
     {
         printf("Error occured while reading PE optional header\n");
-        free(section_table);
-        free(optional_hdr);
+        kfree(section_table);
+        kfree(optional_hdr);
         return (2);
     }
 
     /* Allocates memory for the control structures and the process.
      * Size of image is obtained from the optional header. */
-    exeload->memStart = malloc(optional_hdr->SizeOfImage
-                               + exeload->extra_memory_before
-                               + exeload->extra_memory_after);
+    exeload->memStart = PosVirtualAlloc(0, (optional_hdr->SizeOfImage
+                                            + (exeload->extra_memory_before)
+                                            + (exeload->extra_memory_after)));
     exeload->exeStart = exeload->memStart + exeload->extra_memory_before;
     exeStart = exeload->exeStart;
 
@@ -960,8 +963,8 @@ static int exeloadLoadPE(EXELOAD *exeload, FILE *fp, unsigned long e_lfanew)
                       size_in_file, fp) != size_in_file))
         {
             printf("Error occured while reading PE section\n");
-            free(section_table);
-            free(optional_hdr);
+            kfree(section_table);
+            kfree(optional_hdr);
             return (2);
         }
     }
@@ -1035,8 +1038,8 @@ static int exeloadLoadPE(EXELOAD *exeload, FILE *fp, unsigned long e_lfanew)
               + (exeload->stack_size));
         exeload->sp = (unsigned int)ADDR2ABS(sp);
         /* Frees memory not needed by the process. */
-        free(section_table);
-        free(optional_hdr);
+        kfree(section_table);
+        kfree(optional_hdr);
         exeload->cs_address = 0;
         exeload->ds_address = 0;
 
@@ -1054,8 +1057,8 @@ static int exeloadLoadPE(EXELOAD *exeload, FILE *fp, unsigned long e_lfanew)
     exeStart -= optional_hdr->ImageBase;
     exeStart = ADDR2ABS(exeStart);
     /* Frees memory not needed by the process. */
-    free(section_table);
-    free(optional_hdr);
+    kfree(section_table);
+    kfree(optional_hdr);
     exeload->cs_address = (unsigned long)exeStart;
     exeload->ds_address = (unsigned long)exeStart;
 

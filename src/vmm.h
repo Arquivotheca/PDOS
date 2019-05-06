@@ -18,7 +18,19 @@
 
 #define PAGE_SIZE 0x1000
 #define PT_NUM_ENTRIES 1024
-#define PAGE_TABLES_ADDR 0xFFC00000
+
+/* Recursive mapping is used with the PD as the last entry. */
+#define PAGE_TABLES_ADDR  0xFFC00000
+#define RECURSIVE_PD_ADDR 0xFFFFF000
+/* When creating or modifying new PD the entry before the last one is used. */
+#define MODIFIED_PD_ADDR  0xFFFFE000
+
+#define RECURSIVE_PD_INDEX PT_NUM_ENTRIES - 1
+#define MODIFIED_PD_INDEX  PT_NUM_ENTRIES - 2
+
+/* Calculates indexes into the PD and PT. */
+#define GET_PD_INDEX(addr) ((addr) >> 22)
+#define GET_PT_INDEX(addr) (((addr) >> 12) & 0x3FF)
 
 /* Flags for Page Table/Directory entries. */
 #define PAGE_PRESENT 0x1
@@ -35,11 +47,17 @@ typedef struct vmm_node {
 
 typedef struct {
     PHYSMEMMGR *physmemmgr;
+    void *pd_physaddr; /* Stores the physical address of the assigned PD. */
     VMM_NODE *head;
     VMM_NODE *tail;
 } VMM;
 
 void vmmInit(VMM *vmm, PHYSMEMMGR *physmemmgr);
+void vmmTerm(VMM *vmm);
+
+/* Copies entries mapping the virtual memory specified
+ * from the current PD to the PD of the provided VMM. */
+void vmmCopyCurrentMapping(VMM *vmm, void *addr, unsigned long size);
 
 /* VMM allocates memory for control structures,
  * but allocations require operational kernel VMM.

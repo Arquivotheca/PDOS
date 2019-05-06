@@ -14,8 +14,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stddef.h>
 
 #include "vmm.h"
+#include "liballoc.h" /* For kmalloc() and kfree(). */
 
 static VMM_NODE *vmmCreateNode(unsigned long addr, unsigned long size);
 static void vmmAddNode(VMM *vmm, VMM_NODE *node);
@@ -24,11 +26,79 @@ static void vmmRemoveNode(VMM *vmm, VMM_NODE *node);
 static void vmmMapPages(VMM *vmm, void *addr, unsigned long num_pages);
 static void vmmUnmapPages(VMM *vmm, void *addr, unsigned long num_pages);
 
+/* Helper functions for working with PD and PT as they are volatile. */
+static volatile void *memcpy_volatile(volatile void *s1,
+                                      volatile void *s2,
+                                      size_t n);
+static volatile void *memset_volatile(volatile void *s,
+                                      int c,
+                                      size_t n);
+
 void vmmInit(VMM *vmm, PHYSMEMMGR *physmemmgr)
 {
+    volatile unsigned long *pd = (void *)RECURSIVE_PD_ADDR;
+    volatile unsigned long *new_pd = (void *)MODIFIED_PD_ADDR;
+
     vmm->physmemmgr = physmemmgr;
+    vmm->pd_physaddr = physmemmgrAllocPageFrame(vmm->physmemmgr);
+
+    /* Prepares the new PD for usage using the current one. */
+    pd[MODIFIED_PD_INDEX] = (((unsigned long)(vmm->pd_physaddr))
+                             | PAGE_RW | PAGE_PRESENT);
+
+    /* Marks all entries as not present. */
+    memset_volatile(new_pd, 0, PAGE_SIZE);
+    /* Sets up recursive mapping for the new PD. */
+    new_pd[RECURSIVE_PD_INDEX] = (((unsigned long)(vmm->pd_physaddr))
+                                  | PAGE_RW | PAGE_PRESENT);
+    /* +++Remove after moving all kernel data
+     * from the first 4 MiB to the kernel space. */
+    new_pd[0] = pd[0];
+
+    /* Unmaps the new PD from the current one. */
+    pd[MODIFIED_PD_INDEX] = 0;
+    /* Flushes the Translation Lookaside Buffer by reloading the CR3. */
+    loadPageDirectory(saveCR3());
+
     vmm->head = NULL;
     vmm->tail = NULL;
+}
+
+void vmmTerm(VMM *vmm)
+{
+    VMM_NODE *node, *next_node;
+
+    if (vmm->head)
+    {
+        for (node = vmm->head; node; node = next_node)
+        {
+            next_node = node->next;
+            kfree(node);
+        }
+    }
+
+    physmemmgrFreePageFrame(vmm->physmemmgr, vmm->pd_physaddr);
+}
+
+void vmmCopyCurrentMapping(VMM *vmm, void *addr, unsigned long size)
+{
+    volatile unsigned long *pd = (void *)RECURSIVE_PD_ADDR;
+    volatile unsigned long *modified_pd = (void *)MODIFIED_PD_ADDR;
+    int start_pd_index = GET_PD_INDEX((unsigned long)addr);
+    int end_pd_index = GET_PD_INDEX(((unsigned long)addr) + size);
+
+    /* Maps the new PD into the current one. */
+    pd[MODIFIED_PD_INDEX] = (((unsigned long)(vmm->pd_physaddr))
+                             | PAGE_RW | PAGE_PRESENT);
+
+    memcpy_volatile(modified_pd + start_pd_index,
+                    pd + start_pd_index,
+                    (end_pd_index - start_pd_index) * sizeof(unsigned long));
+
+    /* Unmaps the new PD from the current one. */
+    pd[MODIFIED_PD_INDEX] = 0;
+    /* Flushes the Translation Lookaside Buffer by reloading the CR3. */
+    loadPageDirectory(saveCR3());
 }
 
 void vmmBootstrap(VMM *vmm, void *addr, unsigned long size_supplied)
@@ -41,10 +111,10 @@ void vmmBootstrap(VMM *vmm, void *addr, unsigned long size_supplied)
     temp_node.size = size_supplied;
     temp_node.prev = NULL;
     temp_node.next = NULL;
-    
+
     vmmAddNode(vmm, &temp_node);
 
-    node = malloc(sizeof(VMM_NODE));
+    node = kmalloc(sizeof(VMM_NODE));
     if (node == NULL)
     {
         printf("(VMM) Bootstrap failed\n");
@@ -172,12 +242,12 @@ void *vmmAllocPages(VMM *vmm, unsigned long num_pages)
         }
     }
     if (best_node == NULL) return (0);
-    
+
     node = best_node;
 
     allocated_pages = (void *)(node->addr);
     vmmMapPages(vmm, allocated_pages, num_pages);
-    
+
     node->size -= size_needed;
     if (node->size == 0) vmmRemoveNode(vmm, node);
     else node->addr += size_needed;
@@ -195,7 +265,7 @@ static VMM_NODE *vmmCreateNode(unsigned long addr, unsigned long size)
 {
     VMM_NODE *node;
 
-    node = malloc(sizeof(VMM_NODE));
+    node = kmalloc(sizeof(VMM_NODE));
     if (node == NULL) return (0);
 
     node->addr = addr;
@@ -242,18 +312,16 @@ static void vmmRemoveNode(VMM *vmm, VMM_NODE *node)
     {
         node->next->prev = node->prev;
     }
-    free(node);
+    kfree(node);
 }
 
 static void vmmMapPages(VMM *vmm, void *addr, unsigned long num_pages)
 {
-    unsigned long *page_table = (void *)PAGE_TABLES_ADDR;
+    volatile unsigned long *page_table = (void *)PAGE_TABLES_ADDR;
     /* Last PT in PD is the PD because recursive mapping is used. */
-    unsigned long *page_directory = (page_table
-                                     + PT_NUM_ENTRIES * (PT_NUM_ENTRIES - 1));
-    /* Calculates indexes into the PD and PT. */
-    int pd_index = ((unsigned long)addr) >> 22;
-    int pt_index = (((unsigned long)addr) >> 12) & 0x3FF;
+    volatile unsigned long *page_directory = (void *)RECURSIVE_PD_ADDR;
+    int pd_index = GET_PD_INDEX((unsigned long)addr);
+    int pt_index = GET_PT_INDEX((unsigned long)addr);
 
     page_table += PT_NUM_ENTRIES * pd_index;
     for (;; pd_index++, pt_index = 0, page_table += PT_NUM_ENTRIES)
@@ -268,7 +336,7 @@ static void vmmMapPages(VMM *vmm, void *addr, unsigned long num_pages)
                                         | PAGE_RW | PAGE_PRESENT);
             /* Zeroes the newly allocated PT
              * so all entries are marked as not present. */
-            memset(page_table, 0, PAGE_SIZE);
+            memset_volatile(page_table, 0, PAGE_SIZE);
         }
         for (;
              (pt_index < PT_NUM_ENTRIES) && (num_pages);
@@ -286,13 +354,11 @@ static void vmmMapPages(VMM *vmm, void *addr, unsigned long num_pages)
 
 static void vmmUnmapPages(VMM *vmm, void *addr, unsigned long num_pages)
 {
-    unsigned long *page_table = (void *)PAGE_TABLES_ADDR;
+    volatile unsigned long *page_table = (void *)PAGE_TABLES_ADDR;
     /* Last PT in PD is the PD itself because recursive mapping is used. */
-    unsigned long *page_directory = (page_table
-                                     + PT_NUM_ENTRIES * (PT_NUM_ENTRIES - 1));
-    /* Calculates indexes into the PD and PT. */
-    int pd_index = ((unsigned long)addr) >> 22;
-    int pt_index = (((unsigned long)addr) >> 12) & 0x3FF;
+    volatile unsigned long *page_directory = (void *)RECURSIVE_PD_ADDR;
+    int pd_index = GET_PD_INDEX((unsigned long)addr);
+    int pt_index = GET_PT_INDEX((unsigned long)addr);
     /* Used to check whether a PT contains no mapped pages and can be freed. */
     int can_remove_page_table = 1;
     int i;
@@ -300,14 +366,18 @@ static void vmmUnmapPages(VMM *vmm, void *addr, unsigned long num_pages)
     page_table += PT_NUM_ENTRIES * pd_index;
     /* Special logic for the first PT from which entries should be freed,
      * as the pages can be freed starting from any index. */
-    for (i = 0; i < pt_index; i++)
+    if (page_directory[pd_index] & PAGE_PRESENT)
     {
-        if (page_table[i])
+        for (i = 0; i < pt_index; i++)
         {
-            /* If the PT entry has anything inside, the PT should not be freed
-             * as it might contain important information. */
-            can_remove_page_table = 0;
-            break;
+            if (page_table[i])
+            {
+                /* If the PT entry has anything inside,
+                 * the PT should not be freed
+                 * as it might contain important information. */
+                can_remove_page_table = 0;
+                break;
+            }
         }
     }
     for (;;
@@ -319,7 +389,16 @@ static void vmmUnmapPages(VMM *vmm, void *addr, unsigned long num_pages)
         if ((page_directory[pd_index] & PAGE_PRESENT) == 0)
         {
             /* Page table is not present,
-             * so nothing needs to be done with it. */
+             * so special logic is needed. */
+            if (num_pages <= PT_NUM_ENTRIES)
+            {
+                /* It is the last PT checked,
+                 * so CR3 is reloaded to flush the TLB
+                 * and the function ends. */
+                loadPageDirectory(saveCR3());
+                return;
+            }
+            num_pages -= PT_NUM_ENTRIES;
             continue;
         }
         for (;
@@ -371,4 +450,33 @@ static void vmmUnmapPages(VMM *vmm, void *addr, unsigned long num_pages)
     }
     /* Flushes the Translation Lookaside Buffer by reloading the CR3. */
     loadPageDirectory(saveCR3());
-}    
+}
+
+static volatile void *memcpy_volatile(volatile void *s1,
+                                      volatile void *s2,
+                                      size_t n)
+{
+    volatile unsigned char *f = s2;
+    volatile unsigned char *fe;
+    volatile unsigned char *t = s1;
+
+    fe = f + n;
+    while (f != fe)
+    {
+        *t++ = *f++;
+    }
+    return (s1);
+}
+
+static volatile void *memset_volatile(volatile void *s,
+                                      int c,
+                                      size_t n)
+{
+    size_t x = 0;
+
+    for (x = 0; x < n; x++)
+    {
+        *((char *)s + x) = (unsigned char)c;
+    }
+    return (s);
+}

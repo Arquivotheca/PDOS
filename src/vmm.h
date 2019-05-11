@@ -81,6 +81,9 @@ void vmmFree(VMM *vmm, void *addr, unsigned long size);
 /* Allocates pages of address space at an arbitrary address. */
 void *vmmAllocPages(VMM *vmm, unsigned long num_pages);
 
+/* Allocates pages of address space at the specified address. */
+void *vmmAllocPagesAt(VMM *vmm, unsigned long num_pages, void *addr);
+
 /* Frees pages at the specified address. */
 void vmmFreePages(VMM *vmm, void *addr, unsigned long num_pages);
 

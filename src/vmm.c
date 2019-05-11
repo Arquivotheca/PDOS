@@ -193,8 +193,12 @@ void *vmmAlloc(VMM *vmm, void *addr, unsigned long size)
 
     if (size % PAGE_SIZE) num_pages++;
 
-    /* +++Add a way to allocate at specific addresses. */
-    if (addr != NULL) return (NULL);
+    if (addr != NULL)
+    {
+        /* Rounds down the provided address to the page boundary. */
+        addr = (void *)((((unsigned long)addr) / PAGE_SIZE) * PAGE_SIZE);
+        return (vmmAllocPagesAt(vmm, num_pages, addr));
+    }
 
     return (vmmAllocPages(vmm, num_pages));
 }
@@ -253,6 +257,72 @@ void *vmmAllocPages(VMM *vmm, unsigned long num_pages)
     else node->addr += size_needed;
 
     return (allocated_pages);
+}
+
+void *vmmAllocPagesAt(VMM *vmm, unsigned long num_pages, void *addr)
+{
+    VMM_NODE *node;
+    VMM_NODE *new_node;
+    unsigned long size_needed = num_pages * PAGE_SIZE;
+
+    if (vmm->head == NULL)
+    {
+        /* Ran out of virtual address space. */
+        return (0);
+    }
+
+    for (node = (vmm->head); node; node = node->next)
+    {
+        if (node->addr == (unsigned long)addr)
+        {
+            if (size_needed > (node->size))
+            {
+                return (0);
+            }
+            vmmMapPages(vmm, addr, num_pages);
+
+            node->size -= size_needed;
+            if (node->size == 0) vmmRemoveNode(vmm, node);
+            else node->addr += size_needed;
+
+            return (addr);
+        }
+        if ((node->addr < (unsigned long)addr)
+            && (((unsigned long)addr) < (node->addr + (node->size))))
+        {
+            if (((unsigned long)addr) + size_needed
+                > (node->addr + (node->size)))
+            {
+                return (0);
+            }
+            vmmMapPages(vmm, addr, num_pages);
+
+            if (((unsigned long)addr) + size_needed
+                != (node->addr + (node->size)))
+            {
+                /* The node has to be split into two,
+                 * so new node has to be created. */
+                new_node = vmmCreateNode(((unsigned long)addr) + size_needed,
+                                         ((node->addr + (node->size))
+                                          - (((unsigned long)addr)
+                                             + size_needed)));
+                if (new_node == NULL)
+                {
+                    printf("(VMM) Not enough memory for new node\n"
+                           "in vmmAllocPagesAt()\n");
+                    printf("System halting\n");
+                    for (;;);
+                }
+                vmmAddNode(vmm, new_node);
+            }
+            /* Reduces the size of the original node. */
+            node->size = ((unsigned long)addr) - (node->addr);
+
+            return (addr);
+        }
+    }
+
+    return (0);
 }
 
 void vmmFreePages(VMM *vmm, void *addr, unsigned long num_pages)

@@ -126,7 +126,12 @@ __PDPCLIB_API__ int CTYP __start(char *p)
 #endif
 
 #if defined(__PDOS__) && !defined(__MVS__)
+#ifdef __32BIT__
+    /* PDOS-32 uses an API call returning the full command line string. */
+    p = PosGetCommandLine();
+#else
     p = exep->psp;
+#endif
     __abscor = exep->abscor;
     __vidptr = ABSADDR(0xb8000);
 #ifdef __32BIT__
@@ -664,7 +669,8 @@ __PDPCLIB_API__ int CTYP __start(char *p)
     argv[0] = p;
     p += strlen(p) + 1;
 #endif
-#ifdef __WIN32__
+#if defined(__WIN32__) || (defined(__PDOS__) && defined(__32BIT__))
+    /* Windows and PDOS-32 get the full command line string. */
     argv[0] = p;
     p = strchr(p, ' ');
     if (p == NULL)
@@ -676,8 +682,7 @@ __PDPCLIB_API__ int CTYP __start(char *p)
         *p = '\0';
         p++;
     }
-#endif
-#if defined(__MSDOS__) || (defined(__PDOS__) && !defined(__MVS__))
+#elif defined(__MSDOS__) || (defined(__PDOS__) && !defined(__MVS__))
     argv[0] = "";
 
 #ifdef __MSDOS__

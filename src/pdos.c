@@ -92,6 +92,8 @@ typedef struct _PDOS_PROCESS {
     void *envBlock; /* Environment block of this process */
 #ifdef __32BIT__
     VMM *vmm;
+    char *commandLine; /* Points to kernel memory
+                        * storing the command line string. */
 #endif
     struct _PDOS_PROCESS *parent; /* NULL for root process */
     struct _PDOS_PROCESS *prev; /* Previous process */
@@ -149,7 +151,7 @@ static void loadPcomm(void);
 static void loadExe(char *prog, PARMBLOCK *parmblock);
 #ifdef __32BIT__
 static void loadExe32(char *prog, PARMBLOCK *parmblock);
-static int fixexe32(unsigned char *psp, unsigned long entry, unsigned int sp,
+static int fixexe32(unsigned long entry, unsigned int sp,
                     unsigned long exeStart, unsigned long dataStart);
 #endif
 static int bios2driv(int bios);
@@ -1999,6 +2001,10 @@ static void int21handler(union REGS *regsin,
             else if (regsin->h.al == 0x3E)
             {
                 PosVirtualFree((void *)(regsin->d.ebx), regsin->d.ecx);
+            }
+            else if (regsin->h.al == 0x3F)
+            {
+                regsout->d.eax = (unsigned long)PosGetCommandLine();
             }
 #endif
             else
@@ -3969,26 +3975,37 @@ static void loadExe(char *prog, PARMBLOCK *parmblock)
 
 static void loadExe32(char *prog, PARMBLOCK *parmblock)
 {
-    char *cmdtail = NULL;
+    char *commandLine;
     unsigned char *envptr;
-    unsigned char *psp;
     unsigned char *pcb;
     PDOS_PROCESS *newProc;
     EXELOAD *exeload;
     int ret;
 
+    /* Allocates kernel memory and stores the command line string in it. */
     if (parmblock)
     {
-        /* Copies cmdtail from the provided parmblock,
-         * so it persists across address space changes. */
-        /* 1 for the count and 1 for the return */
-        cmdtail = kmalloc(parmblock->cmdtail[0] + 1 + 1);
-        if (cmdtail == NULL)
-        {
-            printf("Insufficient memory for cmdtail\n");
-            return;
-        }
-        memcpy(cmdtail, parmblock->cmdtail, parmblock->cmdtail[0] + 1 + 1);
+        /* Length is for path, space, arguments, null terminator. */
+        commandLine = kmalloc(strlen(prog) + 1 + (parmblock->cmdtail[0]) + 1);
+    }
+    else
+    {
+        commandLine = kmalloc(strlen(prog) + 1);
+    }
+
+    if (commandLine == NULL)
+    {
+        printf("Insufficient memory for storing command line string\n");
+        return;
+    }
+    strcpy(commandLine, prog);
+    if (parmblock)
+    {
+        strcat(commandLine, " ");
+        memcpy(commandLine + strlen(commandLine),
+               parmblock->cmdtail + 1,
+               parmblock->cmdtail[0]);
+        *(commandLine + strlen(prog) + 1 + (parmblock->cmdtail[0])) = '\0';
     }
 
     /* If curPCB == NULL, we are launching init process (PCOMM),
@@ -4013,6 +4030,9 @@ static void loadExe32(char *prog, PARMBLOCK *parmblock)
     newProc = (PDOS_PROCESS*)pcb;
     initPCB(newProc, (unsigned long)pcb, prog, envptr);
 
+    /* Stores the pointer to the command line string in the new PCB. */
+    newProc->commandLine = commandLine;
+
     /* Creates a new VMM with new address space. */
     newProc->vmm = kmalloc(sizeof(VMM));
     vmmInit(newProc->vmm, &physmemmgr);
@@ -4036,9 +4056,7 @@ static void loadExe32(char *prog, PARMBLOCK *parmblock)
         newProc->parent->status = PDOS_PROCSTATUS_CHILDWAIT;
 
     exeload = kmalloc(sizeof(EXELOAD));
-    /* allocate exeLen + 0x100 (psp)
-     * + stack + extra (safety margin) */
-    exeload->extra_memory_before = 0x100;
+    /* allocate exeLen + stack + extra (safety margin) */
     exeload->extra_memory_after = STACKSZ32 + 0x100;
     exeload->stack_size = STACKSZ32;
 
@@ -4046,23 +4064,12 @@ static void loadExe32(char *prog, PARMBLOCK *parmblock)
     if (ret == 0)
     {
         /* Program has been successfully loaded. */
-        psp = exeload->memStart;
-
-        /* set various values in the psp */
-        psp[0] = 0xcd;
-        psp[1] = 0x20;
-        if (cmdtail != NULL)
-        {
-            /* 1 for the count and 1 for the return */
-            memcpy(psp + 0x80, cmdtail, cmdtail[0] + 1 + 1);
-        }
-
-        ret = fixexe32(psp, exeload->entry_point, exeload->sp,
+        ret = fixexe32(exeload->entry_point,
+                       exeload->sp,
                        exeload->cs_address,
                        exeload->ds_address);
         lastrc = ret;
     }
-    if (cmdtail) kfree(cmdtail);
     kfree(exeload);
 
     /* Process finished, parent becomes current */
@@ -4084,12 +4091,13 @@ static void loadExe32(char *prog, PARMBLOCK *parmblock)
     vmmTerm(newProc->vmm);
     kfree(newProc->vmm);
 
+    kfree(newProc->commandLine);
     kfree(newProc->envBlock);
     removeFromProcessChain(newProc);
     kfree(pcb);
 }
 
-static int fixexe32(unsigned char *psp, unsigned long entry, unsigned int sp,
+static int fixexe32(unsigned long entry, unsigned int sp,
                     unsigned long exeStart, unsigned long dataStart)
 {
     struct {
@@ -4102,10 +4110,7 @@ static int fixexe32(unsigned char *psp, unsigned long entry, unsigned int sp,
     } *realcode, savecode, *realdata, savedata;
     int ret;
     int oldsubcor;
-    unsigned char *commandLine;
     POS_EPARMS exeparms;
-
-    commandLine = psp + 0x80;
 
     /* now we need to record the subroutine's absolute offset fix */
     oldsubcor = subcor;
@@ -4113,8 +4118,8 @@ static int fixexe32(unsigned char *psp, unsigned long entry, unsigned int sp,
 
     exeparms.len = sizeof exeparms;
     exeparms.abscor = subcor;
-    exeparms.psp = ADDRFIXSUB(psp);
-    exeparms.cl = ADDRFIXSUB(commandLine);
+    exeparms.psp = 0;
+    exeparms.cl = 0;
     exeparms.callback = 0;
     exeparms.pstart = ADDRFIXSUB(exec_pstart);
     exeparms.crt = exec_c_api;
@@ -5781,6 +5786,24 @@ void *PosVirtualAlloc(void *addr, size_t size)
 void PosVirtualFree(void *addr, size_t size)
 {
     vmmFree(curPCB->vmm, addr, size);
+}
+
+/* F6,3F - Get Command Line String For The Current Process */
+char *PosGetCommandLine(void)
+{
+    /* The process is allowed to modify the string,
+     * so the string is copied into its virtual memory. */
+    char *commandLine;
+
+    /* Current PCB is NULL what means PDOS itself is being loaded,
+     * so nothing should be done and NULL should be returned. */
+    if (curPCB == NULL) return (NULL);
+
+    commandLine = PosVirtualAlloc(0, strlen(curPCB->commandLine) + 1);
+    if (commandLine == NULL) return (NULL);
+    strcpy(commandLine, curPCB->commandLine);
+
+    return (commandLine);
 }
 #endif
 

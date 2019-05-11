@@ -1796,6 +1796,19 @@ void PosVirtualFree(void *addr, size_t size)
 
     int86i(0x21, &regsin);
 }
+
+/* F6,3F - Get Command Line String For The Current Process */
+char *PosGetCommandLine(void)
+{
+    union REGS regsin;
+    union REGS regsout;
+
+    regsin.h.ah = 0xF6;
+    regsin.h.al = 0x3F;
+
+    int86(0x21, &regsin, &regsout);
+    return ((char *)(regsout.d.eax));
+}
 #endif
 
 /*int 25 function call*/

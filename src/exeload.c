@@ -39,7 +39,6 @@ int exeloadDoload(EXELOAD *exeload, char *prog)
     FILE *fp;
     int ret;
 
-    exeload->memStart = 0;
     fp = fopen(prog, "rb");
     /* Tries to load the executable as different formats.
      * Returned 0 means the executable was loaded successfully.
@@ -108,12 +107,8 @@ static int exeloadLoadAOUT(EXELOAD *exeload, FILE *fp)
     {
         exeLen = firstbit.a_text + firstbit.a_data + firstbit.a_bss;
     }
-    /* Allocates memory for the control structures and the process. */
-    exeload->memStart = PosVirtualAlloc(0, (exeLen
-                                            + (exeload->extra_memory_before)
-                                            + (exeload->extra_memory_after)));
-    exeload->exeStart = exeload->memStart + exeload->extra_memory_before;
-    exeStart = exeload->exeStart;
+    /* Allocates memory for the process and stack. */
+    exeStart = PosVirtualAlloc(0, (exeLen + (exeload->extra_memory_after)));
 
     fread(exeStart, 1, firstbit.a_text, fp);
     if (doing_zmagic || doing_nmagic)
@@ -505,12 +500,8 @@ static int exeloadLoadELF(EXELOAD *exeload, FILE *fp)
             }
         }
     }
-    /* Allocates memory for the control structures and the process. */
-    exeload->memStart = PosVirtualAlloc(0, (exeLen
-                                            + (exeload->extra_memory_before)
-                                            + (exeload->extra_memory_after)));
-    exeload->exeStart = exeload->memStart + exeload->extra_memory_before;
-    exeStart = exeload->exeStart;
+    /* Allocates memory for the process and stack. */
+    exeStart = PosVirtualAlloc(0, (exeLen + (exeload->extra_memory_after)));
 
     if (doing_elf_rel || doing_elf_exec)
     {
@@ -926,13 +917,10 @@ static int exeloadLoadPE(EXELOAD *exeload, FILE *fp, unsigned long e_lfanew)
         return (2);
     }
 
-    /* Allocates memory for the control structures and the process.
+    /* Allocates memory for the process and stack.
      * Size of image is obtained from the optional header. */
-    exeload->memStart = PosVirtualAlloc(0, (optional_hdr->SizeOfImage
-                                            + (exeload->extra_memory_before)
-                                            + (exeload->extra_memory_after)));
-    exeload->exeStart = exeload->memStart + exeload->extra_memory_before;
-    exeStart = exeload->exeStart;
+    exeStart = PosVirtualAlloc(0, (optional_hdr->SizeOfImage
+                                   + (exeload->extra_memory_after)));
 
     /* Loads all sections at their addresses. */
     for (section = section_table;

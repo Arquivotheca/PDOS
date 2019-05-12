@@ -4752,12 +4752,16 @@ static void analyseBpb(DISKINFO *diskinfo, unsigned char *bpb)
 }
 
 #ifdef __32BIT__
+extern int __minstart;
+
 int pdosstrt(void)
 {
     pdos_parms *pp;
     POS_EPARMS eparms;
     char psp[256];
 
+    /* Tells __start() to not use any API calls. */
+    __minstart = 1;
     __abscor = rp_parms->dsbase;
     gdt = ABSADDR(rp_parms->gdt);
     freem_start = rp_parms->freem_start;
@@ -5794,10 +5798,6 @@ char *PosGetCommandLine(void)
     /* The process is allowed to modify the string,
      * so the string is copied into its virtual memory. */
     char *commandLine;
-
-    /* Current PCB is NULL what means PDOS itself is being loaded,
-     * so nothing should be done and NULL should be returned. */
-    if (curPCB == NULL) return (NULL);
 
     commandLine = PosVirtualAlloc(0, strlen(curPCB->commandLine) + 1);
     if (commandLine == NULL) return (NULL);

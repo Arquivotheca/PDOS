@@ -38,6 +38,11 @@ extern FILE *__userFiles[__NFILE];
 #define CTYP
 #endif
 
+#if defined(__PDOS__) && defined(__32BIT__)
+/* Used for PDOS itself to avoid API calls when starting. */
+int __minstart = 0;
+#endif
+
 #ifdef __MSDOS__
 /* Must be unsigned as it is used for array index */
 extern unsigned char *__envptr;
@@ -128,15 +133,22 @@ __PDPCLIB_API__ int CTYP __start(char *p)
 #if defined(__PDOS__) && !defined(__MVS__)
 #ifdef __32BIT__
     /* PDOS-32 uses an API call returning the full command line string. */
-    p = PosGetCommandLine();
+    if (!__minstart)
+    {
+        p = PosGetCommandLine();
+        __envptr = PosGetEnvBlock();
+    }
+    else
+    {
+        /* PDOS itself is starting so no API calls should be used. */
+        p = "";
+        __envptr = NULL;
+    }
 #else
     p = exep->psp;
 #endif
     __abscor = exep->abscor;
     __vidptr = ABSADDR(0xb8000);
-#ifdef __32BIT__
-    __envptr = PosGetEnvBlock();
-#endif
 #endif
 
 #ifdef __WIN32__

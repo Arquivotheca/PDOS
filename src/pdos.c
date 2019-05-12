@@ -3979,7 +3979,7 @@ static void loadExe32(char *prog, PARMBLOCK *parmblock)
     unsigned char *envptr;
     unsigned char *pcb;
     PDOS_PROCESS *newProc;
-    EXELOAD *exeload;
+    unsigned long entry_point;
     int ret;
 
     /* Allocates kernel memory and stores the command line string in it. */
@@ -4055,22 +4055,21 @@ static void loadExe32(char *prog, PARMBLOCK *parmblock)
     if (newProc->parent != NULL)
         newProc->parent->status = PDOS_PROCSTATUS_CHILDWAIT;
 
-    exeload = kmalloc(sizeof(EXELOAD));
-    /* allocate exeLen + stack + extra (safety margin) */
-    exeload->extra_memory_after = STACKSZ32 + 0x100;
-    exeload->stack_size = STACKSZ32;
-
-    ret = exeloadDoload(exeload, prog);
+    ret = exeloadDoload(&entry_point, prog);
     if (ret == 0)
     {
-        /* Program has been successfully loaded. */
-        ret = fixexe32(exeload->entry_point,
-                       exeload->sp,
-                       exeload->cs_address,
-                       exeload->ds_address);
+        /* Program has been successfully loaded,
+         * new stack in the process space is created
+         * and the program is launched. */
+        void *newsp;
+
+        /* Creates new stack and sets the stack pointer to its top. */
+        newsp = PosVirtualAlloc(0, STACKSZ32);
+        newsp = ((char *)newsp) + STACKSZ32;
+
+        ret = fixexe32(entry_point, (unsigned int)newsp, 0, 0);
         lastrc = ret;
     }
-    kfree(exeload);
 
     /* Process finished, parent becomes current */
     curPCB = newProc->parent;

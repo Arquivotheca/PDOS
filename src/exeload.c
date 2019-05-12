@@ -26,37 +26,50 @@
 #include "mz.h"
 #include "pecoff.h"
 
-static int exeloadLoadAOUT(EXELOAD *exeload, FILE *fp);
-static int exeloadLoadELF(EXELOAD *exeload, FILE *fp);
-static int exeloadLoadMZ(EXELOAD *exeload, FILE *fp);
-/* Subfunctions of exeloadLoadMZ() for loading extensions to MZ. */
-static int exeloadLoadPE(EXELOAD *exeload, FILE *fp, unsigned long e_lfanew);
-static int exeloadLoadLX(EXELOAD *exeload, FILE *fp, unsigned long e_lfanew);
-static int exeloadLoadNE(EXELOAD *exeload, FILE *fp, unsigned long e_lfanew);
+/* For reading files Pos API must be used directly
+ * as PDPCLIB allocates memory from the process address space. */
 
-int exeloadDoload(EXELOAD *exeload, char *prog)
+static int exeloadLoadAOUT(unsigned long *entry_point, int fhandle);
+static int exeloadLoadELF(unsigned long *entry_point, int fhandle);
+static int exeloadLoadMZ(unsigned long *entry_point, int fhandle);
+/* Subfunctions of exeloadLoadMZ() for loading extensions to MZ. */
+static int exeloadLoadPE(unsigned long *entry_point,
+                         int fhandle,
+                         unsigned long e_lfanew);
+static int exeloadLoadLX(unsigned long *entry_point,
+                         int fhandle,
+                         unsigned long e_lfanew);
+static int exeloadLoadNE(unsigned long *entry_point,
+                         int fhandle,
+                         unsigned long e_lfanew);
+
+int exeloadDoload(unsigned long *entry_point, char *prog)
 {
-    FILE *fp;
+    int fhandle;
     int ret;
 
-    fp = fopen(prog, "rb");
+    if (PosOpenFile(prog, 0, &fhandle))
+    {
+        printf("Failed to open %s for loading\n", prog);
+        return (1);
+    }
     /* Tries to load the executable as different formats.
      * Returned 0 means the executable was loaded successfully.
      * 1 means it is not the format the function loads.
      * 2 means correct format, but error occured. */
-    ret = exeloadLoadAOUT(exeload, fp);
-    if (ret == 1) ret = exeloadLoadELF(exeload, fp);
-    if (ret == 1) ret = exeloadLoadMZ(exeload, fp);
+    ret = exeloadLoadAOUT(entry_point, fhandle);
+    if (ret == 1) ret = exeloadLoadELF(entry_point, fhandle);
+    if (ret == 1) ret = exeloadLoadMZ(entry_point, fhandle);
     if (ret != 0)
     {
-        fclose(fp);
+        PosCloseFile(fhandle);
         return (1);
     }
 
     return (0);
 }
 
-static int exeloadLoadAOUT(EXELOAD *exeload, FILE *fp)
+static int exeloadLoadAOUT(unsigned long *entry_point, int fhandle)
 {
     int doing_zmagic = 0;
     int doing_nmagic = 0;
@@ -65,21 +78,30 @@ static int exeloadLoadAOUT(EXELOAD *exeload, FILE *fp)
     unsigned char *header = NULL;
     unsigned long exeLen;
     unsigned char *exeStart;
-    unsigned int sp;
     unsigned char *bss;
+    long newpos;
+    size_t readbytes;
 
-    rewind(fp);
-    if (fread(&firstbit, 1, sizeof(firstbit), fp) != sizeof(firstbit))
+    if (PosMoveFilePointer(fhandle, 0, SEEK_SET, &newpos)
+        || PosReadFile(fhandle, &firstbit, sizeof(firstbit), &readbytes)
+        || readbytes != sizeof(firstbit))
     {
         return (1);
     }
+    /* ZMAGIC and NMAGIC are currently not supported
+     * as they should be loaded at 0x10000,
+     * but the kernel reserves the first 4 MiB. */
     if ((firstbit.a_info & 0xffff) == ZMAGIC)
     {
         doing_zmagic = 1;
+        printf("a.out ZMAGIC is not supported\n");
+        return (2);
     }
     else if ((firstbit.a_info & 0xffff) == NMAGIC)
     {
         doing_nmagic = 1;
+        printf("a.out NMAGIC is not supported\n");
+        return (2);
     }
     else if ((firstbit.a_info & 0xffff) == QMAGIC)
     {
@@ -96,7 +118,13 @@ static int exeloadLoadAOUT(EXELOAD *exeload, FILE *fp)
         headerLen = N_TXTOFF(firstbit);
         header = kmalloc(headerLen);
         memcpy(header, &firstbit, sizeof firstbit);
-        fread(header + sizeof firstbit, 1, headerLen - sizeof firstbit, fp);
+        if (PosReadFile(fhandle, header + sizeof firstbit,
+                        headerLen - sizeof firstbit, &readbytes)
+            || (readbytes != (headerLen - sizeof firstbit)))
+        {
+            kfree(header);
+            return (2);
+        }
     }
 
     if (doing_zmagic || doing_nmagic)
@@ -107,21 +135,56 @@ static int exeloadLoadAOUT(EXELOAD *exeload, FILE *fp)
     {
         exeLen = firstbit.a_text + firstbit.a_data + firstbit.a_bss;
     }
-    /* Allocates memory for the process and stack. */
-    exeStart = PosVirtualAlloc(0, (exeLen + (exeload->extra_memory_after)));
-
-    fread(exeStart, 1, firstbit.a_text, fp);
+    /* Allocates memory for the process. */
     if (doing_zmagic || doing_nmagic)
     {
-        fread(exeStart + N_DATADDR(firstbit) - N_TXTADDR(firstbit), 1,
-              firstbit.a_data, fp);
+        /* a.out ZMAGIC and NMAGIC must be loaded at 0x10000. */
+        exeStart = PosVirtualAlloc((void *)0x10000, exeLen);
     }
     else
     {
-        fread(exeStart + firstbit.a_text, 1, firstbit.a_data, fp);
+        /* a.out OMAGIC can be loaded anywhere. */
+        exeStart = PosVirtualAlloc(0, exeLen);
+    }
+    if (exeStart == NULL)
+    {
+        printf("Insufficient memory to load A.OUT program\n");
+        if (doing_zmagic) kfree(header);
+        return (2);
+    }
+
+    if (PosReadFile(fhandle, exeStart, firstbit.a_text, &readbytes)
+        || (readbytes != (firstbit.a_text)))
+    {
+        printf("Error occured while reading A.OUT text\n");
+        if (doing_zmagic) kfree(header);
+        return (2);
+    }
+    if (doing_zmagic || doing_nmagic)
+    {
+        if (PosReadFile(fhandle,
+                        (exeStart + N_DATADDR(firstbit) - N_TXTADDR(firstbit)),
+                        firstbit.a_data,
+                        &readbytes)
+            || (readbytes != (firstbit.a_data)))
+        {
+            printf("Error occured while reading A.OUT data\n");
+            if (doing_zmagic) kfree(header);
+            return (2);
+        }
+    }
+    else
+    {
+        if (PosReadFile(fhandle, exeStart + firstbit.a_text, firstbit.a_data,
+                        &readbytes)
+            || (readbytes != (firstbit.a_data)))
+        {
+            printf("Error occured while reading A.OUT data\n");
+            return (2);
+        }
     }
     /* Closes the file for ZMAGIC and NMAGIC as there is no need for it now. */
-    if (doing_zmagic || doing_nmagic) fclose(fp);
+    if (doing_zmagic || doing_nmagic) PosCloseFile(fhandle);
     if (doing_zmagic) kfree(header);
 
     /* initialise BSS */
@@ -134,14 +197,6 @@ static int exeloadLoadAOUT(EXELOAD *exeload, FILE *fp)
         bss = exeStart + firstbit.a_text + firstbit.a_data;
     }
     memset(bss, '\0', firstbit.a_bss);
-    if (doing_zmagic || doing_nmagic)
-    {
-        sp = N_BSSADDR(firstbit) + firstbit.a_bss + 0x8000;
-    }
-    else
-    {
-        sp = (unsigned int)bss + firstbit.a_bss + exeload->stack_size;
-    }
     /* Relocations. */
     if (!doing_zmagic && !doing_nmagic)
     {
@@ -162,7 +217,14 @@ static int exeloadLoadAOUT(EXELOAD *exeload, FILE *fp)
                 printf("insufficient memory %lu\n", firstbit.a_trsize);
                 return (2);
             }
-            fread(corrections, 1, firstbit.a_trsize, fp);
+            if (PosReadFile(fhandle, corrections, firstbit.a_trsize,
+                            &readbytes)
+                || (readbytes != (firstbit.a_trsize)))
+            {
+                printf("Error occured while reading A.OUT text relocations\n");
+                kfree(corrections);
+                return (2);
+            }
             for (i = 0; i < firstbit.a_trsize / 4; i += 2)
             {
                 offs = corrections[i];
@@ -183,7 +245,14 @@ static int exeloadLoadAOUT(EXELOAD *exeload, FILE *fp)
                 printf("insufficient memory %lu\n", firstbit.a_drsize);
                 return (2);
             }
-            fread(corrections, 1, firstbit.a_drsize, fp);
+            if (PosReadFile(fhandle, corrections, firstbit.a_drsize,
+                            &readbytes)
+                || (readbytes != (firstbit.a_drsize)))
+            {
+                printf("Error occured while reading A.OUT data relocations\n");
+                kfree(corrections);
+                return (2);
+            }
             zap = exeStart + firstbit.a_text;
             for (i = 0; i < firstbit.a_drsize / 4; i += 2)
             {
@@ -198,33 +267,15 @@ static int exeloadLoadAOUT(EXELOAD *exeload, FILE *fp)
             kfree(corrections);
         }
         firstbit.a_entry += (unsigned long)ADDR2ABS(exeStart);
-        fclose(fp);
+        PosCloseFile(fhandle);
     }
 
-    if (doing_zmagic || doing_nmagic)
-    {
-        /* a.out ZMAGIC and NMAGIC must be loaded at 0x10000. */
-        exeStart = exeStart - 0x10000;
-        exeStart = ADDR2ABS(exeStart);
-        exeload->entry_point = firstbit.a_entry;
-        exeload->sp = sp;
-        exeload->cs_address = (unsigned long)exeStart;
-        exeload->ds_address = (unsigned long)exeStart;
-    }
-    else
-    {
-        /* a.out OMAGIC can be loaded anywhere. */
-        sp = (unsigned int)ADDR2ABS(sp);
-        exeload->entry_point = firstbit.a_entry;
-        exeload->sp = sp;
-        exeload->cs_address = 0;
-        exeload->ds_address = 0;
-    }
+    *entry_point = firstbit.a_entry;
 
     return (0);
 }
 
-static int exeloadLoadELF(EXELOAD *exeload, FILE *fp)
+static int exeloadLoadELF(unsigned long *entry_point, int fhandle)
 {
     int doing_elf_rel = 0;
     int doing_elf_exec = 0;
@@ -238,12 +289,14 @@ static int exeloadLoadELF(EXELOAD *exeload, FILE *fp)
     Elf32_Word lowest_segment_align = 0;
     unsigned char *exeStart;
     unsigned char *bss;
-    unsigned int sp;
     unsigned long exeLen;
     unsigned char firstbit[4];
+    long newpos;
+    size_t readbytes;
 
-    rewind(fp);
-    if ((fread(firstbit, 1, sizeof(firstbit), fp) != sizeof(firstbit))
+    if (PosMoveFilePointer(fhandle, 0, SEEK_SET, &newpos)
+        || PosReadFile(fhandle, firstbit, sizeof(firstbit), &readbytes)
+        || (readbytes != sizeof(firstbit))
         || (memcmp((&firstbit), "\x7f""ELF", 4) != 0))
     {
         return (1);
@@ -258,10 +311,9 @@ static int exeloadLoadELF(EXELOAD *exeload, FILE *fp)
             printf("Insufficient memory for ELF header\n");
             return (2);
         }
-        rewind(fp);
-        if (fread(elfHdr, 1,
-                  sizeof(Elf32_Ehdr), fp)
-            != sizeof(Elf32_Ehdr))
+        if (PosMoveFilePointer(fhandle, 0, SEEK_SET, &newpos)
+            || PosReadFile(fhandle, elfHdr, sizeof(Elf32_Ehdr), &readbytes)
+            || (readbytes != sizeof(Elf32_Ehdr)))
         {
             printf("Error occured while reading ELF header\n");
             kfree(elfHdr);
@@ -387,10 +439,11 @@ static int exeloadLoadELF(EXELOAD *exeload, FILE *fp)
                 kfree(elfHdr);
                 return (2);
             }
-            fseek(fp, elfHdr->e_phoff, SEEK_SET);
-            if (fread(program_table, 1,
-                      elfHdr->e_phnum * elfHdr->e_phentsize, fp)
-                != (elfHdr->e_phnum * elfHdr->e_phentsize))
+            if (PosMoveFilePointer(fhandle, elfHdr->e_phoff, SEEK_SET, &newpos)
+                || PosReadFile(fhandle, program_table,
+                               elfHdr->e_phnum * elfHdr->e_phentsize,
+                               &readbytes)
+                || (readbytes != (elfHdr->e_phnum * elfHdr->e_phentsize)))
             {
                 printf("Error occured while reading "
                        "ELF Program Header Table\n");
@@ -409,10 +462,11 @@ static int exeloadLoadELF(EXELOAD *exeload, FILE *fp)
                 kfree(elfHdr);
                 return (2);
             }
-            fseek(fp, elfHdr->e_shoff, SEEK_SET);
-            if (fread(section_table, 1,
-                      elfHdr->e_shnum * elfHdr->e_shentsize, fp)
-                != (elfHdr->e_shnum * elfHdr->e_shentsize))
+            if (PosMoveFilePointer(fhandle, elfHdr->e_shoff, SEEK_SET, &newpos)
+                || PosReadFile(fhandle, section_table,
+                               elfHdr->e_shnum * elfHdr->e_shentsize,
+                               &readbytes)
+                || (readbytes != (elfHdr->e_shnum * elfHdr->e_shentsize)))
             {
                 printf("Error occured while reading "
                        "ELF Section Header Table\n");
@@ -500,15 +554,34 @@ static int exeloadLoadELF(EXELOAD *exeload, FILE *fp)
             }
         }
     }
-    /* Allocates memory for the process and stack. */
-    exeStart = PosVirtualAlloc(0, (exeLen + (exeload->extra_memory_after)));
+    /* Allocates memory for the process. */
+    if (doing_elf_exec)
+    {
+        exeStart = PosVirtualAlloc((void *)lowest_p_vaddr, exeLen);
+    }
+    else if (doing_elf_rel)
+    {
+        exeStart = PosVirtualAlloc(0, exeLen);
+    }
+    if (exeStart == NULL)
+    {
+        printf("Insufficient memory to load ELF program\n");
+        kfree(elfHdr);
+        if (program_table) kfree(program_table);
+        if (section_table)
+        {
+            kfree(section_table);
+            kfree(elf_other_sections);
+        }
+        return (2);
+    }
 
     if (doing_elf_rel || doing_elf_exec)
     {
         /* Loads all sections of ELF file with proper alignment,
          * clears all SHT_NOBITS sections and stores the addresses
          * in sh_addr of each section.
-         * bss and sp are set now too. */
+         * bss is set now too. */
         unsigned char *exe_addr = exeStart;
         unsigned char *other_addr = elf_other_sections;
 
@@ -528,9 +601,11 @@ static int exeloadLoadELF(EXELOAD *exeload, FILE *fp)
                 {
                     exe_addr = exeStart + (segment->p_vaddr - lowest_p_vaddr);
 
-                    fseek(fp, segment->p_offset, SEEK_SET);
-                    if (fread(exe_addr, 1, segment->p_filesz, fp)
-                        != (segment->p_filesz))
+                    if (PosMoveFilePointer(fhandle, segment->p_offset,
+                                           SEEK_SET, &newpos)
+                        || PosReadFile(fhandle, exe_addr, segment->p_filesz,
+                                       &readbytes)
+                        || (readbytes != (segment->p_filesz)))
                     {
                         printf("Error occured while reading ELF segment\n");
                         kfree(program_table);
@@ -571,9 +646,11 @@ static int exeloadLoadELF(EXELOAD *exeload, FILE *fp)
                 }
                 if (section->sh_type != SHT_NOBITS)
                 {
-                    fseek(fp, section->sh_offset, SEEK_SET);
-                    if (fread(exe_addr, 1, section->sh_size, fp)
-                        != (section->sh_size))
+                    if (PosMoveFilePointer(fhandle, section->sh_offset,
+                                           SEEK_SET, &newpos)
+                        || PosReadFile(fhandle, exe_addr, section->sh_size,
+                                       &readbytes)
+                        || (readbytes != (section->sh_size)))
                     {
                         printf("Error occured while reading ELF section\n");
                         kfree(elfHdr);
@@ -610,9 +687,11 @@ static int exeloadLoadELF(EXELOAD *exeload, FILE *fp)
                 }
                 if (section->sh_type != SHT_NOBITS)
                 {
-                    fseek(fp, section->sh_offset, SEEK_SET);
-                    if (fread(other_addr, 1, section->sh_size, fp)
-                        != (section->sh_size))
+                    if (PosMoveFilePointer(fhandle, section->sh_offset,
+                                           SEEK_SET, &newpos)
+                        || PosReadFile(fhandle, other_addr, section->sh_size,
+                                       &readbytes)
+                        || (readbytes != (section->sh_size)))
                     {
                         printf("Error occured while reading ELF section\n");
                         kfree(elfHdr);
@@ -633,19 +712,10 @@ static int exeloadLoadELF(EXELOAD *exeload, FILE *fp)
                 other_addr += section->sh_size;
             }
         }
-        /* Sets the stack pointer. */
-        if (doing_elf_exec)
-        {
-            sp = (unsigned long)exeStart + exeLen + exeload->stack_size;
-        }
-        else
-        {
-            sp = (unsigned long)exe_addr + exeload->stack_size;
-        }
     }
     /* Program was successfully loaded from the file,
      * no more errors can occur. */
-    fclose(fp);
+    PosCloseFile(fhandle);
 
     /* Relocations. */
     if (doing_elf_rel)
@@ -745,56 +815,37 @@ static int exeloadLoadELF(EXELOAD *exeload, FILE *fp)
 
     if (doing_elf_rel)
     {
-        unsigned long entry_point = elfHdr->e_entry;
-
-        /* ELF Relocatable files can be loaded anywhere. */
-        sp = (unsigned int)ADDR2ABS(sp);
-        /* Frees memory not needed by the process. */
-        kfree(elfHdr);
-        if (program_table) kfree(program_table);
-        kfree(section_table);
-        kfree(elf_other_sections);
-        exeload->entry_point = (unsigned long)exeStart + entry_point;
-        exeload->sp = sp;
-        exeload->cs_address = 0;
-        exeload->ds_address = 0;
+        *entry_point = ((unsigned long)exeStart) + (elfHdr->e_entry);
     }
     else if (doing_elf_exec)
     {
-        unsigned long entry_point = elfHdr->e_entry;
+        *entry_point = elfHdr->e_entry;
+    }
 
-        /* ELF Executable files are loaded at the lowest p_vaddr. */
-        exeStart -= lowest_p_vaddr;
-        if (entry_point == 0) entry_point = lowest_p_vaddr;
-        sp += lowest_p_vaddr;
-        exeStart = ADDR2ABS(exeStart);
-        /* Frees memory not needed by the process. */
-        kfree(elfHdr);
-        kfree(program_table);
-        if (section_table)
-        {
-            kfree(section_table);
-            kfree(elf_other_sections);
-        }
-        exeload->entry_point = entry_point;
-        exeload->sp = sp;
-        exeload->cs_address = (unsigned long)exeStart;
-        exeload->ds_address = (unsigned long)exeStart;
+    /* Frees memory not needed by the process. */
+    kfree(elfHdr);
+    if (program_table) kfree(program_table);
+    if (section_table)
+    {
+        kfree(section_table);
+        kfree(elf_other_sections);
     }
 
     return (0);
 }
 
-static int exeloadLoadMZ(EXELOAD *exeload, FILE *fp)
+static int exeloadLoadMZ(unsigned long *entry_point, int fhandle)
 {
     Mz_hdr firstbit;
-
-    rewind(fp);
+    long newpos;
+    size_t readbytes;
 
     /* The header size is in paragraphs,
      * so the smallest possible header is 16 bytes (paragraph) long.
      * Next is the magic number checked. */
-    if ((fread(&firstbit, 1, 16, fp) != 16)
+    if (PosMoveFilePointer(fhandle, 0, SEEK_SET, &newpos)
+        || PosReadFile(fhandle, &firstbit, 16, &readbytes)
+        || (readbytes != 16)
         || (memcmp(firstbit.magic, "MZ", 2) != 0
             && memcmp(&firstbit.magic, "ZM", 2) != 0))
     {
@@ -812,9 +863,9 @@ static int exeloadLoadMZ(EXELOAD *exeload, FILE *fp)
         return (2);
     }
     /* Loads the rest of the header. */
-    if (fread(((char *)&firstbit) + 16, 1,
-              (firstbit.header_size - 1) * 16, fp)
-        != (firstbit.header_size - 1) * 16)
+    if (PosReadFile(fhandle, ((char *)&firstbit) + 16,
+                    (firstbit.header_size - 1) * 16, &readbytes)
+        || (readbytes != (firstbit.header_size - 1) * 16))
     {
         printf("Error occured while reading MZ header\n");
         return (2);
@@ -828,11 +879,11 @@ static int exeloadLoadMZ(EXELOAD *exeload, FILE *fp)
         int ret;
 
         /* Same logic as in exeloadDoload(). */
-        ret = exeloadLoadPE(exeload, fp, firstbit.e_lfanew);
+        ret = exeloadLoadPE(entry_point, fhandle, firstbit.e_lfanew);
         if (ret == 1)
-            ret = exeloadLoadLX(exeload, fp, firstbit.e_lfanew);
+            ret = exeloadLoadLX(entry_point, fhandle, firstbit.e_lfanew);
         if (ret == 1)
-            ret = exeloadLoadNE(exeload, fp, firstbit.e_lfanew);
+            ret = exeloadLoadNE(entry_point, fhandle, firstbit.e_lfanew);
         if (ret == 1)
             printf("Unknown MZ extension\n");
         return (ret);
@@ -843,25 +894,30 @@ static int exeloadLoadMZ(EXELOAD *exeload, FILE *fp)
     return (2);
 }
 
-static int exeloadLoadPE(EXELOAD *exeload, FILE *fp, unsigned long e_lfanew)
+static int exeloadLoadPE(unsigned long *entry_point,
+                         int fhandle,
+                         unsigned long e_lfanew)
 {
     Coff_hdr coff_hdr;
     Pe32_optional_hdr *optional_hdr;
     Coff_section *section_table, *section;
     unsigned char *exeStart;
-    unsigned int sp;
+    long newpos;
+    size_t readbytes;
 
     {
         unsigned char firstbit[4];
 
-        if (fseek(fp, e_lfanew, SEEK_SET)
-            || (fread(firstbit, 1, 4, fp) != 4)
+        if (PosMoveFilePointer(fhandle, e_lfanew, SEEK_SET, &newpos)
+            || PosReadFile(fhandle, firstbit, 4, &readbytes)
+            || (readbytes != 4)
             || (memcmp(firstbit, "PE\0\0", 4) != 0))
         {
             return (1);
         }
     }
-    if (fread(&coff_hdr, 1, sizeof(coff_hdr), fp) != sizeof(coff_hdr))
+    if (PosReadFile(fhandle, &coff_hdr, sizeof(coff_hdr), &readbytes)
+        || (readbytes != sizeof(coff_hdr)))
     {
         printf("Error occured while reading COFF header\n");
         return (2);
@@ -886,8 +942,9 @@ static int exeloadLoadPE(EXELOAD *exeload, FILE *fp, unsigned long e_lfanew)
         printf("Insufficient memory to load PE optional header\n");
         return (2);
     }
-    if (fread(optional_hdr, 1, coff_hdr.SizeOfOptionalHeader, fp)
-        != coff_hdr.SizeOfOptionalHeader)
+    if (PosReadFile(fhandle, optional_hdr, coff_hdr.SizeOfOptionalHeader,
+                    &readbytes)
+        || (readbytes != (coff_hdr.SizeOfOptionalHeader)))
     {
         printf("Error occured while reading PE optional header\n");
         kfree(optional_hdr);
@@ -907,9 +964,10 @@ static int exeloadLoadPE(EXELOAD *exeload, FILE *fp, unsigned long e_lfanew)
         printf("Insufficient memory to load PE section headers\n");
         return (2);
     }
-    if (fread(section_table, 1,
-              coff_hdr.NumberOfSections * sizeof(Coff_section), fp)
-        != (coff_hdr.NumberOfSections * sizeof(Coff_section)))
+    if (PosReadFile(fhandle, section_table,
+                    coff_hdr.NumberOfSections * sizeof(Coff_section),
+                    &readbytes)
+        || (readbytes != (coff_hdr.NumberOfSections * sizeof(Coff_section))))
     {
         printf("Error occured while reading PE optional header\n");
         kfree(section_table);
@@ -917,10 +975,26 @@ static int exeloadLoadPE(EXELOAD *exeload, FILE *fp, unsigned long e_lfanew)
         return (2);
     }
 
-    /* Allocates memory for the process and stack.
+    /* Allocates memory for the process.
      * Size of image is obtained from the optional header. */
-    exeStart = PosVirtualAlloc(0, (optional_hdr->SizeOfImage
-                                   + (exeload->extra_memory_after)));
+    if (!(coff_hdr.Characteristics & IMAGE_FILE_RELOCS_STRIPPED))
+    {
+        /* Relocatable files can be loaded anywhere. */
+        exeStart = PosVirtualAlloc(0, optional_hdr->SizeOfImage);
+    }
+    else
+    {
+        /* PE executable files are loaded at their preferred address. */
+        exeStart = PosVirtualAlloc((void *)(optional_hdr->ImageBase),
+                                   optional_hdr->SizeOfImage);
+    }
+    if (exeStart == NULL)
+    {
+        printf("Insufficient memory to load PE program\n");
+        kfree(section_table);
+        kfree(optional_hdr);
+        return (2);
+    }
 
     /* Loads all sections at their addresses. */
     for (section = section_table;
@@ -946,9 +1020,11 @@ static int exeloadLoadPE(EXELOAD *exeload, FILE *fp, unsigned long e_lfanew)
         {
             size_in_file = section->VirtualSize;
         }
-        if (fseek(fp, section->PointerToRawData, SEEK_SET)
-            || (fread(exeStart + section->VirtualAddress, 1,
-                      size_in_file, fp) != size_in_file))
+        if (PosMoveFilePointer(fhandle, section->PointerToRawData, SEEK_SET,
+                               &newpos)
+            || PosReadFile(fhandle, exeStart + (section->VirtualAddress),
+                           size_in_file, &readbytes)
+            || (readbytes != size_in_file))
         {
             printf("Error occured while reading PE section\n");
             kfree(section_table);
@@ -956,7 +1032,7 @@ static int exeloadLoadPE(EXELOAD *exeload, FILE *fp, unsigned long e_lfanew)
             return (2);
         }
     }
-    fclose(fp);
+    PosCloseFile(fhandle);
 
     if (!(coff_hdr.Characteristics & IMAGE_FILE_RELOCS_STRIPPED))
     {
@@ -1018,47 +1094,28 @@ static int exeloadLoadPE(EXELOAD *exeload, FILE *fp, unsigned long e_lfanew)
                 rel_block = (Base_relocation_block *)cur_rel;
             }
         }
-        /* Relocatable files can be loaded anywhere. */
-        exeload->entry_point = ((unsigned long)exeStart
-                                + (optional_hdr->AddressOfEntryPoint));
-        sp = ((unsigned long)exeStart
-              + (optional_hdr->SizeOfImage)
-              + (exeload->stack_size));
-        exeload->sp = (unsigned int)ADDR2ABS(sp);
-        /* Frees memory not needed by the process. */
-        kfree(section_table);
-        kfree(optional_hdr);
-        exeload->cs_address = 0;
-        exeload->ds_address = 0;
-
-        return (0);
     }
 
-    /* PE executable files are loaded at their preferred address. */
-    exeload->entry_point = ((optional_hdr->ImageBase)
-                             + (optional_hdr->AddressOfEntryPoint));
-    sp = ((unsigned long)exeStart
-          + (optional_hdr->SizeOfImage)
-          + (exeload->stack_size));
-    sp += optional_hdr->ImageBase;
-    exeload->sp = sp;
-    exeStart -= optional_hdr->ImageBase;
-    exeStart = ADDR2ABS(exeStart);
+    *entry_point = ((optional_hdr->ImageBase)
+                    + (optional_hdr->AddressOfEntryPoint));
     /* Frees memory not needed by the process. */
     kfree(section_table);
     kfree(optional_hdr);
-    exeload->cs_address = (unsigned long)exeStart;
-    exeload->ds_address = (unsigned long)exeStart;
 
     return (0);
 }
 
-static int exeloadLoadLX(EXELOAD *exeload, FILE *fp, unsigned long e_lfanew)
+static int exeloadLoadLX(unsigned long *entry_point,
+                         int fhandle,
+                         unsigned long e_lfanew)
 {
     unsigned char firstbit[2];
+    long newpos;
+    size_t readbytes;
 
-    if (fseek(fp, e_lfanew, SEEK_SET)
-        || (fread(firstbit, 1, sizeof(firstbit), fp) != sizeof(firstbit))
+    if (PosMoveFilePointer(fhandle, e_lfanew, SEEK_SET, &newpos)
+        || PosReadFile(fhandle, firstbit, sizeof(firstbit), &readbytes)
+        || (readbytes != sizeof(firstbit))
         || (memcmp(firstbit, "LX", 2) != 0))
     {
         return (1);
@@ -1069,12 +1126,17 @@ static int exeloadLoadLX(EXELOAD *exeload, FILE *fp, unsigned long e_lfanew)
     return (2);
 }
 
-static int exeloadLoadNE(EXELOAD *exeload, FILE *fp, unsigned long e_lfanew)
+static int exeloadLoadNE(unsigned long *entry_point,
+                         int fhandle,
+                         unsigned long e_lfanew)
 {
     unsigned char firstbit[2];
+    long newpos;
+    size_t readbytes;
 
-    if (fseek(fp, e_lfanew, SEEK_SET)
-        || (fread(firstbit, 1, sizeof(firstbit), fp) != sizeof(firstbit))
+    if (PosMoveFilePointer(fhandle, e_lfanew, SEEK_SET, &newpos)
+        || PosReadFile(fhandle, firstbit, sizeof(firstbit), &readbytes)
+        || (readbytes != sizeof(firstbit))
         || (memcmp(firstbit, "NE", 2) != 0))
     {
         return (1);

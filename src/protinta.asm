@@ -54,6 +54,8 @@ oldsp   dw ?
 
 newstack dd ?
 
+savecr3 dd 0
+
 oldds   dw ?
 _DATA   ends
 
@@ -245,6 +247,16 @@ assume cs:_TEXT32
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 rtop_stage2:
+; Checks if virtual memory was enabled before (savecr3 != 0)
+        mov eax, savecr3
+        cmp eax, 00h
+        je rtop_stage2_cont
+; It was enabled, so CR3 is restored and virtual memory is enabled again
+        mov cr3, eax
+        mov eax, cr0
+        or eax, 080000000h
+        mov cr0, eax
+rtop_stage2_cont:
 ; Loads the segment registers
         mov ax, 0010h 
         mov ss, ax
@@ -272,6 +284,14 @@ ptor:
         mov fs, ax
         mov es, ax
         mov ds, ax
+; Saves CR3, disables virtual memory and zeroes CR3
+        mov eax, cr3
+        mov savecr3, eax
+        mov eax, cr0
+        and eax, 07fffffffh
+        mov cr0, eax
+        xor eax, eax
+        mov cr3, eax
 ; Clears the protected mode bit in CR0 (continues in ptor_stage2)
         mov eax, cr0
         and eax, 0fffffffeh

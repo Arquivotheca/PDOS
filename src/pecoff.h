@@ -90,6 +90,28 @@ typedef struct {
 #define DATA_DIRECTORY_REL 5
 
 typedef struct {
+    unsigned long Characteristics; /* Reserved. */
+    unsigned long TimeDateStamp;
+    unsigned short MajorVersion;
+    unsigned short MinorVersion;
+    unsigned long Name;
+    unsigned long Base; /* Subtract from ordinals from Import tables. */
+    unsigned long NumberOfFunctions;
+    unsigned long NumberOfNames; /* How many functions are exported by name. */
+    unsigned long AddressOfFunctions;
+    unsigned long AddressOfNames;
+    unsigned long AddressOfNameOrdinals;
+} IMAGE_EXPORT_DIRECTORY;
+
+typedef struct {
+    unsigned long OriginalFirstThunk;
+    unsigned long TimeDateStamp;
+    unsigned long ForwarderChain;
+    unsigned long Name; /* DLL name RVA. */
+    unsigned long FirstThunk;
+} IMAGE_IMPORT_DESCRIPTOR;
+
+typedef struct {
     unsigned long PageRva;
     unsigned long BlockSize; /* Number of all bytes in the block. */
 } Base_relocation_block;

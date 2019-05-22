@@ -17,3 +17,4 @@ EXPORTS
   GetLastError@0
   GlobalAlloc@8
   GlobalFree@4
+  MoveFileA@8

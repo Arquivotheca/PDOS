@@ -107,3 +107,8 @@ HGLOBAL WINAPI GlobalFree(HGLOBAL hMem)
     PosFreeMem(hMem);
     return (NULL);
 }
+
+BOOL WINAPI MoveFileA(LPCTSTR lpExistingFileName, LPCTSTR lpNewFileName)
+{
+    return (PosRenameFile(lpExistingFileName, lpNewFileName) == 0);
+}

@@ -20,6 +20,7 @@ typedef unsigned int BOOL;
 typedef void *HANDLE;
 typedef void *LPVOID;
 typedef char *LPCSTR;
+typedef char *LPCTSTR;
 typedef char *LPSTR;
 typedef char *LPTSTR;
 typedef char **LPTCH;
@@ -81,3 +82,6 @@ DWORD WINAPI GetLastError(void);
 HGLOBAL WINAPI GlobalAlloc(UINT uFlags, SIZE_T dwBytes);
 
 HGLOBAL WINAPI GlobalFree(HGLOBAL hMem);
+
+#define MoveFile MoveFileA
+BOOL WINAPI MoveFileA(LPCTSTR lpExistingFileName, LPCTSTR lpNewFileName);

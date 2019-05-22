@@ -20,3 +20,4 @@ EXPORTS
   MoveFileA@8
   ReadFile@20
   SetFilePointer@16
+  WaitForSingleObject@8

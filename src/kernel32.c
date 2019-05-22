@@ -131,3 +131,8 @@ DWORD WINAPI SetFilePointer(
 {
     return (0);
 }
+
+DWORD WINAPI WaitForSingleObject(HANDLE h, DWORD dwMilliseconds)
+{
+    return (0);
+}

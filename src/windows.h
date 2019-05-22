@@ -101,3 +101,5 @@ DWORD WINAPI SetFilePointer(
     LONG lDistanceToMove,
     PLONG lpDistanceToMoveHigh,
     DWORD dwMoveMethod);
+
+DWORD WINAPI WaitForSingleObject(HANDLE h, DWORD dwMilliseconds);

@@ -11,6 +11,7 @@
 /*********************************************************************/
 
 typedef unsigned int DWORD;
+typedef unsigned int *LPDWORD;
 typedef unsigned int BOOL;
 typedef void *HANDLE;
 typedef void *LPVOID;
@@ -67,3 +68,5 @@ BOOL WINAPI DeleteFileA(LPCSTR lpFileName);
 LPTSTR WINAPI GetCommandLineA(void);
 
 LPTCH WINAPI GetEnvironmentStrings(void);
+
+BOOL WINAPI GetExitCodeProcess(HANDLE h, LPDWORD lpExitCode);

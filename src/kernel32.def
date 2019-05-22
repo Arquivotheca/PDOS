@@ -13,3 +13,4 @@ EXPORTS
   DeleteFileA@4
   GetCommandLineA@0
   GetEnvironmentStrings@0
+  GetExitCodeProcess@8

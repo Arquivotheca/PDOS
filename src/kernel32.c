@@ -86,3 +86,8 @@ LPTCH WINAPI GetEnvironmentStrings(void)
 {
     return ((LPTCH)0);
 }
+
+BOOL WINAPI GetExitCodeProcess(HANDLE h, LPDWORD lpExitCode)
+{
+    return (0);
+}

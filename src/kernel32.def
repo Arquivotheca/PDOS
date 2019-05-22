@@ -9,3 +9,4 @@ EXPORTS
   ExitProcess@4
   CloseHandle@4
   CreateFileA@28
+  CreateProcessA@40

@@ -56,3 +56,18 @@ HANDLE WINAPI CreateFileA(
 {
     return (INVALID_HANDLE_VALUE);
 }
+
+BOOL WINAPI CreateProcessA(
+    LPCSTR lpApplicationName,
+    LPSTR lpCommandLine,
+    LPSECURITY_ATTRIBUTES lpProcessAttributes,
+    LPSECURITY_ATTRIBUTES lpThreadAttributes,
+    BOOL bInheritHandles,
+    DWORD dwCreationFlags,
+    LPVOID lpEnvironment,
+    LPCSTR lpCurrentDirectory,
+    LPSTARTUPINFOA lpStartupInfo,
+    LPPROCESS_INFORMATION lpProcessInformation)
+{
+    return (0);
+}

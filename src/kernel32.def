@@ -7,3 +7,4 @@ EXPORTS
   GetStdHandle@4
   WriteFile@20
   ExitProcess@4
+  CloseHandle@4

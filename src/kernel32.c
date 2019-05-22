@@ -44,3 +44,11 @@ void WINAPI ExitProcess(int rc)
     PosTerminate(rc);
     return;
 }
+
+BOOL WINAPI CloseHandle(HANDLE h)
+{
+    int ret;
+
+    ret = PosCloseFile((int)h);
+    return (ret == 0);
+}

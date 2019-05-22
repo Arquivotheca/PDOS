@@ -21,3 +21,4 @@ typedef void *HANDLE;
 HANDLE WINAPI GetStdHandle(DWORD d);
 BOOL WINAPI WriteFile(HANDLE h, void *buf, DWORD count, DWORD *actual, void *unknown);
 void WINAPI ExitProcess(int rc);
+BOOL WINAPI CloseHandle(HANDLE h);

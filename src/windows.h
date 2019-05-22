@@ -26,6 +26,7 @@ typedef char **LPTCH;
 typedef unsigned int LPSECURITY_ATTRIBUTES;
 typedef void *LPSTARTUPINFOA;
 typedef void *LPPROCESS_INFORMATION;
+typedef void *HGLOBAL;
 
 #define WINAPI __stdcall
 #define STD_INPUT_HANDLE ((DWORD)-10)
@@ -77,4 +78,4 @@ BOOL WINAPI GetExitCodeProcess(HANDLE h, LPDWORD lpExitCode);
 
 DWORD WINAPI GetLastError(void);
 
-void * WINAPI GlobalAlloc(UINT uFlags, SIZE_T dwBytes);
+HGLOBAL WINAPI GlobalAlloc(UINT uFlags, SIZE_T dwBytes);

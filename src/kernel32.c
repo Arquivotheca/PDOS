@@ -122,3 +122,12 @@ BOOL WINAPI ReadFile(
 {
     return (0);
 }
+
+DWORD WINAPI SetFilePointer(
+    HANDLE h,
+    LONG lDistanceToMove,
+    PLONG lpDistanceToMoveHigh,
+    DWORD dwMoveMethod)
+{
+    return (0);
+}

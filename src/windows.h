@@ -17,6 +17,8 @@ typedef unsigned int UINT;
 typedef unsigned int DWORD;
 typedef unsigned int *LPDWORD;
 typedef unsigned int BOOL;
+typedef long LONG;
+typedef long *PLONG;
 typedef void *HANDLE;
 typedef void *LPVOID;
 typedef char *LPCSTR;
@@ -93,3 +95,9 @@ BOOL WINAPI ReadFile(
     DWORD nNumberOfBytesToRead,
     LPDWORD lpNumberOfBytesRead,
     LPOVERLAPPED lpOverlapped);
+
+DWORD WINAPI SetFilePointer(
+    HANDLE h,
+    LONG lDistanceToMove,
+    PLONG lpDistanceToMoveHigh,
+    DWORD dwMoveMethod);

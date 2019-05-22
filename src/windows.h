@@ -55,3 +55,5 @@ BOOL WINAPI CreateProcessA(
     LPCSTR lpCurrentDirectory,
     LPSTARTUPINFOA lpStartupInfo,
     LPPROCESS_INFORMATION lpProcessInformation);
+
+BOOL WINAPI DeleteFileA(LPCSTR lpFileName);

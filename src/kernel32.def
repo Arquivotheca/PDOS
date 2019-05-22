@@ -10,3 +10,4 @@ EXPORTS
   CloseHandle@4
   CreateFileA@28
   CreateProcessA@40
+  DeleteFileA@4

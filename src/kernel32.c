@@ -71,3 +71,8 @@ BOOL WINAPI CreateProcessA(
 {
     return (0);
 }
+
+BOOL WINAPI DeleteFileA(LPCSTR lpFileName)
+{
+    return (0);
+}

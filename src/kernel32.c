@@ -76,3 +76,8 @@ BOOL WINAPI DeleteFileA(LPCSTR lpFileName)
 {
     return (0);
 }
+
+LPTSTR WINAPI GetCommandLineA(void)
+{
+    return ((LPTSTR)PosGetCommandLine());
+}

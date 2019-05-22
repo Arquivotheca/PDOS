@@ -16,6 +16,7 @@ typedef void *HANDLE;
 typedef void *LPVOID;
 typedef char *LPCSTR;
 typedef char *LPSTR;
+typedef char *LPTSTR;
 typedef unsigned int LPSECURITY_ATTRIBUTES;
 typedef void *LPSTARTUPINFOA;
 typedef void *LPPROCESS_INFORMATION;
@@ -57,3 +58,5 @@ BOOL WINAPI CreateProcessA(
     LPPROCESS_INFORMATION lpProcessInformation);
 
 BOOL WINAPI DeleteFileA(LPCSTR lpFileName);
+
+LPTSTR WINAPI GetCommandLineA(void);

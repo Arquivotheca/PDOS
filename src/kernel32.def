@@ -1,0 +1,9 @@
+; Written by Paul Edwards
+; Released to the public domain
+
+LIBRARY kernel32.dll
+
+EXPORTS
+  GetStdHandle@4
+  WriteFile@20
+  ExitProcess@4

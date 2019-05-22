@@ -14,14 +14,6 @@
 
 #include <pos.h>
 
-typedef unsigned int DWORD;
-typedef unsigned int BOOL;
-typedef void *HANDLE;
-#define WINAPI __stdcall
-#define STD_INPUT_HANDLE ((DWORD)-10)
-#define STD_OUTPUT_HANDLE ((DWORD)-11)
-#define STD_ERROR_HANDLE ((DWORD)-12)
-
 HANDLE WINAPI GetStdHandle(DWORD d)
 {
     if (d == -10) return ((HANDLE)0);
@@ -51,4 +43,16 @@ BOOL WINAPI CloseHandle(HANDLE h)
 
     ret = PosCloseFile((int)h);
     return (ret == 0);
+}
+
+HANDLE WINAPI CreateFileA(
+    LPCSTR lpFileName,
+    DWORD dwDesiredAccess,
+    DWORD dwShareMode,
+    LPSECURITY_ATTRIBUTES lpSecurityAttributes,
+    DWORD dwCreationDisposition,
+    DWORD dwFlagsAndAttributes,
+    HANDLE hTemplateFile)
+{
+    return (INVALID_HANDLE_VALUE);
 }

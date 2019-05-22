@@ -8,3 +8,4 @@ EXPORTS
   WriteFile@20
   ExitProcess@4
   CloseHandle@4
+  CreateFileA@28

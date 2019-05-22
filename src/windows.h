@@ -28,6 +28,7 @@ typedef unsigned int LPSECURITY_ATTRIBUTES;
 typedef void *LPSTARTUPINFOA;
 typedef void *LPPROCESS_INFORMATION;
 typedef void *HGLOBAL;
+typedef void *LPOVERLAPPED;
 
 #define WINAPI __stdcall
 #define STD_INPUT_HANDLE ((DWORD)-10)
@@ -85,3 +86,10 @@ HGLOBAL WINAPI GlobalFree(HGLOBAL hMem);
 
 #define MoveFile MoveFileA
 BOOL WINAPI MoveFileA(LPCTSTR lpExistingFileName, LPCTSTR lpNewFileName);
+
+BOOL WINAPI ReadFile(
+    HANDLE h,
+    LPVOID lpBuffer,
+    DWORD nNumberOfBytesToRead,
+    LPDWORD lpNumberOfBytesRead,
+    LPOVERLAPPED lpOverlapped);

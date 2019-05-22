@@ -112,3 +112,13 @@ BOOL WINAPI MoveFileA(LPCTSTR lpExistingFileName, LPCTSTR lpNewFileName)
 {
     return (PosRenameFile(lpExistingFileName, lpNewFileName) == 0);
 }
+
+BOOL WINAPI ReadFile(
+    HANDLE h,
+    LPVOID lpBuffer,
+    DWORD nNumberOfBytesToRead,
+    LPDWORD lpNumberOfBytesRead,
+    LPOVERLAPPED lpOverlapped)
+{
+    return (0);
+}

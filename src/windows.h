@@ -79,3 +79,5 @@ BOOL WINAPI GetExitCodeProcess(HANDLE h, LPDWORD lpExitCode);
 DWORD WINAPI GetLastError(void);
 
 HGLOBAL WINAPI GlobalAlloc(UINT uFlags, SIZE_T dwBytes);
+
+HGLOBAL WINAPI GlobalFree(HGLOBAL hMem);

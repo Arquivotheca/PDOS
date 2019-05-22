@@ -101,3 +101,9 @@ HGLOBAL WINAPI GlobalAlloc(UINT uFlags, SIZE_T dwBytes)
 {
     return (PosAllocMem(dwBytes, POS_LOC32));
 }
+
+HGLOBAL WINAPI GlobalFree(HGLOBAL hMem)
+{
+    PosFreeMem(hMem);
+    return (NULL);
+}

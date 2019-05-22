@@ -16,3 +16,4 @@ EXPORTS
   GetExitCodeProcess@8
   GetLastError@0
   GlobalAlloc@8
+  GlobalFree@4

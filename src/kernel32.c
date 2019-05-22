@@ -81,3 +81,8 @@ LPTSTR WINAPI GetCommandLineA(void)
 {
     return ((LPTSTR)PosGetCommandLine());
 }
+
+LPTCH WINAPI GetEnvironmentStrings(void)
+{
+    return ((LPTCH)0);
+}

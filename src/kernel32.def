@@ -12,3 +12,4 @@ EXPORTS
   CreateProcessA@40
   DeleteFileA@4
   GetCommandLineA@0
+  GetEnvironmentStrings@0

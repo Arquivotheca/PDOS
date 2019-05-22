@@ -14,3 +14,5 @@ EXPORTS
   GetCommandLineA@0
   GetEnvironmentStrings@0
   GetExitCodeProcess@8
+  GetLastError@0
+  GlobalAlloc@8

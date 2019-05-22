@@ -10,6 +10,10 @@
 /*                                                                   */
 /*********************************************************************/
 
+#include <stddef.h>
+
+typedef size_t SIZE_T;
+typedef unsigned int UINT;
 typedef unsigned int DWORD;
 typedef unsigned int *LPDWORD;
 typedef unsigned int BOOL;
@@ -70,3 +74,7 @@ LPTSTR WINAPI GetCommandLineA(void);
 LPTCH WINAPI GetEnvironmentStrings(void);
 
 BOOL WINAPI GetExitCodeProcess(HANDLE h, LPDWORD lpExitCode);
+
+DWORD WINAPI GetLastError(void);
+
+void * WINAPI GlobalAlloc(UINT uFlags, SIZE_T dwBytes);

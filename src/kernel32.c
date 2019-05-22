@@ -91,3 +91,13 @@ BOOL WINAPI GetExitCodeProcess(HANDLE h, LPDWORD lpExitCode)
 {
     return (0);
 }
+
+DWORD WINAPI GetLastError(void)
+{
+    return (0);
+}
+
+void * WINAPI GlobalAlloc(UINT uFlags, SIZE_T dwBytes)
+{
+    return (PosAllocMem(dwBytes, POS_LOC32));
+}

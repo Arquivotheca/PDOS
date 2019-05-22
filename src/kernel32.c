@@ -38,17 +38,9 @@ BOOL WINAPI WriteFile(HANDLE h, void *buf, DWORD count, DWORD *actual, void *unk
     return (0);
 }
 
-int myfunc(int a, int b);
 
 void WINAPI ExitProcess(int rc)
 {
-    int (*fff)(int a, int b);
-    fff = myfunc;
-    PosTerminate(rc + fff(3,4));
+    PosTerminate(rc);
     return;
-}
-
-int myfunc(int a, int b)
-{
-    return (a + b);
 }

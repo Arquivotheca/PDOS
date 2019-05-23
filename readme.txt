@@ -246,7 +246,12 @@ compbu
 bootupd pdos16.dsk pbootsec.com
 rawrite pdos16.dsk back to floppy
 
-To create kernel32.dll you need to run "compk32".
+To create kernel32.dll (so that you can run Win32
+programs) you need to run "compk32" from a suitable
+platform. You can also build the rest of PDOS/386
+by using the comp4w (needs Watcom), comp5w and
+comp6w (needs a cross-compiled GCC 3.2.3) and copy
+the files across to the target platform.
 
 To create the Windows version of pdptest you need to go:
 dmake -B -f makefile.w32
@@ -623,6 +628,9 @@ protected mode to execute that function.
 But we'll probably just stick to running
 Win32 programs and getting rid of dropping
 down to 16-bit to use the BIOS altogether.
+We'll need 32-bit device drivers to do that
+though. Maybe Windows device drivers can
+be used.
 
 MSGED 4.00 and maybe later versions have support
 for 80386 DOS programming. Look

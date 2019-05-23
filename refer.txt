@@ -50,6 +50,13 @@ most of the functions are very simple, which any C programmer should be able
 to write. Below explains the project's standard of writing code for PDOS,
 and the way in which you should implement the DOS calls.
 
+We also need to make PD-Windows compatible with every Win32 program.
+This requires updating kernel32.c and other DLLs that may be required.
+It would be good if PD-Windows was capable of running Hercules (mainframe
+emulator) so that PDOS/3x0 can be run under PD-Windows. That could
+provide focus. But before that we should get Win32 versions of the tools
+like gcc/ld ported to PD-Windows so that PD-Windows can be used to
+develop PD-Windows.
 
 
 

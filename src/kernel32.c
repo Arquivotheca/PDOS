@@ -24,10 +24,12 @@ HANDLE WINAPI GetStdHandle(DWORD d)
 BOOL WINAPI WriteFile(HANDLE h, void *buf, DWORD count, DWORD *actual, void *unknown)
 {
     size_t written;
+    int ret;
 
-    PosWriteFile((int)h, buf, (size_t)count, &written);
+    ret = PosWriteFile((int)h, buf, (size_t)count, &written);
     *actual = written;
-    return (0);
+    /* Positive return code means success. */
+    return (!ret);
 }
 
 

@@ -117,6 +117,8 @@ don't need to recompile. It is hoped that
 Windows device drivers will also work on
 PD-Windows one day, and that PD-Windows will
 no longer be dependent on the 16-bit BIOS.
+Note that PD-Windows and PDOS/386 ship as a
+single product.
 
 
 
@@ -127,9 +129,7 @@ To get the 16-bit version on floppy disk, you need
 to get hold of a program called "rawrite" from the
 internet and then follow the instructions to get
 pdos16.dsk onto a 1.44 MB floppy disk.  pdos32.dsk
-will give you the 32-bit version, but it is a lot
-less useful unless you're planning on rewriting
-(or maybe recompiling) your software.
+will give you the 32-bit version.
 
 To install on hard disk, you need MSDOS (I tested
 with version 5.0) to format a FAT-16 partition,

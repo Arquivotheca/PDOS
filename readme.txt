@@ -14,8 +14,8 @@ proprietary commercial products.
 INTRODUCTION
 ------------
 
-PDOS currently comes in 5 very different flavors, in
-two broad categories (3 mainframe systems, 2 PC systems):
+PDOS currently comes in 6 quite different flavors, in
+two broad categories (3 mainframe systems, 3 PC systems):
 
 
 Mainframe:
@@ -43,11 +43,14 @@ MSDOS, and thus supports a subset of the 16-bit MSDOS API.
 
 2. PDOS/386 (aka PDOS32) - designed to be a 32-bit version of MSDOS,
 so API is similar to PDOS/86, except most values take a
-32-bit integer that would otherwise normally be 16-bit.
-It may one day support the Win32 console-mode API
-and Win32 executable format, but current intention is to
-just be a viable development environment, using the existing
-a.out format. Also intended to support Posix interface.
+32-bit integer that would otherwise normally be 16-bit. This
+interface is not meant to be directly used, and is subject
+to change. You should be using the Win32 API instead.
+
+3. PD-Windows - similiar to how Windows 95 was built on top
+of MSDOS, PD-Windows is designed to support Win32
+applications, but built on top of 32-bit PDOS/386 instead of
+16-bit MSDOS.
 
 
 
@@ -64,44 +67,14 @@ applications, as they get executed in a different environment.
 PC PURPOSE
 ----------
 
-There are two aspects to the PC-based PDOS.
-
-1. Practical - I'm not sure what the market requirement
-for this is, but if you need to distribute a floppy disk
-or bootable CDROM which contains a 16-bit MSDOS program,
-that doesn't use a lot of services, and mainly you just
-need an MSDOS-like operating system that will load your
-program and allow you to read files, and perhaps then
-take over the whole computer, maybe a game, then PDOS will
-allow you to do this without having to pay licensing fees.
-In addition, you can modify the source and not be bound
-by or worry you are breaking, any licensing restrictions.
-The PDOS floppy disk contains 100% public domain code,
-including the boot sector, the loader, the operating
-system and the command processor.  A 32-bit version can
-also be compiled, but then it obviously ceases to be
-a clone of MSDOS.  A bootable CDROM can be created from
-a bootable floppy using CD burner software.
-
-2. Theoretical - This is about as basic an operating
-system as you are likely to find if you want to see what
-the requirements are to write an operating system.  It is
-the 32-bit version that I am most interested in.  It is
-32-bit from both a user's point of view and a
-programmer's point of view.  Prior to reaching version
-1.00 the internals are subject to change, pending any
-suggestions anyone may have on technical issues.  I am
-mainly concerned about the programming interface, the
-rest (e.g. task protection, virtual memory) can change
-quietly.  I do not profess to be an operating system
-expert or even a DOS expert.  I have spent most of my
-life avoiding anything that falls out of the scope of
-strictly conforming ISO C code.  There is also a 16-bit
-version of PDOS available, which you may find more
-convenient to use for testing purposes, since any DOS
-C compiler can be used to write programs for it, while
-the only compiler I know that works for the 32-bit
-version is EMX 0.9d.
+The long term goal is to be a rival to both
+Microsoft Windows (commercial) and React OS
+(copyrighted freeware). It is hoped that this public
+domain code can be picked up by some commercial
+enterprises to produce commercial-quality
+alternatives to the above. It is also hoped that
+government research departments will take the
+lead in updating the public domain base.
 
 
 The package more accurately contains multiple,
@@ -132,13 +105,18 @@ similarities with Unix (the executable format),
 except it doesn't support the Posix API.  So all
 in all, it's a new operating system which thus
 necessitates all applications to be recompiled,
-although not necessarily rewritten.  At a later
-stage, it may support the Windows NT API so that
-32-bit console mode executables can be run
-unchanged.  Note that PDOS/386 is pure 32-bit.  It
-doesn't have any 16-bit code in it, although it
-does call 16-bit BIOS functions by switching to
-real mode.
+although not necessarily rewritten. Note that
+PDOS/386 is pure 32-bit.  It doesn't have any
+16-bit code in it, although it does call
+16-bit BIOS functions by switching to real mode.
+
+6. PD-Windows, a 32-bit operating system built
+on top of PDOS/386, that is designed to run a
+subset of 32-bit Windows applications so you
+don't need to recompile. It is hoped that
+Windows device drivers will also work on
+PD-Windows one day, and that PD-Windows will
+no longer be dependent on the 16-bit BIOS.
 
 
 
@@ -308,6 +286,13 @@ can go "char *p = ABSADDR(0xb8000);" and then start writing directly to
 screen memory.  ABSADDR refers to an operating system provided variable
 which is how many bytes need to be subtracted from an address in order
 for it to be able to access that absolute memory location.
+
+Since then I figured out how to make EMX produce an executable with
+fixups, so ABSADDR was no longer required.
+
+The next major breakthrough came when Alica Okano added support for
+loading Windows PE executables, along with loading DLLs so that we
+could start supporting a subset of Win32 programs.
 
 
 
@@ -726,6 +711,7 @@ When adding a new interrupt, you need to change handlers.asm,
 pdos.c, protintp.c, protints.s, support.asm, support.s.
 
 
+
 FUTURE DEVELOPMENT
 ------------------
 
@@ -735,7 +721,7 @@ executing until interrupt, then returning to
 protected mode to execute that function.
 
 MSGED 4.00 and maybe later versions have support
-for 80386 DOS programming and Usenet/UUCP. Look
+for 80386 DOS programming. Look
 at porting this and redefining PDOS/386 to match
 this API.
 

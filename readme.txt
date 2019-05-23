@@ -190,6 +190,10 @@ dmake with -B option allows space instead of tabs in makefiles
 https://github.com/mohawk2/dmake/releases
 I use 4_12_2_2
 
+other version of gcc to build Windows pdptest (makefile.w32)
+
+jwasm to build winsupa.asm in pdptest (makefile.w32).
+
 Not used:
 MASM 6.15:
 http://msdn2.microsoft.com/en-us/vstudio/aa718349.aspx
@@ -201,7 +205,8 @@ PC RECOMPILING
 --------------
 
 If you have the above software, you can just type "build"
-and it will rebuild the two DSK files used in the shipment.
+and it will rebuild the two DSK files used in the shipment,
+except for kernel32.dll.
 Note that you need to edit build.bat and put the proper
 paths in before that will actually work.
 
@@ -240,6 +245,11 @@ compb
 compbu
 bootupd pdos16.dsk pbootsec.com
 rawrite pdos16.dsk back to floppy
+
+To create kernel32.dll you need to run "compk32".
+
+To create the Windows version of pdptest you need to go:
+dmake -B -f makefile.w32
 
 
 
@@ -335,70 +345,9 @@ available on 1994-07-30.
 
 0.86  Released 2007-08-23
 
+0.8X  Released 20xx-xx-xx now supports running some
+      Win32 applications.
 
-
-PC PROGRAM INTERFACE
---------------------
-
-The startup code for C programs needed to change for the 32-bit
-version (this is something that programmers don't normally see,
-it's handled by the C runtime library).  This meant deciding on
-a new interface.  I took this opportunity to make a guess at what
-the "perfect C environment" was.  I decided on this:
-
-On startup, the program is called via a near call, with 4 parameters.
-The first 3 are integers, whose value is currently undefined, but may
-potentially be changed to argc, argv and one we won't talk about.  This
-is not going to happen immediately, as doing C-style parsing of
-parameters is deciding on an overhead for one particular language
-without anyone getting a say in the matter.  At the moment, I think
-it's probably better for the program to decide that.
-
-To exit the program, you can either do the normal DOS 0x4c call, or
-you can do a near return, up to you.  Ideally what happens, is that
-the executable has an entry point of main, it generates a call to
-__main (e.g.), which in turn, skipping the stack changes generated
-by main, uses the 4th parameter (described later), to go and change
-the first 2-3 parameters.  That way on return to main, any accesses
-to argc and argv will be correct, assuming the compiler generates
-standard code like EMX does.  Not even the CRT needs to have any
-assembler code!  Unfortunately EMX only generates this "standard
-code" when optimization is off.  With optimization on, it pushes
-more things onto the stack before calling __main, so is
-unpredictable.  It can probably be changed.
-
-Now return from main doesn't give you a chance to call your exit
-routine to close files etc.  So what __main does is set a value
-(via the 4th parameter) of a routine to be called "by the operating
-system" after main has exited.
-
-However, I don't know how to make EMX actually set the entry point
-to main!  So I haven't actually implemented it that way in PDPCLIB.
-Instead I have done the traditional form of startup.  Also note that
-if you exit via interrupt 4c, there is no 4th-parameter last-minute
-callback facility, so call exit routines yourself before invocation.
-
-The 4th parameter is a pointer to the following things:
-1. integer, specifying length of this pointer, including the length
-itself.
-2. integer containing the value that needs to be subtracted from
-absolute addresses to make them addressable in this address space.
-3. pointer to program segment prefix
-4. pointer to command line argument
-5. address of callback routine for program exit,
-initially set to 0 (no callback).
-6. (unimplemented) a pointer to the entire Pos API.
-7. (unimplemented) a pointer to the entire Bos API.
-8. (unimplemented) a pointer to an entire C runtime library (actually
-the same one used by pcomm PLUS a suggested startup routine for
-calling by __main, so that the CRT that you need to link with has to
-do virtually nothing, just accept this pointer, call the startup
-routine, then all other C function calls are implemented via calls to
-this parameter block.  This is sort of like using a DLL.  EXCEPT!  The
-way DLL's work is to use memory-mapping so that they can virtually
-install themselves in very high memory.  I don't currently have
-memory mapping available so whilst the CRT mechanism is implemented, it
-doesn't work, and won't work in the short term.
 
 
 
@@ -489,55 +438,7 @@ attempt to access the non-existent PSP etc.
 So far I have written cut-down versions of all three executables, so that
 it boots (of floppy or hard disk, including logical partitions) and prints
 "Welcome to pcomm" or similar, and then prompts for a command.  Recognized
-commands are:
-
-"cd", which will change directories.
-
-"copy", which copies files.
-
-"date", which shows date.
-
-"del", which deletes files.
-
-"dir", which will give a directory listing.
-
-"echo", which displays a message.
-
-"exit", which does nothing if this is your primary shell.
-
-"help", which provides information about existing commands.
-
-"mcd", which makes new directory and changes to it.
-
-"md", which creates new directories.
-
-"path", which displays or modifies PATH variable.
-
-"pause", which waits for user to press any key.
-
-"prompt", which displays or modifies PROMPT variable.
-
-"rd", which deletes directories.
-
-"reboot", which reboots the computer.
-
-"ren", which renames files and directories.
-
-"set", which displays or modifies environment variables.
-
-"time", which shows the time.
-
-"type", which will read and display a file, e.g. "type config.sys".
-
-"unboot", which marks disk as unbootable.
-
-"ver", which displays current version of PDOS.
-
-Usable only in batch files:
-
-"goto", "rem", "option".
-
-For more information about specific commands use "help [command]".
+commands can be found by typing "help".
 
 You can also launch other programs. The program can't be more than
 60k in size for the 16-bit version.  Also the program can't do
@@ -719,6 +620,9 @@ PDOS/386 could actually execute 16-bit MSDOS
 programs by dropping down to real mode and
 executing until interrupt, then returning to
 protected mode to execute that function.
+But we'll probably just stick to running
+Win32 programs and getting rid of dropping
+down to 16-bit to use the BIOS altogether.
 
 MSGED 4.00 and maybe later versions have support
 for 80386 DOS programming. Look
@@ -737,7 +641,9 @@ needs to have MEMMGR defined and implement a ReSupply
 function. PDOS needs to use memmgrRealloc(). However,
 Linux only supports brk() as a syscall (sys_brk,
 function 45 decimal) so it is not clear how that is
-supposed to work.
+supposed to work. Also the way command line parameters
+are pushed onto the stack in Unix is not very nice.
+We'll probably just stick to Windows.
 
 Use INT 15 AX=E820 to see how much memory is available.
 http://www.ctyme.com/intr/rb-1741.htm
@@ -777,37 +683,35 @@ source code, that is available too, they can put
 their own (proprietary) disk-repair utility on to
 a PDOS disk.
 
-So note some important things.
-1. VM not required.
-2. Multitasking not required.
-3. Ability to support FAT-32 is required. (done, requires testing)
-4. Ability to write to disks is required. (done!)
-5. Ability to handle Windows 32-bit executables is required.
-6. Some utilities, such as "sys" are required.
-7. Ability to handle long file names is required. (done except UCS-2 support)
-8. PDPCLIB needs to be ported to do Windows 32-bit (done!).
-9. An editor is required. (microemacs can now be run on PDOS)
-10. Something as simple as DOS, not as complicated as Unix, is required.
-11. PDPZM should be ported to upload/download data.
-12. All disk access via BIOS is fine and preferred.
-13. Speed is not an issue.
-14. The basics in place provide an opportunity for self-improvement.
+Note:
+1. Some utilities, such as "sys" are required.
+2. microemacs for windows should work
+3. Something as simple as DOS, not as complicated as Unix, is required.
 
 The environment as described above can also be used
 to develop Windows 32-bit console mode programs.
 
 
-Old stuff...
+multitasking would be good
 
-Check to see if pdos (16 bit) static data is being initialized to 0
-Find out why floppy disks aren't working in lba mode
-See if freedos can be used to install.
+file handles should be separate for each process
 
-see how close gcc is to running
-68000 port
-support posix.1 programming interface
-incorporate all source code I have into one huge pcomm.exe
+liballoc should be incorporated into kernel32.dll
+
+processes should run in user mode, ie ring 3, to
+restrict instructions and memory access
+
+gcc and other stuff from binutils should run
+
+maybe do a 68000 and ARM port
+
+maybe support posix.1 programming interface
+
 look at minimizing code that is authorized to hang system.
+
+It would be good if PD-Windows could run the
+mainframe emulator Hercules so that PDOS/3x0
+can be run.
 
 
 

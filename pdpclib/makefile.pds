@@ -1,8 +1,8 @@
-# For the 32-bit version of PDOS we define __PDOS__
+# For the 32-bit version of PDOS we define __PDOS386__
 # but the 16-bit version is just MSDOS
 
 CC=gcc
-COPTS=-fno-common -c -s -O -I. -I..\src -D__PDOS__
+COPTS=-fno-common -c -s -O -I. -I..\src -D__PDOS386__
 
 pdptest.exe: pdosst32.o pdptest.o stdio.o string.o stdlib.o \
        start.o time.o errno.o assert.o signal.o locale.o \

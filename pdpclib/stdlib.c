@@ -22,7 +22,7 @@
 #endif
 
 /* PDOS and MSDOS use the same interface most of the time */
-#if defined(__PDOS__) && !defined(__MVS__)
+#if defined(__PDOS386__)
 #define __MSDOS__
 #endif
 
@@ -242,7 +242,7 @@ __PDPCLIB_API__ void *calloc(size_t nmemb, size_t size)
 
 __PDPCLIB_API__ void *realloc(void *ptr, size_t size)
 {
-#if defined(__PDOS__) && defined(__32BIT__)
+#if defined(__PDOS386__)
     return (__realloc(ptr, size));
 #else
     char *newptr;

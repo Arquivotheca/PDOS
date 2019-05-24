@@ -38,7 +38,7 @@ extern FILE *__userFiles[__NFILE];
 #define CTYP
 #endif
 
-#if defined(__PDOS__) && defined(__32BIT__)
+#if defined(__PDOS386__)
 /* Used for PDOS itself to avoid API calls when starting. */
 int __minstart = 0;
 #endif
@@ -79,7 +79,7 @@ static char buffer2[BUFSIZ + 8];
 static char buffer3[BUFSIZ + 8];
 #endif
 
-#if defined(__PDOS__) && !defined(__MVS__)
+#if defined(__PDOS386__)
 #include <support.h>
 #include <pos.h>
 int __abscor;
@@ -102,13 +102,13 @@ int __start(char *p, char *pgmname, char *ep)
 int __start(char *p, char *pgmname, int tso)
 #elif defined(__gnu_linux__)
 int __start(int argc, char **argv)
-#elif (defined(__PDOS__) && !defined(__MVS__))
+#elif defined(__PDOS386__)
 int __start(int *i1, int *i2, int *i3, POS_EPARMS *exep)
 #else
 __PDPCLIB_API__ int CTYP __start(char *p)
 #endif
 {
-#if (defined(__PDOS__) && !defined(__MVS__)) || defined(__CMS__)
+#if defined(__PDOS386__) || defined(__CMS__)
     char *p;
 #endif
     int x;
@@ -130,8 +130,7 @@ __PDPCLIB_API__ int CTYP __start(char *p)
     char parmbuf[310]; /* z/VSE can have a PARM up to 300 characters */
 #endif
 
-#if defined(__PDOS__) && !defined(__MVS__)
-#ifdef __32BIT__
+#if defined(__PDOS386__)
     /* PDOS-32 uses an API call returning the full command line string. */
     if (!__minstart)
     {
@@ -144,9 +143,6 @@ __PDPCLIB_API__ int CTYP __start(char *p)
         p = "";
         __envptr = NULL;
     }
-#else
-    p = exep->psp;
-#endif
     __abscor = exep->abscor;
     __vidptr = ABSADDR(0xb8000);
 #endif
@@ -681,7 +677,7 @@ __PDPCLIB_API__ int CTYP __start(char *p)
     argv[0] = p;
     p += strlen(p) + 1;
 #endif
-#if defined(__WIN32__) || (defined(__PDOS__) && defined(__32BIT__))
+#if defined(__WIN32__) || defined(__PDOS386__)
     /* Windows and PDOS-32 get the full command line string. */
     argv[0] = p;
     p = strchr(p, ' ');
@@ -694,7 +690,7 @@ __PDPCLIB_API__ int CTYP __start(char *p)
         *p = '\0';
         p++;
     }
-#elif defined(__MSDOS__) || (defined(__PDOS__) && !defined(__MVS__))
+#elif defined(__MSDOS__) || defined(__PDOS386__)
     argv[0] = "";
 
 #ifdef __MSDOS__

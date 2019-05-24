@@ -21,7 +21,7 @@
 #endif
 
 /* pdos and msdos use the same interface most of the time) */
-#if defined(__PDOS__) && !defined(__MVS__)
+#if defined(__PDOS386__)
 #define __MSDOS__
 #endif
 

@@ -90,7 +90,7 @@
 /* Note that PDOS is for the 32-bit version, since the 16-bit
    version uses the MSDOS version since it is compatible with it */
 /* linux is pretty similar too */
-#if (defined(__PDOS__) && !defined(__MVS__)) || defined(__gnu_linux__)
+#if defined(__PDOS386__) || defined(__gnu_linux__)
 #define __MSDOS__
 #endif
 
@@ -2810,7 +2810,7 @@ static int examine(const char **formt, FILE *fq, char *s, va_list *arg,
             precision = 1;
         }
 #if defined(__MSDOS__) && \
-    !(defined(__PDOS__) && !defined(__MVS__)) && \
+    !defined(__PDOS386__) && \
     !defined(__gnu_linux__)
         if (specifier == 'p')
         {
@@ -2845,7 +2845,7 @@ static int examine(const char **formt, FILE *fq, char *s, va_list *arg,
             neg = 0;
         }
 #if defined(__MSDOS__) && \
-    !(defined(__PDOS__) && !defined(__MVS__)) && \
+    !defined(__PDOS386__) && \
     !defined(__gnu_linux__)
         if (!lng)
         {
@@ -2867,7 +2867,7 @@ static int examine(const char **formt, FILE *fq, char *s, va_list *arg,
         if (specifier == 'p')
         {
 #if defined(__MSDOS__) && \
-    !(defined(__PDOS__) && !defined(__MVS__)) && \
+    !defined(__PDOS386__) && \
     !defined(__gnu_linux__)
             precision = 9;
 #else
@@ -2895,7 +2895,7 @@ static int examine(const char **formt, FILE *fq, char *s, va_list *arg,
             }
             x++;
 #if defined(__MSDOS__) && \
-    !(defined(__PDOS__) && !defined(__MVS__)) && \
+    !defined(__PDOS386__) && \
     !defined(__gnu_linux__)
             if ((x == 4) && (specifier == 'p'))
             {
@@ -2906,7 +2906,7 @@ static int examine(const char **formt, FILE *fq, char *s, va_list *arg,
             ulvalue = ulvalue / base;
         }
 #if defined(__MSDOS__) && \
-    !(defined(__PDOS__) && !defined(__MVS__)) && \
+    !defined(__PDOS386__) && \
     !defined(__gnu_linux__)
         if (specifier == 'p')
         {
@@ -4353,7 +4353,7 @@ static int vvscanf(const char *format, va_list arg, FILE *fp, const char *s)
                         }
 /* DOS has a ':' in the pointer - skip that */
 #if defined(__MSDOS__) && \
-    !(defined(__PDOS__) && !defined(__MVS__)) && \
+    !defined(__PDOS386__) && \
     !defined(__gnu_linux__)
                         else if ((*format == 'p') && (ch == ':'))
                         {

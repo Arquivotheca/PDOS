@@ -21,9 +21,6 @@
 #include "memmgr.h"
 #include "support.h"
 
-/* Prototype for function from pcommrt.c. */
-void install_runtime(void);
-
 /* In C99 or higher we would just include <stdbool.h>. But, we need to
  * support older C compilers (C89/C90) which don't come with <stdbool.h>
  */
@@ -482,9 +479,6 @@ int main(int argc, char **argv)
     char *sPROMPT;
 #ifdef USING_EXE
     pdosRun();
-#endif
-#ifdef __32BIT__
-    install_runtime();
 #endif
     /* Save whether this is genuine PDOS or not */
     genuine_pdos = (PosGetMagic() == PDOS_MAGIC);

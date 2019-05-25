@@ -285,8 +285,6 @@ void PosDisplayInteger(int x); /* func f6.00 */
 
 void PosReboot(void); /* func f6.01 */
 
-void PosSetRunTime(void *pstart, void *capi); /* func f6.02 */
-
 void PosSetDosVersion(unsigned int version); /* func f6.03 */
 
 int PosGetLogUnimplemented(void); /* func f6.04 */
@@ -382,31 +380,6 @@ unsigned int PosAbsoluteDiskRead(int drive, unsigned long start_sector,
 unsigned int PosAbsoluteDiskWrite(int drive, unsigned long start_sector,
                                   unsigned int sectors,void *buf); /*INT26 */
 
-
-/* An easier-for-HLLs-to-use interface should also have been provided
-   for executables.  Here is the makings of such an interface... */
-
-typedef struct {
-    int len;
-    int (*__start)(void *exep);
-    int (*printf)(const char *fmt, ...);
-    void *(*malloc)(size_t size);
-} POS_C_API;
-
-typedef struct {
-    int len;
-    int abscor;
-    int subcor;
-    unsigned char *psp;
-    unsigned char *cl;
-    /* if anything is added before callback, strt32.s will need to change */
-    void (*callback)(void);
-    int (*pstart)(int *i1, int *i2, int *i3, void *eparms);
-    /* beyond this point, no corrections have been done */
-    void *posapi;
-    void *bosapi;
-    POS_C_API *crt;
-} POS_EPARMS;
 
 /*Structure for BPB*/
 typedef struct {

@@ -2,10 +2,6 @@
 / written by Paul Edwards
 / released to the public domain
 
-/ symbols defined outside of here that are accessed
-        .globl ___abscor
-        .globl _subcor
-
 / symbols defined here that are accessed from elsewhere
         .globl _call32
         .globl _callwithbypass
@@ -18,7 +14,7 @@
         .text
 
 /////////////////////////////////////////////////////////////
-/ int _call32(int entry, void *exeparms, int sp);
+/ int _call32(int entry, int sp);
 _call32:
         push    %ebp
         mov     %esp, %ebp
@@ -37,25 +33,17 @@ _call32:
         mov     %esp, call32_esp
 / save stack of caller
         mov     saveesp, %eax
-        mov     %eax, saveesp2        
-/ load abscor into edx
-        mov    ___abscor, %edx
+        mov     %eax, saveesp2
 / load return address into ecx
         lea    _call32_ret, %ecx
 / get subroutine's address into ebx
         mov    8(%ebp), %ebx
 / load address of single lret into edi
         lea    _call32_singlelret, %edi
-        add    %edx, %edi
-        sub    _subcor, %edi
 / load address of single ret into esi
         lea    _call32_singleret, %esi
-        add    %edx, %esi
-        sub    _subcor, %esi
-/ load address of exe parm block into %edx
-        mov    12(%ebp), %edx        
 / switch stack etc to new one
-        mov    16(%ebp), %eax
+        mov    12(%ebp), %eax
 / I think this is where interrupts should really be disabled
         mov    %eax, %esp
         mov    $0x30, %ax
@@ -94,18 +82,6 @@ _call32:
 _call32_singleret:
         ret
 _call32_singlelret:
-/ first we see if a callback is required
-        push    %ebx
-        mov     16(%esp), %ebx
-        mov     20(%ebx), %ebx
-        cmp     $0, %ebx
-        je      no_callback
-        push    %eax
-/ +++ We need to test whether this should instead be
-/ call *(%ebx)
-        call    *%ebx
-        pop     %eax
-no_callback:
         pop     %ebx
 / and skip the parameters too
         add     $16, %esp

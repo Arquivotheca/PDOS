@@ -175,13 +175,12 @@ unsigned long runprot_p(rawprot_parms *parmlist)
         { 0xB1, inthdlr_B1 },
         { 0, 0 } };
 
-    __abscor = parmlist->dsbase;
-    intloc = ABSADDR(parmlist->intloc);
+    intloc = (void *)(parmlist->intloc);
     runparm = (runprot_parms *)parmlist->userparm;
-    intbuffer = ABSADDR(runparm->intbuffer);
+    intbuffer = (void *)(runparm->intbuffer);
     dorealint = runparm->dorealint;
-    runreal_p = (unsigned long (*)(unsigned long func, unsigned short *regs))
-             ABSADDR(runparm->runreal);
+    runreal_p = ((unsigned long (*)(unsigned long func, unsigned short *regs))
+                 (runparm->runreal));
 
     /* Configures the Interrupt Descriptor Table (IDT). */
     intaddr = (unsigned long)(&inthdlr);

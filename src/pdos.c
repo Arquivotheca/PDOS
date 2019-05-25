@@ -262,11 +262,6 @@ static int ff_handle;
 static DTA origdta;
 static DTA *dta =&origdta;
 static int debugcnt = 0;
-static void *exec_pstart;
-static void *exec_c_api;
-#ifdef __32BIT__
-static int exec_subcor;
-#endif
 
 /* DOS version reported to programs.
  * Can be changed via PosSetDosVersion() call. */
@@ -308,16 +303,7 @@ static unsigned int currentAttrib = 7;
 static unsigned int currentPage = 0;
 
 #ifdef __32BIT__
-extern char *__vidptr;
-/* SUBADDRFIX - given a pointer from the subprogram, convert
-it into an address usable by us */
-#define SUBADDRFIX(x) ((void *)((char *)(x) + subcor - __abscor))
-#define ADDRFIXSUB(x) ((void *)((char *)(x) - subcor + __abscor))
-#define SUB2ABS(x) ((void *)((char *)(x) + subcor))
-
-extern int __abscor;
 unsigned long __userparm;
-int subcor;
 static void *gdt;
 static char *transferbuf;
 static long freem_start; /* start of free memory below 1 MiB,
@@ -326,8 +312,6 @@ static unsigned long doreboot;
 static unsigned long dopoweroff;
 static char *sbrk_start = NULL;
 static char *sbrk_end;
-#else
-#define ABSADDR(x) ((void *)(x))
 #endif
 
 #ifdef __32BIT__
@@ -383,9 +367,6 @@ void pdosRun(void)
     unsigned long memavail;
 #endif
 
-#ifdef __32BIT__
-    __vidptr = ABSADDR(0xb8000);
-#endif
 #if (!defined(USING_EXE) && !defined(__32BIT__))
     instint();
 #endif
@@ -403,7 +384,7 @@ void pdosRun(void)
     bootedAt = BosGetClockTickCount();
 
 #ifndef __32BIT__
-    bootBPB = (unsigned char *)ABSADDR(0x7c00 + 11);
+    bootBPB = (unsigned char *)0x7c00 + 11;
 #endif
     bootDrivePhysical = bootBPB[25];
     bootDriveLogical = 0;
@@ -466,7 +447,7 @@ void pdosRun(void)
     }
 #ifdef EXE32
     memavail -= 0x500000; /* room for disk cache */
-    memmgrSupply(&memmgr, ABSADDR(0x700000), memavail);
+    memmgrSupply(&memmgr, (void *)0x700000, memavail);
 #else
     /* skip the first 2 MiB */
     memstart = 0x200000;
@@ -519,7 +500,7 @@ void pdosRun(void)
 #endif
     memmgrDefaults(&btlmem);
     memmgrInit(&btlmem);
-    memmgrSupply(&btlmem, ABSADDR(freem_start),
+    memmgrSupply(&btlmem, (void *)freem_start,
                  0xa0000 - freem_start);
     {
         char *below = transferbuf;
@@ -862,7 +843,7 @@ static void int21handler(union REGS *regsin,
         /* INT 21,0A - Buffered Input */
         case 0x0a:
 #ifdef __32BIT__
-            PosReadBufferedInput(SUBADDRFIX(regsin->d.edx));
+            PosReadBufferedInput((void *)(regsin->d.edx));
 #else
             PosReadBufferedInput(MK_FP(sregs->ds, regsin->x.dx));
 #endif
@@ -896,7 +877,7 @@ static void int21handler(union REGS *regsin,
         /* INT 21,1A - Set Disk Transfer Address (DTA) */
         case 0x1a:
 #ifdef __32BIT__
-            tempdta = SUBADDRFIX(regsin->d.edx);
+            tempdta = (void *)(regsin->d.edx);
 #else
             tempdta = MK_FP(sregs->ds, regsin->x.dx);
 #endif
@@ -920,7 +901,7 @@ static void int21handler(union REGS *regsin,
         /* INT 21,25 - Set Interrupt Vector */
         case 0x25:
 #ifdef __32BIT__
-            p = SUBADDRFIX(regsin->d.edx);
+            p = (void *)(regsin->d.edx);
 #else
             p = MK_FP(sregs->ds, regsin->x.dx);
 #endif
@@ -975,7 +956,7 @@ static void int21handler(union REGS *regsin,
         case 0x2f:
             tempdta = PosGetDTA();
 #ifdef __32BIT__
-            regsout->d.ebx = (int)ADDRFIXSUB(tempdta);
+            regsout->d.ebx = (int)tempdta;
 #else
             regsout->x.bx = FP_OFF(tempdta);
             sregs->es = FP_SEG(tempdta);
@@ -1059,7 +1040,7 @@ static void int21handler(union REGS *regsin,
         case 0x35:
             p = PosGetInterruptVector(regsin->h.al);
 #ifdef __32BIT__
-            regsout->d.ebx = (int)ADDRFIXSUB(p);
+            regsout->d.ebx = (int)p;
 #else
             regsout->x.bx = FP_OFF(p);
             sregs->es = FP_SEG(p);
@@ -1088,7 +1069,7 @@ static void int21handler(union REGS *regsin,
         /* INT 21,39 - Make Directory */
         case 0x39:
 #ifdef __32BIT__
-            regsout->d.eax = PosMakeDir(SUBADDRFIX(regsin->d.edx));
+            regsout->d.eax = PosMakeDir((void *)(regsin->d.edx));
             if (regsout->d.eax) regsout->x.cflag = 1;
 #else
             regsout->x.ax = PosMakeDir(MK_FP(sregs->ds, regsin->x.dx));
@@ -1099,7 +1080,7 @@ static void int21handler(union REGS *regsin,
         /* INT 21,3A - Remove Directory */
         case 0x3a:
 #ifdef __32BIT__
-            regsout->d.eax = PosRemoveDir(SUBADDRFIX(regsin->d.edx));
+            regsout->d.eax = PosRemoveDir((void *)(regsin->d.edx));
             if (regsout->d.eax) regsout->x.cflag = 1;
 #else
             regsout->x.ax = PosRemoveDir(MK_FP(sregs->ds, regsin->x.dx));
@@ -1110,7 +1091,7 @@ static void int21handler(union REGS *regsin,
         /* INT 21,3B - Change Directory */
         case 0x3b:
 #ifdef __32BIT__
-            regsout->d.eax = PosChangeDir(SUBADDRFIX(regsin->d.edx));
+            regsout->d.eax = PosChangeDir((void *)(regsin->d.edx));
             if (regsout->d.eax) regsout->x.cflag = 1;
 #else
             regsout->x.ax = PosChangeDir(MK_FP(sregs->ds, regsin->x.dx));
@@ -1121,7 +1102,7 @@ static void int21handler(union REGS *regsin,
         /* INT 21,3C - Create File */
         case 0x3c:
 #ifdef __32BIT__
-            p = SUBADDRFIX(regsin->d.edx);
+            p = (void *)(regsin->d.edx);
             regsout->d.eax = PosCreatFile(p, regsin->x.cx, &handle);
             if (regsout->d.eax) regsout->x.cflag = 1;
             else regsout->d.eax = handle;
@@ -1136,7 +1117,7 @@ static void int21handler(union REGS *regsin,
         /* INT 21,3D - Open File */
         case 0x3d:
 #ifdef __32BIT__
-            p = SUBADDRFIX(regsin->d.edx);
+            p = (void *)(regsin->d.edx);
             regsout->d.eax = PosOpenFile(p, regsin->h.al, &handle);
             if (regsout->d.eax) regsout->x.cflag = 1;
             else regsout->d.eax = handle;
@@ -1160,7 +1141,7 @@ static void int21handler(union REGS *regsin,
         /* INT 21,3F - Read File */
         case 0x3f:
 #ifdef __32BIT__
-            p = SUBADDRFIX(regsin->d.edx);
+            p = (void *)(regsin->d.edx);
             regsout->d.eax = PosReadFile(regsin->d.ebx,
                                          p,
                                          regsin->d.ecx,
@@ -1181,7 +1162,7 @@ static void int21handler(union REGS *regsin,
         /* INT 21,40 - Write File */
         case 0x40:
 #ifdef __32BIT__
-            p = SUBADDRFIX(regsin->d.edx);
+            p = (void *)(regsin->d.edx);
             regsout->d.eax = PosWriteFile(regsin->d.ebx,
                                           p,
                                           regsin->d.ecx,
@@ -1202,7 +1183,7 @@ static void int21handler(union REGS *regsin,
         /* INT 21,41 - Delete File */
         case 0x41:
 #ifdef __32BIT__
-            p = SUBADDRFIX(regsin->d.edx);
+            p = (void *)(regsin->d.edx);
 #else
             p = MK_FP(sregs->ds, regsin->x.dx);
 #endif
@@ -1248,7 +1229,7 @@ static void int21handler(union REGS *regsin,
             if (regsin->h.al == 0x00)
             {
 #ifdef __32BIT__
-                p = SUBADDRFIX(regsin->d.edx);
+                p = (void *)(regsin->d.edx);
 #else
                 p = MK_FP(sregs->ds, regsin->x.dx);
 #endif
@@ -1285,7 +1266,7 @@ static void int21handler(union REGS *regsin,
             else if (regsin->h.al == 0x01)
             {
 #ifdef __32BIT__
-                p = SUBADDRFIX(regsin->d.edx);
+                p = (void *)(regsin->d.edx);
 #else
                 p = MK_FP(sregs->ds, regsin->x.dx);
 #endif
@@ -1387,10 +1368,10 @@ static void int21handler(union REGS *regsin,
             else if (regsin->h.al == 0x0D)
             {
 #ifdef __32BIT__
-                p=SUBADDRFIX(regsin->d.edx);
-                regsout->d.eax =PosGenericBlockDeviceRequest(regsin->h.bl,
-                                                            regsin->h.ch,
-                                                            regsin->h.cl,p);
+                p = (void *)(regsin->d.edx);
+                regsout->d.eax = PosGenericBlockDeviceRequest(regsin->h.bl,
+                                                              regsin->h.ch,
+                                                              regsin->h.cl,p);
 #else
                 p = MK_FP(sregs->ds, regsin->x.dx);
                 regsout->x.ax =PosGenericBlockDeviceRequest(regsin->h.bl,
@@ -1441,7 +1422,7 @@ static void int21handler(union REGS *regsin,
         /* INT 21,47 - Get Current Directory */
         case 0x47:
 #ifdef __32BIT__
-            p = SUBADDRFIX(regsin->d.esi);
+            p = (void *)(regsin->d.esi);
             regsout->d.eax = PosGetCurDir(regsin->h.dl, p);
 #else
             p = MK_FP(sregs->ds, regsin->x.si);
@@ -1477,7 +1458,7 @@ static void int21handler(union REGS *regsin,
         /* INT 21,49 - Free Memory */
         case 0x49:
 #ifdef __32BIT__
-            regsout->d.eax = PosFreeMem(SUBADDRFIX(regsin->d.ebx));
+            regsout->d.eax = PosFreeMem((void *)(regsin->d.ebx));
 #else
             regsout->x.ax = PosFreeMem(MK_FP(sregs->es, 0));
 #endif
@@ -1490,9 +1471,9 @@ static void int21handler(union REGS *regsin,
         /* INT 21,4A - Resize Memory Block */
         case 0x4a:
 #ifdef __32BIT__
-            regsout->d.eax = PosReallocPages(SUBADDRFIX(regsin->d.ecx),
-                                            regsin->d.ebx,
-                                            &regsout->d.ebx);
+            regsout->d.eax = PosReallocPages((void *)(regsin->d.ecx),
+                                             regsin->d.ebx,
+                                             &regsout->d.ebx);
 #else
             regsout->x.ax = PosReallocPages(MK_FP(sregs->es, 0),
                                             regsin->x.bx,
@@ -1515,16 +1496,7 @@ static void int21handler(union REGS *regsin,
             if (regsin->h.al == 0)
             {
 #ifdef __32BIT__
-                pb = SUBADDRFIX(regsin->d.ebx);
-                if (pb != NULL)
-                {
-                    pb->cmdtail = SUBADDRFIX(pb->cmdtail);
-                }
-                PosExec(SUBADDRFIX(regsin->d.edx), pb);
-                if (pb != NULL)
-                {
-                    pb->cmdtail = ADDRFIXSUB(pb->cmdtail);
-                }
+                PosExec((void *)(regsin->d.edx), (void *)(regsin->d.ebx));
 #else
                 PosExec(MK_FP(sregs->ds, regsin->x.dx),
                         MK_FP(sregs->es, regsin->x.bx));
@@ -1555,8 +1527,8 @@ static void int21handler(union REGS *regsin,
         /* INT 21,4E - Find First File */
         case 0x4e:
 #ifdef __32BIT__
-            regsout->d.eax = PosFindFirst(SUBADDRFIX(regsin->d.edx),
-                                        regsin->x.cx);
+            regsout->d.eax = PosFindFirst((void *)(regsin->d.edx),
+                                          regsin->x.cx);
             if (regsout->d.eax != 0)
             {
                 regsout->x.cflag = 1;
@@ -1602,8 +1574,8 @@ static void int21handler(union REGS *regsin,
         /* INT 21,56 - Rename File */
         case 0x56:
 #ifdef __32BIT__
-            p = SUBADDRFIX(regsin->d.edx);
-            q = SUBADDRFIX(regsin->d.edi);
+            p = (void *)(regsin->d.edx);
+            q = (void *)(regsin->d.edi);
 #else
             p = MK_FP(sregs->ds, regsin->x.dx);
             q = MK_FP(sregs->es, regsin->x.di);
@@ -1696,7 +1668,7 @@ static void int21handler(union REGS *regsin,
         /* INT 21,5B - Create New File */
         case 0x5b:
 #ifdef __32BIT__
-            p = SUBADDRFIX(regsin->d.edx);
+            p = (void *)(regsin->d.edx);
             regsout->d.eax = PosCreatNewFile(p, regsin->x.cx, &handle);
             if (regsout->d.eax) regsout->x.cflag = 1;
             else regsout->d.eax = handle;
@@ -1715,13 +1687,13 @@ static void int21handler(union REGS *regsin,
         /* INT 21,60 - Get True File Name */
         case 0x60:
 #ifdef __32BIT__
-            p = SUBADDRFIX(regsin->d.esi);
-            q = SUBADDRFIX(regsin->d.edi);
+            p = (void *)(regsin->d.esi);
+            q = (void *)(regsin->d.edi);
 #else
             p = MK_FP(sregs->ds, regsin->x.si);
             q = MK_FP(sregs->es, regsin->x.di);
 #endif
-            ret=PosTruename(p,q);
+            ret = PosTruename(p,q);
 
             if(ret < 0)
             {
@@ -1815,13 +1787,6 @@ static void int21handler(union REGS *regsin,
             {
                 PosReboot();
             }
-            else if (regsin->h.al == 2)
-            {
-#ifdef __32BIT__
-                PosSetRunTime(SUBADDRFIX(regsin->d.ebx),
-                            SUBADDRFIX(regsin->d.ecx));
-#endif
-            }
             else if (regsin->h.al == 3)
             {
                 PosSetDosVersion(regsin->x.bx);
@@ -1841,7 +1806,7 @@ static void int21handler(union REGS *regsin,
             else if (regsin->h.al == 7)
             {
 #ifdef __32BIT__
-                p = SUBADDRFIX(regsin->d.edx);
+                p = (void *)(regsin->d.edx);
 #else
                 p = MK_FP(sregs->ds, regsin->x.dx);
 #endif
@@ -1853,15 +1818,15 @@ static void int21handler(union REGS *regsin,
                implemented in 16-bit too. */
             else if (regsin->h.al == 8)
             {
-                regsout->d.eax = (int)PosAllocMem(regsin->d.ebx, regsin->d.ecx);
-                regsout->d.eax = (int)ADDRFIXSUB(regsout->d.eax);
+                regsout->d.eax = (int)PosAllocMem(regsin->d.ebx,
+                                                  regsin->d.ecx);
             }
 #endif
             else if (regsin->h.al == 9)
             {
                 p = PosGetErrorMessageString(regsin->x.bx);
 #ifdef __32BIT__
-                regsout->d.edx = (int)ADDRFIXSUB(p);
+                regsout->d.edx = (int)p;
 #else
                 regsout->x.dx = FP_OFF(p);
                 sregs->es = FP_SEG(p);
@@ -1874,7 +1839,7 @@ static void int21handler(union REGS *regsin,
             else if (regsin->h.al == 0xC)
             {
 #ifdef __32BIT__
-                p = SUBADDRFIX(regsin->d.edx);
+                p = (void *)(regsin->d.edx);
                 sz = regsin->d.ecx;
                 pid = regsin->d.ebx;
 #else
@@ -1887,7 +1852,7 @@ static void int21handler(union REGS *regsin,
             else if (regsin->h.al == 0xD)
             {
 #ifdef __32BIT__
-                p = SUBADDRFIX(regsin->d.edx);
+                p = (void *)(regsin->d.edx);
                 pid = regsin->d.ecx;
 #else
                 p = MK_FP(sregs->ds, regsin->x.dx);
@@ -2046,7 +2011,7 @@ static void int80handler(union REGS *regsin,
 
         /* Write */
         case 0x4:
-            p = SUBADDRFIX(regsin->d.ecx);
+            p = (void *)(regsin->d.ecx);
             regsout->d.eax = PosWriteFile(regsin->d.ebx,
                                           p,
                                           regsin->d.edx,
@@ -2941,8 +2906,8 @@ void PosDisplayInteger(int x)
 {
     printf("integer is %x\n", x);
 #ifdef __32BIT__
-    printf("normalized is %x\n", SUBADDRFIX(x));
-    printf("absolute is %x\n", SUB2ABS(x));
+    printf("normalized is %x\n", (void *)x);
+    printf("absolute is %x\n", (void *)x);
 #endif
     return;
 }
@@ -2979,18 +2944,6 @@ void PosPowerOff(void)
 void PosPowerOff(void)
 {
     poweroff();
-    return;
-}
-#endif
-
-#ifdef __32BIT__
-void PosSetRunTime(void *pstart, void *c_api)
-{
-    exec_pstart = pstart;
-    exec_c_api = c_api;
-#ifdef __32BIT__
-    exec_subcor = subcor;
-#endif
     return;
 }
 #endif
@@ -3283,8 +3236,8 @@ int int25(unsigned int *regs)
     regsin.d.edi = regs[5];
     regsin.d.cflag = 0;
     memcpy(&regsout, &regsin, sizeof regsout);
-    dp=SUBADDRFIX(regsin.d.ebx);
-    p = SUBADDRFIX(dp->transferaddress);
+    dp = (void *)(regsin.d.ebx);
+    p = (void *)(dp->transferaddress);
     PosAbsoluteDiskRead(regsin.h.al,dp->sectornumber,dp->numberofsectors,p);
     regs[0] = regsout.d.eax;
     regs[1] = regsout.d.ebx;
@@ -3312,8 +3265,8 @@ int int26(unsigned int *regs)
     regsin.d.edi = regs[5];
     regsin.d.cflag = 0;
     memcpy(&regsout, &regsin, sizeof regsout);
-    dp=SUBADDRFIX(regsin.d.ebx);
-    p = SUBADDRFIX(dp->transferaddress);
+    dp = (void *)(regsin.d.ebx);
+    p = (void *)(dp->transferaddress);
     PosAbsoluteDiskWrite(regsin.h.al,dp->sectornumber,dp->numberofsectors,p);
     regs[0] = regsout.d.eax;
     regs[1] = regsout.d.ebx;
@@ -4108,21 +4061,6 @@ static int fixexe32(unsigned long entry, unsigned int sp,
         unsigned char base_31_24;
     } *realcode, savecode, *realdata, savedata;
     int ret;
-    int oldsubcor;
-    POS_EPARMS exeparms;
-
-    /* now we need to record the subroutine's absolute offset fix */
-    oldsubcor = subcor;
-    subcor = dataStart;
-
-    exeparms.len = sizeof exeparms;
-    exeparms.abscor = subcor;
-    exeparms.psp = 0;
-    exeparms.cl = 0;
-    exeparms.callback = 0;
-    exeparms.pstart = ADDRFIXSUB(exec_pstart);
-    exeparms.crt = exec_c_api;
-    exeparms.subcor = exec_subcor;
 
     /* now we set the GDT entry directly */
     /* after first of all saving the old values */
@@ -4140,11 +4078,10 @@ static int fixexe32(unsigned long entry, unsigned int sp,
     realdata->base_31_24 = (dataStart >> 24) & 0xff;
 
     memId += 256;
-    ret = call32(entry, ADDRFIXSUB(&exeparms), sp);
+    ret = call32(entry, sp);
     /* printf("ret is %x\n", ret); */
     memId -= 256;
 
-    subcor = oldsubcor;
     *realcode = savecode;
     *realdata = savedata;
     return (ret);
@@ -4756,46 +4693,25 @@ extern int __minstart;
 int pdosstrt(void)
 {
     pdos_parms *pp;
-    POS_EPARMS eparms;
-    char psp[256];
 
     /* Tells __start() to not use any API calls. */
     __minstart = 1;
-    __abscor = rp_parms->dsbase;
-    gdt = ABSADDR(rp_parms->gdt);
+    gdt = (void *)(rp_parms->gdt);
     freem_start = rp_parms->freem_start;
-    pp = ABSADDR(__userparm);
-    transferbuf = ABSADDR(pp->transferbuf);
+    pp = (void *)__userparm;
+    transferbuf = (void *)(pp->transferbuf);
     doreboot = pp->doreboot;
     dopoweroff = pp->dopoweroff;
-    bootBPB = ABSADDR(pp->bpb);
+    bootBPB = (void *)(pp->bpb);
     protintHandler(0x0E, int0E);
     protintHandler(0x20, int20);
     protintHandler(0x21, int21);
     protintHandler(0x25, int25);
     protintHandler(0x26, int26);
     protintHandler(0x80, int80);
-    psp[0x80] = 0;
-    psp[0x81] = 0;
-    eparms.psp = psp;
-    eparms.abscor = __abscor;
-    eparms.callback = 0;
-    return (__start(NULL, NULL, NULL, &eparms));
+    return (__start(0));
     return;
 }
-
-int displayc(void)
-{
-    *__vidptr = 'C';
-    return (0);
-}
-
-int displayd(void)
-{
-    *__vidptr = 'D';
-    return (0);
-}
-
 #endif
 
 #ifndef __32BIT__

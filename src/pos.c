@@ -1376,21 +1376,6 @@ void PosReboot(void)
     return;
 }
 
-/* pos extension to set runtime library */
-
-void PosSetRunTime(void *pstart, void *capi)
-{
-    union REGS regsin;
-
-    regsin.h.ah = 0xf6;
-    regsin.h.al = 2;
-#ifdef __32BIT__
-    regsin.d.ebx = (int)pstart;
-    regsin.d.ecx = (int)capi;
-#endif
-    int86i(0x21, &regsin);
-}
-
 /* pos extension to set DOS version */
 void PosSetDosVersion(unsigned int version)
 {

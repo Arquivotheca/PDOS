@@ -390,8 +390,8 @@ int BosVBEGetInfo(void *buffer)
     sregs.es = FP_SEG(buffer);
     regsin.x.di = FP_OFF(buffer);
 #ifdef __32BIT__
-    sregs.es = ((unsigned long)ADDR2ABS(buffer) >> 4) & 0xffffU;
-    regsin.x.di = (unsigned long)ADDR2ABS(buffer) & 0xf;
+    sregs.es = (((unsigned long)buffer) >> 4) & 0xffffU;
+    regsin.x.di = ((unsigned long)buffer) & 0xf;
     regsin.d.edi = (sregs.es << 16) | regsin.x.di;
 #endif
     int86x(0x10 + BIOS_INT_OFFSET, &regsin, &regsout, &sregs);
@@ -413,8 +413,8 @@ int BosVBEGetModeInfo(unsigned int mode, void *buffer)
     sregs.es = FP_SEG(buffer);
     regsin.x.di = FP_OFF(buffer);
 #ifdef __32BIT__
-    sregs.es = ((unsigned long)ADDR2ABS(buffer) >> 4) & 0xffffU;
-    regsin.x.di = (unsigned long)ADDR2ABS(buffer) & 0xf;
+    sregs.es = (((unsigned long)buffer) >> 4) & 0xffffU;
+    regsin.x.di = ((unsigned long)buffer) & 0xf;
     regsin.d.edi = (sregs.es << 16) | regsin.x.di;
 #endif
     int86x(0x10 + BIOS_INT_OFFSET, &regsin, &regsout, &sregs);
@@ -436,8 +436,8 @@ int BosVBESetMode(unsigned int mode, void *buffer)
     sregs.es = FP_SEG(buffer);
     regsin.x.di = FP_OFF(buffer);
 #ifdef __32BIT__
-    sregs.es = ((unsigned long)ADDR2ABS(buffer) >> 4) & 0xffffU;
-    regsin.x.di = (unsigned long)ADDR2ABS(buffer) & 0xf;
+    sregs.es = (((unsigned long)buffer) >> 4) & 0xffffU;
+    regsin.x.di = ((unsigned long)buffer) & 0xf;
     regsin.d.edi = (sregs.es << 16) | regsin.x.di;
 #endif
     int86x(0x10 + BIOS_INT_OFFSET, &regsin, &regsout, &sregs);
@@ -483,8 +483,8 @@ int BosVBEPaletteOps(unsigned int operation,
     sregs.es = FP_SEG(buffer);
     regsin.x.di = FP_OFF(buffer);
 #ifdef __32BIT__
-    sregs.es = ((unsigned long)ADDR2ABS(buffer) >> 4) & 0xffffU;
-    regsin.x.di = (unsigned long)ADDR2ABS(buffer) & 0xf;
+    sregs.es = (((unsigned long)buffer) >> 4) & 0xffffU;
+    regsin.x.di = ((unsigned long)buffer) & 0xf;
     regsin.d.edi = (sregs.es << 16) | regsin.x.di;
 #endif
     int86x(0x10 + BIOS_INT_OFFSET, &regsin, &regsout, &sregs);
@@ -539,8 +539,8 @@ int BosDiskSectorRead(void         *buffer,
     sregs.es = FP_SEG(buffer);
     regsin.x.bx = FP_OFF(buffer);
 #ifdef __32BIT__
-    sregs.es = ((unsigned long)ADDR2ABS(buffer) >> 4) & 0xffffU;
-    regsin.x.bx = (unsigned long)ADDR2ABS(buffer) & 0xf;
+    sregs.es = (((unsigned long)buffer) >> 4) & 0xffffU;
+    regsin.x.bx = ((unsigned long)buffer) & 0xf;
     regsin.d.edi = (sregs.es << 16);
 #endif
     int86x(0x13 + BIOS_INT_OFFSET, &regsin, &regsout, &sregs);
@@ -568,8 +568,8 @@ int BosDiskSectorWrite(void         *buffer,
     sregs.es = FP_SEG(buffer);
     regsin.x.bx = FP_OFF(buffer);
 #ifdef __32BIT__
-    sregs.es = ((unsigned long)ADDR2ABS(buffer) >> 4) & 0xffffU;
-    regsin.x.bx = (unsigned long)ADDR2ABS(buffer) & 0xf;
+    sregs.es = (((unsigned long)buffer) >> 4) & 0xffffU;
+    regsin.x.bx = ((unsigned long)buffer) & 0xf;
     regsin.d.edi = (sregs.es << 16);
 #endif
     int86x(0x13 + BIOS_INT_OFFSET, &regsin, &regsout, &sregs);
@@ -668,16 +668,16 @@ int BosDiskSectorRLBA(void         *buffer,
     regsin.x.si = FP_OFF(packet);
 #ifdef __32BIT__
     /* first of all fix up the buffer address in the packet */
-    sregs.ds = ((unsigned long)ADDR2ABS(buffer) >> 4) & 0xffffU;
-    regsin.x.si = (unsigned long)ADDR2ABS(buffer) & 0xf;
+    sregs.ds = (((unsigned long)buffer) >> 4) & 0xffffU;
+    regsin.x.si = ((unsigned long)buffer) & 0xf;
     packet[4] = regsin.x.si & 0xff;
     packet[5] = (regsin.x.si >> 8) & 0xff;
     packet[6] = sregs.ds & 0xff;
     packet[7] = (sregs.ds >> 8) & 0xff;
 
     /* now we set the packet address */
-    sregs.ds = ((unsigned long)ADDR2ABS(packet) >> 4) & 0xffffU;
-    regsin.x.si = (unsigned long)ADDR2ABS(packet) & 0xf;
+    sregs.ds = (((unsigned long)packet) >> 4) & 0xffffU;
+    regsin.x.si = ((unsigned long)packet) & 0xf;
 
     /* and ds gets stored in upper esi for real mode */
     regsin.d.esi = (sregs.ds << 16) | regsin.x.si;
@@ -731,16 +731,16 @@ int BosDiskSectorWLBA(void         *buffer,
     regsin.x.si = FP_OFF(packet);
 #ifdef __32BIT__
     /* first of all fix up the buffer address in the packet */
-    sregs.ds = ((unsigned long)ADDR2ABS(buffer) >> 4) & 0xffffU;
-    regsin.x.si = (unsigned long)ADDR2ABS(buffer) & 0xf;
+    sregs.ds = (((unsigned long)buffer) >> 4) & 0xffffU;
+    regsin.x.si = ((unsigned long)buffer) & 0xf;
     packet[4] = regsin.x.si & 0xff;
     packet[5] = (regsin.x.si >> 8) & 0xff;
     packet[6] = sregs.ds & 0xff;
     packet[7] = (sregs.ds >> 8) & 0xff;
 
     /* now we set the packet address */
-    sregs.ds = ((unsigned long)ADDR2ABS(packet) >> 4) & 0xffffU;
-    regsin.x.si = (unsigned long)ADDR2ABS(packet) & 0xf;
+    sregs.ds = (((unsigned long)packet) >> 4) & 0xffffU;
+    regsin.x.si = ((unsigned long)packet) & 0xf;
 
     /* and ds gets stored in upper esi for real mode */
     regsin.d.esi = (sregs.ds << 16) | regsin.x.si;

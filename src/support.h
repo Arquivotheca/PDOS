@@ -94,10 +94,6 @@ struct SREGS
 
 #ifdef __32BIT__
 #define far
-extern int __abscor;
-extern char *__vidptr;
-#define ABSADDR(x) ((void *)((char *)(x) - __abscor))
-#define ADDR2ABS(x) ((void *)((char *)(x) + __abscor))
 void enable(void);
 void disable(void);
 #else

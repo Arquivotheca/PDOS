@@ -212,7 +212,7 @@ static int exeloadLoadAOUT(unsigned long *entry_point, int fhandle)
         unsigned char *zap;
 
         zap = exeStart;
-        zapdata = (unsigned int)ADDR2ABS(zap);
+        zapdata = (unsigned int)zap;
         if (firstbit.a_trsize != 0)
         {
             corrections = kmalloc(firstbit.a_trsize);
@@ -270,7 +270,7 @@ static int exeloadLoadAOUT(unsigned long *entry_point, int fhandle)
             }
             kfree(corrections);
         }
-        firstbit.a_entry += (unsigned long)ADDR2ABS(exeStart);
+        firstbit.a_entry += (unsigned long)exeStart;
         PosCloseFile(fhandle);
     }
 

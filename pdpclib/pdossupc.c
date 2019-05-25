@@ -13,8 +13,6 @@
 #define CTYP
 #endif
 
-int __start(int *i1, int *i2, int *i3, POS_EPARMS *exep);
-
 int __open(const char *filename, int mode, int *errind)
 {
     int handle;
@@ -143,44 +141,16 @@ void __datetime(void *ptr)
     return;
 }
 
-int __pstart(int *i1, int *i2, int *i3, POS_EPARMS *exep)
-{
-    return (__start(i1, i2, i3, exep));
-}
-
-#ifdef PDOS_MAIN_ENTRY
-void __callback(void)
-{
-    __exit(0);
-    return;
-}
-#endif
-
-#ifdef PDOS_MAIN_ENTRY
-void __main(int ebp, int retaddr, int i1, int i2, int i3, POS_EPARMS *exep)
-{
-    __start(&i1, &i2, &i3, exep);
-    exep->callback = __callback;
-    return;
-}
-#else
 void __main(void)
 {
     return;
 }
-#endif
 
 void CTYP __exita(int retcode)
 {
 #ifndef PDOS_RET_EXIT
      PosTerminate(retcode);
 #endif
-    return;
-}
-
-void __displayc(void)
-{
-    *__vidptr = 'C';
     return;
 }
 

@@ -82,9 +82,7 @@ static char buffer3[BUFSIZ + 8];
 #if defined(__PDOS386__)
 #include <support.h>
 #include <pos.h>
-int __abscor;
 unsigned char *__envptr;
-char *__vidptr;
 #endif
 
 #if USE_MEMMGR
@@ -102,13 +100,11 @@ int __start(char *p, char *pgmname, char *ep)
 int __start(char *p, char *pgmname, int tso)
 #elif defined(__gnu_linux__)
 int __start(int argc, char **argv)
-#elif defined(__PDOS386__)
-int __start(int *i1, int *i2, int *i3, POS_EPARMS *exep)
 #else
 __PDPCLIB_API__ int CTYP __start(char *p)
 #endif
 {
-#if defined(__PDOS386__) || defined(__CMS__)
+#ifdef __CMS__
     char *p;
 #endif
     int x;
@@ -143,8 +139,6 @@ __PDPCLIB_API__ int CTYP __start(char *p)
         p = "";
         __envptr = NULL;
     }
-    __abscor = exep->abscor;
-    __vidptr = ABSADDR(0xb8000);
 #endif
 
 #ifdef __WIN32__

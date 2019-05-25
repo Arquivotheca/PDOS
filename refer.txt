@@ -171,7 +171,7 @@ easier debugging during early stages of development:
 
 #Int 21/AX=F600h - PDOS - Display Integer
 #Int 21/AX=F601h - PDOS - Reboot
-#Int 21/AX=F602h - PDOS - Set Run Time
+
 #Int 21/AX=F603h - PDOS - Set DOS Version
 #Int 21/AX=F604h - PDOS - Get Log Unimplemented Flag
 #Int 21/AX=F605h - PDOS - Set Log Unimplemented Flag

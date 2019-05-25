@@ -14,36 +14,41 @@
 
 #include <pos.h>
 
-HANDLE WINAPI GetStdHandle(DWORD d)
+HANDLE WINAPI GetStdHandle(DWORD nStdHandle)
 {
-    if (d == -10) return ((HANDLE)0);
-    if (d == -11) return ((HANDLE)1);
-    if (d == -12) return ((HANDLE)2);
+    if (nStdHandle == -10) return ((HANDLE)0);
+    if (nStdHandle == -11) return ((HANDLE)1);
+    if (nStdHandle == -12) return ((HANDLE)2);
 }
 
-BOOL WINAPI WriteFile(HANDLE h, void *buf, DWORD count, DWORD *actual, void *unknown)
+BOOL WINAPI WriteFile(HANDLE hFile,
+                      LPCVOID lpBuffer,
+                      DWORD nNumberOfBytesToWrite,
+                      LPDWORD lpNumberOfBytesWritten,
+                      LPOVERLAPPED lpOverlapped)
 {
     size_t written;
     int ret;
 
-    ret = PosWriteFile((int)h, buf, (size_t)count, &written);
-    *actual = written;
+    ret = PosWriteFile((int)hFile, lpBuffer,
+                       (size_t)nNumberOfBytesToWrite, lpNumberOfBytesWritten);
+    *lpNumberOfBytesWritten = written;
     /* Positive return code means success. */
     return (!ret);
 }
 
 
-void WINAPI ExitProcess(int rc)
+void WINAPI ExitProcess(UINT uExitCode)
 {
-    PosTerminate(rc);
+    PosTerminate(uExitCode);
     return;
 }
 
-BOOL WINAPI CloseHandle(HANDLE h)
+BOOL WINAPI CloseHandle(HANDLE hObject)
 {
     int ret;
 
-    ret = PosCloseFile((int)h);
+    ret = PosCloseFile((int)hObject);
     return (ret == 0);
 }
 
@@ -56,6 +61,25 @@ HANDLE WINAPI CreateFileA(
     DWORD dwFlagsAndAttributes,
     HANDLE hTemplateFile)
 {
+    int handle;
+
+    if (dwCreationDisposition == CREATE_ALWAYS)
+    {
+        if (PosCreatFile(lpFileName, 0, &handle))
+        {
+            return (INVALID_HANDLE_VALUE);
+        }
+        return ((HANDLE)handle);
+    }
+    if (dwCreationDisposition == OPEN_EXISTING)
+    {
+        if (PosOpenFile(lpFileName, 0, &handle))
+        {
+            return (INVALID_HANDLE_VALUE);
+        }
+        return ((HANDLE)handle);
+    }
+
     return (INVALID_HANDLE_VALUE);
 }
 
@@ -89,7 +113,7 @@ LPTCH WINAPI GetEnvironmentStrings(void)
     return ((LPTCH)0);
 }
 
-BOOL WINAPI GetExitCodeProcess(HANDLE h, LPDWORD lpExitCode)
+BOOL WINAPI GetExitCodeProcess(HANDLE hProcess, LPDWORD lpExitCode)
 {
     return (0);
 }
@@ -116,17 +140,18 @@ BOOL WINAPI MoveFileA(LPCTSTR lpExistingFileName, LPCTSTR lpNewFileName)
 }
 
 BOOL WINAPI ReadFile(
-    HANDLE h,
+    HANDLE hFile,
     LPVOID lpBuffer,
     DWORD nNumberOfBytesToRead,
     LPDWORD lpNumberOfBytesRead,
     LPOVERLAPPED lpOverlapped)
 {
-    return (0);
+    return (!PosReadFile((int)hFile, lpBuffer,
+                         nNumberOfBytesToRead, lpNumberOfBytesRead));
 }
 
 DWORD WINAPI SetFilePointer(
-    HANDLE h,
+    HANDLE hFile,
     LONG lDistanceToMove,
     PLONG lpDistanceToMoveHigh,
     DWORD dwMoveMethod)
@@ -134,7 +159,7 @@ DWORD WINAPI SetFilePointer(
     return (0);
 }
 
-DWORD WINAPI WaitForSingleObject(HANDLE h, DWORD dwMilliseconds)
+DWORD WINAPI WaitForSingleObject(HANDLE hHandle, DWORD dwMilliseconds)
 {
     return (0);
 }

@@ -21,10 +21,11 @@ typedef long LONG;
 typedef long *PLONG;
 typedef void *HANDLE;
 typedef void *LPVOID;
-typedef char *LPCSTR;
-typedef char *LPCTSTR;
+typedef const void *LPCVOID;
 typedef char *LPSTR;
+typedef const char *LPCSTR;
 typedef char *LPTSTR;
+typedef const char *LPCTSTR;
 typedef char **LPTCH;
 typedef unsigned int LPSECURITY_ATTRIBUTES;
 typedef void *LPSTARTUPINFOA;
@@ -38,14 +39,29 @@ typedef void *LPOVERLAPPED;
 #define STD_ERROR_HANDLE ((DWORD)-12)
 #define INVALID_HANDLE_VALUE ((HANDLE)-1)
 
+/* Access mask. */
+#define GENERIC_ALL     0x10000000
+#define GENERIC_EXECUTE 0x20000000
+#define GENERIC_WRITE   0x40000000
+#define GENERIC_READ    0x80000000
 
-HANDLE WINAPI GetStdHandle(DWORD d);
+#define CREATE_NEW 1
+#define CREATE_ALWAYS 2
+#define OPEN_EXISTING 3
+#define OPEN_ALWAYS 4
+#define TRUNCATE_EXISTING 5
 
-BOOL WINAPI WriteFile(HANDLE h, void *buf, DWORD count, DWORD *actual, void *unknown);
+HANDLE WINAPI GetStdHandle(DWORD nStdHandle);
 
-void WINAPI ExitProcess(int rc);
+BOOL WINAPI WriteFile(HANDLE hFile,
+                      LPCVOID lpBuffer,
+                      DWORD nNumberOfBytesToWrite,
+                      LPDWORD lpNumberOfBytesWritten,
+                      LPOVERLAPPED lpOverlapped);
 
-BOOL WINAPI CloseHandle(HANDLE h);
+void WINAPI ExitProcess(UINT uExitCode);
+
+BOOL WINAPI CloseHandle(HANDLE hObject);
 
 #define CreateFile CreateFileA
 HANDLE WINAPI CreateFileA(
@@ -78,7 +94,7 @@ LPTSTR WINAPI GetCommandLineA(void);
 
 LPTCH WINAPI GetEnvironmentStrings(void);
 
-BOOL WINAPI GetExitCodeProcess(HANDLE h, LPDWORD lpExitCode);
+BOOL WINAPI GetExitCodeProcess(HANDLE hProcess, LPDWORD lpExitCode);
 
 DWORD WINAPI GetLastError(void);
 
@@ -90,16 +106,16 @@ HGLOBAL WINAPI GlobalFree(HGLOBAL hMem);
 BOOL WINAPI MoveFileA(LPCTSTR lpExistingFileName, LPCTSTR lpNewFileName);
 
 BOOL WINAPI ReadFile(
-    HANDLE h,
+    HANDLE hFile,
     LPVOID lpBuffer,
     DWORD nNumberOfBytesToRead,
     LPDWORD lpNumberOfBytesRead,
     LPOVERLAPPED lpOverlapped);
 
 DWORD WINAPI SetFilePointer(
-    HANDLE h,
+    HANDLE hFile,
     LONG lDistanceToMove,
     PLONG lpDistanceToMoveHigh,
     DWORD dwMoveMethod);
 
-DWORD WINAPI WaitForSingleObject(HANDLE h, DWORD dwMilliseconds);
+DWORD WINAPI WaitForSingleObject(HANDLE hHandle, DWORD dwMilliseconds);

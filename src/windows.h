@@ -32,6 +32,7 @@ typedef void *LPSTARTUPINFOA;
 typedef void *LPPROCESS_INFORMATION;
 typedef void *HGLOBAL;
 typedef void *LPOVERLAPPED;
+typedef void *LPSYSTEMTIME;
 
 #define WINAPI __stdcall
 #define STD_INPUT_HANDLE ((DWORD)-10)

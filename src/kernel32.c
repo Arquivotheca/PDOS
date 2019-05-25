@@ -163,3 +163,8 @@ DWORD WINAPI WaitForSingleObject(HANDLE hHandle, DWORD dwMilliseconds)
 {
     return (0);
 }
+
+void WINAPI GetSystemTime(LPSYSTEMTIME lpSystemTime)
+{
+    return;
+}

@@ -1,9 +1,9 @@
-# For the 32-bit version of PDOS we define __PDOS__
+# For the 32-bit version of PDOS we define __PDOS386__
 # Note that we link twice, because the second link
 # doesn't report unresolved externals for some reason
 
 CC=i686-elf-gcc
-COPTS=-S -Os -fno-common -I. -I../src -D__32BIT__ -D__PDOS__ -fleading-underscore
+COPTS=-S -Os -fno-common -I. -I../src -D__32BIT__ -D__PDOS386__ -fleading-underscore
 
 pdptest.exe: pdosst32.o pdptest.o stdio.o string.o stdlib.o \
        start.o time.o errno.o assert.o signal.o locale.o \

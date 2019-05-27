@@ -293,10 +293,7 @@ level10:
         call   _gotint
         pop    %edx
         pop    %eax
-/  signal pic to reenable interrupts
-        mov    $0x20, %dx
-        mov    $0x20, %al
-        outb   %al, %dx
+/ pops saved registers
         pop    %eax
         pop    %ebx
         pop    %ecx
@@ -398,10 +395,7 @@ level10c:
         call   _gotint
         pop    %edx
         pop    %eax
-/  signal pic to reenable interrupts
-        mov    $0x20, %dx
-        mov    $0x20, %al
-        outb   %al, %dx
+/ pops saved registers
         pop    %eax
         pop    %ebx
         pop    %ecx
@@ -505,10 +499,7 @@ level10e:
         call   _gotint
         pop    %edx
         pop    %eax
-/  signal pic to reenable interrupts
-        mov    $0x20, %dx
-        mov    $0x20, %al
-        outb   %al, %dx
+/ pops saved registers
         pop    %eax
         pop    %ebx
         pop    %ecx

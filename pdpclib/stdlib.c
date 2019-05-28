@@ -311,7 +311,7 @@ __PDPCLIB_API__ void free(void *ptr)
             __freem(ptr);
 #endif
 #elif defined(__WIN32__)
-            GlobalFree(ptr);
+            GlobalFree(((size_t *)ptr) - 1);
 #endif
         }
         else
@@ -329,7 +329,7 @@ __PDPCLIB_API__ void free(void *ptr)
 #ifdef __WIN32__
     if (ptr != NULL)
     {
-        GlobalFree(ptr);
+        GlobalFree(((size_t *)ptr) - 1);
     }
 #endif
 #endif /* not USE_MEMMGR */

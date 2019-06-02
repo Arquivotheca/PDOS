@@ -346,6 +346,226 @@ int liballoc_free(void *addr, size_t num_pages)
 }
 #endif
 
+#ifdef __32BIT__
+typedef struct _TCB {
+    void *stack_pointer;
+    void *stack_bottom;
+    int state;
+    struct _TCB *next;
+} TCB;
+
+#define TCB_STACK_SIZE 0x1000
+
+#define TCB_STATE_READY      0
+#define TCB_STATE_RUNNING    1
+#define TCB_STATE_PAUSED     2
+#define TCB_STATE_TERMINATED 3
+
+static TCB *curTCB = NULL;
+static TCB *firstReadyTCB = NULL;
+static TCB *lastReadyTCB = NULL;
+static TCB *terminatedTCB = NULL;
+static TCB *cleanerTCB = NULL;
+
+static void initThreading(void);
+static void createThread(void *entry);
+static void schedule(void);
+static void blockThread(int reason);
+static void unblockThread(TCB *blockedTCB);
+static void terminateThread(void);
+
+static void cleanTerminatedThreads(void);
+
+static void initThreading(void)
+{
+    disable();
+    /* Creates TCB for the initial kernel thread. */
+    curTCB = kmalloc(sizeof(TCB));
+    if (curTCB == NULL)
+    {
+        printf("Failed to allocate memory for initial TCB\n");
+        printf("System halting\n");
+        for (;;);
+    }
+    memset(curTCB, 0, sizeof(TCB));
+    curTCB->state = TCB_STATE_RUNNING;
+
+    createThread(cleanTerminatedThreads);
+    cleanerTCB = firstReadyTCB;
+    enable();
+}
+
+static void createThread(void *entry)
+{
+    /* Interrupts should be disabled before calling
+     * and enabled after returning. */
+    TCB *newTCB = kmalloc(sizeof(TCB));
+    unsigned int *new_stack;
+    int i;
+
+    if (newTCB == NULL)
+    {
+        printf("Failed to allocate memory for new TCB\n");
+        printf("System halting\n");
+        for (;;);
+    }
+    memset(newTCB, 0, sizeof(TCB));
+
+    new_stack = vmmAlloc(&kernel_vmm, 0, TCB_STACK_SIZE);
+    if (new_stack == NULL)
+    {
+        printf("Failed to allocate memory for new stack\n");
+        printf("System halting\n");
+        for (;;);
+    }
+    newTCB->stack_bottom = new_stack;
+    new_stack = (void *)(((char *)new_stack) + TCB_STACK_SIZE);
+    /* Puts values on the new stack. */
+    /* Entry point. */
+    new_stack--;
+    *new_stack = (unsigned int)entry;
+    /* EFLAGS, EBP, EDI, ESI, EDX, ECX, EBX, EAX. */
+    for (i = 0; i < 8; i++)
+    {
+        new_stack--;
+        *new_stack = 0;
+    }
+
+    newTCB->stack_pointer = new_stack;
+    newTCB->state = TCB_STATE_READY;
+
+    if (lastReadyTCB)
+    {
+        lastReadyTCB->next = newTCB;
+        lastReadyTCB = newTCB;
+    }
+    else
+    {
+        firstReadyTCB = newTCB;
+        lastReadyTCB = newTCB;
+    }
+}
+
+static void schedule(void)
+{
+    /* Interrupts should be disabled before calling. */
+    if (firstReadyTCB)
+    {
+        TCB *oldTCB;
+
+        oldTCB = curTCB;
+        curTCB = firstReadyTCB;
+
+        if (oldTCB->state == TCB_STATE_RUNNING)
+        {
+            oldTCB->state = TCB_STATE_READY;
+            if (firstReadyTCB->next)
+            {
+                firstReadyTCB = firstReadyTCB->next;
+                lastReadyTCB->next = oldTCB;
+                lastReadyTCB = oldTCB;
+            }
+            else
+            {
+                firstReadyTCB = oldTCB;
+                lastReadyTCB = oldTCB;
+            }
+            lastReadyTCB->next = NULL;
+        }
+        else
+        {
+            if (firstReadyTCB->next)
+            {
+                firstReadyTCB = firstReadyTCB->next;
+            }
+            else
+            {
+                firstReadyTCB = NULL;
+                lastReadyTCB = NULL;
+            }
+        }
+
+        /* Switches to the next task, enabling interrupts after the switch. */
+        curTCB->state = TCB_STATE_RUNNING;
+        switchFromToThread(oldTCB, curTCB);
+    }
+    else
+    {
+        if (curTCB->state != TCB_STATE_RUNNING)
+        {
+            printf("No active threads\n");
+            printf("System halting\n");
+            for (;;);
+        }
+        /* Instead of switching to the current task interrupts are enabled. */
+        enable();
+    }
+}
+
+static void blockThread(int reason)
+{
+    /* Interrupts should be disabled before calling. */
+    curTCB->state = reason;
+    schedule();
+}
+
+static void unblockThread(TCB *blockedTCB)
+{
+    /* Interrupts should be disabled before calling
+     * and enabled after returning. */
+    if (blockedTCB->state == TCB_STATE_READY)
+    {
+        return;
+    }
+    blockedTCB->state = TCB_STATE_READY;
+    if (firstReadyTCB)
+    {
+        lastReadyTCB->next = blockedTCB;
+        lastReadyTCB = blockedTCB;
+    }
+    else
+    {
+        firstReadyTCB = blockedTCB;
+        lastReadyTCB = blockedTCB;
+    }
+    lastReadyTCB->next = NULL;
+}
+
+static void terminateThread(void)
+{
+    disable();
+    curTCB->next = terminatedTCB;
+    terminatedTCB = curTCB;
+    unblockThread(cleanerTCB);
+    blockThread(TCB_STATE_TERMINATED);
+}
+
+static void cleanTerminatedThreads(void)
+{
+    TCB *toRemoveTCB = NULL;
+
+    while (1)
+    {
+        disable();
+        toRemoveTCB = terminatedTCB;
+        terminatedTCB = NULL;
+        enable();
+        while (toRemoveTCB)
+        {
+            TCB *removingTCB = toRemoveTCB;
+
+            toRemoveTCB = toRemoveTCB->next;
+            vmmFree(&kernel_vmm,
+                    removingTCB->stack_bottom,
+                    TCB_STACK_SIZE);
+            kfree(removingTCB);
+        }
+        disable();
+        blockThread(TCB_STATE_PAUSED);
+    }
+}
+#endif
+
 #ifndef USING_EXE
 int main(void)
 {
@@ -497,6 +717,7 @@ void pdosRun(void)
         /* Frees memory used for the temporary address space mapping. */
         physmemmgrFreePageFrame(&physmemmgr, page_directory);
     }
+    initThreading();
 #endif
     memmgrDefaults(&btlmem);
     memmgrInit(&btlmem);

@@ -10,6 +10,7 @@
         .globl _enablePaging
         .globl _disablePaging
         .globl _readCR2
+        .globl _switchFromToThread
 
         .text
 
@@ -183,6 +184,48 @@ _readCR2:
         mov     %cr2, %eax
         pop     %ebp
         ret
+
+/////////////////////////////////////////////////////////////
+/ void switchFromToThread(TCB *oldTCB, TCB *newTCB);
+/ Switches from oldTCB thread to newTCB thread.
+/ Interrupts should be disabled before calling.
+_switchFromToThread:
+/ Saves registers.
+    push %eax
+    push %ebx
+    push %ecx
+    push %edx
+    push %esi
+    push %edi
+    push %ebp
+    pushf
+
+/ Loads oldTCB into EDI and newTCB into ESI.
+    push %ebp
+    mov %esp, %ebp
+    mov 40(%ebp), %edi
+    mov 44(%ebp), %esi
+    pop %ebp
+
+/ Saves ESP of the current thread into oldTCB.
+    mov %esp, 0(%edi)
+
+/ Loads state from newTCB.
+    mov 0(%esi), %esp
+
+/ Code running after the switch.
+/ Pops registers.
+    popf
+    pop %ebp
+    pop %edi
+    pop %esi
+    pop %edx
+    pop %ecx
+    pop %ebx
+    pop %eax
+/ Turns interrupts on for the new thread.
+    sti
+    ret
 
 .bss
         .p2align 2

@@ -144,6 +144,8 @@ int int21(unsigned int *regs);
 int int25(unsigned int *regs);
 /* INT 26 - Absolute Disk Write */
 int int26(unsigned int *regs);
+/* IRQ 0 - Timer Interrupt. */
+int intB0(unsigned int *regs);
 /**/
 #endif
 static void loadConfig(void);
@@ -368,6 +370,7 @@ static TCB *terminatedTCB = NULL;
 static TCB *cleanerTCB = NULL;
 
 static void initThreading(void);
+static void startThread(void);
 static void createThread(void *entry);
 static void schedule(void);
 static void blockThread(int reason);
@@ -378,7 +381,6 @@ static void cleanTerminatedThreads(void);
 
 static void initThreading(void)
 {
-    disable();
     /* Creates TCB for the initial kernel thread. */
     curTCB = kmalloc(sizeof(TCB));
     if (curTCB == NULL)
@@ -392,13 +394,25 @@ static void initThreading(void)
 
     createThread(cleanTerminatedThreads);
     cleanerTCB = firstReadyTCB;
+    {
+        /* Timer interrupt handler is installed
+         * after the rest of multitasking system is ready. */
+        unsigned int savedEFLAGS = getEFLAGSAndDisable();
+        protintHandler(0xB0, intB0);
+        setEFLAGS(savedEFLAGS);
+    }
+}
+
+static void startThread(void)
+{
+    /* This function is executed first in every thread. */
+    /* Turns on interrupts as they were disabled for the switch
+     * and EFLAGS were not saved, because this is the start of a new thread. */
     enable();
 }
 
 static void createThread(void *entry)
 {
-    /* Interrupts should be disabled before calling
-     * and enabled after returning. */
     TCB *newTCB = kmalloc(sizeof(TCB));
     unsigned int *new_stack;
     int i;
@@ -424,6 +438,9 @@ static void createThread(void *entry)
     /* Entry point. */
     new_stack--;
     *new_stack = (unsigned int)entry;
+    /* startThread which sets up thread for running. */
+    new_stack--;
+    *new_stack = (unsigned int)startThread;
     /* EFLAGS, EBP, EDI, ESI, EDX, ECX, EBX, EAX. */
     for (i = 0; i < 8; i++)
     {
@@ -433,22 +450,28 @@ static void createThread(void *entry)
 
     newTCB->stack_pointer = new_stack;
     newTCB->state = TCB_STATE_READY;
+    {
+        unsigned int savedEFLAGS = getEFLAGSAndDisable();
 
-    if (lastReadyTCB)
-    {
-        lastReadyTCB->next = newTCB;
-        lastReadyTCB = newTCB;
-    }
-    else
-    {
-        firstReadyTCB = newTCB;
-        lastReadyTCB = newTCB;
+        if (lastReadyTCB)
+        {
+            lastReadyTCB->next = newTCB;
+            lastReadyTCB = newTCB;
+        }
+        else
+        {
+            firstReadyTCB = newTCB;
+            lastReadyTCB = newTCB;
+        }
+
+        setEFLAGS(savedEFLAGS);
     }
 }
 
 static void schedule(void)
 {
-    /* Interrupts should be disabled before calling. */
+    unsigned int savedEFLAGS = getEFLAGSAndDisable();
+
     if (firstReadyTCB)
     {
         TCB *oldTCB;
@@ -485,7 +508,6 @@ static void schedule(void)
             }
         }
 
-        /* Switches to the next task, enabling interrupts after the switch. */
         curTCB->state = TCB_STATE_RUNNING;
         switchFromToThread(oldTCB, curTCB);
     }
@@ -497,22 +519,21 @@ static void schedule(void)
             printf("System halting\n");
             for (;;);
         }
-        /* Instead of switching to the current task interrupts are enabled. */
-        enable();
     }
+
+    setEFLAGS(savedEFLAGS);
 }
 
 static void blockThread(int reason)
 {
-    /* Interrupts should be disabled before calling. */
     curTCB->state = reason;
     schedule();
 }
 
 static void unblockThread(TCB *blockedTCB)
 {
-    /* Interrupts should be disabled before calling
-     * and enabled after returning. */
+    unsigned int savedEFLAGS = getEFLAGSAndDisable();
+
     if (blockedTCB->state == TCB_STATE_READY)
     {
         return;
@@ -529,6 +550,8 @@ static void unblockThread(TCB *blockedTCB)
         lastReadyTCB = blockedTCB;
     }
     lastReadyTCB->next = NULL;
+
+    setEFLAGS(savedEFLAGS);
 }
 
 static void terminateThread(void)
@@ -560,7 +583,6 @@ static void cleanTerminatedThreads(void)
                     TCB_STACK_SIZE);
             kfree(removingTCB);
         }
-        disable();
         blockThread(TCB_STATE_PAUSED);
     }
 }
@@ -3521,6 +3543,14 @@ int int80(unsigned int *regs)
     regs[4] = regsout.d.esi;
     regs[5] = regsout.d.edi;
     regs[6] = regsout.d.cflag;
+    return (0);
+}
+
+/* IRQ 0 - Timer Interrupt. */
+int intB0(unsigned int *regs)
+{
+    schedule();
+
     return (0);
 }
 

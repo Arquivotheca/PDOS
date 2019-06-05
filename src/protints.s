@@ -272,6 +272,12 @@ _inthdlr_p:
         mov    %eax, %esp
 level10:
         mov    saveeax, %eax
+/ saveess and saveesp must be saved on the stack
+/ because task switch can occur
+/ and the next interrupt might not restore them
+/ before switch back happens
+        push   saveess
+        push   saveesp
         push   %edx
 / above is actually room for flags
         push   %edx
@@ -306,6 +312,9 @@ level10:
         mov    %ebx, saveebx
         pop    %ebx
 / above is actually flags
+        pop    saveesp
+        pop    saveess
+/ above are saved saveesp and saveess to handle task switches
         cmp    $0x10, saveess
         je     level10b
         mov    saveesp, %eax
@@ -374,6 +383,12 @@ _inthdlr_q:
         mov    %eax, %esp
 level10c:
         mov    saveeax, %eax
+/ saveess and saveesp must be saved on stack
+/ because task switch can occur
+/ and the next interrupt might not restore them
+/ before switch back happens
+        push   saveess
+        push   saveesp
         push   %edx
 / above is actually room for flags
         push   %edx
@@ -408,6 +423,9 @@ level10c:
         mov    %ebx, saveebx
         pop    %ebx
 / above is actually flags
+        pop    saveesp
+        pop    saveess
+/ above are saved saveesp and saveess to handle task switches
         cmp    $0x10, saveess
         je     level10d
         mov    saveesp, %eax
@@ -475,9 +493,15 @@ _inthdlr_r:
         mov    call32_esp, %eax
         mov    %eax, %esp
 level10e:
+        mov    saveeax, %eax
+/ saveess and saveesp must be saved on stack
+/ because task switch can occur
+/ and the next interrupt might not restore them
+/ before switch back happens
+        push   saveess
+        push   saveesp
         push   saveerrorcode
 / above is duplicated error code
-        mov    saveeax, %eax
         push   %edx
 / above is actually room for flags
         push   %edx
@@ -514,6 +538,9 @@ level10e:
 / above is actually flags
         addl   $4, %esp
 / above is the duplicated error code
+        pop    saveesp
+        pop    saveess
+/ above are saved saveesp and saveess to handle task switches
         cmp    $0x10, saveess
         je     level10f
         mov    saveesp, %eax

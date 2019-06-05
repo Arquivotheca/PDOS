@@ -73,6 +73,9 @@ void gotint(int intno, unsigned int *save)
     {
         if (userInt[x].intno == intno)
         {
+            /* Protected mode handler of IRQ 0 is called after the BIOS one
+             * so the BIOS handler is not affected by task switch. */
+            if (userInt[x].intno == 0xB0) break;
             /* An int 21h e.g. will be handled by PDOS and will
                return 0 indicating that no further action is
                required. If it returns non-zero, then it will fall
@@ -126,6 +129,9 @@ void gotint(int intno, unsigned int *save)
     ssave[5*2 + 1] = newregs[8]; /* es */
     save[6] = newregs[6]; /* cflag */
     save[7] = newregs[7]; /* flags */
+    /* Protected mode handler of IRQ 0 is called after the BIOS one
+     * so the BIOS handler is not affected by task switch. */
+    if (userInt[x].intno == 0xB0) userInt[x].func(save);
     return;
 }
 

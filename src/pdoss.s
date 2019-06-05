@@ -11,6 +11,8 @@
         .globl _disablePaging
         .globl _readCR2
         .globl _switchFromToThread
+        .globl _getEFLAGSAndDisable
+        .globl _setEFLAGS
 
         .text
 
@@ -223,9 +225,31 @@ _switchFromToThread:
     pop %ecx
     pop %ebx
     pop %eax
-/ Turns interrupts on for the new thread.
-    sti
     ret
+
+/////////////////////////////////////////////////////////////
+/ unsigned int getEFLAGSAndDisable(void);
+/ Returns current EFLAGS and disables interrupts.
+_getEFLAGSAndDisable:
+        push    %ebp
+        mov     %esp, %ebp
+        pushf
+        pop     %eax
+        cli
+        pop     %ebp
+        ret
+
+/////////////////////////////////////////////////////////////
+/ void setEFLAGS(unsigned int flags);
+/ Sets EFLAGS.
+_setEFLAGS:
+        push    %ebp
+        mov     %esp, %ebp
+        mov     8(%ebp), %eax
+        push    %eax
+        popf
+        pop     %ebp
+        ret
 
 .bss
         .p2align 2

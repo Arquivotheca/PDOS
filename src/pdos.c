@@ -29,6 +29,8 @@
 #include "patmat.h"
 #include "unused.h"
 #include "dow.h"
+#include "process.h"
+#include "helper.h"
 
 #ifdef __32BIT__
 #include "physmem.h"
@@ -74,48 +76,6 @@ typedef struct {
     int lba;
     int valid;
 } DISKINFO;
-
-/* ===== BEGINS PROCESS MANAGEMENT DATA STRUCTURES ===== */
-
-/* PDOS_PROCESS: data structure with info about a process */
-typedef struct _PDOS_PROCESS {
-    char magic[4]; /* 'PCB\0' magic, to distinguish PCB (Process Control Block)
-                      from MCB (Memory Control Block) */
-    char exeName[PDOS_PROCESS_EXENAMESZ]; /* ASCIIZ short name of executable */
-    unsigned long pid; /* The process ID.
-                        * Under PDOS-32, this is pointer to PCB itself.
-                        * Under PDOS-16, this is segment of PSP.
-                        * Should match PosGetCurrentProcessId() if this is the
-                        * current process.
-                        */
-    PDOS_PROCSTATUS status;
-    void *envBlock; /* Environment block of this process */
-#ifdef __32BIT__
-    VMM *vmm;
-    char *commandLine; /* Points to kernel memory
-                        * storing the command line string. */
-#endif
-    struct _PDOS_PROCESS *parent; /* NULL for root process */
-    struct _PDOS_PROCESS *prev; /* Previous process */
-    struct _PDOS_PROCESS *next; /* Next process */
-} PDOS_PROCESS;
-
-#ifdef __32BIT__
-#define PDOS_PROCESS_SIZE sizeof(PDOS_PROCESS)
-#define NO_PROCESS NULL
-#else
-/* What boundary we want the process control block to be a multiple of */
-#define PDOS_PROCESS_ALIGN 16
-
-#define PDOS_PROCESS_SIZE \
-  ((sizeof(PDOS_PROCESS) % PDOS_PROCESS_ALIGN == 0) ? \
-   sizeof(PDOS_PROCESS) : \
-   ((sizeof(PDOS_PROCESS) / PDOS_PROCESS_ALIGN + 1) * PDOS_PROCESS_ALIGN))
-
-#define PDOS_PROCESS_SIZE_PARAS ((PDOS_PROCESS_SIZE)/16)
-#endif
-
-/* ===== ENDING PROCESS MANAGEMENT DATA STRUCTURES ===== */
 
 void pdosRun(void);
 static void initdisks(void);
@@ -174,8 +134,6 @@ static int fileSeek(int fno, long offset, int whence, long *newpos);
 static int fileClose(int fno);
 static int fileRead(int fno, void *buf, size_t szbuf, size_t *readbytes);
 static void accessDisk(int drive);
-static void upper_str(char *str);
-int bcd2int(unsigned int bcd);
 void dumplong(unsigned long x);
 void dumpbuf(unsigned char *buf, int len);
 static void readLogical(void *diskptr, unsigned long sector, void *buf);
@@ -249,9 +207,6 @@ static int lba;
 static int memId = 0; /* give each program a unique ID for their memory */
 static unsigned long psector; /* partition sector offset */
 static int attr;
-static PDOS_PROCESS *initProc = NULL; /* initial process; beginning of process
-                                         control block chain */
-static PDOS_PROCESS *curPCB = NULL; /* PCB of process running right now */
 
 #define MAXFILES 40
 static struct {
@@ -3032,27 +2987,6 @@ void *PosAllocMemPages(unsigned int pages, unsigned int *maxpages)
 }
 #endif
 
-/* Is there a process control block just before this pointer? */
-static int isProcessPtr(void *ptr)
-{
-    unsigned long abs;
-    PDOS_PROCESS *p;
-    if (ptr == NULL)
-        return 0;
-#ifndef __32BIT__
-    abs = ADDR2ABS(ptr);
-    abs -= PDOS_PROCESS_SIZE;
-    ptr = FP_NORM(ABS2ADDR(abs));
-    p = (PDOS_PROCESS*)ptr;
-#else
-    p = (PDOS_PROCESS*)(((char *)ptr) - PDOS_PROCESS_SIZE);
-#endif
-    return p->magic[0] == 'P' &&
-           p->magic[1] == 'C' &&
-           p->magic[2] == 'B' &&
-           p->magic[3] == 0;
-}
-
 static int pdosMemmgrIsBlockPtr(void *ptr)
 {
 #ifndef __32BIT__
@@ -3972,109 +3906,6 @@ static void loadPcomm(void)
     return;
 }
 
-/* initPCB - Initialize process control block.
- * Sets the magic, flags, etc.
- */
-static void initPCB(PDOS_PROCESS *pcb, unsigned long pid, char *prog,
-                    char *envPtr)
-{
-    char *tmp;
-
-    /* Skip any drive or directory in the program name */
-    for (;;)
-    {
-        tmp = strchr(prog,':');
-        if (tmp == NULL)
-            tmp = strchr(prog,'\\');
-        if (tmp == NULL)
-            tmp = strchr(prog,'/');
-        if (tmp == NULL)
-            break;
-        prog = tmp+1;
-        continue;
-    }
-
-    /* Clear the PCB before using it.
-     * This will set all fields to 0 except those we set explicitly below.
-     */
-    memset(pcb, 0, PDOS_PROCESS_SIZE);
-
-    /* Set the PCB magic. This helps identify PCBs in memory */
-    pcb->magic[0] = 'P';
-    pcb->magic[1] = 'C';
-    pcb->magic[2] = 'B';
-    pcb->magic[3] = 0;
-
-    /* Set the exe name */
-    strncpy(pcb->exeName, prog, PDOS_PROCESS_EXENAMESZ-1);
-    upper_str(pcb->exeName);
-
-    /* Set the PID */
-    pcb->pid = pid;
-
-    /* Set the parent */
-    pcb->parent = curPCB;
-
-    /* Set the environment block */
-    pcb->envBlock = envPtr;
-}
-
-/* Process has terminated, remove it from chain */
-void removeFromProcessChain(PDOS_PROCESS *pcb)
-{
-    PDOS_PROCESS *cur;
-    PDOS_PROCESS *prev = pcb->prev;
-    PDOS_PROCESS *next = pcb->next;
-
-    /* We don't support removing the init process, it can't terminate. */
-    if (prev == NULL)
-        return;
-
-    /* Patch this PCB out of the chain. */
-    prev->next = next;
-    if (next != NULL)
-        next->prev = prev;
-    pcb->next = NULL;
-    pcb->prev = NULL;
-
-    /* Walk through chain, any of our surviving children are reparented
-       to the init process. */
-    cur = initProc;
-    while (cur != NULL)
-    {
-        if (cur->parent == pcb)
-        {
-            cur->parent = initProc;
-        }
-        cur = cur->next;
-    }
-}
-
-/* Add some new process to process chain */
-void addToProcessChain(PDOS_PROCESS *pcb)
-{
-    PDOS_PROCESS *last = NULL;
-
-    /* This is first process ever, it starts the chain. */
-    if (initProc == NULL)
-    {
-        initProc = pcb;
-        return;
-    }
-
-    /* Find last process in chain, this process goes in end. */
-    last = initProc;
-    while (last->next != NULL)
-    {
-        last = last->next;
-    }
-
-    /* We have last process, stick new process after it. */
-    last->next = pcb;
-    pcb->prev = last;
-}
-
-
 /* loadExe - load an executable into memory */
 /* 1. read first 10 bytes of header to get header len */
 /* 2. allocate room for header */
@@ -4980,24 +4811,6 @@ static void accessDisk(int drive)
     return;
 }
 
-static void upper_str(char *str)
-{
-    int x;
-
-    for (x = 0; str[x] != '\0'; x++)
-    {
-        str[x] = toupper((unsigned char)str[x]);
-    }
-    return;
-}
-
-/*Function Converting the Date received in BCD format to int format*/
-int bcd2int(unsigned int bcd)
-{
-    return (bcd & 0x0f) + 10 * ((bcd >> 4) & 0x0f);
-}
-/**/
-
 void dumplong(unsigned long x)
 {
     int y;
@@ -5705,22 +5518,6 @@ char *PosGetErrorMessageString(unsigned int errorCode) /* func f6.09 */
         ERR2STR(NOT_SAME_DEVICE);
         ERR2STR(NO_MORE_FILES);
         ERR2STR(FILE_EXISTS);
-    }
-    return NULL;
-}
-
-/* Find process with given PID */
-PDOS_PROCESS *findProc(unsigned long pid)
-{
-    PDOS_PROCESS *cur = initProc;
-
-    if (pid == 0)
-        return cur;
-    while (cur != NULL)
-    {
-        if (cur->pid == pid)
-            return cur;
-        cur = cur->next;
     }
     return NULL;
 }

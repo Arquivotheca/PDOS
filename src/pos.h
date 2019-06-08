@@ -27,6 +27,9 @@
 /*                                                                   */
 /*********************************************************************/
 
+#ifndef POS_INCLUDED
+#define POS_INCLUDED
+
 #include <stddef.h>
 
 /*Standard Error Codes for PDOS*/
@@ -453,3 +456,4 @@ typedef struct {
 }DTA;
 /**/
 
+#endif /* POS_INCLUDED */

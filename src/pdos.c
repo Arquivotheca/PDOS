@@ -153,7 +153,9 @@ static void loadConfig(void);
 static void loadPcomm(void);
 static void loadExe(char *prog, PARMBLOCK *parmblock);
 #ifdef __32BIT__
-static void loadExe32(char *prog, PARMBLOCK *parmblock);
+#define ASYNCHRONOUS 0
+#define SYNCHRONOUS  1
+static void loadExe32(char *prog, PARMBLOCK *parmblock, int synchronous);
 static void startExe32(void);
 static void terminateExe32(void);
 static int fixexe32(unsigned long entry, unsigned int sp,
@@ -2113,6 +2115,12 @@ static void int21handler(union REGS *regsin,
             }
             break;
 #endif
+        /* INT 21,80 - Execute Program in Background */
+#ifdef __32BIT__
+        case 0x80:
+            PosAExec((void *)(regsin->d.edx), (void *)(regsin->d.ebx));
+            break;
+#endif
 
         /* INT 21,F6 - PDOS extensions */
         case 0xf6:
@@ -3282,6 +3290,20 @@ int PosTruename(char *prename,char *postname)
     return(0);
 }
 
+#ifdef __32BIT__
+void PosAExec(char *prog, void *parmblock)
+{
+    PARMBLOCK *parms = parmblock;
+    char tempp[FILENAME_MAX];
+
+    if (formatcwd(prog, tempp)) return;
+    /* +++Add a way to let user know it failed on formatcwd. */
+    prog = tempp;
+    loadExe32(prog, parms, ASYNCHRONOUS);
+    return;
+}
+#endif
+
 void PosDisplayInteger(int x)
 {
     printf("integer is %x\n", x);
@@ -4071,7 +4093,7 @@ void addToProcessChain(PDOS_PROCESS *pcb)
 static void loadExe(char *prog, PARMBLOCK *parmblock)
 {
 #ifdef __32BIT__
-    loadExe32(prog, parmblock);
+    loadExe32(prog, parmblock, SYNCHRONOUS);
     return;
 #else
     unsigned char firstbit[10];
@@ -4314,7 +4336,7 @@ static void loadExe(char *prog, PARMBLOCK *parmblock)
 #include "elf.h"
 #include "exeload.h"
 
-static void loadExe32(char *prog, PARMBLOCK *parmblock)
+static void loadExe32(char *prog, PARMBLOCK *parmblock, int synchronous)
 {
     char *commandLine;
     unsigned char *envptr;
@@ -4387,7 +4409,8 @@ static void loadExe32(char *prog, PARMBLOCK *parmblock)
     if (newProc->parent != NULL)
         newProc->parent->status = PDOS_PROCSTATUS_CHILDWAIT;
 
-    createThreadAndBlock(startExe32, newProc);
+    if (synchronous) createThreadAndBlock(startExe32, newProc);
+    else createThread(startExe32, newProc);
 }
 
 static void startExe32(void)

@@ -278,6 +278,7 @@ int PosCreatNewFile(const char *name, int attrib, int *handle); /*func 5b*/
 
 int PosTruename(char *prename,char *postname); /*func 60*/
 
+void PosAExec(char *prog, void *parmblock); /* func 80 */
 
 /* The following functions are extensions... */
 

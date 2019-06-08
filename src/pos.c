@@ -1347,6 +1347,22 @@ int PosTruename(char *prename,char *postname)
 #endif
 }
 
+#ifdef __32BIT__
+void PosAExec(char *prog, void *parmblock)
+{
+    union REGS regsin;
+    union REGS regsout;
+    struct SREGS sregs;
+
+    regsin.h.ah = 0x80;
+    regsin.d.edx = (int)prog;
+    regsin.d.ebx = (int)parmblock;
+
+    int86x(0x21, &regsin, &regsout, &sregs);
+    return;
+}
+#endif
+
 /* extension to display an integer for debugging purposes */
 
 void PosDisplayInteger(int x)

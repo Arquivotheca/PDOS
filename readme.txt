@@ -700,7 +700,11 @@ The environment as described above can also be used
 to develop Windows 32-bit console mode programs.
 
 
-multitasking would be good
+multitasking has been added to some extent
+
+multiprocessing (using more than one CPU core)
+
+graphical user interface
 
 file handles should be separate for each process
 

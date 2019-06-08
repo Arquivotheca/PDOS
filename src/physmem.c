@@ -30,7 +30,7 @@ void physmemmgrSupply(PHYSMEMMGR *physmemmgr,
                       unsigned long size)
 {
     unsigned long new_addr;
-    
+
     if (addr & 0xfff)
     {
         /* Aligns the address on the 4 KB boundary
@@ -77,6 +77,7 @@ void physmemmgrSupply(PHYSMEMMGR *physmemmgr,
 void *physmemmgrAllocPageFrame(PHYSMEMMGR *physmemmgr)
 {
     int i;
+    unsigned int savedEFLAGS = getEFLAGSAndDisable();
 
     for (i = 0; i < 512; i++)
     {
@@ -87,10 +88,12 @@ void *physmemmgrAllocPageFrame(PHYSMEMMGR *physmemmgr)
             for (x = 0; !(physmemmgr->pages[i] & (1U << x)); x++);
             physmemmgr->pages[i] &= 0xff ^ (1U << x);
 
+            setEFLAGS(savedEFLAGS);
             return ((void *)((i * 8 + x) * PAGE_FRAME_SIZE));
         }
     }
 
+    setEFLAGS(savedEFLAGS);
     printf("(PHYSMEMMGR) Out of memory\n");
     return (0);
 }
@@ -98,6 +101,8 @@ void *physmemmgrAllocPageFrame(PHYSMEMMGR *physmemmgr)
 void physmemmgrFreePageFrame(PHYSMEMMGR *physmemmgr, void *addr)
 {
     unsigned long offset = BITMAP_OFFSET((unsigned long)addr);
+    unsigned int savedEFLAGS = getEFLAGSAndDisable();
 
     physmemmgr->pages[offset] |= 1U << ((((unsigned long)addr) >> 12) & 0x7);
+    setEFLAGS(savedEFLAGS);
 }

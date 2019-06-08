@@ -17,7 +17,7 @@
         .text
 
 /////////////////////////////////////////////////////////////
-/ int _call32(int entry, int sp);
+/ int _call32(int entry, int sp, TCB *curTCB);
 _call32:
         push    %ebp
         mov     %esp, %ebp
@@ -34,6 +34,9 @@ _call32:
         push    call32_esp
         push    saveesp2
         mov     %esp, call32_esp
+/ call32_esp has to be saved in TCB
+        mov     16(%ebp), %edi
+        mov     %esp, 4(%edi)
 / save stack of caller
         mov     saveesp, %eax
         mov     %eax, saveesp2
@@ -214,6 +217,8 @@ _switchFromToThread:
 
 / Loads state from newTCB.
     mov 0(%esi), %esp
+    mov 4(%esi), %eax
+    mov %eax, call32_esp
 
 / Code running after the switch.
 / Pops registers.

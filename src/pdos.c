@@ -102,6 +102,7 @@ typedef struct _PDOS_PROCESS {
 
 #ifdef __32BIT__
 #define PDOS_PROCESS_SIZE sizeof(PDOS_PROCESS)
+#define NO_PROCESS NULL
 #else
 /* What boundary we want the process control block to be a multiple of */
 #define PDOS_PROCESS_ALIGN 16
@@ -153,6 +154,8 @@ static void loadPcomm(void);
 static void loadExe(char *prog, PARMBLOCK *parmblock);
 #ifdef __32BIT__
 static void loadExe32(char *prog, PARMBLOCK *parmblock);
+static void startExe32(void);
+static void terminateExe32(void);
 static int fixexe32(unsigned long entry, unsigned int sp,
                     unsigned long exeStart, unsigned long dataStart);
 #endif
@@ -318,41 +321,17 @@ static char *sbrk_end;
 
 #ifdef __32BIT__
 static PHYSMEMMGR physmemmgr;
+/* Once mutitasking is running all accesses
+ * to kernel_vmm should be protected by a mutex. */
 static VMM kernel_vmm;
 
-/* Liballoc hooks. */
-/* Locking functions disable and enable interrupts
- * as a better way is not yet implemented. */
-int liballoc_lock()
-{
-    disable();
-    return (0);
-}
-
-int liballoc_unlock()
-{
-    enable();
-    return (0);
-}
-
-void *liballoc_alloc(size_t num_pages)
-{
-    return (vmmAllocPages(&kernel_vmm, num_pages));
-}
-
-int liballoc_free(void *addr, size_t num_pages)
-{
-    vmmFreePages(&kernel_vmm, addr, num_pages);
-
-    return (0);
-}
-#endif
-
-#ifdef __32BIT__
 typedef struct _TCB {
     void *stack_pointer;
+    void *call32_esp;
     void *stack_bottom;
     int state;
+    PDOS_PROCESS *pcb;
+    struct _TCB *waitingParentTCB;
     struct _TCB *next;
 } TCB;
 
@@ -362,6 +341,7 @@ typedef struct _TCB {
 #define TCB_STATE_RUNNING    1
 #define TCB_STATE_PAUSED     2
 #define TCB_STATE_TERMINATED 3
+#define TCB_STATE_CHILDWAIT  4
 
 static TCB *curTCB = NULL;
 static TCB *firstReadyTCB = NULL;
@@ -371,13 +351,19 @@ static TCB *cleanerTCB = NULL;
 
 static void initThreading(void);
 static void startThread(void);
-static void createThread(void *entry);
+static TCB *createThread(void *entry, PDOS_PROCESS *pcb);
+static void createThreadAndBlock(void *entry, PDOS_PROCESS *pcb);
 static void schedule(void);
 static void blockThread(int reason);
 static void unblockThread(TCB *blockedTCB);
 static void terminateThread(void);
 
 static void cleanTerminatedThreads(void);
+
+static void lockMutex(volatile int *mutex);
+static void unlockMutex(volatile int *mutex);
+
+static volatile int fatMutex = 0;
 
 static void initThreading(void)
 {
@@ -392,7 +378,7 @@ static void initThreading(void)
     memset(curTCB, 0, sizeof(TCB));
     curTCB->state = TCB_STATE_RUNNING;
 
-    createThread(cleanTerminatedThreads);
+    createThread(cleanTerminatedThreads, NO_PROCESS);
     cleanerTCB = firstReadyTCB;
     {
         /* Timer interrupt handler is installed
@@ -411,7 +397,7 @@ static void startThread(void)
     enable();
 }
 
-static void createThread(void *entry)
+static TCB *createThread(void *entry, PDOS_PROCESS *pcb)
 {
     TCB *newTCB = kmalloc(sizeof(TCB));
     unsigned int *new_stack;
@@ -425,7 +411,13 @@ static void createThread(void *entry)
     }
     memset(newTCB, 0, sizeof(TCB));
 
-    new_stack = vmmAlloc(&kernel_vmm, 0, TCB_STACK_SIZE);
+    {
+        unsigned int savedEFLAGS = getEFLAGSAndDisable();
+
+        new_stack = vmmAlloc(&kernel_vmm, 0, TCB_STACK_SIZE);
+
+        setEFLAGS(savedEFLAGS);
+    }
     if (new_stack == NULL)
     {
         printf("Failed to allocate memory for new stack\n");
@@ -450,6 +442,7 @@ static void createThread(void *entry)
 
     newTCB->stack_pointer = new_stack;
     newTCB->state = TCB_STATE_READY;
+    newTCB->pcb = pcb;
     {
         unsigned int savedEFLAGS = getEFLAGSAndDisable();
 
@@ -466,6 +459,18 @@ static void createThread(void *entry)
 
         setEFLAGS(savedEFLAGS);
     }
+
+    return (newTCB);
+}
+
+static void createThreadAndBlock(void *entry, PDOS_PROCESS *pcb)
+{
+    unsigned int savedEFLAGS = getEFLAGSAndDisable();
+    TCB *newTCB = createThread(entry, pcb);
+
+    newTCB->waitingParentTCB = curTCB;
+    blockThread(TCB_STATE_CHILDWAIT);
+    setEFLAGS(savedEFLAGS);
 }
 
 static void schedule(void)
@@ -509,6 +514,27 @@ static void schedule(void)
         }
 
         curTCB->state = TCB_STATE_RUNNING;
+        if (oldTCB->pcb != curTCB->pcb)
+        {
+            curPCB = curTCB->pcb;
+            /* Address space must be switched,
+             * so kernel mappings are copied
+             * and new page directory is loaded. */
+            if (curPCB == NO_PROCESS)
+            {
+                vmmCopyCurrentMapping(&kernel_vmm,
+                                      (void *)KERNEL_SPACE_START,
+                                      KERNEL_SPACE_SIZE);
+                loadPageDirectory(kernel_vmm.pd_physaddr);
+            }
+            else
+            {
+                vmmCopyCurrentMapping(curPCB->vmm,
+                                      (void *)KERNEL_SPACE_START,
+                                      KERNEL_SPACE_SIZE);
+                loadPageDirectory(curPCB->vmm->pd_physaddr);
+            }
+        }
         switchFromToThread(oldTCB, curTCB);
     }
     else
@@ -559,6 +585,10 @@ static void terminateThread(void)
     disable();
     curTCB->next = terminatedTCB;
     terminatedTCB = curTCB;
+    if (curTCB->waitingParentTCB)
+    {
+        unblockThread(curTCB->waitingParentTCB);
+    }
     unblockThread(cleanerTCB);
     blockThread(TCB_STATE_TERMINATED);
 }
@@ -578,12 +608,79 @@ static void cleanTerminatedThreads(void)
             TCB *removingTCB = toRemoveTCB;
 
             toRemoveTCB = toRemoveTCB->next;
+            disable();
             vmmFree(&kernel_vmm,
                     removingTCB->stack_bottom,
                     TCB_STACK_SIZE);
+            enable();
             kfree(removingTCB);
         }
         blockThread(TCB_STATE_PAUSED);
+    }
+}
+
+/* Mutex (Mutual Exclusion) prevents two threads
+ * from accesing the same resource at one time
+ * without needing the interrupts to be disabled. */
+static void lockMutex(volatile int *mutex)
+{
+    unsigned int savedEFLAGS = getEFLAGSAndDisable();
+
+    while (*mutex)
+    {
+        schedule();
+    }
+    *mutex = 1;
+
+    setEFLAGS(savedEFLAGS);
+}
+
+static void unlockMutex(volatile int *mutex)
+{
+    unsigned int savedEFLAGS = getEFLAGSAndDisable();
+    *mutex = 0;
+    setEFLAGS(savedEFLAGS);
+}
+
+/* Liballoc hooks. */
+static unsigned int liballocSavedEFLAGS;
+
+int liballoc_lock()
+{
+    liballocSavedEFLAGS = getEFLAGSAndDisable();
+    return (0);
+}
+
+int liballoc_unlock()
+{
+    setEFLAGS(liballocSavedEFLAGS);
+    return (0);
+}
+
+void *liballoc_alloc(size_t num_pages)
+{
+    void *addr;
+    unsigned int savedEFLAGS = getEFLAGSAndDisable();
+    addr = vmmAllocPages(&kernel_vmm, num_pages);
+    setEFLAGS(savedEFLAGS);
+
+    return (addr);
+}
+
+int liballoc_free(void *addr, size_t num_pages)
+{
+    unsigned int savedEFLAGS = getEFLAGSAndDisable();
+    vmmFreePages(&kernel_vmm, addr, num_pages);
+    setEFLAGS(savedEFLAGS);
+
+    return (0);
+}
+
+static void waitForKeystroke(void)
+{
+    while (!PosKeyboardHit())
+    {
+        schedule();
     }
 }
 #endif
@@ -780,6 +877,7 @@ void pdosRun(void)
     memmgrTerm(&memmgr);
 #endif
 #ifdef __32BIT__
+    for(;;);
     memmgrTerm(&btlmem);
 #endif
 #endif
@@ -2317,6 +2415,9 @@ unsigned int PosDirectCharInputNoEcho(void)
     }
     else
     {
+#ifdef __32BIT__
+        waitForKeystroke();
+#endif
         BosReadKeyboardCharacter(&scan, &ascii);
         if (ascii == 0)
         {
@@ -2335,6 +2436,9 @@ unsigned int PosGetCharInputNoEcho(void)
     int scan;
     int ascii;
 
+#ifdef __32BIT__
+    waitForKeystroke();
+#endif
     BosReadKeyboardCharacter(&scan, &ascii);
 
     return ascii;
@@ -2571,6 +2675,9 @@ int PosChangeDir(const char *to)
      * so we use to to point at the [rest]. */
     to = newcwd + 3;
 
+#ifdef __32BIT__
+    lockMutex(&fatMutex);
+#endif
     /* formatcwd also provided us with tempDrive from the path we gave it. */
     ret = fatGetFileAttributes(&disks[tempDrive].fat, to, &attr);
     if (ret || !(attr & DIRENT_SUBDIR)) return (POS_ERR_PATH_NOT_FOUND);
@@ -2581,6 +2688,9 @@ int PosChangeDir(const char *to)
     /* fatPosition provides us with corrected path with LFNs
      * where possible and correct case, so we use it as cwd. */
     else strcpy(disks[tempDrive].cwd, disks[tempDrive].fat.corrected_path);
+#ifdef __32BIT__
+    unlockMutex(&fatMutex);
+#endif
 
     return (0);
 }
@@ -2627,6 +2737,9 @@ int PosReadFile(int fh, void *data, size_t bytes, size_t *readbytes)
             int scan;
             int ascii;
 
+#ifdef __32BIT__
+            waitForKeystroke();
+#endif
             BosReadKeyboardCharacter(&scan, &ascii);
             if ((ascii == '\b') && (x > 0))
             {
@@ -2728,7 +2841,13 @@ int PosGetFileAttributes(const char *fnm,int *attr)
     rc = formatcwd(fnm, tempf);
     if (rc) return (rc);
     fnm = tempf;
+#ifdef __32BIT__
+    lockMutex(&fatMutex);
+#endif
     rc = fatGetFileAttributes(&disks[tempDrive].fat,tempf + 2,attr);
+#ifdef __32BIT__
+    unlockMutex(&fatMutex);
+#endif
     return (rc);
 }
 /**/
@@ -2742,7 +2861,13 @@ int PosSetFileAttributes(const char *fnm,int attr)
     rc = formatcwd(fnm, tempf);
     if (rc) return (rc);
     fnm = tempf;
+#ifdef __32BIT__
+    lockMutex(&fatMutex);
+#endif
     rc = fatSetFileAttributes(&disks[tempDrive].fat,tempf + 2,attr);
+#ifdef __32BIT__
+    unlockMutex(&fatMutex);
+#endif
     return (rc);
 }
 /**/
@@ -3093,7 +3218,13 @@ int PosRenameFile(const char *old, const char *new)
     old = tempf1;
     new = tempf2;
 
+#ifdef __32BIT__
+    lockMutex(&fatMutex);
+#endif
     rc = fatRenameFile(&disks[tempDrive].fat, tempf1 + 2,new);
+#ifdef __32BIT__
+    unlockMutex(&fatMutex);
+#endif
     return (rc);
 }
 /**/
@@ -3124,7 +3255,13 @@ int PosSetFileLastWrittenDateAndTime(int handle,
     fat=fhandle[handle].fatptr;
     fatfile->fdate=fdate;
     fatfile->ftime=ftime;
+#ifdef __32BIT__
+    lockMutex(&fatMutex);
+#endif
     fatUpdateDateAndTime(fat,fatfile);
+#ifdef __32BIT__
+    unlockMutex(&fatMutex);
+#endif
     return 0;
 }
 /**/
@@ -4181,10 +4318,7 @@ static void loadExe32(char *prog, PARMBLOCK *parmblock)
 {
     char *commandLine;
     unsigned char *envptr;
-    unsigned char *pcb;
     PDOS_PROCESS *newProc;
-    unsigned long entry_point;
-    int ret;
 
     /* Allocates kernel memory and stores the command line string in it. */
     if (parmblock)
@@ -4230,9 +4364,8 @@ static void loadExe32(char *prog, PARMBLOCK *parmblock)
         envptr = envCopy(curPCB->envBlock, prog);
     }
 
-    pcb = kmalloc(sizeof(PDOS_PROCESS));
-    newProc = (PDOS_PROCESS*)pcb;
-    initPCB(newProc, (unsigned long)pcb, prog, envptr);
+    newProc = (PDOS_PROCESS*)kmalloc(sizeof(PDOS_PROCESS));
+    initPCB(newProc, (unsigned long)newProc, prog, envptr);
 
     /* Stores the pointer to the command line string in the new PCB. */
     newProc->commandLine = commandLine;
@@ -4240,24 +4373,57 @@ static void loadExe32(char *prog, PARMBLOCK *parmblock)
     /* Creates a new VMM with new address space. */
     newProc->vmm = kmalloc(sizeof(VMM));
     vmmInit(newProc->vmm, &physmemmgr);
-    /* Copies kernel mappings. */
-    vmmCopyCurrentMapping(newProc->vmm,
-                          (void *)KERNEL_SPACE_START,
-                          KERNEL_SPACE_SIZE);
-    /* Loads the new address space. */
-    loadPageDirectory(newProc->vmm->pd_physaddr);
-    /* Tells the new VMM what address range can it use. */
-    vmmSupply(newProc->vmm, (void *)PROCESS_SPACE_START, PROCESS_SPACE_SIZE);
 
     /* Add this process to the process chain */
-    addToProcessChain(newProc);
+    {
+        unsigned int savedEFLAGS = getEFLAGSAndDisable();
 
-    /* Set this process as the running process */
-    curPCB = newProc;
+        addToProcessChain(newProc);
+
+        setEFLAGS(savedEFLAGS);
+    }
 
     newProc->status = PDOS_PROCSTATUS_ACTIVE;
     if (newProc->parent != NULL)
         newProc->parent->status = PDOS_PROCSTATUS_CHILDWAIT;
+
+    createThreadAndBlock(startExe32, newProc);
+}
+
+static void startExe32(void)
+{
+    unsigned long entry_point;
+    int ret;
+    char *prog;
+
+    /* Tells the new VMM what address range can it use. */
+    vmmSupply(curPCB->vmm, (void *)PROCESS_SPACE_START, PROCESS_SPACE_SIZE);
+
+    {
+        /* Obtains the path to the executable
+         * from the command line string stored in the current PCB. */
+        char *a;
+        size_t progLen;
+
+        a = strchr(curPCB->commandLine, ' ');
+        if (a)
+        {
+            progLen = a - (curPCB->commandLine);
+        }
+        else
+        {
+            progLen = strlen(curPCB->commandLine);
+        }
+
+        prog = kmalloc(progLen + 1);
+        if (prog == NULL)
+        {
+            printf("Not enough memory for storing executable path\n");
+            terminateExe32();
+        }
+        memcpy(prog, curPCB->commandLine, progLen);
+        prog[progLen] = '\0';
+    }
 
     ret = exeloadDoload(&entry_point, prog);
     if (ret == 0)
@@ -4275,6 +4441,13 @@ static void loadExe32(char *prog, PARMBLOCK *parmblock)
         lastrc = ret;
     }
 
+    terminateExe32();
+}
+
+static void terminateExe32(void)
+{
+    PDOS_PROCESS *newProc = curPCB;
+
     /* Process finished, parent becomes current */
     curPCB = newProc->parent;
     if (curPCB != NULL && curPCB->status == PDOS_PROCSTATUS_CHILDWAIT)
@@ -4282,22 +4455,41 @@ static void loadExe32(char *prog, PARMBLOCK *parmblock)
 
     /* Terminates the process. */
     newProc->status = PDOS_PROCSTATUS_TERMINATED;
-    /* Copies modified kernel mappings to the VMM of the current process. */
-    vmmCopyCurrentMapping(curPCB->vmm,
-                          (void *)KERNEL_SPACE_START,
-                          KERNEL_SPACE_SIZE);
     /* Frees the process address space. */
     vmmFree(newProc->vmm, (void *)PROCESS_SPACE_START, PROCESS_SPACE_SIZE);
-    /* Loads the address space of the current process. */
-    loadPageDirectory(curPCB->vmm->pd_physaddr);
+
+    {
+        /* No more process memory will be handled,
+         * so this thread will use kernel page directory. */
+        unsigned int savedEFLAGS = getEFLAGSAndDisable();
+
+        vmmCopyCurrentMapping(&kernel_vmm,
+                              (void *)KERNEL_SPACE_START,
+                              KERNEL_SPACE_SIZE);
+        loadPageDirectory(kernel_vmm.pd_physaddr);
+        curPCB = NO_PROCESS;
+        curTCB->pcb = NO_PROCESS;
+
+        setEFLAGS(savedEFLAGS);
+    }
+
+    {
+        unsigned int savedEFLAGS = getEFLAGSAndDisable();
+
+        removeFromProcessChain(newProc);
+
+        setEFLAGS(savedEFLAGS);
+    }
+
     /* Terminates the VMM belonging to the terminated process. */
     vmmTerm(newProc->vmm);
     kfree(newProc->vmm);
 
     kfree(newProc->commandLine);
     kfree(newProc->envBlock);
-    removeFromProcessChain(newProc);
-    kfree(pcb);
+    kfree(newProc);
+
+    terminateThread();
 }
 
 static int fixexe32(unsigned long entry, unsigned int sp,
@@ -4329,7 +4521,7 @@ static int fixexe32(unsigned long entry, unsigned int sp,
     realdata->base_31_24 = (dataStart >> 24) & 0xff;
 
     memId += 256;
-    ret = call32(entry, sp);
+    ret = call32(entry, sp, curTCB);
     /* printf("ret is %x\n", ret); */
     memId -= 256;
 
@@ -4381,7 +4573,13 @@ static int fileCreat(const char *fnm, int attrib, int *handle)
         }
     }
     if (x == MAXFILES) return (-4); /* 4 = too many open files */
+#ifdef __32BIT__
+    lockMutex(&fatMutex);
+#endif
     rc = fatCreatFile(&disks[drive].fat, p, &fhandle[x].fatfile, attrib);
+#ifdef __32BIT__
+    unlockMutex(&fatMutex);
+#endif
     if (rc) return (rc);
     fhandle[x].inuse = 1;
     fhandle[x].fatptr = &disks[drive].fat;
@@ -4435,7 +4633,13 @@ static int dirCreat(const char *dnm, int attrib)
     }
     if (!isDriveValid(drive))
         return POS_ERR_INVALID_DRIVE;
+#ifdef __32BIT__
+    lockMutex(&fatMutex);
+#endif
     rc = fatCreatDir(&disks[drive].fat, p, parentname, attrib);
+#ifdef __32BIT__
+    unlockMutex(&fatMutex);
+#endif
     return (rc);
 }
 
@@ -4466,7 +4670,13 @@ static int newFileCreat(const char *fnm, int attrib, int *handle)
         }
     }
     if (x == MAXFILES) return (-POS_ERR_MANY_OPEN_FILES);
+#ifdef __32BIT__
+    lockMutex(&fatMutex);
+#endif
     rc = fatCreatNewFile(&disks[drive].fat, p, &fhandle[x].fatfile, attrib);
+#ifdef __32BIT__
+    unlockMutex(&fatMutex);
+#endif
     if (rc) return (rc);
     fhandle[x].inuse = 1;
     fhandle[x].fatptr = &disks[drive].fat;
@@ -4503,7 +4713,13 @@ static int fileOpen(const char *fnm, int *handle)
     if (x == MAXFILES) return (-POS_ERR_MANY_OPEN_FILES);
     if (!isDriveValid(drive))
         return POS_ERR_INVALID_DRIVE;
+#ifdef __32BIT__
+    lockMutex(&fatMutex);
+#endif
     rc = fatOpenFile(&disks[drive].fat, p, &fhandle[x].fatfile);
+#ifdef __32BIT__
+    unlockMutex(&fatMutex);
+#endif
     if (rc) return (rc);
     fhandle[x].inuse = 1;
     fhandle[x].fatptr = &disks[drive].fat;
@@ -4522,16 +4738,36 @@ static int fileClose(int fno)
 
 static int fileRead(int fno, void *buf, size_t szbuf, size_t *readbytes)
 {
-    return (fatReadFile(fhandle[fno].fatptr, &fhandle[fno].fatfile, buf,
-                        szbuf, readbytes));
+    int ret;
+
+#ifdef __32BIT__
+    lockMutex(&fatMutex);
+#endif
+    ret = fatReadFile(fhandle[fno].fatptr, &fhandle[fno].fatfile, buf,
+                      szbuf, readbytes);
+#ifdef __32BIT__
+    unlockMutex(&fatMutex);
+#endif
+
+    return (ret);
 }
 
 
 static int fileWrite(int fno, const void *buf, size_t szbuf,
                      size_t *writtenbytes)
 {
-    return (fatWriteFile(fhandle[fno].fatptr, &fhandle[fno].fatfile, buf,
-                         szbuf, writtenbytes));
+    int ret;
+
+#ifdef __32BIT__
+    lockMutex(&fatMutex);
+#endif
+    ret = fatWriteFile(fhandle[fno].fatptr, &fhandle[fno].fatfile, buf,
+                       szbuf, writtenbytes);
+#ifdef __32BIT__
+    unlockMutex(&fatMutex);
+#endif
+
+    return (ret);
 }
 
 /*Fatdelete function to delete a file when fnm is given as filename*/
@@ -4560,10 +4796,22 @@ static int fileDelete(const char *fnm)
      * Directories must be deleted using dirDelete instead. */
     if (!isDriveValid(drive))
         return POS_ERR_INVALID_DRIVE;
+#ifdef __32BIT__
+    lockMutex(&fatMutex);
+#endif
     rc = fatGetFileAttributes(&disks[drive].fat, p, &attr);
+#ifdef __32BIT__
+    unlockMutex(&fatMutex);
+#endif
     if (rc || (attr & DIRENT_SUBDIR)) return (POS_ERR_FILE_NOT_FOUND);
 
+#ifdef __32BIT__
+    lockMutex(&fatMutex);
+#endif
     rc = fatDeleteFile(&disks[drive].fat, p);
+#ifdef __32BIT__
+    unlockMutex(&fatMutex);
+#endif
     if (rc != 0) return (-1);
     return (rc);
 }
@@ -4595,16 +4843,31 @@ static int dirDelete(const char *dnm)
 
     if (!isDriveValid(drive))
         return POS_ERR_INVALID_DRIVE;
+#ifdef __32BIT__
+    lockMutex(&fatMutex);
+#endif
     rc = fatGetFileAttributes(&disks[drive].fat, p, &attr);
-    if (rc || !(attr & DIRENT_SUBDIR)) return (POS_ERR_PATH_NOT_FOUND);
+    if (rc || !(attr & DIRENT_SUBDIR))
+    {
+#ifdef __32BIT__
+        unlockMutex(&fatMutex);
+#endif
+        return (POS_ERR_PATH_NOT_FOUND);
+    }
 
     if (drive == currentDrive)
     {
         if (strcmp(disks[drive].fat.corrected_path,cwd) == 0)
         {
+#ifdef __32BIT__
+            unlockMutex(&fatMutex);
+#endif
             return (POS_ERR_ATTEMPTED_TO_REMOVE_CURRENT_DIRECTORY);
         }
     }
+#ifdef __32BIT__
+    unlockMutex(&fatMutex);
+#endif
 
     fileOpen(dnm, &fh);
 
@@ -4626,7 +4889,13 @@ static int dirDelete(const char *dnm)
     }
     fileClose(fh);
 
+#ifdef __32BIT__
+    lockMutex(&fatMutex);
+#endif
     rc = fatDeleteFile(&disks[drive].fat, p);
+#ifdef __32BIT__
+    unlockMutex(&fatMutex);
+#endif
     if (rc == POS_ERR_FILE_NOT_FOUND) return (POS_ERR_PATH_NOT_FOUND);
     return (rc);
 }
@@ -4639,8 +4908,14 @@ static int fileSeek(int fno, long offset, int whence, long *newpos)
         /* MSDOS returns 0x1 (function number invalid). */
         return (POS_ERR_FUNCTION_NUMBER_INVALID);
     }
+#ifdef __32BIT__
+    lockMutex(&fatMutex);
+#endif
     *newpos = fatSeek(fhandle[fno].fatptr, &(fhandle[fno].fatfile),
                       offset, whence);
+#ifdef __32BIT__
+    unlockMutex(&fatMutex);
+#endif
     return (0);
 }
 /**/

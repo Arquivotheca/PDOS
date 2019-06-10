@@ -62,13 +62,13 @@
 /**/
 
 typedef struct {
-    int year;
-    int month;
-    int day;
-    int hours;
-    int minutes;
-    int seconds;
-    int hundredths;
+    unsigned int year;
+    unsigned int month;
+    unsigned int day;
+    unsigned int hours;
+    unsigned int minutes;
+    unsigned int seconds;
+    unsigned int hundredths;
 } FAT_DATETIME;
 
 /*Structure for Directory Entry */

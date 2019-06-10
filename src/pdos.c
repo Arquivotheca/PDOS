@@ -115,7 +115,6 @@ static void terminateExe32(void);
 static int fixexe32(unsigned long entry, unsigned int sp,
                     unsigned long exeStart, unsigned long dataStart);
 #endif
-static int bios2driv(int bios);
 static int fileCreat(const char *fnm, int attrib, int *handle);
 static int dirCreat(const char *dnm, int attrib);
 static int newFileCreat(const char *fnm, int attrib, int *handle);
@@ -155,7 +154,7 @@ static int writeLBA(void *buf,
 static void analyseBpb(DISKINFO *diskinfo, unsigned char *bpb);
 int pdosstrt(void);
 static int formatcwd(const char *input,char *output);
-static int pdosWriteText(int ch);
+static void pdosWriteText(int ch);
 static size_t envBlockSize(char *envptr);
 static char *envBlockTail(char *envptr);
 static char *envCopy(char *previous, char *progName);
@@ -217,7 +216,6 @@ static char shell[100] = "";
 static int ff_handle;
 static DTA origdta;
 static DTA *dta =&origdta;
-static int debugcnt = 0;
 
 /* DOS version reported to programs.
  * Can be changed via PosSetDosVersion() call. */
@@ -294,8 +292,8 @@ static TCB *cleanerTCB = NULL;
 
 static void initThreading(void);
 static void startThread(void);
-static TCB *createThread(void *entry, PDOS_PROCESS *pcb);
-static void createThreadAndBlock(void *entry, PDOS_PROCESS *pcb);
+static TCB *createThread(void (*entry)(void), PDOS_PROCESS *pcb);
+static void createThreadAndBlock(void (*entry)(void), PDOS_PROCESS *pcb);
 static void schedule(void);
 static void blockThread(int reason);
 static void unblockThread(TCB *blockedTCB);
@@ -340,7 +338,7 @@ static void startThread(void)
     enable();
 }
 
-static TCB *createThread(void *entry, PDOS_PROCESS *pcb)
+static TCB *createThread(void (*entry)(void), PDOS_PROCESS *pcb)
 {
     TCB *newTCB = kmalloc(sizeof(TCB));
     unsigned int *new_stack;
@@ -406,7 +404,7 @@ static TCB *createThread(void *entry, PDOS_PROCESS *pcb)
     return (newTCB);
 }
 
-static void createThreadAndBlock(void *entry, PDOS_PROCESS *pcb)
+static void createThreadAndBlock(void (*entry)(void), PDOS_PROCESS *pcb)
 {
     unsigned int savedEFLAGS = getEFLAGSAndDisable();
     TCB *newTCB = createThread(entry, pcb);
@@ -639,7 +637,6 @@ int main(void)
 
 void pdosRun(void)
 {
-    int drivnum;
 #ifdef USING_EXE
     char *m;
     int mc;
@@ -917,10 +914,7 @@ static void processPartition(int drive, unsigned char *prm)
     int track;
     int head;
     int sect;
-    int x;
     unsigned char *bpb;
-    unsigned int spt;
-    unsigned int hpc;
     unsigned long sector;
 
     head = prm[1];
@@ -982,12 +976,10 @@ static void processPartition(int drive, unsigned char *prm)
 static void processExtended(int drive, unsigned char *prm)
 {
     unsigned char buf[512];
-    int rc;
     int sectors = 1;
     int track;
     int head;
     int sect;
-    int x;
     int systemId;
     unsigned long sector;
     unsigned long extsector;
@@ -1202,7 +1194,10 @@ void PosSetInterruptVector(unsigned int intnum, void *handler)
 }
 
 /* INT 21/AH=2Ah */
-void PosGetSystemDate(int *year, int *month, int *day, int *dw)
+void PosGetSystemDate(unsigned int *year,
+                      unsigned int *month,
+                      unsigned int *day,
+                      unsigned int *dw)
 {
     int c,y,m,d;
     int retval;
@@ -1221,7 +1216,9 @@ void PosGetSystemDate(int *year, int *month, int *day, int *dw)
 }
 
 /* INT 21/AH=2Bh */
-unsigned int PosSetSystemDate(int year, int month, int day)
+unsigned int PosSetSystemDate(unsigned int year,
+                              unsigned int month,
+                              unsigned int day)
 {
     BosSetSystemDate(year / 100,year % 100,month,day);
 
@@ -1754,7 +1751,9 @@ static int pdosMemmgrIsBlockPtr(void *ptr)
 static void *translateProcessPtr(void *ptr)
 {
     void *prev;
+#ifndef __32BIT__
     unsigned long abs;
+#endif
 
 #ifdef __32BIT__
     prev = (void*)(((char*)ptr)-PDOS_PROCESS_SIZE);
@@ -1977,8 +1976,8 @@ void PosDisplayInteger(int x)
 {
     printf("integer is %x\n", x);
 #ifdef __32BIT__
-    printf("normalized is %x\n", (void *)x);
-    printf("absolute is %x\n", (void *)x);
+    printf("normalized is %p\n", (void *)x);
+    printf("absolute is %p\n", (void *)x);
 #endif
     return;
 }
@@ -1986,8 +1985,6 @@ void PosDisplayInteger(int x)
 #ifdef __32BIT__
 void PosReboot(void)
 {
-    unsigned short newregs[11];
-
     runreal_p(doreboot, 0);
     return;
 }
@@ -2006,8 +2003,6 @@ void PosReboot(void)
 #ifdef __32BIT__
 void PosPowerOff(void)
 {
-    unsigned short newregs[11];
-
     runreal_p(dopoweroff, 0);
     return;
 }
@@ -2244,7 +2239,6 @@ int int20(unsigned int *regs)
 {
     static union REGS regsin;
     static union REGS regsout;
-    static struct SREGS sregs;
 
     regsin.d.eax = regs[0];
     regsin.d.ebx = regs[1];
@@ -2270,7 +2264,6 @@ int int25(unsigned int *regs)
 {
     static union REGS regsin;
     static union REGS regsout;
-    static struct SREGS sregs;
     DP *dp;
     void *p;
 
@@ -2299,7 +2292,6 @@ int int26(unsigned int *regs)
 {
     static union REGS regsin;
     static union REGS regsout;
-    static struct SREGS sregs;
     DP *dp;
     void *p;
 
@@ -2817,7 +2809,7 @@ static void loadExe(char *prog, PARMBLOCK *parmblock)
 static void loadExe32(char *prog, PARMBLOCK *parmblock, int synchronous)
 {
     char *commandLine;
-    unsigned char *envptr;
+    char *envptr;
     PDOS_PROCESS *newProc;
 
     /* Allocates kernel memory and stores the command line string in it. */
@@ -3031,21 +3023,6 @@ static int fixexe32(unsigned long entry, unsigned int sp,
     return (ret);
 }
 #endif
-
-static int bios2driv(int bios)
-{
-    int drive;
-
-    if (bios >= 0x80)
-    {
-        drive = bios - 0x80 + 2;
-    }
-    else
-    {
-        drive = bios;
-    }
-    return (drive);
-}
 
 static int fileCreat(const char *fnm, int attrib, int *handle)
 {
@@ -3274,7 +3251,6 @@ static int fileWrite(int fno, const void *buf, size_t szbuf,
 /*Fatdelete function to delete a file when fnm is given as filename*/
 static int fileDelete(const char *fnm)
 {
-    int x;
     const char *p;
     int drive;
     int rc;
@@ -3319,7 +3295,6 @@ static int fileDelete(const char *fnm)
 
 static int dirDelete(const char *dnm)
 {
-    int x;
     const char *p;
     int drive;
     int rc;
@@ -3719,7 +3694,7 @@ int pdosstrt(void)
     protintHandler(0x26, int26);
     protintHandler(0x80, int80);
     return (__start(0));
-    return;
+    return (0);
 }
 #endif
 
@@ -3902,7 +3877,7 @@ static int formatcwd(const char *input,char *output)
          the disk array so that the working directory does
          not change on drive switch.
          */
-        cwd = disks[toupper(input[0])-'A'].cwd;
+        cwd = disks[toupper((unsigned char)(input[0]))-'A'].cwd;
         strcat(output,cwd);
         if(strcmp(cwd,"")!= 0)
         {
@@ -3929,7 +3904,7 @@ static int formatcwd(const char *input,char *output)
         }
         strcat(output,input);
     }
-    tempDrive=toupper(output[0]) - 'A';
+    tempDrive=toupper((unsigned char)(output[0])) - 'A';
     if (!isDriveValid(tempDrive))
     {
         return POS_ERR_INVALID_DRIVE;
@@ -4245,7 +4220,7 @@ unsigned long PosGetClockTickCount(void)
     return BosGetClockTickCount();
 }
 
-static int pdosWriteText(int ch)
+static void pdosWriteText(int ch)
 {
     unsigned int cursorStart;
     unsigned int cursorEnd;
@@ -4432,21 +4407,22 @@ static char * envAllocateEmpty(char *progName)
 static char * envCopy(char *previous, char *progName)
 {
     char *envptr = NULL;
-    unsigned char *envTail;
-    size_t  envSize =
-        strlen(progName) + 1 + sizeof(unsigned short) + envBlockSize(previous);
+    char *envTail;
+    size_t envSize = (strlen(progName) + 1
+                      + sizeof(unsigned short) + envBlockSize(previous));
 
 #ifdef __32BIT__
     envptr = kmalloc(envSize);
 #else
     envptr = memmgrAllocate(&memmgr, envSize, 0);
-    envptr = (unsigned char *)FP_NORM(envptr);
+    envptr = FP_NORM(envptr);
 #endif
-    memcpy(envptr,previous,envSize);
+    memcpy(envptr, previous, envSize);
     envTail = envBlockTail(envptr);
     *((unsigned short *)(envTail)) = 1;
     strcpy(envTail + sizeof(unsigned short), progName);
-    return envptr;
+
+    return (envptr);
 }
 
 static void envBlockCopyWithMods(char *src, char *dest, char *name, char *value)
@@ -4604,11 +4580,6 @@ static char *envModify(char *envPtr, char *name, char *value)
 int PosSetEnv(char *name, char *value)
 {
     char *envPtr = curPCB->envBlock;
-    size_t size = envBlockSize(envPtr);
-    int count = envBlockVarCount(envPtr);
-    char *existing = envBlockGetVar(envPtr,name);
-    int offset;
-    char *newPtr;
 #ifndef __32BIT__
     char *psp;
 #endif
@@ -4708,7 +4679,7 @@ char *PosGetCommandLine(void)
 
 static void getDateTime(FAT_DATETIME *ptr)
 {
-    int dow1, dow2;
+    unsigned int dow1, dow2;
 
     PosGetSystemDate(&ptr->year, &ptr->month, &ptr->day, &dow1);
     PosGetSystemTime(&ptr->hours, &ptr->minutes, &ptr->seconds,

@@ -153,9 +153,14 @@ void PosSetDTA(void *dta); /* func 1a */
 
 void PosSetInterruptVector(unsigned int intnum, void *handler); /* func 25 */
 
-void PosGetSystemDate(int *year, int *month, int *day, int *dw); /* func 2a */
+void PosGetSystemDate(unsigned int *year, /* func 2a */
+                      unsigned int *month,
+                      unsigned int *day,
+                      unsigned int *dw);
 
-unsigned int PosSetSystemDate(int year, int month, int day); /* func 2b */
+unsigned int PosSetSystemDate(unsigned int year, /* func 2b */
+                              unsigned int month,
+                              unsigned int day);
 
 void PosGetSystemTime(unsigned int *hour, /* func 2c */
                       unsigned int *min,

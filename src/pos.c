@@ -246,7 +246,10 @@ void PosSetInterruptVector(unsigned int intnum, void *handler)
            BIOS INT 1A/AH=04h.(BosGetSystemDate())
 */
 
-void PosGetSystemDate(int *year, int *month, int *day, int *dw)
+void PosGetSystemDate(unsigned int *year,
+                      unsigned int *month,
+                      unsigned int *day,
+                      unsigned int *dw)
 {
     union REGS regsin;
     union REGS regsout;
@@ -271,7 +274,9 @@ void PosGetSystemDate(int *year, int *month, int *day, int *dw)
            BIOS INT 1A/AH=05h(BosSetSystemDate())
 */
 
-unsigned int PosSetSystemDate(int year, int month, int day)
+unsigned int PosSetSystemDate(unsigned int year,
+                              unsigned int month,
+                              unsigned int day)
 {
     union REGS regsin;
     union REGS regsout;

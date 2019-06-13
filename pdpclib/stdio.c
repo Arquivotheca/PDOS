@@ -1147,7 +1147,7 @@ static void osfopen(void)
        RECFM is as follows:
 
        x'C0' U, x'80' F, x'40' V
-       x'20' T with F, V, or U; 
+       x'20' T with F, V, or U;
            with top two bits off, x'20' is D (ANSI variable)
            T is obsolete except MVS 3.8 - track overflow
        x'10' B
@@ -1177,7 +1177,7 @@ static void osfopen(void)
     if (myfile->recfm == __RECFM_U)
     {
         /* sysprint etc are expected to be line-buffered,
-           although we allow full buffering for RECFM=UB */  
+           although we allow full buffering for RECFM=UB */
         if (myfile->permfile
             && ((myfile->true_recfm & 0x10) == 0)
            )
@@ -1238,7 +1238,7 @@ static void osfopen(void)
             myfile->style = 0;
         }
     }
-    
+
     /* by the time we reach here, there is no RECFM=U, so
        we only have 2 forms of binary (starting at 0) and
        two forms of text (starting at 2), so we just need
@@ -1305,14 +1305,14 @@ static int vseCloseLib(FILE *stream)
 
 #if 0
     /* is this required? */
-    *(int *)(card + 28) = tot + 
+    *(int *)(card + 28) = tot +
         (tot/MAXRLEN + ((tot % MAXRLEN) != 0)) * sizeof(int);
 #endif
 
     memcpy(card + 32, "TOTO    ", 8); /* total? */
-    
+
     /* is this required? */
-    *(int *)(card + 44) = tot + 
+    *(int *)(card + 44) = tot +
         (tot/MAXRLEN + ((tot % MAXRLEN) != 0)) * sizeof(int);
     fwrite(card, 1, sizeof card, stream);
 
@@ -1364,7 +1364,7 @@ static int vseCloseLib(FILE *stream)
     memcpy(card, "\x02" "END", 4);
 #if 0
     /* is this required? */
-    *(int *)(card + 24) = tot + 
+    *(int *)(card + 24) = tot +
         (tot/MAXRLEN + ((tot % MAXRLEN) != 0)) * sizeof(int);
 #endif
     fwrite(card, 1, sizeof card, stream);
@@ -1397,7 +1397,7 @@ __PDPCLIB_API__ int fclose(FILE *stream)
     {
         stream->upto = stream->fbuf;
         stream->bufStartR = 0;
-        return (vseCloseLib(stream));        
+        return (vseCloseLib(stream));
     }
     /* closing an inactive punch must be the real thing, so free
        the buffer and go through the rest of the close logic. */

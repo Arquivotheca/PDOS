@@ -37,7 +37,6 @@ typedef char wchar_t;
 
 #ifdef __PDPCLIB_DLL
 #define __PDPCLIB_API__ __declspec(dllexport)
-#define __MAIN_FP__
 #else
 #define __PDPCLIB_API__
 #endif

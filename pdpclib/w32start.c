@@ -17,15 +17,25 @@
 #include <stddef.h>
 
 int main(int argc, char **argv);
-void **__get_main_fp();
 
 void mainCRTStartup(void)
 {
-#ifdef __MAIN_FP__
-    (*(__get_main_fp()))=main;
-#endif
+#ifdef __STATIC__
     __start(0);
     return;
+#else
+    int argc;
+    char **argv;
+    char **environ;
+    int startinfo = 0;
+    int status;
+
+    __getmainargs(&argc, &argv, &environ, 1, &startinfo);
+
+    status = main(argc, argv);
+
+    exit(status);
+#endif
 }
 
 void __main(void)

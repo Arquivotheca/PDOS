@@ -218,9 +218,9 @@ static size_t lenread;
 #endif
 
 
-FILE *__stdin = &permFiles[0];
-FILE *__stdout = &permFiles[1];
-FILE *__stderr = &permFiles[2];
+FILE *__stdin_ptr = &permFiles[0];
+FILE *__stdout_ptr = &permFiles[1];
+FILE *__stderr_ptr = &permFiles[2];
 
 FILE *__userFiles[__NFILE];
 static FILE  *myfile;
@@ -240,11 +240,15 @@ static const char *modus;
 static int modeType;
 
 __PDPCLIB_API__ FILE **__gtin()
-    { return(&__stdin); }
+    { return(&__stdin_ptr); }
 __PDPCLIB_API__ FILE **__gtout()
-    { return(&__stdout); }
+    { return(&__stdout_ptr); }
 __PDPCLIB_API__ FILE **__gterr()
-    { return(&__stderr); }
+    { return(&__stderr_ptr); }
+
+#if defined(__WIN32__) && !defined(__STATIC__)
+__PDPCLIB_API__ __DUMMYFILE _iob[3];
+#endif
 
 static void dblcvt(double num, char cnvtype, size_t nwidth,
                    int nprecision, char *result);
@@ -303,7 +307,7 @@ __PDPCLIB_API__ int printf(const char *format, ...)
     int ret;
 
     va_start(arg, format);
-    ret = vfprintf(stdout, format, arg);
+    ret = vfprintf(__stdout, format, arg);
     va_end(arg);
     return (ret);
 }
@@ -312,6 +316,8 @@ __PDPCLIB_API__ int fprintf(FILE *stream, const char *format, ...)
 {
     va_list arg;
     int ret;
+
+    stream = __INTFILE(stream);
 
     va_start(arg, format);
     ret = vfprintf(stream, format, arg);
@@ -322,6 +328,8 @@ __PDPCLIB_API__ int fprintf(FILE *stream, const char *format, ...)
 __PDPCLIB_API__ int vfprintf(FILE *stream, const char *format, va_list arg)
 {
     int ret;
+
+    stream = __INTFILE(stream);
 
     stream->quickText = 0;
     ret = vvprintf(format, arg, stream, NULL);
@@ -878,15 +886,15 @@ static void osfopen(void)
         }
         else
         {
-            if (myfile == stdout)
+            if (myfile == __stdout)
             {
                 strcpy(tmpdd, "PDPOUTHD");
             }
-            else if (myfile == stdin)
+            else if (myfile == __stdin)
             {
                 strcpy(tmpdd, "PDPINXHD");
             }
-            else if (myfile == stderr)
+            else if (myfile == __stderr)
             {
                 strcpy(tmpdd, "PDPERRHD");
             }
@@ -922,15 +930,15 @@ static void osfopen(void)
         }
         else
         {
-            if (myfile == stdout)
+            if (myfile == __stdout)
             {
                 strcpy(tmpdd, "PDPOUTHD");
             }
-            else if (myfile == stdin)
+            else if (myfile == __stdin)
             {
                 strcpy(tmpdd, "PDPINXHD");
             }
-            else if (myfile == stderr)
+            else if (myfile == __stderr)
             {
                 strcpy(tmpdd, "PDPERRHD");
             }
@@ -958,15 +966,15 @@ static void osfopen(void)
         }
         else
         {
-            if (myfile == stdout)
+            if (myfile == __stdout)
             {
                 strcpy(newfnm, "PDPOUTHD");
             }
-            else if (myfile == stdin)
+            else if (myfile == __stdin)
             {
                 strcpy(newfnm, "PDPINXHD");
             }
-            else if (myfile == stderr)
+            else if (myfile == __stderr)
             {
                 strcpy(newfnm, "PDPERRHD");
             }
@@ -1111,7 +1119,7 @@ static void osfopen(void)
         myfile->lrecl = 255;
         if (myfile->permfile)
         {
-            /* don't block stdout/stderr so that output is not
+            /* don't block __stdout/__stderr so that output is not
                delayed if the program crashes */
             myfile->blksize = 259;
         }
@@ -1386,6 +1394,8 @@ __PDPCLIB_API__ int fclose(FILE *stream)
     BOOL rc;
 #endif
 
+    stream = __INTFILE(stream);
+
     if (!stream->isopen)
     {
         return (EOF);
@@ -1475,17 +1485,17 @@ __PDPCLIB_API__ int fclose(FILE *stream)
             free(stream);
             /* need to protect against the app closing the file
                which it is allowed to */
-            if (stream == stdin)
+            if (stream == __stdin)
             {
-                stdin = NULL;
+                __stdin = NULL;
             }
-            else if (stream == stdout)
+            else if (stream == __stdout)
             {
-                stdout = NULL;
+                __stdout = NULL;
             }
-            else if (stream == stderr)
+            else if (stream == __stderr)
             {
-                stderr = NULL;
+                __stderr = NULL;
             }
         }
 #else
@@ -1530,6 +1540,8 @@ __PDPCLIB_API__ size_t fread(void *ptr,
     int errind;
     size_t tempRead;
 #endif
+
+    stream = __INTFILE(stream);
 
     if (nmemb == 1)
     {
@@ -1982,6 +1994,8 @@ __PDPCLIB_API__ size_t fwrite(const void *ptr,
     size_t actualWritten;
     int errind;
 #endif
+
+    stream = __INTFILE(stream);
 
     if (nmemb == 1)
     {
@@ -3070,6 +3084,8 @@ __PDPCLIB_API__ int fputc(int c, FILE *stream)
 {
     char buf[1];
 
+    stream = __INTFILE(stream);
+
 #if !defined(__MVS__) && !defined(__CMS__)
     stream->quickBin = 0;
     if ((stream->upto < (stream->endbuf - 2))
@@ -3120,6 +3136,8 @@ __PDPCLIB_API__ int fputs(const char *s, FILE *stream)
 {
     size_t len;
     size_t ret;
+
+    stream = __INTFILE(stream);
 
     len = strlen(s);
     ret = fwrite(s, len, 1, stream);
@@ -3294,6 +3312,8 @@ __PDPCLIB_API__ char *fgets(char *s, int n, FILE *stream)
     size_t actualRead;
     int errind;
 #endif
+
+    stream = __INTFILE(stream);
 
     if (stream->quickText)
     {
@@ -3574,6 +3594,8 @@ __PDPCLIB_API__ char *fgets(char *s, int n, FILE *stream)
 
 __PDPCLIB_API__ int ungetc(int c, FILE *stream)
 {
+    stream = __INTFILE(stream);
+
     if ((stream->ungetCh != -1) || (c == EOF))
     {
         return (EOF);
@@ -3588,6 +3610,8 @@ __PDPCLIB_API__ int fgetc(FILE *stream)
 {
     unsigned char x[1];
     size_t ret;
+
+    stream = __INTFILE(stream);
 
     ret = fread(x, 1, 1, stream);
     if (ret == 0)
@@ -3611,6 +3635,8 @@ __PDPCLIB_API__ int fseek(FILE *stream, long int offset, int whence)
 #ifdef __MSDOS__
     int ret;
 #endif
+
+    stream = __INTFILE(stream);
 
     oldpos = stream->bufStartR + (stream->upto - stream->fbuf);
     if (stream->mode == __WRITE_MODE)
@@ -3746,29 +3772,39 @@ __PDPCLIB_API__ int fseek(FILE *stream, long int offset, int whence)
 
 __PDPCLIB_API__ long int ftell(FILE *stream)
 {
+    stream = __INTFILE(stream);
+
     return (stream->bufStartR + (stream->upto - stream->fbuf));
 }
 
 __PDPCLIB_API__ int fsetpos(FILE *stream, const fpos_t *pos)
 {
+    stream = __INTFILE(stream);
+
     fseek(stream, *pos, SEEK_SET);
     return (0);
 }
 
 __PDPCLIB_API__ int fgetpos(FILE *stream, fpos_t *pos)
 {
+    stream = __INTFILE(stream);
+
     *pos = ftell(stream);
     return (0);
 }
 
 __PDPCLIB_API__ void rewind(FILE *stream)
 {
+    stream = __INTFILE(stream);
+
     fseek(stream, 0L, SEEK_SET);
     return;
 }
 
 __PDPCLIB_API__ void clearerr(FILE *stream)
 {
+    stream = __INTFILE(stream);
+
     stream->errorInd = 0;
     stream->eofInd = 0;
     return;
@@ -3803,6 +3839,8 @@ buf  + N = ignore, return success
 __PDPCLIB_API__ int setvbuf(FILE *stream, char *buf, int mode, size_t size)
 {
     char *mybuf;
+
+    stream = __INTFILE(stream);
 
 #if defined(__MVS__) || defined(__CMS__)
     /* don't allow mucking around with buffers on MVS or CMS */
@@ -3867,6 +3905,8 @@ __PDPCLIB_API__ int setbuf(FILE *stream, char *buf)
 {
     int ret;
 
+    stream = __INTFILE(stream);
+
     if (buf == NULL)
     {
         ret = setvbuf(stream, NULL, _IONBF, 0);
@@ -3882,6 +3922,8 @@ __PDPCLIB_API__ FILE *freopen(const char *filename,
                               const char *mode,
                               FILE *stream)
 {
+    stream = __INTFILE(stream);
+
     inreopen = 1;
     fclose(stream);
 
@@ -3898,17 +3940,17 @@ __PDPCLIB_API__ FILE *freopen(const char *filename,
         free(stream);
         /* need to protect against the app closing the file
            which it is allowed to */
-        if (stream == stdin)
+        if (stream == __stdin)
         {
-            stdin = NULL;
+            __stdin = NULL;
         }
-        else if (stream == stdout)
+        else if (stream == __stdout)
         {
-            stdout = NULL;
+            __stdout = NULL;
         }
-        else if (stream == stderr)
+        else if (stream == __stderr)
         {
-            stderr = NULL;
+            __stderr = NULL;
         }
     }
 #endif
@@ -3935,7 +3977,7 @@ __PDPCLIB_API__ int fflush(FILE *stream)
             finwrite(stream);
             stream->upto = stream->fbuf;
         }
-        else if ((stream == stdout) || (stream == stderr))
+        else if ((stream == __stdout) || (stream == __stderr))
         {
             fputc('\n', stream);
         }
@@ -3953,6 +3995,8 @@ __PDPCLIB_API__ int fflush(FILE *stream)
     int errind;
     size_t actualWritten;
 #endif
+
+    stream = __INTFILE(stream);
 
     if ((stream->upto != stream->fbuf) && (stream->mode == __WRITE_MODE))
     {
@@ -4035,6 +4079,8 @@ __PDPCLIB_API__ int fscanf(FILE *stream, const char *format, ...)
     va_list arg;
     int ret;
 
+    stream = __INTFILE(stream);
+
     va_start(arg, format);
     ret = vvscanf(format, arg, stream, NULL);
     va_end(arg);
@@ -4047,7 +4093,7 @@ __PDPCLIB_API__ int scanf(const char *format, ...)
     int ret;
 
     va_start(arg, format);
-    ret = vvscanf(format, arg, stdin, NULL);
+    ret = vvscanf(format, arg, __stdin, NULL);
     va_end(arg);
     return (ret);
 }
@@ -4585,11 +4631,11 @@ __PDPCLIB_API__ char *gets(char *s)
 {
     char *ret;
 
-    stdin->quickText = 0;
-    stdin->noNl = 1;
-    ret = fgets(s, INT_MAX, stdin);
-    stdin->noNl = 0;
-    stdin->quickText = 1;
+    __stdin->quickText = 0;
+    __stdin->noNl = 1;
+    ret = fgets(s, INT_MAX, __stdin);
+    __stdin->noNl = 0;
+    __stdin->quickText = 1;
     return (ret);
 }
 
@@ -4597,12 +4643,12 @@ __PDPCLIB_API__ int puts(const char *s)
 {
     int ret;
 
-    ret = fputs(s, stdout);
+    ret = fputs(s, __stdout);
     if (ret == EOF)
     {
         return (ret);
     }
-    return (putc('\n', stdout));
+    return (putc('\n', __stdout));
 }
 
 /* The following functions are implemented as macros */
@@ -4616,31 +4662,39 @@ __PDPCLIB_API__ int puts(const char *s)
 
 __PDPCLIB_API__ int getc(FILE *stream)
 {
+    stream = __INTFILE(stream);
+
     return (fgetc(stream));
 }
 
 __PDPCLIB_API__ int putc(int c, FILE *stream)
 {
+    stream = __INTFILE(stream);
+
     return (fputc(c, stream));
 }
 
 __PDPCLIB_API__ int getchar(void)
 {
-    return (getc(stdin));
+    return (getc(__stdin));
 }
 
 __PDPCLIB_API__ int putchar(int c)
 {
-    return (putc(c, stdout));
+    return (putc(c, __stdout));
 }
 
 __PDPCLIB_API__ int feof(FILE *stream)
 {
+    stream = __INTFILE(stream);
+
     return (stream->eofInd);
 }
 
 __PDPCLIB_API__ int ferror(FILE *stream)
 {
+    stream = __INTFILE(stream);
+
     return (stream->errorInd);
 }
 

@@ -15,9 +15,9 @@
 #include "stdlib.h"
 #include "stddef.h"
 
-__PDPCLIB_API__ int __assert(char *x, char *y, int z)
+__PDPCLIB_API__ int _assert(char *x, char *y, int z)
 {
-    fprintf(stderr, "assertion failed for statement %s in "
+    fprintf(__stderr, "assertion failed for statement %s in "
             "file %s on line %d\n", x, y, z);
     abort();
     return (0);

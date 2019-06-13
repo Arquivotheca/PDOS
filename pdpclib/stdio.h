@@ -170,9 +170,45 @@ FILE **__gtin(void);
 FILE **__gtout(void);
 FILE **__gterr(void);
 
+#define __stdin (*(__gtin()))
+#define __stdout (*(__gtout()))
+#define __stderr (*(__gterr()))
+
+#if defined(__WIN32__) && !defined(__STATIC__)
+/* For Windows stdin, stdout and stderr macros
+ * are implemented using an array FILE _iob[]
+ * where the first three members
+ * are stdin, stdout and stderr.
+ * In this array each member has size 32 bytes,
+ * so __DUMMYFILE is used instead
+ * and the pointers are converted
+ * using __INTFILE macro. */
+#define __DUMMYFILE_SIZE 32
+
+typedef struct
+{
+    char filler[__DUMMYFILE_SIZE];
+} __DUMMYFILE;
+
+#ifndef __PDPCLIB_DLL
+__declspec(dllimport) __DUMMYFILE _iob[3];
+#endif
+
+#define stdin ((FILE *) &(_iob[0]))
+#define stdout ((FILE *) &(_iob[1]))
+#define stderr ((FILE *) &(_iob[2]))
+
+#define __INTFILE(f) (((f) == stdin) ? __stdin : \
+                      ((f) == stdout) ? __stdout : \
+                      ((f) == stderr) ? __stderr : \
+                      f)
+#else
 #define stdin (*(__gtin()))
 #define stdout (*(__gtout()))
 #define stderr (*(__gterr()))
+
+#define __INTFILE(f) (f)
+#endif
 
 #if defined(__VSE__)
 extern FILE *__stdpch;
@@ -222,6 +258,7 @@ int feof(FILE *stream);
 int ferror(FILE *stream);
 #endif
 
+#if !defined(__WIN32__) || defined(__STATIC__)
 #define getchar() (getc(stdin))
 #define putchar(c) (putc((c), stdout))
 #define getc(stream) (fgetc((stream)))
@@ -239,7 +276,8 @@ int ferror(FILE *stream);
 
 #define feof(stream) ((stream)->eofInd)
 #define ferror(stream) ((stream)->errorInd)
-
 #endif
+
+#endif /* __STDIO_INCLUDED */
 
 

@@ -60,15 +60,7 @@ extern int __doperm; /* are we doing the permanent datasets? */
 int __upsi = 0; /* UPSI switches for VSE */
 #endif
 
-#ifdef __MAIN_FP__
-int (*__main_fp)(int argc, char **argv);
-
-__PDPCLIB_API__ void **__get_main_fp()
-    { return((void **)(&__main_fp)); }
-
-#else
 int main(int argc, char **argv);
-#endif
 
 void __exit(int status);
 void CTYP __exita(int status);
@@ -91,6 +83,81 @@ extern void *__lastsup; /* last thing supplied to memmgr */
 
 char **__eplist;
 char *__plist;
+
+#ifdef __WIN32__
+/* Not sure what _startupinfo is. */
+typedef int _startupinfo;
+
+__PDPCLIB_API__ int __getmainargs(int *_Argc,
+                                  char ***_Argv,
+                                  char ***_Env,
+                                  int _DoWildCard,
+                                  _startupinfo *_StartInfo)
+{
+    char *p;
+    int x;
+    int argc;
+    static char *argv[MAXPARMS + 1];
+    static char *env[] = {NULL};
+
+    p = GetCommandLine();
+
+    argv[0] = p;
+    p = strchr(p, ' ');
+    if (p == NULL)
+    {
+        p = "";
+    }
+    else
+    {
+        *p = '\0';
+        p++;
+    }
+
+    while (*p == ' ')
+    {
+        p++;
+    }
+    if (*p == '\0')
+    {
+        argv[1] = NULL;
+        argc = 1;
+    }
+    else
+    {
+        for (x = 1; x < MAXPARMS; )
+        {
+            char srch = ' ';
+
+            if (*p == '"')
+            {
+                p++;
+                srch = '"';
+            }
+            argv[x] = p;
+            x++;
+            p = strchr(p, srch);
+            if (p == NULL)
+            {
+                break;
+            }
+            else
+            {
+                *p = '\0';
+                p++;
+                while (*p == ' ') p++;
+                if (*p == '\0') break; /* strip trailing blanks */
+            }
+        }
+        argv[x] = NULL;
+        argc = x;
+    }
+
+    *_Argc = argc;
+    *_Argv = argv;
+    *_Env = env;
+}
+#endif
 
 #if defined(__CMS__)
 int __start(char *plist, char *pgmname, char **eplist)
@@ -126,101 +193,82 @@ __PDPCLIB_API__ int CTYP __start(char *p)
     char parmbuf[310]; /* z/VSE can have a PARM up to 300 characters */
 #endif
 
-#if defined(__PDOS386__)
-    /* PDOS-32 uses an API call returning the full command line string. */
-    if (!__minstart)
-    {
-        p = PosGetCommandLine();
-        __envptr = PosGetEnvBlock();
-    }
-    else
-    {
-        /* PDOS itself is starting so no API calls should be used. */
-        p = "";
-        __envptr = NULL;
-    }
-#endif
-
-#ifdef __WIN32__
-    p = GetCommandLine();
-#endif
-
 #if !defined(__MVS__) && !defined(__CMS__) && !defined(__VSE__)
 #ifdef __WIN32__
-    stdin->hfile = GetStdHandle(STD_INPUT_HANDLE);
-    stdout->hfile = GetStdHandle(STD_OUTPUT_HANDLE);
-    stderr->hfile = GetStdHandle(STD_ERROR_HANDLE);
+    __stdin->hfile = GetStdHandle(STD_INPUT_HANDLE);
+    __stdout->hfile = GetStdHandle(STD_OUTPUT_HANDLE);
+    __stderr->hfile = GetStdHandle(STD_ERROR_HANDLE);
 #else
-    stdin->hfile = 0;
-    stdout->hfile = 1;
-    stderr->hfile = 2;
+    __stdin->hfile = 0;
+    __stdout->hfile = 1;
+    __stderr->hfile = 2;
 #endif
 
-    stdin->quickBin = 0;
-    stdin->quickText = 0;
-    stdin->textMode = 1;
-    stdin->intFno = 0;
-    stdin->bufStartR = 0;
-    stdin->justseeked = 0;
-    stdin->bufTech = _IOLBF;
-    stdin->intBuffer = buffer1;
-    stdin->fbuf = stdin->intBuffer + 2;
-    *stdin->fbuf++ = '\0';
-    *stdin->fbuf++ = '\0';
-    stdin->szfbuf = BUFSIZ;
-    stdin->endbuf = stdin->fbuf + stdin->szfbuf;
-    *stdin->endbuf = '\n';
-    stdin->noNl = 0;
-    stdin->upto = stdin->endbuf;
-    stdin->bufStartR = -stdin->szfbuf;
-    stdin->mode = __READ_MODE;
-    stdin->ungetCh = -1;
-    stdin->update = 0;
-    stdin->theirBuffer = 0;
-    stdin->permfile = 1;
-    stdin->isopen = 1;
+    __stdin->quickBin = 0;
+    __stdin->quickText = 0;
+    __stdin->textMode = 1;
+    __stdin->intFno = 0;
+    __stdin->bufStartR = 0;
+    __stdin->justseeked = 0;
+    __stdin->bufTech = _IOLBF;
+    __stdin->intBuffer = buffer1;
+    __stdin->fbuf = __stdin->intBuffer + 2;
+    *__stdin->fbuf++ = '\0';
+    *__stdin->fbuf++ = '\0';
+    __stdin->szfbuf = BUFSIZ;
+    __stdin->endbuf = __stdin->fbuf + __stdin->szfbuf;
+    *__stdin->endbuf = '\n';
+    __stdin->noNl = 0;
+    __stdin->upto = __stdin->endbuf;
+    __stdin->bufStartR = -__stdin->szfbuf;
+    __stdin->mode = __READ_MODE;
+    __stdin->ungetCh = -1;
+    __stdin->update = 0;
+    __stdin->theirBuffer = 0;
+    __stdin->permfile = 1;
+    __stdin->isopen = 1;
 
-    stdout->quickBin = 0;
-    stdout->quickText = 0;
-    stdout->textMode = 1;
-    stdout->bufTech = _IOLBF;
-    stdout->intBuffer = buffer2;
-    stdout->fbuf = stdout->intBuffer;
-    *stdout->fbuf++ = '\0';
-    *stdout->fbuf++ = '\0';
-    stdout->szfbuf = BUFSIZ;
-    stdout->endbuf = stdout->fbuf + stdout->szfbuf;
-    *stdout->endbuf = '\n';
-    stdout->noNl = 0;
-    stdout->upto = stdout->fbuf;
-    stdout->bufStartR = 0;
-    stdout->justseeked = 0;
-    stdout->mode = __WRITE_MODE;
-    stdout->update = 0;
-    stdout->theirBuffer = 0;
-    stdout->permfile = 1;
-    stdout->isopen = 1;
+    __stdout->quickBin = 0;
+    __stdout->quickText = 0;
+    __stdout->textMode = 1;
+    __stdout->bufTech = _IOLBF;
+    __stdout->intBuffer = buffer2;
+    __stdout->fbuf = __stdout->intBuffer;
+    *__stdout->fbuf++ = '\0';
+    *__stdout->fbuf++ = '\0';
+    __stdout->szfbuf = BUFSIZ;
+    __stdout->endbuf = __stdout->fbuf + __stdout->szfbuf;
+    *__stdout->endbuf = '\n';
+    __stdout->noNl = 0;
+    __stdout->upto = __stdout->fbuf;
+    __stdout->bufStartR = 0;
+    __stdout->justseeked = 0;
+    __stdout->mode = __WRITE_MODE;
+    __stdout->update = 0;
+    __stdout->theirBuffer = 0;
+    __stdout->permfile = 1;
+    __stdout->isopen = 1;
 
-    stderr->quickBin = 0;
-    stderr->quickText = 0;
-    stderr->textMode = 1;
-    stderr->bufTech = _IOLBF;
-    stderr->intBuffer = buffer3;
-    stderr->fbuf = stderr->intBuffer;
-    *stderr->fbuf++ = '\0';
-    *stderr->fbuf++ = '\0';
-    stderr->szfbuf = BUFSIZ;
-    stderr->endbuf = stderr->fbuf + stderr->szfbuf;
-    *stderr->endbuf = '\n';
-    stderr->noNl = 0;
-    stderr->upto = stderr->fbuf;
-    stderr->bufStartR = 0;
-    stderr->justseeked = 0;
-    stderr->mode = __WRITE_MODE;
-    stderr->update = 0;
-    stderr->theirBuffer = 0;
-    stderr->permfile = 1;
-    stderr->isopen = 1;
+    __stderr->quickBin = 0;
+    __stderr->quickText = 0;
+    __stderr->textMode = 1;
+    __stderr->bufTech = _IOLBF;
+    __stderr->intBuffer = buffer3;
+    __stderr->fbuf = __stderr->intBuffer;
+    *__stderr->fbuf++ = '\0';
+    *__stderr->fbuf++ = '\0';
+    __stderr->szfbuf = BUFSIZ;
+    __stderr->endbuf = __stderr->fbuf + __stderr->szfbuf;
+    *__stderr->endbuf = '\n';
+    __stderr->noNl = 0;
+    __stderr->upto = __stderr->fbuf;
+    __stderr->bufStartR = 0;
+    __stderr->justseeked = 0;
+    __stderr->mode = __WRITE_MODE;
+    __stderr->update = 0;
+    __stderr->theirBuffer = 0;
+    __stderr->permfile = 1;
+    __stderr->isopen = 1;
 #else
     int dyna_sysprint = 0;
     int dyna_systerm = 0;
@@ -349,31 +397,31 @@ __PDPCLIB_API__ int CTYP __start(char *p)
 
 #endif /* MVS */
     __doperm = 1;
-    stdout = fopen("dd:SYSPRINT", "w");
-    if (stdout == NULL)
+    __stdout = fopen("dd:SYSPRINT", "w");
+    if (__stdout == NULL)
     {
         __exita(EXIT_FAILURE);
     }
-    stdout->dynal = dyna_sysprint;
+    __stdout->dynal = dyna_sysprint;
 
-    stderr = fopen("dd:SYSTERM", "w");
-    if (stderr == NULL)
+    __stderr = fopen("dd:SYSTERM", "w");
+    if (__stderr == NULL)
     {
         printf("SYSTERM DD not defined\n");
-        fclose(stdout);
+        fclose(__stdout);
         __exita(EXIT_FAILURE);
     }
-    stderr->dynal = dyna_systerm;
+    __stderr->dynal = dyna_systerm;
 
-    stdin = fopen("dd:SYSIN", "r");
-    if (stdin == NULL)
+    __stdin = fopen("dd:SYSIN", "r");
+    if (__stdin == NULL)
     {
-        fprintf(stderr, "SYSIN DD not defined\n");
-        fclose(stdout);
-        fclose(stderr);
+        fprintf(__stderr, "SYSIN DD not defined\n");
+        fclose(__stdout);
+        fclose(__stderr);
         __exita(EXIT_FAILURE);
     }
-    stdin->dynal = dyna_sysin;
+    __stdin->dynal = dyna_sysin;
     __doperm = 0;
 #if defined(__CMS__)
     __eplist = eplist;
@@ -573,7 +621,7 @@ __PDPCLIB_API__ int CTYP __start(char *p)
                says that the parameter will be read from SYSINPT */
             if (__upsi & 0x80)
             {
-                fgets(parmbuf + 2, sizeof parmbuf - 2, stdin);
+                fgets(parmbuf + 2, sizeof parmbuf - 2, __stdin);
                 p = strchr(parmbuf + 2, '\n');
                 if (p != NULL)
                 {
@@ -592,7 +640,7 @@ __PDPCLIB_API__ int CTYP __start(char *p)
             parmLen = p[0];
             memcpy(parmbuf + 2, p + 1, parmLen);
         }
-                
+
     }
     /* otherwise there is no parm */
     else
@@ -652,6 +700,34 @@ __PDPCLIB_API__ int CTYP __start(char *p)
             p = "";
         }
     }
+#endif /* defined(__MVS__) || defined(__CMS__) || defined(__VSE__) */
+
+    for (x=0; x < __NFILE; x++)
+    {
+        __userFiles[x] = NULL;
+    }
+
+#ifdef __PDPCLIB_DLL
+    return (0);
+#endif
+
+#if defined(__PDOS386__)
+    /* PDOS-32 uses an API call returning the full command line string. */
+    if (!__minstart)
+    {
+        p = PosGetCommandLine();
+        __envptr = PosGetEnvBlock();
+    }
+    else
+    {
+        /* PDOS itself is starting so no API calls should be used. */
+        p = "";
+        __envptr = NULL;
+    }
+#endif
+
+#ifdef __WIN32__
+    p = GetCommandLine();
 #endif
 
 #ifdef __OS2__
@@ -663,10 +739,6 @@ __PDPCLIB_API__ int CTYP __start(char *p)
         DosSetRelMaxFH(&reqFH, &maxFH);
     }
 #endif
-    for (x=0; x < __NFILE; x++)
-    {
-        __userFiles[x] = NULL;
-    }
 #ifdef __OS2__
     argv[0] = p;
     p += strlen(p) + 1;
@@ -684,10 +756,9 @@ __PDPCLIB_API__ int CTYP __start(char *p)
         *p = '\0';
         p++;
     }
-#elif defined(__MSDOS__) || defined(__PDOS386__)
+#elif defined(__MSDOS__)
     argv[0] = "";
 
-#ifdef __MSDOS__
     if(__osver > 0x300)
     {
         env=__envptr;
@@ -703,7 +774,6 @@ __PDPCLIB_API__ int CTYP __start(char *p)
             }
         }
     }
-#endif
     p = p + 0x80;
     p[*p + 1] = '\0';
     p++;
@@ -752,20 +822,53 @@ __PDPCLIB_API__ int CTYP __start(char *p)
     *i1 = argc;
     *i2 = (int)argv;
     return (0);
-#else
-
-#ifdef __MAIN_FP__
-    rc = __main_fp(argc, argv);
+#elif defined(__PDPCLIB_DLL)
+    return (0);
 #else
     rc = main(argc, argv);
-#endif
+
     __exit(rc);
     return (rc);
 #endif
 }
 
+void _exit(int status);
+void _cexit(void);
+void _c_exit(void);
+
 void __exit(int status)
 {
+    /* Complete C library termination and exit with error code. */
+    _cexit();
+
+#ifdef __WIN32__
+    ExitProcess(status);
+#else
+    __exita(status);
+#endif
+}
+
+__PDPCLIB_API__ void _exit(int status)
+{
+    /* Quick C library termination and exit with error code.. */
+    _c_exit();
+
+#ifdef __WIN32__
+    ExitProcess(status);
+#else
+    __exita(status);
+#endif
+}
+
+__PDPCLIB_API__ void _cexit(void)
+{
+    /* Complete C library termination. */
+    _c_exit();
+}
+
+__PDPCLIB_API__ void _c_exit(void)
+{
+    /* Quick C library termination. */
     int x;
 
 #if 0
@@ -794,12 +897,12 @@ void __exit(int status)
     if (__stdpch != NULL) fclose(__stdpch);
 #endif
 
-    if (stdout != NULL) fflush(stdout);
-    if (stderr != NULL) fflush(stderr);
+    if (__stdout != NULL) fflush(__stdout);
+    if (__stderr != NULL) fflush(__stderr);
 #if defined(__MVS__) || defined(__CMS__) || defined(__VSE__)
-    if (stdin != NULL) fclose(stdin);
-    if (stdout != NULL) fclose(stdout);
-    if (stderr != NULL) fclose(stderr);
+    if (__stdin != NULL) fclose(__stdin);
+    if (__stdout != NULL) fclose(__stdout);
+    if (__stderr != NULL) fclose(__stderr);
 #endif
 
 
@@ -815,12 +918,55 @@ void __exit(int status)
     }
 #endif
 #endif /* USE_MEMMGR */
+}
 
+#ifdef __PDPCLIB_DLL
+BOOL WINAPI DllMain(HINSTANCE hinstDll, DWORD fdwReason, LPVOID lpvReserved)
+{
+    __start(0);
+
+    return (TRUE);
+}
+#endif
 
 #ifdef __WIN32__
-    ExitProcess(status);
-#else
-    __exita(status);
-#endif
-    return;
+/* Windows extensions. */
+static int _fmode;
+__PDPCLIB_API__ int *__p__fmode(void)
+{
+    /* Not sure what should this function do. */
+    return (&_fmode);
 }
+
+static char *_environ[] = {NULL};
+static char **_environ_ptr = _environ;
+__PDPCLIB_API__ char ***__p__environ(void)
+{
+    /* Not sure what should this function do. */
+    return (&_environ_ptr);
+}
+
+__PDPCLIB_API__ void __set_app_type(int at)
+{
+    /* Not sure what should this function do. */
+    ;
+}
+
+__PDPCLIB_API__ int _setmode(int fd, int mode)
+{
+    /* Should change mode of file descriptor (fd)
+     * to mode (binary, text, Unicode...)
+     * and return the previous mode.
+     * We do not have _fileno() to convert FILE *
+     * to int and _fileno() can be implemented
+     * as macro accesing FILE internals...,
+     * so this function is just a dummy. */
+    return (0);
+}
+
+__PDPCLIB_API__ void (*_onexit(void (*func)(void)))(void)
+{
+    if (atexit(func)) return (NULL);
+    return (func);
+}
+#endif

@@ -142,7 +142,7 @@ BOOL WINAPI WriteFile(HANDLE hFile,
                       LPDWORD lpNumberOfBytesWritten,
                       LPOVERLAPPED lpOverlapped);
 
-__declspec(noreturn) void WINAPI ExitProcess(UINT uExitCode);
+void WINAPI ExitProcess(UINT uExitCode);
 
 BOOL WINAPI CloseHandle(HANDLE hObject);
 

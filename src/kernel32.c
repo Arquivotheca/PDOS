@@ -41,7 +41,6 @@ BOOL WINAPI WriteFile(HANDLE hFile,
 void WINAPI ExitProcess(UINT uExitCode)
 {
     PosTerminate(uExitCode);
-    return;
 }
 
 BOOL WINAPI CloseHandle(HANDLE hObject)

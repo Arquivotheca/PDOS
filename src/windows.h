@@ -202,3 +202,5 @@ DWORD WINAPI SetFilePointer(
     DWORD dwMoveMethod);
 
 DWORD WINAPI WaitForSingleObject(HANDLE hHandle, DWORD dwMilliseconds);
+
+void WINAPI GetSystemTime(LPSYSTEMTIME lpSystemTime);

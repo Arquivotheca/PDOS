@@ -13,6 +13,7 @@
         .globl _switchFromToThread
         .globl _getEFLAGSAndDisable
         .globl _setEFLAGS
+        .globl _callDllEntry
 
         .text
 
@@ -253,6 +254,26 @@ _setEFLAGS:
         mov     8(%ebp), %eax
         push    %eax
         popf
+        pop     %ebp
+        ret
+
+/////////////////////////////////////////////////////////////
+/ BOOL callDllEntry(void *entry_point, HINSTANCE hinstDll,
+/                   DWORD fdwReason, LPVOID lpvReserved);
+/ Calls the provided DLL entry point using __stdcall convention.
+_callDllEntry:
+        push    %ebp
+        mov     %esp, %ebp
+/ Copies arguments for the DLL entry function (right to left).
+        mov     20(%ebp), %eax
+        push    %eax
+        mov     16(%ebp), %eax
+        push    %eax
+        mov     12(%ebp), %eax
+        push    %eax
+/ Calls the entry point.
+        mov     8(%ebp), %eax
+        call    *%eax
         pop     %ebp
         ret
 

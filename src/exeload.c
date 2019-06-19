@@ -1472,6 +1472,47 @@ static int exeloadLoadPEDLL(unsigned char *exeStart,
         /* After the DLL is bound, time/date stamp is copied. */
         import_desc->TimeDateStamp = export_dir->TimeDateStamp;
     }
+    if (optional_hdr->NumberOfRvaAndSizes > DATA_DIRECTORY_IMPORT_TABLE)
+    {
+        IMAGE_DATA_DIRECTORY *data_dir = (((IMAGE_DATA_DIRECTORY *)
+                                           (optional_hdr + 1))
+                                          + DATA_DIRECTORY_IMPORT_TABLE);
+        if (data_dir->Size != 0)
+        {
+            IMAGE_IMPORT_DESCRIPTOR *import_desc = ((void *)
+                                                    (dllStart
+                                                     + (data_dir
+                                                        ->VirtualAddress)));
+
+            /* Each descriptor is for one DLL
+             * and the array has a null terminator. */
+            for (; import_desc->OriginalFirstThunk; import_desc++)
+            {
+                if (exeloadLoadPEDLL(dllStart, import_desc))
+                {
+                    printf("Failed to load DLL %s\n",
+                           dllStart + (import_desc->Name));
+                    return (1);
+                }
+            }
+        }
+    }
+
+    /* Entry point is optional for DLLs. */
+    if (optional_hdr->AddressOfEntryPoint)
+    {
+        int ret = callDllEntry(dllStart + (optional_hdr->AddressOfEntryPoint),
+                               NULL, 0, NULL);
+
+        if (ret == 0)
+        {
+            printf("Initialization of DLL %s failed\n",
+                   exeStart + (import_desc->Name));
+            kfree(section_table);
+            kfree(optional_hdr);
+            return (1);
+        }
+    }
 
     /* Frees memory not needed by the DLL. */
     kfree(section_table);

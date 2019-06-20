@@ -801,6 +801,12 @@ void WINAPI LeaveCriticalSection(void)
     PosWriteFile(1, "LeaveCriticalSection unimplemented\r\n", len, &len);
     for (;;) ;
 }
+void WINAPI LoadLibraryA(void)
+{
+    size_t len = 28;
+    PosWriteFile(1, "LoadLibraryA unimplemented\r\n", len, &len);
+    for (;;) ;
+}
 void WINAPI LoadLibraryExA(void)
 {
     size_t len = 30;

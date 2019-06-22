@@ -1502,7 +1502,9 @@ static int exeloadLoadPEDLL(unsigned char *exeStart,
     if (optional_hdr->AddressOfEntryPoint)
     {
         int ret = callDllEntry(dllStart + (optional_hdr->AddressOfEntryPoint),
-                               NULL, 0, NULL);
+                               dllStart,
+                               1, /* fdwReason = DLL_PROCESS_ATTACH */
+                               (void *)1); /* lpvReserved = non-NULL */
 
         if (ret == 0)
         {

@@ -134,6 +134,11 @@ typedef struct _SYSTEMTIME {
 #define FILE_CURRENT 1
 #define FILE_END     2
 
+#define DLL_PROCESS_ATTACH 1
+#define DLL_PROCESS_DETACH 0
+#define DLL_THREAD_ATTACH  2
+#define DLL_THREAD_DETACH  3
+
 HANDLE WINAPI GetStdHandle(DWORD nStdHandle);
 
 BOOL WINAPI WriteFile(HANDLE hFile,

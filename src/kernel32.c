@@ -184,6 +184,12 @@ BOOL WINAPI SetConsoleCtrlHandler(PHANDLER_ROUTINE HandlerRoutine, BOOL Add)
     return (0);
 }
 
+void WINAPI SetLastError(DWORD dwErrCode)
+{
+    return;
+}
+
+
 /* auto-genned dummy functions */
 
 void WINAPI AllocConsole(void)
@@ -1084,12 +1090,6 @@ void WINAPI SetHandleInformation(void)
 {
     size_t len = 36;
     PosWriteFile(1, "SetHandleInformation unimplemented\r\n", len, &len);
-    for (;;) ;
-}
-void WINAPI SetLastError(void)
-{
-    size_t len = 28;
-    PosWriteFile(1, "SetLastError unimplemented\r\n", len, &len);
     for (;;) ;
 }
 void WINAPI SetNamedPipeHandleState(void)

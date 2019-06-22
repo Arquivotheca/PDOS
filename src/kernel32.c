@@ -1299,5 +1299,185 @@ void WINAPI WriteTapemark(void)
     PosWriteFile(1, "WriteTapemark unimplemented\r\n", len, &len);
     for (;;) ;
 }
+void WINAPI CompareStringA(void)
+{
+    size_t len = 30;
+    PosWriteFile(1, "CompareStringA unimplemented\r\n", len, &len);
+    for (;;) ;
+}
+void WINAPI FileTimeToLocalFileTime(void)
+{
+    size_t len = 39;
+    PosWriteFile(1, "FileTimeToLocalFileTime unimplemented\r\n", len, &len);
+    for (;;) ;
+}
+void WINAPI FileTimeToSystemTime(void)
+{
+    size_t len = 36;
+    PosWriteFile(1, "FileTimeToSystemTime unimplemented\r\n", len, &len);
+    for (;;) ;
+}
+void WINAPI FindClose(void)
+{
+    size_t len = 25;
+    PosWriteFile(1, "FindClose unimplemented\r\n", len, &len);
+    for (;;) ;
+}
+void WINAPI FindFirstFileA(void)
+{
+    size_t len = 30;
+    PosWriteFile(1, "FindFirstFileA unimplemented\r\n", len, &len);
+    for (;;) ;
+}
+void WINAPI FormatMessageA(void)
+{
+    size_t len = 30;
+    PosWriteFile(1, "FormatMessageA unimplemented\r\n", len, &len);
+    for (;;) ;
+}
+void WINAPI FreeEnvironmentStringsA(void)
+{
+    size_t len = 39;
+    PosWriteFile(1, "FreeEnvironmentStringsA unimplemented\r\n", len, &len);
+    for (;;) ;
+}
+void WINAPI GetACP(void)
+{
+    size_t len = 22;
+    PosWriteFile(1, "GetACP unimplemented\r\n", len, &len);
+    for (;;) ;
+}
+void WINAPI GetCurrentDirectoryA(void)
+{
+    size_t len = 36;
+    PosWriteFile(1, "GetCurrentDirectoryA unimplemented\r\n", len, &len);
+    for (;;) ;
+}
+void WINAPI GetDriveTypeA(void)
+{
+    size_t len = 29;
+    PosWriteFile(1, "GetDriveTypeA unimplemented\r\n", len, &len);
+    for (;;) ;
+}
+void WINAPI GetFullPathNameA(void)
+{
+    size_t len = 32;
+    PosWriteFile(1, "GetFullPathNameA unimplemented\r\n", len, &len);
+    for (;;) ;
+}
+void WINAPI GetLocalTime(void)
+{
+    size_t len = 28;
+    PosWriteFile(1, "GetLocalTime unimplemented\r\n", len, &len);
+    for (;;) ;
+}
+void WINAPI GetOEMCP(void)
+{
+    size_t len = 24;
+    PosWriteFile(1, "GetOEMCP unimplemented\r\n", len, &len);
+    for (;;) ;
+}
+void WINAPI GetStringTypeA(void)
+{
+    size_t len = 30;
+    PosWriteFile(1, "GetStringTypeA unimplemented\r\n", len, &len);
+    for (;;) ;
+}
+void WINAPI GetStringTypeW(void)
+{
+    size_t len = 30;
+    PosWriteFile(1, "GetStringTypeW unimplemented\r\n", len, &len);
+    for (;;) ;
+}
+void WINAPI GetVersion(void)
+{
+    size_t len = 26;
+    PosWriteFile(1, "GetVersion unimplemented\r\n", len, &len);
+    for (;;) ;
+}
+void WINAPI HeapAlloc(void)
+{
+    size_t len = 25;
+    PosWriteFile(1, "HeapAlloc unimplemented\r\n", len, &len);
+    for (;;) ;
+}
+void WINAPI HeapCreate(void)
+{
+    size_t len = 26;
+    PosWriteFile(1, "HeapCreate unimplemented\r\n", len, &len);
+    for (;;) ;
+}
+void WINAPI HeapDestroy(void)
+{
+    size_t len = 27;
+    PosWriteFile(1, "HeapDestroy unimplemented\r\n", len, &len);
+    for (;;) ;
+}
+void WINAPI HeapFree(void)
+{
+    size_t len = 24;
+    PosWriteFile(1, "HeapFree unimplemented\r\n", len, &len);
+    for (;;) ;
+}
+void WINAPI HeapReAlloc(void)
+{
+    size_t len = 27;
+    PosWriteFile(1, "HeapReAlloc unimplemented\r\n", len, &len);
+    for (;;) ;
+}
+void WINAPI LCMapStringA(void)
+{
+    size_t len = 28;
+    PosWriteFile(1, "LCMapStringA unimplemented\r\n", len, &len);
+    for (;;) ;
+}
+void WINAPI LocalFileTimeToFileTime(void)
+{
+    size_t len = 39;
+    PosWriteFile(1, "LocalFileTimeToFileTime unimplemented\r\n", len, &len);
+    for (;;) ;
+}
+void WINAPI SetCurrentDirectoryA(void)
+{
+    size_t len = 36;
+    PosWriteFile(1, "SetCurrentDirectoryA unimplemented\r\n", len, &len);
+    for (;;) ;
+}
+void WINAPI SetEndOfFile(void)
+{
+    size_t len = 28;
+    PosWriteFile(1, "SetEndOfFile unimplemented\r\n", len, &len);
+    for (;;) ;
+}
+void WINAPI SetEnvironmentVariableA(void)
+{
+    size_t len = 39;
+    PosWriteFile(1, "SetEnvironmentVariableA unimplemented\r\n", len, &len);
+    for (;;) ;
+}
+void WINAPI SetFileTime(void)
+{
+    size_t len = 27;
+    PosWriteFile(1, "SetFileTime unimplemented\r\n", len, &len);
+    for (;;) ;
+}
+void WINAPI SetHandleCount(void)
+{
+    size_t len = 30;
+    PosWriteFile(1, "SetHandleCount unimplemented\r\n", len, &len);
+    for (;;) ;
+}
+void WINAPI SystemTimeToFileTime(void)
+{
+    size_t len = 36;
+    PosWriteFile(1, "SystemTimeToFileTime unimplemented\r\n", len, &len);
+    for (;;) ;
+}
+void WINAPI UnhandledExceptionFilter(void)
+{
+    size_t len = 40;
+    PosWriteFile(1, "UnhandledExceptionFilter unimplemented\r\n", len, &len);
+    for (;;) ;
+}
 
 /* end of auto-genned functions */

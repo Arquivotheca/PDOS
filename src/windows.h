@@ -12,77 +12,6 @@
 
 #include <stddef.h>
 
-typedef size_t SIZE_T;
-typedef unsigned int UINT;
-typedef unsigned int DWORD;
-typedef unsigned int *LPDWORD;
-typedef unsigned int BOOL;
-typedef unsigned char BYTE;
-typedef unsigned short WORD;
-typedef long LONG;
-typedef char TCHAR;
-typedef long *PLONG;
-typedef BOOL *LPBOOL;
-typedef BYTE *LPBYTE;
-typedef WORD *LPWORD;
-typedef void *HANDLE;
-typedef HANDLE HINSTANCE;
-typedef void *LPVOID;
-typedef const void *LPCVOID;
-typedef char *LPSTR;
-typedef const char *LPCSTR;
-typedef LPSTR LPTSTR;
-typedef LPCSTR LPCTSTR;
-typedef TCHAR *LPTCH;
-typedef void *HGLOBAL;
-typedef void *LPOVERLAPPED;
-
-typedef struct _SECURITY_ATTRIBUTES {
-    DWORD nLength;
-    LPVOID lpSecurityDescriptor;
-    BOOL bInheritHandle;
-} SECURITY_ATTRIBUTES, *PSECURITY_ATTRIBUTES, *LPSECURITY_ATTRIBUTES;
-
-typedef struct _PROCESS_INFORMATION {
-    HANDLE hProcess;
-    HANDLE hThread;
-    DWORD dwProcessId;
-    DWORD dwThreadId;
-} PROCESS_INFORMATION, *PPROCESS_INFORMATION, *LPPROCESS_INFORMATION;
-
-#define STARTUPINFO STARTUPINFOA
-typedef struct _STARTUPINFOA {
-    DWORD cb;
-    LPSTR lpReserved;
-    LPSTR lpDesktop;
-    LPSTR lpTitle;
-    DWORD dwX;
-    DWORD dwY;
-    DWORD dwXSize;
-    DWORD dwYSize;
-    DWORD dwXCountChars;
-    DWORD dwYCountChars;
-    DWORD dwFillAtribute;
-    DWORD dwFlags;
-    WORD wShowWindow;
-    WORD cbReserved2;
-    LPBYTE lpReserved2;
-    HANDLE hStdInput;
-    HANDLE hStdOutput;
-    HANDLE hStdError;
-} STARTUPINFOA, *LPSTARTUPINFOA;
-
-typedef struct _SYSTEMTIME {
-    WORD wYear;
-    WORD wMonth;
-    WORD wDayOfWeek;
-    WORD wDay;
-    WORD wHour;
-    WORD wMinute;
-    WORD wSecond;
-    WORD wMilliseconds;
-} SYSTEMTIME, *PSYSTEMTIME, *LPSYSTEMTIME;
-
 #define WINAPI __stdcall
 #define STD_INPUT_HANDLE ((DWORD)-10)
 #define STD_OUTPUT_HANDLE ((DWORD)-11)
@@ -138,6 +67,78 @@ typedef struct _SYSTEMTIME {
 #define DLL_PROCESS_DETACH 0
 #define DLL_THREAD_ATTACH  2
 #define DLL_THREAD_DETACH  3
+
+typedef size_t SIZE_T;
+typedef unsigned int UINT;
+typedef unsigned int DWORD;
+typedef unsigned int *LPDWORD;
+typedef unsigned int BOOL;
+typedef unsigned char BYTE;
+typedef unsigned short WORD;
+typedef long LONG;
+typedef char TCHAR;
+typedef long *PLONG;
+typedef BOOL *LPBOOL;
+typedef BYTE *LPBYTE;
+typedef WORD *LPWORD;
+typedef void *HANDLE;
+typedef HANDLE HINSTANCE;
+typedef void *LPVOID;
+typedef const void *LPCVOID;
+typedef char *LPSTR;
+typedef const char *LPCSTR;
+typedef LPSTR LPTSTR;
+typedef LPCSTR LPCTSTR;
+typedef TCHAR *LPTCH;
+typedef void *HGLOBAL;
+typedef void *LPOVERLAPPED;
+typedef BOOL (WINAPI *PHANDLER_ROUTINE)(DWORD CtrlType);
+
+typedef struct _SECURITY_ATTRIBUTES {
+    DWORD nLength;
+    LPVOID lpSecurityDescriptor;
+    BOOL bInheritHandle;
+} SECURITY_ATTRIBUTES, *PSECURITY_ATTRIBUTES, *LPSECURITY_ATTRIBUTES;
+
+typedef struct _PROCESS_INFORMATION {
+    HANDLE hProcess;
+    HANDLE hThread;
+    DWORD dwProcessId;
+    DWORD dwThreadId;
+} PROCESS_INFORMATION, *PPROCESS_INFORMATION, *LPPROCESS_INFORMATION;
+
+#define STARTUPINFO STARTUPINFOA
+typedef struct _STARTUPINFOA {
+    DWORD cb;
+    LPSTR lpReserved;
+    LPSTR lpDesktop;
+    LPSTR lpTitle;
+    DWORD dwX;
+    DWORD dwY;
+    DWORD dwXSize;
+    DWORD dwYSize;
+    DWORD dwXCountChars;
+    DWORD dwYCountChars;
+    DWORD dwFillAtribute;
+    DWORD dwFlags;
+    WORD wShowWindow;
+    WORD cbReserved2;
+    LPBYTE lpReserved2;
+    HANDLE hStdInput;
+    HANDLE hStdOutput;
+    HANDLE hStdError;
+} STARTUPINFOA, *LPSTARTUPINFOA;
+
+typedef struct _SYSTEMTIME {
+    WORD wYear;
+    WORD wMonth;
+    WORD wDayOfWeek;
+    WORD wDay;
+    WORD wHour;
+    WORD wMinute;
+    WORD wSecond;
+    WORD wMilliseconds;
+} SYSTEMTIME, *PSYSTEMTIME, *LPSYSTEMTIME;
 
 HANDLE WINAPI GetStdHandle(DWORD nStdHandle);
 

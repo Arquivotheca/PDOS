@@ -179,6 +179,10 @@ DWORD WINAPI GetVersion(void)
     return (0);
 }
 
+BOOL WINAPI SetConsoleCtrlHandler(PHANDLER_ROUTINE HandlerRoutine, BOOL Add)
+{
+    return (0);
+}
 
 /* auto-genned dummy functions */
 
@@ -1020,12 +1024,6 @@ void WINAPI SetCommTimeouts(void)
 {
     size_t len = 31;
     PosWriteFile(1, "SetCommTimeouts unimplemented\r\n", len, &len);
-    for (;;) ;
-}
-void WINAPI SetConsoleCtrlHandler(void)
-{
-    size_t len = 37;
-    PosWriteFile(1, "SetConsoleCtrlHandler unimplemented\r\n", len, &len);
     for (;;) ;
 }
 void WINAPI SetConsoleCursorInfo(void)

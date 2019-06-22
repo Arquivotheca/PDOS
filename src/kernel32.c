@@ -174,6 +174,11 @@ BOOL WINAPI DllMain(HINSTANCE hinstDll, DWORD fdwReason, LPVOID lpvReserved)
     return (TRUE);
 }
 
+DWORD WINAPI GetVersion(void)
+{
+    return (0);
+}
+
 
 /* auto-genned dummy functions */
 
@@ -1387,12 +1392,6 @@ void WINAPI GetStringTypeW(void)
 {
     size_t len = 30;
     PosWriteFile(1, "GetStringTypeW unimplemented\r\n", len, &len);
-    for (;;) ;
-}
-void WINAPI GetVersion(void)
-{
-    size_t len = 26;
-    PosWriteFile(1, "GetVersion unimplemented\r\n", len, &len);
     for (;;) ;
 }
 void WINAPI HeapAlloc(void)

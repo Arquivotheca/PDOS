@@ -22,15 +22,8 @@ unsigned long dorealint;
 unsigned long (*runreal_p)(unsigned long func, unsigned short *regs);
 rawprot_parms *rp_parms;
 
-void inthdlr(void);
-void inthdlr_8(void);
-void inthdlr_9(void);
+void inthdlr_D(void);
 void inthdlr_E(void);
-void inthdlr_10(void);
-void inthdlr_13(void);
-void inthdlr_15(void);
-void inthdlr_16(void);
-void inthdlr_1A(void);
 void inthdlr_20(void);
 void inthdlr_21(void);
 void inthdlr_25(void);
@@ -92,17 +85,9 @@ void gotint(int intno, unsigned int *save)
         }
     }
 
-    /* If the interrupt number is 0, it signifies that this is
-       just the default handler, and we are not required to take
-       any action. */
-    if (intno == 0)
-    {
-        return;
-    }
-    
     /* The default behaviour is to convert any protected mode
        interrupt into a real mode interrupt. */
-    newregs[0] = (unsigned short)save[0]; /* ax */    
+    newregs[0] = (unsigned short)save[0]; /* ax */
     newregs[1] = (unsigned short)save[1]; /* bx */
     newregs[2] = (unsigned short)save[2]; /* cx */
     newregs[3] = (unsigned short)save[3]; /* dx */
@@ -149,39 +134,38 @@ unsigned long rawprot_p(rawprot_parms *parmlist)
 
 unsigned long runprot_p(rawprot_parms *parmlist)
 {
-    char *intloc;
     int x;
-    unsigned long intdesc1;
-    unsigned long intdesc2;
     unsigned long intaddr;
     runprot_parms *runparm;
     static struct {
         int number;
         void (*handler)(void);
-    } handlerlist[] = { 
-        { 0x8, inthdlr_8 },
-        { 0x9, inthdlr_9 },
-        { 0xE, inthdlr_E },
-        { 0x10, inthdlr_10 },
-        { 0x13, inthdlr_13 },
-        { 0x15, inthdlr_15 },
-        { 0x16, inthdlr_16 },
-        { 0x1A, inthdlr_1A },
-        { 0x20, inthdlr_20 },
-        { 0x21, inthdlr_21 },
-        { 0x25, inthdlr_25 },
-        { 0x26, inthdlr_26 },
-        { 0x80, inthdlr_80 },
-        { 0xA0, inthdlr_A0 },
-        { 0xA3, inthdlr_A3 },
-        { 0xA5, inthdlr_A5 },
-        { 0xA6, inthdlr_A6 },
-        { 0xAA, inthdlr_AA },
-        { 0xB0, inthdlr_B0 },
-        { 0xB1, inthdlr_B1 },
-        { 0, 0 } };
+        int maxRing; /* current ring <= maxRing can call the interrupt. */
+    } handlerlist[] = {
+        { 0xD, inthdlr_D, 0 },
+        { 0xE, inthdlr_E, 0 },
+        { 0x20, inthdlr_20, 3 },
+        { 0x21, inthdlr_21, 3 },
+        { 0x25, inthdlr_25, 3 },
+        { 0x26, inthdlr_26, 3 },
+        { 0x80, inthdlr_80, 3 },
+        { 0xA0, inthdlr_A0, 0 },
+        { 0xA3, inthdlr_A3, 0 },
+        { 0xA5, inthdlr_A5, 0 },
+        { 0xA6, inthdlr_A6, 0 },
+        { 0xAA, inthdlr_AA, 0 },
+        { 0xB0, inthdlr_B0, 0 },
+        { 0xB1, inthdlr_B1, 0 },
+        { 0, 0, 0 } };
+    struct {
+        unsigned short offset_15_0;
+        unsigned short selector;
+        unsigned char zero; /* Must be 0. */
+        unsigned char type_attr;
+        unsigned short offset_31_16;
+    } *orig_intloc, *intloc;
 
-    intloc = (void *)(parmlist->intloc);
+    orig_intloc = (void *)(parmlist->intloc);
     runparm = (runprot_parms *)parmlist->userparm;
     intbuffer = (void *)(runparm->intbuffer);
     dorealint = runparm->dorealint;
@@ -189,29 +173,32 @@ unsigned long runprot_p(rawprot_parms *parmlist)
                  (runparm->runreal));
 
     /* Configures the Interrupt Descriptor Table (IDT). */
-    intaddr = (unsigned long)(&inthdlr);
-    intdesc1 = (0x8 << 16) | (intaddr & 0xffff);
-    intdesc2 = (intaddr & 0xffff0000)
-               | (1 << 15)
-               | (0 << 13)
-               | (0x0e << 8);
-               
-    /* install the generic interrupt handler */
+    /* Marks all interrupts as unused. */
+    intloc = orig_intloc;
     for (x = 0; x < 256; x++)
     {
-        *((unsigned long *)intloc + x * 2) = intdesc1;
-        *((unsigned long *)intloc + x * 2 + 1) = intdesc2;
+        intloc->offset_15_0 = 0;
+        intloc->offset_31_16 = 0;
+        intloc->zero = 0;
+        intloc->selector = 0;
+        intloc->type_attr = 0;
+        intloc++;
     }
 
     /* Installs the handlers from handlerlist. */
+    intloc = orig_intloc;
     for (x = 0; handlerlist[x].number != 0; x++)
-    {    
+    {
         intaddr = (unsigned long)handlerlist[x].handler;
-        intdesc1 = (0x8 << 16) | (intaddr & 0xffff);
-        *((unsigned long *)intloc + handlerlist[x].number * 2) = intdesc1;
-        *((unsigned long *)intloc + handlerlist[x].number * 2 + 1) = intdesc2;
+        intloc = orig_intloc + handlerlist[x].number;
+        intloc->offset_15_0 = (intaddr & 0xffff);
+        intloc->offset_31_16 = (intaddr & 0xffff0000) >> 16;
+        intloc->zero = 0;
+        intloc->selector = 0x8;
+        intloc->type_attr = 0x8E | (handlerlist[x].maxRing << 5);
     }
     /* End of IDT configuration. */
+
     rawprot_p(parmlist);
     numUserInts = 0;
     int_enable();
@@ -234,7 +221,7 @@ unsigned long runaout_p(rawprot_parms *parmlist)
 void protintHandler(int intno, int (*func)(unsigned int *))
 {
     int x;
-    
+
     for (x = 0; x < numUserInts; x++)
     {
         if (userInt[x].intno == intno)

@@ -4,18 +4,11 @@
 
 / symbols defined outside of here that are accessed
         .globl _gotint
-        .globl saveesp
 
 / symbols defined here that are accessed from elsewhere
         .globl _inthdlr
-        .globl _inthdlr_8
-        .globl _inthdlr_9
+        .globl _inthdlr_D
         .globl _inthdlr_E
-        .globl _inthdlr_10
-        .globl _inthdlr_13
-        .globl _inthdlr_15
-        .globl _inthdlr_16
-        .globl _inthdlr_1A
         .globl _inthdlr_20
         .globl _inthdlr_21
         .globl _inthdlr_25
@@ -33,254 +26,78 @@
         .text
 
 /////////////////////////////////////////////////////////////
-/ void inthdlr(void);
-/
-/ handling interrupts is very complex.  here is an example:
-/
-/ command.com, 0x30 does int 21 to exec pgm world
-/ interrupt saves esp into saveesp
-/ then a load is done, clobbering saveesp, but not before saving it,
-/ although since it was already 0x10 it doesn't need to be saved in this case
-/ then world is executed, which does an int 21 to do a print
-/ it saves the old saveesp onto the stack, puts the new esp into saveesp,
-/ then there is a bios call, but it doesn't do anything since ss is already
-/ 0x10.  then the interrupt ends, restoring saveesp
+/ void inthdlr_??(void);
 
-/ _inthdlr is the default interrupt handler designed to do nothing.
-/ It sets the interrupt number to 0 for recognition by gotint.
-_inthdlr:
-        push   %eax
-        mov    %ds, %ax
-        push   %eax
-        mov    $0x10, %eax
-        mov    %ax, %ds
-        push   intnum
-        movl   $0x0, intnum
-        jmp    _inthdlr_q
-_inthdlr_8:
-        push   %eax
-        mov    %ds, %ax
-        push   %eax
-        mov    $0x10, %eax
-        mov    %ax, %ds
-        push   intnum
-        movl   $0x8, intnum
-        jmp    _inthdlr_q
-_inthdlr_9:
-        push   %eax
-        mov    %ds, %ax
-        push   %eax
-        mov    $0x10, %eax
-        mov    %ax, %ds
-        push   intnum
-        movl   $0x9, intnum
-        jmp    _inthdlr_q
-_inthdlr_E:
-        push   %eax
-        mov    %ds, %ax
-        push   %eax
-        mov    $0x10, %eax
-        mov    %ax, %ds
-        push   intnum
-        movl   $0xE, intnum
+/ Protected mode exceptions
+_inthdlr_D:
+        push   $0xD
         jmp    _inthdlr_r
-_inthdlr_10:
-        push   %eax
-        mov    %ds, %ax
-        push   %eax
-        mov    $0x10, %eax
-        mov    %ax, %ds
-        push   intnum
-        movl   $0x10, intnum
-        jmp    _inthdlr_p
-_inthdlr_13:
-        push   %eax
-        mov    %ds, %ax
-        push   %eax
-        mov    $0x10, %eax
-        mov    %ax, %ds
-        push   intnum
-        movl   $0x13, intnum
-        jmp    _inthdlr_p
-_inthdlr_15:
-        push   %eax
-        mov    %ds, %ax
-        push   %eax
-        mov    $0x10, %eax
-        mov    %ax, %ds
-        push   intnum
-        movl   $0x15, intnum
-        jmp    _inthdlr_p
-_inthdlr_16:
-        push   %eax
-        mov    %ds, %ax
-        push   %eax
-        mov    $0x10, %eax
-        mov    %ax, %ds
-        push   intnum
-        movl   $0x16, intnum
-        jmp    _inthdlr_p
-_inthdlr_1A:
-        push   %eax
-        mov    %ds, %ax
-        push   %eax
-        mov    $0x10, %eax
-        mov    %ax, %ds
-        push   intnum
-        movl   $0x1A, intnum
-        jmp    _inthdlr_p
+_inthdlr_E:
+        push   $0xE
+        jmp    _inthdlr_r
+/ System calls
 _inthdlr_20:
-        push   %eax
-        mov    %ds, %ax
-        push   %eax
-        mov    $0x10, %eax
-        mov    %ax, %ds
-        push   intnum
-        movl   $0x20, intnum
+        push   $0x20
         jmp    _inthdlr_p
 _inthdlr_21:
-        push   %eax
-        mov    %ds, %ax
-        push   %eax
-        mov    $0x10, %eax
-        mov    %ax, %ds
-        push   intnum
-        movl   $0x21, intnum
+        push   $0x21
         jmp    _inthdlr_p
 _inthdlr_25:
-        push   %eax
-        mov    %ds, %ax
-        push   %eax
-        mov    $0x10, %eax
-        mov    %ax, %ds
-        push   intnum
-        movl   $0x25, intnum
+        push   $0x25
         jmp    _inthdlr_p
 _inthdlr_26:
-        push   %eax
-        mov    %ds, %ax
-        push   %eax
-        mov    $0x10, %eax
-        mov    %ax, %ds
-        push   intnum
-        movl   $0x26, intnum
+        push   $0x26
         jmp    _inthdlr_p
 _inthdlr_80:
-        push   %eax
-        mov    %ds, %ax
-        push   %eax
-        mov    $0x10, %eax
-        mov    %ax, %ds
-        push   intnum
-        movl   $0x80, intnum
+        push   $0x80
         jmp    _inthdlr_p
 / Interrupt handlers used to access BIOS
 _inthdlr_A0:
-        push   %eax
-        mov    %ds, %ax
-        push   %eax
-        mov    $0x10, %eax
-        mov    %ax, %ds
-        push   intnum
-        movl   $0xA0, intnum
+        push   $0xA0
         jmp    _inthdlr_p
 _inthdlr_A3:
-        push   %eax
-        mov    %ds, %ax
-        push   %eax
-        mov    $0x10, %eax
-        mov    %ax, %ds
-        push   intnum
-        movl   $0xA3, intnum
+        push   $0xA3
         jmp    _inthdlr_p
 _inthdlr_A5:
-        push   %eax
-        mov    %ds, %ax
-        push   %eax
-        mov    $0x10, %eax
-        mov    %ax, %ds
-        push   intnum
-        movl   $0xA5, intnum
+        push   $0xA5
         jmp    _inthdlr_p
 _inthdlr_A6:
-        push   %eax
-        mov    %ds, %ax
-        push   %eax
-        mov    $0x10, %eax
-        mov    %ax, %ds
-        push   intnum
-        movl   $0xA6, intnum
+        push   $0xA6
         jmp    _inthdlr_p
 _inthdlr_AA:
-        push   %eax
-        mov    %ds, %ax
-        push   %eax
-        mov    $0x10, %eax
-        mov    %ax, %ds
-        push   intnum
-        movl   $0xAA, intnum
+        push   $0xAA
         jmp    _inthdlr_p
 / IRQ handlers.
 _inthdlr_B0:
-        push   %eax
-        mov    %ds, %ax
-        push   %eax
-        mov    $0x10, %eax
-        mov    %ax, %ds
-        push   intnum
-        movl   $0xB0, intnum
+        push   $0xB0
         jmp    _inthdlr_q
 _inthdlr_B1:
+        push   $0xB1
+        jmp    _inthdlr_q
+
+/ by the time we get here, the following things are on the stack:
+/ old SS, old ESP, EFLAGS, old CS, return address, (error code),
+/ interrupt number
+
+/ For interrupts modifying the flags, like system calls
+_inthdlr_p:
         push   %eax
+/ above is original eax
         mov    %ds, %ax
         push   %eax
         mov    $0x10, %eax
         mov    %ax, %ds
-        push   intnum
-        movl   $0xB1, intnum
-        jmp    _inthdlr_q
-        
-/ by the time we get here, the following things are on the stack:
-/ original eax, original ds (stored as doubleword), original intnum
-
-_inthdlr_p:
-        push   saveess
-        push   saveesp
-        push   %ebx
-        push   saveeax
-        push   saveebx
-        mov    $0, %eax
-        mov    %ss, %ax
-        mov    %eax, saveess
-        mov    %esp, %eax
-        mov    %eax, saveesp
-        push   %ebp
-        mov    %esp, %ebp        
-/ Restore original eax (at time of interrupt) which is now located
-/ at offset 32 thanks to the above pushes
-        mov    32(%ebp), %eax
-        mov    %eax, saveeax
-        pop    %ebp
-        cmp    $0x10, saveess
-        je     level10        
-        mov    $0x10, %eax
-        mov    %ax, %ss
         mov    %ax, %es
         mov    %ax, %fs
         mov    %ax, %gs
-        mov    call32_esp, %eax
-        mov    %eax, %esp
-level10:
-        mov    saveeax, %eax
-/ saveess and saveesp must be saved on the stack
-/ because task switch can occur
-/ and the next interrupt might not restore them
-/ before switch back happens
-        push   saveess
-        push   saveesp
-        push   %edx
+/ above saves original ds and switches segments
+        push   %ebp
+        mov    %esp, %ebp
+        mov    8(%ebp), %eax
+        pop    %ebp
+        subl   $4, %esp
 / above is actually room for flags
-        push   %edx
+        subl   $4, %esp
 / above is actually room for cflag
         push   %edi
         push   %esi
@@ -288,110 +105,74 @@ level10:
         push   %ecx
         push   %ebx
         push   %eax
-        mov    %eax, %esi
-        mov    %ebx, %edi
         mov    %esp, %eax
-/ above is pointer to saved registers
         push   %eax
-        mov    intnum, %edx
+/ above is pointer to saved registers
+        push   %ebp
+        mov    %esp, %ebp
+        mov    48(%ebp), %edx
+        pop    %ebp
         push   %edx
-/ above interrupt number
+/ above is interrupt number copied for _gotint
         call   _gotint
         pop    %edx
         pop    %eax
 / pops saved registers
         pop    %eax
+        push   %ebp
+        mov    %esp, %ebp
+        mov    %eax, 36(%ebp)
+        pop    %ebp
+/ above saves new eax on the stack where original eax was
+/ so the register can be used freely
         pop    %ebx
         pop    %ecx
         pop    %edx
         pop    %esi
         pop    %edi
-        mov    %eax, saveeax
+        addl   $4, %esp
+/ above is cflag, handled by _gotint
         pop    %eax
-/ above is actually cflag
-        mov    %ebx, saveebx
-        pop    %ebx
-/ above is actually flags
-        pop    saveesp
-        pop    saveess
-/ above are saved saveesp and saveess to handle task switches
-        cmp    $0x10, saveess
-        je     level10b
-        mov    saveesp, %eax
-        mov    %eax, %esp
-level10b:
-        mov    saveess, %eax
-        mov    %ax, %ss
+/ above is flags
         push   %ebp
         mov    %esp, %ebp
 / update the bottom 8 bits plus bit 11 (OF) of the flags
-        andl   $0xfffff700, 44(%ebp)
-        and    $0x8ff, %ebx
-        or     %ebx, 44(%ebp)
-        mov    saveebx, %ebx
-        mov    %ebx, 12(%ebp)
-        push   %eax
-        mov    saveeax, %eax
-        mov    %eax, 32(%ebp)
-        pop    %eax
+        andl   $0xfffff700, 24(%ebp)
+        and    $0x8ff, %eax
+        or     %eax, 24(%ebp)
         pop    %ebp
+/ restores segment registers
+        pop    %eax
+        mov    %ax, %ds
         mov    %ax, %es
         mov    %ax, %fs
         mov    %ax, %gs
-        pop    saveebx
-        pop    saveeax
-        pop    %ebx
-        pop    saveesp
-        pop    saveess
-        pop    intnum
+/ gets new eax from the stack
         pop    %eax
-        mov    %ax, %ds
-        pop    %eax
-        push   %ebp
-        mov    %esp, %ebp
-        pop    %ebp
-        iret        
+        addl   $4, %esp
+/ above is original interrupt number
+        iret
 
 / This is for interrupts that should not alter
 / the flags, like the timer interrupt
 _inthdlr_q:
-        push   saveess
-        push   saveesp
-        push   %ebx
-        push   saveeax
-        push   saveebx
-        mov    $0, %eax
-        mov    %ss, %ax
-        mov    %eax, saveess
-        mov    %esp, %eax
-        mov    %eax, saveesp
-        push   %ebp
-        mov    %esp, %ebp
-/ Restore original eax (at time of interrupt) which is now located
-/ at offset 32 thanks to the above pushes
-        mov    32(%ebp), %eax
-        mov    %eax, saveeax
-        pop    %ebp
-        cmp    $0x10, saveess
-        je     level10c
+        push   %eax
+/ above is original eax
+        mov    %ds, %ax
+        push   %eax
         mov    $0x10, %eax
-        mov    %ax, %ss
+        mov    %ax, %ds
         mov    %ax, %es
         mov    %ax, %fs
         mov    %ax, %gs
-        mov    call32_esp, %eax
-        mov    %eax, %esp
-level10c:
-        mov    saveeax, %eax
-/ saveess and saveesp must be saved on stack
-/ because task switch can occur
-/ and the next interrupt might not restore them
-/ before switch back happens
-        push   saveess
-        push   saveesp
-        push   %edx
+/ above saves original ds and switches segments
+        push   %ebp
+        mov    %esp, %ebp
+        mov    8(%ebp), %eax
+        pop    %ebp
+        subl   $4, %esp
 / above is actually room for flags
-        push   %edx
+        subl   $4, %esp
 / above is actually room for cflag
         push   %edi
         push   %esi
@@ -399,112 +180,72 @@ level10c:
         push   %ecx
         push   %ebx
         push   %eax
-        mov    %eax, %esi
-        mov    %ebx, %edi
         mov    %esp, %eax
-/ above is pointer to saved registers
         push   %eax
-        mov    intnum, %edx
+/ above is pointer to saved registers
+        push   %ebp
+        mov    %esp, %ebp
+        mov    48(%ebp), %edx
+        pop    %ebp
         push   %edx
-/ above interrupt number
+/ above is interrupt number copied for _gotint
         call   _gotint
         pop    %edx
         pop    %eax
 / pops saved registers
         pop    %eax
+        push   %ebp
+        mov    %esp, %ebp
+        mov    %eax, 36(%ebp)
+        pop    %ebp
+/ above saves new eax on the stack where original eax was
+/ so the register can be used freely
         pop    %ebx
         pop    %ecx
         pop    %edx
         pop    %esi
         pop    %edi
-        mov    %eax, saveeax
+        addl   $4, %esp
+/ above is cflag, handled by _gotint
+        addl   $4, %esp
+/ above is flags, ignored
+/ restores segment registers
         pop    %eax
-/ above is actually cflag
-        mov    %ebx, saveebx
-        pop    %ebx
-/ above is actually flags
-        pop    saveesp
-        pop    saveess
-/ above are saved saveesp and saveess to handle task switches
-        cmp    $0x10, saveess
-        je     level10d
-        mov    saveesp, %eax
-        mov    %eax, %esp
-level10d:
-        mov    saveess, %eax
-        mov    %ax, %ss
-        push   %ebp
-        mov    %esp, %ebp
-/ Don't set the flags
-/        mov    %bl, 44(%ebp)
-        mov    saveebx, %ebx
-        mov    %ebx, 12(%ebp)
-        push   %eax
-        mov    saveeax, %eax
-        mov    %eax, 32(%ebp)
-        pop    %eax
-        pop    %ebp
+        mov    %ax, %ds
         mov    %ax, %es
         mov    %ax, %fs
         mov    %ax, %gs
-        pop    saveebx
-        pop    saveeax
-        pop    %ebx
-        pop    saveesp
-        pop    saveess
-        pop    intnum
+/ gets new eax from the stack
         pop    %eax
-        mov    %ax, %ds
-        pop    %eax
-        push   %ebp
-        mov    %esp, %ebp
-        pop    %ebp
+        addl   $4, %esp
+/ above is original interrupt number
         iret
 
 / This is for exceptions that have an error code pushed when they occur.
 _inthdlr_r:
-        push   saveess
-        push   saveesp
-        push   %ebx
-        push   saveeax
-        push   saveebx
-        mov    $0, %eax
-        mov    %ss, %ax
-        mov    %eax, saveess
-        mov    %esp, %eax
-        mov    %eax, saveesp
-        push   %ebp
-        mov    %esp, %ebp
-/ Restore original eax (at time of interrupt) which is now located
-/ at offset 32 thanks to the above pushes
-        mov    32(%ebp), %eax
-        mov    %eax, saveeax
-/ Saves the error code pushed after the data for iret.
-        mov    36(%ebp), %eax
-        mov    %eax, saveerrorcode
-        pop    %ebp
-        cmp    $0x10, saveess
-        je     level10e
+        push   %eax
+/ above is original eax
+        mov    %ds, %ax
+        push   %eax
         mov    $0x10, %eax
-        mov    %ax, %ss
+        mov    %ax, %ds
         mov    %ax, %es
         mov    %ax, %fs
         mov    %ax, %gs
-        mov    call32_esp, %eax
-        mov    %eax, %esp
-level10e:
-        mov    saveeax, %eax
-/ saveess and saveesp must be saved on stack
-/ because task switch can occur
-/ and the next interrupt might not restore them
-/ before switch back happens
-        push   saveess
-        push   saveesp
-        push   saveerrorcode
-/ above is duplicated error code
-        push   %edx
+/ above saves original ds and switches segments
+        push   %ebp
+        mov    %esp, %ebp
+        mov    16(%ebp), %eax
+        pop    %ebp
+        push   %eax
+/ above is duplicated error code so it can be accessed as regs[8]
+        push   %ebp
+        mov    %esp, %ebp
+        mov    12(%ebp), %eax
+        pop    %ebp
+        subl   $4, %esp
 / above is actually room for flags
-        push   %edx
+        subl   $4, %esp
 / above is actually room for cflag
         push   %edi
         push   %esi
@@ -512,70 +253,49 @@ level10e:
         push   %ecx
         push   %ebx
         push   %eax
-        mov    %eax, %esi
-        mov    %ebx, %edi
         mov    %esp, %eax
-/ above is pointer to saved registers
         push   %eax
-        mov    intnum, %edx
+/ above is pointer to saved registers
+        push   %ebp
+        mov    %esp, %ebp
+        mov    52(%ebp), %edx
+        pop    %ebp
         push   %edx
-/ above interrupt number
+/ above is interrupt number copied for _gotint
         call   _gotint
         pop    %edx
         pop    %eax
 / pops saved registers
         pop    %eax
+        push   %ebp
+        mov    %esp, %ebp
+        mov    %eax, 40(%ebp)
+        pop    %ebp
+/ above saves new eax on the stack where original eax was
+/ so the register can be used freely
         pop    %ebx
         pop    %ecx
         pop    %edx
         pop    %esi
         pop    %edi
-        mov    %eax, saveeax
-        pop    %eax
-/ above is actually cflag
-        mov    %ebx, saveebx
-        pop    %ebx
-/ above is actually flags
         addl   $4, %esp
-/ above is the duplicated error code
-        pop    saveesp
-        pop    saveess
-/ above are saved saveesp and saveess to handle task switches
-        cmp    $0x10, saveess
-        je     level10f
-        mov    saveesp, %eax
-        mov    %eax, %esp
-level10f:
-        mov    saveess, %eax
-        mov    %ax, %ss
-        push   %ebp
-        mov    %esp, %ebp
-/ Don't set the flags
-/        mov    %bl, 44(%ebp)
-        mov    saveebx, %ebx
-        mov    %ebx, 12(%ebp)
-        push   %eax
-        mov    saveeax, %eax
-        mov    %eax, 32(%ebp)
+/ above is cflag, handled by _gotint
+        addl   $4, %esp
+/ above is flags, ignored
+        addl   $4, %esp
+/ above is duplicated error code
+/ restores segment registers
         pop    %eax
-        pop    %ebp
+        mov    %ax, %ds
         mov    %ax, %es
         mov    %ax, %fs
         mov    %ax, %gs
-        pop    saveebx
-        pop    saveeax
-        pop    %ebx
-        pop    saveesp
-        pop    saveess
-        pop    intnum
+/ gets new eax from the stack
         pop    %eax
-        mov    %ax, %ds
-        pop    %eax
-        push   %ebp
-        mov    %esp, %ebp
-        pop    %ebp
-/ Removes the error code pushed when the exception occured.
         addl   $4, %esp
+/ above is original interrupt number
+        addl   $4, %esp
+/ above is original error code
         iret
 
 /////////////////////////////////////////////////////////////
@@ -584,20 +304,3 @@ level10f:
 _int_enable:
         sti
         ret
-
-.data
-        .p2align 2
-saveeax:
-        .space 4
-        .p2align 2
-saveebx:
-        .space 4
-        .p2align 2
-saveess:
-        .space 4
-        .p2align 2
-saveerrorcode:
-        .space 4
-        .p2align 2
-intnum:
-        .space 4

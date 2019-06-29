@@ -35,6 +35,7 @@
 /* Flags for Page Table/Directory entries. */
 #define PAGE_PRESENT 0x1
 #define PAGE_RW      0x2
+#define PAGE_USER    0x4
 /* Page Table/Directory entry without flags. */
 #define PAGE_PHYS_ADDR 0xFFFFF000
 
@@ -47,12 +48,16 @@ typedef struct vmm_node {
 
 typedef struct {
     PHYSMEMMGR *physmemmgr;
+    int user;
     void *pd_physaddr; /* Stores the physical address of the assigned PD. */
     VMM_NODE *head;
     VMM_NODE *tail;
 } VMM;
 
-void vmmInit(VMM *vmm, PHYSMEMMGR *physmemmgr);
+#define VMM_KERNEL 0
+#define VMM_USER   PAGE_USER
+
+void vmmInit(VMM *vmm, PHYSMEMMGR *physmemmgr, int user);
 void vmmTerm(VMM *vmm);
 
 /* Copies entries mapping the virtual memory specified

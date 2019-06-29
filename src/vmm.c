@@ -34,12 +34,20 @@ static volatile void *memset_volatile(volatile void *s,
                                       int c,
                                       size_t n);
 
-void vmmInit(VMM *vmm, PHYSMEMMGR *physmemmgr)
+void vmmInit(VMM *vmm, PHYSMEMMGR *physmemmgr, int user)
 {
     volatile unsigned long *pd = (void *)RECURSIVE_PD_ADDR;
     volatile unsigned long *new_pd = (void *)MODIFIED_PD_ADDR;
 
     vmm->physmemmgr = physmemmgr;
+    if (user != VMM_KERNEL && user != VMM_USER)
+    {
+        printf("(VMM) Initialization failed\n");
+        printf("Invalid user argument: %x\n", user);
+        printf("System halting\n");
+        for (;;);
+    }
+    vmm->user = user;
     vmm->pd_physaddr = physmemmgrAllocPageFrame(vmm->physmemmgr);
 
     /* Prepares the new PD for usage using the current one. */
@@ -403,7 +411,8 @@ static void vmmMapPages(VMM *vmm, void *addr, unsigned long num_pages)
 
             new_pt = physmemmgrAllocPageFrame(vmm->physmemmgr);
             page_directory[pd_index] = (((unsigned long)new_pt)
-                                        | PAGE_RW | PAGE_PRESENT);
+                                        | PAGE_RW | PAGE_PRESENT
+                                        | (vmm->user));
             /* Zeroes the newly allocated PT
              * so all entries are marked as not present. */
             memset_volatile(page_table, 0, PAGE_SIZE);
@@ -416,7 +425,8 @@ static void vmmMapPages(VMM *vmm, void *addr, unsigned long num_pages)
 
             new_page_frame = physmemmgrAllocPageFrame(vmm->physmemmgr);
             page_table[pt_index] = (((unsigned long)new_page_frame)
-                                    | PAGE_RW | PAGE_PRESENT);
+                                    | PAGE_RW | PAGE_PRESENT
+                                    | (vmm->user));
         }
         if (num_pages == 0) return;
     }

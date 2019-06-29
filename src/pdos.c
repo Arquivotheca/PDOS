@@ -93,6 +93,7 @@ static void scrunchf(char *dest, char *new);
 static int ff_search(void);
 
 #ifdef __32BIT__
+int int0D(unsigned int *regs);
 int int0E(unsigned int *regs);
 int int20(unsigned int *regs);
 /* INT 25 - Absolute Disk Read */
@@ -261,6 +262,51 @@ static unsigned long dopoweroff;
 #endif
 
 #ifdef __32BIT__
+typedef struct {
+    unsigned short link;
+    unsigned short reserved1;
+    unsigned int *esp0;
+    unsigned short ss0;
+    unsigned short reserved2;
+    unsigned int *esp1;
+    unsigned short ss1;
+    unsigned short reserved3;
+    unsigned int *esp2;
+    unsigned short ss2;
+    unsigned short reserved4;
+    unsigned int cr3;
+    void *eip;
+    unsigned int eflags;
+    unsigned int eax;
+    unsigned int ecx;
+    unsigned int edx;
+    unsigned int ebx;
+    unsigned int *esp;
+    unsigned int *ebp;
+    unsigned int esi;
+    unsigned int edi;
+    unsigned short es;
+    unsigned short reserved5;
+    unsigned short cs;
+    unsigned short reserved6;
+    unsigned short ss;
+    unsigned short reserved7;
+    unsigned short ds;
+    unsigned short reserved8;
+    unsigned short fs;
+    unsigned short reserved9;
+    unsigned short gs;
+    unsigned short reserved10;
+    unsigned short ldt;
+    unsigned short reserved11;
+    unsigned short debug_trap;
+    unsigned short io_map_base;
+} TASK_STATE_SEGMENT;
+
+static TASK_STATE_SEGMENT ringSwitchTSS;
+#endif
+
+#ifdef __32BIT__
 static PHYSMEMMGR physmemmgr;
 /* Once mutitasking is running all accesses
  * to kernel_vmm should be protected by disabling interrupts. */
@@ -269,6 +315,7 @@ static VMM kernel_vmm;
 typedef struct _TCB {
     void *stack_pointer;
     void *call32_esp;
+    unsigned int *esp0;
     void *stack_bottom;
     int state;
     PDOS_PROCESS *pcb;
@@ -476,6 +523,8 @@ static void schedule(void)
                 loadPageDirectory(curPCB->vmm->pd_physaddr);
             }
         }
+        oldTCB->esp0 = ringSwitchTSS.esp0;
+        ringSwitchTSS.esp0 = curTCB->esp0;
         switchFromToThread(oldTCB, curTCB);
     }
     else
@@ -724,6 +773,17 @@ void pdosRun(void)
         printf("less than 4 MiB available - system halting\n");
         for (;;) ;
     }
+    {
+        char *below = transferbuf;
+        volatile char *above = below + 0x100000;
+
+        *above = '\0';
+        *below = 'X';
+        if (*above == 'X')
+        {
+            printf("A20 line not enabled - random results\n");
+        }
+    }
 #ifdef EXE32
     memavail -= 0x500000; /* room for disk cache */
     memmgrSupply(&memmgr, (void *)0x700000, memavail);
@@ -748,11 +808,21 @@ void pdosRun(void)
              paddr < 0x400000;
              paddr += PAGE_FRAME_SIZE, pt_entry++)
         {
-            *pt_entry = paddr;
+            /* All pages in the first 4 MiB have unrestricted access
+             * for now. */
+            *pt_entry = paddr | PAGE_USER;
+        }
+        /* Region from 0xA0000 to 0x100000 is used for VGA and other devices,
+         * so it should not be restricted for ring 3 for now. */
+        for (paddr = 0xA0000, pt_entry = page_table + 0xA0000 / PAGE_SIZE;
+             paddr < 0x100000;
+             paddr += PAGE_FRAME_SIZE, pt_entry++)
+        {
+            *pt_entry = paddr | PAGE_USER | PAGE_RW | PAGE_PRESENT;
         }
         /* Puts the first Page Table into the Page Directory. */
         page_directory[0] = (((unsigned long)page_table)
-                             | PAGE_RW | PAGE_PRESENT);
+                             | PAGE_USER | PAGE_RW | PAGE_PRESENT);
         /* Maps the Page Directory into itself
          * so all Page Tables can be accessed at 0xffc00000.
          * The Page Directory itself is at 0xfffff000. */
@@ -762,7 +832,9 @@ void pdosRun(void)
         enablePaging();
 
         /* Sets up the kernel VMM. */
-        vmmInit(&kernel_vmm, &physmemmgr);
+        /* VMM_USER instead of VMM_KERNEL
+         * because applications are using kernel heap. */
+        vmmInit(&kernel_vmm, &physmemmgr, VMM_USER);
         /* Copies only the needed address range. */
         vmmCopyCurrentMapping(&kernel_vmm,
                               (void *)KERNEL_SPACE_START,
@@ -776,23 +848,36 @@ void pdosRun(void)
         /* Frees memory used for the temporary address space mapping. */
         physmemmgrFreePageFrame(&physmemmgr, page_directory);
     }
+    {
+        struct {
+            unsigned short limit_15_0;
+            unsigned short base_15_0;
+            unsigned char base_23_16;
+            unsigned char access;
+            unsigned char gran_limit;
+            unsigned char base_31_24;
+        } *tss_descriptor = (void *)(((char *)gdt) + 0x38);
+        unsigned int base = (unsigned int)&ringSwitchTSS;
+        unsigned int limit = sizeof(TASK_STATE_SEGMENT) - 1;
+
+        memset(&ringSwitchTSS, 0, sizeof(TASK_STATE_SEGMENT));
+        ringSwitchTSS.ss0 = 0x10;
+
+        tss_descriptor->base_15_0 = base & 0xffff;
+        tss_descriptor->base_23_16 = (base >> 16) & 0xff;
+        tss_descriptor->base_31_24 = (base >> 24) & 0xff;
+        tss_descriptor->limit_15_0 = limit & 0xffff;
+        tss_descriptor->access = 0xE9;
+        tss_descriptor->gran_limit = (limit & 0xF0000) >> 16;
+
+        loadTaskRegister(0x38);
+    }
     initThreading();
 #endif
     memmgrDefaults(&btlmem);
     memmgrInit(&btlmem);
     memmgrSupply(&btlmem, (void *)freem_start,
                  0xa0000 - freem_start);
-    {
-        char *below = transferbuf;
-        volatile char *above = below + 0x100000;
-
-        *above = '\0';
-        *below = 'X';
-        if (*above == 'X')
-        {
-            printf("A20 line not enabled - random results\n");
-        }
-    }
 #else
     /* Ok, time for some heavy hacking.  Because we want to
     be able to supply a full 64k to DOS apps, we can't
@@ -2235,6 +2320,17 @@ int int0E(unsigned int *regs)
     return (0);
 }
 
+int int0D(unsigned int *regs)
+{
+    printf("General Protection Fault occured\n");
+    printf("(Protected Mode Exception 0xD)\n");
+    printf("Error code is %08x\n", regs[8]);
+    printf("System halting\n");
+    for (;;);
+
+    return (0);
+}
+
 int int20(unsigned int *regs)
 {
     static union REGS regsin;
@@ -2864,7 +2960,7 @@ static void loadExe32(char *prog, PARMBLOCK *parmblock, int synchronous)
 
     /* Creates a new VMM with new address space. */
     newProc->vmm = kmalloc(sizeof(VMM));
-    vmmInit(newProc->vmm, &physmemmgr);
+    vmmInit(newProc->vmm, &physmemmgr, VMM_USER);
 
     /* Add this process to the process chain */
     {
@@ -3014,7 +3110,7 @@ static int fixexe32(unsigned long entry, unsigned int sp,
     realdata->base_31_24 = (dataStart >> 24) & 0xff;
 
     memId += 256;
-    ret = call32(entry, sp, curTCB);
+    ret = call32(entry, sp, curTCB, &(ringSwitchTSS.esp0));
     /* printf("ret is %x\n", ret); */
     memId -= 256;
 
@@ -3687,6 +3783,7 @@ int pdosstrt(void)
     doreboot = pp->doreboot;
     dopoweroff = pp->dopoweroff;
     bootBPB = (void *)(pp->bpb);
+    protintHandler(0x0D, int0D);
     protintHandler(0x0E, int0E);
     protintHandler(0x20, int20);
     protintHandler(0x21, int21);

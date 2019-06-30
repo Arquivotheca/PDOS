@@ -1284,6 +1284,14 @@ static void int21handler(union REGS *regsin,
             {
                 regsout->d.eax = (unsigned long)PosGetCommandLine();
             }
+            else if (regsin->h.al == 0x40)
+            {
+                regsout->d.eax = PosInp(regsin->d.ebx);
+            }
+            else if (regsin->h.al == 0x41)
+            {
+                PosOutp(regsin->d.ebx, regsin->d.ecx);
+            }
 #endif
             else
             {

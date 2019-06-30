@@ -1815,6 +1815,35 @@ char *PosGetCommandLine(void)
     int86(0x21, &regsin, &regsout);
     return ((char *)(regsout.d.eax));
 }
+
+/* F6,40 - Read Byte From Port */
+unsigned char PosInp(unsigned int port)
+{
+    union REGS regsin;
+    union REGS regsout;
+
+    regsin.h.ah = 0xf6;
+    regsin.h.al = 0x40;
+
+    regsin.d.ebx = port;
+
+    int86(0x21, &regsin, &regsout);
+    return ((unsigned char)(regsout.d.eax));
+}
+
+/* F6,41 - Write Byte To Port */
+void PosOutp(unsigned int port, unsigned char data)
+{
+    union REGS regsin;
+
+    regsin.h.ah = 0xF6;
+    regsin.h.al = 0x41;
+
+    regsin.d.ebx = port;
+    regsin.d.ecx = data;
+
+    int86i(0x21, &regsin);
+}
 #endif
 
 /*int 25 function call*/

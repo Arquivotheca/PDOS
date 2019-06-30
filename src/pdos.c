@@ -4782,6 +4782,18 @@ char *PosGetCommandLine(void)
 
     return (commandLine);
 }
+
+/* F6,40 - Read Byte From Port */
+unsigned char PosInp(unsigned int port)
+{
+    return (inp(port));
+}
+
+/* F6,41 - Write Byte To Port */
+void PosOutp(unsigned int port, unsigned char data)
+{
+    outp(port, data);
+}
 #endif
 
 static void getDateTime(FAT_DATETIME *ptr)

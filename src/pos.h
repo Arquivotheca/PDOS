@@ -383,6 +383,12 @@ void PosVirtualFree(void *addr, size_t size);
 /* F6,3F - Get Command Line String For The Current Process */
 char *PosGetCommandLine(void);
 
+/* F6,40 - Read Byte From Port */
+unsigned char PosInp(unsigned int port);
+
+/* F6,41 - Write Byte To Port */
+void PosOutp(unsigned int port, unsigned char data);
+
 unsigned int PosAbsoluteDiskRead(int drive, unsigned long start_sector,
                                  unsigned int sectors,void *buf); /*INT25 */
 

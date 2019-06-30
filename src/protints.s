@@ -21,6 +21,7 @@
         .globl _inthdlr_AA
         .globl _inthdlr_B0
         .globl _inthdlr_B1
+        .globl _inthdlr_BE
         .globl _int_enable
 
         .text
@@ -30,49 +31,52 @@
 
 / Protected mode exceptions
 _inthdlr_D:
-        push   $0xD
+        pushl   $0xD
         jmp    _inthdlr_r
 _inthdlr_E:
-        push   $0xE
+        pushl   $0xE
         jmp    _inthdlr_r
 / System calls
 _inthdlr_20:
-        push   $0x20
+        pushl   $0x20
         jmp    _inthdlr_p
 _inthdlr_21:
-        push   $0x21
+        pushl   $0x21
         jmp    _inthdlr_p
 _inthdlr_25:
-        push   $0x25
+        pushl   $0x25
         jmp    _inthdlr_p
 _inthdlr_26:
-        push   $0x26
+        pushl   $0x26
         jmp    _inthdlr_p
 _inthdlr_80:
-        push   $0x80
+        pushl   $0x80
         jmp    _inthdlr_p
 / Interrupt handlers used to access BIOS
 _inthdlr_A0:
-        push   $0xA0
+        pushl   $0xA0
         jmp    _inthdlr_p
 _inthdlr_A3:
-        push   $0xA3
+        pushl   $0xA3
         jmp    _inthdlr_p
 _inthdlr_A5:
-        push   $0xA5
+        pushl   $0xA5
         jmp    _inthdlr_p
 _inthdlr_A6:
-        push   $0xA6
+        pushl   $0xA6
         jmp    _inthdlr_p
 _inthdlr_AA:
-        push   $0xAA
+        pushl   $0xAA
         jmp    _inthdlr_p
 / IRQ handlers.
 _inthdlr_B0:
-        push   $0xB0
+        pushl   $0xB0
         jmp    _inthdlr_q
 _inthdlr_B1:
-        push   $0xB1
+        pushl   $0xB1
+        jmp    _inthdlr_q
+_inthdlr_BE:
+        pushl   $0xBE
         jmp    _inthdlr_q
 
 / by the time we get here, the following things are on the stack:

@@ -36,6 +36,7 @@ void inthdlr_A6(void);
 void inthdlr_AA(void);
 void inthdlr_B0(void);
 void inthdlr_B1(void);
+void inthdlr_BE(void);
 void int_enable(void);
 
 static unsigned short *intbuffer;
@@ -84,6 +85,9 @@ void gotint(int intno, unsigned int *save)
             break;
         }
     }
+
+    /* Only BIOS interrupts and the first 2 IRQs are passed to BIOS. */
+    if (!(intno >= 0xA0 && intno <= 0xB1)) return;
 
     /* The default behaviour is to convert any protected mode
        interrupt into a real mode interrupt. */
@@ -156,6 +160,7 @@ unsigned long runprot_p(rawprot_parms *parmlist)
         { 0xAA, inthdlr_AA, 0 },
         { 0xB0, inthdlr_B0, 0 },
         { 0xB1, inthdlr_B1, 0 },
+        { 0xBE, inthdlr_BE, 0 },
         { 0, 0, 0 } };
     struct {
         unsigned short offset_15_0;

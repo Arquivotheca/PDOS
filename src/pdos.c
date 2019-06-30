@@ -2325,6 +2325,16 @@ int int0D(unsigned int *regs)
     printf("General Protection Fault occured\n");
     printf("(Protected Mode Exception 0xD)\n");
     printf("Error code is %08x\n", regs[8]);
+    if (regs[8])
+    {
+        int table = (regs[8] >> 1) & 0x3;
+
+        if (regs[8] & 0x1) printf("Origin external to processor\n");
+        printf("Selector index 0x%x in ", regs[8] >> 3);
+        if (table == 0) printf("GDT\n");
+        else if (table == 0x2) printf("LDT\n");
+        else printf("IDT\n");
+    }
     printf("System halting\n");
     for (;;);
 

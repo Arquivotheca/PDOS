@@ -199,6 +199,9 @@ easier debugging during early stages of development:
 #Int 21/AX=F63Ch - PDOS - Set Named Font
 #Int 21/AX=F63Dh - PDOS - Allocate Virtual Memory
 #Int 21/AX=F63Eh - PDOS - Free Virtual Memory
+#Int 21/AX=F63Fh - PDOS - Get Command Line String
+#Int 21/AX=F640h - PDOS - Read Byte From Port
+#Int 21/AX=F641h - PDOS - Write Byte To Port
 
 For a full reference of standard and non-standard DOS calls check:
 http://www.ctyme.com/intr/int-21.htm

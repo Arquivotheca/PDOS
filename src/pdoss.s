@@ -14,17 +14,16 @@
         .globl _getEFLAGSAndDisable
         .globl _setEFLAGS
         .globl _callDllEntry
-        .globl _loadTaskRegister
 
         .text
 
 /////////////////////////////////////////////////////////////
-/ int _call32(int entry, int sp, TCB *curTCB, unsigned int **esp0);
+/ int _call32(int entry, int sp, TCB *curTCB);
 _call32:
         push    %ebp
         mov     %esp, %ebp
         pushf
-/ disable interrupts so that we can play with stack
+/ disable interrupts so that we can play with stack        
 / Note - I think this can actually be moved down to where the
 / actual switch takes place
         cli
@@ -34,47 +33,85 @@ _call32:
         push    %esi
         push    %edi
         push    call32_esp
+        push    saveesp2
         mov     %esp, call32_esp
 / call32_esp has to be saved in TCB
         mov     16(%ebp), %edi
         mov     %esp, 4(%edi)
-/ ESP0 in ringSwitchTSS is updated to handle ring switches
-        mov     20(%ebp), %edi
-        mov     %esp, 0(%edi)
+/ save stack of caller
+        mov     saveesp, %eax
+        mov     %eax, saveesp2
+/ load return address into ecx
+        lea    _call32_ret, %ecx
 / get subroutine's address into ebx
         mov    8(%ebp), %ebx
+/ load address of single lret into edi
+        lea    _call32_singlelret, %edi
+/ load address of single ret into esi
+        lea    _call32_singleret, %esi
+/ switch stack etc to new one
+        mov    12(%ebp), %eax
 / I think this is where interrupts should really be disabled
-        mov    $0x33, %ax
+        mov    %eax, %esp
+        mov    $0x30, %ax
+        mov    %ax, %ss
         mov    %ax, %gs
         mov    %ax, %fs
         mov    %ax, %es
         mov    %ax, %ds
-
-/ New SS, new ESP, EFLAGS, new CS, entry point.
-        push   $0x33
-        mov    12(%ebp), %eax
+        
+/ push return address
+/ +++ should next 2 %eax be %ax?
+        mov    $0x8, %eax
         push   %eax
-        pushf
-/ Enables interrupts for the called program.
-        pop    %eax
-        or     $0x200, %eax
+        push   %ecx
+/ push parameters for subroutine from right to left
+        push   %edx
+        mov    $0, %eax
         push   %eax
-        push   $0x2B
-        push   %ebx
-        iret
-
+        push   %eax
+        push   %eax        
+/ push address of a "lret" statement so that they can come back
+        push   %edi
+/ push subroutine's address
+        push    %ebx
+/ push address of a "ret" statement so that we don't directly call
+/ their code, but they can return from their executable with a
+/ normal ret
+/ +++ should next 2 references be %ax instead of %eax?
+        mov     $0x28, %eax
+        push    %eax
+        push    %esi
+/ reenable interrupts for called program        
+        sti
+/ call it via far return        
+        lret
+_call32_singleret:
+        ret
+_call32_singlelret:
+        pop     %ebx
+/ and skip the parameters too
+        add     $16, %esp
+        lret
 _call32_ret:
 / disable interrupts so that we can play with stack
         cli
-/ restore our old stack
+/ restore our old stack etc
+        mov    $0x10, %bx
+        mov    %bx, %ds
         mov    call32_esp, %esp
+        mov    %bx, %ss
+        mov    %bx, %gs
+        mov    %bx, %fs
+        mov    %bx, %es
 / reenable interrupts
         sti
 
 _call32_pops:
+        pop    saveesp2
         pop    call32_esp
         pop    %edi
-        pop    %esi
+        pop    %esi        
         pop    %edx
         pop    %ecx
         pop    %ebx
@@ -82,7 +119,7 @@ _call32_pops:
         pop    %ebp
         ret
 
-
+                
 /////////////////////////////////////////////////////////////
 / void _callwithbypass(int retcode);
 / for use by programs which terminate via int 21h.
@@ -91,7 +128,10 @@ _call32_pops:
 
 _callwithbypass:
 / skip return address, not required
-        addl   $4, %esp
+        pop     %eax
+/ restore old esp
+        mov     saveesp2, %eax
+        mov     %eax, saveesp        
 / get return code
         pop     %eax
         jmp     _call32_ret
@@ -237,18 +277,17 @@ _callDllEntry:
         pop     %ebp
         ret
 
-/////////////////////////////////////////////////////////////
-/ void loadTaskRegister(unsigned short gdt_index);
-/ Loads GDT index of TSS descriptor into Task Register.
-_loadTaskRegister:
-        push    %ebp
-        mov     %esp, %ebp
-        mov     8(%ebp), %eax
-        ltr     %ax
-        pop     %ebp
-        ret
-
 .bss
+        .p2align 2
+saveess:
+        .space 4
+        .p2align 2
+        .globl saveesp
+saveesp:
+        .space 4
+        .p2align 2
+saveesp2:
+        .space 4
         .p2align 2
         .globl call32_esp
 call32_esp:

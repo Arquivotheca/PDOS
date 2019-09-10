@@ -23,6 +23,8 @@ CODEPAGE             819/1047
 #0009      3215       noprompt
 #0009      3270
 #0009      1052       noprompt
+# The 2703 doesn't work yet
+#0009      2703       lport=32003 dial=IN lnctl=tele2 uctrans=no term=tty skip=88C9DF iskip=0A
 
 # This is the IPL disk and can be any address
 

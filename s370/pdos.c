@@ -1175,6 +1175,15 @@ static int pdosDispatchUntilInterrupt(PDOS *pdos)
                 else
                 {
                     cnt = __consrd(300, tbuf);
+                    if (cnt == 300)
+                    {
+                        cnt = -1;
+                    }
+                }
+                if (cnt == -1)
+                {
+                    printf("unable to read from keyboard - system halted\n");
+                    for (;;) ;
                 }
                 if ((cnt >= 0) && ((cons_type == 3215) || (cons_type == 3270)))
                 {

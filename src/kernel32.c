@@ -165,6 +165,25 @@ DWORD WINAPI WaitForSingleObject(HANDLE hHandle, DWORD dwMilliseconds)
 
 void WINAPI GetSystemTime(LPSYSTEMTIME lpSystemTime)
 {
+    unsigned int year, month, day, dow, olddow;
+    unsigned int hour, min, sec, hundredths;
+
+    PosGetSystemDate(&year, &month, &day, &dow);
+    PosGetSystemTime(&hour, &min, &sec, &hundredths);
+    olddow = dow;
+    PosGetSystemDate(&year, &month, &day, &dow);
+    if (olddow != dow)
+    {
+        PosGetSystemTime(&hour, &min, &sec, &hundredths);
+    }
+    lpSystemTime->wYear = year;
+    lpSystemTime->wMonth = month;
+    lpSystemTime->wDay = day;
+    lpSystemTime->wDayOfWeek = dow;
+    lpSystemTime->wHour = hour;
+    lpSystemTime->wMinute = min;
+    lpSystemTime->wSecond = sec;
+    lpSystemTime->wMilliseconds = hundredths * 10;
     return;
 }
 

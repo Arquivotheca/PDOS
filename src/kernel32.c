@@ -155,7 +155,14 @@ DWORD WINAPI SetFilePointer(
     PLONG lpDistanceToMoveHigh,
     DWORD dwMoveMethod)
 {
-    return (0);
+    int ret;
+    long newpos;
+
+    ret = PosMoveFilePointer((int)hFile,
+                             (long)lDistanceToMove,
+                             dwMoveMethod,
+                             &newpos);
+    return (newpos);
 }
 
 DWORD WINAPI WaitForSingleObject(HANDLE hHandle, DWORD dwMilliseconds)

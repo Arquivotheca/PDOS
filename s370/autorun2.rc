@@ -4,4 +4,7 @@ hao clear
 hao tgt PDOS00
 hao cmd script autorun3.rc
 
+# Avoid Hercules time-sensitivity
+pause 1
+
 /mvsunzip hercauto.zip

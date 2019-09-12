@@ -4,4 +4,7 @@ hao clear
 hao tgt PDOS00
 hao cmd script termherc.rc
 
+# Avoid Hercules time-sensitivity
+pause 1
+
 /hercauto

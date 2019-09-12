@@ -16,16 +16,17 @@ NUMCPU               1
 OSTAILOR             QUIET
 PANRATE              MEDIUM
 PGMPRDOS             RESTRICTED
-
+CODEPAGE             819/1047
 
 # Ideally put the console first. It can be either an integrated
-# console (3215-C) or a "normal" telnet console (3215). The address
-# can be anything. For micro-emacs to work make it a 1052 instead,
-# but not a 1052-C as PDOS doesn't support that, because it thinks
-# it is in character mode when it isn't.
+# console (3215-C) or a "normal" telnet console (3215). Or a 3270
+# terminal. Or an EBCDIC ANSI terminal (1052 repurposed for this).
+# The address can be anything.
 
-0009      3215-C     noprompt
-
+0009      3215-C     / noprompt
+#0009      3215       noprompt
+#0009      3270
+#0009      1052       noprompt
 
 # This is the IPL disk and can be any address
 

@@ -650,13 +650,11 @@ void pdosRun(void)
     instint();
 #endif
     PosSetVideoAttribute(0x1E);
-    printf("Welcome to PDOS-"
 #ifdef __32BIT__
-        "32"
+    printf("Welcome to PD-Windows\n");
 #else
-        "16"
+    printf("Welcome to PDOS/86\n");
 #endif
-        "\n");
     PosSetVideoAttribute(0x7);
 
     /* Initialise BIOS tick count at startup. */

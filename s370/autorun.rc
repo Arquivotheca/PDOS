@@ -2,9 +2,9 @@ panrate 1000
 
 hao clear
 
-# When we see "enter commands" string, we can unzip the package
+# When we see the prompt, we can unzip the package
 # and run hercauto.bat
-hao tgt enter further commands yourself
+hao tgt PDOS00
 hao cmd script autorun2.rc
 
 ipl 1b9

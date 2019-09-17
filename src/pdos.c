@@ -1369,7 +1369,13 @@ int PosChangeDir(const char *to)
 #endif
     /* formatcwd also provided us with tempDrive from the path we gave it. */
     ret = fatGetFileAttributes(&disks[tempDrive].fat, to, &attr);
-    if (ret || !(attr & DIRENT_SUBDIR)) return (POS_ERR_PATH_NOT_FOUND);
+    if (ret || !(attr & DIRENT_SUBDIR))
+    {
+#ifdef __32BIT__
+        unlockMutex(&fatMutex);
+#endif
+        return (POS_ERR_PATH_NOT_FOUND);
+    }
 
     /* If to is "", we should just change to root
      * by copying newcwd into cwd. */

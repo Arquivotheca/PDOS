@@ -149,6 +149,14 @@ the (free) gcc compiler and the (free) jwasm as the assembler.
 Use a decent "make" that doesn't need tabs (e.g. Borland's make
 or Microsoft's nmake) and then go "make -f makefile.w32".
 
+For PDOS/386 go either "make -fmakefile.pds" when running
+EMX 0.9d or go "dmake -B -f makefile.pdw" when cross-compiling
+from Windows.
+
+To produce a Windows executable that is similar to mingw,
+run compmsvcrt (which produces a DLL suitable for use
+in PD-Windows) then comppdptest.
+
 
 
 PERFORMANCE

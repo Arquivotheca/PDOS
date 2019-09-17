@@ -52,7 +52,7 @@ int main(int argc, char **argv)
     fp = fopen(*(argv + 3), "rb");
     if (fp == NULL)
     {
-        printf("failed to open %s\n", *(argv + 2));
+        printf("failed to open %s\n", *(argv + 3));
         return (EXIT_FAILURE);
     }
     fread(buf, 1, sizeof buf, fp);

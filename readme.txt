@@ -53,6 +53,14 @@ applications, but built on top of 32-bit PDOS/386 instead of
 16-bit MSDOS.
 
 
+For a version 1.0 to be created requires the following
+enhancements:
+
+1. PD-Windows should support the binutils compile chain
+2. PDOS/380 and Hercules/380 should use the "separate
+memory" proposal where Hercules/380 manages the ATL
+memory.
+
 
 MAINFRAME PURPOSE
 -----------------

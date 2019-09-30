@@ -58,6 +58,7 @@ copy sample.txt sample.c
 copy wtoworld.txt wtoworld.exe
 copy diff.txt diff.exe
 copy uemacs.txt uemacs.exe
+copy edlin.txt edlin.exe
 copy gcc.txt gcc.exe
 copy copyfile.txt copyfile.exe
 copy hexdump.txt hexdump.exe
@@ -95,7 +96,7 @@ rem create package suitable for "shipping"
 del pdospkg.zip
 zip -9X pdospkg pload.sys pdos.sys config.sys readme.txt
 zip -9X pdospkg pcomm.exe autoexec.bat world.exe sample.c 
-zip -9X pdospkg wtoworld.exe diff.exe uemacs.exe hercauto.zip
+zip -9X pdospkg wtoworld.exe diff.exe uemacs.exe edlin.exe hercauto.zip
 zip -9X pdospkg ctl.txt pdos00.cckd pdos.cnf auto*.rc termherc*.rc
 zip -9X pdospkg runpdos.bat pdos.bat pdpi.zip
 zip -9X pdospkg gcc.exe mvsendec.exe mvsunzip.exe hexdump.exe copyfile.exe

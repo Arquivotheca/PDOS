@@ -1,5 +1,5 @@
-# For the 32-bit version of PDOS we define __PDOS__
-# but the 16-bit version is just MSDOS
+# This builds a.out files for PDOS386, on Windows
+# For the 32-bit version of PDOS we define __PDOS386__
 # Note that we link twice, because the second link
 # doesn't report unresolved externals for some reason
 

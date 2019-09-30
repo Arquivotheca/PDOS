@@ -110,8 +110,8 @@ IN31     DS    0H
 .N380ST1 ANOP
 *
 * Watcom needs $$START
-         CALL  $$START
-*         CALL  @@START
+*         CALL  $$START
+         CALL  @@START
 *
          AIF   ('&ZSYS' NE 'S380').N380ST2
 * If we were called in AMODE 31, don't switch back to 24-bit

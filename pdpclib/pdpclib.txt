@@ -1,8 +1,8 @@
             Public Domain C runtime library
             -------------------------------
 
-Version : 3.10
-Released: 2011-01-01
+Version : 4.00
+Released: 2019-10-01
 
 Written by Paul Edwards.
 Released to the public domain.
@@ -384,6 +384,16 @@ available on 1994-07-30.
       and operate as line-buffered, including (nominally)
       RECFM=U devices.
       Miscellaneous bug fixes.
+
+4.00  Released 2019-10-01
+      MVS target has had large boost in functionality. By
+      default it produces load modules that run as 31/ANY
+      on z/OS while still running as AM24 on MVS 3.8J. And
+      they will still get memory above the line on MVS/XA
+      and MVS/380. Modules are 32-bit clean so will run as
+      AM32 on MVS/380, not just AM31.
+      PC target now produces a MSVCRT.DLL which allows very
+      small executables on Windows or PD-Windows.
 
 
 FUTURE DIRECTION

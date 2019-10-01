@@ -1,7 +1,7 @@
           PDOS - Public Domain Operating System
           -------------------------------------
 
-Version 0.8x, released 2010-xx-xx
+Version 0.90, released 2019-10-01
 Written by Paul Edwards, mutazilah@gmail.com
 Released to the public domain
 You may use this entire package for any purpose whatsoever
@@ -358,7 +358,7 @@ available on 1994-07-30.
 
 0.86  Released 2007-08-23
 
-0.8X  Released 20xx-xx-xx now supports running some
+0.90  Released 2019-10-01 now supports running some
       Win32 applications.
 
 

@@ -46,10 +46,9 @@ copy pcomm.exe 32bit
 copy ..\pdpclib\pdptest.exe 32bit
 sys %loc% %drive%:
 copy ..\pdpclib\pdptest.exe %drive%:
-md %drive%:emacs
-unzip -d %drive%:\emacs \samp32\uemacs-stage7.zip
-md %drive%:graphtst
-unzip -d %drive%:\graphtst \samp32\graphtst.zip
+unzip -d %drive%: \samp32\uemvs1.zip
+unzip -d %drive%: \samp32\pdptest.zip
+unzip -d %drive%: \samp32\dll.zip
 echo pdos32.dsk | raread -n -d A
 
 call compb

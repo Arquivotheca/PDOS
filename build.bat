@@ -26,7 +26,7 @@ copy ..\pdpclib\pdptest.exe 16bit
 patchver %loc%\io.sys
 sys %loc% %drive%:
 copy ..\pdpclib\pdptest.exe %drive%:
-echo pdos16.dsk | raread -n -d A
+echo pdos16.img | raread -n -d A
 
 cd ..\pdpclib
 del *.o
@@ -49,14 +49,14 @@ copy ..\pdpclib\pdptest.exe %drive%:
 unzip -d %drive%: \samp32\uemvs1.zip
 unzip -d %drive%: \samp32\pdptest.zip
 unzip -d %drive%: \samp32\dll.zip
-echo pdos32.dsk | raread -n -d A
+echo pdos32.img | raread -n -d A
 
 call compb
 call compbu
-bootupd pdos16.dsk pbootsec.com
-bootupd pdos32.dsk pbootsec.com
+bootupd pdos16.img pbootsec.com
+bootupd pdos32.img pbootsec.com
 
-rem rawrite -f pdos16.dsk -d a -n
-rem rawrite -f pdos32.dsk -d a -n
+rem rawrite -f pdos16.img -d a -n
+rem rawrite -f pdos32.img -d a -n
 
 cd ..

@@ -136,7 +136,7 @@ PC INSTALLING
 To get the 16-bit version on floppy disk, you need
 to get hold of a program called "rawrite" from the
 internet and then follow the instructions to get
-pdos16.dsk onto a 1.44 MB floppy disk.  pdos32.dsk
+pdos16.img onto a 1.44 MB floppy disk.  pdos32.img
 will give you the 32-bit version.
 
 To install on hard disk, you need MSDOS (I tested
@@ -248,11 +248,11 @@ was created in the following manner:
 
 format a floppy disk using MSDOS 5.0
 run doinst using the 16-bit version
-raread to get the floppy into a file, e.g. pdos16.dsk
+raread to get the floppy into a file, e.g. pdos16.img
 compb
 compbu
-bootupd pdos16.dsk pbootsec.com
-rawrite pdos16.dsk back to floppy
+bootupd pdos16.img pbootsec.com
+rawrite pdos16.img back to floppy
 
 To create kernel32.dll (so that you can run Win32
 programs) you need to run "compk32" from a suitable

@@ -482,9 +482,14 @@ $$GETM   DS    0H
 *
          AIF   ('&ZSYS' NE 'S380').N380GM1
 *         GETMAIN RU,LV=(R3),SP=SUBPOOL,LOC=ANY
-* Hardcode the ATL memory area provided by latest MUSIC.
+* The latest MUSIC/SP provides an official ATL region.
 * Note that this function will only work if the C library
 * is compiled with MEMMGR option.
+         LA    R15,0   preset to failure
+*         L     R4,$UXRGLN
+         L     R4,X'CFC'
+         CLR   R3,R4
+         BH    RETURNGM
 *         L     R1,$UXRGVA
          L     R1,X'CF8'
          AGO   .N380GM2

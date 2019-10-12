@@ -486,12 +486,14 @@ $$GETM   DS    0H
 * Note that this function will only work if the C library
 * is compiled with MEMMGR option.
          LA    R15,0   preset to failure
-*         L     R4,$UXRGLN
-         L     R4,X'CFC'
+         USING USRLOW,R0
+         L     R4,$UXRGLN
+*         L     R4,X'CFC'
          CLR   R3,R4
          BH    RETURNGM
-*         L     R1,$UXRGVA
-         L     R1,X'CF8'
+         L     R1,$UXRGVA
+*         L     R1,X'CF8'
+         DROP  R0
          AGO   .N380GM2
 .N380GM1 ANOP
          GETMAIN RU,LV=(R3),SP=SUBPOOL
@@ -898,4 +900,7 @@ ASMBUF   DS    A                  Pointer to an area for PUTing data
 MEMBER24 DS    CL8
 ZDCBLEN  EQU   *-ZDCBAREA
 *
+USRLOW   DSECT
+         DS    CL(X'800')
+         USRCOM
          END

@@ -55,11 +55,11 @@ extern int __tso;
 /* it tries to get almost 16 MiB (and from subpool 3) so should fail */
 
 #if defined(MULMEM)
-#define MAX_CHUNK 67108608
-#define REQ_CHUNK 67108608
+#define MAX_CHUNK 67100672
+#define REQ_CHUNK 67100672
 #else
-#define MAX_CHUNK 67108608 /* maximum size we will store in memmgr */
-#define REQ_CHUNK 67108608 /* size that we request from OS */
+#define MAX_CHUNK 67100672 /* maximum size we will store in memmgr */
+#define REQ_CHUNK 67100672 /* size that we request from OS */
 #endif
 void *__lastsup = NULL; /* last thing supplied to memmgr */
 #endif

@@ -1,3 +1,5 @@
+# This is the makefile used for building a.out files
+# for PDOS using EMX 0.9d on Freedos/MSDOS
 # For the 32-bit version of PDOS we define __PDOS386__
 # but the 16-bit version is just MSDOS
 

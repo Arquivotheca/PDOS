@@ -1,5 +1,5 @@
 # This is the makefile for Win32 to build pdpclib using
-# the gcc compiler.
+# the gcc compiler, and using custom-built Windows tools.
 #
 # The makefile uses spaces, which are normal for Windows
 # users, and Borland make, Microsoft nmake and others are

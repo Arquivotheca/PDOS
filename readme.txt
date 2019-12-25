@@ -733,6 +733,43 @@ It would be good if PD-Windows could run the
 mainframe emulator Hercules so that PDOS/3x0
 can be run.
 
+binutils 2.14a to work with PDPCLIB on Windows and then PD-Windows
+gccmvs - find change that broke minizip
+PDOS/370 - proper space allocation for files
+Hercules/380 - implement "separate memory"
+Hercules/380 - allow multiple tasks to use 64-bit registers
+MVS/380 - put memmgr into Hercules/380 and adjust MVS380MN
+PDOS/380 - adjust for "separate memory"
+PDPCLIB for ASCII - make append do a seek
+PDPCLIB for MVS - support update mode
+uemacs for PDOS/3X0 - bug fixes
+PDOS for 80386 - use API call to determine memory map
+PDOS for 80386 - read more than 1 sector at a time
+PDOS/386 - native IDE driver
+PDOS/386 - native ethernet driver, TCP/IP stack
+PDOS/3X0 to boot from FBA device, FAT-formatted
+PDOS/386 to support virtual tape
+PDOS/386 to support FBA and CKD EBCDIC disks as disks or files
+build EBCDIC version of gcc and binutils for 80386
+PDOS/386 to support running EBCDIC executables
+document REVIEW for MVS
+PosOpenFile to support POS_TEXT parameter
+PDOS/386 to support automatic ASCII/EBCDIC translation and CRLF
+fdisk and format utilities for ASCII PDOS
+boot manager
+PDOS/3X0 to support Pos API
+GCCMVS to support -m64
+MTS version of PDPCLIB
+PDOS/386 USB driver
+All version of PDOS to support command redirection
+PDOS/386 to support EBCDIC FAT and CKD
+PDPCLIB for MVS to support dd:include/stdio.h
+PDPCLIB for MVS TSO to use IKJPARS for prefix resolution
+PDPCLIB for MVS TSO to convert fred.c into c(fred)
+makefile for windows pe executable using Pos* functions
+make pload.com load windows pe instead of a.out
+fix soft tabs in uemacs
+
 
 
 OBTAINING

@@ -553,9 +553,12 @@ typedef struct {
     char endcchh[4];
     char ds1ext2[10]; /* second extent */
     char ds1ext3[10]; /* third extent */
-    char ds1ptrds[5]; /* CCHHR pointing to a format-2 or format-3
+    char ds1ptrds[5]; /* CCHHR pointing to a format-3
                          DSCB which allows unlimited chaining so your
                          dataset can grow to fill the disk */
+    /* format 3 layout can be found here:
+https://www.ibm.com/support/knowledgecenter/en/SSLTBW_2.1.0/com.ibm.zos.v2r1.idas300/s3022.htm
+    */
 } DSCB1;
 
 

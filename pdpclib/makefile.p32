@@ -23,7 +23,7 @@ pdptest.exe: w32start.o pdptest.o stdio.o string.o stdlib.o \
 .c.o:
   $(CC) $(COPTS) -o $&.s $<
   aswin -o $@ $&.s
-  rm -f $&.s
+  cmd /c del $&.s
 
 .asm.obj:
   jwasm -c -coff $<

@@ -93,6 +93,9 @@ typedef TCHAR *LPTCH;
 typedef void *HGLOBAL;
 typedef void *LPOVERLAPPED;
 typedef BOOL (WINAPI *PHANDLER_ROUTINE)(DWORD CtrlType);
+typedef unsigned char CHAR;
+typedef unsigned short WCHAR;
+typedef short SHORT;
 
 typedef struct _SECURITY_ATTRIBUTES {
     DWORD nLength;
@@ -139,6 +142,39 @@ typedef struct _SYSTEMTIME {
     WORD wSecond;
     WORD wMilliseconds;
 } SYSTEMTIME, *PSYSTEMTIME, *LPSYSTEMTIME;
+
+typedef struct _CHAR_INFO {
+    union {
+        WCHAR UnicodeChar;
+        CHAR AsciiChar;
+    } Char;
+    WORD Attributes;
+} CHAR_INFO;
+
+typedef CHAR_INFO *PCHAR_INFO;
+
+typedef struct _COORD {
+    SHORT X;
+    SHORT Y;
+} COORD;
+
+typedef COORD *PCOORD;
+
+typedef struct _SMALL_RECT {
+    SHORT Left;
+    SHORT Top;
+    SHORT Right;
+    SHORT Bottom;
+} SMALL_RECT;
+
+typedef struct _CONSOLE_SCREEN_BUFFER_INFO {
+    COORD dwSize;
+    COORD dwCursorPosition;
+    WORD wAttributes;
+    SMALL_RECT srWindow;
+    COORD dwMaximumWindowSize;
+} CONSOLE_SCREEN_BUFFER_INFO;
+
 
 HANDLE WINAPI GetStdHandle(DWORD nStdHandle);
 
@@ -210,3 +246,15 @@ DWORD WINAPI SetFilePointer(
 DWORD WINAPI WaitForSingleObject(HANDLE hHandle, DWORD dwMilliseconds);
 
 void WINAPI GetSystemTime(LPSYSTEMTIME lpSystemTime);
+
+BOOL WINAPI GetConsoleScreenBufferInfo(
+    HANDLE hFile,
+    CONSOLE_SCREEN_BUFFER_INFO *pcsbi);
+
+#define WriteConsoleOutput WriteConsoleOutputW
+BOOL WINAPI WriteConsoleOutputW(
+    HANDLE hFile,
+    const CHAR_INFO *cinfo,
+    COORD bufferSize,
+    COORD bufferCoord,
+    SMALL_RECT *rect);

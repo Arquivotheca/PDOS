@@ -215,6 +215,37 @@ void WINAPI SetLastError(DWORD dwErrCode)
     return;
 }
 
+BOOL WINAPI GetConsoleScreenBufferInfo(
+    HANDLE hFile,
+    CONSOLE_SCREEN_BUFFER_INFO *pcsbi)
+{
+    pcsbi->dwSize.X = 80;
+    pcsbi->dwSize.Y = 25;
+    pcsbi->dwMaximumWindowSize = pcsbi->dwSize;
+    return (TRUE);
+}
+
+BOOL WINAPI WriteConsoleOutputW(
+    HANDLE hFile,
+    const CHAR_INFO *cinfo,
+    COORD bufferSize,
+    COORD bufferCoord,
+    SMALL_RECT *rect)
+{
+    char *vidptr = (char *)0xb8000;
+    int tot;
+    int x;
+
+    tot = bufferSize.X * bufferSize.Y;
+    for (x = 0; x < tot; x++)
+    {
+        *(vidptr + (10 * 80 + x) * 2) = cinfo[x].Char.AsciiChar;
+        *(vidptr + (10 * 80 + x) * 2 + 1) = (char)cinfo[x].Attributes;
+    }
+    return (TRUE);
+}
+
+
 
 /* auto-genned dummy functions */
 
@@ -498,12 +529,6 @@ void WINAPI GetConsoleMode(void)
 {
     size_t len = 30;
     PosWriteFile(1, "GetConsoleMode unimplemented\r\n", len, &len);
-    for (;;) ;
-}
-void WINAPI GetConsoleScreenBufferInfo(void)
-{
-    size_t len = 42;
-    PosWriteFile(1, "GetConsoleScreenBufferInfo unimplemented\r\n", len, &len);
     for (;;) ;
 }
 void WINAPI GetConsoleWindow(void)
@@ -1304,12 +1329,14 @@ void WINAPI WideCharToMultiByte(void)
     PosWriteFile(1, "WideCharToMultiByte unimplemented\r\n", len, &len);
     for (;;) ;
 }
+#if 0
 void WINAPI WriteConsoleOutputW(void)
 {
     size_t len = 35;
     PosWriteFile(1, "WriteConsoleOutputW unimplemented\r\n", len, &len);
     for (;;) ;
 }
+#endif
 void WINAPI WriteConsoleW(void)
 {
     size_t len = 29;

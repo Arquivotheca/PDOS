@@ -225,7 +225,7 @@ BOOL WINAPI GetConsoleScreenBufferInfo(
     return (TRUE);
 }
 
-BOOL WINAPI WriteConsoleOutputW(
+BOOL WINAPI WriteConsoleOutputA(
     HANDLE hFile,
     const CHAR_INFO *cinfo,
     COORD bufferSize,
@@ -1329,14 +1329,12 @@ void WINAPI WideCharToMultiByte(void)
     PosWriteFile(1, "WideCharToMultiByte unimplemented\r\n", len, &len);
     for (;;) ;
 }
-#if 0
 void WINAPI WriteConsoleOutputW(void)
 {
     size_t len = 35;
     PosWriteFile(1, "WriteConsoleOutputW unimplemented\r\n", len, &len);
     for (;;) ;
 }
-#endif
 void WINAPI WriteConsoleW(void)
 {
     size_t len = 29;

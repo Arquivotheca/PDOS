@@ -251,8 +251,8 @@ BOOL WINAPI GetConsoleScreenBufferInfo(
     HANDLE hFile,
     CONSOLE_SCREEN_BUFFER_INFO *pcsbi);
 
-#define WriteConsoleOutput WriteConsoleOutputW
-BOOL WINAPI WriteConsoleOutputW(
+#define WriteConsoleOutput WriteConsoleOutputA
+BOOL WINAPI WriteConsoleOutputA(
     HANDLE hFile,
     const CHAR_INFO *cinfo,
     COORD bufferSize,

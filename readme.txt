@@ -769,6 +769,8 @@ PDPCLIB for MVS TSO to convert fred.c into c(fred)
 makefile for windows pe executable using Pos* functions
 make pload.com load windows pe instead of a.out
 fix soft tabs in uemacs
+get NT version of uemacs working
+get NT WriteConsoleOutput working properly
 
 
 

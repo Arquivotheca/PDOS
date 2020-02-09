@@ -168,6 +168,8 @@ I use the following bits of software.
 
 MSDOS 5.0
 
+Freedos
+
 Turbo C++ 1.01 (for 16-bit C compiler)
 http://bdn.borland.com/article/21751
 
@@ -179,6 +181,9 @@ http://hobbes.nmsu.edu/cgi-bin/h-browse?sh=1&dir=//pub/os2/dev/emx/v0.9d
 
 Bochs 2.4.5
 http://bochs.sourceforge.net/
+
+Qemu 3.0.0
+https://www.qemu.org/
 
 I have a 900 MB C drive (FAT-16) under Bochs on which I do
 development, and then install the newly-created executables

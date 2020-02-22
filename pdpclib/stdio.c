@@ -1906,7 +1906,6 @@ static void freadSlowB(void *ptr,
             stream->eofInd = 1;
         }
         *actualRead += tempRead;
-        stream->bufStartR += tempRead;
     }
     else
     {

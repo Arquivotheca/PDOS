@@ -35,7 +35,7 @@ void safegets(char *buffer, int size);
 
 
 
-static char buf[200];
+static char buf[300];
 static unsigned char cmdt[140];
 #define PATH_MAX 500
 static char path[PATH_MAX] = ";" ; /* Used to store path */

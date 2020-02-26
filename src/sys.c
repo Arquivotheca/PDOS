@@ -109,7 +109,10 @@ int main(int argc, char **argv)
         src_end = strchr(src_path, '\0');
         /* If source path does end in '\' or '/' '\' is added. */
         if ((src_end - 1)[0] != '\\' && (src_end - 1)[0] != '/')
-        *src_end++ = '\\';
+        {
+            *src_end++ = '\\';
+            *src_end = '\0';
+        }
         strcpy(dest_path, *(argv + 2));
         dest_path[0] = toupper(dest_path[0]);
     }

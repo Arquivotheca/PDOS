@@ -206,6 +206,7 @@ I use 4_12_2_2
 other version of gcc to build Windows pdptest (makefile.w32)
 
 jwasm to build winsupa.asm in pdptest (makefile.w32).
+https://sourceforge.net/projects/jwasm/files/JWasm%20Windows%20binary/JWasm194cb.zip/download
 
 Not used:
 MASM 6.15:

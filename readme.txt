@@ -193,11 +193,11 @@ configuration to test PDOS.
 raread/rawrite (unknown origin)
 
 GCC 3.2.3 to do cross-compile from Windows:
-https://sourceforge.net/projects/gccmvs/files/GCCMVS/gcc-stage296.zip/download
+https://sourceforge.net/projects/pdos/files/pdwdev/pdwdev-rel1.zip/download
 refer to gccdos.txt for documentation
 
 binutils 2.14a to do cross-assembly etc. from Windows:
-https://sourceforge.net/projects/gccmvs/files/GCCMVS/binu214a-stage5.zip/download
+https://sourceforge.net/projects/pdos/files/pdwdev/pdwdev-rel1.zip/download
 
 dmake with -B option allows space instead of tabs in makefiles
 https://github.com/mohawk2/dmake/releases

@@ -13,6 +13,23 @@
 #ifndef __CTYPE_INCLUDED
 #define __CTYPE_INCLUDED
 
+#if defined(__WIN32__) && !defined(__STATIC__)
+#include <stddef.h>
+__PDPCLIB_API__ int isalnum(int c);
+__PDPCLIB_API__ int isalpha(int c);
+__PDPCLIB_API__ int iscntrl(int c);
+__PDPCLIB_API__ int isdigit(int c);
+__PDPCLIB_API__ int isgraph(int c);
+__PDPCLIB_API__ int islower(int c);
+__PDPCLIB_API__ int isprint(int c);
+__PDPCLIB_API__ int ispunct(int c);
+__PDPCLIB_API__ int isspace(int c);
+__PDPCLIB_API__ int isupper(int c);
+__PDPCLIB_API__ int isxdigit(int c);
+__PDPCLIB_API__ int tolower(int c);
+__PDPCLIB_API__ int toupper(int c);
+
+#else
 extern unsigned short *__isbuf;
 extern short *__tolow;
 extern short *__toup;
@@ -30,5 +47,6 @@ extern short *__toup;
 #define isxdigit(c) (__isbuf[(c)] & 0x0400U)
 #define tolower(c) (__tolow[(c)])
 #define toupper(c) (__toup[(c)])
+#endif
 
 #endif

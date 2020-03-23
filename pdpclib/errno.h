@@ -16,10 +16,8 @@
 #define EDOM 1
 #define ERANGE 2
 
-/* extern int errno; */
+#define errno (*(_errno()))
 
-#define errno (*(__get_errno()))
-
-int *__get_errno(void);
+int *_errno(void);
 
 #endif

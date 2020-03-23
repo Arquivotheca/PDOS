@@ -14,20 +14,19 @@
 #define __CTYPE_INCLUDED
 
 #if defined(__WIN32__) && !defined(__STATIC__)
-#include <stddef.h>
-__PDPCLIB_API__ int isalnum(int c);
-__PDPCLIB_API__ int isalpha(int c);
-__PDPCLIB_API__ int iscntrl(int c);
-__PDPCLIB_API__ int isdigit(int c);
-__PDPCLIB_API__ int isgraph(int c);
-__PDPCLIB_API__ int islower(int c);
-__PDPCLIB_API__ int isprint(int c);
-__PDPCLIB_API__ int ispunct(int c);
-__PDPCLIB_API__ int isspace(int c);
-__PDPCLIB_API__ int isupper(int c);
-__PDPCLIB_API__ int isxdigit(int c);
-__PDPCLIB_API__ int tolower(int c);
-__PDPCLIB_API__ int toupper(int c);
+int isalnum(int c);
+int isalpha(int c);
+int iscntrl(int c);
+int isdigit(int c);
+int isgraph(int c);
+int islower(int c);
+int isprint(int c);
+int ispunct(int c);
+int isspace(int c);
+int isupper(int c);
+int isxdigit(int c);
+int tolower(int c);
+int toupper(int c);
 
 #else
 extern unsigned short *__isbuf;

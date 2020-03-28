@@ -461,8 +461,9 @@ commands can be found by typing "help".
 
 You can also launch other programs. The program can't be more than
 60k in size for the 16-bit version.  Also the program can't do
-any as-yet unimplemented interrupts.  This means that it is not
-useful as a general purpose operating system as yet.
+any as-yet unimplemented interrupts.  However, it is sufficiently
+implemented to run C90-compliant applications that have been
+built using PDPCLIB.
 
 PDOS currently (even in the 32-bit version) uses the BIOS to read from
 disk and do screen I/O and keyboard input.  This should hopefully make

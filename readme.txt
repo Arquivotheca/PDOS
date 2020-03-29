@@ -459,9 +459,10 @@ it boots (of floppy or hard disk, including logical partitions) and prints
 "Welcome to pcomm" or similar, and then prompts for a command.  Recognized
 commands can be found by typing "help".
 
-You can also launch other programs. The program can't be more than
-60k in size for the 16-bit version.  Also the program can't do
-any as-yet unimplemented interrupts.  However, it is sufficiently
+You can also launch other programs. The 16-bit version is very
+wasteful of memory, so you can't do a lot with it. The focus is
+on the 32-bit version. Also the program can't do any as-yet
+unimplemented interrupts.  However, it is sufficiently
 implemented to run C90-compliant applications that have been
 built using PDPCLIB.
 

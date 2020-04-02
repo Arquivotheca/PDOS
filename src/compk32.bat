@@ -6,8 +6,8 @@ gccwin -S -Os -D__WIN32__ -I ../pdpclib -I . kernel32.c
 aswin -o kernel32.o kernel32.s
 del kernel32.s
 
-rem for some reason gccwin or aswin are not generating the
-rem correct object code, so we override with gcc 4.8.2 from Cygwin
+rem for some reason gccwin is not generating the correct
+rem assembler code, so we override with gcc 4.8.2 from Cygwin
 gcc -nostdinc -c -Os -D__WIN32__ -I ../pdpclib -I . kernel32.c
 
 gccwin -S -Os -D__WIN32__ -D__32BIT__ -I ../pdpclib -I . pos.c

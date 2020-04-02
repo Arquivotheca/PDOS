@@ -14,4 +14,4 @@ aswin -o support.o support.s
 
 ldwin -s -o kernel32.dll --shared --kill-at dllcrt.o kernel32.o pos.o support.o
 
-dlltool -k --export-all-symbols -D kernel32.dll kernel32.o -l libkernel32.a
+dlltwin -S aswin -k --export-all-symbols -D kernel32.dll kernel32.o -l libkernel32.a

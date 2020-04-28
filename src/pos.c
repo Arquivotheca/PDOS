@@ -676,6 +676,10 @@ int PosWriteFile(int handle,
     return (0);
 }
 
+
+/* func 41h - delete file */
+/* PosDeleteFile returns 0 if delete was successful */
+
 int PosDeleteFile(const char *fname)
 {
     union REGS regsin;

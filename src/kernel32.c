@@ -99,7 +99,12 @@ BOOL WINAPI CreateProcessA(
 
 BOOL WINAPI DeleteFileA(LPCSTR lpFileName)
 {
-    return (0);
+    int ret;
+
+    ret = PosDeleteFile((char *)lpFileName);
+    /* 0 from PosDeleteFile means success */
+    /* 0 from DeleteFileA means failure */
+    return (ret == 0);
 }
 
 LPTSTR WINAPI GetCommandLineA(void)

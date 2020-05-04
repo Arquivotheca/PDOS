@@ -2,6 +2,7 @@ rem this was mostly obtained by running make -n -f makefile.pdw
 
 del *.o
 del pdptest.exe
+gcc386 -S -Os -fno-common -D__PDOS386__ -D__32BIT__ -I. -I../src -o pdosst32.s pdosst32.c
 as386 -o pdosst32.o pdosst32.s
 gcc386 -S -Os -fno-common -D__PDOS386__ -D__32BIT__ -I. -I../src -o pdptest.s pdptest.c
 as386 -o pdptest.o pdptest.s

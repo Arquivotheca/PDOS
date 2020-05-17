@@ -1,7 +1,6 @@
 # This builds stand-alone windows files for PDOS386, on Windows
 # For the 32-bit version of PDOS we define __PDOS386__
-# For some reason I can't create a relocatable executable - I
-# get an invalid executable instead.
+# I haven't worked out how to get relocatable executables yet.
 
 CC=gccwin
 COPTS=-S -Os -fno-common -D__PDOS386__ -D__32BIT__ -U__WIN32__ -I. -I../src
@@ -19,22 +18,22 @@ pdptest.exe: pdosst32.o pdptest.o stdio.o string.o stdlib.o \
   stripwin --strip-unneeded pdptest.exe
 
 bos.o: ../src/bos.c
-  $(CC) $(COPTS) -o $&.s ../src/bos.c
-  aswin -o $@ $&.s
-  rm -f $&.s
+  $(CC) $(COPTS) -o $*.s ../src/bos.c
+  aswin -o $@ $*.s
+  rm -f $*.s
 
 pos.o: ../src/pos.c
-  $(CC) $(COPTS) -o $&.s ../src/pos.c
-  aswin -o $@ $&.s
-  rm -f $&.s
+  $(CC) $(COPTS) -o $*.s ../src/pos.c
+  aswin -o $@ $*.s
+  rm -f $*.s
 
 support.o: ../src/support.s
   aswin -o $@ ../src/support.s
 
 .c.o:
-  $(CC) $(COPTS) -o $&.s $<
-  aswin -o $@ $&.s
-  rm -f $&.s
+  $(CC) $(COPTS) -o $*.s $<
+  aswin -o $@ $*.s
+  rm -f $*.s
 
 .s.o:
   aswin -o $@ $<

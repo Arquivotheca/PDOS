@@ -36,6 +36,3 @@ support.o: ../src/support.s
   $(CC) $(COPTS) -o $*.s $<
   as386 -o $@ $*.s
   rm -f $*.s
-
-.s.o:
-  as386 -o $@ $<

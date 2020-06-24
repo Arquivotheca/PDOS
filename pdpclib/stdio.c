@@ -3880,12 +3880,11 @@ __PDPCLIB_API__ int setvbuf(FILE *stream, char *buf, int mode, size_t size)
         free(stream->intBuffer);
     }
     stream->intBuffer = mybuf;
-    stream->fbuf = stream->intBuffer + 2;
-    *stream->fbuf++ = '\0';
-    *stream->fbuf++ = '\0';
+    stream->fbuf = stream->intBuffer;
     stream->szfbuf = size;
     stream->endbuf = stream->fbuf + stream->szfbuf;
     *stream->endbuf = '\n';
+	stream->bufStartR = -(long)stream->szfbuf;
     if (stream->mode == __WRITE_MODE)
     {
         stream->upto = stream->fbuf;

@@ -3884,7 +3884,7 @@ __PDPCLIB_API__ int setvbuf(FILE *stream, char *buf, int mode, size_t size)
     stream->szfbuf = size;
     stream->endbuf = stream->fbuf + stream->szfbuf;
     *stream->endbuf = '\n';
-	stream->bufStartR = -(long)stream->szfbuf;
+    stream->bufStartR = -(long)stream->szfbuf;
     if (stream->mode == __WRITE_MODE)
     {
         stream->upto = stream->fbuf;

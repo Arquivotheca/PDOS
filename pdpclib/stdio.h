@@ -223,6 +223,7 @@ int fputc(int c, FILE *stream);
 int fputs(const char *s, FILE *stream);
 int fprintf(FILE *stream, const char *format, ...);
 int vfprintf(FILE *stream, const char *format, va_list arg);
+int vprintf(const char *format, va_list arg);
 int remove(const char *filename);
 int rename(const char *old, const char *newnam);
 int sprintf(char *s, const char *format, ...);

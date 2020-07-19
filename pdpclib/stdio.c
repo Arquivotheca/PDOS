@@ -336,6 +336,14 @@ __PDPCLIB_API__ int vfprintf(FILE *stream, const char *format, va_list arg)
     return (ret);
 }
 
+__PDPCLIB_API__ int vprintf(const char *format, va_list arg)
+{
+    int ret;
+
+    ret = vfprintf(stdout, format, arg);
+    return (ret);
+}
+
 __PDPCLIB_API__ FILE *fopen(const char *filename, const char *mode)
 {
 #if defined(__VSE__)

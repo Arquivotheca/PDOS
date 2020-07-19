@@ -16,6 +16,8 @@
 #include <stdlib.h>
 #include <stddef.h>
 
+int __getmainargs(int *_Argc, char ***_Argv, char ***_Env, int _DoWildCard,
+                  int *_StartInfo);
 int main(int argc, char **argv);
 
 void mainCRTStartup(void)

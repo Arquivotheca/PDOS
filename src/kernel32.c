@@ -82,6 +82,29 @@ HANDLE WINAPI CreateFileA(
     return (INVALID_HANDLE_VALUE);
 }
 
+BOOL WINAPI CreateDirectoryA(
+    LPCSTR lpPathName,
+    LPSECURITY_ATTRIBUTES lpSecurityAttributes)
+{
+    return (PosMakeDir(lpPathName));
+}
+
+DWORD WINAPI GetFileAttributesA(
+    LPCSTR lpFileName)
+{
+    int attr;
+    PosGetFileAttributes(lpFileName, &attr);
+    return attr;
+}
+
+BOOL WINAPI PathFileExistsA(
+    LPCSTR pszPath)
+{
+    int attr;
+    PosGetFileAttributes(pszPath, &attr);
+    return (attr != -1);
+}
+
 BOOL WINAPI CreateProcessA(
     LPCSTR lpApplicationName,
     LPSTR lpCommandLine,
@@ -588,12 +611,6 @@ void WINAPI GetExitCodeThread(void)
 {
     size_t len = 33;
     PosWriteFile(1, "GetExitCodeThread unimplemented\r\n", len, &len);
-    for (;;) ;
-}
-void WINAPI GetFileAttributesA(void)
-{
-    size_t len = 34;
-    PosWriteFile(1, "GetFileAttributesA unimplemented\r\n", len, &len);
     for (;;) ;
 }
 void WINAPI GetFileSize(void)

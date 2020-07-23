@@ -198,6 +198,19 @@ HANDLE WINAPI CreateFileA(
     DWORD dwFlagsAndAttributes,
     HANDLE hTemplateFile);
 
+#define CreateDirectory CreateDirectoryA
+BOOL WINAPI CreateDirectoryA(
+    LPCSTR lpPathName,
+    LPSECURITY_ATTRIBUTES lpSecurityAttributes);
+
+#define GetFileAttributes GetFileAttributesA
+DWORD WINAPI GetFileAttributesA(
+    LPCSTR lpFileName);
+
+#define PathFileExists PathFileExistsA
+BOOL WINAPI PathFileExistsA(
+    LPCSTR pszPath);
+
 #define CreateProcess CreateProcessA
 BOOL WINAPI CreateProcessA(
     LPCSTR lpApplicationName,

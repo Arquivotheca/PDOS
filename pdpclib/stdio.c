@@ -1851,6 +1851,7 @@ static void freadSlowB(void *ptr,
                        size_t *actualRead)
 {
     size_t avail;
+    size_t left;
 #ifdef __OS2__
     ULONG tempRead;
     APIRET rc;
@@ -1866,8 +1867,13 @@ static void freadSlowB(void *ptr,
 
     avail = (size_t)(stream->endbuf - stream->upto);
     memcpy(ptr, stream->upto, avail);
+    left = toread - avail;
     *actualRead = avail;
     stream->bufStartR += (stream->endbuf - stream->fbuf);
+    if (stream->eofInd)
+    {
+        return;
+    }
     if (toread >= stream->szfbuf)
     {
         stream->upto = stream->endbuf;
@@ -1875,7 +1881,7 @@ static void freadSlowB(void *ptr,
 #ifdef __OS2__
         rc = DosRead(stream->hfile,
                      (char *)ptr + *actualRead,
-                     toread - *actualRead,
+                     left,
                      &tempRead);
         if (rc != 0)
         {
@@ -1885,22 +1891,22 @@ static void freadSlowB(void *ptr,
         }
 #endif
 #ifdef __WIN32__
-            rc = ReadFile(stream->hfile,
-                          (char *)ptr + *actualRead,
-                          toread - *actualRead,
-                          &tempRead,
-                          NULL);
-            if (!rc)
-            {
-                tempRead = 0;
-                stream->errorInd = 1;
-                errno = GetLastError();
-            }
+        rc = ReadFile(stream->hfile,
+                      (char *)ptr + *actualRead,
+                       left,
+                       &tempRead,
+                       NULL);
+        if (!rc)
+        {
+            tempRead = 0;
+            stream->errorInd = 1;
+            errno = GetLastError();
+        }
 #endif
 #ifdef __MSDOS__
         tempRead = __read(stream->hfile,
                           (char *)ptr + *actualRead,
-                          toread - *actualRead,
+                          left,
                           &errind);
         if (errind)
         {
@@ -1909,7 +1915,7 @@ static void freadSlowB(void *ptr,
             stream->errorInd = 1;
         }
 #endif
-        else if (tempRead != (toread - *actualRead))
+        else if (tempRead != left)
         {
             stream->eofInd = 1;
         }
@@ -1919,15 +1925,13 @@ static void freadSlowB(void *ptr,
     }
     else
     {
-        size_t left;
-
         stream->upto = stream->fbuf;
 #ifdef __OS2__
         rc = DosRead(stream->hfile,
                      stream->fbuf,
                      stream->szfbuf,
                      &tempRead);
-        left = toread - *actualRead;
+
         if (rc != 0)
         {
             tempRead = 0;
@@ -1941,7 +1945,6 @@ static void freadSlowB(void *ptr,
                       stream->szfbuf,
                       &tempRead,
                       NULL);
-        left = toread - *actualRead;
         if (!rc)
         {
             tempRead = 0;
@@ -1954,7 +1957,6 @@ static void freadSlowB(void *ptr,
                           stream->fbuf,
                           stream->szfbuf,
                           &errind);
-        left = toread - *actualRead;
         if (errind)
         {
             errno = tempRead;
@@ -3776,6 +3778,7 @@ __PDPCLIB_API__ int fseek(FILE *stream, long int offset, int whence)
     stream->quickBin = 0;
     stream->quickText = 0;
     stream->ungetCh = -1;
+    stream->eofInd = 0;
     return (0);
 }
 

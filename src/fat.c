@@ -1405,41 +1405,37 @@ long fatSeek(FAT *fat, FATFILE *fatfile, long offset, int whence)
     }
     /* (fat->sectors_per_cluster * MAXSECTSZ) is size of cluster in bytes. */
     currclusters = fatfile->currpos / (fat->sectors_per_cluster * MAXSECTSZ);
-    reqclusters = newpos / (fat->sectors_per_cluster * MAXSECTSZ);
-    /* Using this comparison, we optimize for the case
-     * that we are seeking in the current cluster. */
-    if (reqclusters != currclusters)
+    if (fatfile->fileSize < newpos)
     {
-        if (reqclusters > currclusters)
-        {
-            if (fatfile->fileSize < newpos)
-            {
-                reqclusters = fatfile->fileSize
-                                / (fat->sectors_per_cluster * MAXSECTSZ);
-            }
-            /* We need to seek fewer clusters because we are starting
-             * from the current cluster. */
-            reqclusters -= currclusters;
-        }
-        else
-        {
-            /* We are seeking before the current cluster,
-             * so we have to go from the start cluster. */
-            fatfile->currentCluster = fatfile->startcluster;
-        }
-        /* Seeks clusters until the required cluster is found. */
-        for(; reqclusters > 0; reqclusters--)
-        {
-            fat->currcluster = fatfile->currentCluster;
-            fatClusterAnalyse(fat, fat->currcluster, &(fatfile->sectorStart),
-                              &(fatfile->currentCluster));
-        }
+        reqclusters = fatfile->fileSize
+                        / (fat->sectors_per_cluster * MAXSECTSZ);
     }
     else
     {
-        /* We need to update the fatfile->currentCluster
-          in case the reader reached to the eof */
-        fatfile->currentCluster = reqclusters + fatfile->startcluster;
+        reqclusters = newpos / (fat->sectors_per_cluster * MAXSECTSZ);
+    }
+
+    /* If we are seeking forward, we don't need to go back
+       to the start unless we have hit EOF */
+    if ((reqclusters >= currclusters)
+        && !fatEndCluster(fat, fatfile->currentCluster))
+    {
+        /* We need to seek fewer clusters because we are starting
+         * from the current cluster. */
+        reqclusters -= currclusters;
+    }
+    else
+    {
+        /* We are seeking before the current cluster,
+         * so we have to go from the start cluster. */
+        fatfile->currentCluster = fatfile->startcluster;
+    }
+    /* Seeks clusters until the required cluster is found. */
+    for(; reqclusters > 0; reqclusters--)
+    {
+        fat->currcluster = fatfile->currentCluster;
+        fatClusterAnalyse(fat, fat->currcluster, &(fatfile->sectorStart),
+                          &(fatfile->currentCluster));
     }
 
     /* Update sectorStart for the current cluster. */

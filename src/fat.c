@@ -133,7 +133,8 @@ void fatInit(FAT *fat,
                   | ((unsigned long)bpb[18] << 8)
                   | ((unsigned long)bpb[19] << 16)
                   | ((unsigned long)bpb[20] << 24);
-    /* Calculates start sector of the root and data region. Only for FAT 12/16. */
+    /* Calculates start sector of the root and data region.
+       Only for FAT 12/16. */
     fat->rootstart = fat->fatsize * fat->numfats + fat->fatstart;
     fat->rootentries = bpb[6] | ((unsigned int)bpb[7] << 8);
     fat->rootsize = fat->rootentries / (fat->sector_size / 32);
@@ -343,7 +344,9 @@ unsigned int fatCreatFile(FAT *fat, const char *fnm, FATFILE *fatfile,
                 /* createLFNs is similar to fatPosition, but it
                  * is guaranteed that it will end on empty/deleted
                  * slot or return error. */
-                ret = createLFNs(fat, fat->origshortname, fat->origshortname_len);
+                ret = createLFNs(fat,
+                                 fat->origshortname,
+                                 fat->origshortname_len);
                 if (ret) return (ret);
                 p = fat->de;
             }
@@ -1219,9 +1222,10 @@ int fatWriteFile(FAT *fat, FATFILE *fatfile, const void *buf, size_t szbuf,
                     /* The sectorStart provided by fatClusterAnalyse
                      * is for the old cluster, so we calculate
                      * the new startSector ourselves. */
-                    fatfile->sectorStart = (fat->currcluster - FIRST_DATA_CLUSTER)
-                    * (long)fat->sectors_per_cluster
-                    + fat->filestart;
+                    fatfile->sectorStart =
+                        (fat->currcluster - FIRST_DATA_CLUSTER)
+                        * (long)fat->sectors_per_cluster
+                        + fat->filestart;
                 }
                 else
                 {
@@ -1232,7 +1236,8 @@ int fatWriteFile(FAT *fat, FATFILE *fatfile, const void *buf, size_t szbuf,
             }
         }
         /* If we are updating the last sector and would write less than there
-         * was originally, the part of original remaining should be preserved. */
+         * was originally, the part of original remaining should be preserved.
+         */
         if (fatfile->currpos + tsz < fatfile->fileSize)
         {
             fatReadLogical(fat,
@@ -1735,7 +1740,10 @@ static void fatDirSearch(FAT *fat, char *search)
             return;
         }
         fat->currcluster = nextCluster;
-        fatClusterAnalyse(fat, fat->currcluster, &fat->startSector, &nextCluster);
+        fatClusterAnalyse(fat,
+                          fat->currcluster,
+                          &fat->startSector,
+                          &nextCluster);
         fatDirSectorSearch(fat,
                            search,
                            fat->startSector,
@@ -1765,7 +1773,8 @@ static void fatClusterAnalyse(FAT *fat,
     /* protect against EOF */
     if (fatEndCluster(fat, cluster)) return;
 
-    *startSector = (cluster - FIRST_DATA_CLUSTER) * (long)fat->sectors_per_cluster
+    *startSector = (cluster - FIRST_DATA_CLUSTER)
+                   * (long)fat->sectors_per_cluster
                    + fat->filestart;
     if (fat->fat_type == 16)
     {
@@ -2475,7 +2484,8 @@ unsigned int fatRenameFile(FAT *fat,const char *old,const char *new)
     {
         /* It is 8.3 to 8.3 rename, so no entries are created or deleted. */
         memcpy(fat->de->file_name, fat->new_file, 11);
-        /* If the file is not a subdirectory, we must set the Archive attribute. */
+        /* If the file is not a subdirectory, we must set the Archive
+           attribute. */
         if (!((fat->de->file_attr) & DIRENT_SUBDIR))
         {
             fat->de->file_attr |= DIRENT_ARCHIVE;
@@ -3007,7 +3017,8 @@ static int createLFNs(FAT *fat, char *lfn, unsigned int lfn_len)
         for (; x < numsectors; x++)
         {
             fatReadLogical(fat, fat->startSector + x, buf);
-            for (p = (DIRENT *) buf; (unsigned char *) p < buf + fat->sector_size;
+            for (p = (DIRENT *) buf;
+                 (unsigned char *) p < buf + fat->sector_size;
                  p++)
             {
                 required_free--;
@@ -3251,12 +3262,16 @@ static int checkNumericTail(FAT *fat, char *shortname)
              * we use fatClusterAnalyse to get startSector. */
             if (!(fat->processing_root && fat->rootsize))
             {
-                fatClusterAnalyse(fat, fat->currcluster, &startSector, &nextCluster);
+                fatClusterAnalyse(fat,
+                                  fat->currcluster,
+                                  &startSector,
+                                  &nextCluster);
             }
             for (x = 0; x < numsectors; x++)
             {
                 fatReadLogical(fat, startSector + x, buf);
-                for (p = (DIRENT *) buf; (unsigned char *) p < buf + fat->sector_size;
+                for (p = (DIRENT *) buf;
+                     (unsigned char *) p < buf + fat->sector_size;
                      p++)
                 {
                     if (p->file_name[0] == '\0')
@@ -3428,12 +3443,16 @@ static int findFreeSpaceForLFN(FAT *fat, unsigned int required_free,
          * we use fatClusterAnalyse to get startSector. */
         if (!(fat->processing_root && fat->rootsize))
         {
-            fatClusterAnalyse(fat, fat->currcluster, &startSector, &nextCluster);
+            fatClusterAnalyse(fat,
+                              fat->currcluster,
+                              &startSector,
+                              &nextCluster);
         }
         for (x = 0; x < *numsectors; x++)
         {
             fatReadLogical(fat, startSector + x, buf);
-            for (p = (DIRENT *) buf; (unsigned char *) p < buf + fat->sector_size;
+            for (p = (DIRENT *) buf;
+                 (unsigned char *) p < buf + fat->sector_size;
                  p++)
             {
                 /* If we are at the end of directory,
@@ -3610,7 +3629,8 @@ static void deleteLFNs(FAT *fat)
         for (; x < numsectors; x++)
         {
             fatReadLogical(fat, fat->startSector + x, buf);
-            for (p = (DIRENT *) buf; (unsigned char *) p < buf + fat->sector_size;
+            for (p = (DIRENT *) buf;
+                 (unsigned char *) p < buf + fat->sector_size;
                  p++)
             {
                 if (fat->de)

@@ -548,7 +548,7 @@ unsigned int fatCreatDir(FAT *fat, const char *dnm, const char *parentname,
         fat->currcluster = startcluster;
         fatMarkCluster(fat, fat->currcluster);
 
-        startsector = (fat->currcluster - 2)
+        startsector = (fat->currcluster - FIRST_DATA_CLUSTER)
                 * (long)fat->sectors_per_cluster
                 + fat->filestart;
 
@@ -1010,7 +1010,7 @@ int fatWriteFile(FAT *fat, FATFILE *fatfile, const void *buf, size_t szbuf,
         fatfile->currentCluster = fat->currcluster;
         fatfile->startcluster = fat->currcluster;
         fatMarkCluster(fat, fat->currcluster);
-        fatfile->sectorStart = (fat->currcluster - 2)
+        fatfile->sectorStart = (fat->currcluster - FIRST_DATA_CLUSTER)
                 * (long)fat->sectors_per_cluster
                 + fat->filestart;
         fatfile->sectorUpto = 0;
@@ -1177,7 +1177,7 @@ int fatWriteFile(FAT *fat, FATFILE *fatfile, const void *buf, size_t szbuf,
                 /* The sectorStart provided by fatClusterAnalyse
                  * is for the old cluster, so we calculate
                  * the new startSector ourselves. */
-                fatfile->sectorStart = (fat->currcluster - 2)
+                fatfile->sectorStart = (fat->currcluster - FIRST_DATA_CLUSTER)
                 * (long)fat->sectors_per_cluster
                 + fat->filestart;
             }
@@ -1219,7 +1219,7 @@ int fatWriteFile(FAT *fat, FATFILE *fatfile, const void *buf, size_t szbuf,
                     /* The sectorStart provided by fatClusterAnalyse
                      * is for the old cluster, so we calculate
                      * the new startSector ourselves. */
-                    fatfile->sectorStart = (fat->currcluster - 2)
+                    fatfile->sectorStart = (fat->currcluster - FIRST_DATA_CLUSTER)
                     * (long)fat->sectors_per_cluster
                     + fat->filestart;
                 }
@@ -1385,7 +1385,7 @@ long fatSeek(FAT *fat, FATFILE *fatfile, long offset, int whence)
     if (newpos <= 0)
     {
         fatfile->currentCluster = fatfile->startcluster;
-        fatfile->sectorStart = (fatfile->currentCluster - 2)
+        fatfile->sectorStart = (fatfile->currentCluster - FIRST_DATA_CLUSTER)
         * (long)fat->sectors_per_cluster
         + fat->filestart;
         fatfile->sectorUpto = 0;
@@ -1429,13 +1429,19 @@ long fatSeek(FAT *fat, FATFILE *fatfile, long offset, int whence)
             fatClusterAnalyse(fat, fat->currcluster, &(fatfile->sectorStart),
                               &(fatfile->currentCluster));
         }
-        /* Calculates sectorStart for the found cluster. */
-        fatfile->sectorStart = (fatfile->currentCluster - 2)
+    }
+    else
+    {
+        /* We need to update the fatfile->currentCluster
+          in case the reader reached to the eof */
+        fatfile->currentCluster = reqclusters + fatfile->startcluster;
+    }
+
+    /* Update sectorStart for the current cluster. */
+    fatfile->sectorStart = (fatfile->currentCluster - FIRST_DATA_CLUSTER)
         * (long)fat->sectors_per_cluster
         + fat->filestart;
-        /* Marks fatfile->nextCluster as invalid so fatReadFile will update it. */
-        fatfile->nextCluster = 0;
-    }
+
     if (fatfile->fileSize < newpos)
     {
         /* If the set sector would be after the end of file,
@@ -1450,7 +1456,10 @@ long fatSeek(FAT *fat, FATFILE *fatfile, long offset, int whence)
                                (fat->sectors_per_cluster * MAXSECTSZ))
                                 / MAXSECTSZ;
     }
+
     fatfile->currpos = newpos;
+    /* Marks fatfile->nextCluster as invalid so fatReadFile will update it. */
+    fatfile->nextCluster = 0;
     return (newpos);
 }
 
@@ -1756,7 +1765,7 @@ static void fatClusterAnalyse(FAT *fat,
     /* protect against EOF */
     if (fatEndCluster(fat, cluster)) return;
 
-    *startSector = (cluster - 2) * (long)fat->sectors_per_cluster
+    *startSector = (cluster - FIRST_DATA_CLUSTER) * (long)fat->sectors_per_cluster
                    + fat->filestart;
     if (fat->fat_type == 16)
     {
@@ -2309,7 +2318,7 @@ static void fatChain(FAT *fat, FATFILE *fatfile)
         fatfile->currentCluster = newcluster;
 
         /* update to new set of sectors */
-        fatfile->sectorStart = (fat->currcluster - 2)
+        fatfile->sectorStart = (fat->currcluster - FIRST_DATA_CLUSTER)
                     * (long)fat->sectors_per_cluster
                     + fat->filestart;
         fatfile->sectorUpto = 0;
@@ -2348,7 +2357,7 @@ static void fatChain(FAT *fat, FATFILE *fatfile)
         fatfile->currentCluster = newcluster;
 
         /* update to new set of sectors */
-        fatfile->sectorStart = (fat->currcluster - 2)
+        fatfile->sectorStart = (fat->currcluster - FIRST_DATA_CLUSTER)
                     * (long)fat->sectors_per_cluster
                     + fat->filestart;
         fatfile->sectorUpto = 0;
@@ -2375,7 +2384,7 @@ static void fatChain(FAT *fat, FATFILE *fatfile)
         fatfile->currentCluster = newcluster;
 
         /* update to new set of sectors */
-        fatfile->sectorStart = (fat->currcluster - 2)
+        fatfile->sectorStart = (fat->currcluster - FIRST_DATA_CLUSTER)
                     * (long)fat->sectors_per_cluster
                     + fat->filestart;
         fatfile->sectorUpto = 0;

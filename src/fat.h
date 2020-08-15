@@ -9,6 +9,13 @@
  * Null terminator is not included. */
 #define MAXFILENAME 255
 
+/* Because these first two FAT entries
+store special values, there are no data
+clusters 0 or 1. The first data cluster
+(after the root directory if FAT12/FAT16)
+is cluster 2, marking the beginning of the data area. */
+#define FIRST_DATA_CLUSTER 2
+
 #define FATPOS_FOUND 1
 #define FATPOS_ONEMPTY 2
 #define FATPOS_ENDCLUSTER 3

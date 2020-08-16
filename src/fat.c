@@ -1409,10 +1409,18 @@ long fatSeek(FAT *fat, FATFILE *fatfile, long offset, int whence)
     {
         reqclusters = fatfile->fileSize
                         / (fat->sectors_per_cluster * MAXSECTSZ);
+        /* If the set sector would be after the end of file,
+         * it is set to the end of file. */
+        fatfile->sectorUpto = (fatfile->fileSize %
+                               (fat->sectors_per_cluster * MAXSECTSZ))
+                                / MAXSECTSZ;
     }
     else
     {
         reqclusters = newpos / (fat->sectors_per_cluster * MAXSECTSZ);
+        fatfile->sectorUpto = (newpos %
+                               (fat->sectors_per_cluster * MAXSECTSZ))
+                                / MAXSECTSZ;
     }
 
     /* If we are seeking forward, we don't need to go back
@@ -1442,22 +1450,6 @@ long fatSeek(FAT *fat, FATFILE *fatfile, long offset, int whence)
     fatfile->sectorStart = (fatfile->currentCluster - FIRST_DATA_CLUSTER)
         * (long)fat->sectors_per_cluster
         + fat->filestart;
-
-    if (fatfile->fileSize < newpos)
-    {
-        /* If the set sector would be after the end of file,
-         * it is set to the end of file. */
-        fatfile->sectorUpto = (fatfile->fileSize %
-                               (fat->sectors_per_cluster * MAXSECTSZ))
-                                / MAXSECTSZ;
-    }
-    else
-    {
-        fatfile->sectorUpto = (newpos %
-                               (fat->sectors_per_cluster * MAXSECTSZ))
-                                / MAXSECTSZ;
-    }
-
     fatfile->currpos = newpos;
     /* Marks fatfile->nextCluster as invalid so fatReadFile will update it. */
     fatfile->nextCluster = 0;

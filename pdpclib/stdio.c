@@ -1876,8 +1876,6 @@ static void freadSlowB(void *ptr,
     }
     if (toread >= stream->szfbuf)
     {
-        stream->upto = stream->endbuf;
-        stream->quickBin = 1;
 #ifdef __OS2__
         rc = DosRead(stream->hfile,
                      (char *)ptr + *actualRead,
@@ -1920,7 +1918,17 @@ static void freadSlowB(void *ptr,
             stream->eofInd = 1;
         }
         *actualRead += tempRead;
-        stream->endbuf = stream->fbuf + stream->szfbuf;
+        stream->quickBin = 1;
+        if (tempRead >= stream->szfbuf)
+        {
+            stream->bufStartR += (tempRead - stream->szfbuf);
+            stream->endbuf = stream->fbuf + stream->szfbuf;
+        }
+        else
+        {
+            stream->endbuf = stream->fbuf + tempRead;
+            *stream->endbuf = '\n';
+        }
         stream->upto = stream->endbuf;
     }
     else

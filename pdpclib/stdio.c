@@ -3679,6 +3679,7 @@ __PDPCLIB_API__ int fseek(FILE *stream, long int offset, int whence)
     else if ((newpos >= stream->bufStartR)
         && (newpos < (stream->bufStartR + (stream->endbuf - stream->fbuf)))
         && !stream->update
+        && !stream->quickBin
         && (stream->mode == __READ_MODE))
     {
         stream->upto = stream->fbuf + (size_t)(newpos - stream->bufStartR);

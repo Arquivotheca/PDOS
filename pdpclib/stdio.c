@@ -1920,7 +1920,7 @@ static void freadSlowB(void *ptr,
             stream->eofInd = 1;
         }
         *actualRead += tempRead;
-        stream->endbuf = stream->fbuf + tempRead;
+        stream->endbuf = stream->fbuf + stream->szfbuf;
         stream->upto = stream->endbuf;
     }
     else

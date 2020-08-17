@@ -1874,7 +1874,7 @@ static void freadSlowB(void *ptr,
     {
         return;
     }
-    if (toread >= stream->szfbuf)
+    if (left >= stream->szfbuf)
     {
 #ifdef __OS2__
         rc = DosRead(stream->hfile,

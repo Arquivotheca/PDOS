@@ -836,6 +836,7 @@ static void osfopen(void)
 #if defined(__MVS__) || defined(__CMS__)
     int mode;
     char *p;
+    char *q;
     int len;
     char newfnm[FILENAME_MAX];
     char tmpdd[9];
@@ -991,7 +992,7 @@ static void osfopen(void)
 
         strcpy(rawf, "");
         /* strip any single quote */
-        if (fnm[0] == '\'')
+        if ((fnm[0] == '\'') || (fnm[0] == '/'))
         {
             fnm++;
         }
@@ -1046,6 +1047,38 @@ static void osfopen(void)
         }
         else
         {
+            char *last;
+
+            /* If we have a file such as "test/paul.asm" we need to convert
+               it into PDP001HD(PAUL) and do a dynamic allocation of
+               PDP001HD to "TEST.ASM" */
+            while ((p = strchr(rawf, '/')) != NULL)
+            {
+                *p = '.';
+            }
+            last = strrchr(rawf, '.');
+            if (last != NULL)
+            {
+                *last++ = '\0';
+                p = strrchr(rawf, '.');
+                if (p == NULL)
+                {
+                    p = rawf;
+                }
+                else
+                {
+                    p++;
+                }
+                strcat(newfnm, "(");
+                if (strlen(p) > 8)
+                {
+                    p[8] = '\0';
+                }
+                strcat(newfnm, p);
+                strcat(newfnm, ")");
+                memmove(p, last, strlen(last) + 1);
+            }
+
             /* strip any single quote */
             p = strchr(rawf, '\'');
             if (p != NULL)
@@ -1080,6 +1113,7 @@ static void osfopen(void)
         p = (char *)fnm;
     }
 #endif
+    q = p;
     strcpy(myfile->ddname, "        ");
     len = strcspn(p, "(");
     if (len > 8)
@@ -1094,7 +1128,7 @@ static void osfopen(void)
         p++;
     }
 
-    p = strchr(fnm, '(');
+    p = strchr(q, '(');
     if (p != NULL)
     {
         p++;

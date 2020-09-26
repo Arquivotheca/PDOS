@@ -875,6 +875,20 @@ static void osfopen(void)
             || (strncmp(fnm, "DD", 2) == 0)))
     {
         p++;
+        /* support a filename of dd:include/stdio.h */
+        q = strchr(p, '/');
+        if (q != NULL)
+        {
+            strcpy(newfnm, p);
+            q = strchr(newfnm, '/');
+            *q = '(';
+            q = strchr(newfnm, '.');
+            if (q != NULL)
+            {
+                strcpy(q, ")");
+            }
+            p = newfnm;
+        }
     }
     else
 /* if we are in here then there is no "dd:" on front of file */

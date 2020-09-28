@@ -2512,17 +2512,19 @@ static void fwriteSlowB(const void *ptr,
     size_t spare;
 #ifdef __OS2__
     ULONG tempWritten;
+    ULONG left;
     APIRET rc;
 #endif
 #ifdef __WIN32__
     DWORD tempWritten;
+    DWORD left;
     BOOL rc;
 #endif
 #ifdef __MSDOS__
     size_t tempWritten;
+    size_t left;
     int errind;
 #endif
-
     spare = (size_t)(stream->endbuf - stream->upto);
     if (towrite < spare)
     {
@@ -2572,13 +2574,14 @@ static void fwriteSlowB(const void *ptr,
     *actualWritten = spare;
     stream->upto = stream->fbuf;
     stream->bufStartR += tempWritten;
-    if (towrite > stream->szfbuf)
+    left = towrite - *actualWritten;
+    if (left > stream->szfbuf)
     {
         stream->quickBin = 1;
 #ifdef __OS2__
         rc = DosWrite(stream->hfile,
                       (char *)ptr + *actualWritten,
-                      towrite - *actualWritten,
+                      left,
                       &tempWritten);
         if (rc != 0)
         {
@@ -2590,7 +2593,7 @@ static void fwriteSlowB(const void *ptr,
 #ifdef __WIN32__
         rc = WriteFile(stream->hfile,
                        (char *)ptr + *actualWritten,
-                       towrite - *actualWritten,
+                       left,
                        &tempWritten,
                        NULL);
         if (!rc)
@@ -2603,7 +2606,7 @@ static void fwriteSlowB(const void *ptr,
 #ifdef __MSDOS__
         tempWritten = __write(stream->hfile,
                               (char *)ptr + *actualWritten,
-                              towrite - *actualWritten,
+                              left,
                               &errind);
         if (errind)
         {
@@ -2613,17 +2616,16 @@ static void fwriteSlowB(const void *ptr,
         }
 #endif
         *actualWritten += tempWritten;
-        stream->bufStartR += tempWritten;
+        stream->bufStartR += *actualWritten;
     }
     else
     {
         memcpy(stream->fbuf,
                (char *)ptr + *actualWritten,
-               towrite - *actualWritten);
-        stream->upto += (towrite - *actualWritten);
-        *actualWritten = towrite;
+               left);
+        stream->upto += left;
+        *actualWritten += left;
     }
-    stream->bufStartR += *actualWritten;
     return;
 }
 #endif

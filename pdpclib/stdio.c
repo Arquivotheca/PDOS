@@ -6028,6 +6028,7 @@ static void filedef(char *fdddname, char *fnm, int mymode)
     char *fname;
     char *ftype;
     char *fmode;
+    char *member;
     char *p;
     int console;
 
@@ -6042,7 +6043,12 @@ static void filedef(char *fdddname, char *fnm, int mymode)
     console = 0;
     if( fnm[0] == '*') console = 1;
     while ( NULL != (p = strchr(fnm, '.')) )*p=' '; /* replace . with   */
-    fname =  strtok(fnm, " ");
+/*
+   check for a member
+*/
+    p = strtok(fnm, "(" );     /* member name starts with a ( */
+    member = strtok (NULL, ")" );
+    fname =  strtok(p, " ");
     ftype =  strtok(NULL, " ");
     if (ftype == NULL) ftype = "";
     fmode =  strtok(NULL, " ");
@@ -6108,8 +6114,21 @@ static void filedef(char *fdddname, char *fnm, int mymode)
         }
         else
         {
-             s202parm[48]=s202parm[49]=s202parm[50]=s202parm[51]=
+             if(member == NULL)
+             {
+                 s202parm[48]=s202parm[49]=s202parm[50]=s202parm[51]=
                  s202parm[52]=s202parm[53]=s202parm[54]=s202parm[55]=0xff;
+             }
+             else
+             {
+                 memcpy ( &s202parm[48] , "(       " , 8 );
+                 memcpy ( &s202parm[64] , "        " , 8 );
+                 memcpy ( &s202parm[56] , "MEMBER  " , 8 );
+                 memcpy ( &s202parm[64] , member ,
+                       ( strlen(member) >8 ) ? 8 : strlen(member) );
+                 s202parm[72]=s202parm[73]=s202parm[74]=s202parm[75]=
+                 s202parm[76]=s202parm[77]=s202parm[78]=s202parm[79]=0xff;
+             }
         }
     }
     __SVC202 ( s202parm, &code, &parm );

@@ -494,12 +494,12 @@ int main(int argc, char **argv)
     }
     else
     {
-        /* Support colourful prompt.
+        /* Support colorful prompt.
          * Sometimes I test PCOMM under MS-DOS.
          * And then I get confused about whether I am in PCOMM or COMMAND.COM.
          * Making the default prompt for PCOMM different from that of
          * COMMAND.COM helps avoid that confusion.
-         * Also, lets have a colourful prompt, because we can.
+         * Also, lets have a colorful prompt, because we can.
          * - Simon Kissane
          */
         if (genuine_pdos)

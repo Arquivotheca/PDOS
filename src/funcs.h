@@ -54,14 +54,14 @@ int BosScrollWindowDown(int numLines,
 int BosReadCharAttrib(int page, int *ch, int *attrib);
 int BosWriteCharAttrib(int page, int ch, int attrib, unsigned long num);
 int BosWriteCharCursor(int page, int ch, int col, unsigned long num);
-int BosSetColourPalette(int id, int val);
+int BosSetColorPalette(int id, int val);
 int BosWriteGraphicsPixel(int page, 
-                          int colour, 
+                          int color, 
                           unsigned long row,
                           unsigned long column);
 int BosReadGraphicsPixel(int page, 
                          unsigned long row,
                          unsigned long column,
-                         int *colour);
-int BosWriteText(int page, int ch, int colour);
+                         int *color);
+int BosWriteText(int page, int ch, int color);
 int BosGetVideoMode(int *columns, int *mode, int *page);

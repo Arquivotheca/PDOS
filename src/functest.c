@@ -35,12 +35,12 @@ static int testBosWriteText(void)
 
 static int testBosReadGraphics(void)
 {
-    int colour;
+    int color;
     
     BosSetVideoMode(0x12);
-    BosReadGraphicsPixel(0, 20, 40, &colour);
+    BosReadGraphicsPixel(0, 20, 40, &color);
     BosSetVideoMode(0x02);
-    printf("colour is %x\n", colour);
+    printf("color is %x\n", color);
     return (0);
 }
 
@@ -62,9 +62,9 @@ static int testBosWriteGraphicsPixel(void)
     return (0);
 }
 
-static int testBosSetColourPalette(void)
+static int testBosSetColorPalette(void)
 {
-    BosSetColourPalette(0, 0x03);
+    BosSetColorPalette(0, 0x03);
     return (0);
 }
 

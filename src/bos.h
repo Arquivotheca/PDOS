@@ -67,16 +67,16 @@ int BosWriteCharAttrib(int page,
                        int attrib, 
                        unsigned int num); /* 10:9 */
 int BosWriteCharCursor(int page, int ch, int col, unsigned int num); /* 10:A */
-int BosSetColourPalette(int id, int val); /* 10:B */
+int BosSetColorPalette(int id, int val); /* 10:B */
 int BosWriteGraphicsPixel(int page, /* 10:C */
-                          int colour, 
+                          int color, 
                           unsigned int row,
                           unsigned int column);
 int BosReadGraphicsPixel(int page, /* 10:D */
                          unsigned int row,
                          unsigned int column,
-                         int *colour);
-int BosWriteText(int page, int ch, int colour); /* 10:E */
+                         int *color);
+int BosWriteText(int page, int ch, int color); /* 10:E */
 int BosGetVideoMode(int *columns, int *mode, int *page); /* 10:F */
 
 int BosLoadTextModeRomFont(int font, int block); /* 10:11:{11,12,14} */

@@ -281,9 +281,9 @@ int BosWriteCharCursor(int page, int ch, int col, unsigned int num)
 }
 
 
-/* BosSetColourPalette - BIOS Int 10h Function 0Bh */
+/* BosSetColorPalette - BIOS Int 10h Function 0Bh */
 
-int BosSetColourPalette(int id, int val)
+int BosSetColorPalette(int id, int val)
 {
     union REGS regsin;
 
@@ -298,14 +298,14 @@ int BosSetColourPalette(int id, int val)
 /* BosWriteGraphicsPixel - BIOS Int 10h Function 0Ch */
 
 int BosWriteGraphicsPixel(int page,
-                          int colour,
+                          int color,
                           unsigned int row,
                           unsigned int column)
 {
     union REGS regsin;
 
     regsin.h.ah = 0x0c;
-    regsin.h.al = colour;
+    regsin.h.al = color;
     regsin.h.bh = page;
     regsin.x.cx = (unsigned int)column;
     regsin.x.dx = (unsigned int)row;
@@ -319,7 +319,7 @@ int BosWriteGraphicsPixel(int page,
 int BosReadGraphicsPixel(int page,
                          unsigned int row,
                          unsigned int column,
-                         int *colour)
+                         int *color)
 {
     union REGS regsin;
     union REGS regsout;
@@ -329,21 +329,21 @@ int BosReadGraphicsPixel(int page,
     regsin.x.cx = (unsigned int)column;
     regsin.x.dx = (unsigned int)row;
     int86(0x10 + BIOS_INT_OFFSET, &regsin, &regsout);
-    *colour = regsout.h.al;
+    *color = regsout.h.al;
     return (0);
 }
 
 
 /* BosWriteText - BIOS Int 10h Function 0Eh */
 
-int BosWriteText(int page, int ch, int colour)
+int BosWriteText(int page, int ch, int color)
 {
     union REGS regsin;
 
     regsin.h.ah = 0x0e;
     regsin.h.al = ch;
     regsin.h.bh = page;
-    regsin.h.bl = colour;
+    regsin.h.bl = color;
     int86i(0x10 + BIOS_INT_OFFSET, &regsin);
     /* wportb(0xe9, ch); */ /* works for PDOS-16 under Bochs */
     /* outp(0xe9, ch); */ /* works for PDOS-32 under Bochs */

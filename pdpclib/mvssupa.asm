@@ -3763,7 +3763,7 @@ DYNALDLN EQU   *-DYNALWRK     LENGTH OF DYNAMIC STORAGE
 *  GETPFX - get TSO prefix                                           *
 *                                                                    *
 **********************************************************************
-         PUSH  USING                                            GP17107
+         PUSH  USING
          ENTRY @@GETPFX
 @@GETPFX DS    0H
          SAVE  (14,12),,@@GETPFX
@@ -3785,10 +3785,39 @@ DYNALDLN EQU   *-DYNALWRK     LENGTH OF DYNAMIC STORAGE
          ICM   R5,15,PSCBUPT
          BZ    RETURNGP
          USING UPT,R5
-         LA    R15,UPTPREFX       RETURN ADDRESS (CL7/AL1)      GP17107
+         LA    R15,UPTPREFX       RETURN ADDRESS (CL7/AL1)
 *
-RETURNGP RETURN (14,12),RC=(15)                                 GP17107
-         POP   USING                                            GP17107
+RETURNGP RETURN (14,12),RC=(15)
+         POP   USING
+*
+*
+*
+**********************************************************************
+*                                                                    *
+*  GETEPF - get extended prefix                                      *
+*                                                                    *
+**********************************************************************
+         PUSH  USING
+         ENTRY @@GETEPF
+@@GETEPF DS    0H
+         SAVE  (14,12),,@@GETEPF
+         LR    R12,R15
+         USING @@GETEPF,R12
+*
+         GAMOS
+*         LA    R1,PPL
+*         LA    PPLPCL,DATASET1
+         CALLTSSR EP=IKJPARS
+         GAMAPP
+*
+RETURNGE RETURN (14,12),RC=(15)
+         LTORG ,
+*
+DATASET1 IKJPARM
+DSNAME   IKJPOSIT DSNAME,USID
+         IKJENDP
+*         IKJPPL
+         POP   USING
 *
 *
 *

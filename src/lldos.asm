@@ -211,7 +211,7 @@ poweroff proc
         mov ax, 5300h    ; APM Installation Check
         mov bx, 0000h    ; Power Device ID
         int 15h
-        jc poweroff_err  ; CF=0: APM not installed
+        jc poweroff_err  ; CF=1: APM not installed
         cmp bx, 504dh    ; magic value not in BX: APM not installed
         jne poweroff_err ; useful in case something else is sitting
                          ; on int 15,AX=5300
@@ -222,7 +222,7 @@ poweroff proc
         jc poweroff_err
 
         mov ax, 5307h    ; 15,AX=5307: Set Power State
-        mov bx, 0000h    ; BX=0000 (Power Device ID = System BIOS)
+        mov bx, 0001h
         mov cx, 0003h    ; CX=0003 (Power State = Off)
         int 15h
 poweroff_err:

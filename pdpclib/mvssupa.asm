@@ -2632,11 +2632,11 @@ WRITEVAW CH    R9,=H'5'           AT LEAST FIVE BYTES LEFT ?
          LR    R7,R5              USE ONLY WHAT'S AVAILABLE
          MVCL  R6,R4              COPY SDW + DATA
          ST    R6,BUFFCURR        UPDATE NEXT AVAILABLE
-         LR    R7,R6              SAVE SECOND COPY              PE18090
+         LR    R7,R6              SAVE SECOND COPY              
          SR    R6,R8              LESS START
          STH   R6,0(,R8)          UPDATE BDW
-         SR    R7,R3              GET RECORD LENGTH             PE18090
-         STH   R7,0(,R3)          FIX RDW LENGTH                PE18090
+         SR    R7,R3              GET RECORD LENGTH             
+         STH   R7,0(,R3)          FIX RDW LENGTH                
          MVC   2(2,R3),=X'0100'   SET FLAGS FOR START SEGMENT
          OI    IOPFLAGS,IOFLDATA  SHOW WRITE DATA IN BUFFER     
          TM    IOPFLAGS,IOFLSDW   DID START ?
@@ -3905,44 +3905,44 @@ RETURNGA DS    0H
 *  ADDNUM - Add two numbers using 80386                               *
 *                                                                     *
 ***********************************************************************
-*                                                               PE18032
-         PUSH  USING                                            PE18032
-         DROP  ,                                                PE18032
-         ENTRY @@ADDNUM                                         PE18032
-@@ADDNUM DS    0H                                               PE18032
-         SAVE  (14,12),,@@ADDNUM                                PE18032
-         LR    R12,R15                                          PE18032
-         USING @@ADDNUM,R12                                     PE18032
-         LR    R2,R1  new register for parms                    PE18032
-         L     R0,=X'FFFFFFFD' API for execute 80386            PE18032
-         LR    R1,R0                                            PE18032
-         LA    R3,CODE386                                       PE18032
-         LA    R14,ANRET                                        PE18032
-         L     R4,0(R2)                                         PE18032
-         L     R5,4(R2)                                         PE18032
-         L     R6,8(R2)                                         PE18032
-         SVC   120                                              PE18032
-ANRET    DS    0H                                               PE18032
-         RETURN (14,12),RC=(15)                                 PE18032
-*                                                               PE18032
-         LTORG ,                                                PE18032
-*                                                               PE18032
-CODE386  DS    0D                                               PE18032
-         DC    X'55' push ebp                                   PE18032
-         DC    X'8B' mov ebp,esp                                PE18032
-         DC    X'EC'                                            PE18032
-         DC    X'8B' mov eax, ebp + 8                           PE18032
-         DC    X'45'                                            PE18032
-         DC    X'08'                                            PE18032
-         DC    X'03' add eas, ebp + 12                          PE18032
-         DC    X'45'                                            PE18032
-         DC    X'0C'                                            PE18032
-         DC    X'C9' leave                                      PE18032
-         DC    X'C3' return near                                PE18032
-         DC    X'22' eyecatcher                                 PE18032
-         DC    X'22'                                            PE18032
-         DC    X'22'                                            PE18032
-         POP   USING                                            PE18032
+*                                                               
+         PUSH  USING                                            
+         DROP  ,                                                
+         ENTRY @@ADDNUM                                         
+@@ADDNUM DS    0H                                               
+         SAVE  (14,12),,@@ADDNUM                                
+         LR    R12,R15                                          
+         USING @@ADDNUM,R12                                     
+         LR    R2,R1  new register for parms                    
+         L     R0,=X'FFFFFFFD' API for execute 80386            
+         LR    R1,R0                                            
+         LA    R3,CODE386                                       
+         LA    R14,ANRET                                        
+         L     R4,0(R2)                                         
+         L     R5,4(R2)                                         
+         L     R6,8(R2)                                         
+         SVC   120                                              
+ANRET    DS    0H                                               
+         RETURN (14,12),RC=(15)                                 
+*                                                               
+         LTORG ,                                                
+*                                                               
+CODE386  DS    0D                                               
+         DC    X'55' push ebp                                   
+         DC    X'8B' mov ebp,esp                                
+         DC    X'EC'                                            
+         DC    X'8B' mov eax, ebp + 8                           
+         DC    X'45'                                            
+         DC    X'08'                                            
+         DC    X'03' add eas, ebp + 12                          
+         DC    X'45'                                            
+         DC    X'0C'                                            
+         DC    X'C9' leave                                      
+         DC    X'C3' return near                                
+         DC    X'22' eyecatcher                                 
+         DC    X'22'                                            
+         DC    X'22'                                            
+         POP   USING                                            
          SPACE 2
 ***********************************************************************
 *                                                                     *
@@ -3950,20 +3950,20 @@ CODE386  DS    0D                                               PE18032
 *                                                                     *
 ***********************************************************************
 *
-         PUSH  USING                                            PE18032
-         DROP  ,                                                PE18032
-         ENTRY @@GETMSZ                                         PE18032
-@@GETMSZ DS    0H                                               PE18032
-         SAVE  (14,12),,@@GETMSZ                                PE18032
-         LR    R12,R15                                          PE18032
-         USING @@GETMSZ,R12                                     PE18032
-*         DIAGNOSE X'60'                                        PE18032
-         DC    X'83',X'000060'                                  PE18032
-         LR    R15,R0                                           PE18032
-         RETURN (14,12),RC=(15)                                 PE18032
-*                                                               PE18032
-         LTORG ,                                                PE18032
-         POP   USING                                            PE18032
+         PUSH  USING                                            
+         DROP  ,                                                
+         ENTRY @@GETMSZ                                         
+@@GETMSZ DS    0H                                               
+         SAVE  (14,12),,@@GETMSZ                                
+         LR    R12,R15                                          
+         USING @@GETMSZ,R12                                     
+*         DIAGNOSE X'60'                                        
+         DC    X'83',X'000060'                                  
+         LR    R15,R0                                           
+         RETURN (14,12),RC=(15)                                 
+*                                                               
+         LTORG ,                                                
+         POP   USING                                            
          SPACE 2
 *
 *
@@ -3974,19 +3974,19 @@ CODE386  DS    0D                                               PE18032
 *                                                                     *
 ***********************************************************************
 *
-         PUSH  USING                                            PE18032
-         DROP  ,                                                PE18032
-         ENTRY @@GOSUP                                          PE18032
-@@GOSUP  DS    0H                                               PE18032
-         SAVE  (14,12),,@@GOSUP                                 PE18032
-         LR    R12,R15                                          PE18032
-         USING @@GOSUP,R12                                      PE18032
-         MODESET MODE=SUP                                       PE18032
-         LA    R15,0                                            PE18032
-         RETURN (14,12),RC=(15)                                 PE18032
-*                                                               PE18032
-         LTORG ,                                                PE18032
-         POP   USING                                            PE18032
+         PUSH  USING                                            
+         DROP  ,                                                
+         ENTRY @@GOSUP                                          
+@@GOSUP  DS    0H                                               
+         SAVE  (14,12),,@@GOSUP                                 
+         LR    R12,R15                                          
+         USING @@GOSUP,R12                                      
+         MODESET MODE=SUP                                       
+         LA    R15,0                                            
+         RETURN (14,12),RC=(15)                                 
+*                                                               
+         LTORG ,                                                
+         POP   USING                                            
          SPACE 2
 ***********************************************************************
 *                                                                     *
@@ -3994,19 +3994,19 @@ CODE386  DS    0D                                               PE18032
 *                                                                     *
 ***********************************************************************
 *
-         PUSH  USING                                            PE18032
-         DROP  ,                                                PE18032
-         ENTRY @@GOPROB                                         PE18032
-@@GOPROB DS    0H                                               PE18032
-         SAVE  (14,12),,@@GOPROB                                PE18032
-         LR    R12,R15                                          PE18032
-         USING @@GOPROB,R12                                     PE18032
-         MODESET MODE=PROB                                      PE18032
-         LA    R15,0                                            PE18032
-         RETURN (14,12),RC=(15)                                 PE18032
-*                                                               PE18032
-         LTORG ,                                                PE18032
-         POP   USING                                            PE18032
+         PUSH  USING                                            
+         DROP  ,                                                
+         ENTRY @@GOPROB                                         
+@@GOPROB DS    0H                                               
+         SAVE  (14,12),,@@GOPROB                                
+         LR    R12,R15                                          
+         USING @@GOPROB,R12                                     
+         MODESET MODE=PROB                                      
+         LA    R15,0                                            
+         RETURN (14,12),RC=(15)                                 
+*                                                               
+         LTORG ,                                                
+         POP   USING                                            
          SPACE 2
 ***********************************************************************
 *                                                                     *

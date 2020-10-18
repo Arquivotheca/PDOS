@@ -21,18 +21,18 @@ pdptest.exe: pdosst32.o pdptest.o stdio.o string.o stdlib.o \
 
 bos.o: ../src/bos.c
   $(CC) $(COPTS) -o $*.s ../src/bos.c
-  as386 -o $@ $*.s
+  as386 -o $*.o $*.s
   rm -f $*.s
 
 pos.o: ../src/pos.c
   $(CC) $(COPTS) -o $*.s ../src/pos.c
-  as386 -o $@ $*.s
+  as386 -o $*.o $*.s
   rm -f $*.s
 
 support.o: ../src/support.s
-  as386 -o $@ ../src/support.s
+  as386 -o $*.o ../src/support.s
 
 .c.o:
   $(CC) $(COPTS) -o $*.s $<
-  as386 -o $@ $*.s
+  as386 -o $*.o $*.s
   rm -f $*.s

@@ -33,8 +33,8 @@ del *.o
 call compp
 cd ..\src
 call comp4
-call comp5
-call comp6
+call comp5w
+call comp6w
 format %drive%: /u
 copy %loc%\pload.com %loc%\io.sys
 copy %loc%\pdos.exe %loc%\msdos.sys

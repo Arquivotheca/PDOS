@@ -50,6 +50,13 @@ as386 -o support.o support.s
 as386 -o protints.o protints.s
 as386 -o pdoss.o pdoss.s
 
-ld386 -s -e start -o pdos.exe strt32.o pdos.o bos.o fat.o memmgr.o patmat.o support.o protintp.o exeload.o physmem.o vmm.o liballoc.o process.o int21.o int80.o log.o helper.o protints.o pdoss.o ../pdpclib/pdos.a
-ld386 -r -s -e start -o pdos.exe strt32.o pdos.o bos.o fat.o memmgr.o patmat.o support.o protintp.o exeload.o physmem.o vmm.o liballoc.o process.o int21.o int80.o log.o helper.o protints.o pdoss.o ../pdpclib/pdos.a
+del os.a
+ar386 -r os.a bos.o fat.o exeload.o
+ar386 -r os.a physmem.o vmm.o liballoc.o process.o
+ar386 -r os.a int21.o int80.o log.o helper.o
+ar386 -r os.a memmgr.o patmat.o support.o protintp.o protints.o pdoss.o
+
+ld386 -s -e start -o pdos.exe strt32.o pdos.o os.a ../pdpclib/pdos.a
+ld386 -r -s -e start -o pdos.exe strt32.o pdos.o os.a ../pdpclib/pdos.a
 strip386 --strip-unneeded pdos.exe
+del os.a

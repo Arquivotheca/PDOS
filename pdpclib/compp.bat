@@ -1,1 +1,1 @@
-make -fmakefile.pds
+make -fmakefile.pdw

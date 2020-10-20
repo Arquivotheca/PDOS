@@ -96,6 +96,8 @@ typedef BOOL (WINAPI *PHANDLER_ROUTINE)(DWORD CtrlType);
 typedef unsigned char CHAR;
 typedef unsigned short WCHAR;
 typedef short SHORT;
+typedef void VOID;
+typedef unsigned short USHORT;
 
 typedef struct _SECURITY_ATTRIBUTES {
     DWORD nLength;

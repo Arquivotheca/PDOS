@@ -13,7 +13,13 @@
 #include "setjmp.h"
 #include "stddef.h"
 
+int __setj(jmp_buf env);
 int __longj(void *);
+
+__PDPCLIB_API__ int _setjmp(jmp_buf env)
+{
+    return (__setj(env));
+}
 
 __PDPCLIB_API__ void longjmp(jmp_buf env, int val)
 {

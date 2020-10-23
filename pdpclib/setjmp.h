@@ -41,13 +41,8 @@ typedef struct {
     int retval;
 } jmp_buf[1];
 
-int __setj(jmp_buf env);
-#if defined(__WIN32__) && !defined(__STATIC__)
-#define setjmp(x) (__builtin_setjmp(x))
-#define longjmp(env, val) (__builtin_longjmp(env, val))
-#else
-#define setjmp(x) (__setj(x))
+#define setjmp(x) _setjmp(x)
+int _setjmp(jmp_buf env);
 void longjmp(jmp_buf env, int val);
-#endif
 
 #endif

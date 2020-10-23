@@ -26,6 +26,7 @@ typedef struct {
     int esp;
     int ebp;
     int retaddr;
+    int extra[7]; /* for compatibility with MSVCRT */
 #elif defined(__MSDOS__) || defined(__DOS__) || defined(__POWERC)
     int bx;
     int cx;

@@ -1,4 +1,4 @@
-gcc -c -O2 -D__WIN32__ -D__PDPCLIB_DLL -I . -I../src dllcrt.c
+gcc -c -O2 -D__WIN32__ -D__PDPCLIB_DLL -D__EXPORT__ -I . -I../src dllcrt.c
 gcc -c -O2 -D__WIN32__ -D__PDPCLIB_DLL -I . -I../src stdio.c
 gcc -c -O2 -D__WIN32__ -D__PDPCLIB_DLL -I . -I../src string.c
 gcc -c -O2 -D__WIN32__ -D__PDPCLIB_DLL -I . -I../src stdlib.c

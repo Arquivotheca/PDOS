@@ -12,7 +12,11 @@
 
 #include <stddef.h>
 
+#ifndef __EXPORT__
+#define WINAPI __stdcall __declspec(dllimport)
+#else
 #define WINAPI __stdcall
+#endif
 #define STD_INPUT_HANDLE ((DWORD)-10)
 #define STD_OUTPUT_HANDLE ((DWORD)-11)
 #define STD_ERROR_HANDLE ((DWORD)-12)
@@ -92,7 +96,7 @@ typedef LPCSTR LPCTSTR;
 typedef TCHAR *LPTCH;
 typedef void *HGLOBAL;
 typedef void *LPOVERLAPPED;
-typedef BOOL (WINAPI *PHANDLER_ROUTINE)(DWORD CtrlType);
+typedef BOOL (__stdcall *PHANDLER_ROUTINE)(DWORD CtrlType);
 typedef unsigned char CHAR;
 typedef unsigned short WCHAR;
 typedef short SHORT;

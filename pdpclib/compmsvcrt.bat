@@ -17,3 +17,4 @@ echo stdio.o string.o stdlib.o start.o time.o errno.o >dlltool.in
 echo assert.o signal.o locale.o ctype.o setjmp.o math.o >>dlltool.in
 dlltool -D msvcrt.dll -l msvcrt.a @dlltool.in
 del dlltool.in
+gcc -c -O2 -D__WIN32__ -D__PDPCLIB_DLL -I . -I../src w32start.c

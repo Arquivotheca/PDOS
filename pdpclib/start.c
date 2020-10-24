@@ -921,7 +921,7 @@ __PDPCLIB_API__ void _c_exit(void)
 }
 
 #ifdef __PDPCLIB_DLL
-BOOL WINAPI DllMain(HINSTANCE hinstDll, DWORD fdwReason, LPVOID lpvReserved)
+BOOL __stdcall DllMain(HINSTANCE hinstDll, DWORD fdwReason, LPVOID lpvReserved)
 {
     __start(0);
 

@@ -1145,11 +1145,26 @@ static int exeloadLoadPEDLL(unsigned char *exeStart,
     unsigned char *dllStart;
     long newpos;
     size_t readbytes;
+    char *name1;
+    char *name2;
 
     /* PE DLL is being loaded,
      * so it is loaded in the same way as PE executable,
      * but the MZ stage is integrated. */
-    if (PosOpenFile(exeStart + (import_desc->Name), 0, &fhandle))
+    name1 = exeStart + import_desc->Name;
+    if (strcmp(name1, "kernel32.dll") == 0)
+    {
+        name2 = "C:\\KERNEL32.DLL";
+    }
+    else if (strcmp(name1, "msvcrt.dll") == 0)
+    {
+        name2 = "C:\\MSVCRT.DLL";
+    }
+    else
+    {
+        name2 = name1;
+    }
+    if (PosOpenFile(name2, 0, &fhandle))
     {
         printf("Failed to open %s for loading\n",
                exeStart + (import_desc->Name));

@@ -20,7 +20,7 @@ pdptest.exe: w32start.o pdptest.o stdio.o string.o stdlib.o \
   arwin r pdpwin32.a w32start.o stdio.o string.o stdlib.o winsupa.obj
   arwin r pdpwin32.a start.o time.o errno.o assert.o signal.o
   arwin r pdpwin32.a locale.o ctype.o setjmp.o math.o __memmgr.o
-  ldwin -s -o pdptest.exe w32start.o pdptest.o pdpwin32.a -lkernel32 -L../src
+  ldwin -s -o pdptest.exe w32start.o pdptest.o pdpwin32.a ../src/kernel32.a
 
 .c.o:
   $(CC) $(COPTS) -o $*.s $<

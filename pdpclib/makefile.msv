@@ -9,6 +9,10 @@
 # if the resultant file looks a bit silly.
 
 CC=gcc
+AR=ar
+AS=as
+LD=ld
+DLLT=dlltool
 COPTS=-S -O2 -D__WIN32__ -D__PDPCLIB_DLL -I . -I ../src
 
 all: clean pdptest.exe
@@ -17,29 +21,30 @@ pdptest.exe: w32start.o pdptest.o stdio.o string.o stdlib.o \
        start.o time.o errno.o assert.o signal.o locale.o \
        ctype.o setjmp.o math.o dllcrt.o winsupa.obj
   rm -f temp.a
-  ar r temp.a w32start.o stdio.o string.o stdlib.o winsupa.obj
-  ar r temp.a start.o time.o errno.o assert.o signal.o
-  ar r temp.a locale.o ctype.o setjmp.o math.o
-  ld -s -o msvcrt.dll --shared dllcrt.o temp.a ../src/kernel32.a
+  $(AR) r temp.a w32start.o stdio.o string.o stdlib.o winsupa.obj
+  $(AR) r temp.a start.o time.o errno.o assert.o signal.o
+  $(AR) r temp.a locale.o ctype.o setjmp.o math.o
+  $(LD) -s -o msvcrt.dll --shared dllcrt.o temp.a ../src/kernel32.a
+  rm -f temp.a
   echo stdio.o string.o stdlib.o start.o time.o errno.o >dlltool.in
   echo assert.o signal.o locale.o ctype.o setjmp.o math.o >>dlltool.in
-  dlltool -D msvcrt.dll -l msvcrt.a @dlltool.in
+  $(DLLT) -D msvcrt.dll -l msvcrt.a @dlltool.in
   rm -f dlltool.in
-  ld -s -nostdlib -o pdptest.exe w32start.o pdptest.o msvcrt.a
+  $(LD) -s -nostdlib -o pdptest.exe w32start.o pdptest.o msvcrt.a
 
 pdptest.o: pdptest.c
   $(CC) -S -O2 -D__WIN32__ -I . -I ../src -o $*.s $*.c
-  as -o $*.o $*.s
+  $(AS) -o $*.o $*.s
   rm -f $*.s
 
 dllcrt.o: dllcrt.c
   $(CC) $(COPTS) -D__EXPORT__ -o $*.s $*.c
-  as -o $*.o $*.s
+  $(AS) -o $*.o $*.s
   rm -f $*.s
 
 .c.o:
   $(CC) $(COPTS) -o $*.s $<
-  as -o $*.o $*.s
+  $(AS) -o $*.o $*.s
   rm -f $*.s
 
 .asm.obj:

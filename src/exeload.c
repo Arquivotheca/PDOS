@@ -1152,7 +1152,8 @@ static int exeloadLoadPEDLL(unsigned char *exeStart,
      * so it is loaded in the same way as PE executable,
      * but the MZ stage is integrated. */
     name1 = exeStart + import_desc->Name;
-    if (strcmp(name1, "kernel32.dll") == 0)
+    if ((strcmp(name1, "kernel32.dll") == 0)
+        || (strcmp(name1, "KERNEL32.dll") == 0))
     {
         name2 = "C:\\KERNEL32.DLL";
     }

@@ -14,6 +14,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stddef.h>
+#include <time.h>
+#include <locale.h>
+#include <setjmp.h>
+
 #include <windows.h>
 
 BOOL WINAPI DllMain(HINSTANCE hinstDll, DWORD fdwReason, LPVOID lpvReserved);
@@ -32,7 +36,15 @@ BOOL WINAPI DllMainCRTStartup(HINSTANCE hinstDll,
 
 BOOL WINAPI DllMain(HINSTANCE hinstDll, DWORD fdwReason, LPVOID lpvReserved)
 {
-    /* __start(0); */
+#ifdef NEED_START
+    /* define dummy calls to get the whole of PDPCLIB linked in */
+    static jmp_buf jmpenv;
+
+    __start(0);
+    time(NULL);
+    setlocale(LC_ALL, "");
+    setjmp(jmpenv);
+#endif
 
     return (TRUE);
 }

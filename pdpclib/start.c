@@ -920,15 +920,6 @@ __PDPCLIB_API__ void _c_exit(void)
 #endif /* USE_MEMMGR */
 }
 
-#ifdef __PDPCLIB_DLL
-BOOL __stdcall DllMain(HINSTANCE hinstDll, DWORD fdwReason, LPVOID lpvReserved)
-{
-    __start(0);
-
-    return (TRUE);
-}
-#endif
-
 #ifdef __WIN32__
 /* Windows extensions. */
 static int _fmode;

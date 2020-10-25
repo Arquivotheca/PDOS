@@ -38,11 +38,11 @@ BOOL WINAPI DllMain(HINSTANCE hinstDll, DWORD fdwReason, LPVOID lpvReserved)
 {
 #ifdef NEED_START
     /* define dummy calls to get the whole of PDPCLIB linked in */
-    static jmp_buf jmpenv;
+    jmp_buf jmpenv;
 
     __start(0);
     time(NULL);
-    setlocale(LC_ALL, "");
+    localeconv();
     setjmp(jmpenv);
 #endif
 

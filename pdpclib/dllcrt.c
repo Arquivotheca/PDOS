@@ -34,16 +34,21 @@ BOOL WINAPI DllMainCRTStartup(HINSTANCE hinstDll,
     return (bRet);
 }
 
+int __needdum = 0;
+
 BOOL WINAPI DllMain(HINSTANCE hinstDll, DWORD fdwReason, LPVOID lpvReserved)
 {
 #ifdef NEED_START
     /* define dummy calls to get the whole of PDPCLIB linked in */
     jmp_buf jmpenv;
 
-    __start(0);
-    time(NULL);
-    localeconv();
-    setjmp(jmpenv);
+    __start(0); /* this needs to be called */
+    if (__needdum)
+    {
+        time(NULL);
+        localeconv();
+        setjmp(jmpenv);
+    }
 #endif
 
     return (TRUE);

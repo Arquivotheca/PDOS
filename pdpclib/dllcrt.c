@@ -39,12 +39,13 @@ int __needdum = 0;
 BOOL WINAPI DllMain(HINSTANCE hinstDll, DWORD fdwReason, LPVOID lpvReserved)
 {
 #ifdef NEED_START
-    /* define dummy calls to get the whole of PDPCLIB linked in */
-    jmp_buf jmpenv;
 
     __start(0); /* this needs to be called */
     if (__needdum)
     {
+        /* define dummy calls to get the whole of PDPCLIB linked in */
+        jmp_buf jmpenv;
+
         time(NULL);
         localeconv();
         setjmp(jmpenv);

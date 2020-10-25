@@ -32,7 +32,7 @@ BOOL WINAPI DllMainCRTStartup(HINSTANCE hinstDll,
 
 BOOL WINAPI DllMain(HINSTANCE hinstDll, DWORD fdwReason, LPVOID lpvReserved)
 {
-    __start(0);
+    /* __start(0); */
 
     return (TRUE);
 }

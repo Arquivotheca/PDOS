@@ -15,13 +15,6 @@
 #include <pos.h>
 
 
-/* DllMainCRTStartup() calls this function, but it is not exported. */
-BOOL WINAPI DllMain(HINSTANCE hinstDll, DWORD fdwReason, LPVOID lpvReserved)
-{
-    return (TRUE);
-}
-
-
 /* auto-genned dummy functions */
 
 void WINAPI NtAccessCheck(void)

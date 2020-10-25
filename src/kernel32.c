@@ -222,12 +222,6 @@ void WINAPI GetSystemTime(LPSYSTEMTIME lpSystemTime)
     return;
 }
 
-/* DllMainCRTStartup() calls this function, but it is not exported. */
-BOOL WINAPI DllMain(HINSTANCE hinstDll, DWORD fdwReason, LPVOID lpvReserved)
-{
-    return (TRUE);
-}
-
 DWORD WINAPI GetVersion(void)
 {
     return (0);

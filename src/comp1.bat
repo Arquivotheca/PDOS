@@ -1,11 +1,11 @@
 @echo off
-wasmr -zq -zcm -Dmemodel=tiny ploadst.asm
-wasmr -zq -zcm -Dmemodel=tiny int13x.asm
-wasmr -zq -zcm -Dmemodel=tiny near.asm
+jwasmr -q -zcm -Dmemodel=tiny ploadst.asm
+jwasmr -q -zcm -Dmemodel=tiny int13x.asm
+jwasmr -q -zcm -Dmemodel=tiny near.asm
 
 rem these two files are shared between modules
-wasmr -zq -zcm -Dmemodel=tiny support.asm 
-wasmr -zq -zcm -Dmemodel=tiny lldos.asm
+jwasmr -q -zcm -Dmemodel=tiny support.asm 
+jwasmr -q -zcm -Dmemodel=tiny lldos.asm
 tcc -O -c -mt -DNEED_DUMP -j1 -I..\pdpclib pload.c minifat.c bos.c pdosload.c ..\pdpclib\string.c ..\pdpclib\dossupc.c
 tcc -O -c -mt -j1 -I..\pdpclib ..\pdpclib\ctype.c
 

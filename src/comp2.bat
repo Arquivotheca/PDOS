@@ -1,8 +1,8 @@
-wasmr -zq -zcm -Dmemodel=large pdosstrt.asm
-wasmr -zq -zcm -Dmemodel=large support.asm
-wasmr -zq -zcm -Dmemodel=large lldos.asm
-wasmr -zq -zcm -Dmemodel=large handlers.asm
-wasmr -zq -zcm -Dmemodel=large ..\pdpclib\dossupa.asm
+jwasmr -q -zcm -Dmemodel=large pdosstrt.asm
+jwasmr -q -zcm -Dmemodel=large support.asm
+jwasmr -q -zcm -Dmemodel=large lldos.asm
+jwasmr -q -zcm -Dmemodel=large handlers.asm
+jwasmr -q -zcm -Dmemodel=large ..\pdpclib\dossupa.asm
 tcc -w- -O -c -ml -j1 -I..\pdpclib memmgr.c format.c patmat.c process.c
 tcc -w- -O -c -ml -j1 -I..\pdpclib int21.c log.c helper.c
 tcc -w- -O -c -ml -j1 -I..\pdpclib bos.c fat.c ..\pdpclib\string.c ..\pdpclib\ctype.c ..\pdpclib\dossupc.c

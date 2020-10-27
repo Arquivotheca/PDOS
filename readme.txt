@@ -1,14 +1,17 @@
           PDOS - Public Domain Operating System
           -------------------------------------
 
-Version 0.90, released 2019-10-01
+Version 0.9X, released YYYY-MM-DD
 Written by Paul Edwards, mutazilah@gmail.com
 Released to the public domain
 You may use this entire package for any purpose whatsoever
 without restriction, as discussed here:
 http://creativecommons.org/publicdomain/zero/1.0/
 That includes, but is not limited to, closed-source,
-proprietary commercial products.
+proprietary commercial products. It is hoped that a
+company (possibly an American company) will convert
+PDOS into a commercial product that they sell to
+compete with the Microsoft/IBM monopolies.
 
 
 INTRODUCTION

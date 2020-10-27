@@ -1,5 +1,5 @@
 @echo off
-jwasmr -q -zcm -Dmemodel=tiny support.asm 
+jwasmr -q -zcm -Dmemodel=tiny support.asm
 jwasmr -q -zcm -Dmemodel=tiny ploadst.asm
 jwasmr -q -zcm -Dmemodel=tiny near.asm
 jwasmr -q -zcm -Dmemodel=tiny lldos.asm

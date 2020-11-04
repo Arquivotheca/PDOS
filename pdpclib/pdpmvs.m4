@@ -135,7 +135,7 @@ undivert(pdptest.s)dnl
 //* ORDER MVSSUPA(P)
 //*
 //PDPTEST  EXEC PGM=PDPTEST,PARM='-tt dd:in dd:out',
-//         COND=(0,LT,LKED)
+//         COND=(4,LT,LKED)
 //STEPLIB  DD  DSN=&&LOADLIB,DISP=(OLD,PASS)
 //SYSPRINT DD  SYSOUT=*
 //SYSTERM  DD  SYSOUT=*

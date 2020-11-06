@@ -216,6 +216,9 @@ MASM 6.15:
 http://msdn2.microsoft.com/en-us/vstudio/aa718349.aspx
 (go "vcpp5 /c" to extract)
 
+HX DOS extender:
+https://www.japheth.de/HX.html
+
 
 
 PC RECOMPILING

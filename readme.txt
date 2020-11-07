@@ -174,7 +174,7 @@ MSDOS 5.0
 Freedos
 
 Turbo C++ 1.01 (for 16-bit C compiler)
-http://bdn.borland.com/article/21751
+https://web.archive.org/web/20060114221019/http://community.borland.com/article/images/21751/tcpp101.zip
 
 Open Watcom 1.6 (for 16-bit wasmr assembler)
 http://www.openwatcom.org

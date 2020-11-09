@@ -3019,7 +3019,7 @@ LOOKSWA  SAVE  (14,12)       SAVE REGS                                   *JOAO*
          LR    R12,R15       BASE REG                                    *JOAO*
          LR    R3,R1         SVA OF JFCB                                 *JOAO*
          CNOP  0,4           FULLWORD ALIGNMENT                          *JOAO*
-         BAS   R1,LOOKINIT   BR AROUND AND SET R1                        *JOAO*
+         BAL   R1,LOOKINIT   BR AROUND AND SET R1                        *JOAO*
          DS    18F           SAVE AREA                                   *JOAO*
 *DDWSWA  SWAREQ FCODE=RL,EPA=DDWEPA,MF=L                                 *JOAO*
 DDWSWA   DS    0F            SWA MANAGER PARAMETER LIST                  *JOAO*
@@ -3856,7 +3856,7 @@ RETURNGP RETURN (14,12),RC=(15)
          L     R3,=V(@@CPPL)       LOAD THE POINTER TO THE CPPL
          USING CPPL,R3             AND ESTABLISH ADDRESSABILITY
          CNOP  0,4                 FORCE FULLWORD ALIGNMENT
-         BAS   R1,GETSTART         BR AROUND STATIC SAVE AREA
+         BAL   R1,GETSTART         BR AROUND STATIC SAVE AREA
          DS    18F                 SAVE AREA
 GETSTART ST    R1,8(,R13)          PUT THE ADDRESS OF THE NEW SAVE
 *                                  AREA INTO THE CALLER'S SAVE ARE
@@ -3918,7 +3918,7 @@ DSNCHK   SAVE  (14,12),,DSNCHK     SAVE CALLER'S REGISTERS
          USING DSNDSECT,R2         AND ESTABLISH ADDRESSABILITY TO
 *                                  OUR MAPPING OF THE PDE
          CNOP  0,4                 FORCE FULLWORD ALIGNMENT
-         BAS   R1,DSNSTART         BR AROUND STATIC SAVE AREA
+         BAL   R1,DSNSTART         BR AROUND STATIC SAVE AREA
          DS    18F                 SAVE AREA
 DSNSTART ST    R1,8(,R13)          PUT THE ADDRESS OF THE NEW SAVE
 *                                  AREA INTO THE CALLER'S SAVE ARE

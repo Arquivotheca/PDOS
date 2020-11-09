@@ -1500,6 +1500,7 @@ TERMOPEN MVC   IOMFLAGS,WWORK     Save for duration
          L     R1,TCBFSA     GET FIRST SAVE AREA
          N     R1,=X'00FFFFFF'    IN CASE AM31
          L     R1,24(,R1)         LOAD INVOCATION R1
+         ST    R1,@@CPPL          SAVE THE CPPL ADDRESS                  *JOAO*
          USING CPPL,R1       DECLARE IT
          MVC   ZIOECT,CPPLECT
          MVC   ZIOUPT,CPPLUPT
@@ -1656,6 +1657,8 @@ EOFRLEN  EQU   *-ENDFILE
 *
          SPACE 1
          LTORG ,
+         ENTRY @@CPPL             EXTERNAL POINTER TO THE CPPL           *JOAO*
+@@CPPL   DS    A                  POINTER TO THE CPPL                    *JOAO*
          SPACE 1
 *     QSAM support has been removed
 * QSAMDCB changes depending on whether we are in LOCATE mode or
@@ -3006,53 +3009,84 @@ ADCBEXIT FUNEXIT RC=(R15)         Return to caller
 *        R15 - RETURNED SWA ADDRESS OR 0                              *
 *        R14 - RETURN                                                 *
 *                                                                     *
+*   REVISED BY JOAO REGINATO (NOV/2020)                               *
+*        TO CALL SWAREQ IF THE SWA IS ABOVE THE 2 GB BAR              *
 ***********************************************************************
          PUSH  USING
-         DROP  ,
-         USING LOOKSWA,R15
-LOOKSWA  STM   R0,R3,12(R13)      Save regs
-         N     R1,=X'00FFFFFF'    CLEAN IT
-         EX    R1,EXSWAODD   SEE WHETHER IT'S AN ODD ADDRESS
+         DROP  R12                                                       *JOAO*
+         USING LOOKSWA,R12                                               *JOAO*
+LOOKSWA  SAVE  (14,12)       SAVE REGS                                   *JOAO*
+         LR    R12,R15       BASE REG                                    *JOAO*
+         LR    R3,R1         SVA OF JFCB                                 *JOAO*
+         CNOP  0,4           FULLWORD ALIGNMENT                          *JOAO*
+         BAS   R1,LOOKINIT   BR AROUND AND SET R1                        *JOAO*
+         DS    18F           SAVE AREA                                   *JOAO*
+*DDWSWA  SWAREQ FCODE=RL,EPA=DDWEPA,MF=L                                 *JOAO*
+DDWSWA   DS    0F            SWA MANAGER PARAMETER LIST                  *JOAO*
+         DC    A(DDWEPA)     ADDR OF EPA                                 *JOAO*
+         DC    A(DDWFCN)     ADDR OF FUNCTION CODE                       *JOAO*
+DDWEPA   DC    A(DDWSVA)     ADDR OF SVA                                 *JOAO*
+DDWSVA   DS    XL28          SVA RETURN AREA                             *JOAO*
+DDWFCN   DC    CL2'RL'       FUNCTION CODE                               *JOAO*
+LOOKINIT ST    R13,4(,R1)    LINKAGE                                     *JOAO*
+         ST    R1,8(,R13)    CONVENTION                                  *JOAO*
+         LR    R13,R1        NEW SAVE AREA                               *JOAO*
+         N     R3,=X'00FFFFFF' CLEAN IT
+         EX    R3,EXSWAODD   SEE WHETHER IT'S AN ODD ADDRESS
          BZ    LOOKSVA       NO; HAVE ADDRESS
-         L     R2,PSATOLD-PSA     Get TCB
-         USING TCB,R2
-         L     R2,TCBJSCB
-*COMP*   USING IEZJSCB,R2
-*COMP*   L     R2,JSCBQMPI   (not in S370/380)
-         L     R2,X'0F4'(,R2)     Get QMPI
-*COMP*   USING IOPARAMS,R2
-*COMP*   ICM   R2,15,QMAT    QMAT BASE
-         ICM   R2,15,X'018'(R2)   Get QMAT
-         BZ    LOOKSWA0      NO QMAT, SKIP IT
+         SR    R15,R15       NOTHING FOUND - RETURN 0
+         L     R5,PSATOLD-PSA GET TCB
+         USING TCB,R5
+         L     R5,TCBJSCB
+*COMP*   USING IEZJSCB,R5
+*COMP*   L     R5,JSCBQMPI   (NOT IN S370/380)
+         ICM   R5,15,X'0F4'(R5) GET QMPI
+         BZ    LOOKSWAT      NO QMPI, SKIP IT
+*COMP*   USING IOPARAMS,R5
+         TM    X'010'(R5),X'04' IS QMAT 64 BITS?                         *JOAO*
+         BZ    LOOKNO64      BR IF NOT                                   *JOAO*
+         XC    DDWSVA,DDWSVA CLEAR SVA RETURN AREA                       *JOAO*
+         STCM  R3,7,DDWSVA+4 JFCB TOKEN                                  *JOAO*
+*        SWAREQ MF=(E,DDWSWA),UNAUTH=YES                                 *JOAO*
+         LA    R1,DDWSWA     PARAMETER LIST                              *JOAO*
+         LA    R13,0(,R13)   PREPARE R13                                 *JOAO*
+         L     R15,CVTPTR    GET CVT                                     *JOAO*
+         L     R15,X'0128'(,R15) GET JESCT                               *JOAO*
+         L     R15,X'0064'(,R15) GET JESCT EXTENSION                     *JOAO*
+         L     R15,X'0058'(,R15) GET UNAUTHORIZED SWA MANAGER            *JOAO*
+         BALR  R14,R15       CALL SWA MANAGER                            *JOAO*
+         L     R15,DDWSVA    LOAD JFCB ADDRESS                           *JOAO*
+         B     LOOKSWAT      RETURN                                      *JOAO*
          SPACE 1
-*COMP*   USING QMAT,R2
-         LR    R0,R1         COPY TOKEN
+*COMP*   ICM   R4,15,QMAT    QMAT BASE
+LOOKNO64 ICM   R4,15,X'018'(R5) GET QMAT
+         BZ    LOOKSWAT      NO QMAT, SKIP IT
+*COMP*   USING QMAT,R4
+         LR    R0,R3         COPY TOKEN                                  *JOAO*
          SRL   R0,16         MOVE EXTENT TO LAST BYTE
-         N     R1,=XL4'FFFF'   ISOLATE SVA OFFSET
-         LA    R3,X'FF'      MAX QMAT EXTENTS
-         NR    R0,R3         ISOLATE QMAT COUNTER
+         N     R3,=XL4'FFFF' ISOLATE SVA OFFSET
+         LA    R1,X'FF'      MAX QMAT EXTENTS
+         NR    R0,R1         ISOLATE QMAT COUNTER
          BZ    LOOKSWAV      ZERO; CHECK QMAT VERSION
          SPACE 1
-*COMP*AP ICM   R2,15,QMATNEXT  NEXT QMAT EXTENT
-LOOKSWAP ICM   R2,15,X'00C'(R2) NXT QMAT EXTENT
+*COMP*AP ICM   R4,15,QMATNEXT NEXT QMAT EXTENT
+LOOKSWAP ICM   R4,15,X'00C'(R4) NEXT QMAT EXTENT
          BZ    LOOKSWAX      NONE?
          BCT   R0,LOOKSWAP   LOOP TO FIND THE EXTENT
          SPACE 1
 *COMP*AV CLI   QMATVERS,2    IS IT AN ESA4 QMAT?
-LOOKSWAV CLI   X'004'(R2),2  IS IT AN ESA4 QMAT?
+LOOKSWAV CLI   X'004'(R4),2  IS IT AN ESA4 QMAT?
          BL    LOOKSWAX      NO, USE AS IS
-         LA    R2,1(,R2)     ALIGN
-LOOKSWAX ALR   R1,R2         ADD QMAT BASE
-         L     R1,0(,R1)     GET HEADER ADDRESS
-.NOQMAT  ANOP  ,
-LOOKSVA  LA    R15,16(,R1)   SKIP HEADER
-LOOKSWAT LM    R0,R3,12(R13)     RESTORE CALLER'S REGISTERS
-         BR    R14           RETURN IN CALLER'S AMODE
-LOOKSWA0 SR    R15,R15       NOTHING FOUND - RETURN 0
-         B     LOOKSWAT      RETURN
+         LA    R4,1(,R4)     ALIGN
+LOOKSWAX ALR   R3,R4         ADD QMAT BASE
+         L     R3,0(,R3)     GET HEADER ADDRESS
+LOOKSVA  LA    R15,16(,R3)   SKIP HEADER
+LOOKSWAT L     R13,4(,R13)   PREVIOUS SAVE AREA                          *JOAO*
+         ST    R15,16(,R13)  SAVE RC                                     *JOAO*
+         RETURN (14,12)      RETURN TO CALLER                            *JOAO*
 EXSWAODD TM    =X'01',*-*    ODD ADDRESS?
+         LTORG ,                                                         *JOAO*
          POP   USING
-         SPACE 2
 *
 ***********************************************************************
 *                                                                     *
@@ -3791,32 +3825,167 @@ RETURNGP RETURN (14,12),RC=(15)
 *
 *
 *
-**********************************************************************
-*                                                                    *
-*  GETEPF - get extended prefix                                      *
-*                                                                    *
-**********************************************************************
-         PUSH  USING
-         ENTRY @@GETEPF
-@@GETEPF DS    0H
-         SAVE  (14,12),,@@GETEPF
-         LR    R12,R15
-         USING @@GETEPF,R12
-*
-         GAMOS
-*         LA    R1,PPL
-*         LA    PPLPCL,DATASET1
-         CALLTSSR EP=IKJPARS
-         GAMAPP
-*
-RETURNGE RETURN (14,12),RC=(15)
-         LTORG ,
-*
-DATASET1 IKJPARM
-DSNAME   IKJPOSIT DSNAME,USID
-         IKJENDP
-*         IKJPPL
-         POP   USING
+***********************************************************************
+*-                                                                   -*
+*- TITLE - @@GETEPF                                                  -*
+*-                                                                   -*
+*- DESCRIPTION - PROGRAM TO RETURN THE FULL DSN WITH                 -*
+*-               THE PREFIX FROM THE TSO/E PROFILE.                  -*
+*-                                                                   -*
+*- OPERATION - @@GETEPF IS A NON-REENTRANT PROGRAM THAT              -*
+*-             PERFORMS THE FOLLOWING PROCESSING:                    -*
+*-                                                                   -*
+*- 1 - ESTABLISHES ADDRESSABILITY AND SAVES THE CALLER'S REGISTERS   -*
+*- 2 - USES THE PARSE SERVICE ROUTINE (IKJPARS) TO DETERMINE THE     -*
+*-     VALIDITY OF THE OPERANDS                                      -*
+*- 3 - PROVIDES A VALIDITY CHECKING ROUTINE TO GET THE FULLY         -*
+*-     QUALIFIED DSN AND ITS LENGTH                                  -*
+*- 4 - RESTORES THE CALLER'S REGISTERS BEFORE RETURNING              -*
+*- 5 - RETURNS TO THE CALLER WITH REGISTER 15 POINTING TO THE        -*
+*-     NULL-TERMINATED DSNAME.                                       -*
+*-                                                                   -*
+*-     >>>>> J. REGINATO-NOV/2020 - BRAZIL <<<<<                     -*
+*-     >>>>> RELEASED TO THE PUBLIC DOMAIN <<<<<                     -*
+*-                                                                   -*
+***********************************************************************
+         ENTRY @@GETEPF            ENTRY POINT
+@@GETEPF SAVE  (14,12),,@@GETEPF-NOV/2020-J.REGINATO
+*                                  SAVE CALLER'S REGISTERS
+         LR    R12,R15             ESTABLISH ADDRESSABILITY WITHIN
+         USING @@GETEPF,R12        THIS CSECT
+         L     R3,=V(@@CPPL)       LOAD THE POINTER TO THE CPPL
+         USING CPPL,R3             AND ESTABLISH ADDRESSABILITY
+         CNOP  0,4                 FORCE FULLWORD ALIGNMENT
+         BAS   R1,GETSTART         BR AROUND STATIC SAVE AREA
+         DS    18F                 SAVE AREA
+GETSTART ST    R1,8(,R13)          PUT THE ADDRESS OF THE NEW SAVE
+*                                  AREA INTO THE CALLER'S SAVE ARE
+         ST    R13,4(,R1)          PUT THE ADDRESS OF THE CALLER'S
+*                                  SAVE AREA INTO THE NEW SAVE AREA
+         LR    R13,R1              POINT TO ITS OWN SAVE AREA
+***********************************************************************
+*-       SET A FIXED SUFFIX IN THE CP PROMPT BUFFER                  -*
+***********************************************************************
+         L     R4,CPPLCBUF         CP PROMPT BUFFER
+         LA    R2,4(,R4)           TEXT START "PGM PARM"
+         LA    R1,9(,R2)           MAX PGM LENGTH + 1
+         LA    R0,C' '             SPACE CHAR
+         SRST  R1,R2               SEARCH SPACE AFTER PGM
+         LA    R1,1(,R1)           +1
+         MVC   0(8,R1),=C'@@@@@@@Z' MOVE SUFFIX
+         SR    R1,R2               CALCULATE OFFSET
+         STH   R1,2(,R4)           SAVE IT ON THE CP BUFFER OFFSET
+         LA    R1,12(,R1)          CALCULATE ENTIRE BUFFER
+         STH   R1,0(,R4)           SAVE IT ON THE CP BUFFER LENGTH
+***********************************************************************
+*-       CALL THE PARSE ROUTINE TO INCLUDE THE PROFILE PREFIX        -*
+***********************************************************************
+         XC    WKAREA(WKLEN),WKAREA CLEAR ENTIRE WORK AREA
+         LA    R2,WKPPL            POINTS TO THE NEW PPL
+         USING PPL,R2              ESTABLISH ADDRESSABILITY TO THE PPL
+         MVC   PPLUPT,CPPLUPT      PUT IN THE UPT ADDRESS FROM CPPL
+         MVC   PPLECT,CPPLECT      PUT IN THE ECT ADDRESS FROM CPPL
+         MVC   PPLCBUF,CPPLCBUF    PUT IN THE COMMAND BUFFER ADDRES
+*                                  FROM THE CPPL
+         LA    R1,WKANS            GET THE ADDRESS OF THE PARSE
+*                                  ANSWER AREA AND
+         ST    R1,PPLANS           STORE IT IN THE PPL
+         LA    R1,WKECB            GET THE ADDRESS OF THE ECB AND
+         ST    R1,PPLECB           PUT IT IN THE PPL
+         L     R1,=A(PCLSTART)     GET THE ADDRESS OF THE PCL AND
+         ST    R1,PPLPCL           PUT IT IN THE PPL FOR PARSE
+         CALLTSSR EP=IKJPARS,MF=(E,PPL) INVOKE PARSE
+***********************************************************************
+*-       CLEANUP AND TERMINATION PROCESSING                          -*
+***********************************************************************
+CLEANUP  ICM   R1,15,WKANS         POINT TO THE PDL
+         BNP   RETURN              BR IF NOT VALID
+         IKJRLSA (R1)              FREE STORAGE THAT PARSE ALLOCATED
+*                                  FOR THE PDL
+RETURN   LA    R15,WKDSN           DSNAME+\0
+         L     R13,4(,R13)         CHAIN TO PREVIOUS SAVE AREA
+         RETURN (14,12),RC=(15)    RETURN TO THE CALLER
+         DROP  ,                   FREE REGISTERS
+***********************************************************************
+*-       DSNCHK - IKJPOSIT VALIDITY CHECKING ROUTINE                 -*
+*-                                                                   -*
+*-       RETURN THE DSN AND ITS LENGTH WITH RETURN CODE ALWAYS 0     -*
+***********************************************************************
+DSNCHK   SAVE  (14,12),,DSNCHK     SAVE CALLER'S REGISTERS
+         LR    R12,R15             ESTABLISH ADDRESSABILITY WITHIN
+         USING DSNCHK,R12          THIS CSECT
+         L     R2,0(,R1)           GET THE ADDRESS OF THE PDE
+         USING DSNDSECT,R2         AND ESTABLISH ADDRESSABILITY TO
+*                                  OUR MAPPING OF THE PDE
+         CNOP  0,4                 FORCE FULLWORD ALIGNMENT
+         BAS   R1,DSNSTART         BR AROUND STATIC SAVE AREA
+         DS    18F                 SAVE AREA
+DSNSTART ST    R1,8(,R13)          PUT THE ADDRESS OF THE NEW SAVE
+*                                  AREA INTO THE CALLER'S SAVE ARE
+         ST    R13,4(,R1)          PUT THE ADDRESS OF THE CALLER'S
+*                                  SAVE AREA INTO THE NEW SAVE AREA
+         LR    R13,R1              POINT TO ITS OWN SAVE AREA
+***********************************************************************
+*-       MAINLINE PROCESSING                                         -*
+***********************************************************************
+         L     R4,DSNPTR           POINT TO THE DSN
+         LH    R1,DSNLEN           GET THE DSN LENGTH
+         STH   R1,WKDSNLEN         SAVE IT TO RETURN
+         BCTR  R1,R0               MINUS 1
+         MVC   WKDSN(0),0(R4)      MOVE DSN
+         EX    R1,*-6              MOVE DSN WITH PROPER LENGTH
+DSNOK    L     R13,4(,R13)         CHAIN TO PREVIOUS SAVE AREA
+         RETURN (14,12),RC=0       RETURN TO THE CALLER WITH RC=0
+***********************************************************************
+*-       PARSE MACROS USED TO DESCRIBE THE COMMAND OPERANDS          -*
+***********************************************************************
+PCLSTART IKJPARM DSECT=PDL         START DEFINITION
+PCLDSN   IKJPOSIT DSNAME,USID,     PARSE DSN AND APPEND TO PREFIX      X
+               VALIDCK=DSNCHK      VALIDITY CHECK ROUTINE
+         IKJENDP ,                 END DEFINITION
+*---------------------------------------------------------------------*
+*-       MAPPING THE PDE BUILT BY PARSE TO DESCRIBE A DSNAME OPERAND -*
+*---------------------------------------------------------------------*
+DSNDSECT DSECT                     PDE MAPPING FOR THE DSN
+DSNPTR   DS    F                   POINTER TO THE DSN
+DSNLEN   DS    H                   LENGTH OF THE DSN EXCLUDING QUOTES
+DSNFLG   DS    CL1                 FLAGS BYTE
+*        0... .... THE DATA SET NAME IS NOT PRESENT
+*        1... .... THE DATA SET NAME IS PRESENT
+*        .0.. .... THE DATA SET NAME IS NOT CONTAINED WITHIN QUOTES
+*        .1.. .... THE DATA SET NAME IS CONTAINED WITHIN QUOTES
+         DS    CL1                 RESERVED
+MBRPTR   DS    F                   POINTER TO THE MEMBER NAME
+MBRLEN   DS    H                   LENGTH OF THE MEMBER NAME
+*                                  EXCLUDING PARENTHESES
+MBRFLG   DS    CL1                 FLAGS BYTE
+*        0... .... THE MEMBER NAME IS NOT PRESENT
+*        1... .... THE MEMBER NAME IS PRESENT
+         DS    CL1                 RESERVED
+PSWPTR   DS    F                   POINTER TO THE DATA SET PASSWORD
+PSWLEN   DS    H                   LENGTH OF THE PASSWORD
+PSWFLG   DS    CL1                 FLAGS BYTE
+*        0... .... THE DATA SET PASSWORD IS NOT PRESENT
+*        1... .... THE DATA SET PASSWORD IS PRESENT
+         DS    CL1                 RESERVED
+*---------------------------------------------------------------------*
+*-       MAPPING TSO CONTROL BLOCKS                                  -*
+*---------------------------------------------------------------------*
+         IKJPPL                    PARSE PARAMETER LIST
+LENPPL   EQU   *-PPL               LENGTH OF PPL
+         CSECT
+***********************************************************************
+*-       DECLARES THE STATIC WORK AREA                               -*
+***********************************************************************
+         DS    0F                  FULLWORD ALIGNMENT
+WKAREA   DS    0C                  START OF WORK AREA
+WKPDE    DS    F                   ADDRESS OF THE PDE FROM PARSE
+WKECB    DS    F                   CP'S EVENT CONTROL BLOCK
+WKANS    DS    F                   PARSE ANSWER PLACE
+WKPPL    DS    CL(LENPPL)          PPL
+WKDSNLEN DS    H                   DSN LENGTH
+WKDSN    DS    CL45                NULL-TERMINATED FULL DSN
+WKLEN    EQU   *-WKAREA            LENGTH OF WORK AREA
 *
 *
 *

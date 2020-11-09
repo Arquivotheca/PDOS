@@ -3894,7 +3894,9 @@ GETSTART ST    R1,8(,R13)          PUT THE ADDRESS OF THE NEW SAVE
          ST    R1,PPLECB           PUT IT IN THE PPL
          L     R1,=A(PCLSTART)     GET THE ADDRESS OF THE PCL AND
          ST    R1,PPLPCL           PUT IT IN THE PPL FOR PARSE
+         GAMOS
          CALLTSSR EP=IKJPARS,MF=(E,PPL) INVOKE PARSE
+         GAMAPP
 ***********************************************************************
 *-       CLEANUP AND TERMINATION PROCESSING                          -*
 ***********************************************************************

@@ -139,7 +139,7 @@ undivert(pdptest.s)dnl
 //STEPLIB  DD  DSN=&&LOADLIB,DISP=(OLD,PASS)
 //SYSPRINT DD  SYSOUT=*
 //SYSTERM  DD  SYSOUT=*
-//SYSUDUMP DD  SYSOUT=*
+//SYSABEND DD  SYSOUT=*
 //SYSIN    DD  DUMMY
 //IN       DD  *
 line 1

@@ -1500,7 +1500,7 @@ TERMOPEN MVC   IOMFLAGS,WWORK     Save for duration
          L     R1,TCBFSA     GET FIRST SAVE AREA
          N     R1,=X'00FFFFFF'    IN CASE AM31
          L     R1,24(,R1)         LOAD INVOCATION R1
-         ST    R1,@@CPPL          SAVE THE CPPL ADDRESS                  *JOAO*
+         ST    R1,@@CPPL          save the CPPL address                  *JOAO*
          USING CPPL,R1       DECLARE IT
          MVC   ZIOECT,CPPLECT
          MVC   ZIOUPT,CPPLUPT
@@ -1656,9 +1656,9 @@ ENDFILE  LA    R6,1               Indicate @@AREAD reached end-of-file
 EOFRLEN  EQU   *-ENDFILE
 *
          SPACE 1
+         ENTRY @@CPPL             External pointer to the CPPL           *JOAO*
+@@CPPL   DS    A                  Pointer to the CPPL                    *JOAO*
          LTORG ,
-         ENTRY @@CPPL             EXTERNAL POINTER TO THE CPPL           *JOAO*
-@@CPPL   DS    A                  POINTER TO THE CPPL                    *JOAO*
          SPACE 1
 *     QSAM support has been removed
 * QSAMDCB changes depending on whether we are in LOCATE mode or
@@ -3835,14 +3835,15 @@ RETURNGP RETURN (14,12),RC=(15)
 *- OPERATION - @@GETEPF IS A NON-REENTRANT PROGRAM THAT              -*
 *-             PERFORMS THE FOLLOWING PROCESSING:                    -*
 *-                                                                   -*
-*- 1 - ESTABLISHES ADDRESSABILITY AND SAVES THE CALLER'S REGISTERS   -*
-*- 2 - USES THE PARSE SERVICE ROUTINE (IKJPARS) TO DETERMINE THE     -*
+*- 1 - GETS THE DSNAME FROM PARM                                     -*
+*- 2 - ESTABLISHES ADDRESSABILITY AND SAVES THE CALLER'S REGISTERS   -*
+*- 3 - USES THE PARSE SERVICE ROUTINE (IKJPARS) TO DETERMINE THE     -*
 *-     VALIDITY OF THE OPERANDS                                      -*
-*- 3 - PROVIDES A VALIDITY CHECKING ROUTINE TO GET THE FULLY         -*
+*- 4 - PROVIDES A VALIDITY CHECKING ROUTINE TO GET THE FULLY         -*
 *-     QUALIFIED DSN AND ITS LENGTH                                  -*
-*- 4 - RESTORES THE CALLER'S REGISTERS BEFORE RETURNING              -*
-*- 5 - RETURNS TO THE CALLER WITH REGISTER 15 POINTING TO THE        -*
-*-     NULL-TERMINATED DSNAME.                                       -*
+*- 5 - RESTORES THE CALLER'S REGISTERS BEFORE RETURNING              -*
+*- 6 - RETURNS TO THE CALLER WITH REGISTER 15 POINTING TO THE        -*
+*-     NULL-TERMINATED FULL DSNAME WITH THE PREFIX FROM THE PROFILE  -*
 *-                                                                   -*
 *-     >>>>> J. REGINATO-NOV/2020 - BRAZIL <<<<<                     -*
 *-     >>>>> RELEASED TO THE PUBLIC DOMAIN <<<<<                     -*
@@ -3853,58 +3854,72 @@ RETURNGP RETURN (14,12),RC=(15)
 *                                  SAVE CALLER'S REGISTERS
          LR    R12,R15             ESTABLISH ADDRESSABILITY WITHIN
          USING @@GETEPF,R12        THIS CSECT
-         L     R3,=V(@@CPPL)       LOAD THE POINTER TO THE CPPL
-         USING CPPL,R3             AND ESTABLISH ADDRESSABILITY
          CNOP  0,4                 FORCE FULLWORD ALIGNMENT
-         BAL   R1,GETSTART         BR AROUND STATIC SAVE AREA
+         BAL   R1,GETESTRT         BR AROUND STATIC SAVE AREA
          DS    18F                 SAVE AREA
-GETSTART ST    R1,8(,R13)          PUT THE ADDRESS OF THE NEW SAVE
+GETESTRT ST    R1,8(,R13)          PUT THE ADDRESS OF THE NEW SAVE
 *                                  AREA INTO THE CALLER'S SAVE ARE
          ST    R13,4(,R1)          PUT THE ADDRESS OF THE CALLER'S
 *                                  SAVE AREA INTO THE NEW SAVE AREA
+         LDVAL R4,24(,R13)         GET THE PARM FROM THE ORIGINAL R1
          LR    R13,R1              POINT TO ITS OWN SAVE AREA
 ***********************************************************************
-*-       SET A FIXED SUFFIX IN THE CP PROMPT BUFFER                  -*
+*-       GET THE DSNAME FROM PARM AND FILL IN A NEW BUFFER           -*
 ***********************************************************************
-         L     R4,CPPLCBUF         CP PROMPT BUFFER
-         LA    R2,4(,R4)           TEXT START "PGM PARM"
-         LA    R1,9(,R2)           MAX PGM LENGTH + 1
-         LA    R0,C' '             SPACE CHAR
-         SRST  R1,R2               SEARCH SPACE AFTER PGM
-         LA    R1,1(,R1)           +1
-         MVC   0(8,R1),=C'@@@@@@@Z' MOVE SUFFIX
-         SR    R1,R2               CALCULATE OFFSET
-         STH   R1,2(,R4)           SAVE IT ON THE CP BUFFER OFFSET
-         LA    R1,12(,R1)          CALCULATE ENTIRE BUFFER
-         STH   R1,0(,R4)           SAVE IT ON THE CP BUFFER LENGTH
+         XC    WKCBUF(WKCBUFT),WKCBUF CLEAR THE NEW BUFFER
+         LDVAL R3,=V(@@CPPL)       LOAD THE CPPL ADDRESS
+         USING CPPL,R3             AND ESTABLISH ADDRESSABILITY
+         L     R5,CPPLCBUF         LOAD THE ORIGINAL COMMAND BUFFER
+         LH    R1,0(,R5)           GET THE BUFFER LENGTH
+         BCTR  R1,R0               -1 FOR EXECUTE
+         MVC   WKCBUF(0),0(R5)     COPY THE ORIGINAL BUFFER
+         EX    R1,*-6              COPY THE ORIGINAL BUFFER
+         TRT   0(45,R4),WKTRT      SEARCH THE DSNAME FOR \0
+         BZ    GETEEND             RETURN IF NONE FOUND
+         SR    R1,R4               GET THE REAL LENGTH
+         BCTR  R1,R0               -1 FOR EXECUTE
+         LA    R2,WKCBUFP          POINT TO THE NEW PROMPT BUFFER
+         LH    R5,WKCBUFO          GET THE OFFSET TO THE DSNAME
+         AR    R2,R5               ADD THE OFFSET TO THE DSNAME
+         CLI   0(R2),X'00'         ANY PARM IN THE PROMPT BUFFER?
+         BNE   GETEOFFK            YES, CONTINUE
+         LA    R2,1(,R2)           INCREASE POINTER BY 1
+         LA    R5,1(,R5)           INCREASE OFFSET BY 1
+         STH   R5,WKCBUFO          SAVE THE NEW OFFSET TO THE DSNAME
+GETEOFFK ST    R2,WKDSN            SAVE THE POINTER TO THE DSNAME
+         MVC   0(0,R2),0(R4)       COPY DSNAME TO THE NEW BUFFER
+         EX    R1,*-6              COPY DSNAME TO THE NEW BUFFER
+         LA    R0,WKCBUF           GET THE BUFFER START
+         SR    R2,R0               GET THE PREFIX LENGTH
+         LA    R1,1(R1,R2)         GET THE TOTAL LENGTH
+         STH   R1,WKCBUFL          SAVE THE NEW BUFFER LENGTH
 ***********************************************************************
 *-       CALL THE PARSE ROUTINE TO INCLUDE THE PROFILE PREFIX        -*
 ***********************************************************************
-         XC    WKAREA(WKLEN),WKAREA CLEAR ENTIRE WORK AREA
-         LA    R2,WKPPL            POINTS TO THE NEW PPL
-         USING PPL,R2              ESTABLISH ADDRESSABILITY TO THE PPL
+         LA    R5,WKPPL            POINT TO THE NEW PPL
+         USING PPL,R5              ESTABLISH ADDRESSABILITY TO THE PPL
          MVC   PPLUPT,CPPLUPT      PUT IN THE UPT ADDRESS FROM CPPL
          MVC   PPLECT,CPPLECT      PUT IN THE ECT ADDRESS FROM CPPL
-         MVC   PPLCBUF,CPPLCBUF    PUT IN THE COMMAND BUFFER ADDRES
+         LA    R1,WKCBUF           GET THE ADDRESS OF THE NEW BUFFER
+         ST    R1,PPLCBUF          PUT IN THE BUFFER ADDRESS
 *                                  FROM THE CPPL
          LA    R1,WKANS            GET THE ADDRESS OF THE PARSE
 *                                  ANSWER AREA AND
          ST    R1,PPLANS           STORE IT IN THE PPL
          LA    R1,WKECB            GET THE ADDRESS OF THE ECB AND
          ST    R1,PPLECB           PUT IT IN THE PPL
-         L     R1,=A(PCLSTART)     GET THE ADDRESS OF THE PCL AND
-         ST    R1,PPLPCL           PUT IT IN THE PPL FOR PARSE
-         GAMOS
+         MVC   PPLPCL,=A(PCLSTART) PUT THE PCL IN THE PPL FOR PARSE
+         GAMOS ,                   SET AM24 ON S380
          CALLTSSR EP=IKJPARS,MF=(E,PPL) INVOKE PARSE
-         GAMAPP
+         GAMAPP ,                  SET AM31 ON S380
 ***********************************************************************
 *-       CLEANUP AND TERMINATION PROCESSING                          -*
 ***********************************************************************
-CLEANUP  ICM   R1,15,WKANS         POINT TO THE PDL
-         BNP   RETURN              BR IF NOT VALID
+         ICM   R1,15,WKANS         POINT TO THE PDL
+         BNP   GETEEND             BR IF NOT VALID
          IKJRLSA (R1)              FREE STORAGE THAT PARSE ALLOCATED
 *                                  FOR THE PDL
-RETURN   LA    R15,WKDSN           DSNAME+\0
+GETEEND  L     R15,WKDSN           RETURN THE NULL-TERMINATED DSNAME
          L     R13,4(,R13)         CHAIN TO PREVIOUS SAVE AREA
          RETURN (14,12),RC=(15)    RETURN TO THE CALLER
          DROP  ,                   FREE REGISTERS
@@ -3928,13 +3943,14 @@ DSNSTART ST    R1,8(,R13)          PUT THE ADDRESS OF THE NEW SAVE
 *                                  SAVE AREA INTO THE NEW SAVE AREA
          LR    R13,R1              POINT TO ITS OWN SAVE AREA
 ***********************************************************************
-*-       MAINLINE PROCESSING                                         -*
+*-       RETURN THE DSNAME FROM PARSER                               -*
 ***********************************************************************
          L     R4,DSNPTR           POINT TO THE DSN
          LH    R1,DSNLEN           GET THE DSN LENGTH
-         STH   R1,WKDSNLEN         SAVE IT TO RETURN
          BCTR  R1,R0               MINUS 1
-         MVC   WKDSN(0),0(R4)      MOVE DSN
+         L     R3,WKDSN            GET THE DSNAME POINTER
+         XC    0(45,R3),0(R3)      CLEAR IT
+         MVC   0(0,R3),0(R4)       MOVE DSN
          EX    R1,*-6              MOVE DSN WITH PROPER LENGTH
 DSNOK    L     R13,4(,R13)         CHAIN TO PREVIOUS SAVE AREA
          RETURN (14,12),RC=0       RETURN TO THE CALLER WITH RC=0
@@ -3979,15 +3995,18 @@ LENPPL   EQU   *-PPL               LENGTH OF PPL
 ***********************************************************************
 *-       DECLARES THE STATIC WORK AREA                               -*
 ***********************************************************************
-         DS    0F                  FULLWORD ALIGNMENT
-WKAREA   DS    0C                  START OF WORK AREA
 WKPDE    DS    F                   ADDRESS OF THE PDE FROM PARSE
 WKECB    DS    F                   CP'S EVENT CONTROL BLOCK
 WKANS    DS    F                   PARSE ANSWER PLACE
 WKPPL    DS    CL(LENPPL)          PPL
-WKDSNLEN DS    H                   DSN LENGTH
-WKDSN    DS    CL45                NULL-TERMINATED FULL DSN
-WKLEN    EQU   *-WKAREA            LENGTH OF WORK AREA
+WKDSN    DS    F                   DSNAME POINTER INTO THE BUFFER
+WKCBUF   DS    0F                  NEW FAKE COMMAND BUFFER
+WKCBUFL  DS    H                   BUFFER LENGTH
+WKCBUFO  DS    H                   OFFSET TO THE DSNAME
+WKCBUFP  DS    CL(8+1)             PROMPT BUFFER PGMNAME + SPACE
+         DS    CL(44+1)            NULL-TERMINATED DSNAME
+WKCBUFT  EQU   *-WKCBUF            TOTAL LENGTH
+WKTRT    DC    X'FF',255X'00'      SEARCH FOR X'00'
 *
 *
 *

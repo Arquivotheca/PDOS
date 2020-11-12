@@ -27,6 +27,9 @@ int __idcams(size_t len, char *data);
 #pragma linkage(__getpfx, OS)
 char *__getpfx(void);
 
+#pragma linkage(__getepf, OS)
+char *__getepf(char *dsn);
+
 #pragma linkage(__system, OS)
 #ifdef MUSIC
 int __system(int len, const char *command);

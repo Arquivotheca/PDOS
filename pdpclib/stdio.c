@@ -1013,26 +1013,24 @@ static void osfopen(void)
 #if defined(__MVS__) && !defined(__VSE__)
         else
         {
-            /* Currently we manually add a prefix, but in the
-               future we should call IKJPARS instead, so that
-               an operating system can provide a longer
-               (than 7 characters) prefix instead. */
+            /* Call IKJPARS to get a prefix */
             if (__tso)
             {
-                char pfx[8];
-                int l;
+                char *z = "@@@@@@@Z"; /* dummy DSN */
+                int len;
                 char *gp;
 
-                gp = __getpfx();
-                if (gp != NULL)
+                gp = __getepf(z);
+                len = strlen(gp);
+                if (len > strlen(z))
                 {
-                    memcpy(pfx, gp, sizeof pfx);
-                    l = pfx[sizeof pfx - 1];
-                    if ((l > 0) && (l < sizeof pfx))
+                    if (strcmp(gp + strlen(gp) - strlen(z), z) == 0)
                     {
-                        pfx[l] = '\0';
-                        strcpy(rawf, pfx);
-                        strcat(rawf, ".");
+                        len -= strlen(z);
+                    }
+                    if (strlen(rawf) + len + 1 < sizeof rawf)
+                    {
+                        strncpy(rawf + strlen(rawf), gp, len);
                     }
                 }
             }

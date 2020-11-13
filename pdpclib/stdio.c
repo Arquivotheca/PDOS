@@ -1028,9 +1028,10 @@ static void osfopen(void)
                     {
                         len -= strlen(z);
                     }
-                    if (strlen(rawf) + len + 1 < sizeof rawf)
+                    if (len + 1 < sizeof rawf)
                     {
-                        strncpy(rawf + strlen(rawf), gp, len);
+                        strncpy(rawf, gp, len);
+                        rawf[len] = '\0';
                     }
                 }
             }

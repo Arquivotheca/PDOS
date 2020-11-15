@@ -88,6 +88,13 @@ CEESTART DS    0H
          LR    R1,R11            Restore R1 as MVS gave us
          USING STACK,R13
 *
+* First save away the R1 in case it is needed because it is
+* a TSO environment and this is the CPPL
+         LR    R9,R1             Alter R9 instead of R1
+         N     R9,=X'00FFFFFF'   Clean potential garbage in high byte
+         L     R8,=V(@@CPPL)     Get address of @@CPPL global variable
+         ST    R9,0(R8)          save into @@CPPL
+*
          LA    R1,0(,R1)         Clean address, just for good measure
 *
          LA    R2,0              Set R2 to 0

@@ -1500,7 +1500,6 @@ TERMOPEN MVC   IOMFLAGS,WWORK     Save for duration
          L     R1,TCBFSA     GET FIRST SAVE AREA
          N     R1,=X'00FFFFFF'    IN CASE AM31
          L     R1,24(,R1)         LOAD INVOCATION R1
-*        ST    R1,@@CPPL          save the CPPL address                  *JOAO*
          USING CPPL,R1       DECLARE IT
          MVC   ZIOECT,CPPLECT
          MVC   ZIOUPT,CPPLUPT

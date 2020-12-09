@@ -140,7 +140,8 @@ To get the 16-bit version on floppy disk, you need
 to get hold of a program called "rawrite" from the
 internet and then follow the instructions to get
 pdos16.img onto a 1.44 MB floppy disk.  pdos32.img
-will give you the 32-bit version.
+will give you the 32-bit version. Both of these
+files can be found in the "src" directory.
 
 To install on hard disk, you need MSDOS (I tested
 with version 5.0) to format a FAT-16 partition,

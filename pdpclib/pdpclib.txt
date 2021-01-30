@@ -154,8 +154,8 @@ EMX 0.9d or go "dmake -B -f makefile.pdw" when cross-compiling
 from Windows.
 
 To produce a Windows executable that is similar to mingw,
-run compmsvcrt (which produces a DLL suitable for use
-in PD-Windows) then comppdptest.
+run "dmake -B -f makefile.msv" which produces a DLL suitable
+for use in PD-Windows.
 
 
 

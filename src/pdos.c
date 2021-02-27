@@ -2167,8 +2167,11 @@ static int ff_search(void)
                 p = strchr(file, ' ');
                 if (p != NULL)
                 {
-                    *p-- = '\0';
+                    *p = '\0';
                 }
+                p = file + strlen(file);
+                if (p > file) p--;
+                if (*p == '.') *p = '\0';
                 if ((patmat(file, ff_pat) ||
                     /* If it has LFN, it is enough if only one of them fits. */
                      (lfn_len && patmat(testlfn, ff_pat)))
@@ -2185,7 +2188,6 @@ static int ff_search(void)
 
                 )
                 {
-                    if ((p != NULL) && (*p == '.')) *p = '\0';
                     dta->attrib = dirent.file_attr; /* attribute */
 
                     dta->file_time = dirent.last_modtime[0]   /*time*/

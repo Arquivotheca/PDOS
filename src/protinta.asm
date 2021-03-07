@@ -248,6 +248,8 @@ assume cs:_TEXT32
 
 rtop_stage2:
 ; Checks if virtual memory was enabled before (savecr3 != 0)
+        xor eax, eax
+        mov cr3, eax
         mov eax, savecr3
         cmp eax, 00h
         je rtop_stage2_cont

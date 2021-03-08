@@ -1,7 +1,7 @@
 # This builds Amiga hunk executables for Amiga OS 68000
 
 CC=vbccm68k
-COPTS=-D__AMIGA__ -I. -I../amiga
+COPTS=-D__AMIGA__ -cpu=68020 -fpu=68881 -I. -I../amiga
 
 pdptest.exe: amistart.o pdptest.o stdio.o string.o stdlib.o \
        start.o time.o errno.o assert.o signal.o locale.o \

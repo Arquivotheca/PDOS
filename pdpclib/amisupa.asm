@@ -70,3 +70,62 @@ Write:
 	JSR	-048(A6)
 	MOVEM.L	(A7)+,D2/D3/A6
 	RTS
+
+
+	SECTION	".text",CODE
+	XREF	_DOSBase
+
+	XDEF	_Input
+_Input:
+	XDEF	Input
+Input:
+	MOVE.L	A6,-(A7)
+	MOVEA.L	_DOSBase,A6
+	JSR	-054(A6)
+	MOVEA.L	(A7)+,A6
+	RTS
+
+
+	SECTION	".text",CODE
+	XREF	_DOSBase
+
+	XDEF	_Output
+_Output:
+	XDEF	Output
+Output:
+	MOVE.L	A6,-(A7)
+	MOVEA.L	_DOSBase,A6
+	JSR	-060(A6)
+	MOVEA.L	(A7)+,A6
+	RTS
+
+
+	SECTION	".text",CODE
+	XREF	_SysBase
+
+	XDEF	_AllocMem
+_AllocMem:
+	XDEF	AllocMem
+AllocMem:
+	MOVE.L	A6,-(A7)
+	MOVEA.L	_SysBase,A6
+	MOVEM.L	08(A7),D0/D1
+	JSR	-198(A6)
+	MOVEA.L	(A7)+,A6
+	RTS
+
+
+	SECTION	".text",CODE
+	XREF	_SysBase
+
+	XDEF	_FreeMem
+_FreeMem:
+	XDEF	FreeMem
+FreeMem:
+	MOVE.L	A6,-(A7)
+	MOVEA.L	_SysBase,A6
+	MOVEA.L	08(A7),A1
+	MOVE.L	12(A7),D0
+	JSR	-210(A6)
+	MOVEA.L	(A7)+,A6
+	RTS

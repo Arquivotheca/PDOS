@@ -73,6 +73,8 @@ static char buffer3[BUFSIZ + 8];
 
 #if defined(__AMIGA__)
 
+#include <clib/dos_protos.h>
+
 struct Node {
     struct Node *ln_Succ;
     char filler[6];
@@ -259,6 +261,10 @@ __PDPCLIB_API__ int CTYP __start(char *p)
     __stdin->hfile = GetStdHandle(STD_INPUT_HANDLE);
     __stdout->hfile = GetStdHandle(STD_OUTPUT_HANDLE);
     __stderr->hfile = GetStdHandle(STD_ERROR_HANDLE);
+#elif defined(__AMIGA__)
+    __stdin->hfile = Input();
+    __stdout->hfile = Output();
+    __stderr->hfile = Output();
 #else
     __stdin->hfile = 0;
     __stdout->hfile = 1;

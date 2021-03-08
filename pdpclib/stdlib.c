@@ -26,6 +26,10 @@
 #define __MSDOS__
 #endif
 
+#ifdef __AMIGA__
+#include <clib/exec_protos.h>
+#endif
+
 #ifdef __OS2__
 #define INCL_DOSMISC
 #define INCL_DOSPROCESS
@@ -89,6 +93,14 @@ void (*__userExit[__NATEXIT])(void);
 
 __PDPCLIB_API__ void *malloc(size_t size)
 {
+#ifdef __AMIGA__
+    size_t *x;
+
+    x = AllocMem(size + sizeof(size_t), 0);
+    if (x == NULL) return (NULL);
+    *(x - 1) = size;
+    return (x);
+#endif
 #ifdef __OS2__
     PVOID BaseAddress;
     ULONG ulObjectSize;
@@ -280,6 +292,13 @@ __PDPCLIB_API__ void *realloc(void *ptr, size_t size)
 
 __PDPCLIB_API__ void free(void *ptr)
 {
+#ifdef __AMIGA__
+    if (ptr != NULL)
+    {
+        ptr = (char *)ptr - sizeof(size_t);
+        FreeMem(ptr, *(size_t *)ptr + sizeof(size_t));
+    }
+#endif
 #ifdef __OS2__
     if (ptr != NULL)
     {

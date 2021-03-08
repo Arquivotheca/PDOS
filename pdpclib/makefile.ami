@@ -1,0 +1,17 @@
+# This builds Amiga hunk executables for Amiga OS 68000
+
+CC=vbccm68k
+COPTS=-D__AMIGA__ -I. -I../amiga
+
+pdptest.exe: amistart.o pdptest.o stdio.o string.o stdlib.o \
+       start.o time.o errno.o assert.o signal.o locale.o \
+       ctype.o setjmp.o math.o
+  vlink -bamigahunk -o pdptest.exe amistart.o pdptest.o stdio.o string.o stdlib.o start.o time.o errno.o assert.o signal.o locale.o ctype.o setjmp.o math.o
+
+.c.o:
+  $(CC) $(COPTS) -o=$*.s $<
+  vasmm68k_mot -o $*.o -Fhunk $*.s
+  rm -f $*.s
+
+.asm.o:
+  vasmm68k_mot -o $*.o -Fhunk $<

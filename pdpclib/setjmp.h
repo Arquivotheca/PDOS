@@ -16,6 +16,21 @@
 typedef struct {
 #if defined(__MVS__) || defined(__CMS__) || defined(__VSE__)
     int regs[15];
+#elif defined(__AMIGA__)
+    long a0;
+    long a1;
+    long a2;
+    long a3;
+    long a4;
+    long a5;
+    long a6;
+    long d0;
+    long d1;
+    long d2;
+    long d3;
+    long d4;
+    long d5;
+    long d6;
 #elif defined(__WIN32__) || defined(__32BIT__) || defined(__OS2__) \
     || defined(__gnu_linux__)
     int ebx;

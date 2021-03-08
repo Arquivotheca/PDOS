@@ -110,6 +110,10 @@ extern void CTYP __remove(const char *filename);
 extern void CTYP __rename(const char *old, const char *newnam);
 #endif
 
+#ifdef __AMIGA__
+#include <clib/dos_protos.h>
+#endif
+
 #ifdef __OS2__
 #include <os2.h>
 #endif
@@ -1583,6 +1587,9 @@ __PDPCLIB_API__ size_t fread(void *ptr,
     size_t toread;
     size_t elemRead;
     size_t actualRead;
+#ifdef __AMIGA__
+    long tempRead;
+#endif
 #ifdef __OS2__
     APIRET rc;
     ULONG tempRead;
@@ -1681,6 +1688,18 @@ __PDPCLIB_API__ size_t fread(void *ptr,
     }
     else
     {
+#ifdef __AMIGA__
+        tempRead = Read(stream->hfile, ptr, toread);
+        if (tempRead == -1)
+        {
+            actualRead = 0;
+            stream->errorInd = 1;
+        }
+        else
+        {
+            actualRead = tempRead;
+        }
+#endif
 #ifdef __OS2__
         rc = DosRead(stream->hfile, ptr, toread, &tempRead);
         if (rc != 0)
@@ -1782,6 +1801,9 @@ static void freadSlowT(void *ptr,
     size_t need;
     char *p;
     size_t got;
+#ifdef __AMIGA__
+    long tempRead;
+#endif
 #ifdef __OS2__
     ULONG tempRead;
     APIRET rc;
@@ -1800,6 +1822,16 @@ static void freadSlowT(void *ptr,
     {
         if (stream->upto == stream->endbuf)
         {
+#ifdef __AMIGA__
+            tempRead = Read(stream->hfile,
+                            stream->fbuf,
+                            stream->szfbuf);
+            if (tempRead == -1)
+            {
+                tempRead = 0;
+                stream->errorInd = 1;
+            }
+#endif
 #ifdef __OS2__
             rc = DosRead(stream->hfile,
                          stream->fbuf,
@@ -1899,6 +1931,9 @@ static void freadSlowB(void *ptr,
 {
     size_t avail;
     size_t left;
+#ifdef __AMIGA__
+    long tempRead;
+#endif
 #ifdef __OS2__
     ULONG tempRead;
     APIRET rc;
@@ -1923,6 +1958,16 @@ static void freadSlowB(void *ptr,
     }
     if (left >= stream->szfbuf)
     {
+#ifdef __AMIGA__
+        tempRead = Read(stream->hfile,
+                        (char *)ptr + *actualRead,
+                        left);
+        if (tempRead == -1)
+        {
+            tempRead = 0;
+            stream->errorInd = 1;
+        }
+#endif
 #ifdef __OS2__
         rc = DosRead(stream->hfile,
                      (char *)ptr + *actualRead,
@@ -1981,6 +2026,16 @@ static void freadSlowB(void *ptr,
     else
     {
         stream->upto = stream->fbuf;
+#ifdef __AMIGA__
+        tempRead = Read(stream->hfile,
+                        stream->fbuf,
+                        stream->szfbuf);
+        if (tempRead == -1)
+        {
+            tempRead = 0;
+            stream->errorInd = 1;
+        }
+#endif
 #ifdef __OS2__
         rc = DosRead(stream->hfile,
                      stream->fbuf,
@@ -2048,6 +2103,9 @@ __PDPCLIB_API__ size_t fwrite(const void *ptr,
 {
     size_t towrite;
     size_t elemWritten;
+#ifdef __AMIGA__
+    long actualWritten;
+#endif
 #ifdef __OS2__
     ULONG actualWritten;
     APIRET rc;
@@ -2090,6 +2148,14 @@ __PDPCLIB_API__ size_t fwrite(const void *ptr,
     }
     else
     {
+#ifdef __AMIGA__
+        actualWritten = Write(stream->hfile, ptr, towrite);
+        if (actualWritten == -1)
+        {
+            stream->errorInd = 1;
+            actualWritten = 0;
+        }
+#endif
 #ifdef __OS2__
         rc = DosWrite(stream->hfile, (VOID *)ptr, towrite, &actualWritten);
         if (rc != 0)
@@ -2208,6 +2274,9 @@ static void fwriteSlowT(const void *ptr,
     size_t diffp;
     size_t rem;
     int fin;
+#ifdef __AMIGA__
+    long tempWritten;
+#endif
 #ifdef __OS2__
     ULONG tempWritten;
     APIRET rc;
@@ -2245,6 +2314,16 @@ static void fwriteSlowT(const void *ptr,
                 memcpy(stream->upto, oldp, rem);
                 oldp += rem;
                 diffp -= rem;
+#ifdef __AMIGA__
+                tempWritten = Write(stream->hfile,
+                                    stream->fbuf,
+                                    stream->szfbuf);
+                if (tempWritten == -1)
+                {
+                    stream->errorInd = 1;
+                    return;
+                }
+#endif
 #ifdef __OS2__
                 rc = DosWrite(stream->hfile,
                               stream->fbuf,
@@ -2292,6 +2371,16 @@ static void fwriteSlowT(const void *ptr,
         rem = (size_t)(stream->endbuf - stream->upto);
         if (rem < 3)
         {
+#ifdef __AMIGA__
+            tempWritten = Write(stream->hfile,
+                                stream->fbuf,
+                                (long)(stream->upto - stream->fbuf));
+            if (tempWritten == -1)
+            {
+                stream->errorInd = 1;
+                return;
+            }
+#endif
 #ifdef __OS2__
             rc = DosWrite(stream->hfile,
                           stream->fbuf,
@@ -2353,6 +2442,16 @@ static void fwriteSlowT(const void *ptr,
         && (stream->upto != stream->fbuf)
         && (oldp != tptr))
     {
+#ifdef __AMIGA__
+        tempWritten = Write(stream->hfile,
+                            stream->fbuf,
+                            (long)(stream->upto - stream->fbuf));
+        if (tempWritten == -1)
+        {
+            stream->errorInd = 1;
+            return;
+        }
+#endif
 #ifdef __OS2__
         rc = DosWrite(stream->hfile,
                       stream->fbuf,
@@ -2407,6 +2506,16 @@ static void fwriteSlowT(const void *ptr,
         else
         {
             memcpy(stream->upto, oldp, rem);
+#ifdef __AMIGA__
+            tempWritten = Write(stream->hfile,
+                                stream->fbuf,
+                                (long)stream->szfbuf);
+            if (tempWritten == -1)
+            {
+                stream->errorInd = 1;
+                return;
+            }
+#endif
 #ifdef __OS2__
             rc = DosWrite(stream->hfile,
                           stream->fbuf,
@@ -2457,6 +2566,16 @@ static void fwriteSlowT(const void *ptr,
     if ((stream->bufTech == _IONBF)
         && (stream->upto != stream->fbuf))
     {
+#ifdef __AMIGA__
+        tempWritten = Write(stream->hfile,
+                            stream->fbuf,
+                            (long)(stream->upto - stream->fbuf));
+        if (tempWritten == -1)
+        {
+            stream->errorInd = 1;
+            return;
+        }
+#endif
 #ifdef __OS2__
         rc = DosWrite(stream->hfile,
                       stream->fbuf,
@@ -2509,6 +2628,10 @@ static void fwriteSlowB(const void *ptr,
                         size_t *actualWritten)
 {
     size_t spare;
+#ifdef __AMIGA__
+    long tempWritten;
+    long left;
+#endif
 #ifdef __OS2__
     ULONG tempWritten;
     ULONG left;
@@ -2533,6 +2656,16 @@ static void fwriteSlowB(const void *ptr,
         return;
     }
     memcpy(stream->upto, ptr, spare);
+#ifdef __AMIGA__
+    tempWritten = Write(stream->hfile,
+                        stream->fbuf,
+                        (long)stream->szfbuf);
+    if (tempWritten == -1)
+    {
+        stream->errorInd = 1;
+        return;
+    }
+#endif
 #ifdef __OS2__
     rc = DosWrite(stream->hfile,
                   stream->fbuf,
@@ -2577,6 +2710,16 @@ static void fwriteSlowB(const void *ptr,
     if (left > stream->szfbuf)
     {
         stream->quickBin = 1;
+#ifdef __AMIGA__
+        tempWritten = Write(stream->hfile,
+                            (char *)ptr + *actualWritten,
+                            left);
+        if (tempWritten == -1)
+        {
+            stream->errorInd = 1;
+            return;
+        }
+#endif
 #ifdef __OS2__
         rc = DosWrite(stream->hfile,
                       (char *)ptr + *actualWritten,
@@ -3368,6 +3511,9 @@ __PDPCLIB_API__ char *fgets(char *s, int n, FILE *stream)
     register char *u = s;
     int c;
     int processed;
+#ifdef __AMIGA__
+    long actualRead;
+#endif
 #ifdef __OS2__
     ULONG actualRead;
     APIRET rc;
@@ -3606,6 +3752,14 @@ __PDPCLIB_API__ char *fgets(char *s, int n, FILE *stream)
         processed += (int)(t - stream->upto) - 1;
         u--;
         stream->bufStartR += (stream->endbuf - stream->fbuf);
+#ifdef __AMIGA__
+        actualRead = Read(stream->hfile, stream->fbuf, (long)stream->szfbuf);
+        if (actualRead == -1)
+        {
+            actualRead = 0;
+            stream->errorInd = 1;
+        }
+#endif
 #ifdef __OS2__
         rc = DosRead(stream->hfile, stream->fbuf, stream->szfbuf, &actualRead);
         if (rc != 0)
@@ -4052,6 +4206,9 @@ __PDPCLIB_API__ int fflush(FILE *stream)
         }
     }
 #else
+#ifdef __AMIGA__
+    long actualWritten;
+#endif
 #ifdef __OS2__
     APIRET rc;
     ULONG actualWritten;
@@ -4069,6 +4226,16 @@ __PDPCLIB_API__ int fflush(FILE *stream)
 
     if ((stream->upto != stream->fbuf) && (stream->mode == __WRITE_MODE))
     {
+#ifdef __AMIGA__
+        actualWritten = Write(stream->hfile,
+                              stream->fbuf,
+                              (long)(stream->upto - stream->fbuf));
+        if (actualWritten == -1)
+        {
+            stream->errorInd = 1;
+            return (EOF);
+        }
+#endif
 #ifdef __OS2__
         rc = DosWrite(stream->hfile,
                      (VOID *)stream->fbuf,

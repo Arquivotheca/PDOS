@@ -71,6 +71,33 @@ static char buffer2[BUFSIZ + 8];
 static char buffer3[BUFSIZ + 8];
 #endif
 
+#if defined(__AMIGA__)
+
+struct Node {
+    struct Node *ln_Succ;
+    char filler[6];
+    char *ln_Name;
+};
+
+struct Library {
+    struct Node lib_Node;
+    /* other junk */
+};
+
+struct List {
+    struct Node *lh_Head;
+    char filler[10];
+};
+
+struct ExecBase {
+    char filler[378];
+    struct List LibList;
+};
+
+struct ExecBase *SysBase;
+void *DOSBase;
+#endif
+
 #if defined(__PDOS386__)
 #include <support.h>
 #include <pos.h>
@@ -167,6 +194,8 @@ int __start(char *p, char *pgmname, char *ep)
 int __start(char *p, char *pgmname, int tso)
 #elif defined(__gnu_linux__)
 int __start(int argc, char **argv)
+#elif defined(__AMIGA__)
+int __start(unsigned long cmdlen, char *p, void *pdosbase)
 #else
 __PDPCLIB_API__ int CTYP __start(char *p)
 #endif
@@ -180,6 +209,9 @@ __PDPCLIB_API__ int CTYP __start(char *p)
     static char *argv[MAXPARMS + 1];
 #endif
     int rc;
+#ifdef __AMIGA__
+    struct Library *library;
+#endif
 #ifdef __OS2__
     ULONG maxFH;
     LONG reqFH;
@@ -194,6 +226,35 @@ __PDPCLIB_API__ int CTYP __start(char *p)
 #endif
 
 #if !defined(__MVS__) && !defined(__CMS__) && !defined(__VSE__)
+
+#ifdef __AMIGA__
+    if (cmdlen >= 0x80000000UL)
+    {
+        cmdlen -= 0x80000000UL;
+        SysBase = (struct ExecBase *)pdosbase;
+    }
+    else
+    {
+        SysBase = *(struct ExecBase **)4;
+    }
+    p[(size_t)cmdlen] = '\0';
+    DOSBase = NULL;
+    library = (struct Library *)SysBase->LibList.lh_Head;
+    while (library != NULL)
+    {
+        if (strcmp(library->lib_Node.ln_Name, "dos.library") == 0)
+        {
+            DOSBase = library;
+            break;
+        }
+        library = (struct Library *)library->lib_Node.ln_Succ;
+    }
+    if (DOSBase == NULL)
+    {
+        return (-1);
+    }
+#endif
+
 #ifdef __WIN32__
     __stdin->hfile = GetStdHandle(STD_INPUT_HANDLE);
     __stdout->hfile = GetStdHandle(STD_OUTPUT_HANDLE);

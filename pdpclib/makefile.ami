@@ -5,8 +5,8 @@ COPTS=-D__AMIGA__ -cpu=68020 -fpu=68881 -I. -I../amiga
 
 pdptest.exe: amistart.o pdptest.o stdio.o string.o stdlib.o \
        start.o time.o errno.o assert.o signal.o locale.o \
-       ctype.o setjmp.o math.o
-  vlink -bamigahunk -o pdptest.exe amistart.o pdptest.o stdio.o string.o stdlib.o start.o time.o errno.o assert.o signal.o locale.o ctype.o setjmp.o math.o
+       ctype.o setjmp.o math.o amisupa.o
+  vlink -bamigahunk -o pdptest.exe amistart.o pdptest.o stdio.o string.o stdlib.o start.o time.o errno.o assert.o signal.o locale.o ctype.o setjmp.o math.o amisupa.o
 
 .c.o:
   $(CC) $(COPTS) -o=$*.s $<

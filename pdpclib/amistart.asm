@@ -24,8 +24,16 @@
         section "CODE",code
         xref ___start
         xdef ___amistart
-*
+        xdef ___exita
+
 ___amistart:
         movem.l d0/a0/a6,-(sp)
         jsr ___start
+        rts
+
+* This function receives a return code as a parameter. The stack
+* then needs to be restored and the parameter placed in register d0
+* prior to return to the OS.
+
+___exita:
         rts

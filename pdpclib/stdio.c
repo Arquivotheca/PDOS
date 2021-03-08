@@ -688,6 +688,43 @@ static void checkMode(void)
 
 static void osfopen(void)
 {
+#ifdef __AMIGA__
+    int mode;
+
+    if ((modeType == 1) || (modeType == 4)
+        || (modeType == 7) || (modeType == 10))
+    {
+        mode = 0; /* read */
+    }
+    else if ((modeType == 2) || (modeType == 5)
+             || (modeType == 8) || (modeType == 11))
+    {
+        mode = 1; /* write */
+    }
+    else
+    {
+        mode = 2; /* append or otherwise unsupported */
+        /* because we don't have append mode implemented
+           at the moment on AMIGA, just return with an
+           error immediately */
+        err = 1;
+        errno = 2;
+        return;
+    }
+    if (mode)
+    {
+        myfile->hfile = Open(fnm, MODE_NEWFILE);
+    }
+    else
+    {
+        myfile->hfile = Open(fnm, MODE_OLDFILE);
+    }
+    if (myfile->hfile == NULL)
+    {
+        err = 1;
+        errno = 1;
+    }
+#endif
 #ifdef __OS2__
     APIRET rc;
     ULONG  action;
@@ -1446,6 +1483,9 @@ static int vseCloseLib(FILE *stream)
 
 __PDPCLIB_API__ int fclose(FILE *stream)
 {
+#ifdef __AMIGA__
+    int rc;
+#endif
 #ifdef __OS2__
     APIRET rc;
 #endif
@@ -1475,6 +1515,9 @@ __PDPCLIB_API__ int fclose(FILE *stream)
         free(__vsepb);
         __vsepb = NULL;
     }
+#endif
+#ifdef __AMIGA__
+    rc = Close(stream->hfile);
 #endif
 #ifdef __OS2__
     rc = DosClose(stream->hfile);
@@ -1561,6 +1604,13 @@ __PDPCLIB_API__ int fclose(FILE *stream)
         stream->isopen = 0;
 #endif
     }
+#ifdef __AMIGA__
+    if (rc != 0)
+    {
+        errno = rc;
+        return (EOF);
+    }
+#endif
 #ifdef __OS2__
     if (rc != 0)
     {

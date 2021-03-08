@@ -129,3 +129,33 @@ FreeMem:
 	JSR	-210(A6)
 	MOVEA.L	(A7)+,A6
 	RTS
+
+
+	SECTION	".text",CODE
+	XREF	_DOSBase
+
+	XDEF	_Open
+_Open:
+	XDEF	Open
+Open:
+	MOVEM.L	D2/A6,-(A7)
+	MOVEA.L	_DOSBase,A6
+	MOVEM.L	12(A7),D1/D2
+	JSR	-030(A6)
+	MOVEM.L	(A7)+,D2/A6
+	RTS
+
+
+	SECTION	".text",CODE
+	XREF	_DOSBase
+
+	XDEF	_Close
+_Close:
+	XDEF	Close
+Close:
+	MOVE.L	A6,-(A7)
+	MOVEA.L	_DOSBase,A6
+	MOVE.L	08(A7),D1
+	JSR	-036(A6)
+	MOVEA.L	(A7)+,A6
+	RTS

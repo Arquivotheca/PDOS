@@ -24,9 +24,9 @@
         section "CODE",code
         xref ___start
         xdef ___amistart
-        xdef ___exita
 
 ___amistart:
+        move.l  sp,savedSP
         movem.l d0/a0/a6,-(sp)
         jsr ___start
         rts
@@ -35,5 +35,12 @@ ___amistart:
 * then needs to be restored and the parameter placed in register d0
 * prior to return to the OS.
 
+        xdef ___exita
 ___exita:
+        move.l  4(sp),d0
+        move.l  savedSP,sp
         rts
+
+        section BSS,bss
+savedSP:
+        ds.l    1

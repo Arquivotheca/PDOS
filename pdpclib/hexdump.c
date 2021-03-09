@@ -27,7 +27,7 @@
 static void dodump(FILE * fp, long start, long count);
 static void skipb(FILE * fp, long start);
 
-main(int argc, char **argv)
+int main(int argc, char **argv)
 {
     FILE *fp;
     long start, count;

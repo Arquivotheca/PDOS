@@ -239,7 +239,12 @@ __PDPCLIB_API__ int CTYP __start(char *p)
     {
         SysBase = *(struct ExecBase **)4;
     }
+    if (cmdlen > 0)
+    {
+        cmdlen--;
+    }
     p[(size_t)cmdlen] = '\0';
+    argv[0] = "UNKNOWN";
     DOSBase = NULL;
     library = (struct Library *)SysBase->LibList.lh_Head;
     while (library != NULL)

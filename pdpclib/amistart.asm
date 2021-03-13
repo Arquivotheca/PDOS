@@ -29,6 +29,7 @@ ___amistart:
         move.l  sp,savedSP
         movem.l d0/a0/a6,-(sp)
         jsr ___start
+        movem.l (sp)+,d0/a0/a6
         rts
 
 * This function receives a return code as a parameter. The stack

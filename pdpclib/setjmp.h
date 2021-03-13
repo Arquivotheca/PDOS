@@ -24,6 +24,7 @@ typedef struct {
     long a4;
     long a5;
     long a6;
+    long a7;
     long d0;
     long d1;
     long d2;
@@ -31,6 +32,7 @@ typedef struct {
     long d4;
     long d5;
     long d6;
+    long d7;
     long retaddr;
 #elif defined(__WIN32__) || defined(__32BIT__) || defined(__OS2__) \
     || defined(__gnu_linux__)

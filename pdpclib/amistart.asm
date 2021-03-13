@@ -12,7 +12,7 @@
 *                                                                     *
 *  It puts the standard AmigaOS registers containing the command      *
 *  length (d0) and command buffer (a0) as well as the AmigaPDOS       *
-*  extension register (only visible if running AmigaPDOS) a6,         *
+*  extension register (only visible if running AmigaPDOS) d7,         *
 *  containing an alternative SysBase to use (only if d0 is greater    *
 *  than or equal to 2 GiB, and in which case, 2 GiB should be         *
 *  subtracted from d0 before use) on the stack.                       *
@@ -27,10 +27,10 @@
 
 ___amistart:
         move.l  sp,savedSP
-        movem.l d0/a0/a6,-(sp)
+        movem.l d0/a0/d7,-(sp)
         jsr ___start
         move.l d0,savedD0
-        movem.l (sp)+,d0/a0/a6
+        movem.l (sp)+,d0/a0/d7
         move.l savedD0,d0
         rts
 

@@ -98,8 +98,8 @@ __PDPCLIB_API__ void *malloc(size_t size)
 
     x = AllocMem(size + sizeof(size_t), 0);
     if (x == NULL) return (NULL);
-    *(x - 1) = size;
-    return (x);
+    *x = size;
+    return (x + 1);
 #endif
 #ifdef __OS2__
     PVOID BaseAddress;

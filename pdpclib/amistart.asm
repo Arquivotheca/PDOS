@@ -28,10 +28,8 @@
 ___amistart:
         move.l  sp,savedSP
         movem.l d0/a0/d7,-(sp)
-        jsr ___start
-        move.l d0,savedD0
-        movem.l (sp)+,d0/a0/d7
-        move.l savedD0,d0
+        jsr     ___start
+        lea     12(sp),sp
         rts
 
 * This function receives a return code as a parameter. The stack
@@ -46,6 +44,4 @@ ___exita:
 
         section BSS,bss
 savedSP:
-        ds.l    1
-savedD0:
         ds.l    1

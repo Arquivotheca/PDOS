@@ -21,7 +21,7 @@
 #endif
 
 /* pdos and msdos use the same interface most of the time) */
-#if defined(__PDOS386__)
+#if defined(__PDOS386__) || defined(__SMALLERC__)
 #define __MSDOS__
 #endif
 
@@ -306,7 +306,9 @@ __PDPCLIB_API__ struct tm *gmtime(const time_t *timer)
     tms.tm_mday = da;
     tms.tm_yday = (int)(ymd_to_scalar(tms.tm_year + 1900, mo, da)
                   - ymd_to_scalar(tms.tm_year + 1900, 1, 1));
+#if !defined(__SMALLERC__)
     tms.tm_wday = dow(tms.tm_year + 1900, mo, da);
+#endif
     tms.tm_isdst = -1;
     tms.tm_sec = (int)(secs % 60);
     secs /= 60;

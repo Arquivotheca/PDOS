@@ -289,12 +289,16 @@ __PDPCLIB_API__ double atan (double x)
 
 __PDPCLIB_API__ double atan2(double y,double x)
 {
+#if defined(__SMALLERC__)
+    return (0.0);
+#else
     return (x >= y) ?
                (x >= -y ? atan(y/x) : -pi/2 - atan(x/y))
               :
                (x >= -y ? pi/2 - atan(x/y)
                         : (y >= 0) ? pi + atan(y/x)
                                    : -pi + atan(y/x));
+#endif
 }
 
 
@@ -712,7 +716,9 @@ __PDPCLIB_API__ double modf(double value, double *iptr)
         value = -value;
     }
     i = (long)value;
+#if !defined(__SMALLERC__)
     value -= i;
+#endif
     if (neg)
     {
         value = -value;

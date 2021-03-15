@@ -90,7 +90,7 @@
 /* Note that PDOS is for the 32-bit version, since the 16-bit
    version uses the MSDOS version since it is compatible with it */
 /* linux is pretty similar too */
-#if defined(__PDOS386__) || defined(__gnu_linux__)
+#if defined(__PDOS386__) || defined(__gnu_linux__) || defined(__SMALLERC__)
 #define __MSDOS__
 #endif
 
@@ -4830,7 +4830,9 @@ static int vvscanf(const char *format, va_list arg, FILE *fp, const char *s)
                                     /* Account for any preceding zeros */
                                     while (ntrailzer>0)
                                     {
+#if !defined(__SMALLERC__)
                                         fpval*=10.;
+#endif
                                         ntrailzer--;
                                     }
                                     fpval=fpval*10.0+(ch-'0');
@@ -4870,12 +4872,16 @@ static int vvscanf(const char *format, va_list arg, FILE *fp, const char *s)
                         {
                             if (expnum & 1)     /* low-order bit */
                             {
+#if !defined(__SMALLERC__)
                                 if (negsw2) fpval/=pow10;
                                 else fpval*=pow10;
+#endif
                             }
                             expnum>>=1;   /* shift right 1 bit */
                             if (expnum==0) break;
+#if !defined(__SMALLERC__)
                             pow10*=pow10;   /* 10.**n where n is power of 2 */
+#endif
                         }
                     }
                     if (negsw1) fpval=-fpval;

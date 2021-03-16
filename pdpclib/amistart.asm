@@ -27,7 +27,13 @@
 
 ___amistart:
         move.l  sp,savedSP
-        movem.l d0/a0/d7,-(sp)
+
+* Don't use movem to push the arguments because the order
+* is not what you code yourself, but other rules.
+        move.l  d7,-(sp)
+        move.l  a0,-(sp)
+        move.l  d0,-(sp)
+
         jsr     ___start
         lea     12(sp),sp
         rts

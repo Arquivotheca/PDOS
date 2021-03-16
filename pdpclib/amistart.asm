@@ -42,6 +42,6 @@ ___exita:
         move.l  savedSP,sp
         rts
 
-        section BSS,bss
+        section "BSS",bss
 savedSP:
         ds.l    1

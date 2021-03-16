@@ -11,12 +11,13 @@ pdptest.exe: dosstart.obj pdptest.obj stdio.obj string.obj stdlib.obj \
   echo tlib borland +dossupc.obj +dossupa.obj
   echo tlink dosstart+pdptest,pdptest.exe,nul.map,borland.lib,
   copy dosstart.obj pdptest.exe
+  echo smlrl -huge -o pdptest.exe setjmp.obj
 
 .c.obj:
   smlrpp -D__SMALLERC__ -zI -I . -o $*.e $<
   $(CC) $(COPTS) $*.e $*.s
   rm -f $*.e
-  nasm -f obj $*.s -o $*.obj
+  nasm -f elf32 $*.s -o $*.obj
   rm -f $*.s
 
 .asm.obj:

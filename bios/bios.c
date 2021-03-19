@@ -43,7 +43,7 @@ int main(int argc, char **argv)
     }
     genstart = (void *)entry_point;
     printf("first byte of code is %02X\n", *(unsigned char *)entry_point);
-#if 0
+#if 1
     rc = genstart(cbfunc, NULL);
 #else
     rc = 0;

@@ -39,4 +39,11 @@ currently using (vbcc). Same deal for running on
 Windows, and MVS is done as part of the above.
 
 See exeloadLoadAmiga() in exeload.c for copious documentation
-on how everything should work.
+on how everything should work. Special thanks to Frank Wille
+for running tests on AmigaOS for me, and even running a
+debugger over my executable to find out what I was doing
+wrong. Also to the guys over at http://eab.abime.net/ for
+patiently explaining how AmigaOS worked and where a BIOS
+fitted in, and Commodore also for providing an inspiration
+(OS accessed via absolute location 4) for a BIOS that operated
+in a similar manner.

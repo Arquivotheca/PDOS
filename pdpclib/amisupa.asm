@@ -164,3 +164,18 @@ Close:
 	JSR	-036(A6)
 	MOVEA.L	(A7)+,A6
 	RTS
+
+
+	SECTION	"CODE",CODE
+	XREF	_DOSBase
+
+	XDEF	_Seek
+_Seek:
+	XDEF	Seek
+Seek:
+	MOVEM.L	D2/D3/A6,-(A7)
+	MOVEA.L	_DOSBase,A6
+	MOVEM.L	16(A7),D1/D2/D3
+	JSR	-066(A6)
+	MOVEM.L	(A7)+,D2/D3/A6
+	RTS

@@ -3897,6 +3897,9 @@ __PDPCLIB_API__ int fseek(FILE *stream, long int offset, int whence)
 {
     long oldpos;
     long newpos;
+#ifdef __AMIGA__
+    long retpos;
+#endif
 #ifdef __OS2__
     ULONG retpos;
     APIRET rc;
@@ -3947,6 +3950,24 @@ __PDPCLIB_API__ int fseek(FILE *stream, long int offset, int whence)
     }
     else
     {
+#ifdef __AMIGA__
+        retpos = Seek(stream->hfile, newpos, OFFSET_BEGINNING);
+        if ((retpos == -1) || (retpos != newpos))
+        {
+            return (-1);
+        }
+        stream->endbuf = stream->fbuf + stream->szfbuf;
+        if (stream->mode == __READ_MODE)
+        {
+            stream->upto = stream->endbuf;
+            stream->bufStartR = newpos - stream->szfbuf;
+        }
+        else
+        {
+            stream->upto = stream->fbuf;
+            stream->bufStartR = newpos;
+        }
+#endif
 #ifdef __OS2__
         rc = DosSetFilePtr(stream->hfile, newpos, FILE_BEGIN, &retpos);
         if ((rc != 0) || (retpos != newpos))

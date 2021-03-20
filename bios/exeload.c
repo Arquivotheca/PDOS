@@ -143,7 +143,7 @@ static int exeloadLoadAOUT(char **entry_point, FILE *fp, char **loadloc)
         }
     }
 
-    printf("loading %lu bytes of text\n", firstbit.a_text);
+    /* printf("loading %lu bytes of text\n", firstbit.a_text); */
     if (fread(exeStart, firstbit.a_text, 1, fp) != 1)
     {
         printf("Error occured while reading A.OUT text\n");
@@ -151,7 +151,7 @@ static int exeloadLoadAOUT(char **entry_point, FILE *fp, char **loadloc)
     }
     if (firstbit.a_data != 0)
     {
-        printf("loading %lu bytes of data\n", firstbit.a_data);
+        /* printf("loading %lu bytes of data\n", firstbit.a_data); */
         if (fread(exeStart + firstbit.a_text,
                   firstbit.a_data,
                   1,
@@ -250,7 +250,7 @@ static int exeloadLoadMVS(char **entry_point, FILE *fp, char **loadloc)
     size_t readbytes;
     int entry;
 
-    printf("in LoadMVS\n");
+    /* printf("in LoadMVS\n"); */
     rewind(fp);
 #if 0
     if ((fseek(fp, 0, SEEK_SET) != 0)
@@ -260,7 +260,7 @@ static int exeloadLoadMVS(char **entry_point, FILE *fp, char **loadloc)
     }
 #endif
     readbytes = fread(*loadloc, 1, 1000000, fp);
-    printf("read %d bytes\n", (int)readbytes);
+    /* printf("read %d bytes\n", (int)readbytes); */
     if (fixPE(*loadloc, &readbytes, &entry, (int)*loadloc) != 0)
     {
         return (1);
@@ -306,11 +306,11 @@ static int exeloadLoadAmiga(char **entry_point, FILE *fp, char **loadloc)
     unsigned char *datareloc = NULL;
     int iter;
 
-    printf("in LoadAmiga\n");
+    /* printf("in LoadAmiga\n"); */
     p = beg = *loadloc;
     rewind(fp);
     readbytes = fread(p, 1, 1000000, fp);
-    printf("read %d bytes\n", (int)readbytes);
+    /* printf("read %d bytes\n", (int)readbytes); */
     if (readbytes < 4)
     {
         return (1);
@@ -325,18 +325,18 @@ static int exeloadLoadAmiga(char **entry_point, FILE *fp, char **loadloc)
     temp = getword(p);
     if (temp != 0)
     {
-        printf("can't handle 1\n");
+        printf("can't handle Amiga Hunk 1\n");
         return (1);
     }
     p += 4;
     temp = getword(p);
     if (temp == 2)
     {
-        printf("no data section\n");
+        /* printf("no data section\n"); */
         havedata = 0;
         bsshunk = 1;
         datahunk = -1;
-        printf("bsshunk determined to be %d\n", bsshunk);
+        /* printf("bsshunk determined to be %d\n", bsshunk); */
         p += 8;
     }
     else if (temp == 3)
@@ -354,15 +354,15 @@ static int exeloadLoadAmiga(char **entry_point, FILE *fp, char **loadloc)
         it would have been 1). Lengths are the number of 4-byte
         words.
         */
-        printf("we have a data section\n");
+        /* printf("we have a data section\n"); */
         havedata = 1;
         bsshunk = 2;
-        printf("bsshunk determined to be %d\n", bsshunk);
+        /* printf("bsshunk determined to be %d\n", bsshunk); */
         p += 12;
     }
     else
     {
-        printf("can't handle 2\n");
+        printf("can't handle Amiga Hunk 2\n");
         return (1);
     }
     p += 12;
@@ -370,22 +370,23 @@ static int exeloadLoadAmiga(char **entry_point, FILE *fp, char **loadloc)
     temp = getword(p);
     if (temp != HUNK_CODE)
     {
-        printf("expecting code at hex %lx\n", (unsigned long)(p - beg));
+        printf("Amiga Hunk expecting code at hex %lx\n",
+               (unsigned long)(p - beg));
         return (1);
     }
     p += 4;
     temp = getword(p);
-    printf("length of code is hex %lx\n", temp);
+    /* printf("length of code is hex %lx\n", temp); */
     p += 4;
     codestart = p;
-    printf("at codestart is %02X\n", *(unsigned char *)codestart);
+    /* printf("at codestart is %02X\n", *(unsigned char *)codestart); */
     p += temp * 4;
 
     while (1)
     {
         if (p >= bssstart)
         {
-            printf("reached end of executable\n");
+            /* printf("reached end of executable\n"); */
             break;
         }
         temp = getword(p);
@@ -411,7 +412,7 @@ static int exeloadLoadAmiga(char **entry_point, FILE *fp, char **loadloc)
                 p += temp * 4; /* skip relocations */
                 temp = getword(p);
             }
-            printf("skipped relocations\n");
+            /* printf("skipped relocations\n"); */
             p += 4;
         }
         else if (temp == HUNK_DATA)
@@ -420,12 +421,12 @@ static int exeloadLoadAmiga(char **entry_point, FILE *fp, char **loadloc)
             temp = getword(p);
             p += 4; /* skip number of words */
             datastart = p;
-            printf("got data start for real\n");
+            /* printf("got data start for real\n"); */
             p += temp * 4;
         }
         else if (temp == HUNK_SYMBOL)
         {
-            printf("got symbol\n");
+            /* printf("got symbol\n"); */
             p += 4; /* skip hunk id */
             temp = getword(p);
             while (temp != 0) /* until hunk number is 0 */
@@ -434,7 +435,7 @@ static int exeloadLoadAmiga(char **entry_point, FILE *fp, char **loadloc)
                 long rem;
 
                 p += 4; /* skip hunk number */
-                printf("symbol %s found\n", p);
+                /* printf("symbol %s found\n", p); */
                 len = strlen(p);
                 len++;
                 rem = len % 4;
@@ -450,36 +451,36 @@ static int exeloadLoadAmiga(char **entry_point, FILE *fp, char **loadloc)
         }
         else if (temp == HUNK_END)
         {
-            printf("got hunk end\n");
+            /* printf("got hunk end\n"); */
             p += 4;
         }
         else if (temp == HUNK_BSS)
         {
-            printf("got BSS hunk\n");
+            /* printf("got BSS hunk\n"); */
             p += 8;
         }
         else
         {
-            printf("unexpected hunk id hex %lx\n", temp);
+            printf("unexpected Amiga Hunk id hex %lx\n", temp);
             return (1);
         }
     }
 
     /* apply relocations */
-    printf("applying relocations\n");
+    /* printf("applying relocations\n"); */
     for (iter = 0; iter < 2; iter++)
     {
         if ((iter == 0) && (codereloc == NULL)) continue;
         if ((iter == 1) && (datareloc == NULL)) continue;
         if (iter == 0)
         {
-            printf("applying code relocations\n");
+            /* printf("applying code relocations\n"); */
             genstart = codestart;
             p = codereloc;
         }
         else if (iter == 1)
         {
-            printf("applying data relocations\n");
+            /* printf("applying data relocations\n"); */
             genstart = datastart;
             p = datareloc;
         }
@@ -498,21 +499,21 @@ static int exeloadLoadAmiga(char **entry_point, FILE *fp, char **loadloc)
             if (hunk_nbr == codehunk)
             {
                 correction = codestart;
-                printf("got %lu CODE relocations\n", count);
+                /* printf("got %lu CODE relocations\n", count); */
             }
             else if (hunk_nbr == datahunk)
             {
                 correction = datastart;
-                printf("got %lu DATA relocations\n", count);
+                /* printf("got %lu DATA relocations\n", count); */
             }
             else if (hunk_nbr == bsshunk)
             {
                 correction = bssstart;
-                printf("got %lu BSS relocations\n", count);
+                /* printf("got %lu BSS relocations\n", count); */
             }
             else
             {
-                printf("got unexpected hunk number hex %lx\n", hunk_nbr);
+                printf("got unexpected Amiga Hunk number hex %lx\n", hunk_nbr);
                 printf("code hunk is %d\n", codehunk);
                 printf("data hunk is %d\n", datahunk);
                 printf("bss hunk is %d\n", bsshunk);
@@ -658,11 +659,11 @@ static int exeloadLoadAmiga(char **entry_point, FILE *fp, char **loadloc)
             temp = getword(p);
         }
     }
-    printf("finished relocations\n");
+    /* printf("finished relocations\n"); */
 
     *entry_point = codestart;
-    printf("just set entry point, first byte %02X\n",
-           *(unsigned char *)codestart);
+    /* printf("just set entry point, first byte %02X\n",
+           *(unsigned char *)codestart); */
 
     return (0);
 }
@@ -2010,7 +2011,7 @@ static int fixPE(char *buf, int *len, int *entry, int rlad)
     
     if ((*len <= 8) || (*((int *)buf + 1) != 0xca6d0f))
     {
-        printf("Not an MVS PE executable\n");
+        /* printf("Not an MVS PE executable\n"); */
         return (-1);
     }
 #if PE_DEBUG

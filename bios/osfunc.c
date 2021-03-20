@@ -10,14 +10,11 @@
 /*                                                                   */
 /*********************************************************************/
 
-extern int x;
-
-void (*__cbfunc)(void *cbdata, int funccode, void *retptr, char *str);
+void (*__exposfunc)(void *cbdata, int funccode, void *retptr, char *str);
 void *__cbdata;
 
 void osfunc(int funccode, void *retptr, char *str)
 {
-    /* x = 4; */
-    __cbfunc(__cbdata, funccode, retptr, str);
+    __exposfunc(__cbdata, funccode, retptr, str);
     return;
 }

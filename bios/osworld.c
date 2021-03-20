@@ -12,18 +12,15 @@
 
 #include <osfunc.h>
 
-char x = 13;
-char *y = &x;
-
 int main(void)
 {
-    /* return (x); */
 #ifdef __MVS__
-    osfunc(OS_PRINTF, 0, "\x27[2J");
+    /* osfunc(OS_PRINTF, 0, "\x27[2J"); */
 #else
     /* osfunc(OS_PRINTF, 0, "\x1b[2J"); */
 #endif
     osfunc(OS_PRINTF, 0, "hello, world from osworld\n");
     osfunc(OS_PRINTF, 0, "just checking!\n");
-    return (*y);
+    osfunc(OS_FOPEN, 0, "::"); /* boot disk is designated by :: */
+    return (0);
 }

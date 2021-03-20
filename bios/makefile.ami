@@ -4,7 +4,7 @@ CC=vbccm68k
 COPTS=-D__AMIGA__ -cpu=68020 -fpu=68881 -O=991 -I. -I../amiga -I../pdpclib
 
 bios.exe: bios.o exeload.o
-  vlink -bamigahunk -o bios.exe ../pdpclib/amistart.o bios.o exeload.o ../pdpclib/stdio.o ../pdpclib/string.o ../pdpclib/stdlib.o ../pdpclib/start.o ../pdpclib/time.o ../pdpclib/errno.o ../pdpclib/assert.o ../pdpclib/signal.o ../pdpclib/locale.o ../pdpclib/ctype.o ../pdpclib/setjmp.o ../pdpclib/math.o ../pdpclib/amisupa.o
+  vlink -bamigahunk -o bios.exe ../pdpclib/amistart.o bios.o exeload.o ../pdpclib/pdpclib.lib
 
 .c.o:
   $(CC) $(COPTS) -o=$*.s $<

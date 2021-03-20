@@ -10,14 +10,14 @@
 /*                                                                   */
 /*********************************************************************/
 
-extern void (*__cbfunc)(void *cbdata, int funccode, void *retptr, char *str);
+extern void (*__exposfunc)(void *cbdata, int funccode, void *retptr, char *str);
 extern void *__cbdata;
 
 int main(void);
 
-int __crt0(void (*cbfunc)(void *cbdata, int funccode, void *retptr, char *str), void *cbdata)
+int __crt0(void (*exposfunc)(void *cbdata, int funccode, void *retptr, char *str), void *cbdata)
 {
-    __cbfunc = cbfunc;
+    __exposfunc = exposfunc;
     __cbdata = cbdata;
     return (main());
 }

@@ -279,6 +279,7 @@ static int exeloadLoadMVS(char **entry_point, FILE *fp, char **loadloc)
 #define HUNK_HEADER 0x3F3
 #define HUNK_CODE 0x3E9
 #define HUNK_DATA 0x3EA
+#define HUNK_BSS 0x3EB
 #define HUNK_RELOC32 0x3EC
 #define HUNK_SYMBOL 0x3F0
 #define HUNK_END 0x3F2
@@ -291,17 +292,19 @@ static int exeloadLoadAmiga(char **entry_point, FILE *fp, char **loadloc)
     size_t readbytes;
     int entry;
     unsigned char *p;
-    unsigned long hunkid;
     int havedata; /* are we expecting a data section? */
     unsigned long temp;
     int datahunk = 1;
     int codehunk = 0;
     int bsshunk;
     unsigned char *beg;
-    unsigned char *bssstart;
     unsigned char *codestart;
-    unsigned char *datastart;
-    unsigned char *reloc;
+    unsigned char *datastart = NULL;
+    unsigned char *bssstart;
+    unsigned char *genstart; /* generic start location when doing relocations */
+    unsigned char *codereloc = NULL;
+    unsigned char *datareloc = NULL;
+    int iter;
 
     printf("in LoadAmiga\n");
     p = beg = *loadloc;
@@ -313,8 +316,8 @@ static int exeloadLoadAmiga(char **entry_point, FILE *fp, char **loadloc)
         return (1);
     }
     bssstart = p + readbytes;
-    hunkid = getword(p);
-    if (hunkid != HUNK_HEADER)
+    temp = getword(p);
+    if (temp != HUNK_HEADER)
     {
         return (1);
     }
@@ -363,8 +366,9 @@ static int exeloadLoadAmiga(char **entry_point, FILE *fp, char **loadloc)
         return (1);
     }
     p += 12;
-    hunkid = getword(p);
-    if (hunkid != HUNK_CODE)
+
+    temp = getword(p);
+    if (temp != HUNK_CODE)
     {
         printf("expecting code at hex %lx\n", (unsigned long)(p - beg));
         return (1);
@@ -376,259 +380,284 @@ static int exeloadLoadAmiga(char **entry_point, FILE *fp, char **loadloc)
     codestart = p;
     printf("at codestart is %02X\n", *(unsigned char *)codestart);
     p += temp * 4;
-    temp = getword(p);
-    if (temp != HUNK_RELOC32)
-    {
-        printf("expecting relocations at hex %lx\n", (unsigned long)(p - beg));
-        return (1);
-    }
-    p += 4;
-    reloc = p;
-    if (havedata)
-    {
-        /* skip relocations for now, come back later */
-        temp = getword(p);
-        while (temp != 0)
-        {
-            p += 4; /* skip count of relocations */
-            p += 4; /* skip hunk number */
-            p += temp * 4; /* skip relocations */
-            temp = getword(p);
-        }
-        printf("skipped relocations\n");
-        p += 4;
-        /* now look for either symbols or data section */
-        /* or hunk end */
-        /* stop when we find data section */
-        while (1)
-        {
-            temp = getword(p);
-            if (temp == HUNK_DATA)
-            {
-                p += 8;
-                datastart = p;
-                printf("got data start for real\n");
-                break;
-            }
-            if (temp == HUNK_SYMBOL)
-            {
-                printf("got symbol\n");
-                p += 4; /* skip hunk id */
-                temp = getword(p);
-                while (temp != 0) /* until hunk number is 0 */
-                {
-                    long len;
-                    long rem;
 
-                    p += 4; /* skip hunk number */
-                    printf("symbol %s found\n", p);
-                    len = strlen(p);
-                    len++;
-                    rem = len % 4;
-                    if (rem != 0)
-                    {
-                        len = len - rem + 4; /* move up to 4-byte boundary */
-                    }
-                    p += len;
-                    p += 4; /* skip offset */
-                    temp = getword(p);
-                }
-                p += 4; /* skip hunk number */
-            }
-            else if (temp == HUNK_END)
+    while (1)
+    {
+        if (p >= bssstart)
+        {
+            printf("reached end of executable\n");
+            break;
+        }
+        temp = getword(p);
+        if (temp == HUNK_RELOC32)
+        {
+            p += 4;
+            /* if we haven't yet encountered a HUNK_DATA, then this
+               must be a code relocation */
+            if (datastart == NULL)
             {
-                printf("got hunk end\n");
-                p += 4;
+                codereloc = p;
             }
             else
             {
-                printf("unexpected hunk id hex %lx\n", temp);
-                return (1);
+                datareloc = p;
             }
+            /* skip relocations for now, come back later */
+            temp = getword(p);
+            while (temp != 0)
+            {
+                p += 4; /* skip count of relocations */
+                p += 4; /* skip hunk number */
+                p += temp * 4; /* skip relocations */
+                temp = getword(p);
+            }
+            printf("skipped relocations\n");
+            p += 4;
         }
-    } /* have data */
-    
-    /* apply relocations */
-    printf("applying relocations\n");
-    p = reloc;
-    temp = getword(p);
-    while (temp != 0)
-    {
-        unsigned long count;
-        unsigned long hunk_nbr;
-        unsigned char *correction;
-        unsigned long x;
+        else if (temp == HUNK_DATA)
+        {
+            p += 4; /* skip hunk id */
+            temp = getword(p);
+            p += 4; /* skip number of words */
+            datastart = p;
+            printf("got data start for real\n");
+            p += temp * 4;
+        }
+        else if (temp == HUNK_SYMBOL)
+        {
+            printf("got symbol\n");
+            p += 4; /* skip hunk id */
+            temp = getword(p);
+            while (temp != 0) /* until hunk number is 0 */
+            {
+                long len;
+                long rem;
 
-        count = temp;
-        p += 4; /* skip count of relocations */
-        hunk_nbr = getword(p);
-        p += 4; /* skip hunk number */
-        if (hunk_nbr == 0)
-        {
-            correction = codestart;
-            printf("got %lu CODE relocations\n", count);
-/*            correction = bssstart;
-            printf("got %lu BSS relocations\n", count); */
+                p += 4; /* skip hunk number */
+                printf("symbol %s found\n", p);
+                len = strlen(p);
+                len++;
+                rem = len % 4;
+                if (rem != 0)
+                {
+                    len = len - rem + 4; /* move up to 4-byte boundary */
+                }
+                p += len;
+                p += 4; /* skip offset */
+                temp = getword(p);
+            }
+            p += 4; /* skip hunk number */
         }
-        else if (hunk_nbr == codehunk)
+        else if (temp == HUNK_END)
         {
-            correction = codestart;
-            printf("got %lu CODE relocations\n", count);
+            printf("got hunk end\n");
+            p += 4;
         }
-        else if (hunk_nbr == datahunk)
+        else if (temp == HUNK_BSS)
         {
-            correction = datastart;
-            printf("got %lu DATA relocations\n", count);
-        }
-        else if (hunk_nbr == bsshunk)
-        {
-            correction = bssstart;
-            printf("got %lu BSS relocations\n", count);
+            printf("got BSS hunk\n");
+            p += 8;
         }
         else
         {
-            printf("got unexpected hunk number hex %lx\n", hunk_nbr);
-            printf("code hunk is %d\n", codehunk);
-            printf("data hunk is %d\n", datahunk);
-            printf("bss hunk is %d\n", bsshunk);
+            printf("unexpected hunk id hex %lx\n", temp);
             return (1);
         }
-        /* Note that all relocations are applied to the code
-           section, but the code needs different corrections
-           depending on whether it is referencing another location
-           in code, a data reference, e.g. a global variable with a
-           value of 5, or a BSS reference, e.g. an uninitialized
-           global variable. */
-        /* At the various offsets in the code there will be values,
-           such as 48, which are the correct offsets if the module
-           was loaded at location 0 in memory, and also the data
-           section started at location 0 in memory, and also the
-           bss section (variables that need to be set to 0 before
-           the executable runs) is set to location 0 in memory.
-           Note that the BSS takes up no space in the executable
-           because it would just be a whole lot of zeros serving
-           no purpose. So the onus is on the program loading the
-           executable to initialize that area. That area is
-           normally placed at the end of the executable, but you
-           can do a separate malloc and put it anywhere if you
-           want. You can also put the data section anywhere you
-           want to, with a separate malloc, so long as you actually
-           copy all that data across to the new location. This is
-           what needs to happen with reentrant modules. There needs
-           to be a register (such as ds: in 8086) pointing to where
-           the global variables are. And normally the BSS comes
-           after that, so you can use a single register to point to
-           both data and BSS. The code corrections only need to be
-           done once for the code section itself, and the data
-           offsets are all given in reference to some dedicated
-           register (such as ds) so that no more corrections are
-           required to the code to reference the correct offsets.
-           In fact, you don't need to correct them at all, they are
-           all set to the correct offsets for the dedicated
-           register. But if you're not using a dedicated register,
-           or you are using the huge, large or compact memory models
-           of the 8086, you can't use a dedicated register, as there
-           is too much data (more than 64k) for ds to reference, so
-           ds keeps on being reloaded, and thus the code corrections
-           need to be made to point to the full address
-           (segment:offset) of where the variable can be found.
-           For the 68000 you also need the full address (as the
-           compiler is not using a dedicated register and dynamically
-           providing the offsets), but it is a flat 32-bit pointer.
-           If yu are using a compiler that DOES use a dedicated
-           register, then there will simply be no "data corrections"
-           found in the relocation table, ie the relocation table
-           will only have references to locations in the code where
-           somewhere else in the code needs to be referenced (e.g.
-           to call a function) but because the code is not loaded
-           at location 0 (or effectively done so via virtual memory,
-           or some other fixed location like Windows used to use),
-           so it needs to know where exactly in memory it has been
-           loaded. */
-
-        for (x = 0; x < count; x++)
-        {
-            unsigned char *zaploc;
-            unsigned char *xxx;
-            unsigned long value;
-            unsigned long oldref;
-            unsigned char *properref;
-            unsigned long properref_val;
-
-            xxx = &p[x * 4]; /* point to a value, such as 12,
-                which is where in the code section will need
-                to be adjusted */
-            value = getword(xxx); /* now we have that value 12 */
-            zaploc = codestart + value; /* now we point to the
-                exact location in the code section that needs
-                to have a correction applied. Note that the
-                corrected value to be applied depends on whether
-                it is a code, data or BSS reference, but we have
-                already determined that, and are already pointing
-                to the relevant memory address. */
-            oldref = getword(zaploc); /* now we have the old
-                value of the function or whatever, e.g. if the
-                called function is at offset 40 in the code
-                section, then it will have the value 40. */
-            properref = correction + oldref; /* This is where we
-                want the code to start looking for this code, data
-                or BSS reference. Even if we are on a 64-bit system
-                and we are loading this 32-bit module, someone
-                else will have made sure that we are effectively
-                on a 4 GiB boundary so that this pointer will be
-                valid, even though we're just about to truncate
-                it to 4 bytes. ie on a 64-bit system, properref
-                could be 0x1 0000 0000 - but that's OK so long
-                as the high 32 bits of all registers have been
-                set to 0x1 0000 0000. None of this 68000 code
-                knows about the high 32-bits of 64-bit registers
-                so will not disturb any data stored there. */
-            properref_val = (unsigned long)properref; /* this
-                probably won't truncate the pointer, but we are
-                putting it in integer form, ready for manipulation.
-                Note that if this program is running on a 8086,
-                and you are trying to load this 68000 executable
-                (prior to switching to the 68000 coprocessor),
-                using far data pointers, you will need to use a
-                compiler that converts far pointers into flat
-                references when converting from pointer to long,
-                because
-                the 68000 program will require a flat reference.
-                ie the compiler needs to do the equivalent of
-                ((properref >> 4) << 16) | (properref & 0xffff)
-                in order to create properref_val. Or you need
-                to provide your own routine to do that. In my
-                opinion this is the job of the compiler, it
-                should know that you are wanting a flat reference.
-                So too when you go:
-                char *p = (char *)0xb8000UL;
-                it should convert that into b800:0000 itself.
-                Speak to your compiler vendor!
-                If we were doing things the other way around, ie
-                you have a 68000 loading an 8086 large memory model
-                program, then this is a "known quantity" (the same
-                as loading a small memory model program) and it is
-                this loader code (perhaps compiled with a 68000)
-                that would need to convert a flat memory pointer (ie
-                where it loaded the 8086 program into 68000 memory)
-                that would need to convert a flat pointer into a
-                segmented pointer suitable for the 8086 prior to
-                switching to the 8086 coprocessor. So it is reasonable
-                for you to do the bit shifting in your own code. After
-                first of all converting into an unsigned long, because
-                maybe the loader is not 68000 either, but another
-                segmented architecture with different segmentation rules,
-                and it too needs to convert to a flat address (as
-                represented by unsigned long) prior to being manually
-                converted into an address suitable for the 8086. */
-                
-            putword(zaploc, properref_val);
-        }
-        p += temp * 4; /* skip relocations */
-        temp = getword(p);
     }
-    p += 4; /* get past the relocations and on to the next hunk ID,
-        even though currently we have no further need to look at hunks. */
+
+    /* apply relocations */
+    printf("applying relocations\n");
+    for (iter = 0; iter < 2; iter++)
+    {
+        if ((iter == 0) && (codereloc == NULL)) continue;
+        if ((iter == 1) && (datareloc == NULL)) continue;
+        if (iter == 0)
+        {
+            printf("applying code relocations\n");
+            genstart = codestart;
+            p = codereloc;
+        }
+        else if (iter == 1)
+        {
+            printf("applying data relocations\n");
+            genstart = datastart;
+            p = datareloc;
+        }
+        temp = getword(p);
+        while (temp != 0)
+        {
+            unsigned long count;
+            unsigned long hunk_nbr;
+            unsigned char *correction;
+            unsigned long x;
+
+            count = temp;
+            p += 4; /* skip count of relocations */
+            hunk_nbr = getword(p);
+            p += 4; /* skip hunk number */
+            if (hunk_nbr == codehunk)
+            {
+                correction = codestart;
+                printf("got %lu CODE relocations\n", count);
+            }
+            else if (hunk_nbr == datahunk)
+            {
+                correction = datastart;
+                printf("got %lu DATA relocations\n", count);
+            }
+            else if (hunk_nbr == bsshunk)
+            {
+                correction = bssstart;
+                printf("got %lu BSS relocations\n", count);
+            }
+            else
+            {
+                printf("got unexpected hunk number hex %lx\n", hunk_nbr);
+                printf("code hunk is %d\n", codehunk);
+                printf("data hunk is %d\n", datahunk);
+                printf("bss hunk is %d\n", bsshunk);
+                return (1);
+            }
+            /* WARNING - the following is not entirely accurate. There
+               ARE data relocations, and the above code caters for that,
+               and that's why there are two iterations of the loop. But
+               pogie points for trying. */
+
+            /* Note that all relocations are applied to the code
+               section, but the code needs different corrections
+               depending on whether it is referencing another location
+               in code, a data reference, e.g. a global variable with a
+               value of 5, or a BSS reference, e.g. an uninitialized
+               global variable. */
+            /* At the various offsets in the code there will be values,
+               such as 48, which are the correct offsets if the module
+               was loaded at location 0 in memory, and also the data
+               section started at location 0 in memory, and also the
+               bss section (variables that need to be set to 0 before
+               the executable runs) is set to location 0 in memory.
+               Note that the BSS takes up no space in the executable
+               because it would just be a whole lot of zeros serving
+               no purpose. So the onus is on the program loading the
+               executable to initialize that area. That area is
+               normally placed at the end of the executable, but you
+               can do a separate malloc and put it anywhere if you
+               want. You can also put the data section anywhere you
+               want to, with a separate malloc, so long as you actually
+               copy all that data across to the new location. This is
+               what needs to happen with reentrant modules. There needs
+               to be a register (such as ds: in 8086) pointing to where
+               the global variables are. And normally the BSS comes
+               after that, so you can use a single register to point to
+               both data and BSS. The code corrections only need to be
+               done once for the code section itself, and the data
+               offsets are all given in reference to some dedicated
+               register (such as ds) so that no more corrections are
+               required to the code to reference the correct offsets.
+               In fact, you don't need to correct them at all, they are
+               all set to the correct offsets for the dedicated
+               register. But if you're not using a dedicated register,
+               or you are using the huge, large or compact memory models
+               of the 8086, you can't use a dedicated register, as there
+               is too much data (more than 64k) for ds to reference, so
+               ds keeps on being reloaded, and thus the code corrections
+               need to be made to point to the full address
+               (segment:offset) of where the variable can be found.
+               For the 68000 you also need the full address (as the
+               compiler is not using a dedicated register and dynamically
+               providing the offsets), but it is a flat 32-bit pointer.
+               If you are using a compiler that DOES use a dedicated
+               register, then there will simply be no "data corrections"
+               found in the relocation table, ie the relocation table
+               will only have references to locations in the code where
+               somewhere else in the code needs to be referenced (e.g.
+               to call a function) but because the code is not loaded
+               at location 0 (or effectively done so via virtual memory,
+               or some other fixed location like Windows used to use),
+               so it needs to know where exactly in memory it has been
+               loaded. */
+
+            for (x = 0; x < count; x++)
+            {
+                unsigned char *zaploc;
+                unsigned char *xxx;
+                unsigned long value;
+                unsigned long oldref;
+                unsigned char *properref;
+                unsigned long properref_val;
+
+                xxx = &p[x * 4]; /* point to a value, such as 12,
+                    which is where in the code section will need
+                    to be adjusted */
+                value = getword(xxx); /* now we have that value 12 */
+                zaploc = genstart + value; /* now we point to the
+                    exact location in the code section that needs
+                    to have a correction applied. Note that the
+                    corrected value to be applied depends on whether
+                    it is a code, data or BSS reference, but we have
+                    already determined that, and are already pointing
+                    to the relevant memory address. */
+                oldref = getword(zaploc); /* now we have the old
+                    value of the function or whatever, e.g. if the
+                    called function is at offset 40 in the code
+                    section, then it will have the value 40. */
+                properref = correction + oldref; /* This is where we
+                    want the code to start looking for this code, data
+                    or BSS reference. Even if we are on a 64-bit system
+                    and we are loading this 32-bit module, someone
+                    else will have made sure that we are effectively
+                    on a 4 GiB boundary so that this pointer will be
+                    valid, even though we're just about to truncate
+                    it to 4 bytes. ie on a 64-bit system, properref
+                    could be 0x1 0000 0000 - but that's OK so long
+                    as the high 32 bits of all registers have been
+                    set to 0x1 0000 0000. None of this 68000 code
+                    knows about the high 32-bits of 64-bit registers
+                    so will not disturb any data stored there. */
+                properref_val = (unsigned long)properref; /* this
+                    probably won't truncate the pointer, but we are
+                    putting it in integer form, ready for manipulation.
+                    Note that if this program is running on a 8086,
+                    and you are trying to load this 68000 executable
+                    (prior to switching to the 68000 coprocessor),
+                    using far data pointers, you will need to use a
+                    compiler that converts far pointers into flat
+                    references when converting from pointer to long,
+                    because
+                    the 68000 program will require a flat reference.
+                    ie the compiler needs to do the equivalent of
+                    ((properref >> 4) << 16) | (properref & 0xffff)
+                    in order to create properref_val. Or you need
+                    to provide your own routine to do that. In my
+                    opinion this is the job of the compiler, it
+                    should know that you are wanting a flat reference.
+                    So too when you go:
+                    char *p = (char *)0xb8000UL;
+                    it should convert that into b800:0000 itself.
+                    Speak to your compiler vendor!
+                    If we were doing things the other way around, ie
+                    you have a 68000 loading an 8086 large memory model
+                    program, then this is a "known quantity" (the same
+                    as loading a small memory model program) and it is
+                    this loader code (perhaps compiled with a 68000)
+                    that would need to convert a flat memory pointer (ie
+                    where it loaded the 8086 program into 68000 memory)
+                    that would need to convert a flat pointer into a
+                    segmented pointer suitable for the 8086 prior to
+                    switching to the 8086 coprocessor. So it is reasonable
+                    for you to do the bit shifting in your own code. After
+                    first of all converting into an unsigned long, because
+                    maybe the loader is not 68000 either, but another
+                    segmented architecture with different segmentation rules,
+                    and it too needs to convert to a flat address (as
+                    represented by unsigned long) prior to being manually
+                    converted into an address suitable for the 8086. */
+
+                putword(zaploc, properref_val);
+            }
+            p += temp * 4; /* skip relocations */
+            temp = getword(p);
+        }
+    }
     printf("finished relocations\n");
 
     *entry_point = codestart;

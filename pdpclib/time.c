@@ -186,7 +186,7 @@ __PDPCLIB_API__ time_t mktime(struct tm *timeptr)
 {
     time_t tt;
 
-    if ((timeptr->tm_year < 70) || (timeptr->tm_year > 120))
+    if (timeptr->tm_year < 70)
     {
         tt = (time_t)-1;
     }

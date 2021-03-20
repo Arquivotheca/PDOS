@@ -183,6 +183,18 @@ void rule_search_and_build(char *name)
 
 }
 
+void help(void)
+{
+    printf("Usage: pdmake [options] [target]...\n");
+    printf("Options:\n");
+    printf("  -B                  "
+           "Make everything regardless of timestamps.\n");
+    printf("  -f FILE             "
+           "Read FILE as a makefile.\n");
+    printf("  -h, --help          "
+           "Print this message and exit.\n");
+}
+
 int main(int argc, char **argv)
 {
     int i;
@@ -195,18 +207,39 @@ int main(int argc, char **argv)
     {
         if (argv[i][0] == '-')
         {
-            if ((argv[i][1] == 'f') && (argv[i][2] == '\0'))
+            switch (argv[i][1])
             {
-                default_makefile = 0;
-                read_makefile(argv[++i]);
-            }
-            else if ((argv[i][1] == 'B') && (argv[i][2] == '\0'))
-            {
-                printf("Rebuilding everything, regardless of timestamps.\n");
-            }
-            else
-            {
-                printf("Unknown switch!\n");
+                case 'h':
+                    help();
+                    return (0);
+
+                case 'f':
+                    if (argv[i][2] == '\0')
+                    {
+                        default_makefile = 0;
+                        read_makefile(argv[++i]);
+                    }
+                    else
+                    {
+                        default_makefile = 0;
+                        read_makefile(argv[i] + 2);
+                    }
+                    break;
+
+                case 'B':
+                    printf("Rebuilding everything, regardless of timestamps.\n");
+                    break;
+
+                case '-':
+                    if (strcmp("help", argv[i] + 2) == 0)
+                    {
+                        help();
+                        return (0);
+                    }
+                    else printf("Unknown switch!\n");
+                    break;
+
+                default: printf("Unknown switch!\n"); break;
             }
         }
         else

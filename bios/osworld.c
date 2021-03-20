@@ -12,7 +12,8 @@
 
 #include <osfunc.h>
 
-char x = 9;
+char x = 13;
+char *y = &x;
 
 int main(void)
 {
@@ -24,5 +25,5 @@ int main(void)
 #endif
     osfunc(OS_PRINTF, 0, "hello, world from osworld\n");
     osfunc(OS_PRINTF, 0, "just checking!\n");
-    return (x);
+    return (*y);
 }

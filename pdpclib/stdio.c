@@ -1483,9 +1483,6 @@ static int vseCloseLib(FILE *stream)
 
 __PDPCLIB_API__ int fclose(FILE *stream)
 {
-#ifdef __AMIGA__
-    int rc;
-#endif
 #ifdef __OS2__
     APIRET rc;
 #endif
@@ -1517,7 +1514,7 @@ __PDPCLIB_API__ int fclose(FILE *stream)
     }
 #endif
 #ifdef __AMIGA__
-    rc = Close(stream->hfile);
+    Close(stream->hfile);
 #endif
 #ifdef __OS2__
     rc = DosClose(stream->hfile);
@@ -1604,13 +1601,6 @@ __PDPCLIB_API__ int fclose(FILE *stream)
         stream->isopen = 0;
 #endif
     }
-#ifdef __AMIGA__
-    if (rc != 0)
-    {
-        errno = rc;
-        return (EOF);
-    }
-#endif
 #ifdef __OS2__
     if (rc != 0)
     {

@@ -522,7 +522,7 @@ static int exeloadLoadAmiga(char **entry_point, FILE *fp, char **loadloc)
             /* WARNING - the following is not entirely accurate. There
                ARE data relocations, and the above code caters for that,
                and that's why there are two iterations of the loop. But
-               pogie points for trying. */
+               pogi points for trying. */
 
             /* Note that all relocations are applied to the code
                section, but the code needs different corrections

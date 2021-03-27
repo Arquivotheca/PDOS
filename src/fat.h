@@ -26,9 +26,13 @@ is cluster 2, marking the beginning of the data area. */
 
 /*File name special values*/
 #define DIRENT_AVA 0x00
-#define DIRENT_IC 0x05
-#define DIRENT_DOT 0x2E
+#define DIRENT_IC 0x05 /* what is this? Does it need to be 0x2D for EBCDIC? */
+#define DIRENT_DOT '.'
+#ifdef EBCDIC
+#define DIRENT_DEL 0x47
+#else
 #define DIRENT_DEL 0xE5
+#endif
 /**/
 
 /*File attributes*/

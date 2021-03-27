@@ -251,6 +251,12 @@ static unsigned int currentAttrib = 7;
 static unsigned int currentPage = 0;
 
 #ifdef __32BIT__
+#include "vgatext.h"
+
+static VGATEXT vgatext;
+#endif
+
+#ifdef __32BIT__
 unsigned long __userparm;
 static void *gdt;
 static char *transferbuf;
@@ -629,6 +635,9 @@ static void waitForKeystroke(void)
 #ifndef USING_EXE
 int main(void)
 {
+#ifdef __32BIT__
+    vgatext_init(&vgatext);
+#endif
     pdosRun();
     dumpbuf("\r\nNo command processor - system halted\r\n", 40);
     return (0);
@@ -4193,6 +4202,17 @@ int PosProcessGetInfo(unsigned long pid, PDOS_PROCINFO *info, size_t infoSz)
     return POS_ERR_NO_ERROR;
 }
 
+#ifdef __32BIT__
+void PosClearScreen()
+{
+    vgatext_clear_screen(&vgatext, currentAttrib);
+}
+
+void PosMoveCursor(int row, int col) /* func f6.31 */
+{
+    vgatext_set_cursor_position(&vgatext, row, col);
+}
+#else
 void PosClearScreen()
 {
     BosClearScreen(currentAttrib);
@@ -4202,6 +4222,7 @@ void PosMoveCursor(int row, int col) /* func f6.31 */
 {
     BosSetCursorPosition(currentPage, row, col);
 }
+#endif
 
 int PosGetVideoInfo(pos_video_info *info, size_t size) /* func f6.32 */
 {
@@ -4247,6 +4268,38 @@ unsigned long PosGetClockTickCount(void)
     return BosGetClockTickCount();
 }
 
+#ifdef __32BIT__
+static void pdosWriteText(int ch)
+{
+    unsigned int row;
+    unsigned int column;
+    if (ch == 8)
+    {
+        vgatext_read_cursor_position(&vgatext,&row,&column);
+        if (column > 0)
+        {
+            column--;
+            vgatext_set_cursor_position(&vgatext,row,column);
+            vgatext_write_with_attr(&vgatext, ' ', currentAttrib);
+        }
+    }
+    else if (ch == 7 || ch == 0xA || ch == 0xD)
+        vgatext_write_text(&vgatext,ch,0);
+    else
+    {
+        vgatext_read_cursor_position(&vgatext,&row,&column);
+        vgatext_write_with_attr(&vgatext, ch, currentAttrib);
+        column++;
+        if (column == vgatext_get_max_cols(&vgatext))
+        {
+            vgatext_write_text(&vgatext,'\r',0);
+            vgatext_write_text(&vgatext,'\n',0);
+            vgatext_read_cursor_position(&vgatext,&row,&column);
+        }
+        vgatext_set_cursor_position(&vgatext,row,column);
+    }
+}
+#else
 static void pdosWriteText(int ch)
 {
     unsigned int cursorStart;
@@ -4280,6 +4333,7 @@ static void pdosWriteText(int ch)
         BosSetCursorPosition(currentPage,row,column);
     }
 }
+#endif
 
 void PosSetVideoAttribute(unsigned int attr) /* func f6.37 */
 {

@@ -124,4 +124,9 @@ int CTYP int86(int intno, union REGS *regsin, union REGS *regsout);
 int CTYP int86x(int intno, union REGS *regsin,
            union REGS *regsout, struct SREGS *sregs);
 
+#ifdef __32BIT__
+unsigned char inp(unsigned int port);
+void outp(unsigned int port, unsigned char data);
+#endif
+
 #endif

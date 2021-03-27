@@ -18,7 +18,12 @@
 
 void vgatext_init(VGATEXT *vgatext)
 {
-    vgatext->video = (volatile unsigned char *)0xb8000;
+    /* Checks BIOS data area to see if the monitor is monochrome. */
+    if ((*((unsigned short *)0x410) & 0x30) == 0x30)
+    {
+        vgatext->video = (volatile unsigned char *)0xb0000;
+    }
+    else vgatext->video = (volatile unsigned char *)0xb8000;
     vgatext->cursor_row = 0;
     vgatext->cursor_column = 0;
 }

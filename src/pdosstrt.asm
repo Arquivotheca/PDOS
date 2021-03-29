@@ -3,9 +3,13 @@
 ; This program written by Paul Edwards
 ; Released to the public domain
 
-.model large
+% .model memodel
 
-extrn _main:proc
+ifdef WATCOM
+extrn main_:proc
+else
+extrn main:proc
+endif
 
 _DATA   segment word public 'DATA'
 _DATA   ends
@@ -21,6 +25,11 @@ DGROUP  group   _DATA,_BSS
 _TEXT segment word public 'CODE'
 
 top:
+
+ifdef WATCOM
+public _cstart_
+_cstart_:
+endif
 
 public ___startup
 ___startup proc
@@ -39,7 +48,13 @@ mov ax, cs
 mov ax, DGROUP
 mov ds, ax
 ;call far ptr _displayc
-call far ptr _main
+
+ifdef WATCOM
+call far ptr main_
+else
+call far ptr main
+endif
+
 ;call far ptr _displayc
 
 sub sp,2

@@ -1,9 +1,9 @@
-; dossupa.asm - assembler support functions for DOS
+; nearw.asm - assembler support functions for Watcom
 ;
 ; This program written by Paul Edwards
 ; Released to the public domain
 
-.model tiny
+% .model memodel
 
 ;extrn ___divide:proc
 ;extrn ___modulo:proc

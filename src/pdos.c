@@ -2625,7 +2625,7 @@ static void loadExe(char *prog, PARMBLOCK *parmblock)
     int ret;
     unsigned char *bss;
     int isexe = 0;
-    char *olddta;
+    DTA *olddta;
 
     if (fileOpen(prog, &fno)) return;
     fileRead(fno, firstbit, sizeof firstbit, &readbytes);
@@ -2789,7 +2789,7 @@ static void loadExe(char *prog, PARMBLOCK *parmblock)
 
 #if (!defined(USING_EXE))
     olddta = dta;
-    dta = psp + 0x80;
+    dta = (DTA *)(psp + 0x80);
     newProc->status = PDOS_PROCSTATUS_ACTIVE;
     if (newProc->parent != NULL)
         newProc->parent->status = PDOS_PROCSTATUS_CHILDWAIT;

@@ -19,6 +19,8 @@
 #include "rule.h"
 #include "xmalloc.h"
 
+static int dry_run = 0; /* Run no commands. */
+
 variable *default_goal_var;
 
 static rule *rules = NULL;
@@ -82,7 +84,7 @@ void rule_use(rule *r, char *name)
         new_cmds = variable_expand_line(new_cmds);
         printf("%s\n", new_cmds);
 
-        system(new_cmds);
+        if (!dry_run) system(new_cmds);
         free(new_cmds);
 
         p = q + 1;
@@ -124,7 +126,7 @@ void suffix_rule_use(suffix_rule *s, char *name)
         new_cmds = variable_expand_line(new_cmds);
         printf("%s\n", new_cmds);
 
-        system(new_cmds);
+        if (!dry_run) system(new_cmds);
         free(new_cmds);
 
         p = q + 1;
@@ -193,6 +195,8 @@ void help(void)
            "Read FILE as a makefile.\n");
     printf("  -h, --help          "
            "Print this message and exit.\n");
+    printf("  -n, --dry_run       "
+           "Run no commands, only print them.\n");
 }
 
 int main(int argc, char **argv)
@@ -209,9 +213,9 @@ int main(int argc, char **argv)
         {
             switch (argv[i][1])
             {
-                case 'h':
-                    help();
-                    return (0);
+                case 'B':
+                    printf("Rebuilding everything, regardless of timestamps.\n");
+                    break;
 
                 case 'f':
                     if (argv[i][2] == '\0')
@@ -226,8 +230,12 @@ int main(int argc, char **argv)
                     }
                     break;
 
-                case 'B':
-                    printf("Rebuilding everything, regardless of timestamps.\n");
+                case 'h':
+                    help();
+                    return (0);
+
+                case 'n':
+                    dry_run = 1;
                     break;
 
                 case '-':
@@ -236,10 +244,14 @@ int main(int argc, char **argv)
                         help();
                         return (0);
                     }
-                    else printf("Unknown switch!\n");
+                    else if (strcmp("dry_run", argv[i] + 2) == 0)
+                    {
+                        dry_run = 1;
+                    }
+                    else printf("Unknown switch! Use -h for help.\n");
                     break;
 
-                default: printf("Unknown switch!\n"); break;
+                default: printf("Unknown switch! Use -h for help.\n"); break;
             }
         }
         else

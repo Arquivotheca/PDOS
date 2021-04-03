@@ -51,7 +51,9 @@ typedef struct {
     unsigned long SizeOfUninitializedData;
     unsigned long AddressOfEntryPoint; /* Relative to ImageBase. */
     unsigned long BaseOfCode;
+#ifndef TARGET_64BIT
     unsigned long BaseOfData;
+#endif
     /* Extension fields. */
     unsigned char *ImageBase;
     unsigned long SectionAlignment;
@@ -69,9 +71,21 @@ typedef struct {
     unsigned short Subsystem;
     unsigned short DllCharacteristics;
     unsigned long SizeOfStackReserve;
+#ifdef TARGET_64BIT
+    unsigned long dummy1;
+#endif
     unsigned long SizeOfStackCommit;
+#ifdef TARGET_64BIT
+    unsigned long dummy2;
+#endif
     unsigned long SizeOfHeapReserve;
+#ifdef TARGET_64BIT
+    unsigned long dummy3;
+#endif
     unsigned long SizeOfHeapCommit;
+#ifdef TARGET_64BIT
+    unsigned long dummy4;
+#endif
     unsigned long LoaderFlags; /* Reserved, should be 0. */
     unsigned long NumberOfRvaAndSizes; /* Number of data directories. */
 } Pe32_optional_hdr;

@@ -1442,7 +1442,7 @@ static int exeloadLoadPE(unsigned char **entry_point,
         }
     }
 
-    if ((unsigned long)exeStart != optional_hdr->ImageBase)
+    if (exeStart != optional_hdr->ImageBase)
     {
         /* Relocations are not stripped, so the executable can be relocated. */
         if (optional_hdr->NumberOfRvaAndSizes > DATA_DIRECTORY_REL)
@@ -1451,7 +1451,7 @@ static int exeloadLoadPE(unsigned char **entry_point,
                                                (optional_hdr + 1))
                                               + DATA_DIRECTORY_REL);
             /* Difference between preferred address and real address. */
-            unsigned long image_diff;
+            ptrdiff_t image_diff;
             int lower_exeStart;
             Base_relocation_block *rel_block = ((Base_relocation_block *)
                                                 (exeStart
@@ -1459,17 +1459,15 @@ static int exeloadLoadPE(unsigned char **entry_point,
                                                     ->VirtualAddress)));
             Base_relocation_block *end_rel_block;
 
-            if (optional_hdr->ImageBase > (unsigned long)exeStart)
+            if (optional_hdr->ImageBase > exeStart)
             {
-                /* Image is loaded  at lower address than preferred. */
-                image_diff = optional_hdr->ImageBase
-                             - (unsigned long)exeStart;
+                /* Image is loaded at lower address than preferred. */
+                image_diff = optional_hdr->ImageBase - exeStart;
                 lower_exeStart = 1;
             }
             else
             {
-                image_diff = (unsigned long)exeStart
-                             - optional_hdr->ImageBase;
+                image_diff = exeStart - optional_hdr->ImageBase;
                 lower_exeStart = 0;
             }
 
@@ -1490,15 +1488,15 @@ static int exeloadLoadPE(unsigned char **entry_point,
                 {
                     /* Top 4 bits indicate the type of relocation. */
                     unsigned char rel_type = (unsigned char)((*cur_rel) >> 12);
-                    void *rel_target = (exeStart + (rel_block->PageRva)
+                    unsigned char *rel_target = (exeStart + (rel_block->PageRva)
                                         + ((*cur_rel) & 0x0fff));
 
                     if (rel_type == IMAGE_REL_BASED_ABSOLUTE) continue;
                     if (rel_type == IMAGE_REL_BASED_HIGHLOW)
                     {
                         if (lower_exeStart)
-                            (*((unsigned long *)rel_target)) -= image_diff;
-                        else (*((unsigned long *)rel_target)) += image_diff;
+                            *(unsigned char **)rel_target -= image_diff;
+                        else *(unsigned char **)rel_target += image_diff;
                     }
                     else
                     {

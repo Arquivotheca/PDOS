@@ -53,7 +53,7 @@ typedef struct {
     unsigned long BaseOfCode;
     unsigned long BaseOfData;
     /* Extension fields. */
-    unsigned long ImageBase;
+    unsigned char *ImageBase;
     unsigned long SectionAlignment;
     unsigned long FileAlignment;
     unsigned short MajorOperatingSystemVersion;

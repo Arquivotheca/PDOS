@@ -53,15 +53,23 @@ static int exeloadLoadPEDLL(unsigned char *exeStart,
                             IMAGE_IMPORT_DESCRIPTOR *import_desc);
 #endif
 
-static int exeloadLoadMVS(char **entry_point, FILE *fp, char **loadloc);
+static int exeloadLoadMVS(unsigned char **entry_point,
+                          FILE *fp,
+                          unsigned char **loadloc);
 static int exeloadLoadAmiga(char **entry_point, FILE *fp, char **loadloc);
-static int fixPE(char *buf, int *len, int *entry, int rlad);
-static int processRLD(char *buf, int rlad, char *rld, int len);
+static int fixPE(unsigned char *buf,
+                 size_t *len,
+                 unsigned char **entry,
+                 unsigned long rlad);
+static int processRLD(unsigned char *buf,
+                      unsigned long rlad,
+                      unsigned char *rld,
+                      int len);
 
 int exeloadDoload(char **entry_point, char *progname, char **loadloc)
 {
     FILE *fp;
-    int ret = 1;
+    int ret;
 
     fp = fopen(progname, "rb");
     if (fp == NULL)
@@ -73,10 +81,10 @@ int exeloadDoload(char **entry_point, char *progname, char **loadloc)
      * Returned 0 means the executable was loaded successfully.
      * 1 means it is not the format the function loads.
      * 2 means correct format, but error occured. */
-#if 1
     ret = exeloadLoadAOUT(entry_point, fp, loadloc);
-    if (ret == 1) ret = exeloadLoadMVS(entry_point, fp, loadloc);
-#endif
+    if (ret == 1) ret = exeloadLoadMVS((unsigned char **)entry_point,
+                                       fp,
+                                       (unsigned char **)loadloc);
     if (ret == 1) ret = exeloadLoadAmiga(entry_point, fp, loadloc);
 #if 0
     if (ret == 1) ret = exeloadLoadELF(entry_point, fhandle);
@@ -241,36 +249,35 @@ static int exeloadLoadAOUT(char **entry_point, FILE *fp, char **loadloc)
     return (0);
 }
 
-static int exeloadLoadMVS(char **entry_point, FILE *fp, char **loadloc)
+static int exeloadLoadMVS(unsigned char **entry_point,
+                          FILE *fp,
+                          unsigned char **loadloc)
 {
-    /* struct exec firstbit; */
-    unsigned long exeLen;
     unsigned char *exeStart;
-    long newpos;
     size_t readbytes;
-    int entry;
+    unsigned char *entry;
 
     /* printf("in LoadMVS\n"); */
     rewind(fp);
-#if 0
-    if ((fseek(fp, 0, SEEK_SET) != 0)
-        || (fread(&firstbit, sizeof(firstbit), 1, fp) != 1))
-    {
-        return (1);
-    }
-#endif
     readbytes = fread(*loadloc, 1, 1000000, fp);
     /* printf("read %d bytes\n", (int)readbytes); */
-    if (fixPE(*loadloc, &readbytes, &entry, (int)*loadloc) != 0)
+
+    /* the last parameter is an unsigned long because the code allows
+       relocations to be done for a theoretical load point rather than
+       requiring the actual load point. In case we wanted to do the
+       calculations to later store the executable in ROM or something
+       like that. */
+
+    if (fixPE(*loadloc, &readbytes, &entry, (unsigned long)*loadloc) != 0)
     {
         return (1);
     }
-    *entry_point = (char *)entry; /* fix this !!! */
+    *entry_point = entry;
 
     return (0);
 }
 
-#define getword(p) (p[0] << 24 | p[1] << 16 | p[2] << 8 | p[3])
+#define getword(p) ((p[0] << 24) | (p[1] << 16) | (p[2] << 8) | p[3])
 #define putword(p, val) (p[0] = (val >> 24) & 0xff, \
                          p[1] = (val >> 16) & 0xff, \
                          p[2] = (val >> 8) & 0xff, \
@@ -292,7 +299,6 @@ static int exeloadLoadAmiga(char **entry_point, FILE *fp, char **loadloc)
     size_t readbytes;
     int entry;
     unsigned char *p;
-    int havedata; /* are we expecting a data section? */
     unsigned long temp;
     int datahunk = 1;
     int codehunk = 0;
@@ -333,7 +339,6 @@ static int exeloadLoadAmiga(char **entry_point, FILE *fp, char **loadloc)
     if (temp == 2)
     {
         /* printf("no data section\n"); */
-        havedata = 0;
         bsshunk = 1;
         datahunk = -1;
         /* printf("bsshunk determined to be %d\n", bsshunk); */
@@ -355,7 +360,6 @@ static int exeloadLoadAmiga(char **entry_point, FILE *fp, char **loadloc)
         words.
         */
         /* printf("we have a data section\n"); */
-        havedata = 1;
         bsshunk = 2;
         /* printf("bsshunk determined to be %d\n", bsshunk); */
         p += 12;
@@ -488,7 +492,7 @@ static int exeloadLoadAmiga(char **entry_point, FILE *fp, char **loadloc)
         while (temp != 0)
         {
             unsigned long count;
-            unsigned long hunk_nbr;
+            int hunk_nbr;
             unsigned char *correction;
             unsigned long x;
 
@@ -1982,18 +1986,21 @@ static int exeloadLoadNE(unsigned long *entry_point,
 
 #define PE_DEBUG 1
 
-static int fixPE(char *buf, int *len, int *entry, int rlad)
+static int fixPE(unsigned char *buf,
+                 size_t *len,
+                 unsigned char **entry,
+                 unsigned long rlad)
 {
-    char *p;
-    char *q;
+    unsigned char *p;
+    unsigned char *q;
     int z;
     typedef struct {
-        char pds2name[8];
-        char unused1[19];
-        char pds2epa[3];
-        char pds2ftb1;
-        char pds2ftb2;
-        char pds2ftb3;
+        unsigned char pds2name[8];
+        unsigned char unused1[19];
+        unsigned char pds2epa[3];
+        unsigned char pds2ftb1;
+        unsigned char pds2ftb2;
+        unsigned char pds2ftb3;
     } IHAPDS;
     IHAPDS *ihapds;
     int rmode;
@@ -2005,9 +2012,7 @@ static int fixPE(char *buf, int *len, int *entry, int rlad)
     int l;
     int l2;
     int lastt = -1;
-    char *lasttxt = NULL;
-    char *upto = buf;
-    int initlen = *len;
+    unsigned char *upto = buf;
     
     if ((*len <= 8) || (*((int *)buf + 1) != 0xca6d0f))
     {
@@ -2036,7 +2041,8 @@ static int fixPE(char *buf, int *len, int *entry, int rlad)
         {
             for (z = 0; z < l; z++)
             {
-                printf("z %d %x %c\n", z, p[z], isprint(p[z]) ? p[z] : ' ');
+                printf("z %d %x %c\n", z, p[z],
+                       isprint((unsigned char)p[z]) ? p[z] : ' ');
             }
         }
 #endif
@@ -2059,9 +2065,10 @@ static int fixPE(char *buf, int *len, int *entry, int rlad)
 #else
             amode = ihapds->pds2ftb2 & 0x03;
 #endif
-            ent = 0;
-            memcpy((char *)&ent + sizeof(ent) - 3, ihapds->pds2epa, 3);
-            *entry = (int)(buf + ent);
+            ent = ((unsigned long)ihapds->pds2epa[0] << 16)
+                | ((unsigned long)ihapds->pds2epa[1] << 8)
+                | ihapds->pds2epa[2];
+            *entry = buf + ent;
 #if PE_DEBUG
             printf("module name is %.8s\n", ihapds->pds2name);
             printf("rmode is %s\n", rmode ? "ANY" : "24");
@@ -2124,7 +2131,6 @@ static int fixPE(char *buf, int *len, int *entry, int rlad)
 #if PE_DEBUG
                     printf("rectype: program text\n");
 #endif
-                    lasttxt = q;
                     memmove(upto, q, l2);
                     upto += l2;
                     t = -1;
@@ -2247,19 +2253,22 @@ static int fixPE(char *buf, int *len, int *entry, int rlad)
 }
 
 
-static int processRLD(char *buf, int rlad, char *rld, int len)
+static int processRLD(unsigned char *buf,
+                      unsigned long rlad,
+                      unsigned char *rld,
+                      int len)
 {
     int l;
-    char *r;
+    unsigned char *r;
     int cont = 0;
-    char *fin;
+    unsigned char *fin;
     int negative;
     int ll;
     int a;
-    int newval;
-    int *zaploc;
+    long newval;
+    unsigned int *zaploc;
     
-    r = rld + 16;
+    r = (unsigned char *)rld + 16;
     fin = rld + len;
     while (r != fin)
     {
@@ -2300,11 +2309,16 @@ static int processRLD(char *buf, int rlad, char *rld, int len)
             printf("corrupt2 at position %x\n", r - rld);
             return (-1);
         }
-        a = 0;
-        memcpy((char *)&a + sizeof(a) - 3, r, 3);
+        a = ((unsigned long)r[0] << 16)
+            || ((unsigned long)r[1] << 8)
+            || r[2];
         /* +++ need bounds checking on this OS code */
         /* printf("need to zap %d bytes at offset %6x\n", ll, a); */
-        zaploc = (int *)(buf + a - ((ll == 3) ? 1 : 0));
+        zaploc = (unsigned int *)(buf + a);
+
+        /* This old code doesn't look right. The integer is misaligned */
+        /* zaploc = (unsigned int *)(buf + a - ((ll == 3) ? 1 : 0)); */
+
         newval = *zaploc;
         /* printf("which means that %8x ", newval); */
         newval += rlad;

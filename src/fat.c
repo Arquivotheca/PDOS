@@ -853,8 +853,8 @@ int fatReadFile(FAT *fat, FATFILE *fatfile, void *buf, size_t szbuf,
         fatfile->byteUpto = fatfile->currpos % fat->sector_size;
         fatfile->lastBytes = (unsigned int)
                              (fatfile->fileSize
-                              % (fat->sectors_per_cluster
-                                 * fat->sector_size));
+                              % ((unsigned long)fat->sectors_per_cluster
+                                 * (unsigned long)fat->sector_size));
         fatfile->lastSectors = fatfile->lastBytes / fat->sector_size;
         fatfile->lastBytes = fatfile->lastBytes % fat->sector_size;
         /* Only files have the last access date updated. */

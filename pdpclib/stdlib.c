@@ -552,10 +552,8 @@ __PDPCLIB_API__ double strtod(const char *nptr, char **endptr)
             {
                 while (xf > 0)
                 {
-#if !defined(__SMALLERC__)
-                    xd *= 10;
-                    xf--;
-#endif
+                    xd = xd * 10;
+                    xf = xf - 1;
                 }
                 if (es < 0.0)
                 {

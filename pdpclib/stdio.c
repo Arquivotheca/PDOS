@@ -4841,9 +4841,7 @@ static int vvscanf(const char *format, va_list arg, FILE *fp, const char *s)
                                     /* Account for any preceding zeros */
                                     while (ntrailzer>0)
                                     {
-#if !defined(__SMALLERC__)
-                                        fpval*=10.;
-#endif
+                                        fpval = fpval * 10;
                                         ntrailzer--;
                                     }
                                     fpval=fpval*10.0+(ch-'0');
@@ -4883,16 +4881,13 @@ static int vvscanf(const char *format, va_list arg, FILE *fp, const char *s)
                         {
                             if (expnum & 1)     /* low-order bit */
                             {
-#if !defined(__SMALLERC__)
-                                if (negsw2) fpval/=pow10;
-                                else fpval*=pow10;
-#endif
+                                if (negsw2) fpval = fpval / pow10;
+                                else fpval = fpval * pow10;
                             }
                             expnum>>=1;   /* shift right 1 bit */
                             if (expnum==0) break;
-#if !defined(__SMALLERC__)
-                            pow10*=pow10;   /* 10.**n where n is power of 2 */
-#endif
+                            pow10 = pow10 * pow10;
+                               /* 10.**n where n is power of 2 */
                         }
                     }
                     if (negsw1) fpval=-fpval;

@@ -117,8 +117,6 @@ static int exeloadLoadAOUT(unsigned char **entry_point,
     unsigned long exeLen;
     unsigned char *exeStart;
     unsigned char *bss;
-    long newpos;
-    size_t readbytes;
 
     if ((fseek(fp, 0, SEEK_SET) != 0)
         || (fread(&firstbit, sizeof(firstbit), 1, fp) != 1))
@@ -186,7 +184,6 @@ static int exeloadLoadAOUT(unsigned char **entry_point,
     bss = exeStart + firstbit.a_text + firstbit.a_data;
     memset(bss, '\0', firstbit.a_bss);
     /* Relocations. */
-    if (1)
     {
         unsigned int *corrections;
         unsigned int i;
@@ -265,7 +262,6 @@ static int exeloadLoadMVS(unsigned char **entry_point,
                           FILE *fp,
                           unsigned char **loadloc)
 {
-    unsigned char *exeStart;
     size_t readbytes;
     unsigned char *entry;
 
@@ -290,10 +286,10 @@ static int exeloadLoadMVS(unsigned char **entry_point,
 }
 
 #define getword(p) ((p[0] << 24) | (p[1] << 16) | (p[2] << 8) | p[3])
-#define putword(p, val) (p[0] = (val >> 24) & 0xff, \
-                         p[1] = (val >> 16) & 0xff, \
-                         p[2] = (val >> 8) & 0xff, \
-                         p[3] = val & 0xff)
+#define putword(p, val) (p[0] = (unsigned char)((val >> 24) & 0xff), \
+                         p[1] = (unsigned char)((val >> 16) & 0xff), \
+                         p[2] = (unsigned char)((val >> 8) & 0xff), \
+                         p[3] = (unsigned char)(val & 0xff))
 
 #define HUNK_HEADER 0x3F3
 #define HUNK_CODE 0x3E9
@@ -307,11 +303,7 @@ static int exeloadLoadAmiga(unsigned char **entry_point,
                             FILE *fp,
                             unsigned char **loadloc)
 {
-    unsigned long exeLen;
-    unsigned char *exeStart;
-    long newpos;
     size_t readbytes;
-    int entry;
     unsigned char *p;
     unsigned long temp;
     int datahunk = 1;
@@ -454,7 +446,7 @@ static int exeloadLoadAmiga(unsigned char **entry_point,
 
                 p += 4; /* skip hunk number */
                 /* printf("symbol %s found\n", p); */
-                len = strlen(p);
+                len = strlen((char *)p);
                 len++;
                 rem = len % 4;
                 if (rem != 0)
@@ -1252,8 +1244,6 @@ static int exeloadLoadMZ(unsigned char **entry_point,
                          unsigned char **loadloc)
 {
     Mz_hdr firstbit;
-    long newpos;
-    size_t readbytes;
 
     /* The header size is in paragraphs,
      * so the smallest possible header is 16 bytes (paragraph) long.
@@ -1320,8 +1310,6 @@ static int exeloadLoadPE(unsigned char **entry_point,
     Pe32_optional_hdr *optional_hdr;
     Coff_section *section_table, *section;
     unsigned char *exeStart;
-    long newpos;
-    size_t readbytes;
 
     {
         unsigned char firstbit[4];
@@ -1501,7 +1489,7 @@ static int exeloadLoadPE(unsigned char **entry_point,
                 for (; cur_rel < end_rel; cur_rel++)
                 {
                     /* Top 4 bits indicate the type of relocation. */
-                    unsigned char rel_type = (*cur_rel) >> 12;
+                    unsigned char rel_type = (unsigned char)((*cur_rel) >> 12);
                     void *rel_target = (exeStart + (rel_block->PageRva)
                                         + ((*cur_rel) & 0x0fff));
 
@@ -1540,7 +1528,7 @@ static int exeloadLoadPE(unsigned char **entry_point,
              * and the array has a null terminator. */
             for (; import_desc->OriginalFirstThunk; import_desc++)
             {
-                if (1) /* exeloadLoadPEDLL(exeStart, import_desc)) */
+                /* if (exeloadLoadPEDLL(exeStart, import_desc)) */
                 {
                     printf("Cannot use DLLs - %s\n",
                            exeStart + (import_desc->Name));
@@ -2032,7 +2020,7 @@ static int fixPE(unsigned char *buf,
 {
     unsigned char *p;
     unsigned char *q;
-    int z;
+    /* int z; */
     typedef struct {
         unsigned char pds2name[8];
         unsigned char unused1[19];
@@ -2297,7 +2285,6 @@ static int processRLD(unsigned char *buf,
                       unsigned char *rld,
                       int len)
 {
-    int l;
     unsigned char *r;
     int cont = 0;
     unsigned char *fin;

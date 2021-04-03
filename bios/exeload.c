@@ -1326,6 +1326,13 @@ static int exeloadLoadPE(unsigned char **entry_point,
         printf("Error occured while reading COFF header\n");
         return (2);
     }
+#if TARGET_64BIT
+    if (coff_hdr.Machine != IMAGE_FILE_MACHINE_AMD64)
+    {
+        printf("only 64-bit PE programs are supported\n");
+        return (2);
+    }
+#else
     if ((coff_hdr.Machine != IMAGE_FILE_MACHINE_UNKNOWN)
         && (coff_hdr.Machine != IMAGE_FILE_MACHINE_I386))
     {
@@ -1339,6 +1346,7 @@ static int exeloadLoadPE(unsigned char **entry_point,
         }
         return (2);
     }
+#endif
 
     if ((coff_hdr.Characteristics & IMAGE_FILE_RELOCS_STRIPPED) != 0)
     {
@@ -1358,6 +1366,15 @@ static int exeloadLoadPE(unsigned char **entry_point,
         free(optional_hdr);
         return (2);
     }
+#if TARGET_64BIT
+    if (optional_hdr->Magic != MAGIC_PE32PLUS)
+    {
+        printf("Unknown PE optional header magic: %04x\n",
+               optional_hdr->Magic);
+        free(optional_hdr);
+        return (2);
+    }
+#else
     if (optional_hdr->Magic != MAGIC_PE32)
     {
         printf("Unknown PE optional header magic: %04x\n",
@@ -1365,6 +1382,7 @@ static int exeloadLoadPE(unsigned char **entry_point,
         free(optional_hdr);
         return (2);
     }
+#endif
 
     section_table = malloc(coff_hdr.NumberOfSections * sizeof(Coff_section));
     if (section_table == NULL)

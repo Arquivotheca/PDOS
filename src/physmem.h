@@ -17,7 +17,7 @@
 #define PAGE_FRAME_SIZE 0x1000
 
 typedef struct {
-    unsigned char pages[512]; /* Bitmap for the first 16 MB. 1 = free. */
+    unsigned char pages[2048]; /* Bitmap for the first 64 MiB. 1 = free. */
 } PHYSMEMMGR;
 
 void physmemmgrInit(PHYSMEMMGR *physmemmgr);

@@ -22,7 +22,7 @@
 void physmemmgrInit(PHYSMEMMGR *physmemmgr)
 {
     /* Marks all physical memory as unavailable. */
-    memset(physmemmgr->pages, 0, 512);
+    memset(physmemmgr->pages, 0, 2048);
 }
 
 void physmemmgrSupply(PHYSMEMMGR *physmemmgr,
@@ -39,16 +39,17 @@ void physmemmgrSupply(PHYSMEMMGR *physmemmgr,
         size -= new_addr - addr;
         addr = new_addr;
     }
-    if (addr > 512 * 8 * PAGE_FRAME_SIZE)
+    if (addr > 2048 * 8 * PAGE_FRAME_SIZE)
     {
         printf("PHYSMEMMGR does not support more than %u bytes of memory\n",
-               512 * 8 * PAGE_FRAME_SIZE);
+               2048 * 8 * PAGE_FRAME_SIZE);
         return;
     }
-    if ((addr + size) / (PAGE_FRAME_SIZE * 8) > 512)
+    if ((addr + size) / (PAGE_FRAME_SIZE * 8) > 2048)
     {
+        printf("PHYSMEMMGR reduced size of provided memory\n");
         /* Reduces size provided so physmmemgr can handle it. */
-        size = 512 * 8 * PAGE_FRAME_SIZE - addr;
+        size = 2048 * 8 * PAGE_FRAME_SIZE - addr;
     }
     if (addr & 0x7000)
     {
@@ -79,7 +80,7 @@ void *physmemmgrAllocPageFrame(PHYSMEMMGR *physmemmgr)
     int i;
     unsigned int savedEFLAGS = getEFLAGSAndDisable();
 
-    for (i = 0; i < 512; i++)
+    for (i = 0; i < 2048; i++)
     {
         if (physmemmgr->pages[i])
         {

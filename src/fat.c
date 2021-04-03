@@ -811,8 +811,8 @@ unsigned int fatOpenFile(FAT *fat, const char *fnm, FATFILE *fatfile)
 
         fatfile->lastBytes = (unsigned int)
                              (fatfile->fileSize
-                              % (fat->sectors_per_cluster
-                                 * fat->sector_size));
+                              % ((unsigned long)fat->sectors_per_cluster
+                                 * (unsigned long)fat->sector_size));
         fatfile->lastSectors = fatfile->lastBytes / fat->sector_size;
         fatfile->lastBytes = fatfile->lastBytes % fat->sector_size;
         fatClusterAnalyse(fat,

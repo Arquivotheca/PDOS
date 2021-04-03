@@ -1333,10 +1333,7 @@ static int exeloadLoadPE(unsigned char **entry_point,
             return (1);
         }
     }
-    printf("got PE!\n");
-#if 0
-    if (PosReadFile(fhandle, &coff_hdr, sizeof(coff_hdr), &readbytes)
-        || (readbytes != sizeof(coff_hdr)))
+    if (fread(&coff_hdr, sizeof(coff_hdr), 1, fp) != 1)
     {
         printf("Error occured while reading COFF header\n");
         return (2);
@@ -1355,81 +1352,84 @@ static int exeloadLoadPE(unsigned char **entry_point,
         return (2);
     }
 
-    optional_hdr = kmalloc(coff_hdr.SizeOfOptionalHeader);
+    if ((coff_hdr.Characteristics & IMAGE_FILE_RELOCS_STRIPPED) != 0)
+    {
+        printf("only relocatable executables supported\n");
+        return (2);
+    }
+
+    optional_hdr = malloc(coff_hdr.SizeOfOptionalHeader);
     if (optional_hdr == NULL)
     {
         printf("Insufficient memory to load PE optional header\n");
         return (2);
     }
-    if (PosReadFile(fhandle, optional_hdr, coff_hdr.SizeOfOptionalHeader,
-                    &readbytes)
-        || (readbytes != (coff_hdr.SizeOfOptionalHeader)))
+    if (fread(optional_hdr, coff_hdr.SizeOfOptionalHeader, 1, fp) != 1)
     {
         printf("Error occured while reading PE optional header\n");
-        kfree(optional_hdr);
+        free(optional_hdr);
         return (2);
     }
     if (optional_hdr->Magic != MAGIC_PE32)
     {
         printf("Unknown PE optional header magic: %04x\n",
                optional_hdr->Magic);
-        kfree(optional_hdr);
+        free(optional_hdr);
         return (2);
     }
 
-    section_table = kmalloc(coff_hdr.NumberOfSections * sizeof(Coff_section));
+    section_table = malloc(coff_hdr.NumberOfSections * sizeof(Coff_section));
     if (section_table == NULL)
     {
         printf("Insufficient memory to load PE section headers\n");
+        free(optional_hdr);
         return (2);
     }
-    if (PosReadFile(fhandle, section_table,
-                    coff_hdr.NumberOfSections * sizeof(Coff_section),
-                    &readbytes)
-        || (readbytes != (coff_hdr.NumberOfSections * sizeof(Coff_section))))
+    if (fread(section_table,
+              coff_hdr.NumberOfSections * sizeof(Coff_section),
+              1,
+              fp) != 1)
     {
         printf("Error occured while reading PE optional header\n");
-        kfree(section_table);
-        kfree(optional_hdr);
+        free(section_table);
+        free(optional_hdr);
         return (2);
     }
 
     /* Allocates memory for the process.
      * Size of image is obtained from the optional header. */
-    /* PE files are loaded at their preferred address. */
-    exeStart = PosVirtualAlloc((void *)(optional_hdr->ImageBase),
-                               optional_hdr->SizeOfImage);
-    if ((exeStart == NULL)
-        && !(coff_hdr.Characteristics & IMAGE_FILE_RELOCS_STRIPPED))
+    if (*loadloc != NULL)
     {
-        /* If the PE file could not be loaded at its preferred address,
-         * but it is relocatable, it is loaded elsewhere. */
-        exeStart = PosVirtualAlloc(0, optional_hdr->SizeOfImage);
+        exeStart = *loadloc;
+    }
+    else
+    {
+        exeStart = malloc(optional_hdr->SizeOfImage);
     }
     if (exeStart == NULL)
     {
         printf("Insufficient memory to load PE program\n");
-        kfree(section_table);
-        kfree(optional_hdr);
+        free(section_table);
+        free(optional_hdr);
         return (2);
     }
 
     /* Loads all sections at their addresses. */
     for (section = section_table;
-         section < section_table + (coff_hdr.NumberOfSections);
+         section < section_table + coff_hdr.NumberOfSections;
          section++)
     {
         unsigned long size_in_file;
 
         /* Virtual size of a section is larger than in file,
          * so the difference is filled with 0. */
-        if ((section->VirtualSize) > (section->SizeOfRawData))
+        if (section->VirtualSize > section->SizeOfRawData)
         {
-            memset((exeStart
-                    + (section->VirtualAddress)
-                    + (section->SizeOfRawData)),
+            memset(exeStart
+                   + section->VirtualAddress
+                   + section->SizeOfRawData,
                    0,
-                   (section->VirtualSize) - (section->SizeOfRawData));
+                   section->VirtualSize - section->SizeOfRawData);
             size_in_file = section->SizeOfRawData;
         }
         /* SizeOfRawData is rounded up,
@@ -1438,21 +1438,23 @@ static int exeloadLoadPE(unsigned char **entry_point,
         {
             size_in_file = section->VirtualSize;
         }
-        if (PosMoveFilePointer(fhandle, section->PointerToRawData, SEEK_SET,
-                               &newpos)
-            || PosReadFile(fhandle, exeStart + (section->VirtualAddress),
-                           size_in_file, &readbytes)
-            || (readbytes != size_in_file))
+        if (size_in_file != 0)
         {
-            printf("Error occured while reading PE section\n");
-            kfree(section_table);
-            kfree(optional_hdr);
-            return (2);
+            if ((fseek(fp, section->PointerToRawData, SEEK_SET) != 0)
+                || (fread(exeStart + section->VirtualAddress,
+                         size_in_file,
+                         1,
+                         fp) != 1))
+            {
+                printf("Error occured while reading PE section\n");
+                free(section_table);
+                free(optional_hdr);
+                return (2);
+            }
         }
     }
-    PosCloseFile(fhandle);
 
-    if (((unsigned long)exeStart) != (optional_hdr->ImageBase))
+    if ((unsigned long)exeStart != optional_hdr->ImageBase)
     {
         /* Relocations are not stripped, so the executable can be relocated. */
         if (optional_hdr->NumberOfRvaAndSizes > DATA_DIRECTORY_REL)
@@ -1461,9 +1463,8 @@ static int exeloadLoadPE(unsigned char **entry_point,
                                                (optional_hdr + 1))
                                               + DATA_DIRECTORY_REL);
             /* Difference between preferred address and real address. */
-            unsigned long image_diff = (optional_hdr->ImageBase
-                                        - (unsigned long)exeStart);
-            int lower_exeStart = 0;
+            unsigned long image_diff;
+            int lower_exeStart;
             Base_relocation_block *rel_block = ((Base_relocation_block *)
                                                 (exeStart
                                                  + (data_dir
@@ -1473,8 +1474,17 @@ static int exeloadLoadPE(unsigned char **entry_point,
             if (optional_hdr->ImageBase > (unsigned long)exeStart)
             {
                 /* Image is loaded  at lower address than preferred. */
+                image_diff = optional_hdr->ImageBase
+                             - (unsigned long)exeStart;
                 lower_exeStart = 1;
             }
+            else
+            {
+                image_diff = (unsigned long)exeStart
+                             - optional_hdr->ImageBase;
+                lower_exeStart = 0;
+            }
+
             end_rel_block = rel_block + ((data_dir->Size)
                                          / sizeof(Base_relocation_block));
 
@@ -1519,9 +1529,6 @@ static int exeloadLoadPE(unsigned char **entry_point,
         IMAGE_DATA_DIRECTORY *data_dir = (((IMAGE_DATA_DIRECTORY *)
                                            (optional_hdr + 1))
                                           + DATA_DIRECTORY_IMPORT_TABLE);
-#if 1
-        printf("Executables using DLLs not supported\n");
-#else
         if (data_dir->Size != 0)
         {
             IMAGE_IMPORT_DESCRIPTOR *import_desc = ((void *)
@@ -1533,23 +1540,20 @@ static int exeloadLoadPE(unsigned char **entry_point,
              * and the array has a null terminator. */
             for (; import_desc->OriginalFirstThunk; import_desc++)
             {
-                if (exeloadLoadPEDLL(exeStart, import_desc))
+                if (1) /* exeloadLoadPEDLL(exeStart, import_desc)) */
                 {
-                    printf("Failed to load DLL %s\n",
+                    printf("Cannot use DLLs - %s\n",
                            exeStart + (import_desc->Name));
                     return (2);
                 }
             }
         }
-#endif
     }
 
-    *entry_point = (((unsigned long)exeStart)
-                    + (optional_hdr->AddressOfEntryPoint));
+    *entry_point = exeStart + optional_hdr->AddressOfEntryPoint;
     /* Frees memory not needed by the process. */
-    kfree(section_table);
-    kfree(optional_hdr);
-#endif
+    free(section_table);
+    free(optional_hdr);
     return (0);
 }
 

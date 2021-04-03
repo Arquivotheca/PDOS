@@ -22,25 +22,31 @@
 
 /* Headers for executable support. */
 #include "a_out.h"
+#include "mz.h"
+#include "pecoff.h"
 
 #if 0
 #include "elf.h"
-#include "mz.h"
-#include "pecoff.h"
 #endif
 
 /* For reading files Pos API must be used directly
  * as PDPCLIB allocates memory from the process address space. */
 
-static int exeloadLoadAOUT(char **entry_point, FILE *fp, char **loadloc);
+static int exeloadLoadAOUT(unsigned char **entry_point,
+                           FILE *fp,
+                           unsigned char **loadloc);
+
+static int exeloadLoadMZ(unsigned char **entry_point,
+                         FILE *fp,
+                         unsigned char **loadloc);
+/* Subfunctions of exeloadLoadMZ() for loading extensions to MZ. */
+static int exeloadLoadPE(unsigned char **entry_point,
+                         FILE *fp,
+                         unsigned char **loadloc,
+                         unsigned long e_lfanew);
 
 #if 0
 static int exeloadLoadELF(unsigned long *entry_point, int fhandle);
-static int exeloadLoadMZ(unsigned long *entry_point, int fhandle);
-/* Subfunctions of exeloadLoadMZ() for loading extensions to MZ. */
-static int exeloadLoadPE(unsigned long *entry_point,
-                         int fhandle,
-                         unsigned long e_lfanew);
 static int exeloadLoadLX(unsigned long *entry_point,
                          int fhandle,
                          unsigned long e_lfanew);
@@ -56,7 +62,9 @@ static int exeloadLoadPEDLL(unsigned char *exeStart,
 static int exeloadLoadMVS(unsigned char **entry_point,
                           FILE *fp,
                           unsigned char **loadloc);
-static int exeloadLoadAmiga(char **entry_point, FILE *fp, char **loadloc);
+static int exeloadLoadAmiga(unsigned char **entry_point,
+                            FILE *fp,
+                            unsigned char **loadloc);
 static int fixPE(unsigned char *buf,
                  size_t *len,
                  unsigned char **entry,
@@ -66,7 +74,9 @@ static int processRLD(unsigned char *buf,
                       unsigned char *rld,
                       int len);
 
-int exeloadDoload(char **entry_point, char *progname, char **loadloc)
+int exeloadDoload(unsigned char **entry_point,
+                  char *progname,
+                  unsigned char **loadloc)
 {
     FILE *fp;
     int ret;
@@ -86,9 +96,9 @@ int exeloadDoload(char **entry_point, char *progname, char **loadloc)
                                        fp,
                                        (unsigned char **)loadloc);
     if (ret == 1) ret = exeloadLoadAmiga(entry_point, fp, loadloc);
+    if (ret == 1) ret = exeloadLoadMZ(entry_point, fp, loadloc);
 #if 0
     if (ret == 1) ret = exeloadLoadELF(entry_point, fhandle);
-    if (ret == 1) ret = exeloadLoadMZ(entry_point, fhandle);
 #endif
     fclose(fp);
     if (ret != 0)
@@ -99,7 +109,9 @@ int exeloadDoload(char **entry_point, char *progname, char **loadloc)
     return (0);
 }
 
-static int exeloadLoadAOUT(char **entry_point, FILE *fp, char **loadloc)
+static int exeloadLoadAOUT(unsigned char **entry_point,
+                           FILE *fp,
+                           unsigned char **loadloc)
 {
     struct exec firstbit;
     unsigned long exeLen;
@@ -291,7 +303,9 @@ static int exeloadLoadMVS(unsigned char **entry_point,
 #define HUNK_SYMBOL 0x3F0
 #define HUNK_END 0x3F2
 
-static int exeloadLoadAmiga(char **entry_point, FILE *fp, char **loadloc)
+static int exeloadLoadAmiga(unsigned char **entry_point,
+                            FILE *fp,
+                            unsigned char **loadloc)
 {
     unsigned long exeLen;
     unsigned char *exeStart;
@@ -1231,8 +1245,11 @@ static int exeloadLoadELF(unsigned long *entry_point, int fhandle)
 
     return (0);
 }
+#endif
 
-static int exeloadLoadMZ(unsigned long *entry_point, int fhandle)
+static int exeloadLoadMZ(unsigned char **entry_point,
+                         FILE *fp,
+                         unsigned char **loadloc)
 {
     Mz_hdr firstbit;
     long newpos;
@@ -1241,9 +1258,8 @@ static int exeloadLoadMZ(unsigned long *entry_point, int fhandle)
     /* The header size is in paragraphs,
      * so the smallest possible header is 16 bytes (paragraph) long.
      * Next is the magic number checked. */
-    if (PosMoveFilePointer(fhandle, 0, SEEK_SET, &newpos)
-        || PosReadFile(fhandle, &firstbit, 16, &readbytes)
-        || (readbytes != 16)
+    if ((fseek(fp, 0, SEEK_SET) != 0)
+        || (fread(&firstbit, 16, 1, fp) != 1)
         || (memcmp(firstbit.magic, "MZ", 2) != 0
             && memcmp(&firstbit.magic, "ZM", 2) != 0))
     {
@@ -1261,9 +1277,10 @@ static int exeloadLoadMZ(unsigned long *entry_point, int fhandle)
         return (2);
     }
     /* Loads the rest of the header. */
-    if (PosReadFile(fhandle, ((char *)&firstbit) + 16,
-                    (firstbit.header_size - 1) * 16, &readbytes)
-        || (readbytes != (firstbit.header_size - 1) * 16))
+    if (fread(((char *)&firstbit) + 16,
+              (firstbit.header_size - 1) * 16,
+              1,
+              fp) != 1)
     {
         printf("Error occured while reading MZ header\n");
         return (2);
@@ -1277,11 +1294,13 @@ static int exeloadLoadMZ(unsigned long *entry_point, int fhandle)
         int ret;
 
         /* Same logic as in exeloadDoload(). */
-        ret = exeloadLoadPE(entry_point, fhandle, firstbit.e_lfanew);
+        ret = exeloadLoadPE(entry_point, fp, loadloc, firstbit.e_lfanew);
+#if 0
         if (ret == 1)
             ret = exeloadLoadLX(entry_point, fhandle, firstbit.e_lfanew);
         if (ret == 1)
             ret = exeloadLoadNE(entry_point, fhandle, firstbit.e_lfanew);
+#endif
         if (ret == 1)
             printf("Unknown MZ extension\n");
         return (ret);
@@ -1292,8 +1311,9 @@ static int exeloadLoadMZ(unsigned long *entry_point, int fhandle)
     return (2);
 }
 
-static int exeloadLoadPE(unsigned long *entry_point,
-                         int fhandle,
+static int exeloadLoadPE(unsigned char **entry_point,
+                         FILE *fp,
+                         unsigned char **loadloc,
                          unsigned long e_lfanew)
 {
     Coff_hdr coff_hdr;
@@ -1306,14 +1326,15 @@ static int exeloadLoadPE(unsigned long *entry_point,
     {
         unsigned char firstbit[4];
 
-        if (PosMoveFilePointer(fhandle, e_lfanew, SEEK_SET, &newpos)
-            || PosReadFile(fhandle, firstbit, 4, &readbytes)
-            || (readbytes != 4)
+        if ((fseek(fp, e_lfanew, SEEK_SET) != 0)
+            || (fread(firstbit, 4, 1, fp) != 1)
             || (memcmp(firstbit, "PE\0\0", 4) != 0))
         {
             return (1);
         }
     }
+    printf("got PE!\n");
+#if 0
     if (PosReadFile(fhandle, &coff_hdr, sizeof(coff_hdr), &readbytes)
         || (readbytes != sizeof(coff_hdr)))
     {
@@ -1498,6 +1519,9 @@ static int exeloadLoadPE(unsigned long *entry_point,
         IMAGE_DATA_DIRECTORY *data_dir = (((IMAGE_DATA_DIRECTORY *)
                                            (optional_hdr + 1))
                                           + DATA_DIRECTORY_IMPORT_TABLE);
+#if 1
+        printf("Executables using DLLs not supported\n");
+#else
         if (data_dir->Size != 0)
         {
             IMAGE_IMPORT_DESCRIPTOR *import_desc = ((void *)
@@ -1517,6 +1541,7 @@ static int exeloadLoadPE(unsigned long *entry_point,
                 }
             }
         }
+#endif
     }
 
     *entry_point = (((unsigned long)exeStart)
@@ -1524,10 +1549,12 @@ static int exeloadLoadPE(unsigned long *entry_point,
     /* Frees memory not needed by the process. */
     kfree(section_table);
     kfree(optional_hdr);
-
+#endif
     return (0);
 }
 
+
+#if 0
 static int exeloadLoadPEDLL(unsigned char *exeStart,
                             IMAGE_IMPORT_DESCRIPTOR *import_desc)
 {

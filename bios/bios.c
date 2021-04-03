@@ -24,8 +24,8 @@ static void exposfunc(void *cbdata, int funccode, void *retptr, char *str);
 
 int main(int argc, char **argv)
 {
-    char *p;
-    char *entry_point;
+    unsigned char *p;
+    unsigned char *entry_point;
     int rc;
 
     printf("bios starting\n");

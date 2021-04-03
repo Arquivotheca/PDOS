@@ -1705,6 +1705,7 @@ static int exeloadLoadPEDLL(unsigned char *exeStart,
     if (section_table == NULL)
     {
         printf("Insufficient memory to load PE section headers\n");
+        kfree(optional_hdr);
         return (2);
     }
     if (PosReadFile(fhandle, section_table,
@@ -1788,9 +1789,8 @@ static int exeloadLoadPEDLL(unsigned char *exeStart,
                                                (optional_hdr + 1))
                                               + DATA_DIRECTORY_REL);
             /* Difference between preferred address and real address. */
-            unsigned long image_diff = (optional_hdr->ImageBase
-                                        - (unsigned long)dllStart);
-            int lower_dllStart = 0;
+            unsigned long image_diff;
+            int lower_dllStart;
             Base_relocation_block *rel_block = ((Base_relocation_block *)
                                                 (dllStart
                                                  + (data_dir
@@ -1800,7 +1800,15 @@ static int exeloadLoadPEDLL(unsigned char *exeStart,
             if (optional_hdr->ImageBase > (unsigned long)dllStart)
             {
                 /* Image is loaded  at lower address than preferred. */
+                image_diff = optional_hdr->ImageBase
+                             - (unsigned long)dllStart;
                 lower_dllStart = 1;
+            }
+            else
+            {
+                image_diff = (unsigned long)dllStart
+                             - optional_hdr->ImageBase;
+                lower_dllStart = 0;
             }
             end_rel_block = rel_block + ((data_dir->Size)
                                          / sizeof(Base_relocation_block));

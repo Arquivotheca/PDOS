@@ -6,7 +6,6 @@ pdos.exe: memmgr.obj format.obj patmat.obj process.obj int21.obj \
   copy pdos.obj pdos.exe
 
 .c.obj:
-  echo smlrpp -D__SMALLERC__ -D__32BIT__ -zI -I . -I ../pdpclib -o $*.e $<
   pdcc -E -D__SMALLERC__ -D__32BIT__ -I . -I ../pdpclib -o $*.e $<
   $(CC) $(COPTS) $*.e $*.s
   rm -f $*.e

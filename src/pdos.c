@@ -2759,6 +2759,12 @@ static void loadExe(char *prog, PARMBLOCK *parmblock)
         ss = *(unsigned int *)&header[0xe];
         ss += addSeg;
         sp = *(unsigned int *)&header[0x10];
+        if (sp < 0x1000)
+        {
+            printf("ridiculously low sp of %x being converted to 0x1000\n",
+                   sp);
+            sp = 0x1000;
+        }
 
         /* This 16:16 arithmetic will work because the exeStart
         offset is 0 */

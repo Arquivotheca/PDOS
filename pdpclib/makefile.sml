@@ -14,8 +14,7 @@ pdptest.exe: smlstart.obj pdptest.obj stdio.obj string.obj stdlib.obj \
   smlrl -huge -entry ___intstart -o pdptest.exe pdptest.obj smlstart.obj stdio.obj string.obj stdlib.obj start.obj time.obj errno.obj assert.obj signal.obj locale.obj ctype.obj setjmp.obj math.obj dossupc.obj
 
 .c.obj:
-  echo pdcc -E -D__SMALLERC__ -I . -o $*.e $<
-  smlrpp -D__SMALLERC__ -zI -I . -o $*.e $<
+  pdcc -E -D__SMALLERC__ -I . -o $*.e $<
   $(CC) $(COPTS) $*.e $*.s
   rm -f $*.e
   nasm -f elf32 $*.s -o $*.obj

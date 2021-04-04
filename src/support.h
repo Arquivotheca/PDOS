@@ -97,6 +97,11 @@ struct SREGS
 void enable(void);
 void disable(void);
 #else
+
+#ifdef __SMALLERC__
+#define ADDR2ABS(x) ((unsigned long)(x))
+#define ABS2ADDR(x) ((void *)(x))
+#else
 /* ADDR2ABS - convert a 16:16 address into a flat absolute address */
 #define ADDR2ABS(x) ((((unsigned long)(void far *)(x) >> 16) << 4) \
                    + ((unsigned long)(void far *)(x) & 0xffffU))
@@ -106,13 +111,21 @@ void disable(void);
 #define ABS2ADDR(x) ((void far *)((((unsigned long)(x) & 0xf0000UL) << 12) \
                    | ((unsigned long)(x) & 0xffff)))
 #endif
+#endif
 
+#ifdef __SMALLERC__
+#define MK_FP(x, y) (void *)(((unsigned long)(x) << 16) | (y))
+#define FP_OFF(x) (unsigned int)((unsigned long)(void *)(x) & 0xffffU)
+#define FP_SEG(x) (unsigned int)((unsigned long)(void *)(x) & 0x000f0000UL >> 4)
+#define FP_NORM(x) (void *)(x)
+#else
 #define MK_FP(x, y) (void far *)(((unsigned long)(x) << 16) | (y))
 #define FP_OFF(x) (unsigned int)((unsigned long)(void far *)(x) & 0xffffU)
 #define FP_SEG(x) (unsigned int)((unsigned long)(void far *)(x) >> 16)
 #define FP_NORM(x) (void *)(((((unsigned long)(x) >> 16) \
                      + (((unsigned long)(x) & 0xffffU) / 16)) << 16) \
                      | (((unsigned long)(x) & 0xffffU) % 16))
+#endif
 
 #if defined(__WATCOMC__)
 #define CTYP __cdecl

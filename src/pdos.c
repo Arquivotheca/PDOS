@@ -1734,7 +1734,7 @@ void *PosAllocMemPages(unsigned int pages, unsigned int *maxpages)
 
 static int pdosMemmgrIsBlockPtr(void *ptr)
 {
-#ifndef __32BIT__
+#if !defined(__32BIT__) && !defined(__SMALLERC__)
     unsigned long abs;
 
     abs = ADDR2ABS(ptr);
@@ -1768,7 +1768,7 @@ static void *translateProcessPtr(void *ptr)
     unsigned long abs;
 #endif
 
-#ifdef __32BIT__
+#if defined(__32BIT__) || defined(__SMALLERC__)
     prev = (void*)(((char*)ptr)-PDOS_PROCESS_SIZE);
 #else
     abs = ADDR2ABS(ptr);

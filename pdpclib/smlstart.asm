@@ -9,6 +9,10 @@ bits 16
 section .text
 	global	___intstart
 ___intstart:
+        mov     al, 0
+        mov     ah, 4ch
+        int     21h ; terminate
+
 	push	ebp
 	movzx	ebp, sp
 	mov	eax, 5
@@ -17,7 +21,6 @@ L1:
 	leave
 	retf
 L3:
-
 
         global  ___exita
 ___exita:

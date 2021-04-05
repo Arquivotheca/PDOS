@@ -1,0 +1,40 @@
+# Released to the public domain.
+#
+# Anyone and anything may copy, edit, publish,
+# use, compile, sell and distribute this work
+# and all its parts in any form for any purpose,
+# commercial and non-commercial, without any restrictions,
+# without complying with any conditions
+# and by any means.
+
+# Produces a.out executable.
+# Links twice because the second link does not report unresolved externals.
+
+CC=gcc386
+COPTS=-S -Os -fno-common -ansi -Icpplib/include -I../pdpclib \
+       -D__PDOS__386 -D__32BIT__ -D__NOBIVA__
+
+all: clean pdcc.exe
+
+pdcc.exe: main.o c_ppout.o inc_path.o cpplib.a
+    ld386 -s -e ___pdosst32 -o pdcc.exe ../pdpclib/pdosst32.o main.o c_ppout.o inc_path.o cpplib.a ../pdpclib/pdos.a
+    ld386 -r -s -e ___pdosst32 -o pdcc.exe ../pdpclib/pdosst32.o main.o c_ppout.o inc_path.o cpplib.a ../pdpclib/pdos.a
+    strip386 --strip-unneeded pdcc.exe
+
+cpplib.a: cpplib/core.o cpplib/directs.o cpplib/errors.o \
+          cpplib/expr.o cpplib/files.o cpplib/chars.o \
+          cpplib/idents.o cpplib/init.o cpplib/lex.o \
+          cpplib/macro.o cpplib/support.o cpplib/symtab.o
+    rm -f cpplib.a
+    ar386 r cpplib.a cpplib/core.o cpplib/directs.o cpplib/errors.o
+    ar386 r cpplib.a cpplib/expr.o cpplib/files.o cpplib/chars.o
+    ar386 r cpplib.a cpplib/idents.o cpplib/init.o cpplib/lex.o
+    ar386 r cpplib.a cpplib/macro.o cpplib/support.o cpplib/symtab.o
+
+.c.o:
+    $(CC) $(COPTS) -o $*.s $<
+    as386 -o $@ $*.s
+    rm -f $*.s
+
+clean:
+    rm -f *.o cpplib/*.o cpplib.a pdcc.exe

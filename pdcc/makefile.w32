@@ -1,0 +1,44 @@
+# Released to the public domain.
+#
+# Anyone and anything may copy, edit, publish,
+# use, compile, sell and distribute this work
+# and all its parts in any form for any purpose,
+# commercial and non-commercial, without any restrictions,
+# without complying with any conditions
+# and by any means.
+
+# Produces Windows executable.
+# Links with PDPCLIB created by makefile.msv.
+
+CC=gccwin
+CFLAGS=-O2
+LD=ldwin
+LDFLAGS=
+AS=aswin
+AR=arwin
+STRIP=stripwin
+COPTS=-S $(CFLAGS) -fno-common -ansi -Icpplib/include -I../pdpclib -D__WIN32__ -D__NOBIVA__
+
+all: clean pdcc.exe
+
+pdcc.exe: main.o c_ppout.o inc_path.o cpplib.a
+    $(LD) $(LDFLAGS) -o pdcc.exe ../pdpclib/w32start.o main.o c_ppout.o inc_path.o cpplib.a ../pdpclib/msvcrt.a
+    $(STRIP) pdcc.exe
+
+cpplib.a: cpplib/core.o cpplib/directs.o cpplib/errors.o \
+          cpplib/expr.o cpplib/files.o cpplib/chars.o \
+          cpplib/idents.o cpplib/init.o cpplib/lex.o \
+          cpplib/macro.o cpplib/support.o cpplib/symtab.o
+    rm -f cpplib.a
+    $(AR) r cpplib.a cpplib/core.o cpplib/directs.o cpplib/errors.o
+    $(AR) r cpplib.a cpplib/expr.o cpplib/files.o cpplib/chars.o
+    $(AR) r cpplib.a cpplib/idents.o cpplib/init.o cpplib/lex.o
+    $(AR) r cpplib.a cpplib/macro.o cpplib/support.o cpplib/symtab.o
+
+.c.o:
+    $(CC) $(COPTS) -o $*.s $<
+    $(AS) -o $@ $*.s
+    rm -f $*.s
+
+clean:
+    rm -f *.o cpplib/*.o cpplib.a pdcc.exe

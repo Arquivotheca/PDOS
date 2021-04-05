@@ -109,7 +109,7 @@ void pdosload(void)
         }
         load += 0x200;
     } while (readbytes == 0x200);
-    start = (unsigned long)(void far *)psp;
+    start = psp;
     start >>= 4;
     fixexe(loads, (unsigned int)start, &progentry);
     start <<= 16;

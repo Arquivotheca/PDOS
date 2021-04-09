@@ -21,4 +21,4 @@ pdptest.exe: smlstart.obj pdptest.obj stdio.obj string.obj stdlib.obj \
   rm -f $*.s
 
 .asm.obj:
-  nasm -f elf32 $< -o $*.obj
+  jwasm -elf -Dmemodel=large $< -Fo$*.obj

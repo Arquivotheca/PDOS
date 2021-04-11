@@ -265,6 +265,18 @@ __PDPCLIB_API__ int CTYP __start(char *p)
 #ifdef __WIN32__
     __stdin->hfile = GetStdHandle(STD_INPUT_HANDLE);
     __stdout->hfile = GetStdHandle(STD_OUTPUT_HANDLE);
+    {
+        DWORD dw;
+
+#ifndef ENABLE_VIRTUAL_TERMINAL_PROCESSING
+#define ENABLE_VIRTUAL_TERMINAL_PROCESSING 0x0004
+#endif
+        if (GetConsoleMode(__stdout->hfile, &dw))
+        {
+            dw |= ENABLE_VIRTUAL_TERMINAL_PROCESSING;
+            SetConsoleMode(__stdout->hfile, dw);
+        }
+    }
     __stderr->hfile = GetStdHandle(STD_ERROR_HANDLE);
 #elif defined(__AMIGA__)
     __stdin->hfile = Input();

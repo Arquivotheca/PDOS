@@ -1,0 +1,34 @@
+# Released to the public domain.
+#
+# Anyone and anything may copy, edit, publish,
+# use, compile, sell and distribute this work
+# and all its parts in any form for any purpose,
+# commercial and non-commercial, without any restrictions,
+# without complying with any conditions
+# and by any means.
+
+# Produces Windows executable.
+# Links with PDPCLIB created by makefile.p32.
+
+CC=gccwin
+CFLAGS=-O2
+LD=ldwin
+LDFLAGS=
+AS=aswin
+AR=arwin
+STRIP=stripwin
+COPTS=-S $(CFLAGS) -fno-common -ansi -I../pdpclib -D__WIN32__ -D__STATIC__ -D__NOBIVA__
+
+all: clean bios.exe
+
+bios.exe: bios.o exeload.o
+    $(LD) $(LDFLAGS) -o bios.exe ../pdpclib/w32start.o bios.o exeload.o ../pdpclib/pdpwin32.a ../src/kernel32.a
+    $(STRIP) bios.exe
+
+.c.o:
+    $(CC) $(COPTS) -o $*.s $<
+    $(AS) -o $@ $*.s
+    rm -f $*.s
+
+clean:
+    rm -f *.o bios.exe

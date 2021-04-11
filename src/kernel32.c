@@ -267,7 +267,16 @@ BOOL WINAPI WriteConsoleOutputA(
     return (TRUE);
 }
 
+BOOL WINAPI GetConsoleMode(HANDLE hFile, DWORD *dw)
+{
+    *dw = 0;
+    return (1);
+}
 
+BOOL WINAPI SetConsoleMode(HANDLE hFile, DWORD dw)
+{
+    return (1);
+}
 
 /* auto-genned dummy functions */
 
@@ -545,12 +554,6 @@ void WINAPI GetConsoleCursorInfo(void)
 {
     size_t len = 36;
     PosWriteFile(1, "GetConsoleCursorInfo unimplemented\r\n", len, &len);
-    for (;;) ;
-}
-void WINAPI GetConsoleMode(void)
-{
-    size_t len = 30;
-    PosWriteFile(1, "GetConsoleMode unimplemented\r\n", len, &len);
     for (;;) ;
 }
 void WINAPI GetConsoleWindow(void)
@@ -1109,12 +1112,6 @@ void WINAPI SetConsoleCursorPosition(void)
 {
     size_t len = 40;
     PosWriteFile(1, "SetConsoleCursorPosition unimplemented\r\n", len, &len);
-    for (;;) ;
-}
-void WINAPI SetConsoleMode(void)
-{
-    size_t len = 30;
-    PosWriteFile(1, "SetConsoleMode unimplemented\r\n", len, &len);
     for (;;) ;
 }
 void WINAPI SetConsoleTextAttribute(void)

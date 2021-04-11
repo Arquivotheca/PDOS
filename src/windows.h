@@ -277,3 +277,7 @@ BOOL WINAPI WriteConsoleOutputA(
     COORD bufferSize,
     COORD bufferCoord,
     SMALL_RECT *rect);
+
+BOOL WINAPI GetConsoleMode(HANDLE hFile, DWORD *dw);
+
+BOOL WINAPI SetConsoleMode(HANDLE hFile, DWORD dw);

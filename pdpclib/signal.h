@@ -19,9 +19,15 @@ void __sigdfl(int sig);
 void __sigerr(int sig);
 void __sigign(int sig);
 
+#if defined(__WIN32__) && !defined(__STATIC__)
+#define SIG_DFL 0
+#define SIG_ERR -1
+#define SIG_IGN 1
+#else
 #define SIG_DFL __sigdfl
 #define SIG_ERR __sigerr
 #define SIG_IGN __sigign
+#endif
 
 #define SIGABRT 1
 #define SIGFPE 2

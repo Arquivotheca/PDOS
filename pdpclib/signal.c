@@ -27,13 +27,30 @@ void __sigdfl(int sig);
 void __sigerr(int sig);
 void __sigign(int sig);
 
+#if 0
 #define SIG_DFL __sigdfl
 #define SIG_ERR __sigerr
 #define SIG_IGN __sigign
+#endif
 
 __PDPCLIB_API__ void (*signal(int sig, void (*func)(int)))(int)
 {
+#if defined(__WIN32__) && !defined(__STATIC__)
+    if ((int)func == SIG_DFL)
+    {
+        handlers[sig] = __sigdfl;
+    }
+    else if ((int)func == SIG_ERR)
+    {
+        handlers[sig] = __sigerr;
+    }
+    else if ((int)func == SIG_IGN)
+    {
+        handlers[sig] = __sigign;
+    }
+#else
     handlers[sig] = func;
+#endif
     return (func);
 }
 

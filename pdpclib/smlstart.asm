@@ -89,8 +89,10 @@ relo_data_done:
 
     push    ebx
 
-    lea     edi, [ebx + offset __start__bss]
-    lea     ebx, [ebx + offset __stop__bss]
+    mov     esi, offset __start__bss
+    lea     edi, [ebx + esi]
+    mov     esi, offset __stop__bss
+    lea     ebx, [ebx + esi]
     sub     ebx, edi
     ror     edi, 4
     mov     es, di
@@ -117,7 +119,8 @@ bss2:
 
     pop     ebx
 
-    lea     eax, [ebx + offset ___start__]
+    mov     esi, offset ___start__
+    lea     eax, [ebx + esi]
     shl     eax, 12
     rol     ax, 4
     push    eax

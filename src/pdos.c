@@ -3881,6 +3881,16 @@ static int formatcwd(const char *input,char *output)
     char *temp;
     char *read;
     char *write;
+
+    /* The user provided '.'. */
+    if (input[0] == '.')
+    {
+        if (input[1] == '\\' || input[1] == '/')
+        {
+            input += 2;
+        }
+        else if (input[1] == '\0') input++;
+    }
    /*
      The user only provides the <folder-name>
      e.g. \from\1.txt the function corrects it to

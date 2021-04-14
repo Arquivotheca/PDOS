@@ -3889,7 +3889,10 @@ static int formatcwd(const char *input,char *output)
         {
             input += 2;
         }
-        else if (input[1] == '\0') input++;
+        else if (input[1] == '\0')
+        {
+            input++;
+        }
     }
    /*
      The user only provides the <folder-name>
@@ -3931,11 +3934,11 @@ static int formatcwd(const char *input,char *output)
          */
         cwd = disks[toupper((unsigned char)(input[0]))-'A'].cwd;
         strcat(output,cwd);
-        if(strcmp(cwd,"")!= 0)
+        if(strcmp(cwd, "") != 0)
         {
-            strcat(output,"\\");
+            strcat(output, "\\");
         }
-        strcat(output,input+2);
+        strcat(output, input + 2);
     }
 
     /*

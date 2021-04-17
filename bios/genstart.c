@@ -36,3 +36,11 @@ int __main(void)
 {
     return (0);
 }
+
+
+/* Watcom requires this to be defined */
+
+void _cstart_(void)
+{
+    return;
+}

@@ -14,3 +14,5 @@ enum {
 OS_PRINTF,
 OS_FOPEN,
 };
+
+void osfunc(int funccode, void *retptr, char *str);

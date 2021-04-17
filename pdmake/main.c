@@ -71,7 +71,8 @@ void rule_use(rule *r, char *name)
     star_name = xstrdup(name);
     p = strrchr(star_name, '.');
     if (p) *p = '\0';
-    
+
+    variable_change("@", xstrdup(name));
     variable_change("*", star_name);
 
     p = r->cmds->text;
@@ -218,16 +219,7 @@ int main(int argc, char **argv)
                     break;
 
                 case 'f':
-                    if (argv[i][2] == '\0')
-                    {
-                        default_makefile = 0;
-                        read_makefile(argv[++i]);
-                    }
-                    else
-                    {
-                        default_makefile = 0;
-                        read_makefile(argv[i] + 2);
-                    }
+                    /* Checked later. */
                     break;
 
                 case 'h':
@@ -257,6 +249,29 @@ int main(int argc, char **argv)
         else
         {
             goal = argv[i];
+        }
+    }
+
+    /* Checks only -f options because everything else was checked before. */
+    for (i = 1; i < argc; i++)
+    {
+        if (argv[i][0] == '-')
+        {
+            switch (argv[i][1])
+            {
+                case 'f':
+                    if (argv[i][2] == '\0')
+                    {
+                        default_makefile = 0;
+                        read_makefile(argv[++i]);
+                    }
+                    else
+                    {
+                        default_makefile = 0;
+                        read_makefile(argv[i] + 2);
+                    }
+                    break;
+            }
         }
     }
 

@@ -74,7 +74,7 @@ void *__lastsup = NULL; /* last thing supplied to memmgr */
 #else
 #define CTYP
 #endif
-#ifdef __32BIT__
+#if defined(__32BIT__) && !defined(NOLIBALLOC)
 /* For PDOS-32 liballoc is used for memory management. */
 #include "liballoc.h"
 #else
@@ -116,7 +116,7 @@ __PDPCLIB_API__ void *malloc(size_t size)
     return ((void *)BaseAddress);
 #endif
 #ifdef __MSDOS__
-#ifdef __32BIT__
+#if defined(__32BIT__) && !defined(NOLIBALLOC)
     return (__malloc(size));
 #else
     void *ptr;
@@ -254,7 +254,7 @@ __PDPCLIB_API__ void *calloc(size_t nmemb, size_t size)
 
 __PDPCLIB_API__ void *realloc(void *ptr, size_t size)
 {
-#if defined(__PDOS386__)
+#if defined(__PDOS386__) && !defined(NOLIBALLOC)
     return (__realloc(ptr, size));
 #else
     char *newptr;
@@ -307,7 +307,7 @@ __PDPCLIB_API__ void free(void *ptr)
     }
 #endif
 #ifdef __MSDOS__
-#ifdef __32BIT__
+#if defined(__32BIT__) && !defined(NOLIBALLOC)
     __free(ptr);
 #else
     if (ptr != NULL)

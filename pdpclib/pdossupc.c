@@ -73,7 +73,7 @@ void __rename(const char *old, const char *new)
     return;
 }
 
-#ifdef __32BIT__
+#if defined(__32BIT__) && !defined(NOLIBALLOC)
 /* PDOS-32 uses liballoc with PosVirtualAlloc() and PosVirtualFree(). */
 #include "liballoc.h"
 
@@ -98,10 +98,16 @@ int __liballoc_free(void *addr, size_t num_pages)
 
     return (0);
 }
+
 #else
+
 void __allocmem(size_t size, void **ptr)
 {
+#ifdef __32BIT__
+    *ptr = PosAllocMem(size, POS_LOC32);
+#else
     *ptr = PosAllocMem(size, POS_LOC20);
+#endif
     return;
 }
 

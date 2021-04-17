@@ -219,7 +219,8 @@ int main(int argc, char **argv)
                     break;
 
                 case 'f':
-                    /* Checked later. */
+                    /* Checked properly later. */
+                    if (argv[i][2] == '\0') i++;
                     break;
 
                 case 'h':

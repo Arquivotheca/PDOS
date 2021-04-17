@@ -25,10 +25,7 @@
 #include "a_out.h"
 #include "mz.h"
 #include "pecoff.h"
-
-#if 0
 #include "elf.h"
-#endif
 
 /* For reading files Pos API must be used directly
  * as PDPCLIB allocates memory from the process address space. */
@@ -46,8 +43,10 @@ static int exeloadLoadPE(unsigned char **entry_point,
                          unsigned char **loadloc,
                          unsigned long e_lfanew);
 
+static int exeloadLoadELF(unsigned char **entry_point,
+                          FILE *fp,
+                          unsigned char **loadloc);
 #if 0
-static int exeloadLoadELF(unsigned long *entry_point, int fhandle);
 static int exeloadLoadLX(unsigned long *entry_point,
                          int fhandle,
                          unsigned long e_lfanew);
@@ -98,9 +97,8 @@ int exeloadDoload(unsigned char **entry_point,
                                        (unsigned char **)loadloc);
     if (ret == 1) ret = exeloadLoadAmiga(entry_point, fp, loadloc);
     if (ret == 1) ret = exeloadLoadMZ(entry_point, fp, loadloc);
-#if 0
-    if (ret == 1) ret = exeloadLoadELF(entry_point, fhandle);
-#endif
+    if (ret == 1) ret = exeloadLoadELF(entry_point, fp, loadloc);
+
     fclose(fp);
     if (ret != 0)
     {
@@ -679,8 +677,9 @@ static int exeloadLoadAmiga(unsigned char **entry_point,
     return (0);
 }
 
-#if 0
-static int exeloadLoadELF(unsigned long *entry_point, int fhandle)
+static int exeloadLoadELF(unsigned char **entry_point,
+                          FILE *fp,
+                          unsigned char **loadloc)
 {
     int doing_elf_rel = 0;
     int doing_elf_exec = 0;
@@ -689,20 +688,19 @@ static int exeloadLoadELF(unsigned long *entry_point, int fhandle)
     Elf32_Phdr *segment;
     Elf32_Shdr *section_table = NULL;
     Elf32_Shdr *section;
-    unsigned char *elf_other_sections;
+    unsigned char *elf_other_sections = NULL;
     Elf32_Addr lowest_p_vaddr = 0;
     Elf32_Word lowest_segment_align = 0;
-    unsigned char *exeStart;
+    unsigned char *exeStart = NULL;
     unsigned char *bss;
     unsigned long exeLen;
     unsigned char firstbit[4];
     long newpos;
     size_t readbytes;
 
-    if (PosMoveFilePointer(fhandle, 0, SEEK_SET, &newpos)
-        || PosReadFile(fhandle, firstbit, sizeof(firstbit), &readbytes)
-        || (readbytes != sizeof(firstbit))
-        || (memcmp((&firstbit), "\x7f""ELF", 4) != 0))
+    if ((fseek(fp, 0, SEEK_SET) != 0)
+        || (fread(&firstbit, sizeof firstbit, 1, fp) != 1)
+        || (memcmp(&firstbit, "\x7f" "ELF", 4) != 0))
     {
         return (1);
     }
@@ -710,18 +708,17 @@ static int exeloadLoadELF(unsigned long *entry_point, int fhandle)
         int elf_invalid = 0;
 
         /* Loads entire ELF header into memory. */
-        elfHdr = kmalloc(sizeof(Elf32_Ehdr));
+        elfHdr = malloc(sizeof(Elf32_Ehdr));
         if (elfHdr == NULL)
         {
             printf("Insufficient memory for ELF header\n");
             return (2);
         }
-        if (PosMoveFilePointer(fhandle, 0, SEEK_SET, &newpos)
-            || PosReadFile(fhandle, elfHdr, sizeof(Elf32_Ehdr), &readbytes)
-            || (readbytes != sizeof(Elf32_Ehdr)))
+        if ((fseek(fp, 0, SEEK_SET) != 0)
+            || (fread(elfHdr, sizeof(Elf32_Ehdr), 1, fp) != 1))
         {
             printf("Error occured while reading ELF header\n");
-            kfree(elfHdr);
+            free(elfHdr);
             return (2);
         }
 
@@ -769,13 +766,16 @@ static int exeloadLoadELF(unsigned long *entry_point, int fhandle)
         {
             doing_elf_rel = 1;
         }
+#if 0
         else if (elfHdr->e_type == ET_EXEC)
         {
             doing_elf_exec = 1;
         }
+#endif
         else
         {
-            printf("Only ELF relocatable and executable "
+            printf("Only ELF relocatable "
+                   /* "and executable " */
                    "files are supported\n");
             elf_invalid = 1;
         }
@@ -831,52 +831,54 @@ static int exeloadLoadELF(unsigned long *entry_point, int fhandle)
             /* All problems with ELF header are reported
              * and loading is stopped. */
             printf("This ELF file cannot be loaded\n");
-            kfree(elfHdr);
+            free(elfHdr);
             return (2);
         }
         /* Loads Program Header Table if it is present. */
         if (!(elfHdr->e_phoff == 0 || elfHdr->e_phnum == 0))
         {
-            program_table = kmalloc(elfHdr->e_phnum * elfHdr->e_phentsize);
+            program_table = malloc(elfHdr->e_phnum * elfHdr->e_phentsize);
             if (program_table == NULL)
             {
                 printf("Insufficient memory for ELF Program Header Table\n");
-                kfree(elfHdr);
+                free(elfHdr);
                 return (2);
             }
-            if (PosMoveFilePointer(fhandle, elfHdr->e_phoff, SEEK_SET, &newpos)
-                || PosReadFile(fhandle, program_table,
-                               elfHdr->e_phnum * elfHdr->e_phentsize,
-                               &readbytes)
-                || (readbytes != (elfHdr->e_phnum * elfHdr->e_phentsize)))
+            if ((fseek(fp, elfHdr->e_phoff, SEEK_SET) != 0)
+                || (fread(program_table,
+                          elfHdr->e_phnum * elfHdr->e_phentsize,
+                          1,
+                          fp) != 1))
             {
                 printf("Error occured while reading "
                        "ELF Program Header Table\n");
-                kfree(elfHdr);
-                kfree(program_table);
+                free(elfHdr);
+                free(program_table);
                 return (2);
             }
         }
         /* Loads Section Header Table if it is present. */
         if (!(elfHdr->e_shoff == 0 || elfHdr->e_shnum == 0))
         {
-            section_table = kmalloc(elfHdr->e_shnum * elfHdr->e_shentsize);
+            section_table = malloc(elfHdr->e_shnum * elfHdr->e_shentsize);
             if (section_table == NULL)
             {
                 printf("Insufficient memory for ELF Section Header Table\n");
-                kfree(elfHdr);
+                free(elfHdr);
+                free(program_table);
                 return (2);
             }
-            if (PosMoveFilePointer(fhandle, elfHdr->e_shoff, SEEK_SET, &newpos)
-                || PosReadFile(fhandle, section_table,
-                               elfHdr->e_shnum * elfHdr->e_shentsize,
-                               &readbytes)
-                || (readbytes != (elfHdr->e_shnum * elfHdr->e_shentsize)))
+            if ((fseek(fp, elfHdr->e_shoff, SEEK_SET) != 0)
+                || (fread(section_table,
+                          elfHdr->e_shnum * elfHdr->e_shentsize,
+                          1,
+                          fp) != 1))
             {
                 printf("Error occured while reading "
                        "ELF Section Header Table\n");
-                kfree(elfHdr);
-                kfree(section_table);
+                free(elfHdr);
+                free(program_table);
+                free(section_table);
                 return (2);
             }
         }
@@ -949,35 +951,39 @@ static int exeloadLoadELF(unsigned long *entry_point, int fhandle)
                    otherLen += section_size;
                 }
             }
-            elf_other_sections = kmalloc(otherLen);
+            elf_other_sections = malloc(otherLen);
             if (elf_other_sections == NULL)
             {
                 printf("Insufficient memory to load ELF sections\n");
-                kfree(elfHdr);
-                kfree(section_table);
+                free(elfHdr);
+                free(program_table);
+                free(section_table);
                 return (2);
             }
         }
     }
     /* Allocates memory for the process. */
+#if 0
     if (doing_elf_exec)
     {
         exeStart = PosVirtualAlloc((void *)lowest_p_vaddr, exeLen);
     }
+#endif
+    if (*loadloc != NULL)
+    {
+        exeStart = *loadloc;
+    }
     else if (doing_elf_rel)
     {
-        exeStart = PosVirtualAlloc(0, exeLen);
+        exeStart = malloc(exeLen);
     }
     if (exeStart == NULL)
     {
         printf("Insufficient memory to load ELF program\n");
-        kfree(elfHdr);
-        if (program_table) kfree(program_table);
-        if (section_table)
-        {
-            kfree(section_table);
-            kfree(elf_other_sections);
-        }
+        free(elfHdr);
+        free(program_table);
+        free(section_table);
+        free(elf_other_sections);
         return (2);
     }
 
@@ -990,7 +996,7 @@ static int exeloadLoadELF(unsigned long *entry_point, int fhandle)
         unsigned char *exe_addr = exeStart;
         unsigned char *other_addr = elf_other_sections;
 
-        bss = 0;
+        bss = NULL;
         if (doing_elf_exec)
         {
             /* Aligns the exeStart on lowest segment alignment boundary. */
@@ -1006,19 +1012,17 @@ static int exeloadLoadELF(unsigned long *entry_point, int fhandle)
                 {
                     exe_addr = exeStart + (segment->p_vaddr - lowest_p_vaddr);
 
-                    if (PosMoveFilePointer(fhandle, segment->p_offset,
-                                           SEEK_SET, &newpos)
-                        || PosReadFile(fhandle, exe_addr, segment->p_filesz,
-                                       &readbytes)
-                        || (readbytes != (segment->p_filesz)))
+                    if ((fseek(fp, segment->p_offset, SEEK_SET) != 0)
+                        || (fread(exe_addr,
+                                  segment->p_filesz,
+                                  1,
+                                  fp) != 1))
                     {
                         printf("Error occured while reading ELF segment\n");
-                        kfree(program_table);
-                        if (section_table)
-                        {
-                            kfree(section_table);
-                            kfree(elf_other_sections);
-                        }
+                        free(elfHdr);
+                        free(program_table);
+                        free(section_table);
+                        free(elf_other_sections);
                         return (2);
                     }
 
@@ -1051,17 +1055,17 @@ static int exeloadLoadELF(unsigned long *entry_point, int fhandle)
                 }
                 if (section->sh_type != SHT_NOBITS)
                 {
-                    if (PosMoveFilePointer(fhandle, section->sh_offset,
-                                           SEEK_SET, &newpos)
-                        || PosReadFile(fhandle, exe_addr, section->sh_size,
-                                       &readbytes)
-                        || (readbytes != (section->sh_size)))
+                    if ((fseek(fp, section->sh_offset, SEEK_SET) != 0)
+                        || (fread(exe_addr,
+                                  section->sh_size,
+                                  1,
+                                  fp) != 1))
                     {
                         printf("Error occured while reading ELF section\n");
-                        kfree(elfHdr);
-                        if (program_table) kfree(program_table);
-                        kfree(section_table);
-                        kfree(elf_other_sections);
+                        free(elfHdr);
+                        free(program_table);
+                        free(section_table);
+                        free(elf_other_sections);
                         return (2);
                     }
                 }
@@ -1092,17 +1096,17 @@ static int exeloadLoadELF(unsigned long *entry_point, int fhandle)
                 }
                 if (section->sh_type != SHT_NOBITS)
                 {
-                    if (PosMoveFilePointer(fhandle, section->sh_offset,
-                                           SEEK_SET, &newpos)
-                        || PosReadFile(fhandle, other_addr, section->sh_size,
-                                       &readbytes)
-                        || (readbytes != (section->sh_size)))
+                    if ((fseek(fp, section->sh_offset, SEEK_SET) != 0)
+                        || (fread(other_addr,
+                                  section->sh_size,
+                                  1,
+                                  fp) != 1))
                     {
                         printf("Error occured while reading ELF section\n");
-                        kfree(elfHdr);
-                        if (program_table) kfree(program_table);
-                        kfree(section_table);
-                        kfree(elf_other_sections);
+                        free(elfHdr);
+                        free(program_table);
+                        free(section_table);
+                        free(elf_other_sections);
                         return (2);
                     }
                 }
@@ -1120,7 +1124,6 @@ static int exeloadLoadELF(unsigned long *entry_point, int fhandle)
     }
     /* Program was successfully loaded from the file,
      * no more errors can occur. */
-    PosCloseFile(fhandle);
 
     /* Relocations. */
     if (doing_elf_rel)
@@ -1220,25 +1223,25 @@ static int exeloadLoadELF(unsigned long *entry_point, int fhandle)
 
     if (doing_elf_rel)
     {
-        *entry_point = ((unsigned long)exeStart) + (elfHdr->e_entry);
+        *entry_point = exeStart + elfHdr->e_entry;
     }
     else if (doing_elf_exec)
     {
-        *entry_point = elfHdr->e_entry;
+        *entry_point = (unsigned char *)elfHdr->e_entry;
     }
 
     /* Frees memory not needed by the process. */
-    kfree(elfHdr);
-    if (program_table) kfree(program_table);
-    if (section_table)
-    {
-        kfree(section_table);
-        kfree(elf_other_sections);
-    }
+    free(elfHdr);
+    free(program_table);
+    free(section_table);
+    free(elf_other_sections);
 
+    if (*loadloc == NULL)
+    {
+        *loadloc = exeStart;
+    }
     return (0);
 }
-#endif
 
 static int exeloadLoadMZ(unsigned char **entry_point,
                          FILE *fp,

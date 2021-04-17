@@ -203,6 +203,7 @@ void help(void)
 int main(int argc, char **argv)
 {
     int i;
+    char *name = "Makefile";
     int default_makefile = 1;
     char *goal = NULL;
     
@@ -219,8 +220,14 @@ int main(int argc, char **argv)
                     break;
 
                 case 'f':
-                    /* Checked properly later. */
-                    if (argv[i][2] == '\0') i++;
+                    if (argv[i][2] == '\0')
+                    {
+                        name = argv[++i];
+                    }
+                    else
+                    {
+                        name = argv[i] + 2;
+                    }
                     break;
 
                 case 'h':
@@ -253,33 +260,7 @@ int main(int argc, char **argv)
         }
     }
 
-    /* Checks only -f options because everything else was checked before. */
-    for (i = 1; i < argc; i++)
-    {
-        if (argv[i][0] == '-')
-        {
-            switch (argv[i][1])
-            {
-                case 'f':
-                    if (argv[i][2] == '\0')
-                    {
-                        default_makefile = 0;
-                        read_makefile(argv[++i]);
-                    }
-                    else
-                    {
-                        default_makefile = 0;
-                        read_makefile(argv[i] + 2);
-                    }
-                    break;
-            }
-        }
-    }
-
-    if (default_makefile)
-    {
-        read_makefile("Makefile");
-    }
+    read_makefile(name);
 
     if (goal == NULL) goal = default_goal_var->value;
     

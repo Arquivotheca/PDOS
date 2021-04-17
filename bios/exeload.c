@@ -766,16 +766,14 @@ static int exeloadLoadELF(unsigned char **entry_point,
         {
             doing_elf_rel = 1;
         }
-#if 0
         else if (elfHdr->e_type == ET_EXEC)
         {
             doing_elf_exec = 1;
         }
-#endif
         else
         {
             printf("Only ELF relocatable "
-                   /* "and executable " */
+                   "and executable "
                    "files are supported\n");
             elf_invalid = 1;
         }
@@ -884,7 +882,7 @@ static int exeloadLoadELF(unsigned char **entry_point,
         }
     }
 
-    if (doing_elf_rel || doing_elf_exec)
+    if (1)
     {
         /* Calculates how much memory is needed
          * and allocates memory for sections used only for loading. */
@@ -963,17 +961,11 @@ static int exeloadLoadELF(unsigned char **entry_point,
         }
     }
     /* Allocates memory for the process. */
-#if 0
-    if (doing_elf_exec)
-    {
-        exeStart = PosVirtualAlloc((void *)lowest_p_vaddr, exeLen);
-    }
-#endif
     if (*loadloc != NULL)
     {
         exeStart = *loadloc;
     }
-    else if (doing_elf_rel)
+    else
     {
         exeStart = malloc(exeLen);
     }
@@ -987,7 +979,7 @@ static int exeloadLoadELF(unsigned char **entry_point,
         return (2);
     }
 
-    if (doing_elf_rel || doing_elf_exec)
+    if (1)
     {
         /* Loads all sections of ELF file with proper alignment,
          * clears all SHT_NOBITS sections and stores the addresses
@@ -1096,18 +1088,21 @@ static int exeloadLoadELF(unsigned char **entry_point,
                 }
                 if (section->sh_type != SHT_NOBITS)
                 {
-                    if ((fseek(fp, section->sh_offset, SEEK_SET) != 0)
-                        || (fread(other_addr,
-                                  section->sh_size,
-                                  1,
-                                  fp) != 1))
+                    if (section->sh_size != 0)
                     {
-                        printf("Error occured while reading ELF section\n");
-                        free(elfHdr);
-                        free(program_table);
-                        free(section_table);
-                        free(elf_other_sections);
-                        return (2);
+                        if ((fseek(fp, section->sh_offset, SEEK_SET) != 0)
+                            || (fread(other_addr,
+                                      section->sh_size,
+                                      1,
+                                      fp) != 1))
+                        {
+                            printf("Error occured while reading ELF section\n");
+                            free(elfHdr);
+                            free(program_table);
+                            free(section_table);
+                            free(elf_other_sections);
+                            return (2);
+                        }
                     }
                 }
                 else
@@ -1126,6 +1121,9 @@ static int exeloadLoadELF(unsigned char **entry_point,
      * no more errors can occur. */
 
     /* Relocations. */
+    /* This code doesn't support RELA relocations, but that seems
+       to be a strange restriction. Having separate relocation
+       logic for EXEC seems strange too. */
     if (doing_elf_rel)
     {
         for (section = section_table;
@@ -1221,14 +1219,7 @@ static int exeloadLoadELF(unsigned char **entry_point,
         ;
     }
 
-    if (doing_elf_rel)
-    {
-        *entry_point = exeStart + elfHdr->e_entry;
-    }
-    else if (doing_elf_exec)
-    {
-        *entry_point = (unsigned char *)elfHdr->e_entry;
-    }
+    *entry_point = exeStart + elfHdr->e_entry;
 
     /* Frees memory not needed by the process. */
     free(elfHdr);

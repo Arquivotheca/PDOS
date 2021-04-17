@@ -264,6 +264,18 @@ __PDPCLIB_API__ int CTYP __start(char *p)
 
 #ifdef __WIN32__
     __stdin->hfile = GetStdHandle(STD_INPUT_HANDLE);
+    {
+        DWORD dw;
+
+#ifndef ENABLE_VIRTUAL_TERMINAL_INPUT
+#define ENABLE_VIRTUAL_TERMINAL_INPUT 0x0200
+#endif
+        if (GetConsoleMode(__stdin->hfile, &dw))
+        {
+            dw |= ENABLE_VIRTUAL_TERMINAL_INPUT;
+            SetConsoleMode(__stdin->hfile, dw);
+        }
+    }
     __stdout->hfile = GetStdHandle(STD_OUTPUT_HANDLE);
     {
         DWORD dw;

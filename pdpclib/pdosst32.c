@@ -12,6 +12,8 @@
 #define CTYP
 #endif
 
+int CTYP __start(char *p);
+
 void CTYP __pdosst32(void)
 {
     __start(0);

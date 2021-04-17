@@ -204,7 +204,6 @@ int main(int argc, char **argv)
 {
     int i;
     char *name = "Makefile";
-    int default_makefile = 1;
     char *goal = NULL;
     
     default_goal_var = variable_add(xstrdup(".DEFAULT_GOAL"), xstrdup(""));

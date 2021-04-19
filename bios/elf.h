@@ -15,7 +15,7 @@
 typedef unsigned long Elf32_Addr;
 typedef unsigned long Elf32_Off;
 typedef unsigned long Elf32_Word;
-typedef signed long Elf32_SWord;
+typedef signed long Elf32_Sword;
 typedef unsigned short Elf32_Half; /* 2 bytes. */
 
 #define EI_NIDENT 16 /* Size of e_ident on all systems. */
@@ -131,6 +131,12 @@ typedef struct {
     Elf32_Addr r_offset;
     Elf32_Word r_info; /* Top byte is symbol index, bottom is rel. type. */
 } Elf32_Rel;
+
+typedef struct {
+    Elf32_Addr r_offset;
+    Elf32_Word r_info; /* Top byte is symbol index, bottom is rel. type. */
+    Elf32_Sword r_addend;
+} Elf32_Rela;
 
 #define ELF32_R_SYM(r_info) ((r_info) >> 8)
 #define ELF32_R_TYPE(r_info) ((r_info) & 0xff)

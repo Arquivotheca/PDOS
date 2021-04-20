@@ -9,6 +9,32 @@
 .model large
 .386
 
+    public ___intstart
+    public ___exita
+
+    public ___creat
+    public ___open
+    public ___close
+    public ___read
+    public ___write
+    public ___remove
+    public ___rename
+    public ___seek
+    public ___lesf2
+    public ___mulsf3
+    public ___floatsisf
+    public ___addsf3
+    public ___negsf2
+    public ___gesf2
+    public ___divsf3
+    public ___fixsfsi
+    public ___subsf3
+
+    public ___psp
+    public ___envptr
+    public ___osver
+
+;extrn __start:proc
     extern ___start:byte
     extern __start__relot:byte, __stop__relot:byte
     extern __start__relod:byte, __stop__relod:byte
@@ -16,7 +42,6 @@
 
 text segment "CODE"
 
-    public ___intstart
 ___intstart:
 
     ; perform code/data relocations
@@ -128,6 +153,31 @@ bss2:
 
 rt:
     dd      offset rt
+
+;___exita proc, retcode: word
+___exita:
+        ret
+;___exita endp
+
+___creat:
+___open:
+___close:
+___read:
+___write:
+___remove:
+___rename:
+___seek:
+___lesf2:
+___mulsf3:
+___floatsisf:
+___addsf3:
+___negsf2:
+___gesf2:
+___divsf3:
+___fixsfsi:
+___subsf3:
+        ret
+
 text ends
 
 _relot segment dword "CONST"
@@ -137,6 +187,11 @@ _relot ends
 data segment "DATA"
 rd:
     dd      offset rd
+
+banner  db  "PDPCLIB"
+___psp   dd  ?
+___envptr dd  ?
+___osver dw  ?
 data ends
 
 _relod segment dword "CONST"

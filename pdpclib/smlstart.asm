@@ -149,6 +149,11 @@ bss2:
     shl     eax, 12
     rol     ax, 4
     push    eax
+
+    mov     al, 0
+    mov     ah, 4ch
+    int     21h ; terminate
+
     retf        ; __start__() will set up argc and argv for main() and call exit(main(argc, argv))
 
 rt:

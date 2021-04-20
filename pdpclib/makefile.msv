@@ -48,7 +48,7 @@ dllcrt.o: dllcrt.c
   rm -f $*.s
 
 .asm.obj:
-  jwasm -c -coff $<
+  jwasm -q -c -coff $<
 #  ml -c -coff $<
 #  poasm $<
 

@@ -159,7 +159,6 @@ bss2:
     retf        ; call ___start
 
 term:
-    mov     al, 0
     mov     ah, 4ch
     int     21h ; terminate
 

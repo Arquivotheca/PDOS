@@ -114,6 +114,9 @@ char **__eplist;
 char *__plist;
 
 #ifdef __WIN32__
+static DWORD stdin_dw;
+static DWORD stdout_dw;
+
 /* Not sure what _startupinfo is. */
 typedef int _startupinfo;
 
@@ -270,8 +273,9 @@ __PDPCLIB_API__ int CTYP __start(char *p)
 #ifndef ENABLE_VIRTUAL_TERMINAL_INPUT
 #define ENABLE_VIRTUAL_TERMINAL_INPUT 0x0200
 #endif
-        if (GetConsoleMode(__stdin->hfile, &dw))
+        if (GetConsoleMode(__stdin->hfile, &stdin_dw))
         {
+            dw = stdin_dw;
             dw |= ENABLE_VIRTUAL_TERMINAL_INPUT;
             SetConsoleMode(__stdin->hfile, dw);
         }
@@ -283,8 +287,9 @@ __PDPCLIB_API__ int CTYP __start(char *p)
 #ifndef ENABLE_VIRTUAL_TERMINAL_PROCESSING
 #define ENABLE_VIRTUAL_TERMINAL_PROCESSING 0x0004
 #endif
-        if (GetConsoleMode(__stdout->hfile, &dw))
+        if (GetConsoleMode(__stdout->hfile, &stdout_dw))
         {
+            dw = stdout_dw;
             dw |= ENABLE_VIRTUAL_TERMINAL_PROCESSING;
             SetConsoleMode(__stdout->hfile, dw);
         }
@@ -995,6 +1000,11 @@ __PDPCLIB_API__ void _c_exit(void)
 
     if (__stdout != NULL) fflush(__stdout);
     if (__stderr != NULL) fflush(__stderr);
+#if defined(__WIN32__)
+    SetConsoleMode(__stdin->hfile, stdin_dw);
+    SetConsoleMode(__stdout->hfile, stdout_dw);
+#endif
+
 #if defined(__MVS__) || defined(__CMS__) || defined(__VSE__)
     if (__stdin != NULL) fclose(__stdin);
     if (__stdout != NULL) fclose(__stdout);

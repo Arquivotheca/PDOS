@@ -144,17 +144,24 @@ bss2:
 
     pop     ebx
 
+    mov     esi, offset term
+    lea     eax, [ebx + esi]
+    shl     eax, 12
+    rol     ax, 4
+    push    eax
+
     mov     esi, offset ___start
     lea     eax, [ebx + esi]
     shl     eax, 12
     rol     ax, 4
     push    eax
 
+    retf        ; call ___start
+
+term:
     mov     al, 0
     mov     ah, 4ch
     int     21h ; terminate
-
-    retf        ; __start__() will set up argc and argv for main() and call exit(main(argc, argv))
 
 rt:
     dd      offset rt

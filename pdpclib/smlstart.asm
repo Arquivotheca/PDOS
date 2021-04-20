@@ -165,10 +165,12 @@ term:
 rt:
     dd      offset rt
 
-;___exita proc, retcode: word
-__exita:
-        ret
-;___exita endp
+__exita proc, retcode: dword
+    mov     eax, retcode
+    mov     ah, 4ch
+    int     21h ; terminate
+    ret
+__exita endp
 
 __creat:
 __open:

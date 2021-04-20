@@ -6,43 +6,43 @@
 ;
 ; Attempt to adapt Smaller C's c0dh.asm from NASM to JWASM.
 
-.model large
+.model large, C
 .386
 
-    public ___intstart
-    public ___exita
+    public __intstart
+    public __exita
 
-    public ___creat
-    public ___open
-    public ___close
-    public ___read
-    public ___write
-    public ___remove
-    public ___rename
-    public ___seek
-    public ___lesf2
-    public ___mulsf3
-    public ___floatsisf
-    public ___addsf3
-    public ___negsf2
-    public ___gesf2
-    public ___divsf3
-    public ___fixsfsi
-    public ___subsf3
+    public __creat
+    public __open
+    public __close
+    public __read
+    public __write
+    public __remove
+    public __rename
+    public __seek
+    public __lesf2
+    public __mulsf3
+    public __floatsisf
+    public __addsf3
+    public __negsf2
+    public __gesf2
+    public __divsf3
+    public __fixsfsi
+    public __subsf3
 
-    public ___psp
-    public ___envptr
-    public ___osver
+    public __psp
+    public __envptr
+    public __osver
 
 ;extrn __start:proc
-    extern ___start:byte
-    extern __start__relot:byte, __stop__relot:byte
-    extern __start__relod:byte, __stop__relod:byte
-    extern __start__bss:byte, __stop__bss:byte
+    extern __start:byte
+    extern _start__relot:byte, _stop__relot:byte
+    extern _start__relod:byte, _stop__relod:byte
+    extern _start__bss:byte, _stop__bss:byte
 
 text segment "CODE"
 
-___intstart:
+__intstart:
 
     ; perform code/data relocations
 
@@ -56,9 +56,9 @@ labnext:
     add     ebx, eax
     sub     ebx, offset labnext ; ebx = base physical address
 
-    mov     esi, offset __start__relot
+    mov     esi, offset _start__relot
 relo_text_loop:
-    cmp     esi, offset __stop__relot
+    cmp     esi, offset _stop__relot
     jae     relo_text_done
 
     lea     edi, [ebx + esi] ; edi = physical address of a relocation table element
@@ -86,9 +86,9 @@ relo_text_loop:
     jmp     relo_text_loop
 relo_text_done:
 
-    mov     esi, offset __start__relod
+    mov     esi, offset _start__relod
 relo_data_loop:
-    cmp     esi, offset __stop__relod
+    cmp     esi, offset _stop__relod
     jae     relo_data_done
 
     lea     edi, [ebx + esi] ; edi = physical address of a relocation table element
@@ -114,9 +114,9 @@ relo_data_done:
 
     push    ebx
 
-    mov     esi, offset __start__bss
+    mov     esi, offset _start__bss
     lea     edi, [ebx + esi]
-    mov     esi, offset __stop__bss
+    mov     esi, offset _stop__bss
     lea     ebx, [ebx + esi]
     sub     ebx, edi
     ror     edi, 4
@@ -150,13 +150,13 @@ bss2:
     rol     ax, 4
     push    eax
 
-    mov     esi, offset ___start
+    mov     esi, offset __start
     lea     eax, [ebx + esi]
     shl     eax, 12
     rol     ax, 4
     push    eax
 
-    retf        ; call ___start
+    retf        ; call __start
 
 term:
     mov     ah, 4ch
@@ -166,27 +166,27 @@ rt:
     dd      offset rt
 
 ;___exita proc, retcode: word
-___exita:
+__exita:
         ret
 ;___exita endp
 
-___creat:
-___open:
-___close:
-___read:
-___write:
-___remove:
-___rename:
-___seek:
-___lesf2:
-___mulsf3:
-___floatsisf:
-___addsf3:
-___negsf2:
-___gesf2:
-___divsf3:
-___fixsfsi:
-___subsf3:
+__creat:
+__open:
+__close:
+__read:
+__write:
+__remove:
+__rename:
+__seek:
+__lesf2:
+__mulsf3:
+__floatsisf:
+__addsf3:
+__negsf2:
+__gesf2:
+__divsf3:
+__fixsfsi:
+__subsf3:
         ret
 
 text ends
@@ -200,9 +200,9 @@ rd:
     dd      offset rd
 
 banner  db  "PDPCLIB"
-___psp   dd  ?
-___envptr dd  ?
-___osver dw  ?
+__psp   dd  ?
+__envptr dd  ?
+__osver dw  ?
 data ends
 
 _relod segment dword "CONST"

@@ -9,15 +9,15 @@
 .model large
 .386
 
-    extern ___start__:byte
+    extern ___start:byte
     extern __start__relot:byte, __stop__relot:byte
     extern __start__relod:byte, __stop__relod:byte
     extern __start__bss:byte, __stop__bss:byte
 
 text segment "CODE"
 
-    public __start
-__start:
+    public ___intstart
+___intstart:
 
     ; perform code/data relocations
 
@@ -119,7 +119,7 @@ bss2:
 
     pop     ebx
 
-    mov     esi, offset ___start__
+    mov     esi, offset ___start
     lea     eax, [ebx + esi]
     shl     eax, 12
     rol     ax, 4

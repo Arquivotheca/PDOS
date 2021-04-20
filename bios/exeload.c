@@ -934,7 +934,8 @@ static int exeloadLoadELF(unsigned char **entry_point,
                      * 0 and 1 mean no alignment restrictions. */
                     section_size += section->sh_addralign;
                 }
-                if (section->sh_flags & SHF_ALLOC)
+                if ((section->sh_flags & SHF_ALLOC)
+                    && (section->sh_type != SHT_RELA))
                 {
                     /* Section is needed while the program is running,
                      * but if we are loading an executable file,
@@ -1034,7 +1035,8 @@ static int exeloadLoadELF(unsigned char **entry_point,
              section < section_table + elfHdr->e_shnum;
              section++)
         {
-            if (section->sh_flags & SHF_ALLOC)
+            if ((section->sh_flags & SHF_ALLOC)
+                && (section->sh_type != SHT_RELA))
             {
                 /* If we are loading executable file,
                  * SHF_ALLOC sections are already loaded in segments. */
@@ -1121,10 +1123,7 @@ static int exeloadLoadELF(unsigned char **entry_point,
      * no more errors can occur. */
 
     /* Relocations. */
-    /* This code doesn't support RELA relocations, but that seems
-       to be a strange restriction. Having separate relocation
-       logic for EXEC seems strange too. */
-    if (doing_elf_rel)
+    if (1)
     {
         for (section = section_table;
              section < section_table + elfHdr->e_shnum;
@@ -1132,8 +1131,81 @@ static int exeloadLoadELF(unsigned char **entry_point,
         {
             if (section->sh_type == SHT_RELA)
             {
-                printf("ELF Relocations with explicit addend "
-                       "are not supported\n");
+                /* sh_link specifies the symbol table
+                 * and sh_info section being modified. */
+                Elf32_Sym *sym_table = (Elf32_Sym *)(section_table
+                                        + (section->sh_link))->sh_addr;
+                unsigned char *target_base = exeStart +
+                                             (((unsigned char *)(section_table
+                                             + (section->sh_info))->sh_addr)
+                                             - (unsigned char *)lowest_p_vaddr);
+                Elf32_Rela *startrel = (Elf32_Rela *)section->sh_addr;
+                Elf32_Rela *currel;
+
+                if (section->sh_entsize != sizeof(Elf32_Rela))
+                {
+                    printf("Invalid size of relocation entries in ELF file\n");
+                    continue;
+                }
+
+                for (currel = startrel;
+                     currel < (startrel
+                               + ((section->sh_size) / (section->sh_entsize)));
+                     currel++)
+                {
+                    long *target = (long *)(target_base + currel->r_offset);
+                    Elf32_Sym *symbol = (sym_table
+                                         + ELF32_R_SYM(currel->r_info));
+                    Elf32_Addr sym_value = 0;
+
+                    if (ELF32_R_SYM(currel->r_info) != STN_UNDEF)
+                    {
+                        if (symbol->st_shndx == SHN_ABS)
+                        {
+                            /* Absolute symbol, stores absolute value. */
+                            sym_value = symbol->st_value;
+                        }
+                        else if (symbol->st_shndx == SHN_UNDEF)
+                        {
+                            /* Dynamic linker should fill this symbol. */
+                            printf("Undefined symbol in ELF file\n");
+                            continue;
+                        }
+                        else if (symbol->st_shndx == SHN_XINDEX)
+                        {
+                            printf("Unsupported value in ELF symbol\n");
+                            printf("symbol->st_shndx: %x\n", symbol->st_shndx);
+                            continue;
+                        }
+                        else
+                        {
+                            /* Internal symbol. Must be converted
+                             * to absolute symbol.*/
+                            sym_value = symbol->st_value;
+                            /* Adds the address of the related section
+                             * so the symbol stores absolute address. */
+                            sym_value += ((section_table
+                                           + symbol->st_shndx)->sh_addr);
+                        }
+                    }
+                    switch (ELF32_R_TYPE(currel->r_info))
+                    {
+                        case R_386_NONE:
+                            break;
+                        case R_386_32:
+                            /* Symbol value + offset. */
+                            *target = *target - lowest_p_vaddr + (long)exeStart;
+                            break;
+                        case R_386_PC32:
+                            /* Symbol value + offset - absolute address
+                             * of the modified field. */
+                            *target = (sym_value + (*target)
+                                       - (unsigned long)target);
+                            break;
+                        default:
+                            printf("Unknown relocation type in ELF file\n");
+                    }
+                }
             }
             else if (section->sh_type == SHT_REL)
             {
@@ -1213,13 +1285,8 @@ static int exeloadLoadELF(unsigned char **entry_point,
             }
         }
     }
-    else if (doing_elf_exec)
-    {
-        /* +++Implement relocations for ELF Executables. */
-        ;
-    }
 
-    *entry_point = exeStart + elfHdr->e_entry;
+    *entry_point = exeStart + (elfHdr->e_entry - lowest_p_vaddr);
 
     /* Frees memory not needed by the process. */
     free(elfHdr);

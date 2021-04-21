@@ -10,16 +10,7 @@
 .386
 
     public __intstart
-    public __exita
 
-    public __creat
-    public __open
-    public __close
-    public __read
-    public __write
-    public __remove
-    public __rename
-    public __seek
     public __lesf2
     public __mulsf3
     public __floatsisf
@@ -31,7 +22,7 @@
     public __subsf3
 
     public __psp
-    public __envptr
+;    public __envptr
     public __osver
 
 ;extrn __start:proc
@@ -165,21 +156,6 @@ term:
 rt:
     dd      offset rt
 
-__exita proc, retcode: dword
-    mov     eax, retcode
-    mov     ah, 4ch
-    int     21h ; terminate
-    ret
-__exita endp
-
-__creat:
-__open:
-__close:
-__read:
-__write:
-__remove:
-__rename:
-__seek:
 __lesf2:
 __mulsf3:
 __floatsisf:
@@ -203,7 +179,7 @@ rd:
 
 banner  db  "PDPCLIB"
 __psp   dd  ?
-__envptr dd  ?
+;__envptr dd  ?
 __osver dw  ?
 data ends
 

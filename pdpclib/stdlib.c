@@ -22,7 +22,7 @@
 #endif
 
 /* PDOS and MSDOS use the same interface most of the time */
-#if defined(__PDOS386__)
+#if defined(__PDOS386__) || defined(__SMALLERC__)
 #define __MSDOS__
 #endif
 

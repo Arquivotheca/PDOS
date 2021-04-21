@@ -38,6 +38,10 @@ extern FILE *__userFiles[__NFILE];
 #define CTYP
 #endif
 
+#ifdef __SMALLERC__
+#define __PDOS386__
+#endif
+
 #if defined(__PDOS386__)
 /* Used for PDOS itself to avoid API calls when starting. */
 int __minstart = 0;
@@ -814,12 +818,14 @@ __PDPCLIB_API__ int CTYP __start(char *p)
 
 #if defined(__PDOS386__)
     /* PDOS-32 uses an API call returning the full command line string. */
+#ifndef __SMALLERC__
     if (!__minstart)
     {
         p = PosGetCommandLine();
         __envptr = PosGetEnvBlock();
     }
     else
+#endif
     {
         /* PDOS itself is starting so no API calls should be used. */
         p = "";

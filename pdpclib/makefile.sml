@@ -3,7 +3,8 @@ COPTS=-huge -I .
 
 pdptest.exe: smlstart.obj pdptest.obj stdio.obj string.obj stdlib.obj \
        start.obj time.obj errno.obj assert.obj signal.obj locale.obj \
-       ctype.obj setjmp.obj math.obj dossupc.obj
+       ctype.obj setjmp.obj math.obj pdossupc.obj ../src/pos.obj \
+       ../src/support.obj
   echo if exist borland.lib del borland.lib
   echo tlib borland +smlstart.obj +stdio.obj +string.obj +stdlib.obj
   echo tlib borland +start.obj +time.obj +errno.obj +assert.obj +signal.obj
@@ -11,14 +12,14 @@ pdptest.exe: smlstart.obj pdptest.obj stdio.obj string.obj stdlib.obj \
   echo tlib borland +dossupc.obj
   echo tlink smlstart+pdptest,pdptest.exe,nul.map,borland.lib,
   echo copy smlstart.obj pdptest.exe
-  smlrl -huge -entry ___intstart -o pdptest.exe pdptest.obj smlstart.obj stdio.obj string.obj stdlib.obj start.obj time.obj errno.obj assert.obj signal.obj locale.obj ctype.obj setjmp.obj math.obj dossupc.obj
+  smlrl -huge -entry ___intstart -o pdptest.exe pdptest.obj smlstart.obj stdio.obj string.obj stdlib.obj start.obj time.obj errno.obj assert.obj signal.obj locale.obj ctype.obj setjmp.obj math.obj pdossupc.obj ../src/pos.obj ../src/support.obj
 
 .c.obj:
-  pdcc -E -D__SMALLERC__ -I . -o $*.e $<
+  pdcc -E -D__SMALLERC__ -I . -I ../src -o $*.e $<
   $(CC) $(COPTS) $*.e $*.s
   rm -f $*.e
   nasm -f elf32 $*.s -o $*.obj
   rm -f $*.s
 
 .asm.obj:
-  jwasm -q -elf -Dmemodel=large $< -Fo$*.obj
+  jwasm -q -elf -Dmemodel=large -DSMALLERC -Fo$*.obj $<

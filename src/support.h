@@ -86,10 +86,10 @@ union REGS
 
 struct SREGS
 {
-    unsigned int es;
-    unsigned int cs;
-    unsigned int ss;
-    unsigned int ds;
+    unsigned short es;
+    unsigned short cs;
+    unsigned short ss;
+    unsigned short ds;
 };
 
 #ifdef __32BIT__
@@ -114,9 +114,10 @@ void disable(void);
 #endif
 
 #ifdef __SMALLERC__
-#define MK_FP(x, y) (void *)(((unsigned long)(x) << 16) | (y))
-#define FP_OFF(x) (unsigned int)((unsigned long)(void *)(x) & 0xffffU)
-#define FP_SEG(x) (unsigned int)((unsigned long)(void *)(x) & 0x000f0000UL >> 4)
+/* Smaller C uses flat addresses */
+#define MK_FP(x, y) (void *)(((unsigned long)(x) << 4) | (y))
+#define FP_OFF(x) (unsigned int)(((unsigned long)(void *)(x)) & 0xfU)
+#define FP_SEG(x) (unsigned int)((((unsigned long)(void *)(x)) & 0x000ffff0UL) >> 4)
 #define FP_NORM(x) (void *)(x)
 #else
 #define MK_FP(x, y) (void far *)(((unsigned long)(x) << 16) | (y))

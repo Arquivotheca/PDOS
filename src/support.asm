@@ -212,10 +212,17 @@ int86 endp
 
 
 public int86x
+ifdef SMALLERC
+int86x proc uses eax ebx cx dx esi di ds es, \
+           intnum:dword, regsin:ptr, regsout:ptr, sregs:ptr
+else
 int86x proc uses ax bx cx dx si di ds es, \
             intnum:word, regsin:ptr, regsout:ptr, sregs:ptr
+endif
 
 push ds; for restoration after interrupt
+
+ifndef SMALLERC
 
 if @DataSize
   lds si, sregs
@@ -223,15 +230,36 @@ else
   mov si, sregs
 endif
 
+else
+	mov	eax, sregs
+	mov	ebx, eax
+	mov	esi, ebx
+	ror	esi, 4
+	mov	ds, si
+	shr	esi, 28
+endif
+
+
 mov es, [si + 6]
 push es ; new value for ds
 
 mov es, [si + 0]
 
+ifndef SMALLERC
+
 if @DataSize
   lds si, regsin
 else
   mov si, regsin
+endif
+
+else
+	mov	eax, regsin
+	mov	ebx, eax
+	mov	esi, ebx
+	ror	esi, 4
+	mov	ds, si
+	shr	esi, 28
 endif
 
 pushf
@@ -366,10 +394,21 @@ mov ax, [bp+10]; restore ds immediately, can't move without it
 pop bp
 mov ds, ax
 
+ifndef SMALLERC
+
 if @DataSize
   lds si, regsout
 else
   mov si, regsout
+endif
+
+else
+	mov	eax, regsout
+	mov	ebx, eax
+	mov	esi, ebx
+	ror	esi, 4
+	mov	ds, si
+	shr	esi, 28
 endif
 
 pop ax
@@ -388,10 +427,21 @@ pushf
 pop ax
 mov word ptr [si + 14], ax
 
+ifndef SMALLERC
+
 if @DataSize
   lds si, sregs
 else
   mov si, sregs
+endif
+
+else
+	mov	eax, sregs
+	mov	ebx, eax
+	mov	esi, ebx
+	ror	esi, 4
+	mov	ds, si
+	shr	esi, 28
 endif
 
 pop ax

@@ -875,6 +875,11 @@ int fatReadFile(FAT *fat, FATFILE *fatfile, void *buf, size_t szbuf,
                               fatfile->currentCluster,
                               &fatfile->sectorStart,
                               &fatfile->nextCluster);
+            /* sectorUpto is potentially wrong after a seek/write too,
+               so we recalculate */
+            fatfile->sectorUpto = (fatfile->currpos %
+                                  (fat->sectors_per_cluster * MAXSECTSZ))
+                                   / MAXSECTSZ;
         }
     }
     /* until we reach the end of the chain
@@ -1363,6 +1368,8 @@ long fatSeek(FAT *fat, FATFILE *fatfile, long offset, int whence)
     long newpos;
     unsigned long currclusters;
     unsigned long reqclusters;
+    long realpos;
+    int adjust;
 
     if (whence == SEEK_SET) newpos = offset;
     else if (whence == SEEK_CUR) newpos = fatfile->currpos + offset;
@@ -1405,23 +1412,35 @@ long fatSeek(FAT *fat, FATFILE *fatfile, long offset, int whence)
     }
     /* (fat->sectors_per_cluster * MAXSECTSZ) is size of cluster in bytes. */
     currclusters = fatfile->currpos / (fat->sectors_per_cluster * MAXSECTSZ);
+
+    /* If we are seeking past the end of the file, then just position on
+       the end of the file instead. */
     if (fatfile->fileSize < newpos)
     {
-        reqclusters = fatfile->fileSize
-                        / (fat->sectors_per_cluster * MAXSECTSZ);
-        /* If the set sector would be after the end of file,
-         * it is set to the end of file. */
-        fatfile->sectorUpto = (fatfile->fileSize %
-                               (fat->sectors_per_cluster * MAXSECTSZ))
-                                / MAXSECTSZ;
+        realpos = fatfile->fileSize;
     }
     else
     {
-        reqclusters = newpos / (fat->sectors_per_cluster * MAXSECTSZ);
-        fatfile->sectorUpto = (newpos %
-                               (fat->sectors_per_cluster * MAXSECTSZ))
-                                / MAXSECTSZ;
+        realpos = newpos;
     }
+    reqclusters = realpos
+                  / (fat->sectors_per_cluster * MAXSECTSZ);
+
+    /* If we are positioned at the end of a sector, then sectorUpto
+       will be one too big, as we don't break into a new sector or
+       cluster until we actually have new data. Adjusting by one
+       byte will do the trick. */
+    if ((realpos != 0) && (fatfile->fileSize == newpos))
+    {
+        adjust = 1;
+    }
+    else
+    {
+        adjust = 0;
+    }
+    fatfile->sectorUpto = ((realpos - adjust) %
+                           (fat->sectors_per_cluster * MAXSECTSZ))
+                            / MAXSECTSZ;
 
     /* If we are seeking forward, we don't need to go back
        to the start unless we have hit EOF */

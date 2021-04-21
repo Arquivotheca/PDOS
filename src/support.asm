@@ -5,6 +5,10 @@
 
 % .model memodel, c
 
+ifdef SMALLERC
+.386
+endif
+
 assume cs:_TEXT, ds:DGROUP
 
 _DATA   segment word public 'DATA'
@@ -15,13 +19,29 @@ _BSS    ends
 _TEXT segment word public 'CODE'
 
 public int86
+ifdef SMALLERC
+int86 proc uses eax ebx cx dx esi di ds es, \
+           intnum:dword, regsin:ptr, regsout:ptr
+else
 int86 proc uses ax bx cx dx si di ds es, \
            intnum:word, regsin:ptr, regsout:ptr
+endif
+
+ifndef SMALLERC
 
 if @DataSize
   lds si, regsin
 else
   mov si, regsin
+endif
+
+else
+	mov	eax, regsin
+	mov	ebx, eax
+	mov	esi, ebx
+	ror	esi, 4
+	mov	ds, si
+	shr	esi, 28
 endif
 
 pushf
@@ -154,10 +174,21 @@ fintry:
 pop bp
 push si
 
+ifndef SMALLERC
+
 if @DataSize
   lds si, regsout
 else
   mov si, regsout
+endif
+
+else
+	mov	eax, regsout
+	mov	ebx, eax
+	mov	esi, ebx
+	ror	esi, 4
+	mov	ds, si
+	shr	esi, 28
 endif
 
 mov [si + 0], ax

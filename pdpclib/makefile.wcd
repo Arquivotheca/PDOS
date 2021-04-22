@@ -20,7 +20,7 @@ pdptest.exe: dosstart.obj pdptest.obj stdio.obj string.obj stdlib.obj \
   wlib -b -q watcom +math.obj
   wlib -b -q watcom +dossupc.obj
   wlib -b -q watcom +dossupa.obj
-  wlink File pdptest.obj Name pdptest.exe Form dos Library watcom.lib
+  wlink File pdptest.obj Name pdptest.exe Form dos Library watcom.lib Option quiet
 
 dosstart.obj: dosstart.asm
   wasm -q -DWATCOM dosstart.asm

@@ -2057,9 +2057,9 @@ static void make_ff(char *pat)
             ff_path[0] = '\0';
         }
     }
-    if (strcmp(ff_pat, "") == 0)
+    if ((strcmp(ff_pat, "") == 0) || (strcmp(ff_pat, "*.*") == 0))
     {
-        strcpy(ff_pat, "*.*");
+        strcpy(ff_pat, "*");
     }
     return;
 }

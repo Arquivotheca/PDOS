@@ -105,6 +105,8 @@ void __allocmem(size_t size, void **ptr)
 {
 #ifdef __32BIT__
     *ptr = PosAllocMem(size, POS_LOC32);
+#elif defined(__SMALLERC__)
+    *ptr = PosAllocMemPages((size >> 4) + (((size % 16) != 0) ? 1 : 0), NULL);
 #else
     *ptr = PosAllocMem(size, POS_LOC20);
 #endif

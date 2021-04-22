@@ -5,13 +5,6 @@ pdptest.exe: smlstart.obj pdptest.obj stdio.obj string.obj stdlib.obj \
        start.obj time.obj errno.obj assert.obj signal.obj locale.obj \
        ctype.obj setjmp.obj math.obj pdossupc.obj ../src/pos.obj \
        ../src/support.obj
-  echo if exist borland.lib del borland.lib
-  echo tlib borland +smlstart.obj +stdio.obj +string.obj +stdlib.obj
-  echo tlib borland +start.obj +time.obj +errno.obj +assert.obj +signal.obj
-  echo tlib borland +locale.obj +ctype.obj +setjmp.obj +math.obj
-  echo tlib borland +dossupc.obj
-  echo tlink smlstart+pdptest,pdptest.exe,nul.map,borland.lib,
-  echo copy smlstart.obj pdptest.exe
   smlrl -huge -entry ___intstart -o pdptest.exe pdptest.obj smlstart.obj stdio.obj string.obj stdlib.obj start.obj time.obj errno.obj assert.obj signal.obj locale.obj ctype.obj setjmp.obj math.obj pdossupc.obj ../src/pos.obj ../src/support.obj
 
 .c.obj:

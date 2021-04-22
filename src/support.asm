@@ -403,6 +403,14 @@ mov ax, [bp+10]; restore ds immediately, can't move without it
 pop bp
 mov ds, ax
 
+mov ax, 0
+jnc xflagclear
+mov ax, 1
+xflagclear:
+
+push ax ; cflag
+pushf
+
 ifndef SMALLERC
 
 if @DataSize
@@ -412,13 +420,17 @@ else
 endif
 
 else
-	mov	eax, regsout
-	mov	ebx, eax
-	mov	esi, ebx
-	ror	esi, 4
-	mov	ds, si
-	shr	esi, 28
+  mov esi, regsout
+  ror esi, 4
+  mov ds, si
+  shr esi, 28
 endif
+
+pop ax ; flags
+mov word ptr [si + 14], ax
+
+pop ax ; cflag
+mov word ptr [si + 12], ax
 
 pop ax
 mov [si + 0], ax
@@ -428,13 +440,6 @@ mov [si + 6], dx
 mov [si + 10], di
 pop ax
 mov [si + 8], ax ; si
-mov word ptr [si + 12], 0
-jnc xflagclear
-mov word ptr [si + 12], 1
-xflagclear:
-pushf
-pop ax
-mov word ptr [si + 14], ax
 
 ifndef SMALLERC
 

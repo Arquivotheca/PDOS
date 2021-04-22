@@ -174,6 +174,16 @@ fintry:
 pop bp
 push si
 
+push ax
+
+mov ax, 0
+jnc flagclear
+mov ax, 1
+flagclear:
+
+push ax ; cflag
+pushf
+
 ifndef SMALLERC
 
 if @DataSize
@@ -183,13 +193,19 @@ else
 endif
 
 else
-	mov	eax, regsout
-	mov	ebx, eax
-	mov	esi, ebx
-	ror	esi, 4
-	mov	ds, si
-	shr	esi, 28
+  mov esi, regsout
+  ror esi, 4
+  mov ds, si
+  shr esi, 28
 endif
+
+pop ax ; flags
+mov word ptr [si + 14], ax
+
+pop ax ; cflag
+mov word ptr [si + 12], ax
+
+pop ax
 
 mov [si + 0], ax
 mov [si + 2], bx
@@ -198,13 +214,6 @@ mov [si + 6], dx
 mov [si + 10], di
 pop ax ; actually si
 mov [si + 8], ax
-mov word ptr [si + 12], 0
-jnc flagclear
-mov word ptr [si + 12], 1
-flagclear:
-pushf
-pop ax
-mov word ptr [si + 14], ax
 
 ret
 int86 endp

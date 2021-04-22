@@ -1287,11 +1287,13 @@ static void int21handler(union REGS *regsin,
             else
             {
                 logUnimplementedCall(0x21, regsin->h.ah, regsin->h.al);
+                regsout->x.cflag = 1;
             }
             break;
 
         default:
             logUnimplementedCall(0x21, regsin->h.ah, regsin->h.al);
+            regsout->x.cflag = 1;
             break;
     }
     return;

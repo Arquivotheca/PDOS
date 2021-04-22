@@ -56,30 +56,21 @@ int int21(unsigned int *regs)
     return (0);
 }
 #else
-void int21(unsigned int *regptrs,
-           unsigned int es,
-           unsigned int ds,
-           unsigned int di,
-           unsigned int si,
-           unsigned int dx,
-           unsigned int cx,
-           unsigned int bx,
-           unsigned int cflag,
-           unsigned int ax)
+void int21(unsigned int *regptrs)
 {
     static union REGS regsin;
     static union REGS regsout;
     static struct SREGS sregs;
 
-    regsin.x.ax = ax;
-    regsin.x.bx = bx;
-    regsin.x.cx = cx;
-    regsin.x.dx = dx;
-    regsin.x.si = si;
-    regsin.x.di = di;
+    sregs.es = regptrs[0];
+    sregs.ds = regptrs[1];
+    regsin.x.di = regptrs[2];
+    regsin.x.si = regptrs[3];
+    regsin.x.dx = regptrs[4];
+    regsin.x.cx = regptrs[5];
+    regsin.x.bx = regptrs[6];
     regsin.x.cflag = 0;
-    sregs.ds = ds;
-    sregs.es = es;
+    regsin.x.ax = regptrs[8];
     memcpy(&regsout, &regsin, sizeof regsout);
     int21handler(&regsin, &regsout, &sregs);
     regptrs[0] = sregs.es;

@@ -36,12 +36,10 @@ else
 endif
 
 else
-	mov	eax, regsin
-	mov	ebx, eax
-	mov	esi, ebx
-	ror	esi, 4
-	mov	ds, si
-	shr	esi, 28
+  mov esi, regsin
+  ror esi, 4
+  mov ds, si
+  shr esi, 28
 endif
 
 pushf
@@ -240,12 +238,10 @@ else
 endif
 
 else
-	mov	eax, sregs
-	mov	ebx, eax
-	mov	esi, ebx
-	ror	esi, 4
-	mov	ds, si
-	shr	esi, 28
+  mov esi, sregs
+  ror esi, 4
+  mov ds, si
+  shr esi, 28
 endif
 
 
@@ -263,12 +259,10 @@ else
 endif
 
 else
-	mov	eax, regsin
-	mov	ebx, eax
-	mov	esi, ebx
-	ror	esi, 4
-	mov	ds, si
-	shr	esi, 28
+  mov esi, regsin
+  ror esi, 4
+  mov ds, si
+  shr esi, 28
 endif
 
 pushf
@@ -450,12 +444,10 @@ else
 endif
 
 else
-	mov	eax, sregs
-	mov	ebx, eax
-	mov	esi, ebx
-	ror	esi, 4
-	mov	ds, si
-	shr	esi, 28
+  mov esi, sregs
+  ror esi, 4
+  mov ds, si
+  shr esi, 28
 endif
 
 pop ax

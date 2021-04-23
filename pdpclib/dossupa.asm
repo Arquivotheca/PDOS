@@ -711,6 +711,23 @@ f_lxmul@ proc
 push bp
 mov bp,sp
 push cx
+push bx
+
+cmp cx,0
+jne noswap
+
+; hack to swap parameters around when cx is small
+
+push cx
+push bx
+push dx
+push ax
+pop bx
+pop cx
+pop ax
+pop dx
+
+noswap:
 
 push ax
 mul cx
@@ -719,6 +736,7 @@ pop ax
 mul bx
 add dx, cx
 
+pop bx
 pop cx
 pop bp
 ret

@@ -2607,6 +2607,7 @@ static void loadExe(char *prog, PARMBLOCK *parmblock)
     unsigned char *header = NULL;
     unsigned char *envptr;
     unsigned long exeLen;
+    unsigned long extraLen = 0;
     unsigned char *psp;
     unsigned char *pcb;
     PDOS_PROCESS *newProc;
@@ -2661,23 +2662,27 @@ static void loadExe(char *prog, PARMBLOCK *parmblock)
     if (isexe)
     {
         exeLen = *(unsigned int *)&header[4];
+        extraLen = *(unsigned short *)&header[0x0a] * 16UL;
         exeLen = (exeLen + 1) * 512 - headerLen;
     }
     else
     {
-        exeLen = 0x10000;
+        exeLen = 0x10000UL;
     }
+    extraLen += 0x100; /* PSP */
+    extraLen += PDOS_PROCESS_SIZE;
+    extraLen += 16; /* for good measure and to allow division by 16 */
     maxPages = memmgrMaxSize(&memmgr);
-    if (((long)maxPages * 16) < (exeLen+PDOS_PROCESS_SIZE))
+    if (((unsigned long)maxPages * 16) < (exeLen+extraLen))
     {
         printf("insufficient memory to load program\n");
-        printf("required %ld, available %ld\n",
-            (exeLen+PDOS_PROCESS_SIZE), (long)maxPages * 16);
+        printf("required %lu, available %lu\n",
+            exeLen+extraLen, (unsigned long)maxPages * 16);
         memmgrFree(&memmgr, header);
         memmgrFree(&memmgr, envptr);
         return;
     }
-    pcb = pdos16MemmgrAllocPages(&memmgr, maxPages, 0);
+    pcb = pdos16MemmgrAllocPages(&memmgr, (exeLen + extraLen) / 16, 0);
     if (pcb != NULL)
     {
         psp = pcb + PDOS_PROCESS_SIZE;

@@ -732,6 +732,11 @@ static void int21handler(union REGS *regsin,
         /* INT 21,48 - Allocate Memory */
         case 0x48:
 #ifndef __32BIT__
+#if 0
+            /* Not sure if this is still relevant, and it is
+               creating excess memory allocation, so it is
+               being removed. */
+
             /* This function is only useful in 16-bit PDOS */
             /* for some bizarre reason, MSC allocates 32 bytes,
             then attempts to turn it into 16k - do this in
@@ -740,6 +745,7 @@ static void int21handler(union REGS *regsin,
             {
                 regsin->x.bx = 0x400;
             }
+#endif
             p = PosAllocMemPages(regsin->x.bx, &regsout->x.bx);
             if (p == NULL)
             {

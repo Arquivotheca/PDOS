@@ -270,7 +270,10 @@ static void read_lbuf(struct linebuf *lbuf, int set_default)
             remove_backslash_newlines(line);
 
             {
-                char *colon = strchr(line, ':');
+                char *colon;
+
+                line = variable_expand_line(xstrdup(line));
+                colon = strchr(line, ':');
 
                 if (colon == NULL)
                 {
@@ -282,6 +285,7 @@ static void read_lbuf(struct linebuf *lbuf, int set_default)
                 filenames = parse_nameseq(line, sizeof (*filenames));
 
                 depstr = xstrdup(colon + 1);
+                free(line);
             }
 
             if (semicolonp)

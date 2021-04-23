@@ -20,6 +20,7 @@
 #include "xmalloc.h"
 
 static int dry_run = 0; /* Run no commands. */
+static int ignore_errors = 0;
 
 variable *default_goal_var;
 
@@ -85,7 +86,16 @@ void rule_use(rule *r, char *name)
         new_cmds = variable_expand_line(new_cmds);
         printf("%s\n", new_cmds);
 
-        if (!dry_run) system(new_cmds);
+        if (!dry_run)
+        {
+            int error = system(new_cmds);
+
+            if (!ignore_errors && error)
+            {
+                fprintf(stderr, "[%s] Error %d\n", name, error);
+                exit(1);
+            }
+        }
         free(new_cmds);
 
         p = q + 1;
@@ -127,7 +137,16 @@ void suffix_rule_use(suffix_rule *s, char *name)
         new_cmds = variable_expand_line(new_cmds);
         printf("%s\n", new_cmds);
 
-        if (!dry_run) system(new_cmds);
+        if (!dry_run)
+        {
+            int error = system(new_cmds);
+
+            if (!ignore_errors && error)
+            {
+                fprintf(stderr, "[%s] Error %d\n", name, error);
+                exit(1);
+            }
+        }
         free(new_cmds);
 
         p = q + 1;
@@ -184,6 +203,16 @@ void rule_search_and_build(char *name)
         return;
     }
 
+    {
+        FILE *f = fopen(name, "r");
+        fclose(f);
+        if (f == NULL)
+        {
+            fprintf(stderr, "No rule to make target `%s'. Stop.", name);
+            exit(1);
+        }
+    }
+
 }
 
 void help(void)
@@ -196,6 +225,8 @@ void help(void)
            "Read FILE as a makefile.\n");
     printf("  -h, --help          "
            "Print this message and exit.\n");
+    printf("  -i, --ignore-errors "
+           "Ignore errors from commands.\n");
     printf("  -n, --dry_run       "
            "Run no commands, only print them.\n");
 }
@@ -233,12 +264,20 @@ int main(int argc, char **argv)
                     help();
                     return (0);
 
+                case 'i':
+                    ignore_errors = 1;
+                    break;
+
                 case 'n':
                     dry_run = 1;
                     break;
 
                 case '-':
-                    if (strcmp("help", argv[i] + 2) == 0)
+                    if (strcmp("ignore-errors", argv[i] + 2) == 0)
+                    {
+                        ignore_errors = 1;
+                    }
+                    else if (strcmp("help", argv[i] + 2) == 0)
                     {
                         help();
                         return (0);

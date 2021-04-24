@@ -722,37 +722,27 @@ public __U4M
 __U4M:
 public f_lxmul@
 f_lxmul@ proc
-push bp
-mov bp,sp
 push cx
 push bx
+push si
+push di
 
-cmp cx,0
-jne noswap
+; Code provided by Terje Mathisen
+mov si,ax
+mov di,dx
+mul cx ;; hi * lo
+xchg ax,di ;; First mul saved, grab org dx
+mul bx ;; lo * hi
+add di,ax ;; top word of result
 
-; hack to swap parameters around when cx is small
+mov ax,si ;; retrieve original AX
+mul bx ;; lo * lo
+add dx,di
 
-push cx
-push bx
-push dx
-push ax
+pop di
+pop si
 pop bx
 pop cx
-pop ax
-pop dx
-
-noswap:
-
-push ax
-mul cx
-mov cx, ax
-pop ax
-mul bx
-add dx, cx
-
-pop bx
-pop cx
-pop bp
 ret
 f_lxmul@ endp
 

@@ -142,7 +142,8 @@ LPTCH WINAPI GetEnvironmentStrings(void)
 
 BOOL WINAPI GetExitCodeProcess(HANDLE hProcess, LPDWORD lpExitCode)
 {
-    return (0);
+    *lpExitCode = (DWORD)PosGetReturnCode();
+    return (1);
 }
 
 DWORD WINAPI GetLastError(void)

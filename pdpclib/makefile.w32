@@ -27,7 +27,7 @@ pdptest.exe: w32start.o pdptest.o stdio.o string.o stdlib.o \
   $(CC) $(COPTS) $<
 
 .asm.obj:
-  jwasm -c -coff $<
+  jwasm -c -coff -q $<
 #  ml -c -coff $<
 #  poasm $<
 

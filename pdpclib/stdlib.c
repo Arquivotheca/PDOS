@@ -83,6 +83,7 @@ void CTYP __freemem(void *ptr);
 #endif
 extern unsigned char *__envptr;
 void CTYP __exec(char *cmd, void *env);
+int CTYP __getrc(void);
 #endif
 
 #ifdef __gnu_linux__
@@ -932,7 +933,7 @@ __PDPCLIB_API__ int system(const char *string)
         cmd = "\\command.com";
     }
     __exec(cmd, &parmblock);
-    return (0);
+    return (__getrc());
 #endif
 #if defined(MUSIC)
     return (__system(strlen(string), string));

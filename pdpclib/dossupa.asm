@@ -483,6 +483,20 @@ ret
 ___exec endp
 
 
+; get return code/errorlevel
+public ___getrc
+___getrc proc
+push bp
+mov bp, sp
+
+mov ah, 04dh
+int 21h
+
+pop bp
+ret
+___getrc endp
+
+
 public ___datetime
 ___datetime proc
 push bp

@@ -126,6 +126,11 @@ void __exec(char *cmd, void *env)
     return;
 }
 
+int __getrc(void)
+{
+    return (PosGetReturnCode());
+}
+
 void __datetime(void *ptr)
 {
     unsigned int year, month, day, dow;

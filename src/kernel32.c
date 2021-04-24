@@ -159,7 +159,7 @@ LPTSTR WINAPI GetCommandLineA(void)
 
 LPTCH WINAPI GetEnvironmentStrings(void)
 {
-    char *env = "ComSpec=\\command.com";
+    char *env = PosGetEnvBlock();
 
     return ((LPTCH)env);
 }

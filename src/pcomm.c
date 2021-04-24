@@ -477,6 +477,7 @@ cmdBlock *findCommand(char *cmdName)
 int main(int argc, char **argv)
 {
     char *sPROMPT;
+    char *origpath;
 #ifdef USING_EXE
     pdosRun();
 #endif
@@ -486,6 +487,19 @@ int main(int argc, char **argv)
     if (genuine_pdos)
     {
         PosGetVideoInfo(&savedVideoState, sizeof(pos_video_info));
+    }
+    origpath = getenv("PATH");
+    if (origpath != NULL)
+    {
+        if (strlen(origpath) < PATH_MAX)
+        {
+            strcpy(path, origpath);
+        }
+    }
+    if (genuine_pdos)
+    {
+         PosSetEnv("PATH",path);
+         __envptr = PosGetEnvBlock();
     }
     sPROMPT = getenv("PROMPT");
     if (sPROMPT != NULL)
@@ -518,7 +532,15 @@ int main(int argc, char **argv)
     parseArgs(argc, argv);
     if (singleCommand)
     {
-        return (processInput());
+        int rc;
+
+        rc = processInput();
+        if (genuine_pdos)
+        {
+             PosSetEnv("PATH",origpath);
+             __envptr = PosGetEnvBlock();
+        }
+        return (rc);
     }
     if (primary)
     {

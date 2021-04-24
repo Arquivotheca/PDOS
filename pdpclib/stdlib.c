@@ -889,6 +889,10 @@ __PDPCLIB_API__ int system(const char *string)
     cmdproc = getenv("ComSpec");
     if (cmdproc == NULL)
     {
+        cmdproc = getenv("COMSPEC");
+    }
+    if (cmdproc == NULL)
+    {
         return (-1);
     }
     if (strlen(string) > sizeof cmdbuf - 10)

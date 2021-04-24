@@ -133,6 +133,7 @@ BOOL WINAPI CreateProcessA(
         return (1);
     }
     len = strlen(string);
+    if (len + 3 > sizeof cmdt) return (0);
     cmdt[0] = (unsigned char)len;
     memcpy(&cmdt[1], string, len);
     memcpy(&cmdt[len+1], "\r", 2);

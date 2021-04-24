@@ -2980,6 +2980,10 @@ static void startExe32(void)
         ret = fixexe32(entry_point, (unsigned int)newsp, 0, 0);
         lastrc = ret;
     }
+    else
+    {
+        lastrc = -1;
+    }
 
     terminateExe32();
 }

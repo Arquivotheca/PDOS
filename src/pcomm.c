@@ -518,8 +518,7 @@ int main(int argc, char **argv)
     parseArgs(argc, argv);
     if (singleCommand)
     {
-        processInput();
-        return (0);
+        return (processInput());
     }
     if (primary)
     {

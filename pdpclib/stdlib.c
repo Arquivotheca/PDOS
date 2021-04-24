@@ -883,12 +883,27 @@ __PDPCLIB_API__ int system(const char *string)
     PROCESS_INFORMATION pi;
     STARTUPINFO si;
     DWORD ExitCode;
+    char *cmdproc;
+    char cmdbuf[300];
+
+    cmdproc = getenv("ComSpec");
+    if (cmdproc == NULL)
+    {
+        return (-1);
+    }
+    if (strlen(string) > sizeof cmdbuf - 10)
+    {
+        return (-2);
+    }
+    strcpy(cmdbuf, "/c ");
+    strcat(cmdbuf, string);
 
     memset(&si, 0, sizeof si);
     si.cb = sizeof si;
     memset(&pi, 0, sizeof pi);
-    rc = CreateProcess(NULL,
-                       (char *)string,
+
+    rc = CreateProcess(cmdproc,
+                       cmdbuf,
                        NULL,
                        NULL,
                        FALSE,

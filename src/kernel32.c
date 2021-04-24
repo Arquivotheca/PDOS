@@ -117,7 +117,28 @@ BOOL WINAPI CreateProcessA(
     LPSTARTUPINFOA lpStartupInfo,
     LPPROCESS_INFORMATION lpProcessInformation)
 {
-    return (0);
+    static unsigned char cmdt[140];
+    static struct {
+        int env;
+        unsigned char *cmdtail;
+        char *fcb1;
+        char *fcb2;
+    } parmblock = { 0, cmdt, NULL, NULL };
+    size_t len;
+    char *cmd;
+    char *string = (char *)lpCommandLine;
+
+    if (string == NULL)
+    {
+        return (1);
+    }
+    len = strlen(string);
+    cmdt[0] = (unsigned char)len;
+    memcpy(&cmdt[1], string, len);
+    memcpy(&cmdt[len+1], "\r", 2);
+    cmd = (char *)lpApplicationName;
+    PosExec(cmd, &parmblock);
+    return (1);
 }
 
 BOOL WINAPI DeleteFileA(LPCSTR lpFileName)
@@ -137,7 +158,9 @@ LPTSTR WINAPI GetCommandLineA(void)
 
 LPTCH WINAPI GetEnvironmentStrings(void)
 {
-    return ((LPTCH)0);
+    char *env = "ComSpec=\\command.com";
+
+    return ((LPTCH)env);
 }
 
 BOOL WINAPI GetExitCodeProcess(HANDLE hProcess, LPDWORD lpExitCode)

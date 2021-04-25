@@ -15,9 +15,7 @@ pdptest.exe: pdosst32.o pdptest.o stdio.o string.o stdlib.o \
   ar386 r pdos.a start.o time.o errno.o assert.o signal.o
   ar386 r pdos.a locale.o ctype.o setjmp.o math.o
   ar386 r pdos.a pos.o support.o pdossupc.o bos.o liballoc.o
-  ld386 -s -e ___pdosst32 -o pdptest.exe pdosst32.o pdptest.o pdos.a
-  ld386 -r -s -e ___pdosst32 -o pdptest.exe pdosst32.o pdptest.o pdos.a
-  strip386 --strip-unneeded pdptest.exe
+  ld386 -N -s -e ___pdosst32 -o pdptest.exe pdosst32.o pdptest.o pdos.a
 
 bos.o: ../src/bos.c
   $(CC) $(COPTS) -o $*.s ../src/bos.c

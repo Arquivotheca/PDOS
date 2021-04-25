@@ -6,6 +6,4 @@ del pcomm.s
 as386 -o dostime.o dostime.s
 del dostime.s
 
-ld386 -s -e ___pdosst32 -o pcomm.exe ../pdpclib/pdosst32.o pcomm.o dostime.o ../pdpclib/pdos.a
-ld386 -r -s -e ___pdosst32 -o pcomm.exe ../pdpclib/pdosst32.o pcomm.o dostime.o ../pdpclib/pdos.a
-strip386 --strip-unneeded pcomm.exe
+ld386 -N -s -e ___pdosst32 -o pcomm.exe ../pdpclib/pdosst32.o pcomm.o dostime.o ../pdpclib/pdos.a

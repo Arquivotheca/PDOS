@@ -60,7 +60,5 @@ ar386 -r os.a int21.o int80.o log.o helper.o
 ar386 -r os.a memmgr.o patmat.o support.o protintp.o protints.o pdoss.o
 ar386 -r os.a vgatext.o
 
-ld386 -s -e start -o pdos.exe strt32.o pdos.o os.a ../pdpclib/pdos.a
-ld386 -r -s -e start -o pdos.exe strt32.o pdos.o os.a ../pdpclib/pdos.a
-strip386 --strip-unneeded pdos.exe
+ld386 -N -s -e start -o pdos.exe strt32.o pdos.o os.a ../pdpclib/pdos.a
 del os.a

@@ -51,6 +51,12 @@ not10:
         jmp     fintry
 not13:
 
+        cmp     $0x14, 8(%ebp)
+        jne     not14
+        int     $0x14
+        jmp     fintry
+not14:
+
         cmp     $0x15, 8(%ebp)
         jne     not15
         int     $0x15
@@ -111,6 +117,12 @@ notA0:
         int     $0xA3
         jmp     fintry
 notA3:
+
+        cmpl    $0xA4, 8(%ebp)
+        jne     notA4
+        int     $0xA4
+        jmp     fintry
+notA4:
 
         cmpl    $0xA5, 8(%ebp)
         jne     notA5

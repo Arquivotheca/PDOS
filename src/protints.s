@@ -13,6 +13,7 @@
         .globl _inthdlr_E
         .globl _inthdlr_10
         .globl _inthdlr_13
+        .globl _inthdlr_14
         .globl _inthdlr_15
         .globl _inthdlr_16
         .globl _inthdlr_1A
@@ -102,6 +103,15 @@ _inthdlr_13:
         mov    %ax, %ds
         push   intnum
         movl   $0x13, intnum
+        jmp    _inthdlr_p
+_inthdlr_14:
+        push   %eax
+        mov    %ds, %ax
+        push   %eax
+        mov    $0x10, %eax
+        mov    %ax, %ds
+        push   intnum
+        movl   $0x14, intnum
         jmp    _inthdlr_p
 _inthdlr_15:
         push   %eax
@@ -193,6 +203,15 @@ _inthdlr_A3:
         mov    %ax, %ds
         push   intnum
         movl   $0xA3, intnum
+        jmp    _inthdlr_p
+_inthdlr_A4:
+        push   %eax
+        mov    %ds, %ax
+        push   %eax
+        mov    $0x10, %eax
+        mov    %ax, %ds
+        push   intnum
+        movl   $0xA4, intnum
         jmp    _inthdlr_p
 _inthdlr_A5:
         push   %eax

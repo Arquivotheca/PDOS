@@ -28,6 +28,7 @@ void inthdlr_9(void);
 void inthdlr_E(void);
 void inthdlr_10(void);
 void inthdlr_13(void);
+void inthdlr_14(void);
 void inthdlr_15(void);
 void inthdlr_16(void);
 void inthdlr_1A(void);
@@ -165,6 +166,7 @@ unsigned long runprot_p(rawprot_parms *parmlist)
         { 0xE, inthdlr_E },
         { 0x10, inthdlr_10 },
         { 0x13, inthdlr_13 },
+        { 0x14, inthdlr_14 },
         { 0x15, inthdlr_15 },
         { 0x16, inthdlr_16 },
         { 0x1A, inthdlr_1A },

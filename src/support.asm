@@ -142,6 +142,12 @@ int 0A3h
 jmp fintry
 notA3:
 
+cmp intnum, 0A4h
+jne notA4
+int 0A4h
+jmp fintry
+notA4:
+
 cmp intnum, 0A5h
 jne notA5
 int 0A5h
@@ -364,6 +370,12 @@ jne xnotA3
 int 0A3h
 jmp xfintry
 xnotA3:
+
+cmp intnum, 0A4h
+jne xnotA4
+int 0A4h
+jmp xfintry
+xnotA4:
 
 cmp intnum, 0A5h
 jne xnotA5

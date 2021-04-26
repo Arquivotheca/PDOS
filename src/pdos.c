@@ -218,6 +218,10 @@ static char shell[100] = "";
 char kernel32[] = "?:\\KERNEL32.DLL";
 char msvcrt[] = "?:\\MSVCRT.DLL";
 
+/* warn of any application errors in case application
+   doesn't adequately report them. */
+static int warnerror = 1;
+
 static int ff_handle;
 static DTA origdta;
 static DTA *dta =&origdta;
@@ -1421,7 +1425,12 @@ int PosOpenFile(const char *name, int mode, int *handle)
 
     ret = formatcwd(name, filename);
     if (ret) return (ret);
-    return (fileOpen(filename, handle));
+    ret = fileOpen(filename, handle);
+    if ((ret != 0) && warnerror)
+    {
+        printf("warning - failed to open %s\n", name);
+    }
+    return (ret);
 }
 
 int PosCloseFile(int fno)

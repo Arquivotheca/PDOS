@@ -918,7 +918,14 @@ __PDPCLIB_API__ int system(const char *string)
                        &pi);
     if (!rc)
     {
-        return (GetLastError());
+        int ret;
+
+        ret = GetLastError();
+        if (ret == 0)
+        {
+            ret = -1; /* force an error */
+        }
+        return (ret);
     }
     WaitForSingleObject(pi.hProcess, INFINITE);
     GetExitCodeProcess(pi.hProcess, &ExitCode);

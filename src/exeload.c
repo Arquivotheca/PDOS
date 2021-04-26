@@ -47,6 +47,10 @@ static int exeloadLoadNE(unsigned long *entry_point,
 static int exeloadLoadPEDLL(unsigned char *exeStart,
                             IMAGE_IMPORT_DESCRIPTOR *import_desc);
 
+extern char kernel32[];
+extern char msvcrt[];
+static int warnkernel = 1;
+
 int exeloadDoload(unsigned long *entry_point, char *prog)
 {
     int fhandle;
@@ -62,6 +66,7 @@ int exeloadDoload(unsigned long *entry_point, char *prog)
      * 1 means it is not the format the function loads.
      * 2 means correct format, but error occured. */
     ret = exeloadLoadAOUT(entry_point, fhandle);
+    if (ret == 0) printf("warning - still using a.out format\n");
     if (ret == 1) ret = exeloadLoadELF(entry_point, fhandle);
     if (ret == 1) ret = exeloadLoadMZ(entry_point, fhandle);
     if (ret != 0)
@@ -1163,14 +1168,23 @@ static int exeloadLoadPEDLL(unsigned char *exeStart,
     if ((strcmp(name1, "kernel32.dll") == 0)
         || (strcmp(name1, "KERNEL32.dll") == 0))
     {
-        name2 = "\\KERNEL32.DLL";
+        name2 = kernel32;
+        if (warnkernel)
+        {
+            printf("warning - this executable is dependent on"
+                   " kernel32 instead of just msvcrt\n");
+        }
     }
     else if (strcmp(name1, "msvcrt.dll") == 0)
     {
-        name2 = "\\MSVCRT.DLL";
+        name2 = msvcrt;
+        warnkernel = 0; /* MSVCRT is the only thing allowed to use
+            kernel32 without a warning */
     }
     else
     {
+        printf("warning - this executable uses a non-standard DLL %s\n",
+               name1);
         name2 = name1;
     }
     if (PosOpenFile(name2, 0, &fhandle))
@@ -1552,6 +1566,10 @@ static int exeloadLoadPEDLL(unsigned char *exeStart,
     kfree(section_table);
     kfree(optional_hdr);
 
+    if (name2 == msvcrt)
+    {
+        warnkernel = 1;
+    }
     return (0);
 }
 

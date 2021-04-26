@@ -200,6 +200,8 @@ static int lba;
 static int memId = 0; /* give each program a unique ID for their memory */
 static unsigned long psector; /* partition sector offset */
 static int attr;
+/* note that on EBCDIC, the alphabet isn't contiguous */
+static char *alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
 #define MAXFILES 40
 static struct {
@@ -213,6 +215,9 @@ static char ff_path[FILENAME_MAX];
 static char ff_pat[FILENAME_MAX];
 
 static char shell[100] = "";
+char kernel32[] = "?:\\KERNEL32.DLL";
+char msvcrt[] = "?:\\MSVCRT.DLL";
+
 static int ff_handle;
 static DTA origdta;
 static DTA *dta =&origdta;
@@ -2568,10 +2573,11 @@ static void loadPcomm(void)
     static PARMBLOCK p = { 0, "\x2/p\r", NULL, NULL };
     static PARMBLOCK altp = { 0, "\x0\r", NULL, NULL };
 
+    kernel32[0] = msvcrt[0] = alphabet[bootDriveLogical];
     if (strcmp(shell, "") == 0)
     {
         strcpy(shell,"?:\\COMMAND.COM");
-        shell[0] = bootDriveLogical + 'A';
+        shell[0] = alphabet[bootDriveLogical];
         loadExe(shell, &p);
     }
     else

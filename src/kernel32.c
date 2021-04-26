@@ -117,7 +117,7 @@ BOOL WINAPI CreateProcessA(
     LPSTARTUPINFOA lpStartupInfo,
     LPPROCESS_INFORMATION lpProcessInformation)
 {
-    static unsigned char cmdt[140];
+    static unsigned char cmdt[300];
     static struct {
         int env;
         unsigned char *cmdtail;

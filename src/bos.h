@@ -134,6 +134,13 @@ int BosDiskSectorWLBA(void         *buffer, /* 13:43 */
                       unsigned long sector,
                       unsigned long hisector);
 
+unsigned int BosSerialInitialize(unsigned int port, unsigned int parms);
+  /* 14:0 */
+
+unsigned int BosSerialWriteChar(unsigned int port, int ch); /* 14:1 */
+
+unsigned int BosSerialReadChar(unsigned int port); /* 14:2 */
+
 long BosExtendedMemorySize(void); /* 15:88 */
 
 void BosReadKeyboardCharacter(int *scancode, int *ascii); /* 16:0 */

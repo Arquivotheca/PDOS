@@ -750,6 +750,55 @@ int BosDiskSectorWLBA(void         *buffer,
     return (regsout.h.ah);
 }
 
+
+/* BosSerialInitialize BIOS Int 14h Function 00h */
+
+unsigned int BosSerialInitialize(unsigned int port, unsigned int parms)
+{
+    union REGS regsin;
+    union REGS regsout;
+
+    regsin.h.ah = 0x00;
+    regsin.h.al = parms;
+    regsin.x.dx = port;
+
+    int86(0x14 + BIOS_INT_OFFSET, &regsin, &regsout);
+    return (regsout.x.ax);
+}
+
+
+/* BosSerialWriteChar BIOS Int 14h Function 01h */
+
+unsigned int BosSerialWriteChar(unsigned int port, int ch)
+{
+    union REGS regsin;
+    union REGS regsout;
+
+    regsin.h.ah = 0x01;
+    regsin.h.al = ch;
+    regsin.x.dx = port;
+
+    int86(0x14 + BIOS_INT_OFFSET, &regsin, &regsout);
+    return (regsout.h.ah);
+}
+
+
+/* BosSerialReadChar BIOS Int 14h Function 02h */
+
+unsigned int BosSerialReadChar(unsigned int port)
+{
+    union REGS regsin;
+    union REGS regsout;
+
+    regsin.h.ah = 0x02;
+    regsin.h.al = 0;
+    regsin.x.dx = port;
+
+    int86(0x14 + BIOS_INT_OFFSET, &regsin, &regsout);
+    return (regsout.x.ax);
+}
+
+
 long BosExtendedMemorySize(void)
 {
     union REGS regsin;

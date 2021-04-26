@@ -26,25 +26,30 @@ static int testBosGetVideoMode(void)
     return (0);
 }
 
-static int testBosSerialWriteChar(void)
-{
-    BosSerialWriteChar(0, 'X');
-    return (0);
-}
-
 static int testBosSerialInitialize(void)
 {
     BosSerialInitialize(0, 0x3);
     return (0);
 }
 
+static int testBosSerialWriteChar(void)
+{
+    BosSerialWriteChar(0, 'X');
+    return (0);
+}
+
 static int testBosSerialReadChar(void)
 {
-    unsigned int x = 0x8000;
+    unsigned int x;
 
-    while (x == 0x8000)
+    while (1)
     {
         x = BosSerialReadChar(0);
+        if ((x & 0x8000U) == 0)
+        {
+            printf("%c", (x & 0xff));
+            fflush(stdout);
+        }
     }
     printf("received %x\n", x);
     return (0);
@@ -625,8 +630,10 @@ int main(void)
     
     /* testPosSelectDisk(); */
 
+#if 0
     testBosSerialInitialize();
     testBosSerialWriteChar();
+#endif
     testBosSerialReadChar();
     
     /*testPosGetDefaultDrive();*/

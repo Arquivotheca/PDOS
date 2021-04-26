@@ -81,6 +81,12 @@ int 013h
 jmp fintry
 not13:
 
+cmp intnum, 014h
+jne not14
+int 014h
+jmp fintry
+not14:
+
 cmp intnum, 015h
 jne not15
 int 015h
@@ -303,6 +309,12 @@ jne xnot13
 int 013h
 jmp xfintry
 xnot13:
+
+cmp intnum, 014h
+jne xnot14
+int 014h
+jmp xfintry
+xnot14:
 
 cmp intnum, 015h
 jne xnot15

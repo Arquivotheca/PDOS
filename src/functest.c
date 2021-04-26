@@ -26,6 +26,30 @@ static int testBosGetVideoMode(void)
     return (0);
 }
 
+static int testBosSerialWriteChar(void)
+{
+    BosSerialWriteChar(0, 'X');
+    return (0);
+}
+
+static int testBosSerialInitialize(void)
+{
+    BosSerialInitialize(0, 0x3);
+    return (0);
+}
+
+static int testBosSerialReadChar(void)
+{
+    unsigned int x = 0x8000;
+
+    while (x == 0x8000)
+    {
+        x = BosSerialReadChar(0);
+    }
+    printf("received %x\n", x);
+    return (0);
+}
+
 static int testBosWriteText(void)
 {
     BosWriteText(0, 'A', 0);
@@ -96,6 +120,7 @@ static int testBosScroll(void)
     return (0);
 }
 
+#if 0
 /* Test function to test BIOS call Int 10/AH=04h*/
 static int testBosReadLightPen(void)
 {
@@ -107,6 +132,7 @@ static int testBosReadLightPen(void)
     printf("trigger is %d\n", trigger);
     return (0);
 }
+#endif
 
 /* Test function to test BIOS call Int 10/AH=03h*/
 static int testBosReadCursorPosition(void)
@@ -158,6 +184,7 @@ static int testBosPrintScreen(void)
     return (0);
 }
 
+#if 0
 /* Note that the drive is 0 = floppy A, 0x80 = hard disk C */
 
 static int testDisk(void)
@@ -194,6 +221,7 @@ static int testDisk(void)
     }
     return (0);
 }
+#endif
 
 static int testExtendedMemory(void)
 {
@@ -204,6 +232,7 @@ static int testExtendedMemory(void)
     return (0);
 }
 
+#if 0
 static int testDriveParms(void)
 {
     int rc;
@@ -233,7 +262,9 @@ static int testDriveParms(void)
     }
     return (0);
 }
+#endif
 
+#if 0
 /*Function For testing function call 440D*/
 static int testGenericBlockDeviceRequest(void)
 {
@@ -271,6 +302,7 @@ static int testGenericBlockDeviceRequest(void)
     return(0);
 }
 /**/
+#endif
 
 /*Function for testing int 25 call*/
 static int testAbsoluteDiskRead(void)
@@ -476,6 +508,7 @@ static int testPosDirectCharInputNoEcho(void)
     printf("The return value is x %d x \n" , ret);
 }
 
+#if 0
 /* Test function to test BIOS Call Int 16/AH=00h */
 static int testBosReadKeyboardCharacter(void)
 {
@@ -487,6 +520,7 @@ static int testBosReadKeyboardCharacter(void)
     printf("\n The value of scancode is x %d x \n", scancode);
     printf("\n The value of ascii is x %d x \n", ascii);
 }
+#endif
 
 /* Test function to test POS Call Int 21/AH=08h  */
 static int testPosGetCharInputNoEcho(void)
@@ -568,6 +602,8 @@ static int testPosSetSystemDate(void)
 
 int main(void)
 {
+    printf("starting tests\n");
+
     /* Successful Tests*/
     /*Bos Tests*/
     /*testBosGetSystemTime();*/    
@@ -587,7 +623,11 @@ int main(void)
     /*testPosGetCharInputNoEcho();*/    
     /*testPosDisplayString();*/    
     
-    testPosSelectDisk();  
+    /* testPosSelectDisk(); */
+
+    testBosSerialInitialize();
+    testBosSerialWriteChar();
+    testBosSerialReadChar();
     
     /*testPosGetDefaultDrive();*/
     /*testPosGetSystemDate();*/

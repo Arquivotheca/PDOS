@@ -39,7 +39,7 @@ extern FILE *__userFiles[__NFILE];
 #endif
 
 #ifdef __SMALLERC__
-#define __PDOS386__
+#define __MSDOS__
 #endif
 
 #if defined(__PDOS386__)
@@ -818,14 +818,12 @@ __PDPCLIB_API__ int CTYP __start(char *p)
 
 #if defined(__PDOS386__)
     /* PDOS-32 uses an API call returning the full command line string. */
-#ifndef __SMALLERC__
     if (!__minstart)
     {
         p = PosGetCommandLine();
         __envptr = PosGetEnvBlock();
     }
     else
-#endif
     {
         /* PDOS itself is starting so no API calls should be used. */
         p = "";
@@ -866,6 +864,7 @@ __PDPCLIB_API__ int CTYP __start(char *p)
 #elif defined(__MSDOS__)
     argv[0] = "";
 
+#ifndef __SMALLERC__
     if(__osver > 0x300)
     {
         env=__envptr;
@@ -881,6 +880,7 @@ __PDPCLIB_API__ int CTYP __start(char *p)
             }
         }
     }
+#endif
     p = p + 0x80;
     p[*p + 1] = '\0';
     p++;

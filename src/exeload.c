@@ -1005,6 +1005,11 @@ static int exeloadLoadPE(unsigned long *entry_point,
         return (2);
     }
 
+    if (coff_hdr.Characteristics & IMAGE_FILE_RELOCS_STRIPPED)
+    {
+        printf("warning - executable has had relocations stripped\n");
+    }
+
     /* Loads all sections at their addresses. */
     for (section = section_table;
          section < section_table + (coff_hdr.NumberOfSections);

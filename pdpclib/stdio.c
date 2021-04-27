@@ -3076,6 +3076,7 @@ static int examine(const char **formt, FILE *fq, char *s, va_list *arg,
         }
 #if defined(__MSDOS__) && \
     !defined(__PDOS386__) && \
+    !defined(__SMALLERC__) && \
     !defined(__gnu_linux__)
         if (specifier == 'p')
         {
@@ -3111,6 +3112,7 @@ static int examine(const char **formt, FILE *fq, char *s, va_list *arg,
         }
 #if defined(__MSDOS__) && \
     !defined(__PDOS386__) && \
+    !defined(__SMALLERC__) && \
     !defined(__gnu_linux__)
         if (!lng)
         {
@@ -3133,6 +3135,7 @@ static int examine(const char **formt, FILE *fq, char *s, va_list *arg,
         {
 #if defined(__MSDOS__) && \
     !defined(__PDOS386__) && \
+    !defined(__SMALLERC__) && \
     !defined(__gnu_linux__)
             precision = 9;
 #else
@@ -3161,6 +3164,7 @@ static int examine(const char **formt, FILE *fq, char *s, va_list *arg,
             x++;
 #if defined(__MSDOS__) && \
     !defined(__PDOS386__) && \
+    !defined(__SMALLERC__) && \
     !defined(__gnu_linux__)
             if ((x == 4) && (specifier == 'p'))
             {
@@ -3172,6 +3176,7 @@ static int examine(const char **formt, FILE *fq, char *s, va_list *arg,
         }
 #if defined(__MSDOS__) && \
     !defined(__PDOS386__) && \
+    !defined(__SMALLERC__) && \
     !defined(__gnu_linux__)
         if (specifier == 'p')
         {

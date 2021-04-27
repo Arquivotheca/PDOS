@@ -2906,7 +2906,7 @@ static void loadExe32(char *prog, PARMBLOCK *parmblock, int synchronous)
     if (curPCB == NULL)
     {
         char sBOOTDRIVE[2];
-        sBOOTDRIVE[0] = 'A' + bootDriveLogical;
+        sBOOTDRIVE[0] = alphabet[bootDriveLogical];
         sBOOTDRIVE[1] = 0;
         envptr = envAllocateEmpty(prog);
         envptr = envModify(envptr, "COMSPEC", prog);

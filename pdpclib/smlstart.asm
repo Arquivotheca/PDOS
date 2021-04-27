@@ -23,7 +23,6 @@
 
     public __psp
     public __envptr
-    public __osver
 
 ;extrn __start:proc
     extern __start:byte
@@ -34,6 +33,12 @@
 text segment "CODE"
 
 __intstart:
+
+    ; Get MSDOS version and push ready for start()
+    mov ah,30h
+    int 21h
+    xchg al,ah
+    push ax
 
     ; push PSP ready for calling start()
 
@@ -187,7 +192,6 @@ rd:
 banner  db  "PDPCLIB"
 __psp   dd  ?
 __envptr dd  ?
-__osver dw  ?
 data ends
 
 _relod segment dword "CONST"

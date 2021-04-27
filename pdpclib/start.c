@@ -50,7 +50,10 @@ int __minstart = 0;
 #ifdef __MSDOS__
 /* Must be unsigned as it is used for array index */
 extern unsigned char *__envptr;
-extern unsigned short __osver;
+#ifndef __SMALLERC__
+extern
+#endif
+unsigned short __osver;
 #endif
 
 #ifdef __VSE__
@@ -205,6 +208,8 @@ int __start(char *p, char *pgmname, int tso)
 int __start(int argc, char **argv)
 #elif defined(__AMIGA__)
 int __start(unsigned long cmdlen, char *p, void *pdosbase)
+#elif defined(__SMALLERC__)
+__PDPCLIB_API__ int CTYP __start(char *p, unsigned short osver)
 #else
 __PDPCLIB_API__ int CTYP __start(char *p)
 #endif
@@ -864,6 +869,9 @@ __PDPCLIB_API__ int CTYP __start(char *p)
 #elif defined(__MSDOS__)
     argv[0] = "";
 
+#ifdef __SMALLERC__
+    __osver = osver;
+#endif
 #ifndef __SMALLERC__
     if(__osver > 0x300)
     {

@@ -22,7 +22,7 @@
     public __subsf3
 
     public __psp
-;    public __envptr
+    public __envptr
     public __osver
 
 ;extrn __start:proc
@@ -34,6 +34,13 @@
 text segment "CODE"
 
 __intstart:
+
+    ; push PSP ready for calling start()
+
+    xor     eax, eax
+    mov     ax, ds
+    shl     eax, 4
+    push    eax
 
     ; perform code/data relocations
 
@@ -179,7 +186,7 @@ rd:
 
 banner  db  "PDPCLIB"
 __psp   dd  ?
-;__envptr dd  ?
+__envptr dd  ?
 __osver dw  ?
 data ends
 

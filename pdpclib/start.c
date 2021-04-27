@@ -49,7 +49,10 @@ int __minstart = 0;
 
 #ifdef __MSDOS__
 /* Must be unsigned as it is used for array index */
-extern unsigned char *__envptr;
+#ifndef __SMALLERC__
+extern
+#endif
+unsigned char *__envptr;
 #ifndef __SMALLERC__
 extern
 #endif
@@ -870,9 +873,11 @@ __PDPCLIB_API__ int CTYP __start(char *p)
     argv[0] = "";
 
 #ifdef __SMALLERC__
+    __envptr = (unsigned char *)
+               ((unsigned long)(*(unsigned short *)(p + 0x2c)) << 4);
     __osver = osver;
 #endif
-#ifndef __SMALLERC__
+
     if(__osver > 0x300)
     {
         env=__envptr;
@@ -888,7 +893,7 @@ __PDPCLIB_API__ int CTYP __start(char *p)
             }
         }
     }
-#endif
+
     p = p + 0x80;
     p[*p + 1] = '\0';
     p++;

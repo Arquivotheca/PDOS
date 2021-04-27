@@ -21,9 +21,6 @@
     public __fixsfsi
     public __subsf3
 
-    public __psp
-    public __envptr
-
 ;extrn __start:proc
     extern __start:byte
     extern _start__relot:byte, _stop__relot:byte
@@ -190,8 +187,6 @@ rd:
     dd      offset rd
 
 banner  db  "PDPCLIB"
-__psp   dd  ?
-__envptr dd  ?
 data ends
 
 _relod segment dword "CONST"

@@ -26,6 +26,10 @@
 #define __MSDOS__
 #endif
 
+#ifdef __PDOS386__
+#include <pos.h>
+#endif
+
 #ifdef __AMIGA__
 #include <clib/exec_protos.h>
 #endif
@@ -935,17 +939,18 @@ __PDPCLIB_API__ int system(const char *string)
 #endif
 #ifdef __MSDOS__
     static unsigned char cmdt[140];
-    static struct {
+    static
 #ifdef __PDOS386__
-        unsigned int env;
+    POSEXEC_PARMBLOCK
 #else
-        unsigned short env; /* this will presumably need to change to be a
-                               pointer in 32-bit flat mode */
-#endif
+    struct {
+        unsigned short env;
         unsigned char *cmdtail;
         char *fcb1;
         char *fcb2;
-    } parmblock = { 0, cmdt, NULL, NULL };
+    }
+#endif
+        parmblock = { 0, cmdt, NULL, NULL };
     size_t len;
     char *cmd;
 

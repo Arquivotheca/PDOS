@@ -2268,6 +2268,12 @@ int int0E(unsigned int *regs)
 int int0(unsigned int *regs)
 {
     printf("Divide by zero fault occured (Protected Mode Exception 0x0)\n");
+    printf("EAX %08X EBX %08X ECX %08X EDX %08X\n",
+           regs[0], regs[1], regs[2], regs[3]);
+    printf("ESI %08X EDI %08X FLAGS %08X\n",
+           regs[4], regs[5], regs[7]);
+    printf("regs[-1] is %08X\n", regs[-1]);
+    printf("regs[-2] is %08X\n", regs[-2]);
     printf("System halting\n");
     for (;;);
 

@@ -936,7 +936,8 @@ __PDPCLIB_API__ int system(const char *string)
 #ifdef __MSDOS__
     static unsigned char cmdt[140];
     static struct {
-        int env;
+        unsigned short env; /* this will presumably need to change to be a
+                               pointer in 32-bit flat mode */
         unsigned char *cmdtail;
         char *fcb1;
         char *fcb2;

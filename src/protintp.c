@@ -23,6 +23,7 @@ unsigned long (*runreal_p)(unsigned long func, unsigned short *regs);
 rawprot_parms *rp_parms;
 
 void inthdlr(void);
+void inthdlr_0(void);
 void inthdlr_8(void);
 void inthdlr_9(void);
 void inthdlr_E(void);
@@ -94,10 +95,10 @@ void gotint(int intno, unsigned int *save)
         }
     }
 
-    /* If the interrupt number is 0, it signifies that this is
+    /* If the interrupt number is 0xff, it signifies that this is
        just the default handler, and we are not required to take
        any action. */
-    if (intno == 0)
+    if (intno == 0xff)
     {
         return;
     }
@@ -161,6 +162,7 @@ unsigned long runprot_p(rawprot_parms *parmlist)
         int number;
         void (*handler)(void);
     } handlerlist[] = { 
+        { 0x0, inthdlr_0 },
         { 0x8, inthdlr_8 },
         { 0x9, inthdlr_9 },
         { 0xE, inthdlr_E },
@@ -182,7 +184,7 @@ unsigned long runprot_p(rawprot_parms *parmlist)
         { 0xAA, inthdlr_AA },
         { 0xB0, inthdlr_B0 },
         { 0xB1, inthdlr_B1 },
-        { 0, 0 } };
+        { 0xFF, 0 } };
 
     intloc = (void *)(parmlist->intloc);
     runparm = (runprot_parms *)parmlist->userparm;
@@ -207,7 +209,7 @@ unsigned long runprot_p(rawprot_parms *parmlist)
     }
 
     /* Installs the handlers from handlerlist. */
-    for (x = 0; handlerlist[x].number != 0; x++)
+    for (x = 0; handlerlist[x].number != 0xFF; x++)
     {    
         intaddr = (unsigned long)handlerlist[x].handler;
         intdesc1 = (0x8 << 16) | (intaddr & 0xffff);

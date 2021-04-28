@@ -8,6 +8,7 @@
 
 / symbols defined here that are accessed from elsewhere
         .globl _inthdlr
+        .globl _inthdlr_0
         .globl _inthdlr_8
         .globl _inthdlr_9
         .globl _inthdlr_E
@@ -49,8 +50,17 @@
 / 0x10.  then the interrupt ends, restoring saveesp
 
 / _inthdlr is the default interrupt handler designed to do nothing.
-/ It sets the interrupt number to 0 for recognition by gotint.
+/ It sets the interrupt number to 0xff for recognition by gotint.
 _inthdlr:
+        push   %eax
+        mov    %ds, %ax
+        push   %eax
+        mov    $0x10, %eax
+        mov    %ax, %ds
+        push   intnum
+        movl   $0xff, intnum
+        jmp    _inthdlr_q
+_inthdlr_0:
         push   %eax
         mov    %ds, %ax
         push   %eax

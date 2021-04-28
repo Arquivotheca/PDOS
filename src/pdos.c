@@ -93,6 +93,7 @@ static void scrunchf(char *dest, char *new);
 static int ff_search(void);
 
 #ifdef __32BIT__
+int int0(unsigned int *regs);
 int int0E(unsigned int *regs);
 int int20(unsigned int *regs);
 /* INT 25 - Absolute Disk Read */
@@ -2264,6 +2265,15 @@ int int0E(unsigned int *regs)
     return (0);
 }
 
+int int0(unsigned int *regs)
+{
+    printf("Divide by zero fault occured (Protected Mode Exception 0x0)\n");
+    printf("System halting\n");
+    for (;;);
+
+    return (0);
+}
+
 int int0D(unsigned int *regs)
 {
     printf("General Protection Fault occured\n");
@@ -3753,6 +3763,7 @@ int pdosstrt(void)
     doreboot = pp->doreboot;
     dopoweroff = pp->dopoweroff;
     bootBPB = (void *)(pp->bpb);
+    protintHandler(0x0, int0);
     protintHandler(0x0E, int0E);
     protintHandler(0x20, int20);
     protintHandler(0x21, int21);

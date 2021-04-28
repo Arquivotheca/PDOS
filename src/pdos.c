@@ -60,7 +60,11 @@
     /* stdin, stdout, stderr, stdaux, stdprn */
 
 typedef struct {
+#ifdef __32BIT__
     int env;
+#else
+    short env;
+#endif
     unsigned char *cmdtail;
     char *fcb1;
     char *fcb2;

@@ -128,6 +128,17 @@ typedef struct _PDOS_PROCINFO {
 
 /* ===== ENDING PROCESS MANAGEMENT DATA STRUCTURES ===== */
 
+typedef struct {
+#ifdef __32BIT__
+    char *env;
+#else
+    short env;
+#endif
+    unsigned char *cmdtail;
+    char *fcb1;
+    char *fcb2;
+} POSEXEC_PARMBLOCK;
+
 /* API functions */
 
 void PosTermNoRC(void); /* int 20h */
@@ -257,7 +268,7 @@ int PosFreeMem(void *ptr); /* func 49 */
 /* func 4a */
 int PosReallocPages(void *ptr, unsigned int newpages, unsigned int *maxp);
 
-void PosExec(char *prog, void *parmblock); /* func 4b */
+void PosExec(char *prog, POSEXEC_PARMBLOCK *parmblock); /* func 4b */
 
 void PosTerminate(int rc); /* func 4c */
 
@@ -286,7 +297,7 @@ int PosCreatNewFile(const char *name, int attrib, int *handle); /*func 5b*/
 
 int PosTruename(char *prename,char *postname); /*func 60*/
 
-void PosAExec(char *prog, void *parmblock); /* func 80 */
+void PosAExec(char *prog, POSEXEC_PARMBLOCK *parmblock); /* func 80 */
 
 /* The following functions are extensions... */
 

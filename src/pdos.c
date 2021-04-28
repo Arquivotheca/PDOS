@@ -60,17 +60,6 @@
     /* stdin, stdout, stderr, stdaux, stdprn */
 
 typedef struct {
-#ifdef __32BIT__
-    int env;
-#else
-    short env;
-#endif
-    unsigned char *cmdtail;
-    char *fcb1;
-    char *fcb2;
-} PARMBLOCK;
-
-typedef struct {
     FAT fat;
     BPB bpb;
     char cwd[MAX_PATH];
@@ -110,11 +99,11 @@ int intB0(unsigned int *regs);
 #endif
 static void loadConfig(void);
 static void loadPcomm(void);
-static void loadExe(char *prog, PARMBLOCK *parmblock);
+static void loadExe(char *prog, POSEXEC_PARMBLOCK *parmblock);
 #ifdef __32BIT__
 #define ASYNCHRONOUS 0
 #define SYNCHRONOUS  1
-static void loadExe32(char *prog, PARMBLOCK *parmblock, int synchronous);
+static void loadExe32(char *prog, POSEXEC_PARMBLOCK *parmblock, int synchronous);
 static void startExe32(void);
 static void terminateExe32(void);
 static int fixexe32(unsigned long entry, unsigned int sp,
@@ -1843,15 +1832,14 @@ int PosReallocPages(void *ptr, unsigned int newpages, unsigned int *maxp)
 }
 #endif
 
-void PosExec(char *prog, void *parmblock)
+void PosExec(char *prog, POSEXEC_PARMBLOCK *parmblock)
 {
-    PARMBLOCK *parms = parmblock;
     char tempp[FILENAME_MAX];
 
     if (formatcwd(prog, tempp)) return;
     /* +++Add a way to let user know it failed on formatcwd. */
     prog = tempp;
-    loadExe(prog, parms);
+    loadExe(prog, parmblock);
     return;
 }
 
@@ -1991,15 +1979,14 @@ int PosTruename(char *prename,char *postname)
 }
 
 #ifdef __32BIT__
-void PosAExec(char *prog, void *parmblock)
+void PosAExec(char *prog, POSEXEC_PARMBLOCK *parmblock)
 {
-    PARMBLOCK *parms = parmblock;
     char tempp[FILENAME_MAX];
 
     if (formatcwd(prog, tempp)) return;
     /* +++Add a way to let user know it failed on formatcwd. */
     prog = tempp;
-    loadExe32(prog, parms, ASYNCHRONOUS);
+    loadExe32(prog, parmblock, ASYNCHRONOUS);
     return;
 }
 #endif
@@ -2599,8 +2586,8 @@ static void loadConfig(void)
 
 static void loadPcomm(void)
 {
-    static PARMBLOCK p = { 0, "\x2/p\r", NULL, NULL };
-    static PARMBLOCK altp = { 0, "\x0\r", NULL, NULL };
+    static POSEXEC_PARMBLOCK p = { 0, "\x2/p\r", NULL, NULL };
+    static POSEXEC_PARMBLOCK altp = { 0, "\x0\r", NULL, NULL };
 
     kernel32[0] = msvcrt[0] = alphabet[bootDriveLogical];
     if (strcmp(shell, "") == 0)
@@ -2631,7 +2618,7 @@ static void loadPcomm(void)
 /* 1. header is larger */
 /* 6. executable needs 2-stage load */
 
-static void loadExe(char *prog, PARMBLOCK *parmblock)
+static void loadExe(char *prog, POSEXEC_PARMBLOCK *parmblock)
 {
 #ifdef __32BIT__
     loadExe32(prog, parmblock, SYNCHRONOUS);
@@ -2888,7 +2875,7 @@ static void loadExe(char *prog, PARMBLOCK *parmblock)
 #include "elf.h"
 #include "exeload.h"
 
-static void loadExe32(char *prog, PARMBLOCK *parmblock, int synchronous)
+static void loadExe32(char *prog, POSEXEC_PARMBLOCK *parmblock, int synchronous)
 {
     char *commandLine;
     char *envptr;

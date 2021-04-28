@@ -39,12 +39,8 @@ static char buf[300];
 static unsigned char cmdt[140];
 #define PATH_MAX 500
 static char path[PATH_MAX] = ";" ; /* Used to store path */
-static struct {
-    int env;
-    unsigned char *cmdtail;
-    char *fcb1;
-    char *fcb2;
-} parmblock = { 0, cmdt, NULL, NULL };
+static POSEXEC_PARMBLOCK
+    parmblock = { 0, cmdt, NULL, NULL };
 static size_t len;
 static char drive[2] = "A";
 static char cwd[65];

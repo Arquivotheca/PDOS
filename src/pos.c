@@ -1070,7 +1070,7 @@ int PosReallocMem(void *ptr, unsigned int newpages, unsigned int *maxp)
     return (regsout.x.ax);
 }
 
-void PosExec(char *prog, void *parmblock)
+void PosExec(char *prog, POSEXEC_PARMBLOCK *parmblock)
 {
     union REGS regsin;
     union REGS regsout;
@@ -1357,7 +1357,7 @@ int PosTruename(char *prename,char *postname)
 }
 
 #ifdef __32BIT__
-void PosAExec(char *prog, void *parmblock)
+void PosAExec(char *prog, POSEXEC_PARMBLOCK *parmblock)
 {
     union REGS regsin;
     union REGS regsout;

@@ -15,7 +15,4 @@ del osfunc.s
 
 rem I don't know why I need to use "pie" to stop relocations
 rem from being stripped
-ld -pie -s -e ___crt0 -o osworld.exe genstart.o osworld.o osfunc.o
-
-rem Don't do this - it will strip relocations
-rem stripwin --strip-unneeded osworld.exe
+ldwin -s -e ___crt0 -o osworld.exe genstart.o osworld.o osfunc.o

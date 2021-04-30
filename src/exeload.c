@@ -985,29 +985,24 @@ static int exeloadLoadPE(unsigned long *entry_point,
         return (2);
     }
 
+    if (coff_hdr.Characteristics & IMAGE_FILE_RELOCS_STRIPPED)
+    {
+        printf("error - executable has had relocations stripped\n");
+        kfree(section_table);
+        kfree(optional_hdr);
+        return (2);
+    }
+
     /* Allocates memory for the process.
      * Size of image is obtained from the optional header. */
-    /* PE files are loaded at their preferred address. */
-    exeStart = PosVirtualAlloc((void *)(optional_hdr->ImageBase),
-                               optional_hdr->SizeOfImage);
-    if ((exeStart == NULL)
-        && !(coff_hdr.Characteristics & IMAGE_FILE_RELOCS_STRIPPED))
-    {
-        /* If the PE file could not be loaded at its preferred address,
-         * but it is relocatable, it is loaded elsewhere. */
-        exeStart = PosVirtualAlloc(0, optional_hdr->SizeOfImage);
-    }
+    exeStart = PosVirtualAlloc(0, optional_hdr->SizeOfImage);
+
     if (exeStart == NULL)
     {
         printf("Insufficient memory to load PE program\n");
         kfree(section_table);
         kfree(optional_hdr);
         return (2);
-    }
-
-    if (coff_hdr.Characteristics & IMAGE_FILE_RELOCS_STRIPPED)
-    {
-        printf("warning - executable has had relocations stripped\n");
     }
 
     /* Loads all sections at their addresses. */

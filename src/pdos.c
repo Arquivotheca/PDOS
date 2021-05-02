@@ -41,7 +41,7 @@
 void *kmalloc(size_t size);
 void kfree(void *ptr);
 #define vmmInit(a, b)
-#define vmmFree(a, b, c)
+#define vmmFree(a, b, c) kfree(b)
 #define vmmAlloc(a, b, c) kmalloc(c)
 #define vmmTerm(a)
 #define vmmCopyCurrentMapping(a, b, c)
@@ -3046,7 +3046,9 @@ static void terminateExe32(void)
     /* Terminates the process. */
     newProc->status = PDOS_PROCSTATUS_TERMINATED;
     /* Frees the process address space. */
+#ifndef NOVM
     vmmFree(newProc->vmm, (void *)PROCESS_SPACE_START, PROCESS_SPACE_SIZE);
+#endif
 
     {
         /* No more process memory will be handled,

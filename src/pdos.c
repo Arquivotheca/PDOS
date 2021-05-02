@@ -36,9 +36,24 @@
 
 #ifdef __32BIT__
 #include "int80.h"
+#ifdef NOVM
+#define PAGE_SIZE 0x1000
+void *kmalloc(size_t size);
+void kfree(void *ptr);
+#define vmmInit(a, b)
+#define vmmFree(a, b, c)
+#define vmmAlloc(a, b, c) kmalloc(c)
+#define vmmTerm(a)
+#define vmmCopyCurrentMapping(a, b, c)
+#define vmmSupply(a, b, c)
+#define vmmAllocPages(a, num_pages) kmalloc(num_pages * PAGE_SIZE)
+#define vmmFreePages(a, addr, num_pages) kfree(addr)
+#define loadPageDirectory(a)
+#else
 #include "physmem.h"
 #include "vmm.h"
 #include "liballoc.h"
+#endif
 
 /* Address space layout.
  * Kernel space contents are the same for every process. */
@@ -270,7 +285,11 @@ static unsigned long dopoweroff;
 #endif
 
 #ifdef __32BIT__
+#ifdef NOVM
+static MEMMGR physmemmgr;
+#else
 static PHYSMEMMGR physmemmgr;
+#endif
 /* Once mutitasking is running all accesses
  * to kernel_vmm should be protected by disabling interrupts. */
 static VMM kernel_vmm;
@@ -741,6 +760,10 @@ void pdosRun(void)
     /* skip the first 2 MiB */
     memstart = 0x200000;
     memavail -= 0x200000;
+#ifdef NOVM
+    memmgrInit(&physmemmgr);
+    memmgrSupply(&physmemmgr, (void *)memstart, memavail);
+#else
     /* Provides memory to physical memory manager. */
     physmemmgrInit(&physmemmgr);
     physmemmgrSupply(&physmemmgr, memstart, memavail);
@@ -787,6 +810,7 @@ void pdosRun(void)
         physmemmgrFreePageFrame(&physmemmgr, page_directory);
     }
     initThreading();
+#endif
 #endif
     memmgrDefaults(&btlmem);
     memmgrInit(&btlmem);
@@ -4835,3 +4859,18 @@ static void getDateTime(FAT_DATETIME *ptr)
     }
     return;
 }
+
+#ifdef NOVM
+
+void *kmalloc(size_t size)
+{
+    return (memmgrAllocate(&physmemmgr, size, memId));
+}
+
+void kfree(void *ptr)
+{
+    memmgrFree(&physmemmgr, ptr);
+    return;
+}
+
+#endif

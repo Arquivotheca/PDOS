@@ -61,7 +61,7 @@ double log(double x);
 double log10(double x);
 
 
-#ifdef __WATCOMC__
+#if 0 /* def __WATCOMC__ */
 #pragma intrinsic(cos, sin, tan, exp, log, log10, sqrt)
 #endif
 

@@ -17,6 +17,7 @@
 #include <time.h>
 #include <locale.h>
 #include <setjmp.h>
+#include <math.h>
 
 #include <windows.h>
 
@@ -49,6 +50,7 @@ BOOL WINAPI DllMain(HINSTANCE hinstDll, DWORD fdwReason, LPVOID lpvReserved)
         time(NULL);
         localeconv();
         setjmp(jmpenv);
+        sin(0.0);
     }
 #endif
 

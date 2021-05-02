@@ -2982,6 +2982,7 @@ static void startExe32(void)
     int ret;
     char *prog;
 
+    memId += 256;
     /* Tells the new VMM what address range can it use. */
     vmmSupply(curPCB->vmm, (void *)PROCESS_SPACE_START, PROCESS_SPACE_SIZE);
 
@@ -3048,7 +3049,10 @@ static void terminateExe32(void)
     /* Frees the process address space. */
 #ifndef NOVM
     vmmFree(newProc->vmm, (void *)PROCESS_SPACE_START, PROCESS_SPACE_SIZE);
+#else
+    memmgrFreeId(&physmemmgr, memId);
 #endif
+    memId -= 256;
 
     {
         /* No more process memory will be handled,
@@ -3112,10 +3116,8 @@ static int fixexe32(unsigned long entry, unsigned int sp,
     realdata->base_23_16 = (dataStart >> 16) & 0xff;
     realdata->base_31_24 = (dataStart >> 24) & 0xff;
 
-    memId += 256;
     ret = call32(entry, sp, curTCB);
     /* printf("ret is %x\n", ret); */
-    memId -= 256;
 
     *realcode = savecode;
     *realdata = savedata;

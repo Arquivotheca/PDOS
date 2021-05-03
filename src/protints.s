@@ -384,6 +384,57 @@ level10b:
 
 / This is for interrupts that should not alter
 / the flags, like the timer interrupt
+
+/ by the time we get here, the following things are on the stack:
+/ original eax, original ds (stored as doubleword), original intnum
+
+/ And because this is an interrupt that does not push an error
+/ code, above those 3 dwords are the EIP, cs (stored as a
+/ dword), and the flags (also stored as a dword). All three of
+/ those things will be popped when we do an iret.
+
+/ Above that is completely unpredictable, as it is just whatever
+/ the application had pushed onto the stack before the
+/ interrupt occurred.
+
+/ gotint() will receive the interrupt plus an array of registers.
+/ It will then pass it on to the specific interrupt handler, just
+/ passing the register array. This pointer is all that the
+/ interrupt will have to work with, so we need to calculate
+/ everything from that spot.
+
+/ In addition, the stack is actually switched (to the caller's
+/ stack, but with the OS (0x10) ss) prior to the register array
+/ being constructed. I think
+/ this switch is done to allow the interrupt to terminate the
+/ called program if it wishes to do so. The stack pointer before
+/ the switch is available on the new stack, after the registers
+/ (EAX, EBX, ECX, EDX, ESI, EDI) then cflag, then flags. Although
+/ at time of writing, the flags are not being correctly passed
+/ up to gotint().
+
+/ We don't switch stack if this is the highest level, ie ss of 0x10
+/ Note that when an application is running it will have an ss of
+/ 0x30 which is "spawn_data"
+
+/ old stack looks like this at the time of stack switch:
+/ unpredictable stack data pushed by application during execution,
+/ before interruption
+/ flags
+/ cs
+/ eip
+/ eax
+/ ds
+/ old intnum
+/ previous interrupt's ss (saveess)
+/ previous interrupt's esp (saveesp)
+/ ebx (not sure why it is needed, seems to do with flags)
+/ previous interrupt's eax (saveeax)
+/ previous interrupt's ebx (saveebx)
+/ The above is what saveesp will be pointing to
+/ ebp is temporarily stored here, and will remain if there is a
+/     stack switch done
+
 _inthdlr_q:
         push   saveess
         push   saveesp
@@ -411,6 +462,7 @@ _inthdlr_q:
         mov    %ax, %gs
         mov    call32_esp, %eax
         mov    %eax, %esp
+/ Now we are on the new stack.
 level10c:
         mov    saveeax, %eax
 / saveess and saveesp must be saved on stack
@@ -486,6 +538,7 @@ level10d:
         pop    %eax
         mov    %ax, %ds
         pop    %eax
+/ These 3 instructions look pointless to me
         push   %ebp
         mov    %esp, %ebp
         pop    %ebp

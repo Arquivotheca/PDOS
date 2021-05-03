@@ -2282,13 +2282,29 @@ int int0E(unsigned int *regs)
 
 int int0(unsigned int *regs)
 {
+    unsigned int *oldsp;
+    unsigned int *ebp;
+    unsigned int *retaddr;
+
     printf("Divide by zero fault occured (Protected Mode Exception 0x0)\n");
     printf("EAX %08X EBX %08X ECX %08X EDX %08X\n",
            regs[0], regs[1], regs[2], regs[3]);
-    printf("ESI %08X EDI %08X FLAGS %08X\n",
-           regs[4], regs[5], regs[7]);
-    printf("regs[-1] is %08X\n", regs[-1]);
-    printf("regs[-2] is %08X\n", regs[-2]);
+    printf("ESI %08X EDI %08X\n",
+           regs[4], regs[5]);
+    printf("regs are at %p\n", regs);
+    oldsp = (unsigned int *)regs[8];
+    printf("old stack starts at %p\n", oldsp);
+    ebp = (unsigned int *)oldsp[-1];
+    printf("EBP is probably %p\n", ebp);
+    printf("interrupt address is %08X\n", oldsp[8]);
+    printf("flags are %08X\n", oldsp[10]);
+    printf("EBP chain to EBP is %08X\n", ebp[0]);
+    retaddr = (unsigned int *)ebp[1];
+    printf("previous function's return address is %p\n", retaddr);
+    printf("called address was possibly relative %08X\n", retaddr[-1]);
+    printf("which would make it absolute address %08X\n",
+           (char *)retaddr + retaddr[-1]);
+
     printf("System halting\n");
     for (;;);
 

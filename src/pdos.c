@@ -282,6 +282,8 @@ static long freem_start; /* start of free memory below 1 MiB,
                             absolute address */
 static unsigned long doreboot;
 static unsigned long dopoweroff;
+unsigned char *loadaddr = NULL;
+unsigned long entry_point;
 #endif
 
 #ifdef __32BIT__
@@ -2291,6 +2293,7 @@ int int0(unsigned int *regs)
            regs[0], regs[1], regs[2], regs[3]);
     printf("ESI %08X EDI %08X\n",
            regs[4], regs[5]);
+    printf("module loaded at %p, entry point %08lX\n", loadaddr, entry_point);
     printf("regs are at %p\n", regs);
     oldsp = (unsigned int *)regs[8];
     printf("old stack starts at %p\n", oldsp);
@@ -2994,7 +2997,8 @@ static void loadExe32(char *prog, POSEXEC_PARMBLOCK *parmblock, int synchronous)
 
 static void startExe32(void)
 {
-    unsigned long entry_point;
+    unsigned long old_entry_point;
+    char *old_loadaddr;
     int ret;
     char *prog;
 
@@ -3028,6 +3032,8 @@ static void startExe32(void)
         prog[progLen] = '\0';
     }
 
+    old_entry_point = entry_point;
+    old_loadaddr = loadaddr;
     ret = exeloadDoload(&entry_point, prog);
     if (ret == 0)
     {
@@ -3047,6 +3053,8 @@ static void startExe32(void)
     {
         lastrc = -1;
     }
+    loadaddr = old_loadaddr;
+    entry_point = old_entry_point;
 
     terminateExe32();
 }

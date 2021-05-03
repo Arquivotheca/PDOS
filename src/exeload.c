@@ -49,6 +49,7 @@ static int exeloadLoadPEDLL(unsigned char *exeStart,
 
 extern char kernel32[];
 extern char msvcrt[];
+extern unsigned char *loadaddr;
 static int warnkernel = 1;
 
 int exeloadDoload(unsigned long *entry_point, char *prog)
@@ -161,6 +162,7 @@ static int exeloadLoadAOUT(unsigned long *entry_point, int fhandle)
         if (doing_zmagic) kfree(header);
         return (2);
     }
+
 
     if (PosReadFile(fhandle, exeStart, firstbit.a_text, &readbytes)
         || (readbytes != (firstbit.a_text)))
@@ -280,6 +282,7 @@ static int exeloadLoadAOUT(unsigned long *entry_point, int fhandle)
     }
 
     *entry_point = firstbit.a_entry;
+    loadaddr = exeStart;
 
     return (0);
 }
@@ -830,6 +833,7 @@ static int exeloadLoadELF(unsigned long *entry_point, int fhandle)
     {
         *entry_point = elfHdr->e_entry;
     }
+    loadaddr = exeStart;
 
     /* Frees memory not needed by the process. */
     kfree(elfHdr);
@@ -1140,6 +1144,7 @@ static int exeloadLoadPE(unsigned long *entry_point,
 
     *entry_point = (((unsigned long)exeStart)
                     + (optional_hdr->AddressOfEntryPoint));
+    loadaddr = exeStart;
     /* Frees memory not needed by the process. */
     kfree(section_table);
     kfree(optional_hdr);

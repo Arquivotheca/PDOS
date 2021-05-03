@@ -2273,7 +2273,7 @@ static int ff_search(void)
 /* registers come in as eax, ebx, ecx, edx, esi, edi, cflag */
 int int0E(unsigned int *regs)
 {
-    printf("Page Fault occured (Protected Mode Exception 0xE)\n");
+    printf("Page Fault occurred (Protected Mode Exception 0xE)\n");
     printf("while accessing virtual address 0x%08x\n", readCR2());
     printf("Error code is %08x\n", regs[8]);
     printf("System halting\n");
@@ -2288,7 +2288,7 @@ int int0(unsigned int *regs)
     unsigned int *ebp;
     unsigned int *retaddr;
 
-    printf("Divide by zero fault occured (Protected Mode Exception 0x0)\n");
+    printf("Divide by zero fault occurred (Protected Mode Exception 0x0)\n");
     printf("EAX %08X EBX %08X ECX %08X EDX %08X\n",
            regs[0], regs[1], regs[2], regs[3]);
     printf("ESI %08X EDI %08X\n",
@@ -2316,7 +2316,7 @@ int int0(unsigned int *regs)
 
 int int0D(unsigned int *regs)
 {
-    printf("General Protection Fault occured\n");
+    printf("General Protection Fault occurred\n");
     printf("(Protected Mode Exception 0xD)\n");
     printf("Error code is %08x\n", regs[8]);
     if (regs[8])

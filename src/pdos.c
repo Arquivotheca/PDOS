@@ -2427,16 +2427,7 @@ int intB0(unsigned int *regs)
 
 /**/
 #else
-void int0(unsigned int *regptrs,
-        unsigned int es,
-        unsigned int ds,
-        unsigned int di,
-        unsigned int si,
-        unsigned int dx,
-        unsigned int cx,
-        unsigned int bx,
-        unsigned int cflag,
-        unsigned int ax)
+void int0(unsigned int *regptrs)
 {
     printf("got a divide by zero\n");
     printf("AX %04X BX %04X CX %04X DX %04X\n",

@@ -286,6 +286,11 @@ unsigned char *loadaddr = NULL;
 unsigned long entry_point;
 #endif
 
+#ifndef __32BIT__
+static unsigned char *loadaddr = NULL;
+static unsigned char *entry_point = NULL;
+#endif
+
 #ifdef __32BIT__
 #ifdef NOVM
 static MEMMGR physmemmgr;
@@ -2436,6 +2441,7 @@ void int0(unsigned int *regptrs)
            regptrs[3], regptrs[2], regptrs[1], regptrs[0]);
     printf("BP %04X CS %04X IP %04X FLAGS %04X\n",
            regptrs[9], regptrs[11], regptrs[10], regptrs[12]);
+    printf("module loaded at %p, entry point %p\n", loadaddr, entry_point);
     printf("regptrs is %p\n", regptrs);
     printf("halting\n");
     for (;;) ;
@@ -2692,6 +2698,7 @@ static void loadExe(char *prog, POSEXEC_PARMBLOCK *parmblock)
     unsigned char *pcb;
     PDOS_PROCESS *newProc;
     unsigned char *exeStart;
+    unsigned char *old_loadaddr;
     unsigned int numReloc;
     unsigned long *relocStart;
     unsigned int relocI;
@@ -2700,6 +2707,7 @@ static void loadExe(char *prog, POSEXEC_PARMBLOCK *parmblock)
     unsigned int ss;
     unsigned int sp;
     unsigned char *exeEntry;
+    unsigned char *old_entry_point;
     unsigned int maxPages;
     int fno;
     size_t readbytes;
@@ -2884,11 +2892,17 @@ static void loadExe(char *prog, POSEXEC_PARMBLOCK *parmblock)
     newProc->status = PDOS_PROCSTATUS_ACTIVE;
     if (newProc->parent != NULL)
         newProc->parent->status = PDOS_PROCSTATUS_CHILDWAIT;
+    old_loadaddr = loadaddr;
+    old_entry_point = entry_point;
+    loadaddr = exeStart;
+    entry_point = exeEntry;
     memId += 256;
     ret = callwithpsp(exeEntry, psp, ss, sp);
     /* printf("ret is %x\n", ret); */
     memmgrFreeId(&memmgr, memId);
     memId -= 256;
+    entry_point = old_entry_point;
+    loadaddr = old_loadaddr;
     dta = olddta;
 #endif
     lastrc = ret;

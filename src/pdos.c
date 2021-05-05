@@ -2434,6 +2434,9 @@ int intB0(unsigned int *regs)
 #else
 void int0(unsigned int *regptrs)
 {
+    unsigned short ss;
+    unsigned char *chain;
+
     printf("got a divide by zero\n");
     printf("AX %04X BX %04X CX %04X DX %04X\n",
            regptrs[8], regptrs[6], regptrs[5], regptrs[4]);
@@ -2444,6 +2447,11 @@ void int0(unsigned int *regptrs)
     printf("module loaded at %p, entry point %p\n", loadaddr, entry_point);
     printf("interrupt address is %p\n", MK_FP(regptrs[11], regptrs[10]));
     printf("regptrs is %p\n", regptrs);
+    ss = FP_SEG(regptrs);
+    chain = MK_FP(ss, regptrs[9]); /* bp chains back */
+    /* Watcom isn't pushing bp first, on entry, so we have a
+       temporary hack of 6 */
+    printf("retaddr is %p\n", *(char **)(chain + 2 + 6));
     printf("halting\n");
     for (;;) ;
     return;

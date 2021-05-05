@@ -50,6 +50,7 @@ instint proc uses bx es
 instint endp
 
 handler0 proc
+        push bp
         push ax
         push ax   ; dummy, actually cflag storage
         push bx
@@ -86,12 +87,14 @@ clear0:
         mov bp, sp
         and word ptr [bp+6],0fffeh
         pop bp
+        pop bp
         iret
 notclear0:
         pop ax
         push bp
         mov bp, sp
         or word ptr [bp+6],0001h
+        pop bp
         pop bp
         iret
 handler0 endp

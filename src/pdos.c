@@ -2439,6 +2439,10 @@ void int0(unsigned int *regptrs,
         unsigned int ax)
 {
     printf("got a divide by zero\n");
+    printf("AX %04X BX %04X CX %04X DX %04X\n",
+           regptrs[8], regptrs[6], regptrs[5], regptrs[4]);
+    printf("SI %04X DI %04X DS %04X ES %04X\n",
+           regptrs[3], regptrs[2], regptrs[1], regptrs[0]);
     printf("halting\n");
     for (;;) ;
     return;

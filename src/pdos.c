@@ -2442,6 +2442,7 @@ void int0(unsigned int *regptrs)
     printf("BP %04X CS %04X IP %04X FLAGS %04X\n",
            regptrs[9], regptrs[11], regptrs[10], regptrs[12]);
     printf("module loaded at %p, entry point %p\n", loadaddr, entry_point);
+    printf("interrupt address is %p\n", MK_FP(regptrs[11], regptrs[10]));
     printf("regptrs is %p\n", regptrs);
     printf("halting\n");
     for (;;) ;

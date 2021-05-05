@@ -2434,8 +2434,9 @@ void int0(unsigned int *regptrs)
            regptrs[8], regptrs[6], regptrs[5], regptrs[4]);
     printf("SI %04X DI %04X DS %04X ES %04X\n",
            regptrs[3], regptrs[2], regptrs[1], regptrs[0]);
+    printf("BP %04X CS %04X IP %04X FLAGS %04X\n",
+           regptrs[9], regptrs[11], regptrs[10], regptrs[12]);
     printf("regptrs is %p\n", regptrs);
-    printf("bp is %04X\n", regptrs[9]);
     printf("halting\n");
     for (;;) ;
     return;

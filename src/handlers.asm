@@ -49,6 +49,11 @@ instint proc uses bx es
         ret
 instint endp
 
+; the stack will already have
+; flags
+; cs
+; ip
+
 handler0 proc
         push bp
         push ax

@@ -2427,6 +2427,23 @@ int intB0(unsigned int *regs)
 
 /**/
 #else
+void int0(unsigned int *regptrs,
+        unsigned int es,
+        unsigned int ds,
+        unsigned int di,
+        unsigned int si,
+        unsigned int dx,
+        unsigned int cx,
+        unsigned int bx,
+        unsigned int cflag,
+        unsigned int ax)
+{
+    printf("got a divide by zero\n");
+    printf("halting\n");
+    for (;;) ;
+    return;
+}
+
 void int20(unsigned int *regptrs,
         unsigned int es,
         unsigned int ds,

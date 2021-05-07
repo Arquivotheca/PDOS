@@ -2436,6 +2436,7 @@ void int0(unsigned int *regptrs)
 {
     unsigned short ss;
     unsigned char *chain;
+    unsigned short *retaddr;
 
     printf("got a divide by zero\n");
     printf("AX %04X BX %04X CX %04X DX %04X\n",
@@ -2451,7 +2452,11 @@ void int0(unsigned int *regptrs)
     chain = MK_FP(ss, regptrs[9]); /* bp chains back */
     /* Watcom isn't pushing bp first, on entry, so we have a
        temporary hack of 6 */
-    printf("retaddr is %p\n", *(char **)(chain + 2 + 6));
+    retaddr = (unsigned short *)*(char **)(chain + 2 + 6);
+    printf("retaddr is %p\n", retaddr);
+    printf("and that caller might have done a near call to %p\n",
+           MK_FP(regptrs[11],
+                 (unsigned short)(FP_OFF(retaddr) + retaddr[-1])));
     printf("halting\n");
     for (;;) ;
     return;

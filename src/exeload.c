@@ -1319,28 +1319,28 @@ static int exeloadLoadPEDLL(unsigned char *exeStart,
         kfree(section_table);
         kfree(optional_hdr);
         PosCloseFile(fhandle);
-        return (1);
+        return (2);
+    }
+
+    if (coff_hdr.Characteristics & IMAGE_FILE_RELOCS_STRIPPED)
+    {
+        printf("error - DLL has had relocations stripped\n");
+        kfree(section_table);
+        kfree(optional_hdr);
+        PosCloseFile(fhandle);
+        return (2);
     }
 
     /* Allocates memory for the process.
      * Size of image is obtained from the optional header. */
-    /* PE files are loaded at their preferred address. */
-    dllStart = PosVirtualAlloc((void *)(optional_hdr->ImageBase),
-                               optional_hdr->SizeOfImage);
-    if ((dllStart == NULL)
-        && !(coff_hdr.Characteristics & IMAGE_FILE_RELOCS_STRIPPED))
-    {
-        /* If the PE file could not be loaded at its preferred address,
-         * but it is relocatable, it is loaded elsewhere. */
-        dllStart = PosVirtualAlloc(0, optional_hdr->SizeOfImage);
-    }
+    dllStart = PosVirtualAlloc(0, optional_hdr->SizeOfImage);
     if (dllStart == NULL)
     {
         printf("Insufficient memory to load PE program\n");
         kfree(section_table);
         kfree(optional_hdr);
         PosCloseFile(fhandle);
-        return (1);
+        return (2);
     }
 
     /* Loads all sections at their addresses. */
@@ -1377,7 +1377,7 @@ static int exeloadLoadPEDLL(unsigned char *exeStart,
             kfree(section_table);
             kfree(optional_hdr);
             PosCloseFile(fhandle);
-            return (1);
+            return (2);
         }
     }
     PosCloseFile(fhandle);

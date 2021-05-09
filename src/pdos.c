@@ -816,8 +816,8 @@ void pdosRun(void)
         /* Frees memory used for the temporary address space mapping. */
         physmemmgrFreePageFrame(&physmemmgr, page_directory);
     }
-    initThreading();
 #endif
+    initThreading();
 #endif
     memmgrDefaults(&btlmem);
     memmgrInit(&btlmem);

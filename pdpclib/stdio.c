@@ -1983,7 +1983,73 @@ static void freadSlowB(void *ptr,
 }
 #endif
 
+
 #if !defined(__MVS__) && !defined(__CMS__)
+static void iwrite(FILE *stream,
+                   const void *ptr,
+                   size_t towrite,
+                   size_t *actualWritten)
+{
+#ifdef __AMIGA__
+    long tempWritten;
+#endif
+#ifdef __OS2__
+    ULONG tempWritten;
+    APIRET rc;
+#endif
+#ifdef __WIN32__
+    DWORD tempWritten;
+    BOOL rc;
+#endif
+#ifdef __MSDOS__
+    size_t tempWritten;
+    int errind;
+#endif
+
+#ifdef __AMIGA__
+    tempWritten = Write(stream->hfile, ptr, towrite);
+    if (tempWritten == -1)
+    {
+        stream->errorInd = 1;
+        tempWritten = 0;
+        errno = 1;
+    }
+#endif
+#ifdef __OS2__
+    rc = DosWrite(stream->hfile, (VOID *)ptr, towrite, &tempWritten);
+    if (rc != 0)
+    {
+        stream->errorInd = 1;
+        tempWritten = 0;
+        errno = rc;
+    }
+#endif
+#ifdef __WIN32__
+    rc = WriteFile(stream->hfile, ptr, towrite, &tempWritten, NULL);
+    if (!rc)
+    {
+        stream->errorInd = 1;
+        tempWritten = 0;
+        errno = GetLastError();
+    }
+#endif
+#ifdef __MSDOS__
+    tempWritten = __write(stream->hfile,
+                          ptr,
+                          towrite,
+                          &errind);
+    if (errind)
+    {
+        stream->errorInd = 1;
+        tempWritten = 0;
+        errno = 1;
+    }
+#endif
+    *actualWritten = tempWritten;
+    return;
+}
+
+
 __PDPCLIB_API__ size_t fwrite(const void *ptr,
                               size_t size,
                               size_t nmemb,
@@ -1991,21 +2057,7 @@ __PDPCLIB_API__ size_t fwrite(const void *ptr,
 {
     size_t towrite;
     size_t elemWritten;
-#ifdef __AMIGA__
-    long actualWritten;
-#endif
-#ifdef __OS2__
-    ULONG actualWritten;
-    APIRET rc;
-#endif
-#ifdef __WIN32__
-    DWORD actualWritten;
-    BOOL rc;
-#endif
-#ifdef __MSDOS__
     size_t actualWritten;
-    int errind;
-#endif
 
     stream = __INTFILE(stream);
 
@@ -2036,44 +2088,7 @@ __PDPCLIB_API__ size_t fwrite(const void *ptr,
     }
     else
     {
-#ifdef __AMIGA__
-        actualWritten = Write(stream->hfile, ptr, towrite);
-        if (actualWritten == -1)
-        {
-            stream->errorInd = 1;
-            actualWritten = 0;
-        }
-#endif
-#ifdef __OS2__
-        rc = DosWrite(stream->hfile, (VOID *)ptr, towrite, &actualWritten);
-        if (rc != 0)
-        {
-            stream->errorInd = 1;
-            actualWritten = 0;
-            errno = rc;
-        }
-#endif
-#ifdef __WIN32__
-        rc = WriteFile(stream->hfile, ptr, towrite, &actualWritten, NULL);
-        if (!rc)
-        {
-            stream->errorInd = 1;
-            actualWritten = 0;
-            errno = GetLastError();
-        }
-#endif
-#ifdef __MSDOS__
-        actualWritten = __write(stream->hfile,
-                                ptr,
-                                towrite,
-                                &errind);
-        if (errind)
-        {
-            stream->errorInd = 1;
-            actualWritten = 0;
-            errno = actualWritten;
-        }
-#endif
+        iwrite(stream, ptr, towrite, &actualWritten);
         if (nmemb == 1)
         {
             if (actualWritten == size)
@@ -2162,21 +2177,7 @@ static void fwriteSlowT(const void *ptr,
     size_t diffp;
     size_t rem;
     int fin;
-#ifdef __AMIGA__
-    long tempWritten;
-#endif
-#ifdef __OS2__
-    ULONG tempWritten;
-    APIRET rc;
-#endif
-#ifdef __WIN32__
-    DWORD tempWritten;
-    BOOL rc;
-#endif
-#ifdef __MSDOS__
     size_t tempWritten;
-    int errind;
-#endif
 
     *actualWritten = 0;
     tptr = (char *)ptr;
@@ -2202,110 +2203,22 @@ static void fwriteSlowT(const void *ptr,
                 memcpy(stream->upto, oldp, rem);
                 oldp += rem;
                 diffp -= rem;
-#ifdef __AMIGA__
-                tempWritten = Write(stream->hfile,
-                                    stream->fbuf,
-                                    stream->szfbuf);
-                if (tempWritten == -1)
-                {
-                    stream->errorInd = 1;
-                    return;
-                }
-#endif
-#ifdef __OS2__
-                rc = DosWrite(stream->hfile,
-                              stream->fbuf,
-                              stream->szfbuf,
-                              &tempWritten);
-                if (rc != 0)
-                {
-                    stream->errorInd = 1;
-                    errno = rc;
-                    return;
-                }
-#endif
-#ifdef __WIN32__
-                rc = WriteFile(stream->hfile,
-                               stream->fbuf,
-                               stream->szfbuf,
-                               &tempWritten,
-                               NULL);
-                if (!rc)
-                {
-                    stream->errorInd = 1;
-                    errno = GetLastError();
-                    return;
-                }
-#endif
-#ifdef __MSDOS__
-                tempWritten = __write(stream->hfile,
-                                      stream->fbuf,
-                                      stream->szfbuf,
-                                      &errind);
-                if (errind)
-                {
-                    stream->errorInd = 1;
-                    return;
-                }
-#endif
-                else
-                {
-                    *actualWritten += rem;
-                    stream->upto = stream->fbuf;
-                    stream->bufStartR += tempWritten;
-                }
+                iwrite(stream, stream->fbuf, stream->szfbuf, &tempWritten);
+                if (stream->errorInd) return;
+
+                *actualWritten += rem;
+                stream->upto = stream->fbuf;
+                stream->bufStartR += tempWritten;
             }
         }
         rem = (size_t)(stream->endbuf - stream->upto);
         if (rem < 3)
         {
-#ifdef __AMIGA__
-            tempWritten = Write(stream->hfile,
-                                stream->fbuf,
-                                (long)(stream->upto - stream->fbuf));
-            if (tempWritten == -1)
-            {
-                stream->errorInd = 1;
-                return;
-            }
-#endif
-#ifdef __OS2__
-            rc = DosWrite(stream->hfile,
-                          stream->fbuf,
-                          (size_t)(stream->upto - stream->fbuf),
-                          &tempWritten);
-            if (rc != 0)
-            {
-                stream->errorInd = 1;
-                errno = rc;
-                return;
-            }
-#endif
-#ifdef __WIN32__
-            rc = WriteFile(stream->hfile,
-                           stream->fbuf,
-                           (size_t)(stream->upto - stream->fbuf),
-                           &tempWritten,
-                           NULL);
-            if (!rc)
-            {
-                stream->errorInd = 1;
-                errno = GetLastError();
-                return;
-            }
-#endif
-#ifdef __MSDOS__
-            tempWritten = __write(stream->hfile,
-                                  stream->fbuf,
-                                  (size_t)(stream->upto - stream->fbuf),
-                                  &errind);
-            if (errind)
-            {
-                stream->errorInd = 1;
-                errno = tempWritten;
-                return;
-            }
-#endif
+            iwrite(stream,
+                   stream->fbuf,
+                   stream->upto - stream->fbuf,
+                   &tempWritten);
+            if (stream->errorInd) return;
             stream->upto = stream->fbuf;
             stream->bufStartR += tempWritten;
         }
@@ -2330,53 +2243,11 @@ static void fwriteSlowT(const void *ptr,
         && (stream->upto != stream->fbuf)
         && (oldp != tptr))
     {
-#ifdef __AMIGA__
-        tempWritten = Write(stream->hfile,
-                            stream->fbuf,
-                            (long)(stream->upto - stream->fbuf));
-        if (tempWritten == -1)
-        {
-            stream->errorInd = 1;
-            return;
-        }
-#endif
-#ifdef __OS2__
-        rc = DosWrite(stream->hfile,
-                      stream->fbuf,
-                      (size_t)(stream->upto - stream->fbuf),
-                      &tempWritten);
-        if (rc != 0)
-        {
-            stream->errorInd = 1;
-            errno = rc;
-            return;
-        }
-#endif
-#ifdef __WIN32__
-        rc = WriteFile(stream->hfile,
-                       stream->fbuf,
-                       (size_t)(stream->upto - stream->fbuf),
-                       &tempWritten,
-                       NULL);
-        if (!rc)
-        {
-            stream->errorInd = 1;
-            errno = GetLastError();
-            return;
-        }
-#endif
-#ifdef __MSDOS__
-        tempWritten = __write(stream->hfile,
-                              stream->fbuf,
-                              (size_t)(stream->upto - stream->fbuf),
-                              &errind);
-        if (errind)
-        {
-            stream->errorInd = 1;
-            errno = tempWritten;
-            return;
-        }
-#endif
+        iwrite(stream,
+               stream->fbuf,
+               stream->upto - stream->fbuf,
+               &tempWritten);
+        if (stream->errorInd) return;
         stream->upto = stream->fbuf;
         stream->bufStartR += tempWritten;
     }
@@ -2394,53 +2265,8 @@ static void fwriteSlowT(const void *ptr,
         else
         {
             memcpy(stream->upto, oldp, rem);
-#ifdef __AMIGA__
-            tempWritten = Write(stream->hfile,
-                                stream->fbuf,
-                                (long)stream->szfbuf);
-            if (tempWritten == -1)
-            {
-                stream->errorInd = 1;
-                return;
-            }
-#endif
-#ifdef __OS2__
-            rc = DosWrite(stream->hfile,
-                          stream->fbuf,
-                          stream->szfbuf,
-                          &tempWritten);
-            if (rc != 0)
-            {
-                stream->errorInd = 1;
-                errno = rc;
-                return;
-            }
-#endif
-#ifdef __WIN32__
-            rc = WriteFile(stream->hfile,
-                           stream->fbuf,
-                           stream->szfbuf,
-                           &tempWritten,
-                           NULL);
-            if (!rc)
-            {
-                stream->errorInd = 1;
-                errno = GetLastError();
-                return;
-            }
-#endif
-#ifdef __MSDOS__
-            tempWritten = __write(stream->hfile,
-                                  stream->fbuf,
-                                  stream->szfbuf,
-                                  &errind);
-            if (errind)
-            {
-                stream->errorInd = 1;
-                errno = tempWritten;
-                return;
-            }
-#endif
+            iwrite(stream, stream->fbuf, stream->szfbuf, &tempWritten);
+            if (stream->errorInd) return;
             else
             {
                 *actualWritten += rem;
@@ -2454,53 +2280,11 @@ static void fwriteSlowT(const void *ptr,
     if ((stream->bufTech == _IONBF)
         && (stream->upto != stream->fbuf))
     {
-#ifdef __AMIGA__
-        tempWritten = Write(stream->hfile,
-                            stream->fbuf,
-                            (long)(stream->upto - stream->fbuf));
-        if (tempWritten == -1)
-        {
-            stream->errorInd = 1;
-            return;
-        }
-#endif
-#ifdef __OS2__
-        rc = DosWrite(stream->hfile,
-                      stream->fbuf,
-                      (size_t)(stream->upto - stream->fbuf),
-                      &tempWritten);
-        if (rc != 0)
-        {
-            stream->errorInd = 1;
-            errno = rc;
-            return;
-        }
-#endif
-#ifdef __WIN32__
-        rc = WriteFile(stream->hfile,
-                       stream->fbuf,
-                       (size_t)(stream->upto - stream->fbuf),
-                       &tempWritten,
-                       NULL);
-        if (!rc)
-        {
-            stream->errorInd = 1;
-            errno = GetLastError();
-            return;
-        }
-#endif
-#ifdef __MSDOS__
-        tempWritten = __write(stream->hfile,
-                              stream->fbuf,
-                              (size_t)(stream->upto - stream->fbuf),
-                              &errind);
-        if (errind)
-        {
-            stream->errorInd = 1;
-            errno = tempWritten;
-            return;
-        }
-#endif
+        iwrite(stream,
+               stream->fbuf,
+               stream->upto - stream->fbuf,
+               &tempWritten);
+        if (stream->errorInd) return;
         stream->upto = stream->fbuf;
         stream->bufStartR += tempWritten;
     }
@@ -2516,25 +2300,8 @@ static void fwriteSlowB(const void *ptr,
                         size_t *actualWritten)
 {
     size_t spare;
-#ifdef __AMIGA__
-    long tempWritten;
-    long left;
-#endif
-#ifdef __OS2__
-    ULONG tempWritten;
-    ULONG left;
-    APIRET rc;
-#endif
-#ifdef __WIN32__
-    DWORD tempWritten;
-    DWORD left;
-    BOOL rc;
-#endif
-#ifdef __MSDOS__
     size_t tempWritten;
     size_t left;
-    int errind;
-#endif
     spare = (size_t)(stream->endbuf - stream->upto);
     if (towrite < spare)
     {
@@ -2544,53 +2311,8 @@ static void fwriteSlowB(const void *ptr,
         return;
     }
     memcpy(stream->upto, ptr, spare);
-#ifdef __AMIGA__
-    tempWritten = Write(stream->hfile,
-                        stream->fbuf,
-                        (long)stream->szfbuf);
-    if (tempWritten == -1)
-    {
-        stream->errorInd = 1;
-        return;
-    }
-#endif
-#ifdef __OS2__
-    rc = DosWrite(stream->hfile,
-                  stream->fbuf,
-                  stream->szfbuf,
-                  &tempWritten);
-    if (rc != 0)
-    {
-        stream->errorInd = 1;
-        errno = rc;
-        return;
-    }
-#endif
-#ifdef __WIN32__
-    rc = WriteFile(stream->hfile,
-                   stream->fbuf,
-                   stream->szfbuf,
-                   &tempWritten,
-                   NULL);
-    if (!rc)
-    {
-        stream->errorInd = 1;
-        errno = GetLastError();
-        return;
-    }
-#endif
-#ifdef __MSDOS__
-    tempWritten = __write(stream->hfile,
-                          stream->fbuf,
-                          stream->szfbuf,
-                          &errind);
-    if (errind)
-    {
-        stream->errorInd = 1;
-        errno = tempWritten;
-        return;
-    }
-#endif
+    iwrite(stream, stream->fbuf, stream->szfbuf, &tempWritten);
+    if (stream->errorInd) return;
     *actualWritten = spare;
     stream->upto = stream->fbuf;
     stream->bufStartR += tempWritten;
@@ -2598,53 +2320,8 @@ static void fwriteSlowB(const void *ptr,
     if (left > stream->szfbuf)
     {
         stream->quickBin = 1;
-#ifdef __AMIGA__
-        tempWritten = Write(stream->hfile,
-                            (char *)ptr + *actualWritten,
-                            left);
-        if (tempWritten == -1)
-        {
-            stream->errorInd = 1;
-            return;
-        }
-#endif
-#ifdef __OS2__
-        rc = DosWrite(stream->hfile,
-                      (char *)ptr + *actualWritten,
-                      left,
-                      &tempWritten);
-        if (rc != 0)
-        {
-            stream->errorInd = 1;
-            errno = rc;
-            return;
-        }
-#endif
-#ifdef __WIN32__
-        rc = WriteFile(stream->hfile,
-                       (char *)ptr + *actualWritten,
-                       left,
-                       &tempWritten,
-                       NULL);
-        if (!rc)
-        {
-            stream->errorInd = 1;
-            errno = GetLastError();
-            return;
-        }
-#endif
-#ifdef __MSDOS__
-        tempWritten = __write(stream->hfile,
-                              (char *)ptr + *actualWritten,
-                              left,
-                              &errind);
-        if (errind)
-        {
-            stream->errorInd = 1;
-            errno = tempWritten;
-            return;
-        }
-#endif
+        iwrite(stream, (const char *)ptr + *actualWritten, left, &tempWritten);
+        if (stream->errorInd) return;
         *actualWritten += tempWritten;
         stream->bufStartR += *actualWritten;
     }
@@ -4065,73 +3742,17 @@ __PDPCLIB_API__ int fflush(FILE *stream)
         }
     }
 #else
-#ifdef __AMIGA__
-    long actualWritten;
-#endif
-#ifdef __OS2__
-    APIRET rc;
-    ULONG actualWritten;
-#endif
-#ifdef __WIN32__
-    BOOL rc;
-    DWORD actualWritten;
-#endif
-#ifdef __MSDOS__
-    int errind;
     size_t actualWritten;
-#endif
 
     stream = __INTFILE(stream);
 
     if ((stream->upto != stream->fbuf) && (stream->mode == __WRITE_MODE))
     {
-#ifdef __AMIGA__
-        actualWritten = Write(stream->hfile,
-                              stream->fbuf,
-                              (long)(stream->upto - stream->fbuf));
-        if (actualWritten == -1)
-        {
-            stream->errorInd = 1;
-            return (EOF);
-        }
-#endif
-#ifdef __OS2__
-        rc = DosWrite(stream->hfile,
-                     (VOID *)stream->fbuf,
-                     (size_t)(stream->upto - stream->fbuf),
-                     &actualWritten);
-        if (rc != 0)
-        {
-            stream->errorInd = 1;
-            errno = rc;
-            return (EOF);
-        }
-#endif
-#ifdef __WIN32__
-        rc = WriteFile(stream->hfile,
-                       stream->fbuf,
-                       (size_t)(stream->upto - stream->fbuf),
-                       &actualWritten,
-                       NULL);
-        if (!rc)
-        {
-            stream->errorInd = 1;
-            errno = GetLastError();
-            return (EOF);
-        }
-#endif
-#ifdef __MSDOS__
-        actualWritten = __write(stream->hfile,
-                                stream->fbuf,
-                                (size_t)(stream->upto - stream->fbuf),
-                                &errind);
-        if (errind)
-        {
-            stream->errorInd = 1;
-            errno = actualWritten;
-            return (EOF);
-        }
-#endif
+        iwrite(stream,
+               stream->fbuf,
+               stream->upto - stream->fbuf,
+               &actualWritten);
+        if (stream->errorInd) return (EOF);
         stream->bufStartR += actualWritten;
         stream->upto = stream->fbuf;
     }

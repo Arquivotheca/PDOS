@@ -1618,15 +1618,10 @@ __PDPCLIB_API__ int fclose(FILE *stream)
     return (0);
 }
 
+
 #if !defined(__MVS__) && !defined(__CMS__)
-__PDPCLIB_API__ size_t fread(void *ptr,
-                             size_t size,
-                             size_t nmemb,
-                             FILE *stream)
+static void iread(FILE *stream, void *ptr, size_t toread, size_t *actualRead)
 {
-    size_t toread;
-    size_t elemRead;
-    size_t actualRead;
 #ifdef __AMIGA__
     long tempRead;
 #endif
@@ -1642,6 +1637,74 @@ __PDPCLIB_API__ size_t fread(void *ptr,
     int errind;
     size_t tempRead;
 #endif
+
+#ifdef __AMIGA__
+    tempRead = Read(stream->hfile, ptr, toread);
+    if (tempRead == -1)
+    {
+        *actualRead = 0;
+        stream->errorInd = 1;
+    }
+    else
+    {
+        *actualRead = tempRead;
+    }
+#endif
+#ifdef __OS2__
+    rc = DosRead(stream->hfile, ptr, toread, &tempRead);
+    if (rc != 0)
+    {
+        *actualRead = 0;
+        stream->errorInd = 1;
+        errno = rc;
+    }
+    else
+    {
+        *actualRead = tempRead;
+    }
+#endif
+#ifdef __WIN32__
+    rc = ReadFile(stream->hfile,
+                  ptr,
+                  toread,
+                  &tempRead,
+                  NULL);
+    if (!rc)
+    {
+        *actualRead = 0;
+        stream->errorInd = 1;
+        errno = GetLastError();
+    }
+    else
+    {
+        *actualRead = tempRead;
+    }
+#endif
+#ifdef __MSDOS__
+    tempRead = __read(stream->hfile, ptr, toread, &errind);
+    if (errind)
+    {
+        errno = tempRead;
+        *actualRead = 0;
+        stream->errorInd = 1;
+    }
+    else
+    {
+        *actualRead = tempRead;
+    }
+#endif
+    return;
+}
+
+
+__PDPCLIB_API__ size_t fread(void *ptr,
+                             size_t size,
+                             size_t nmemb,
+                             FILE *stream)
+{
+    size_t toread;
+    size_t elemRead;
+    size_t actualRead;
 
     stream = __INTFILE(stream);
 
@@ -1728,61 +1791,7 @@ __PDPCLIB_API__ size_t fread(void *ptr,
     }
     else
     {
-#ifdef __AMIGA__
-        tempRead = Read(stream->hfile, ptr, toread);
-        if (tempRead == -1)
-        {
-            actualRead = 0;
-            stream->errorInd = 1;
-        }
-        else
-        {
-            actualRead = tempRead;
-        }
-#endif
-#ifdef __OS2__
-        rc = DosRead(stream->hfile, ptr, toread, &tempRead);
-        if (rc != 0)
-        {
-            actualRead = 0;
-            stream->errorInd = 1;
-            errno = rc;
-        }
-        else
-        {
-            actualRead = tempRead;
-        }
-#endif
-#ifdef __WIN32__
-        rc = ReadFile(stream->hfile,
-                      ptr,
-                      toread,
-                      &tempRead,
-                      NULL);
-        if (!rc)
-        {
-            actualRead = 0;
-            stream->errorInd = 1;
-            errno = GetLastError();
-        }
-        else
-        {
-            actualRead = tempRead;
-        }
-#endif
-#ifdef __MSDOS__
-        tempRead = __read(stream->hfile, ptr, toread, &errind);
-        if (errind)
-        {
-            errno = tempRead;
-            actualRead = 0;
-            stream->errorInd = 1;
-        }
-        else
-        {
-            actualRead = tempRead;
-        }
-#endif
+        iread(stream, ptr, toread, &actualRead);
         if (nmemb == 1)
         {
             if (actualRead == size)
@@ -1841,74 +1850,14 @@ static void freadSlowT(void *ptr,
     size_t need;
     char *p;
     size_t got;
-#ifdef __AMIGA__
-    long tempRead;
-#endif
-#ifdef __OS2__
-    ULONG tempRead;
-    APIRET rc;
-#endif
-#ifdef __WIN32__
-    DWORD tempRead;
-    BOOL rc;
-#endif
-#ifdef __MSDOS__
     size_t tempRead;
-    int errind;
-#endif
 
     *actualRead = 0;
     while (!finReading)
     {
         if (stream->upto == stream->endbuf)
         {
-#ifdef __AMIGA__
-            tempRead = Read(stream->hfile,
-                            stream->fbuf,
-                            stream->szfbuf);
-            if (tempRead == -1)
-            {
-                tempRead = 0;
-                stream->errorInd = 1;
-            }
-#endif
-#ifdef __OS2__
-            rc = DosRead(stream->hfile,
-                         stream->fbuf,
-                         stream->szfbuf,
-                         &tempRead);
-            if (rc != 0)
-            {
-                tempRead = 0;
-                stream->errorInd = 1;
-                errno = rc;
-            }
-#endif
-#ifdef __WIN32__
-            rc = ReadFile(stream->hfile,
-                          stream->fbuf,
-                          stream->szfbuf,
-                          &tempRead,
-                          NULL);
-            if (!rc)
-            {
-                tempRead = 0;
-                stream->errorInd = 1;
-                errno = GetLastError();
-            }
-#endif
-#ifdef __MSDOS__
-            tempRead = __read(stream->hfile,
-                              stream->fbuf,
-                              stream->szfbuf,
-                              &errind);
-            if (errind)
-            {
-                errno = tempRead;
-                tempRead = 0;
-                stream->errorInd = 1;
-            }
-#endif
+            iread(stream, stream->fbuf, stream->szfbuf, &tempRead);
             if (tempRead == 0)
             {
                 stream->eofInd = 1;
@@ -1971,21 +1920,7 @@ static void freadSlowB(void *ptr,
 {
     size_t avail;
     size_t left;
-#ifdef __AMIGA__
-    long tempRead;
-#endif
-#ifdef __OS2__
-    ULONG tempRead;
-    APIRET rc;
-#endif
-#ifdef __WIN32__
-    DWORD tempRead;
-    BOOL rc;
-#endif
-#ifdef __MSDOS__
     size_t tempRead;
-    int errind;
-#endif
 
     avail = (size_t)(stream->endbuf - stream->upto);
     memcpy(ptr, stream->upto, avail);
@@ -1998,53 +1933,10 @@ static void freadSlowB(void *ptr,
     }
     if (left >= stream->szfbuf)
     {
-#ifdef __AMIGA__
-        tempRead = Read(stream->hfile,
-                        (char *)ptr + *actualRead,
-                        left);
-        if (tempRead == -1)
+        iread(stream, (char *)ptr + *actualRead, left, &tempRead);
+        if (stream->errorInd)
         {
-            tempRead = 0;
-            stream->errorInd = 1;
         }
-#endif
-#ifdef __OS2__
-        rc = DosRead(stream->hfile,
-                     (char *)ptr + *actualRead,
-                     left,
-                     &tempRead);
-        if (rc != 0)
-        {
-            tempRead = 0;
-            stream->errorInd = 1;
-            errno = rc;
-        }
-#endif
-#ifdef __WIN32__
-        rc = ReadFile(stream->hfile,
-                      (char *)ptr + *actualRead,
-                       left,
-                       &tempRead,
-                       NULL);
-        if (!rc)
-        {
-            tempRead = 0;
-            stream->errorInd = 1;
-            errno = GetLastError();
-        }
-#endif
-#ifdef __MSDOS__
-        tempRead = __read(stream->hfile,
-                          (char *)ptr + *actualRead,
-                          left,
-                          &errind);
-        if (errind)
-        {
-            errno = tempRead;
-            tempRead = 0;
-            stream->errorInd = 1;
-        }
-#endif
         else if (tempRead != left)
         {
             stream->eofInd = 1;
@@ -2066,54 +1958,10 @@ static void freadSlowB(void *ptr,
     else
     {
         stream->upto = stream->fbuf;
-#ifdef __AMIGA__
-        tempRead = Read(stream->hfile,
-                        stream->fbuf,
-                        stream->szfbuf);
-        if (tempRead == -1)
+        iread(stream, stream->fbuf, stream->szfbuf, &tempRead);
+        if (stream->errorInd)
         {
-            tempRead = 0;
-            stream->errorInd = 1;
         }
-#endif
-#ifdef __OS2__
-        rc = DosRead(stream->hfile,
-                     stream->fbuf,
-                     stream->szfbuf,
-                     &tempRead);
-
-        if (rc != 0)
-        {
-            tempRead = 0;
-            stream->errorInd = 1;
-            errno = rc;
-        }
-#endif
-#ifdef __WIN32__
-        rc = ReadFile(stream->hfile,
-                      stream->fbuf,
-                      stream->szfbuf,
-                      &tempRead,
-                      NULL);
-        if (!rc)
-        {
-            tempRead = 0;
-            stream->errorInd = 1;
-            errno = GetLastError();
-        }
-#endif
-#ifdef __MSDOS__
-        tempRead = __read(stream->hfile,
-                          stream->fbuf,
-                          stream->szfbuf,
-                          &errind);
-        if (errind)
-        {
-            errno = tempRead;
-            tempRead = 0;
-            stream->errorInd = 1;
-        }
-#endif
         else if (tempRead < left)
         {
             stream->eofInd = 1;
@@ -3556,21 +3404,7 @@ __PDPCLIB_API__ char *fgets(char *s, int n, FILE *stream)
     register char *u = s;
     int c;
     int processed;
-#ifdef __AMIGA__
-    long actualRead;
-#endif
-#ifdef __OS2__
-    ULONG actualRead;
-    APIRET rc;
-#endif
-#ifdef __WIN32__
-    DWORD actualRead;
-    BOOL rc;
-#endif
-#ifdef __MSDOS__
     size_t actualRead;
-    int errind;
-#endif
 
     stream = __INTFILE(stream);
 
@@ -3797,48 +3631,7 @@ __PDPCLIB_API__ char *fgets(char *s, int n, FILE *stream)
         processed += (int)(t - stream->upto) - 1;
         u--;
         stream->bufStartR += (stream->endbuf - stream->fbuf);
-#ifdef __AMIGA__
-        actualRead = Read(stream->hfile, stream->fbuf, (long)stream->szfbuf);
-        if (actualRead == -1)
-        {
-            actualRead = 0;
-            stream->errorInd = 1;
-        }
-#endif
-#ifdef __OS2__
-        rc = DosRead(stream->hfile, stream->fbuf, stream->szfbuf, &actualRead);
-        if (rc != 0)
-        {
-            actualRead = 0;
-            stream->errorInd = 1;
-            errno = rc;
-        }
-#endif
-#ifdef __WIN32__
-        rc = ReadFile(stream->hfile,
-                      stream->fbuf,
-                      stream->szfbuf,
-                      &actualRead,
-                      NULL);
-        if (!rc)
-        {
-            actualRead = 0;
-            stream->errorInd = 1;
-            errno = GetLastError();
-        }
-#endif
-#ifdef __MSDOS__
-        actualRead = __read(stream->hfile,
-                            stream->fbuf,
-                            stream->szfbuf,
-                            &errind);
-        if (errind)
-        {
-            errno = actualRead;
-            actualRead = 0;
-            stream->errorInd = 1;
-        }
-#endif
+        iread(stream, stream->fbuf, stream->szfbuf, &actualRead);
         stream->endbuf = stream->fbuf + actualRead;
         *stream->endbuf = '\n';
         if (actualRead == 0)

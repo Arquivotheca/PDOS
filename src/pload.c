@@ -1,3 +1,24 @@
+/*********************************************************************/
+/*                                                                   */
+/*  This Program Written by Paul Edwards.                            */
+/*  Released to the Public Domain                                    */
+/*                                                                   */
+/*********************************************************************/
+/*********************************************************************/
+/*                                                                   */
+/*  pload - boot loader/IO.SYS designed to reside at location        */
+/*  0x600 but all offsets will be from 0x500 because it is being     */
+/*  built as a .COM file so there is 0x100 reserved for a PSP, even  */
+/*  though we don't really have one in our situation.                */
+/*                                                                   */
+/*  This program may only have the first 3 sectors loaded into       */
+/*  memory when execution starts (a limitaion of the boot sector)    */
+/*  so we first load ourselves (and just assume we are the maximum   */
+/*  58 sectors before we hit other data), and then we proceed to     */
+/*  load the kernel/OS (PDOS) at 0x10600.                            */
+/*                                                                   */
+/*********************************************************************/
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

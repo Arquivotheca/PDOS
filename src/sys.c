@@ -4,6 +4,9 @@
  * http://creativecommons.org/publicdomain/zero/1.0/ *
  *****************************************************/
 
+/* Utility bin2hex in ozpd was used to generate the hex values
+   from the .com files */
+
 #include <stdio.h>
 #include <string.h>
 #include <pos.h>

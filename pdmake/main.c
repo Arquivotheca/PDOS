@@ -173,34 +173,37 @@ void rule_search_and_build(char *name)
     }
 
     suffix = strrchr(name, '.');
-    for (s = suffix_rules; s; s = s->next)
+    if (suffix)
     {
-        if (strcmp(suffix, s->second) == 0)
+        for (s = suffix_rules; s; s = s->next)
         {
-            FILE *f;
-            char *orig, *p;
-            
-            orig = xmalloc(strlen(name) + strlen(s->first) + 1);
-            memcpy(orig, name, strlen(name) + 1);
-            p = strrchr(orig, '.');
-            *p = '\0';
-            strcat(orig, s->first);
-
-            f = fopen(orig, "r");
-            free(orig);
-
-            if (f)
+            if (strcmp(suffix, s->second) == 0)
             {
-                fclose(f);
-                break;
+                FILE *f;
+                char *orig, *p;
+
+                orig = xmalloc(strlen(name) + strlen(s->first) + 1);
+                memcpy(orig, name, strlen(name) + 1);
+                p = strrchr(orig, '.');
+                *p = '\0';
+                strcat(orig, s->first);
+
+                f = fopen(orig, "r");
+                free(orig);
+
+                if (f)
+                {
+                    fclose(f);
+                    break;
+                }
             }
         }
-    }
 
-    if (s)
-    {
-        suffix_rule_use(s, name);
-        return;
+        if (s)
+        {
+            suffix_rule_use(s, name);
+            return;
+        }
     }
 
     {
@@ -301,6 +304,9 @@ int main(int argc, char **argv)
     read_makefile(name);
 
     if (goal == NULL) goal = default_goal_var->value;
+
+    /* No goal is set, so there is nothing to do. */
+    if (strcmp(goal, "") == 0) return (0);
     
     rule_search_and_build(goal);
     

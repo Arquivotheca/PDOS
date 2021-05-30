@@ -208,12 +208,13 @@ void rule_search_and_build(char *name)
 
     {
         FILE *f = fopen(name, "r");
-        fclose(f);
+
         if (f == NULL)
         {
             fprintf(stderr, "No rule to make target `%s'. Stop.", name);
             exit(1);
         }
+        else fclose(f);
     }
 
 }

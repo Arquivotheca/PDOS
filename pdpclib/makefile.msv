@@ -25,8 +25,8 @@ pdptest.exe: w32start.o pdptest.o stdio.o string.o stdlib.o \
   $(AR) r temp.a start.o time.o errno.o assert.o signal.o
   $(AR) r temp.a locale.o ctype.o setjmp.o math.o
   $(LD) -s -o msvcrt.dll --shared dllcrt.o temp.a ../src/kernel32.a
+  $(DLLT) -S $(AS) -D msvcrt.dll -l msvcrt.a temp.a
   rm -f temp.a
-  $(DLLT) -S $(AS) -D msvcrt.dll -l msvcrt.a stdio.o string.o stdlib.o start.o time.o errno.o assert.o signal.o locale.o ctype.o setjmp.o math.o
   $(LD) -s -nostdlib -o pdptest.exe w32start.o pdptest.o msvcrt.a
 
 pdptest.o: pdptest.c

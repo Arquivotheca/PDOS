@@ -899,11 +899,12 @@ __PDPCLIB_API__ int system(const char *string)
     {
         return (-1);
     }
-    if (strlen(string) > sizeof cmdbuf - 10)
+    if (strlen(string) + strlen(cmdproc) > sizeof cmdbuf - 10)
     {
         return (-2);
     }
-    strcpy(cmdbuf, "/c ");
+    strcpy(cmdbuf, cmdproc);
+    strcat(cmdbuf, " /c ");
     strcat(cmdbuf, string);
 
     memset(&si, 0, sizeof si);

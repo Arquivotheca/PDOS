@@ -11,9 +11,12 @@
 .text
 .intel_syntax noprefix
 
+.globl ___setj
 .globl __setj
+.globl ___longj
 .globl __longj
 
+___setj:
 __setj:
         mov eax, [esp+4]
         push ebx
@@ -40,6 +43,7 @@ __setj:
         ret
 
 
+___longj:
 __longj:
         mov eax, [esp+4]
         mov ebp, [eax+20]

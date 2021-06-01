@@ -19,9 +19,9 @@ all: clean pdptest.exe
 
 pdptest.exe: w32start.o pdptest.o stdio.o string.o stdlib.o \
        start.o time.o errno.o assert.o signal.o locale.o \
-       ctype.o setjmp.o math.o dllcrt.o winsupa.obj
+       ctype.o setjmp.o math.o dllcrt.o winsupc.obj
   rm -f temp.a
-  $(AR) r temp.a stdio.o string.o stdlib.o winsupa.obj
+  $(AR) r temp.a stdio.o string.o stdlib.o winsupc.obj
   $(AR) r temp.a start.o time.o errno.o assert.o signal.o
   $(AR) r temp.a locale.o ctype.o setjmp.o math.o
   $(LD) -s -o msvcrt.dll --shared dllcrt.o temp.a ../src/kernel32.a
@@ -45,9 +45,7 @@ dllcrt.o: dllcrt.c
   rm -f $*.s
 
 .asm.obj:
-  jwasm -q -c -coff $<
-#  ml -c -coff $<
-#  poasm $<
+  $(AS) -o $@ $<
 
 clean:
   rm -f *.o

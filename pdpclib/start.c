@@ -144,6 +144,13 @@ __PDPCLIB_API__ int __getmainargs(int *_Argc,
 
     p = GetCommandLine();
 
+    /* kludge for presumed HX bug */
+    if (strncmp(p, "C:\\COMMAND.COM /c", 17) == 0)
+    {
+        p += 17;
+        p += strspn(p, " ");
+    }
+
     argv[0] = p;
     p = strchr(p, ' ');
     if (p == NULL)
@@ -841,6 +848,13 @@ __PDPCLIB_API__ int CTYP __start(char *p)
 
 #ifdef __WIN32__
     p = GetCommandLine();
+
+    /* kludge for presumed HX bug */
+    if (strncmp(p, "C:\\COMMAND.COM /c", 17) == 0)
+    {
+        p += 17;
+        p += strspn(p, " ");
+    }
 #endif
 
 #ifdef __OS2__

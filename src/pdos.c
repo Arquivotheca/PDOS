@@ -2972,12 +2972,20 @@ static void loadExe32(char *prog, POSEXEC_PARMBLOCK *parmblock, int synchronous)
     char *commandLine = "";
     char *envptr;
     PDOS_PROCESS *newProc;
+    char *ct = "";
 
     /* Allocates kernel memory and stores the command line string in it. */
     if (parmblock)
     {
-        commandLine = parmblock->cmdtail;
+        ct = parmblock->cmdtail;
     }
+    commandLine = kmalloc(strlen(ct) + 1);
+    if (commandLine == NULL)
+    {
+        printf("insufficient memory to allocate parameter block\n");
+        return;
+    }
+    strcpy(commandLine, ct);
 
     /* If curPCB == NULL, we are launching init process (PCOMM),
      * setup initial environment.

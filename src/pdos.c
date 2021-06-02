@@ -2666,18 +2666,24 @@ static void loadPcomm(void)
 {
     static POSEXEC_PARMBLOCK p = { 0, "\x2/p\r", NULL, NULL };
     static POSEXEC_PARMBLOCK altp = { 0, "\x0\r", NULL, NULL };
+    POSEXEC_PARMBLOCK *pb = &altp;
+#ifdef __32BIT__
+    char parm[FILENAME_MAX + 20];
+#endif
 
     kernel32[0] = msvcrt[0] = alphabet[bootDriveLogical];
     if (strcmp(shell, "") == 0)
     {
         strcpy(shell,"?:\\COMMAND.COM");
         shell[0] = alphabet[bootDriveLogical];
-        loadExe(shell, &p);
+        pb = &p;
+#ifdef __32BIT__
+        strcpy(parm, shell);
+        strcat(parm, " /p"); /* no \r required */
+        pb->cmdtail = parm;
+#endif
     }
-    else
-    {
-        loadExe(shell, &altp);
-    }
+    loadExe(shell, pb);
     return;
 }
 
@@ -2963,34 +2969,14 @@ static void loadExe(char *prog, POSEXEC_PARMBLOCK *parmblock)
 
 static void loadExe32(char *prog, POSEXEC_PARMBLOCK *parmblock, int synchronous)
 {
-    char *commandLine;
+    char *commandLine = "";
     char *envptr;
     PDOS_PROCESS *newProc;
 
     /* Allocates kernel memory and stores the command line string in it. */
     if (parmblock)
     {
-        /* Length is for path, space, arguments, null terminator. */
-        commandLine = kmalloc(strlen(prog) + 1 + (parmblock->cmdtail[0]) + 1);
-    }
-    else
-    {
-        commandLine = kmalloc(strlen(prog) + 1);
-    }
-
-    if (commandLine == NULL)
-    {
-        printf("Insufficient memory for storing command line string\n");
-        return;
-    }
-    strcpy(commandLine, prog);
-    if (parmblock)
-    {
-        strcat(commandLine, " ");
-        memcpy(commandLine + strlen(commandLine),
-               parmblock->cmdtail + 1,
-               parmblock->cmdtail[0]);
-        *(commandLine + strlen(prog) + 1 + (parmblock->cmdtail[0])) = '\0';
+        commandLine = parmblock->cmdtail;
     }
 
     /* If curPCB == NULL, we are launching init process (PCOMM),

@@ -36,7 +36,11 @@ void safegets(char *buffer, int size);
 
 
 static char buf[300];
+#ifdef __32BIT__
+static unsigned char cmdt[300];
+#else
 static unsigned char cmdt[140];
+#endif
 #define PATH_MAX 500
 static char path[PATH_MAX] = ";" ; /* Used to store path */
 static POSEXEC_PARMBLOCK
@@ -1324,9 +1328,11 @@ static int doExec(char *b,char *p)
 
     s = path;
     ln = strlen(p);
+#ifndef __32BIT__
     cmdt[0] = ln;
     memcpy(cmdt + 1, p, ln);
     memcpy(cmdt + ln + 1, "\r", 2);
+#endif
 
     while(*s != '\0')
     {
@@ -1351,6 +1357,11 @@ static int doExec(char *b,char *p)
 
         if (exists(tempbuf))
         {
+#ifdef __32BIT__
+            strcpy(cmdt, tempbuf);
+            strcat(cmdt, " ");
+            strcat(cmdt, p);
+#endif
             PosExec(tempbuf, &parmblock);
             break;
         }
@@ -1359,6 +1370,11 @@ static int doExec(char *b,char *p)
 
         if (exists(tempbuf))
         {
+#ifdef __32BIT__
+            strcpy(cmdt, tempbuf);
+            strcat(cmdt, " ");
+            strcat(cmdt, p);
+#endif
             PosExec(tempbuf, &parmblock);
             break;
         }

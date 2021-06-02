@@ -117,28 +117,14 @@ BOOL WINAPI CreateProcessA(
     LPSTARTUPINFOA lpStartupInfo,
     LPPROCESS_INFORMATION lpProcessInformation)
 {
-    static unsigned char cmdt[300];
-    static struct {
-        int env;
-        unsigned char *cmdtail;
-        char *fcb1;
-        char *fcb2;
-    } parmblock = { 0, cmdt, NULL, NULL };
-    size_t len;
-    char *cmd;
-    char *string = (char *)lpCommandLine;
+    POSEXEC_PARMBLOCK parmblock = { 0, NULL, NULL, NULL };
 
-    if (string == NULL)
+    if (lpCommandLine == NULL)
     {
         return (1);
     }
-    len = strlen(string);
-    if (len + 3 > sizeof cmdt) return (0);
-    cmdt[0] = (unsigned char)len;
-    memcpy(&cmdt[1], string, len);
-    memcpy(&cmdt[len+1], "\r", 2);
-    cmd = (char *)lpApplicationName;
-    PosExec(cmd, &parmblock);
+    parmblock.cmdtail = (char *)lpCommandLine;
+    PosExec((char *)lpApplicationName, &parmblock);
     return (1);
 }
 

@@ -268,7 +268,7 @@ static unsigned int currentAttrib = 7;
 /* Current video page */
 static unsigned int currentPage = 0;
 
-#ifdef __32BIT__
+#if defined(__32BIT__) && defined(VGADRV)
 #include "vgatext.h"
 
 static VGATEXT vgatext;
@@ -664,7 +664,7 @@ static void waitForKeystroke(void)
 #ifndef USING_EXE
 int main(void)
 {
-#ifdef __32BIT__
+#if defined(__32BIT__) && defined(VGADRV)
     vgatext_init(&vgatext);
 #endif
     pdosRun();
@@ -4342,7 +4342,7 @@ int PosProcessGetInfo(unsigned long pid, PDOS_PROCINFO *info, size_t infoSz)
     return POS_ERR_NO_ERROR;
 }
 
-#ifdef __32BIT__
+#if defined(__32BIT__) && defined(VGADRV)
 void PosClearScreen()
 {
     vgatext_clear_screen(&vgatext, currentAttrib);
@@ -4408,7 +4408,7 @@ unsigned long PosGetClockTickCount(void)
     return BosGetClockTickCount();
 }
 
-#ifdef __32BIT__
+#if defined(__32BIT__) && defined(VGADRV)
 static void pdosWriteText(int ch)
 {
     unsigned int row;

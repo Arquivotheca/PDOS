@@ -162,7 +162,8 @@ get xychop.c from OZPD at http://pdos.sourceforge.net
 format d: /u
 doinst
 newboot (or newboota for floppies)
-
+and to get a new MBR for a hard disk, go:
+newmbr (after checking disk number)
 
 
 PC DEVELOPMENT ENVIRONMENT

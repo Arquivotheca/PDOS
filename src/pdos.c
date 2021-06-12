@@ -689,7 +689,7 @@ void pdosRun(void)
 #endif
     PosSetVideoAttribute(0x1E);
 #ifdef __32BIT__
-    printf("Welcome to PD-Windows\n");
+    printf("Welcome to PDOS/386 (aka PD-Windows)\n");
 #else
     printf("Welcome to PDOS/86\n");
 #endif

@@ -8,6 +8,12 @@
 
 .model tiny
 
+; Note that the string as it currently stands is exactly the
+; right size to fit into "ldwin" peigen.c. And note that
+; "od -t x4" on needpdos.exe will generate hex values suitable
+; for updating peigen.c. So you can change the string but not
+; make it bigger. Unless you change other stuff as well.
+
 _DATA   segment word public 'DATA'
 msg  db  "Install HX or upgrade to PDOS/386 or Wine etc"
 msg2 db  0DH

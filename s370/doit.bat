@@ -28,6 +28,7 @@ gccmvs -DUSE_MEMMGR -Os -DS380 -S -I . -I ../pdpclib pdos.c
 gccmvs -DUSE_MEMMGR -Os -DS380 -S -I . -I ../pdpclib pdosutil.c
 gccmvs -DUSE_MEMMGR -Os -DS380 -S -I . -I ../pdpclib pcomm.c
 gccmvs -DUSE_MEMMGR -O0 -DS380 -S -I . -I ../pdpclib world.c
+gccmvs -DUSE_MEMMGR -O0 -DS380 -S -I . -I ../pdpclib bbs.c
 
 sleep 1
 
@@ -54,6 +55,7 @@ copy pdosin.txt config.sys
 copy pcomm.txt pcomm.exe
 copy pcommin.txt autoexec.bat
 copy world.txt world.exe
+copy bbs.txt bbs.exe
 copy sample.txt sample.c
 copy wtoworld.txt wtoworld.exe
 copy diff.txt diff.exe
@@ -95,7 +97,7 @@ rem create package suitable for "shipping"
 
 del pdospkg.zip
 zip -9X pdospkg pload.sys pdos.sys config.sys readme.txt
-zip -9X pdospkg pcomm.exe autoexec.bat world.exe sample.c 
+zip -9X pdospkg pcomm.exe autoexec.bat world.exe bbs.exe sample.c
 zip -9X pdospkg wtoworld.exe diff.exe uemacs.exe edlin.exe hercauto.zip
 zip -9X pdospkg ctl.txt pdos00.cckd pdos.cnf auto*.rc termherc*.rc
 zip -9X pdospkg runpdos.bat pdos.bat pdpi.zip

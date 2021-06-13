@@ -1182,8 +1182,11 @@ static int pdosDispatchUntilInterrupt(PDOS *pdos)
                        EOF being reached (a count of 0 seems to do that,
                        which happens when the remote disconnects) and cleared,
                        so we pretend a NUL was entered by the user instead. */
-                    if (cnt == 0)
+                    /* also if there is a delay put into Hercules we get -1
+                       instead, so cover that too */
+                    if ((cnt == 0) || (cnt == -1))
                     {
+                        cnt = 0;
                         tbuf[0] = 0;
                         cnt++;
                     }

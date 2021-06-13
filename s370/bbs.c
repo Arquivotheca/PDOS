@@ -45,6 +45,10 @@ int main(int argc, char **argv)
         printf("2. File area (not yet implemented)\n");
         printf("3. The highest quality porn ever produced (coming soon)\n");
         ch = fgetc(stdin);
+        if (ch == EOF)
+        {
+            clearerr(stdin);
+        }
     }
     return (0);
 }

@@ -25,10 +25,12 @@
 
 int main(int argc, char **argv)
 {
+    int ch = 0;
+
     while (1)
     {
         printf(CHAR_ESC_STR "[2J"
-               "You entered an invalid option!\n\n");
+               "You entered an invalid option! (hex %02X)\n\n", ch);
         printf("Welcome to the Ten Minute Limit BBS\n");
         printf("Back in action after a fascist kicked me off Fidonet\n");
         printf("brought to you in "
@@ -41,7 +43,7 @@ int main(int argc, char **argv)
         printf("enter an option below:\n");
         printf("1. Message area (not yet implemented)\n");
         printf("2. File area (not yet implemented)\n");
-        fgetc(stdin);
+        ch = fgetc(stdin);
     }
     return (0);
 }

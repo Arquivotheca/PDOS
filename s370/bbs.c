@@ -43,6 +43,7 @@ int main(int argc, char **argv)
         printf("enter an option below:\n");
         printf("1. Message area (not yet implemented)\n");
         printf("2. File area (not yet implemented)\n");
+        printf("3. The highest quality porn ever produced (coming soon)\n");
         ch = fgetc(stdin);
     }
     return (0);

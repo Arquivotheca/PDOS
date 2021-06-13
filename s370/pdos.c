@@ -1178,6 +1178,15 @@ static int pdosDispatchUntilInterrupt(PDOS *pdos)
                 else
                 {
                     cnt = __consrd(300, tbuf);
+                    /* hack - PDPCLIB MVS routines cannot currently handle
+                       EOF being reached (a count of 0 seems to do that,
+                       which happens when the remote disconnects) and cleared,
+                       so we pretend a NUL was entered by the user instead. */
+                    if (cnt == 0)
+                    {
+                        tbuf[0] = 0;
+                        cnt++;
+                    }
                     if (cnt == 300)
                     {
                         cnt = -1;

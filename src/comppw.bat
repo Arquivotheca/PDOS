@@ -1,6 +1,6 @@
 rem wasmr -zq -zcm -Dmemodel=large support.asm
-rem tcc -O -c -ml -I..\pdpclib functest.c pos.c bos.c
-rem tlink -x functest+bos+pos+support,functest.exe,,..\pdpclib\borland.lib
+rem tcc -O -c -ml -I..\pdpclib portwrit.c pos.c bos.c
+rem tlink -x portwrit+bos+pos+support,portwrit.exe,,..\pdpclib\borland.lib
 
 rem wasm -zq -zcm -Dmemodel=large support.asm
 rem wcl -q -w -c -I. -ml -zl -D__MSDOS__ -fpi87 -s -zdp -zu -I..\pdpclib portwrit.c bos.c

@@ -26,7 +26,7 @@ int main(int argc, char **argv)
         printf("usage: portinit <port number> <parm>\n");
         printf("initialize a port, using the parameter\n");
         printf("you probably want 0x03 or 0xE3 for the parm\n");
-        printf("(both of those are N81, with different speeds)\n");
+        printf("(both of those are N,8,1, with different speeds)\n");
         printf("or maybe don't use this function at all and hope that\n");
         printf("the manufacturer has set some sensible default\n");
         return (EXIT_FAILURE);

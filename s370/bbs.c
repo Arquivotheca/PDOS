@@ -31,7 +31,7 @@ int main(int argc, char **argv)
     while (1)
     {
         printf(CHAR_ESC_STR "[2J"
-               "You entered an invalid option! (hex %02X)\n\n", ch);
+               "You entered an invalid option! (hex %02X)\n", ch);
         if (isdigit((unsigned char)ch))
         {
             printf("but at least it was a digit!\n");
@@ -40,6 +40,7 @@ int main(int argc, char **argv)
         {
             printf("it wasn't even a digit!!!\n");
         }
+        printf("\n");
         printf("Welcome to the Ten Minute Limit BBS\n");
         printf("Back in action 24 years after a fascist kicked me "
                "off Fidonet\n");

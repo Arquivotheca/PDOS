@@ -12,6 +12,7 @@
 
 #include <stdio.h>
 #include <string.h>
+#include <ctype.h>
 
 /* If ISO weren't a pack of dipshits, and supported "\e", or at least
    (and maybe preferably) some standard defines, I wouldn't need to do
@@ -31,8 +32,17 @@ int main(int argc, char **argv)
     {
         printf(CHAR_ESC_STR "[2J"
                "You entered an invalid option! (hex %02X)\n\n", ch);
+        if (isdigit((unsigned char)ch))
+        {
+            printf("but at least it was a digit!\n");
+        }
+        else
+        {
+            printf("it wasn't even a digit!!!\n");
+        }
         printf("Welcome to the Ten Minute Limit BBS\n");
-        printf("Back in action after a fascist kicked me off Fidonet\n");
+        printf("Back in action 24 years after a fascist kicked me "
+               "off Fidonet\n");
         printf("brought to you in "
 #ifdef ASCII
                "inglorious ASCII"

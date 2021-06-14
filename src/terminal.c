@@ -62,8 +62,8 @@ int main(int argc, char **argv)
             }
             c &= 0xff;
             if (c == CHAR_XON_CHAR) break;
-            printf("%02X %c\n", c, c);
-            /* fputc(c, stdout); */
+            /* printf("%02X %c\n", c, c); */
+            fputc(c, stdout);
         }
     }
     return (0);

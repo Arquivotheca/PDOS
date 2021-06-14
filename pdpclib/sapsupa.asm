@@ -1038,6 +1038,21 @@ RETURN99 DS    0H
 @@GETPFX BR    R14
          LTORG ,
 *
+*
+*
+***********************************************************************
+*
+*  GETEPF - dummy function
+*
+***********************************************************************
+         ENTRY @@GETEPF
+         USING @@GETEPF,R15
+         LA    R15,0
+@@GETEPF BR    R14
+         LTORG ,
+*
+*
+*
 * S/370 doesn't support switching modes so this code is useless,
 * and won't compile anyway because "BSM" is not known.
 *

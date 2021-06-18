@@ -7,14 +7,12 @@ LD=ldwin
 LDFLAGS=
 AS=aswin
 AR=arwin
-STRIP=stripwin
 COPTS=-S $(CFLAGS) -fno-common -ansi -I. -I../pdpclib -D__WIN32__
 
 all: clean pdmake.exe
 
 pdmake.exe: main.o read.o variable.o xmalloc.o
-  $(LD) $(LDFLAGS) -o pdmake.exe ../pdpclib/w32start.o main.o read.o variable.o xmalloc.o ../pdpclib/msvcrt.a ../src/kernel32.a
-  $(STRIP) pdmake.exe
+  $(LD) $(LDFLAGS) -s -o pdmake.exe ../pdpclib/w32start.o main.o read.o variable.o xmalloc.o ../pdpclib/msvcrt.a ../src/kernel32.a
 
 .c.o:
   $(CC) $(COPTS) -o $*.s $<

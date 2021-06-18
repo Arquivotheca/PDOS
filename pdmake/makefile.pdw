@@ -10,8 +10,7 @@ all: clean pdmake.exe
 
 pdmake.exe: main.o read.o variable.o xmalloc.o
   ld386 -s -e ___pdosst32 -o pdmake.exe ../pdpclib/pdosst32.o main.o read.o variable.o xmalloc.o ../pdpclib/pdos.a 
-  ld386 -r -s -e ___pdosst32 -o pdmake.exe ../pdpclib/pdosst32.o main.o read.o variable.o xmalloc.o ../pdpclib/pdos.a 
-  strip386 --strip-unneeded pdmake.exe
+  ld386 -N -s -e ___pdosst32 -o pdmake.exe ../pdpclib/pdosst32.o main.o read.o variable.o xmalloc.o ../pdpclib/pdos.a 
 
 .c.o:
   $(CC) $(COPTS) -o $*.s $<

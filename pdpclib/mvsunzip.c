@@ -46,8 +46,9 @@ int main(int argc, char **argv)
 
     if (argc <= 1) usage();
 
+#if defined(__CMS__)
 /* check to see if we have a CMS minidisk provided */
-#ifdef __CMS__
+
     if (argc > aupto)
     {
         if (strlen(argv[aupto]) == 1)
@@ -56,10 +57,10 @@ int main(int argc, char **argv)
             aupto++;
         }
     }
-#endif
 
+#elif defined(__VSE__)
 /* VSE requires an output DDNAME, even for library output */
-#ifdef __VSE__
+
     if (argc > aupto)
     {
         outdd = argv[aupto++];
@@ -68,10 +69,9 @@ int main(int argc, char **argv)
     {
         usage();
     }
-#endif
 
+#elif defined(__MVS__)
 /* MVS has an optional pds for output */
-#ifdef __MVS__
     if (argc > aupto)
     {
         if (ins_strcmp(argv[aupto], "binary") != 0)
@@ -80,6 +80,9 @@ int main(int argc, char **argv)
             aupto++;
         }
     }
+
+#else
+    /* Normal systems like Windows don't have a mandatory unusual argument */
 #endif
 
 /* VSE may request just a single file - should probably enable
@@ -128,11 +131,18 @@ static void usage(void)
     printf("usage: mvsunzip <infile> <outdd> [file] [binary]\n");
     printf("where outdd can be either a sequential file or library\n");
     printf("and file is the name of the file in the zip archive\n");
-#else
+#elif defined(__MVS__)
     printf("usage: mvsunzip <infile> [outpds] [binary]\n");
     printf("where infile is a sequential file\n");
     printf("and outpds is a PDS (not supported on all systems)\n");
     printf("e.g. mvsunzip dd:input dd:output\n");
+#else
+    printf("usage: mvsunzip <infile> [binary]\n");
+    printf("where infile is an uncompressed zip file\n");
+    printf("note that for text unzips, data is assumed to be ASCII\n");
+    printf("and will be converted to the local character set if that\n");
+    printf("is not already ASCII\n");
+    printf("e.g. mvsunzip input.zip binary\n");
 #endif
     exit(EXIT_FAILURE);
 }
@@ -334,6 +344,9 @@ static int onefile(FILE *infile)
         }
 #endif
     }
+
+#else
+    sprintf(newfnm, "%s", p);
 #endif
 
 

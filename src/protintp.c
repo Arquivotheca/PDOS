@@ -40,6 +40,7 @@ void inthdlr_26(void);
 void inthdlr_80(void);
 void inthdlr_A0(void);
 void inthdlr_A3(void);
+void inthdlr_A4(void);
 void inthdlr_A5(void);
 void inthdlr_A6(void);
 void inthdlr_AA(void);
@@ -179,6 +180,7 @@ unsigned long runprot_p(rawprot_parms *parmlist)
         { 0x80, inthdlr_80 },
         { 0xA0, inthdlr_A0 },
         { 0xA3, inthdlr_A3 },
+        { 0xA4, inthdlr_A4 },
         { 0xA5, inthdlr_A5 },
         { 0xA6, inthdlr_A6 },
         { 0xAA, inthdlr_AA },

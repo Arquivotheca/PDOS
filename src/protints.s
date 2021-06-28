@@ -25,6 +25,7 @@
         .globl _inthdlr_80
         .globl _inthdlr_A0
         .globl _inthdlr_A3
+        .globl _inthdlr_A4
         .globl _inthdlr_A5
         .globl _inthdlr_A6
         .globl _inthdlr_AA

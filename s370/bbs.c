@@ -30,15 +30,34 @@ int main(int argc, char **argv)
 
     while (1)
     {
-        printf(CHAR_ESC_STR "[2J"
-               "You entered an invalid option! (hex %02X)\n", ch);
-        if (isdigit((unsigned char)ch))
+        printf(CHAR_ESC_STR "[2J");
+        if (ch == '4')
         {
-            printf("but at least it was a digit!\n");
+            FILE *fp;
+
+            fp = fopen("antitwit.txt", "r");
+            if (fp != NULL)
+            {
+                int x;
+
+                while ((x = fgetc(fp)) != EOF)
+                {
+                    fputc(x, stdout);
+                }
+                fclose(fp);
+            }
         }
         else
         {
-            printf("it wasn't even a digit!!!\n");
+            printf("You entered an invalid option! (hex %02X)\n", ch);
+            if (isdigit((unsigned char)ch))
+            {
+                printf("but at least it was a digit!\n");
+            }
+            else
+            {
+                printf("it wasn't even a digit!!!\n");
+            }
         }
         printf("\n");
         printf("Welcome to the Ten Minute Limit BBS\n");
@@ -55,6 +74,7 @@ int main(int argc, char **argv)
         printf("1. Message area (not yet implemented)\n");
         printf("2. File area (not yet implemented)\n");
         printf("3. The highest quality porn ever produced (coming soon)\n");
+        printf("4. Non-twitter feed\n");
         ch = fgetc(stdin);
         if (ch == EOF)
         {

@@ -1,7 +1,5 @@
 # This builds a.out files for PDOS386, on Windows
 # For the 32-bit version of PDOS we define __PDOS386__
-# Note that we link twice, because the second link
-# doesn't report unresolved externals for some reason
 
 CC=gcc386
 COPTS=-S -Os -fno-common -D__PDOS386__ -D__32BIT__ -I. -I../src

@@ -1,0 +1,43 @@
+# Produce Windows executable
+# links with PDPCLIB created by makefile.msv
+
+CC=gccwin
+CFLAGS=-O2
+# ldwin gives unresolved externals that require --noinhibit-exec
+# to work around if "ld" can't be used. Given that we're currently
+# dependent on fpc itself, adding ld to the dependency list is
+# not onerous. However, I prefer the ldwin stub.
+LD=ldwin
+LDFLAGS=--noinhibit-exec
+AS=aswin
+AR=arwin
+COPTS=-S $(CFLAGS) -fno-common -ansi -I. -I../pdpclib -D__WIN32__
+
+all: clean worldpas.exe
+
+worldpas.exe: worldpas.o pascalc.o pascala.o
+  $(LD) $(LDFLAGS) -s -o worldpas.exe ../pdpclib/w32start.o worldpas.o pascalc.o pascala.o ../pdpclib/msvcrt.a
+
+
+# Without "-s", this produces an executable (but can be ignored)
+# With "-s" this produces crap (which can be deleted)
+# I choose to delete crap. Under other circumstances, even more
+# crap is produced.
+.pas.o:
+  fpc -a -s $<
+  rm -f link*.res
+  rm -f ppas.bat
+  rm -f *.ppu
+  $(AS) -o $@ $*.s
+  rm -f $*.s
+
+.c.o:
+  $(CC) $(COPTS) -o $*.s $<
+  $(AS) -o $@ $*.s
+  rm -f $*.s
+
+.asm.o:
+  $(AS) -o $@ $<
+
+clean:
+  rm -f *.o worldpas.exe

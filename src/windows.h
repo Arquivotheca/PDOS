@@ -231,7 +231,7 @@ typedef struct _INPUT_RECORD {
     MOUSE_EVENT_RECORD MouseEvent;
     WINSIZE_EVENT WindowBufferSizeEvent;
     } Event;
-} INPUT_RECORD;
+} INPUT_RECORD, *PINPUT_RECORD;
 
 
 HANDLE WINAPI GetStdHandle(DWORD nStdHandle);
@@ -333,3 +333,33 @@ BOOL WINAPI WriteConsoleOutputA(
 BOOL WINAPI GetConsoleMode(HANDLE hFile, DWORD *dw);
 
 BOOL WINAPI SetConsoleMode(HANDLE hFile, DWORD dw);
+
+BOOL WINAPI FreeConsole(void);
+
+#define SetConsoleTitle SetConsoleTitleA
+BOOL WINAPI SetConsoleTitleA(LPCTSTR x);
+
+#define GetConsoleTitle GetConsoleTitleA
+BOOL WINAPI GetConsoleTitleA(LPCTSTR x, DWORD y);
+
+BOOL WINAPI SetConsoleCursorPosition(HANDLE h, COORD c);
+
+#define FillConsoleOutputCharacter FillConsoleOutputCharacterA
+BOOL WINAPI FillConsoleOutputCharacterA(HANDLE h,
+                                        TCHAR t,
+                                        DWORD d,
+                                        COORD c,
+                                        LPDWORD lpd);
+
+BOOL WINAPI FillConsoleOutputAttribute(HANDLE h,
+                                       WORD w,
+                                       DWORD d,
+                                       COORD c,
+                                       LPDWORD lpd);
+
+#define ReadConsoleInput ReadConsoleInputA
+BOOL WINAPI ReadConsoleInputA(HANDLE h, PINPUT_RECORD pi, DWORD d, LPDWORD lpd);
+
+BOOL WINAPI AllocConsole(void);
+
+BOOL WINAPI GetNumberOfConsoleMouseButtons(LPDWORD lpd);

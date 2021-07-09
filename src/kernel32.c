@@ -289,13 +289,23 @@ BOOL WINAPI SetConsoleMode(HANDLE hFile, DWORD dw)
     return (1);
 }
 
+BOOL WINAPI GetNumberOfConsoleMouseButtons(LPDWORD lpd)
+{
+    size_t len = 44;
+    PosWriteFile(1, "GetNumberOfConsoleMouseButtons unimplemented\r\n",
+                 len, &len);
+    for (;;) ;
+    return (0);
+}
+
 /* auto-genned dummy functions */
 
-void WINAPI AllocConsole(void)
+BOOL WINAPI AllocConsole(void)
 {
     size_t len = 28;
     PosWriteFile(1, "AllocConsole unimplemented\r\n", len, &len);
     for (;;) ;
+    return (0);
 }
 void WINAPI AttachConsole(void)
 {
@@ -447,13 +457,22 @@ void WINAPI ExpandEnvironmentStringsW(void)
     PosWriteFile(1, "ExpandEnvironmentStringsW unimplemented\r\n", len, &len);
     for (;;) ;
 }
-void WINAPI FillConsoleOutputAttribute(void)
+BOOL WINAPI FillConsoleOutputAttribute(HANDLE h,
+                                       WORD w,
+                                       DWORD d,
+                                       COORD c,
+                                       LPDWORD lpd)
 {
     size_t len = 42;
     PosWriteFile(1, "FillConsoleOutputAttribute unimplemented\r\n", len, &len);
     for (;;) ;
+    return (0);
 }
-void WINAPI FillConsoleOutputCharacterA(void)
+BOOL WINAPI FillConsoleOutputCharacterA(HANDLE h,
+                                        TCHAR t,
+                                        DWORD d,
+                                        COORD c,
+                                        LPDWORD lpd)
 {
     size_t len = 43;
     PosWriteFile(1, "FillConsoleOutputCharacterA unimplemented\r\n", len, &len);
@@ -495,11 +514,12 @@ void WINAPI FlushViewOfFile(void)
     PosWriteFile(1, "FlushViewOfFile unimplemented\r\n", len, &len);
     for (;;) ;
 }
-void WINAPI FreeConsole(void)
+BOOL WINAPI FreeConsole(void)
 {
     size_t len = 27;
     PosWriteFile(1, "FreeConsole unimplemented\r\n", len, &len);
     for (;;) ;
+    return (0);
 }
 void WINAPI FreeEnvironmentStringsW(void)
 {
@@ -1023,11 +1043,12 @@ void WINAPI QueueUserAPC(void)
     PosWriteFile(1, "QueueUserAPC unimplemented\r\n", len, &len);
     for (;;) ;
 }
-void WINAPI ReadConsoleInputA(void)
+BOOL WINAPI ReadConsoleInputA(HANDLE h, PINPUT_RECORD pi, DWORD d, LPDWORD lpd)
 {
     size_t len = 33;
     PosWriteFile(1, "ReadConsoleInputA unimplemented\r\n", len, &len);
     for (;;) ;
+    return (0);
 }
 void WINAPI ReadConsoleInputW(void)
 {
@@ -1119,11 +1140,12 @@ void WINAPI SetConsoleCursorInfo(void)
     PosWriteFile(1, "SetConsoleCursorInfo unimplemented\r\n", len, &len);
     for (;;) ;
 }
-void WINAPI SetConsoleCursorPosition(void)
+BOOL WINAPI SetConsoleCursorPosition(HANDLE h, COORD c)
 {
     size_t len = 40;
     PosWriteFile(1, "SetConsoleCursorPosition unimplemented\r\n", len, &len);
     for (;;) ;
+    return (0);
 }
 void WINAPI SetConsoleTextAttribute(void)
 {
@@ -1131,11 +1153,26 @@ void WINAPI SetConsoleTextAttribute(void)
     PosWriteFile(1, "SetConsoleTextAttribute unimplemented\r\n", len, &len);
     for (;;) ;
 }
-void WINAPI SetConsoleTitleW(void)
+BOOL WINAPI SetConsoleTitleW(LPCTSTR x)
 {
     size_t len = 32;
     PosWriteFile(1, "SetConsoleTitleW unimplemented\r\n", len, &len);
     for (;;) ;
+    return (0);
+}
+BOOL WINAPI SetConsoleTitleA(LPCTSTR x)
+{
+    size_t len = 32;
+    PosWriteFile(1, "SetConsoleTitleA unimplemented\r\n", len, &len);
+    for (;;) ;
+    return (0);
+}
+BOOL WINAPI GetConsoleTitleA(LPCTSTR x, DWORD y)
+{
+    size_t len = 32;
+    PosWriteFile(1, "GetConsoleTitleA unimplemented\r\n", len, &len);
+    for (;;) ;
+    return (0);
 }
 void WINAPI SetEnvironmentVariableW(void)
 {

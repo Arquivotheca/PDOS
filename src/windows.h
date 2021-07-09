@@ -17,6 +17,9 @@
 #else
 #define WINAPI __stdcall
 #endif
+
+#define PASCAL __stdcall
+
 #define STD_INPUT_HANDLE ((DWORD)-10)
 #define STD_OUTPUT_HANDLE ((DWORD)-11)
 #define STD_ERROR_HANDLE ((DWORD)-12)

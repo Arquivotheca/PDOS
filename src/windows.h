@@ -75,6 +75,25 @@
 #define DLL_THREAD_ATTACH  2
 #define DLL_THREAD_DETACH  3
 
+#define SHIFT_PRESSED 1
+#define RIGHT_CTRL_PRESSED 2
+#define LEFT_CTRL_PRESSED 3
+#define RIGHT_ALT_PRESSED 4
+#define LEFT_ALT_PRESSED 5
+#define FOREGROUND_BLUE 6
+#define FOREGROUND_GREEN 7
+#define FOREGROUND_RED 8
+
+#define KEY_EVENT 1
+#define MOUSE_EVENT 2
+#define WINDOW_BUFFER_SIZE_EVENT 3
+
+#define ENABLE_WINDOW_INPUT 1
+#define ENABLE_PROCESSED_INPUT 2
+#define ENABLE_LINE_INPUT 3
+#define ENABLE_ECHO_INPUT 4
+#define ENABLE_MOUSE_INPUT 5
+
 typedef size_t SIZE_T;
 typedef unsigned int UINT;
 typedef unsigned int DWORD;
@@ -183,6 +202,36 @@ typedef struct _CONSOLE_SCREEN_BUFFER_INFO {
     SMALL_RECT srWindow;
     COORD dwMaximumWindowSize;
 } CONSOLE_SCREEN_BUFFER_INFO;
+
+typedef struct {
+    WORD wVirtualScanCode;
+    DWORD dwControlKeyState;
+    union {
+        WCHAR UnicodeChar;
+        CHAR AsciiChar;
+    } uChar;
+    /* CHAR_INFO uChar; */
+    BOOL bKeyDown;
+} KEYBOARD_EVENT;
+
+typedef struct {
+    DWORD dwButtonState;
+    COORD dwMousePosition;
+    DWORD dwControlKeyState;
+} MOUSE_EVENT_RECORD;
+
+typedef struct {
+    COORD dwSize;
+} WINSIZE_EVENT;
+
+typedef struct _INPUT_RECORD {
+    WORD EventType;
+    union {
+    KEYBOARD_EVENT KeyEvent;
+    MOUSE_EVENT_RECORD MouseEvent;
+    WINSIZE_EVENT WindowBufferSizeEvent;
+    } Event;
+} INPUT_RECORD;
 
 
 HANDLE WINAPI GetStdHandle(DWORD nStdHandle);

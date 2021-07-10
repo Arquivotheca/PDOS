@@ -928,6 +928,7 @@ static void scanPartition(int drive)
             if ((systemId == PTS_FAT12)
                 || (systemId == PTS_FAT16S)
                 || (systemId == PTS_FAT16B)
+                || (systemId == PTS_FAT16L)
                 || (systemId == PTS_FAT32)
                 || (systemId == PTS_FAT32L))
             {
@@ -984,6 +985,11 @@ static void processPartition(int drive, unsigned char *prm)
                     sect);
     }
     if (rc != 0)
+    {
+        return;
+    }
+    /* check FAT signature */
+    if ((buf[510] != 0x55) || (buf[511] != 0xaa))
     {
         return;
     }
@@ -1060,6 +1066,7 @@ static void processExtended(int drive, unsigned char *prm)
         if ((systemId == PTS_FAT12)
             || (systemId == PTS_FAT16S)
             || (systemId == PTS_FAT16B)
+            || (systemId == PTS_FAT16L)
             || (systemId == PTS_FAT32)
             || (systemId == PTS_FAT32L))
         {

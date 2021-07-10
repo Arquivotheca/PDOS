@@ -3,6 +3,10 @@
 # This should probably be written in Pascal instead, but
 # I don't know how to do that. The code probably works on
 # all 80386 environments but I only tested Win32
+#
+# Actually, another option would be for a compiler option
+# in Free Pascal to generate C calling convention for the
+# calls to the runtime library functions.
 
 # written by Paul Edwards
 # released to the public domain  

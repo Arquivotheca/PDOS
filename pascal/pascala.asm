@@ -6,7 +6,9 @@
 #
 # Actually, another option would be for a compiler option
 # in Free Pascal to generate C calling convention for the
-# calls to the runtime library functions.
+# calls to the runtime library functions (instead of the
+# current register calling convention used by Delphi and
+# Free Pascal).
 
 # written by Paul Edwards
 # released to the public domain  

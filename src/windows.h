@@ -75,24 +75,24 @@
 #define DLL_THREAD_ATTACH  2
 #define DLL_THREAD_DETACH  3
 
-#define SHIFT_PRESSED 1
-#define RIGHT_CTRL_PRESSED 2
-#define LEFT_CTRL_PRESSED 3
-#define RIGHT_ALT_PRESSED 4
-#define LEFT_ALT_PRESSED 5
-#define FOREGROUND_BLUE 6
-#define FOREGROUND_GREEN 7
-#define FOREGROUND_RED 8
+#define SHIFT_PRESSED                           0x0010
+#define RIGHT_CTRL_PRESSED                      0x0004
+#define LEFT_CTRL_PRESSED                       0x0008
+#define RIGHT_ALT_PRESSED                       0x0001
+#define LEFT_ALT_PRESSED                        0x0002
+#define FOREGROUND_BLUE                         0x0001
+#define FOREGROUND_GREEN                        0x0002
+#define FOREGROUND_RED                          0x0004
 
-#define KEY_EVENT 1
-#define MOUSE_EVENT 2
-#define WINDOW_BUFFER_SIZE_EVENT 3
+#define KEY_EVENT                               0x0001
+#define MOUSE_EVENT                             0x0002
+#define WINDOW_BUFFER_SIZE_EVENT                0x0004
 
-#define ENABLE_WINDOW_INPUT 1
-#define ENABLE_PROCESSED_INPUT 2
-#define ENABLE_LINE_INPUT 3
-#define ENABLE_ECHO_INPUT 4
-#define ENABLE_MOUSE_INPUT 5
+#define ENABLE_WINDOW_INPUT                     0x0008
+#define ENABLE_PROCESSED_INPUT                  0x0001
+#define ENABLE_LINE_INPUT                       0x0002
+#define ENABLE_ECHO_INPUT                       0x0004
+#define ENABLE_MOUSE_INPUT                      0x0010
 
 typedef size_t SIZE_T;
 typedef unsigned int UINT;
@@ -150,7 +150,7 @@ typedef struct _STARTUPINFOA {
     DWORD dwYSize;
     DWORD dwXCountChars;
     DWORD dwYCountChars;
-    DWORD dwFillAtribute;
+    DWORD dwFillAttribute;
     DWORD dwFlags;
     WORD wShowWindow;
     WORD cbReserved2;
@@ -184,9 +184,7 @@ typedef CHAR_INFO *PCHAR_INFO;
 typedef struct _COORD {
     SHORT X;
     SHORT Y;
-} COORD;
-
-typedef COORD *PCOORD;
+} COORD, *PCOORD;
 
 typedef struct _SMALL_RECT {
     SHORT Left;
@@ -203,33 +201,35 @@ typedef struct _CONSOLE_SCREEN_BUFFER_INFO {
     COORD dwMaximumWindowSize;
 } CONSOLE_SCREEN_BUFFER_INFO;
 
-typedef struct {
-    WORD wVirtualScanCode;
-    DWORD dwControlKeyState;
+typedef struct _KEY_EVENT_RECORD {
+    BOOL  bKeyDown;
+    WORD  wRepeatCount;
+    WORD  wVirtualKeyCode;
+    WORD  wVirtualScanCode;
     union {
-        WCHAR UnicodeChar;
-        CHAR AsciiChar;
+      WCHAR UnicodeChar;
+      CHAR  AsciiChar;
     } uChar;
-    /* CHAR_INFO uChar; */
-    BOOL bKeyDown;
-} KEYBOARD_EVENT;
-
-typedef struct {
-    DWORD dwButtonState;
-    COORD dwMousePosition;
     DWORD dwControlKeyState;
+} KEY_EVENT_RECORD;
+
+typedef struct _MOUSE_EVENT_RECORD {
+    COORD dwMousePosition;
+    DWORD dwButtonState;
+    DWORD dwControlKeyState;
+    DWORD dwEventFlags;
 } MOUSE_EVENT_RECORD;
 
-typedef struct {
-    COORD dwSize;
-} WINSIZE_EVENT;
+typedef struct _WINDOW_BUFFER_SIZE_RECORD {
+  COORD dwSize;
+} WINDOW_BUFFER_SIZE_RECORD;
 
 typedef struct _INPUT_RECORD {
     WORD EventType;
     union {
-    KEYBOARD_EVENT KeyEvent;
+    KEY_EVENT_RECORD KeyEvent;
     MOUSE_EVENT_RECORD MouseEvent;
-    WINSIZE_EVENT WindowBufferSizeEvent;
+    WINDOW_BUFFER_SIZE_RECORD WindowBufferSizeEvent;
     } Event;
 } INPUT_RECORD, *PINPUT_RECORD;
 

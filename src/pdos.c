@@ -896,6 +896,7 @@ static void initdisks(void)
 #define PTS_FAT16S 4 /* DOS 16-bit FAT < 32MB */
 #define PTS_DOSE 5 /* DOS extended partition */
 #define PTS_FAT16B 6 /* DOS 16-bit FAT >= 32MB */
+#define PTS_NTFS 7 /* Windows NT NTFS */
 #define PTS_FAT32 0x0b /* Win95 32-bit FAT */
 #define PTS_FAT32L 0x0c /* Win95 32-bit FAT LBA */
 #define PTS_FAT16L 0x0e /* Win95 16-bit FAT LBA */

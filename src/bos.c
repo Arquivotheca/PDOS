@@ -618,7 +618,7 @@ int BosFixedDiskStatus(unsigned int drive)
     int86(0x13 + BIOS_INT_OFFSET, &regsin, &regsout);
     if (regsout.x.cflag)
     {
-        return (regsout.x.ax);
+        return (regsout.h.ah);
     }
     return (0);
 }

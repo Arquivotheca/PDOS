@@ -991,6 +991,7 @@ static void processPartition(int drive, unsigned char *prm)
     /* check FAT signature */
     if ((buf[510] != 0x55) || (buf[511] != 0xaa))
     {
+        printf("drive %x has partition without 55AA signature!\n");
         return;
     }
     bpb = buf + 11;

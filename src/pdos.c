@@ -879,10 +879,11 @@ static void initdisks(void)
     for (x = 0x80; x < 0x84; x++)
     {
         rc = BosFixedDiskStatus(x);
-        if (1) /* (rc == 0) */
+        if (rc != 0)
         {
-            scanPartition(x);
+            printf("status %d from disk %x being ignored\n", rc, x);
         }
+        scanPartition(x);
     }
     return;
 }
@@ -915,7 +916,11 @@ static void scanPartition(int drive)
 
     /* read partition table */
     rc = readAbs(buf, sectors, drive, track, head, sector);
-    if (rc == 0)
+    if (rc != 0)
+    {
+        printf("can't read MBR sector 0/0/1 of drive %x\n", drive);
+    }
+    else
     {
         psector = 0;
         /* for each partition */
@@ -986,12 +991,16 @@ static void processPartition(int drive, unsigned char *prm)
     }
     if (rc != 0)
     {
+        printf("can't read sector %d/%d/%d of drive %x\n",
+               track, head, sect, drive);
         return;
     }
     /* check FAT signature */
     if ((buf[510] != 0x55) || (buf[511] != 0xaa))
     {
-        printf("drive %x has partition without 55AA signature!\n", drive);
+        printf("drive %x has partition without 55AA signature"
+               " in VBR (%d/%d/%d)\n",
+               drive, track, head, sect);
         return;
     }
     bpb = buf + 11;

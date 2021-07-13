@@ -995,15 +995,18 @@ static void processPartition(int drive, unsigned char *prm)
                track, head, sect, drive);
         return;
     }
+    bpb = buf + 11;
     /* check FAT signature */
     if ((buf[510] != 0x55) || (buf[511] != 0xaa))
     {
         printf("drive %x has partition without 55AA signature"
                " in VBR (%d/%d/%d)\n",
                drive, track, head, sect);
+        printf("bytes per sector would have been %d\n",
+               ((unsigned int)bpb[1] << 8) | bpb[0]);
+        printf("maybe we could have used LBA instead, which is %ld\n", sector);
         return;
     }
-    bpb = buf + 11;
     analyseBpb(&disks[lastDrive], bpb);
 
     /* we set the lba to whatever mode we are currently in */

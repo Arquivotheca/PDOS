@@ -915,10 +915,14 @@ static void scanPartition(int drive)
     int systemId;
 
     /* read partition table */
-    rc = readAbs(buf, sectors, drive, track, head, sector);
+    /* rc = readAbs(buf, sectors, drive, track, head, sector); */
+    rc = readLBA(buf,
+                 sectors,
+                 drive,
+                 0); /* sector 0 */
     if (rc != 0)
     {
-        printf("can't read MBR sector 0/0/1 of drive %x\n", drive);
+        printf("can't read MBR sector 0/0/1 or LBA 0 of drive %x\n", drive);
     }
     else
     {

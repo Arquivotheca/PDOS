@@ -926,7 +926,7 @@ static void scanPartition(int drive)
         /* for each partition */
         for (x = 0; x < PT_ENT; x++)
         {
-            lba = 0;
+            lba = 1;
             systemId = buf[PT_OFFSET + x * PT_LEN + PTO_SYSID];
             /* Currently supported systems. */
             /* +++Add support for all systems and test. */
@@ -942,7 +942,7 @@ static void scanPartition(int drive)
         }
         for (x = 0; x < PT_ENT; x++)
         {
-            lba = 0;
+            lba = 1;
             systemId = buf[PT_OFFSET + x * PT_LEN + PTO_SYSID];
             if ((systemId == PTS_DOSE)
                 || (systemId == PTS_W95EL))

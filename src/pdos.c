@@ -1005,6 +1005,16 @@ static void processPartition(int drive, unsigned char *prm)
         printf("bytes per sector would have been %d\n",
                ((unsigned int)bpb[1] << 8) | bpb[0]);
         printf("maybe we could have used LBA instead, which is %ld\n", sector);
+        rc = readLBA(buf,
+                    sectors,
+                    drive,
+                    sector);
+        printf("that would have given rc %d\n", rc);
+        if (rc == 0)
+        {
+            printf("and then bytes per sector would have been %d\n",
+                   ((unsigned int)bpb[1] << 8) | bpb[0]);
+        }
         return;
     }
     analyseBpb(&disks[lastDrive], bpb);

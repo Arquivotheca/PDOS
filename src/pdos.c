@@ -3721,7 +3721,7 @@ static int readAbs(void *buf,
 
     unused(sectors);
     tries = 0;
-    while (tries < 5)
+    while (tries < 10)
     {
         rc = BosDiskSectorRead(readbuf, 1, drive, track, head, sect);
         if (rc == 0)

@@ -128,7 +128,7 @@ void disable(void);
                      | (((unsigned long)(x) & 0xffffU) % 16))
 #endif
 
-#if defined(__WATCOMC__)
+#if defined(__WATCOMC__) && !defined(WATNATIVE)
 #define CTYP __cdecl
 #else
 #define CTYP

@@ -1,5 +1,4 @@
-rem uses PDPCLIB's makefile.wcd
+rem Use Watcom's version of int86 routine which compensates
+rem for flags not being popped in INT 25H and 26H
 
-wasm -zq -zcm -Dmemodel=large support.asm
-wcl -q -w -c -I. -ml -zl -D__MSDOS__ -fpi87 -s -zdp -zu -I..\pdpclib sys.c pos.c
-wlink File sys.obj,pos.obj,support.obj Name sys.exe Form dos Library ..\pdpclib\watcom.lib Option quiet
+wcl -I. -ml -DWATNATIVE sys.c pos.c

@@ -13,7 +13,11 @@
 #include <stddef.h>
 
 #include "pos.h"
+#ifdef WATNATIVE
+#include <dos.h>
+#else
 #include "support.h"
+#endif
 
 /* Calls an interrupt without input or output registers */
 /*
@@ -1953,6 +1957,7 @@ int intdos(union REGS *regsin, union REGS *regsout)
     return (int86(0x21, regsin, regsout));
 }
 
+#ifndef WATNATIVE
 int bdos(int func, int dx, int al)
 {
     union REGS regs;
@@ -1971,4 +1976,4 @@ int bdos(int func, int dx, int al)
     return (regs.x.ax);
 #endif
 }
-
+#endif

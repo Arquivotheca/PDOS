@@ -274,6 +274,10 @@ static void ivtCopyEntries(int dest, int orig, int count)
 }
 
 /* Code for remapping Programmable Interrupt Controller (PIC). */
+
+/* This may be useful to aid in understanding:
+   https://wiki.osdev.org/8259_PIC */
+
 #define PIC1         0x20
 #define PIC2         0xA0
 #define PIC1_COMMAND PIC1

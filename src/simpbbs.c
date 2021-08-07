@@ -144,10 +144,10 @@ int main(int argc, char **argv)
         printf("Back in action 24 years after a fascist kicked me "
                "off Fidonet\n");
         printf("brought to you in "
-#ifdef ASCII
-               "inglorious ASCII"
-#else
+#ifdef EBCDIC
                "glorious EBCDIC"
+#else
+               "inglorious ASCII"
 #endif
                "\n");
         printf("enter an option below:\n");

@@ -73,10 +73,7 @@ int bbs_fputc(int c, FILE *stream)
     {
         BosSerialWriteChar(port, c);
     }
-    else
-    {
-        fputc(c, stream);
-    }
+    fputc(c, stream);
     return (c);
 }
 

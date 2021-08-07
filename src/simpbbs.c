@@ -58,7 +58,7 @@ int bbs_fgetc(FILE *fp)
             c = BosSerialReadChar(port);
             if ((c & 0x8000U) == 0) break;
         }
-        if ((c & 0xff00U) == 0x100)
+        if ((c & 0x100U) == 0x100)
         {
             return (c & 0xff);
         }

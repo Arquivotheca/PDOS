@@ -1,4 +1,4 @@
-# winsupb.asm - support code for C programs for Win32
+# winsupc.asm - support code for C programs for Win32
 #
 # This program written by Paul Edwards
 # Released to the public domain

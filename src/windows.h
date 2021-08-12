@@ -13,7 +13,7 @@
 #include <stddef.h>
 
 #ifndef __EXPORT__
-#define WINAPI __stdcall __declspec(dllimport)
+#define WINAPI __declspec(dllimport) __stdcall
 #else
 #define WINAPI __stdcall
 #endif

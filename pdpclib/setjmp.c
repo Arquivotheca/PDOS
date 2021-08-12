@@ -16,7 +16,11 @@
 int __setj(jmp_buf env);
 int __longj(void *);
 
+#ifdef __MSC__
+__PDPCLIB_API__ int setjmp(jmp_buf env)
+#else
 __PDPCLIB_API__ int _setjmp(jmp_buf env)
+#endif
 {
     return (__setj(env));
 }

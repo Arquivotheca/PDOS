@@ -60,8 +60,13 @@ typedef struct {
     int retval;
 } jmp_buf[1];
 
+#ifdef __MSC__
+int setjmp(jmp_buf env);
+#else
 #define setjmp(x) _setjmp(x)
 int _setjmp(jmp_buf env);
+#endif
+
 void longjmp(jmp_buf env, int val);
 
 #endif

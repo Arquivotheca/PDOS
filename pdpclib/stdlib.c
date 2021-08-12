@@ -370,8 +370,7 @@ __PDPCLIB_API__ void abort(void)
 #endif
 }
 
-#if !defined(__EMX__) && !defined(__GNUC__) && !defined(__WIN32__) \
-  && !defined(__gnu_linux__)
+#if !defined(__EMX__) && !defined(__GNUC__) && !defined(__gnu_linux__)
 void __exit(int status);
 #else
 void __exit(int status) __attribute__((noreturn));

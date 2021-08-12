@@ -133,15 +133,15 @@ single product.
 
 
 
-PC INSTALLING
--------------
+PC INSTALLING - TRADITIONAL
+---------------------------
 
 To get the 16-bit version on floppy disk, you need
 to get hold of a program called "rawrite" from the
-internet and then follow the instructions to get
-pdos16.img onto a 1.44 MB floppy disk.  pdos32.img
-will give you the 32-bit version. Both of these
-files can be found in the "src" directory.
+internet and then follow the instructions (from
+rawrite) to get pdos16.img onto a 1.44 MB floppy disk.
+pdos32.img will give you the 32-bit version. Both of
+these files can be found in the "src" directory.
 
 To install on hard disk, you need MSDOS (I tested
 with version 5.0) to format a FAT-16 partition,
@@ -164,6 +164,17 @@ doinst
 newboot (or newboota for floppies)
 and to get a new MBR for a hard disk, go:
 newmbr (after checking disk number)
+
+
+
+PC INSTALLING - MODERN
+----------------------
+
+You can obtain a hard disk image in the form pdos.vhd.
+You can mount this drive under Windows and copy extra
+files onto it. Eject it, burn it to USB stick using
+Win32 Disk Imager.
+
 
 
 PC DEVELOPMENT ENVIRONMENT
@@ -216,18 +227,21 @@ https://sourceforge.net/projects/jwasm/files/JWasm%20Windows%20binary/JWasm194cb
 Not used:
 MASM 6.15:
 http://msdn2.microsoft.com/en-us/vstudio/aa718349.aspx
-(go "vcpp5 /c" to extract)
+https://web.archive.org/web/20070202015826/http://download.microsoft.com/download/vb60ent/update/6/w9x2kxp/en-us/vcpp5.exe
+(go "vcpp5 /c" to extract and choose to install in any scratch
+directory, then copy ml.exe and ml.err into your PATH,
+and save MasmRef.doc as a reference)
 
 HX DOS extender:
 https://www.japheth.de/HX.html
 
 
 
-PC RECOMPILING
---------------
+PC RECOMPILING - TRADITIONAL
+----------------------------
 
 If you have the above software, you can just type "build"
-and it will rebuild the two DSK files used in the shipment,
+and it will rebuild the two .img files used in the shipment,
 except for kernel32.dll.
 Note that you need to edit build.bat and put the proper
 paths in before that will actually work.
@@ -276,7 +290,48 @@ comp6w (needs a cross-compiled GCC 3.2.3) and copy
 the files across to the target platform.
 
 To create the Windows version of pdptest you need to go:
-dmake -B -f makefile.w32
+pdmake -f makefile.msv
+
+(and copy the msvcrt.dll to the target system too).
+
+
+
+PC RECOMPILING - MODERN
+-----------------------
+
+You typically need to create a virtual hard disk (VHD)
+under Windows, as MBR and FAT, and then use Freedos
+under Bochs or whatever to delete the partition and
+recreate it. The batch files below should be inspected
+before executing them.
+
+After obtaining the source for PDOS/386 go:
+
+cd src
+compk32
+cd ..\pdpclib
+pdmake -f makefile.msv
+pdmake -f makefile.pdw
+cd ..\src
+comp4w
+comp5w
+comp6w
+
+Transfer pload.com, pdos.exe, pcomm.exe, kernel32.dll,
+msvcrt.dll (from pdpclib) to Freedos, format a drive
+(without /s), doinst, newboot, newmbr
+
+For PDOS/86 you instead go:
+
+cd pdpclib
+pdmake -f makefile.wcd
+cd ..\src
+comp1w
+comp2w
+comp3w
+
+Transfer pload.com, pdos.exe, pcomm.exe to Freedos,
+format a drive (without /s), doinst, newboot, newmbr.
 
 
 

@@ -307,6 +307,10 @@ before executing them.
 
 After obtaining the source for PDOS/386 go:
 
+compsys
+compimbr
+
+XXXXX begin
 cd src
 compk32
 cd ..\pdpclib
@@ -316,12 +320,14 @@ cd ..\src
 comp4w
 comp5w
 comp6w
+XXXXX end
 
 Transfer pload.com, pdos.exe, pcomm.exe, kernel32.dll,
-msvcrt.dll (from pdpclib) to Freedos, format a drive
-(without /s), doinst, newboot, newmbr
+msvcrt.dll (from pdpclib), sys.exe, instmbr.exe to Freedos,
+format a drive (without /s, and I think you need /u),
+doinst (don't worry about patchver error), instmbr.
 
-For PDOS/86 you instead go:
+For PDOS/86 you instead change the bit between XXXXX with:
 
 cd pdpclib
 pdmake -f makefile.wcd
@@ -330,8 +336,7 @@ comp1w
 comp2w
 comp3w
 
-Transfer pload.com, pdos.exe, pcomm.exe to Freedos,
-format a drive (without /s), doinst, newboot, newmbr.
+and you don't need kernel32.dll and msvcrt.dll.
 
 
 

@@ -16,7 +16,7 @@ pdptest.exe: w32start.obj pdptest.obj stdio.obj string.obj stdlib.obj \
   lib -nologo -out:temp3.lib locale.obj ctype.obj setjmp.obj math.obj __memmgr.obj fpfuncsv.obj
   lib -nologo -out:pdpwin32.lib temp1.lib temp2.lib temp3.lib
   del temp*.lib
-  cl -Fepdptest.exe w32start.obj pdptest.obj pdpwin32.lib ../src/kernel32.lib
+  cl -Fepdptest.exe w32start.obj pdptest.obj pdpwin32.lib ../src/kernel32.lib /link /fixed:no
 
 .c.obj:
   $(CC) $(COPTS) $<
@@ -25,5 +25,5 @@ pdptest.exe: w32start.obj pdptest.obj stdio.obj string.obj stdlib.obj \
   ml -c -coff $<
 
 clean:
-  rm -f *.o
+  rm -f *.obj
   rm -f pdptest.exe

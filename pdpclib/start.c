@@ -205,6 +205,7 @@ __PDPCLIB_API__ int __getmainargs(int *_Argc,
     *_Argc = argc;
     *_Argv = argv;
     *_Env = env;
+    return (0);
 }
 #endif
 

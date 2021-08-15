@@ -192,7 +192,7 @@ typedef struct
 } __DUMMYFILE;
 
 #ifndef __PDPCLIB_DLL
-__declspec(dllimport) __DUMMYFILE _iob[3];
+__DUMMYFILE _iob[3];
 #endif
 
 #define stdin ((FILE *) &(_iob[0]))

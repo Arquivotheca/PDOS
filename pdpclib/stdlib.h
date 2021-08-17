@@ -44,8 +44,6 @@ typedef struct { long quot; long rem; } ldiv_t;
 #define MB_CUR_MAX 1
 #define __NATEXIT 32
 
-extern void (*__userExit[__NATEXIT])(void);
-
 void *malloc(size_t size);
 void *calloc(size_t nmemb, size_t size);
 void *realloc(void *ptr, size_t size);

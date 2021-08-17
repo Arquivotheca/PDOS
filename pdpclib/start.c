@@ -21,6 +21,8 @@
 
 extern FILE *__userFiles[__NFILE];
 
+extern void (*__userExit[__NATEXIT])(void);
+
 #define MAXPARMS 50 /* maximum number of arguments we can handle */
 
 #ifdef __OS2__

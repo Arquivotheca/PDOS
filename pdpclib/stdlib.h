@@ -31,7 +31,7 @@ typedef unsigned int size_t;
 typedef char wchar_t;
 #endif
 typedef struct { int quot; int rem; } div_t;
-typedef struct { long int quot; long int rem; } ldiv_t;
+typedef struct { long quot; long rem; } ldiv_t;
 
 #define NULL ((void *)0)
 #define EXIT_SUCCESS 0
@@ -65,9 +65,9 @@ int rand(void);
 double atof(const char *nptr);
 double strtod(const char *nptr, char **endptr);
 int atoi(const char *nptr);
-long int atol(const char *nptr);
-long int strtol(const char *nptr, char **endptr, int base);
-unsigned long int strtoul(const char *nptr, char **endptr, int base);
+long atol(const char *nptr);
+long strtol(const char *nptr, char **endptr, int base);
+unsigned long strtoul(const char *nptr, char **endptr, int base);
 int mblen(const char *s, size_t n);
 int mbtowc(wchar_t *pwc, const char *s, size_t n);
 int wctomb(char *s, wchar_t wchar);
@@ -75,8 +75,8 @@ size_t mbstowcs(wchar_t *pwcs, const char *s, size_t n);
 size_t wcstombs(char *s, const wchar_t *pwcs, size_t n);
 int abs(int j);
 div_t div(int numer, int denom);
-long int labs(long int j);
-ldiv_t ldiv(long int numer, long int denom);
+long labs(long j);
+ldiv_t ldiv(long numer, long denom);
 int atexit(void (*func)(void));
 char *getenv(const char *name);
 int system(const char *string);
@@ -91,7 +91,7 @@ void *bsearch(const void *key, const void *base,
 #if defined(__IBMC__) && defined(__OS2__)
 int _Builtin __abs(int j);
 #define abs(j) (__abs((j)))
-long int _Builtin __labs(long int j);
+long _Builtin __labs(long j);
 #define labs(j) (__labs((j)))
 #endif
 

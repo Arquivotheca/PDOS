@@ -325,7 +325,7 @@ DODIAG   DS    0H
 * Move in MSG * prefix
          MVC   ABMSG(6),MSGSTAR
          LA    R6,ABMSG
-*         DIAG  6,4,0(8)
+*         DIAG  6,4,8(0)
          DC    X'83640008'
 DONEDIAG DS    0H
          LA    R15,0
@@ -579,7 +579,7 @@ SYSTEMLN EQU   *-SYSTMWRK    LENGTH OF DYNAMIC STORAGE
 *
          L     R6,0(R1)
          L     R4,4(R1)
-*         DIAG  4,6,0(8)
+*         DIAG  4,6,8(0)
          DC    X'83460008'
          LA    R15,0
 *

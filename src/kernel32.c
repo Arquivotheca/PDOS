@@ -19,6 +19,7 @@ HANDLE WINAPI GetStdHandle(DWORD nStdHandle)
     if (nStdHandle == -10) return ((HANDLE)0);
     if (nStdHandle == -11) return ((HANDLE)1);
     if (nStdHandle == -12) return ((HANDLE)2);
+    return ((HANDLE)-1);
 }
 
 BOOL WINAPI WriteFile(HANDLE hFile,

@@ -31,7 +31,7 @@ BOOL WINAPI WriteFile(HANDLE hFile,
     int ret;
 
     ret = PosWriteFile((int)hFile, lpBuffer,
-                       (size_t)nNumberOfBytesToWrite, lpNumberOfBytesWritten);
+                       (size_t)nNumberOfBytesToWrite, &written);
     *lpNumberOfBytesWritten = written;
     /* Positive return code means success. */
     return (!ret);

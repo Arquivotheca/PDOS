@@ -135,6 +135,10 @@ extern void CTYP __rename(const char *old, const char *newnam);
 extern int __open(const char *a, int b, int c);
 extern int __write(int a, const void *b, int c);
 extern int __read(int a, void *b, int c);
+extern int __seek(int handle, long offset, int whence);
+extern void __close(int handle);
+extern void __remove(const char *filename);
+extern void __rename(const char *old, const char *newnam);
 
 #define O_WRONLY 0x1
 #define O_CREAT  0x40

@@ -4517,7 +4517,7 @@ void PosSetVideoAttribute(unsigned int attr) /* func f6.37 */
 
 int PosSetVideoMode(unsigned int mode) /* func f6.38 */
 {
-    int actual, cols, page;
+    unsigned int actual, cols, page;
     BosSetVideoMode(mode);
     BosGetVideoMode(&cols, &actual, &page);
     if (mode == actual) {
@@ -4529,7 +4529,7 @@ int PosSetVideoMode(unsigned int mode) /* func f6.38 */
 
 int PosSetVideoPage(unsigned int page) /* func f6.39 */
 {
-    int mode, cols, actual;
+    unsigned int mode, cols, actual;
     BosSetActiveDisplayPage(page);
     BosGetVideoMode(&cols, &mode, &actual);
     if (page == actual) {

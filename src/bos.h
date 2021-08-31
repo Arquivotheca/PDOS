@@ -77,7 +77,7 @@ int BosReadGraphicsPixel(int page, /* 10:D */
                          unsigned int column,
                          int *color);
 int BosWriteText(int page, int ch, int color); /* 10:E */
-int BosGetVideoMode(int *columns, int *mode, int *page); /* 10:F */
+int BosGetVideoMode(unsigned int *columns, unsigned int *mode, unsigned int *page); /* 10:F */
 
 int BosLoadTextModeRomFont(int font, int block); /* 10:11:{11,12,14} */
 
@@ -93,6 +93,8 @@ int BosVBEPaletteOps(unsigned int operation, /* 10:4F09 */
                      unsigned int entries,
                      unsigned int start_index,
                      void *buffer);
+
+unsigned long BosGetMemorySize(void); /* 12 */
 
 int BosDiskReset(unsigned int drive); /* 13:0 */
 

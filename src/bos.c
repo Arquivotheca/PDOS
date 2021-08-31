@@ -353,7 +353,7 @@ int BosWriteText(int page, int ch, int color)
 
 /* BosGetVideoMode - BIOS Int 10h Function 0Fh */
 
-int BosGetVideoMode(int *columns, int *mode, int *page)
+int BosGetVideoMode(unsigned int *columns, unsigned int *mode, unsigned int *page)
 {
     union REGS regsin;
     union REGS regsout;
@@ -490,6 +490,23 @@ int BosVBEPaletteOps(unsigned int operation,
     int86x(0x10 + BIOS_INT_OFFSET, &regsin, &regsout, &sregs);
     if (regsout.h.al != 0x4f) return (2);
     return (regsout.h.ah);
+}
+
+
+/* INT 12H - get size of memory starting at 00000000H */
+/* Note that the interrupt traditionally returns the number of
+   KB in AX, but this could theoretically be changed to return
+   an extension in say DX. We leave open this possibility and
+   return the number of bytes instead, as an unsigned 32-bit
+   quantity. */
+
+unsigned long BosGetMemorySize(void)
+{
+    union REGS regsin;
+    union REGS regsout;
+
+    int86(0x12 + BIOS_INT_OFFSET, &regsin, &regsout);
+    return ((unsigned long)regsout.x.ax << 10);
 }
 
 int BosDiskReset(unsigned int drive)
@@ -1059,7 +1076,7 @@ int BosGetTextModeRows(void)
 
 void BosClearScreen(unsigned int attr)
 {
-    int rows, cols, mode, page;
+    unsigned int rows, cols, mode, page;
     rows = BosGetTextModeRows();
     cols = BosGetTextModeCols();
     BosScrollWindowUp(0, attr, 0, 0, rows, cols);

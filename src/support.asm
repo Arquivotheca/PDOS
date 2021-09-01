@@ -75,6 +75,12 @@ int 010h
 jmp fintry
 not10:
 
+cmp intnum, 012h
+jne not12
+int 012h
+jmp fintry
+not12:
+
 cmp intnum, 013h
 jne not13
 int 013h

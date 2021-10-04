@@ -628,8 +628,6 @@ echo the package should have shipped with "mvsunzip pdpi.zip" already run
 
 echo that's enough for now - enter further commands yourself!
 echo on
-
-bbs
 /*
 //*
 //COPYFILE EXEC PGM=COPYFILE,PARM='-tt dd:in dd:out'

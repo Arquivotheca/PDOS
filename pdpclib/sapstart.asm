@@ -111,8 +111,8 @@ POSTIPL  DS    0H
          LA    R1,1   Magic number for z/Arch
          SIGP  R1,0,18   Ignore any error from this
 * Adding 1 will activate AM64
-*         LA    R2,1(POSTIPLZ)
-         LA    R2,POSTIPLZ-POSTIPL+1(R12)
+         LA    R2,POSTIPLZ+1
+*         LA    R2,POSTIPLZ-POSTIPL+1(R12)
          BSM   R0,R2
 POSTIPLZ DS    0H
          MVC   FLCEINPW(16),WAITER4
@@ -226,8 +226,16 @@ READBUF  DS    A
 READSIZE DS    F
 SAVEAR2  DS    18F
          DS    0D
-ST4PSW   DC    X'000C0000'  EC mode + Machine Check enabled
+         AIF   ('&ZSYS' EQ 'ZARCH').ZST4
+ST4PSW   DC    A(X'000C0000')
          DC    A(AMBIT+STAGE4)
+         AGO   .ZST4A
+*
+.ZST4    ANOP
+ST4PSW   DC    A(X'000C0000'+AM64BIT)
+         DC    A(AMBIT+STAGE4)
+.ZST4A   ANOP
+*
 WAITSERR DC    X'000E0000'  EC mode + Machine Check enabled + wait
          DC    A(AMBIT+X'00000444')  Severe error
 * At this point, we are in a "normal" post-IPL status,

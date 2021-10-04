@@ -57,6 +57,7 @@ INITSYS  DS    0H
          MVC   FLCSNPSW(8),WAITER2
          MVC   FLCPNPSW(8),WAITER3
 *
+* Note that SVCNPSW is an alias for FLCSNPSW
          MVC   SVCNPSW(8),NEWSVC
 *
 * Prepare CR6 for interrupts

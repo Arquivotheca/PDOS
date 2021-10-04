@@ -619,7 +619,7 @@ SYSTEMLN EQU   *-SYSTMWRK    LENGTH OF DYNAMIC STORAGE
          LA    R7,1
 NOSPACE  DS    0H
 NOCRREQ  DS    0H
-         AIF   ('&ZSYS' EQ 'S390').CHN390G
+         AIF   ('&ZSYS' EQ 'S390' OR '&ZSYS' EQ 'ZARCH').CHN390G
          STCM  R2,B'0111',CCHAIN+1   This requires BTL buffer
          STH   R7,CCHAIN+6     Store length in WRITE CCW
          AGO   .CHN390H
@@ -639,7 +639,7 @@ NOCRREQ  DS    0H
          ST    R3,FLCCAW    Store in CAW
 *
 *
-         AIF   ('&ZSYS' EQ 'S390').SIO31M
+         AIF   ('&ZSYS' EQ 'S390' OR '&ZSYS' EQ 'ZARCH').SIO31M
          SIO   0(R10)
 *         TIO   0(R10)
          AGO   .SIO24M
@@ -657,7 +657,7 @@ NOCRREQ  DS    0H
          LPSW  CWAITNER     Wait for an interrupt
          DC    H'0'
 CCONT    DS    0H           Interrupt will automatically come here
-         AIF   ('&ZSYS' EQ 'S390').SIO31N
+         AIF   ('&ZSYS' EQ 'S390' OR '&ZSYS' EQ 'ZARCH').SIO31N
          SH    R7,FLCCSW+6  Subtract residual count to get bytes read
          LR    R15,R7
 * After a successful CCW chain, CSW should be pointing to end
@@ -677,7 +677,7 @@ CALLFIN  DS    0H
          LTORG
 *
 *
-         AIF   ('&ZSYS' NE 'S390').NOT390P
+         AIF   ('&ZSYS' NE 'S390' AND '&ZSYS' NE 'ZARCH').NOT390P
          DS    0F
 CIRB     DS    24F
 CORB     DS    0F
@@ -689,7 +689,7 @@ CORB     DS    0F
 *
 *
          DS    0D
-         AIF   ('&ZSYS' EQ 'S390').CHN390I
+         AIF   ('&ZSYS' EQ 'S390' OR '&ZSYS' EQ 'ZARCH').CHN390I
 * X'09' = write with automatic carriage return
 CCHAIN   CCW   X'09',0,X'20',0    20 = ignore length issues
          AGO   .CHN390J

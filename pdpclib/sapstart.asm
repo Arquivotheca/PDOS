@@ -38,6 +38,11 @@ ENTSTRT  EQU   2048         Create a predictable usable entry point
 .ZVAR64  ANOP
 CODESTRT EQU   8192         Start of our real code
 ENTSTRT  EQU   8192+1024    Create a predictable usable entry point
+*
+* These values can be found here:
+* https://www.ibm.com/docs/en/zos/2.4.0
+* ?topic=information-ihapsae-mapping
+*
 FLCEINPW EQU   496   A(X'1F0')
 FLCEMNPW EQU   480   A(X'1E0')
 FLCESNPW EQU   448   A(X'1C0')

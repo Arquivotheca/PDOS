@@ -35,6 +35,7 @@ MAXBLKS  EQU   40           Maximum number of blocks to read
          AIF ('&ZSYS' EQ 'ZARCH').ZVAR64
 CODESTRT EQU   1024         Start of our real code
 ENTSTRT  EQU   2048         Create a predictable usable entry point
+         AGO .ZVAR64B
 .ZVAR64  ANOP
 CODESTRT EQU   8192         Start of our real code
 ENTSTRT  EQU   8192+1024    Create a predictable usable entry point
@@ -47,7 +48,6 @@ FLCEINPW EQU   496   A(X'1F0')
 FLCEMNPW EQU   480   A(X'1E0')
 FLCESNPW EQU   448   A(X'1C0')
 FLCEPNPW EQU   464   A(X'1D0')
-         AGO .ZVAR64B
 .ZVAR64B ANOP
 *
 *
@@ -109,6 +109,7 @@ POSTIPL  DS    0H
          MVC   FLCMNPSW(8),WAITER1
          MVC   FLCSNPSW(8),WAITER2
          MVC   FLCPNPSW(8),WAITER3
+         AGO .ZSW64B
 .ZSW64   ANOP
 *
 * Activate z/Arch (code taken from UDOS)
@@ -124,7 +125,6 @@ POSTIPLZ DS    0H
          MVC   FLCEMNPW(16),WAITER1
          MVC   FLCESNPW(16),WAITER2
          MVC   FLCEPNPW(16),WAITER3
-         AGO .ZSW64B
 .ZSW64B  ANOP
 * Save IPL address in R10
          SLR   R10,R10
@@ -154,6 +154,7 @@ WAITER3  DC    X'000E0000'  machine check, EC, wait
          DC    A(AMBIT+X'00000333')  error 333
 WAITER4  DC    X'000E0000'  machine check, EC, wait
          DC    A(AMBIT+X'00000444')  error 444
+         AGO   .WAIT64B
 .WAIT64A ANOP
 * Below values somewhat obtained from UDOS
 WAITER1  DC    A(X'00060000'+AM64BIT)
@@ -172,7 +173,6 @@ WAITER4  DC    A(X'00060000'+AM64BIT)
          DC    A(AMBIT)
          DC    A(0)
          DC    A(X'00000444')  error 444
-         AGO   .WAIT64B
 .WAIT64B ANOP
          DS    0D
 *

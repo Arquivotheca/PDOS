@@ -83,7 +83,7 @@ INITSYS  DS    0H
 *
 *
 * Prepare CR6 for interrupts
-         AIF   ('&ZSYS' NE 'S390').SIO24A
+         AIF   ('&ZSYS' NE 'S390' AND '&ZSYS' NE 'ZARCH').SIO24A
          LCTL  6,6,ALLIOINT CR6 needs to enable all interrupts
 .SIO24A  ANOP
 *
@@ -100,7 +100,7 @@ INITSYS  DS    0H
 *
 *
 *
-         AIF   ('&ZSYS' NE 'S390').NOT390A
+         AIF   ('&ZSYS' NE 'S390' AND '&ZSYS' NE 'ZARCH').NOT390A
          DS    0F
 ALLIOINT DC    X'FF000000'
 .NOT390A ANOP

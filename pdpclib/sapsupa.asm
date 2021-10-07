@@ -50,6 +50,14 @@
          PRINT NOGEN
          YREGS
 SUBPOOL  EQU   0
+*
+         AIF ('&ZSYS' NE 'ZARCH').ZVAR64B
+FLCEINPW EQU   496   A(X'1F0')
+FLCEMNPW EQU   480   A(X'1E0')
+FLCESNPW EQU   448   A(X'1C0')
+FLCEPNPW EQU   464   A(X'1D0')
+.ZVAR64B ANOP
+*
          EXTRN @@CONSDN
 *
 *
@@ -60,6 +68,13 @@ AMBIT    EQU X'80000000'
 .AMB24A  ANOP
 AMBIT    EQU X'00000000'
 .AMB24B  ANOP
+*
+         AIF ('&ZSYS' NE 'ZARCH').AMZB24A
+AM64BIT  EQU X'00000001'
+         AGO .AMZB24B
+.AMZB24A ANOP
+AM64BIT  EQU X'00000000'
+.AMZB24B ANOP
 *
 *
 *
@@ -632,7 +647,12 @@ NOCRREQ  DS    0H
 * something more sophisticated in PDOS than this continual
 * initialization.
 *
+         AIF   ('&ZSYS' EQ 'ZARCH').ZNEWIOA
          MVC   FLCINPSW(8),CNEWIO
+         AGO   .ZNEWIOB
+.ZNEWIOA ANOP
+         MVC   FLCEINPW(16),CNEWIO
+.ZNEWIOB ANOP
          STOSM FLCINPSW,X'00'  Work with DAT on or OFF
 * R3 points to CCW chain
          LA    R3,CCHAIN
@@ -700,8 +720,16 @@ CFINCHN  EQU   *
          DS    0D
 CWAITNER DC    X'060E0000'  I/O, machine check, EC, wait, DAT on
          DC    A(AMBIT)     no error
+         AIF   ('&ZSYS' EQ 'ZARCH').ZNEWIOC
 CNEWIO   DC    X'000C0000'  machine check, EC, DAT off
          DC    A(AMBIT+CCONT)  continuation after I/O request
+         AGO   .ZNEWIOD
+.ZNEWIOC ANOP
+CNEWIO   DC    A(X'00040000'+AM64BIT)
+         DC    A(AMBIT)
+         DC    A(0)
+         DC    A(CCONT)  continuation after I/O request
+.ZNEWIOD ANOP
 *
          DROP  ,
 *
@@ -728,7 +756,7 @@ CNEWIO   DC    X'000C0000'  machine check, EC, DAT off
          L     R10,0(R10)
          L     R7,0(R1)        Bytes to read
          L     R2,4(R1)        Buffer to read into
-         AIF   ('&ZSYS' EQ 'S390').CRD390G
+         AIF   ('&ZSYS' EQ 'S390' OR '&ZSYS' EQ 'ZARCH').CRD390G
          STCM  R2,B'0111',CRDCHN+1   This requires BTL buffer
          STH   R7,CRDCHN+6     Store length in READ CCW
          AGO   .CRD390H
@@ -741,14 +769,19 @@ CNEWIO   DC    X'000C0000'  machine check, EC, DAT off
 * something more sophisticated in PDOS than this continual
 * initialization.
 *
+         AIF   ('&ZSYS' EQ 'ZARCH').ZNEWIOG
          MVC   FLCINPSW(8),CRNEWIO
+         AGO   .ZNEWIOH
+.ZNEWIOG ANOP
+         MVC   FLCEINPW(16),CRNEWIO
+.ZNEWIOH ANOP
          STOSM FLCINPSW,X'00'  Work with DAT on or OFF
 * R3 points to CCW chain
          LA    R3,CRDCHN
          ST    R3,FLCCAW    Store in CAW
 *
 *
-         AIF   ('&ZSYS' EQ 'S390').CRD31M
+         AIF   ('&ZSYS' EQ 'S390' OR '&ZSYS' EQ 'ZARCH').CRD31M
          SIO   0(R10)
 *         TIO   0(R10)
          AGO   .CRD24M
@@ -766,7 +799,7 @@ CNEWIO   DC    X'000C0000'  machine check, EC, DAT off
          LPSW  CRWTNER      Wait for an interrupt
          DC    H'0'
 CRCONT   DS    0H           Interrupt will automatically come here
-         AIF   ('&ZSYS' EQ 'S390').CRD31N
+         AIF   ('&ZSYS' EQ 'S390' OR '&ZSYS' EQ 'ZARCH').CRD31N
          SH    R7,FLCCSW+6  Subtract residual count to get bytes read
          LR    R15,R7
 * After a successful CCW chain, CSW should be pointing to end
@@ -786,7 +819,7 @@ CRALLFIN DS    0H
          LTORG
 *
 *
-         AIF   ('&ZSYS' NE 'S390').CRD390P
+         AIF   ('&ZSYS' NE 'S390' AND '&ZSYS' NE 'ZARCH').CRD390P
          DS    0F
 CRIRB    DS    24F
 CRORB    DS    0F
@@ -798,7 +831,7 @@ CRORB    DS    0F
 *
 *
          DS    0D
-         AIF   ('&ZSYS' EQ 'S390').CRD390I
+         AIF   ('&ZSYS' EQ 'S390' OR '&ZSYS' EQ 'ZARCH').CRD390I
 * X'0A' = read inquiry
 CRDCHN   CCW   X'0A',0,X'20',0    20 = ignore length issues
          AGO   .CRD390J
@@ -809,8 +842,16 @@ CRDFCHN  EQU   *
          DS    0D
 CRWTNER  DC    X'060E0000'  I/O, machine check, EC, wait, DAT on
          DC    A(AMBIT)     no error
+         AIF   ('&ZSYS' EQ 'ZARCH').ZNEWIOE
 CRNEWIO  DC    X'000C0000'  machine check, EC, DAT off
          DC    A(AMBIT+CRCONT)  continuation after I/O request
+         AGO   .ZNEWIOF
+.ZNEWIOE ANOP
+CRNEWIO  DC    A(X'00040000'+AM64BIT)
+         DC    A(AMBIT)
+         DC    A(0)
+         DC    A(CRCONT)  continuation after I/O request
+.ZNEWIOF ANOP
 *
          DROP  ,
 *
@@ -837,7 +878,7 @@ CRNEWIO  DC    X'000C0000'  machine check, EC, DAT off
          L     R10,0(R10)
          L     R7,0(R1)        Bytes to read
          L     R2,4(R1)        Buffer to read into
-         AIF   ('&ZSYS' EQ 'S390').C3R390G
+         AIF   ('&ZSYS' EQ 'S390' OR '&ZSYS' EQ 'ZARCH').C3R390G
          STCM  R2,B'0111',C3RCHN+1   This requires BTL buffer
          STH   R7,C3RCHN+6     Store length in READ CCW
          AGO   .C3R390H
@@ -867,7 +908,7 @@ CUCONT   DS    0H           Interrupt will automatically come here
          ST    R3,FLCCAW    Store in CAW
 *
 *
-         AIF   ('&ZSYS' EQ 'S390').C3R31M
+         AIF   ('&ZSYS' EQ 'S390' OR '&ZSYS' EQ 'ZARCH').C3R31M
          SIO   0(R10)
 *         TIO   0(R10)
          AGO   .C3R24M
@@ -885,7 +926,7 @@ CUCONT   DS    0H           Interrupt will automatically come here
          LPSW  C3RWTNER     Wait for an interrupt
          DC    H'0'
 C3RCONT  DS    0H           Interrupt will automatically come here
-         AIF   ('&ZSYS' EQ 'S390').C3R31N
+         AIF   ('&ZSYS' EQ 'S390' OR '&ZSYS' EQ 'ZARCH').C3R31N
          SH    R7,FLCCSW+6  Subtract residual count to get bytes read
          LR    R15,R7
 * After a successful CCW chain, CSW should be pointing to end
@@ -905,7 +946,7 @@ C3RALFIN DS    0H
          LTORG
 *
 *
-         AIF   ('&ZSYS' NE 'S390').C3R390P
+         AIF   ('&ZSYS' NE 'S390' AND '&ZSYS' NE 'ZARCH').C3R390P
          DS    0F
 C3RIRB   DS    24F
 C3RORB   DS    0F
@@ -917,7 +958,7 @@ C3RORB   DS    0F
 *
 *
          DS    0D
-         AIF   ('&ZSYS' EQ 'S390').C3R390I
+         AIF   ('&ZSYS' EQ 'S390' OR '&ZSYS' EQ 'ZARCH').C3R390I
 * X'06' = read modified
 C3RCHN   CCW   X'06',0,X'20',0    20 = ignore length issues
          AGO   .C3R390J

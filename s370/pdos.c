@@ -243,6 +243,12 @@ old virtual memory map:
   this assumes that PLOAD and PDOS are less than 1 cylinder in
   size and that they have been allocated on cylinder boundaries */
 
+/* mandate maximum address space for z/Arch */
+#if defined(ZARCH)
+#define MAXASIZE 4080 /* 16 less than theoretical maximum */
+#define MAXANUM 1
+#endif
+
 /* trim down storage requirements for S/390 */
 #if defined(S390)
 #define MAXASIZE 32
@@ -257,7 +263,7 @@ old virtual memory map:
 #endif
 
 #ifndef EA_ON
-#ifndef S390
+#if !defined(S390) && !defined(ZARCH)
 #define EA_ON 1 /* use extended addressing in 370 and 380 mode */
 #else
 #define EA_ON 0 /* only supported in 380 mode */
@@ -883,7 +889,9 @@ int pdosInit(PDOS *pdos)
 
     pdos->ipldev = initsys();
     pdos->curdev = pdos->ipldev;
+#ifndef ZARCH
     lcreg0(cr0);
+#endif
     if (findFile(pdos->ipldev, "CONFIG.SYS", &cyl, &head, &rec) != 0)
     {
         printf("config.sys missing\n");
@@ -925,7 +933,7 @@ int pdosInit(PDOS *pdos)
                         || (strstr(p, "3270") != NULL)
                         || (strstr(p, "1052") != NULL))
                     {
-#if defined(S390)
+#if defined(S390) || defined(ZARCH)
                         __consdn = 0x10000 + ctr;
 #else
                         sscanf(p, "%x", &__consdn);
@@ -974,7 +982,8 @@ int pdosInit(PDOS *pdos)
     pdos->context =
         pdos->aspaces[pdos->curr_aspace].o.curr_rb =
         &pdos->aspaces[pdos->curr_aspace].o.first_rb;
-    
+
+#ifndef ZARCH
     /* Now we set the DAT pointers for our first address space,
        in preparation for switching DAT on. */
     lcreg1(pdos->aspaces[pdos->curr_aspace].o.cregs[1]);
@@ -982,6 +991,7 @@ int pdosInit(PDOS *pdos)
     lcreg13(pdos->aspaces[pdos->curr_aspace].o.cregs[13]);
 #endif
     daton();
+#endif
 
     if (pdosLoadPcomm(pdos) != 0)
     {
@@ -1267,7 +1277,7 @@ static void pdosDumpregs(PDOS *pdos)
     
     p = pdos->context->regs[1];
     p &= 0x7fffffff;
-    if ((p >= 0) && (p < MAXASIZE * 1024 * 1024))
+    if ((p >= 0) && (p < MAXASIZE * 1024U * 1024))
     {
         /* nothing */
     }
@@ -1279,7 +1289,7 @@ static void pdosDumpregs(PDOS *pdos)
     {
         alt1 = pdos->context->regs[x];
         alt1 &= 0x7fffffff;
-        if ((alt1 >= 0) && (alt1 < MAXASIZE * 1024 * 1024))
+        if ((alt1 >= 0) && (alt1 < MAXASIZE * 1024U * 1024))
         {
             alt1 = *(int *)alt1;
         }
@@ -1289,7 +1299,7 @@ static void pdosDumpregs(PDOS *pdos)
         }        
         alt2 = ((int *)p)[x];
         alt2 &= 0x7fffffff;
-        if ((alt2 >= 0) && (alt2 < MAXASIZE * 1024 * 1024))
+        if ((alt2 >= 0) && (alt2 < MAXASIZE * 1024U * 1024))
         {
             alt2 = *(int *)alt2;
         }
@@ -1312,6 +1322,7 @@ static void pdosDumpregs(PDOS *pdos)
 
 static void pdosInitAspaces(PDOS *pdos)
 {
+#ifndef ZARCH
     int s;
     int a;
     int p;
@@ -1631,6 +1642,21 @@ static void pdosInitAspaces(PDOS *pdos)
     
 #endif
 
+#else /* ZARCH */
+        int a = 0;
+
+        memmgrDefaults(&pdos->aspaces[a].o.btlmem);
+        memmgrInit(&pdos->aspaces[a].o.btlmem);
+        memmgrSupply(&pdos->aspaces[a].o.btlmem,
+                     (char *)BTL_PRIVSTART,
+                     BTL_PRIVLEN * 1024U * 1024);
+
+        memmgrDefaults(&pdos->aspaces[a].o.atlmem);
+        memmgrInit(&pdos->aspaces[a].o.atlmem);
+        memmgrSupply(&pdos->aspaces[a].o.atlmem,
+                     (char *)(S370_MAXMB * 1024U * 1024),
+                     (MAXASIZE - S370_MAXMB) * 1024U * 1024);
+#endif /* ZARCH */
     return;
 }
 
@@ -2876,8 +2902,11 @@ static int pdosLoadExe(PDOS *pdos, char *prog, char *parm)
         pdos->context->regs[14] = (int)gotret;
         pdos->context->regs[15] = entry;
         pdos->context->psw1 = PSW_ENABLE_INT; /* need to enable interrupts */
+#if defined(ZARCH)
+        pdos->context->psw1 |= 1; /* dispatch in 64-bit mode */
+#endif
         pdos->context->psw2 = entry; /* 24-bit mode for now */
-#if defined(S380) || defined(S390)
+#if defined(S380) || defined(S390) || defined(ZARCH)
         pdos->context->psw2 |= 0x80000000; /* dispatch in 31-bit mode */
 #endif
 

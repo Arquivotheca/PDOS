@@ -19,6 +19,13 @@ PDOSSUP TITLE 'P D O S S U P  ***  SUPPORT ROUTINE FOR PDOS'
          YREGS
 SUBPOOL  EQU   0
 *
+         AIF ('&ZSYS' NE 'ZARCH').ZVAR64B
+FLCEINPW EQU   496   A(X'1F0')
+FLCEMNPW EQU   480   A(X'1E0')
+FLCESNPW EQU   448   A(X'1C0')
+FLCEPNPW EQU   464   A(X'1D0')
+.ZVAR64B ANOP
+*
 *
 *
          AIF ('&ZSYS' EQ 'S370').AMB24A
@@ -27,6 +34,13 @@ AMBIT    EQU X'80000000'
 .AMB24A  ANOP
 AMBIT    EQU X'00000000'
 .AMB24B  ANOP
+*
+         AIF ('&ZSYS' NE 'ZARCH').AMZB24A
+AM64BIT  EQU X'00000001'
+         AGO .AMZB24B
+.AMZB24A ANOP
+AM64BIT  EQU X'00000000'
+.AMZB24B ANOP
 *
 *
 *
@@ -52,16 +66,24 @@ INITSYS  DS    0H
 * to set "dummy" values for all of them, to give us
 * visibility into any problem.
 *
+         AIF ('&ZSYS' EQ 'ZARCH').ZSW64
          MVC   FLCINPSW(8),WAITER7
          MVC   FLCMNPSW(8),WAITER1
          MVC   FLCSNPSW(8),WAITER2
          MVC   FLCPNPSW(8),WAITER3
-*
 * Note that SVCNPSW is an alias for FLCSNPSW
          MVC   SVCNPSW(8),NEWSVC
+         AGO .ZSW64B
+.ZSW64   ANOP
+         MVC   FLCEINPW(16),WAITER7
+         MVC   FLCEMNPW(16),WAITER1
+         MVC   FLCEPNPW(16),WAITER3
+         MVC   FLCESNPW(16),NEWSVC
+.ZSW64B  ANOP
+*
 *
 * Prepare CR6 for interrupts
-         AIF   ('&ZSYS' NE 'S390').SIO24A
+         AIF   ('&ZSYS' NE 'S390' AND '&ZSYS' NE 'ZARCH').SIO24A
          LCTL  6,6,ALLIOINT CR6 needs to enable all interrupts
 .SIO24A  ANOP
 *
@@ -78,13 +100,15 @@ INITSYS  DS    0H
          LTORG
 *
 *
-         AIF   ('&ZSYS' NE 'S390').NOT390A
+         AIF   ('&ZSYS' NE 'S390' AND '&ZSYS' NE 'ZARCH').NOT390A
          DS    0F
 ALLIOINT DC    X'FF000000'
 .NOT390A ANOP
 *
 *
+*
          DS    0D
+         AIF ('&ZSYS' EQ 'ZARCH').WAIT64A
 WAITER7  DC    X'000E0000'  machine check, EC, wait
          DC    A(AMBIT+X'00000777')  error 777
 WAITER1  DC    X'000E0000'  machine check, EC, wait
@@ -95,6 +119,25 @@ WAITER3  DC    X'040E0000'  machine check, EC, wait, dat on
          DC    A(AMBIT+X'00000333')  error 333
 NEWSVC   DC    X'040C0000'  machine check, EC, DAT on
          DC    A(AMBIT+GOTSVC)  SVC handler
+         AGO   .WAIT64B
+.WAIT64A ANOP
+WAITER1  DC    A(X'00060000'+AM64BIT)
+         DC    A(AMBIT)
+         DC    A(0)
+         DC    A(X'00000111')  error 111
+WAITER3  DC    A(X'00060000'+AM64BIT)
+         DC    A(AMBIT)
+         DC    A(0)
+         DC    A(X'00000333')  error 333
+WAITER7  DC    A(X'00060000'+AM64BIT)
+         DC    A(AMBIT)
+         DC    A(0)
+         DC    A(X'00000777')  error 777
+NEWSVC   DC    A(X'00040000'+AM64BIT)
+         DC    A(AMBIT)
+         DC    A(0)
+         DC    A(GOTSVC)
+.WAIT64B ANOP
 *
 *
 *
@@ -142,7 +185,7 @@ WRBLOCK  DS    0H
 * and check for a 0 return, and if so, do a BNZ.
 *         LRA   R2,0(R2)     Get real address
          L     R7,20(R1)    Bytes to read
-         AIF   ('&ZSYS' EQ 'S390').WR390B
+         AIF   ('&ZSYS' EQ 'S390' OR '&ZSYS' EQ 'ZARCH').WR390B
          STCM  R2,B'0111',WRLDCCW+1   This requires BTL buffer
          STH   R7,WRLDCCW+6  Store in WRITE CCW
          AGO   .WR390C
@@ -162,7 +205,7 @@ WRBLOCK  DS    0H
          ST    R3,FLCCAW    Store in CAW
 *
 *
-         AIF   ('&ZSYS' EQ 'S390').WR31B
+         AIF   ('&ZSYS' EQ 'S390' OR '&ZSYS' EQ 'ZARCH').WR31B
          SIO   0(R10)
 *         TIO   0(R10)
          AGO   .WR24B
@@ -178,7 +221,7 @@ WRBLOCK  DS    0H
          LPSW  WRWTNOER     Wait for an interrupt
          DC    H'0'
 WRCONT   DS    0H           Interrupt will automatically come here
-         AIF   ('&ZSYS' EQ 'S390').WR31H
+         AIF   ('&ZSYS' EQ 'S390' OR '&ZSYS' EQ 'ZARCH').WR31H
          SH    R7,FLCCSW+6  Subtract residual count to get bytes read
          LR    R15,R7
 * After a successful CCW chain, CSW should be pointing to end
@@ -198,7 +241,7 @@ WRALLFIN DS    0H
          LTORG
 *
 *
-         AIF   ('&ZSYS' NE 'S390').WR390G
+         AIF   ('&ZSYS' NE 'S390' AND '&ZSYS' NE 'ZARCH').WR390G
          DS    0F
 WRIRB    DS    24F
 WRORB    DS    0F
@@ -210,7 +253,7 @@ WRORB    DS    0F
 *
 *
          DS    0D
-         AIF   ('&ZSYS' EQ 'S390').WR390
+         AIF   ('&ZSYS' EQ 'S390' OR '&ZSYS' EQ 'ZARCH').WR390
 WRSEEK   CCW   7,WRBBCCHH,X'40',6       40 = chain command
 WRSRCH   CCW   X'31',WRCCHHR,X'40',5    40 = chain command
          CCW   8,WRSRCH,0,0

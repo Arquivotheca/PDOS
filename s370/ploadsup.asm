@@ -19,6 +19,13 @@ PLOADSUP TITLE 'P L O A D S U P  ***  SUPPORT ROUTINE FOR PLOAD'
          YREGS
 SUBPOOL  EQU   0
 *
+         AIF ('&ZSYS' NE 'ZARCH').ZVAR64B
+FLCEINPW EQU   496   A(X'1F0')
+FLCEMNPW EQU   480   A(X'1E0')
+FLCESNPW EQU   448   A(X'1C0')
+FLCEPNPW EQU   464   A(X'1D0')
+.ZVAR64B ANOP
+*
 *
 *
          AIF ('&ZSYS' EQ 'S370').AMB24A
@@ -27,6 +34,15 @@ AMBIT    EQU X'80000000'
 .AMB24A  ANOP
 AMBIT    EQU X'00000000'
 .AMB24B  ANOP
+*
+*
+*
+         AIF ('&ZSYS' NE 'ZARCH').AMZB24A
+AM64BIT  EQU X'00000001'
+         AGO .AMZB24B
+.AMZB24A ANOP
+AM64BIT  EQU X'00000000'
+.AMZB24B ANOP
 *
 *
 *
@@ -52,10 +68,19 @@ INITSYS  DS    0H
 * to set "dummy" values for all of them, to give us
 * visibility into any problem.
 *
+         AIF ('&ZSYS' EQ 'ZARCH').ZSW64
          MVC   FLCINPSW(8),WAITER7
          MVC   FLCMNPSW(8),WAITER1
          MVC   FLCSNPSW(8),WAITER2
          MVC   FLCPNPSW(8),WAITER3
+         AGO .ZSW64B
+.ZSW64   ANOP
+         MVC   FLCEINPW(16),WAITER7
+         MVC   FLCEMNPW(16),WAITER1
+         MVC   FLCESNPW(16),WAITER2
+         MVC   FLCEPNPW(16),WAITER3
+.ZSW64B  ANOP
+*
 *
 * Prepare CR6 for interrupts
          AIF   ('&ZSYS' NE 'S390').SIO24A
@@ -83,6 +108,7 @@ ALLIOINT DC    X'FF000000'
 *
 *
          DS    0D
+         AIF ('&ZSYS' EQ 'ZARCH').WAIT64A
 WAITER7  DC    X'000E0000'  machine check, EC, wait
          DC    A(AMBIT+X'00000777')  error 777
 WAITER1  DC    X'000E0000'  machine check, EC, wait
@@ -91,6 +117,26 @@ WAITER2  DC    X'000E0000'  machine check, EC, wait
          DC    A(AMBIT+X'00000222')  error 222
 WAITER3  DC    X'000E0000'  machine check, EC, wait
          DC    A(AMBIT+X'00000333')  error 333
+         AGO   .WAIT64B
+.WAIT64A ANOP
+* Below values somewhat obtained from UDOS
+WAITER1  DC    A(X'00060000'+AM64BIT)
+         DC    A(AMBIT)
+         DC    A(0)
+         DC    A(X'00000111')  error 111
+WAITER2  DC    A(X'00060000'+AM64BIT)
+         DC    A(AMBIT)
+         DC    A(0)
+         DC    A(X'00000222')  error 222
+WAITER3  DC    A(X'00060000'+AM64BIT)
+         DC    A(AMBIT)
+         DC    A(0)
+         DC    A(X'00000333')  error 333
+WAITER7  DC    A(X'00060000'+AM64BIT)
+         DC    A(AMBIT)
+         DC    A(0)
+         DC    A(X'00000777')  error 777
+.WAIT64B ANOP
 *
 *
 *

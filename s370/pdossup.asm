@@ -302,7 +302,7 @@ ADISP    DS    0H
          USING ADISP,R12
          USING PSA,R0
 *
-         STM   R0,R15,FLCCRSAV        Save our OS registers
+         STM   R0,R15,FLCFLA        Save our OS registers
          LM    R0,R15,FLCGRSAV        Load application registers
          LPSW  SVCOPSW                App returns to old PSW
          DC    H'0'
@@ -324,7 +324,7 @@ ADISPRT2 DS    0H
 *
 GOTSVC   DS    0H
          STM   R0,R15,FLCGRSAV        Save application registers
-         LM    R0,R15,FLCCRSAV        Load OS registers
+         LM    R0,R15,FLCFLA        Load OS registers
          B     ADISPRET
 *
 *
@@ -363,7 +363,7 @@ DREAD    DS    0H
          STM   R0,R15,FLCGRSAV        Save application registers
          ST    R14,SVCOPSW+4
          NI    SVCOPSW+4,X'80'
-         LM    R0,R15,FLCCRSAV        Load OS registers
+         LM    R0,R15,FLCFLA          Load OS registers
 *
 * We need to return to 31-bit mode, which PDOS may be operating in.
          AIF   ('&ZSYS' EQ 'S370').MOD24G
@@ -387,7 +387,7 @@ DWRITE   DS    0H
          STM   R0,R15,FLCGRSAV        Save application registers
          ST    R14,SVCOPSW+4
          NI    SVCOPSW+4,X'80'
-         LM    R0,R15,FLCCRSAV        Load OS registers
+         LM    R0,R15,FLCFLA          Load OS registers
 *
 * We need to return to 31-bit mode, which PDOS may be operating in.
          AIF   ('&ZSYS' EQ 'S370').MOD24D

@@ -242,7 +242,7 @@ OUTDCBLN EQU   *-OUTDCB
          LR    R12,R15
          USING @@AREAD,R12
          LR    R11,R1
-         AIF ('&ZSYS' EQ 'S370').NOMOD1
+         AIF ('&ZSYS' EQ 'S370' OR '&ZSYS' EQ 'ZARCH').NOMOD1
          CALL  @@SETM24
 .NOMOD1  ANOP
 *         AIF   ('&ZSYS' NE 'S370').BELOW1
@@ -276,7 +276,7 @@ RETURNAR DS    0H
          L     R13,SAVEAREA+4
          LR    R7,R15
 *        FREEMAIN RU,LV=WORKLEN,A=(R1),SP=SUBPOOL
-         AIF ('&ZSYS' EQ 'S370').NOMOD2
+         AIF ('&ZSYS' EQ 'S370' OR '&ZSYS' EQ 'ZARCH').NOMOD2
          CALL  @@SETM31
 .NOMOD2  ANOP
          ST    R5,0(R4)         Tell caller the length read

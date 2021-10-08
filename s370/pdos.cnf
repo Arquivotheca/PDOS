@@ -1,12 +1,6 @@
-# PDOS sort of needs 592 MB. The first address space only
-# needs 160 MB though. And even that isn't really required.
-MAINSIZE             600
+MAINSIZE             4096
 
-# S/370 actually gives us S/380 under Hercules/380
-ARCHMODE             S/370
-
-AM24MODE             32
-AM31MODE             32
+ARCHMODE             z/Arch
 
 CPUSERIAL            000611
 CPUMODEL             4381
@@ -17,7 +11,7 @@ OSTAILOR             QUIET
 PANRATE              MEDIUM
 PGMPRDOS             RESTRICTED
 CODEPAGE             819/1047
-CNSLPORT             64000
+CNSLPORT             3270
 
 # Ideally put the console first. It can be either an integrated
 # console (3215-C) or a "normal" telnet console (3215). Or a 3270
@@ -26,8 +20,8 @@ CNSLPORT             64000
 
 #0009      3215-C     / noprompt
 #0009      3215       noprompt
-#0009      3270
-0009      1052       noprompt
+0009      3270
+#0009      1052       noprompt
 #0009      1052-C      / noprompt
 
 # This is the IPL disk and can be any address

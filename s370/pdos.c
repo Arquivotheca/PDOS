@@ -775,7 +775,7 @@ static DCB *gendcb = NULL; /* +++ need to eliminate this state info */
 static IOB geniob; /* +++ move this somewhere */
 static char lastds[FILENAME_MAX]; /* needs to be in TIOT */
 static int memid = 256; /* this really belongs in the address space */
-static int cons_type; /* do we have a 1052 or 3215? */
+static int cons_type = 3270; /* do we have a 1052 or 3215? */
 
 void gotret(void);
 int adisp(void);

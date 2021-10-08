@@ -992,11 +992,11 @@ CUNEWIO  DC    X'000C0000'  machine check, EC, DAT off
 .ZCCCA   ANOP
 C3RWTNER DC    X'060E0001'  I/O, machine check, EC, wait, DAT on
          DC    A(AMBIT)     no error
-C3NEWIO  DC    X'000C0001'  machine check, EC, DAT off
+C3NEWIO  DC    X'00040001'  machine check, EC, DAT off
          DC    A(AMBIT)
          DC    A(0)
          DC    A(C3RCONT)  continuation after I/O request
-CUNEWIO  DC    X'000C0001'  machine check, EC, DAT off
+CUNEWIO  DC    X'00040001'  machine check, EC, DAT off
          DC    A(AMBIT)
          DC    A(0)
          DC    A(CUCONT)  continuation after I/O request

@@ -2256,8 +2256,11 @@ static void pdosSVC99(PDOS *pdos)
 
 
 
-
+#ifdef ZARCH
+#define PSW_ENABLE_INT 0x000C0000 /* actually disable interrupts for now */
+#else
 #define PSW_ENABLE_INT 0x040C0000 /* actually disable interrupts for now */
+#endif
 
 
 #define DS1RECFF 0x80

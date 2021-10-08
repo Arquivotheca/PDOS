@@ -620,7 +620,7 @@ echo welcome to autoexec.bat
 echo type "help" for some example commands
 
 echo note that in order to use GCC:
-gcc --version
+rem gcc --version
 
 echo you need a command such as:
 echo gcc -S -I . -o - sample.c

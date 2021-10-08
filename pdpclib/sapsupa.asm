@@ -840,13 +840,15 @@ CRDCHN   CCW1  X'0A',0,X'20',0    20 = ignore length issues
 .CRD390J ANOP
 CRDFCHN  EQU   *
          DS    0D
+         AIF   ('&ZSYS' EQ 'ZARCH').ZNEWIOE
 CRWTNER  DC    X'060E0000'  I/O, machine check, EC, wait, DAT on
          DC    A(AMBIT)     no error
-         AIF   ('&ZSYS' EQ 'ZARCH').ZNEWIOE
 CRNEWIO  DC    X'000C0000'  machine check, EC, DAT off
          DC    A(AMBIT+CRCONT)  continuation after I/O request
          AGO   .ZNEWIOF
 .ZNEWIOE ANOP
+CRWTNER  DC    X'060E0001'  I/O, machine check, EC, wait, DAT on
+         DC    A(AMBIT)     no error
 CRNEWIO  DC    A(X'00040000'+AM64BIT)
          DC    A(AMBIT)
          DC    A(0)

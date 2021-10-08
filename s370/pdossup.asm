@@ -24,6 +24,7 @@ FLCEINPW EQU   496   A(X'1F0')
 FLCEMNPW EQU   480   A(X'1E0')
 FLCESNPW EQU   448   A(X'1C0')
 FLCEPNPW EQU   464   A(X'1D0')
+FLCESOPW EQU   320   A(X'140')
 .ZVAR64B ANOP
 *
 *
@@ -361,12 +362,21 @@ GOTRET   DS    0H
          ENTRY DREAD
 DREAD    DS    0H
          STM   R0,R15,FLCGRSAV        Save application registers
+         AIF   ('&ZSYS' EQ 'ZARCH').ZRDA
          ST    R14,SVCOPSW+4
          NI    SVCOPSW+4,X'80'
+         AGO   .ZRDB
+.ZRDA    ANOP
+         ST    R14,FLCESOPW+12
+         NI    FLCESOPW+12,X'00'
+         ST    R14,FLCESOPW+4
+         OI    FLCESOPW+4,X'80'
+*         NI    FLCESOPW+3,X'FE'
+.ZRDB    ANOP
          LM    R0,R15,FLCFLA          Load OS registers
 *
 * We need to return to 31-bit mode, which PDOS may be operating in.
-         AIF   ('&ZSYS' EQ 'S370').MOD24G
+         AIF   ('&ZSYS' EQ 'S370' OR '&ZSYS' EQ 'ZARCH').MOD24G
          CALL  @@SETM31
 .MOD24G  ANOP
          LA    R15,3
@@ -385,12 +395,21 @@ DREAD    DS    0H
          ENTRY DWRITE
 DWRITE   DS    0H
          STM   R0,R15,FLCGRSAV        Save application registers
+         AIF   ('&ZSYS' EQ 'ZARCH').ZWRA
          ST    R14,SVCOPSW+4
          NI    SVCOPSW+4,X'80'
+         AGO   .ZWRB
+.ZWRA    ANOP
+         ST    R14,FLCESOPW+12
+         NI    FLCESOPW+12,X'00'
+         ST    R14,FLCESOPW+4
+         OI    FLCESOPW+4,X'80'
+*         NI    FLCESOPW+3,X'FE'
+.ZWRB    ANOP
          LM    R0,R15,FLCFLA          Load OS registers
 *
 * We need to return to 31-bit mode, which PDOS may be operating in.
-         AIF   ('&ZSYS' EQ 'S370').MOD24D
+         AIF   ('&ZSYS' EQ 'S370' OR '&ZSYS' EQ 'ZARCH').MOD24D
          CALL  @@SETM31
 .MOD24D  ANOP
          LA    R15,2
@@ -455,7 +474,7 @@ DEXIT    DS    0H
 *
          L     R2,0(R1)               their exit
          L     R3,4(R1)               actual DCB for them
-         AIF   ('&ZSYS' EQ 'S370').MOD24E
+         AIF   ('&ZSYS' EQ 'S370' OR '&ZSYS' EQ 'ZARCH').MOD24E
          CALL  @@SETM24
 .MOD24E  ANOP
 *
@@ -465,7 +484,7 @@ DEXIT    DS    0H
          BALR  R14,R15
          LM    R0,R12,20(R13)
 *
-         AIF   ('&ZSYS' EQ 'S370').MOD24F
+         AIF   ('&ZSYS' EQ 'S370' OR '&ZSYS' EQ 'ZARCH').MOD24F
          CALL  @@SETM31
 .MOD24F  ANOP
 *

@@ -892,8 +892,14 @@ CRNEWIO  DC    A(X'00040000'+AM64BIT)
 * Interrupt needs to point to CUCONT now, for an
 * unsolicited interrupt.
 *
+         AIF   ('&ZSYS' EQ 'ZARCH').ZCUA
          MVC   FLCINPSW(8),CUNEWIO
          STOSM FLCINPSW,X'00'  Work with DAT on or OFF
+         AGO   .ZCUB
+.ZCUA    ANOP
+         MVC   FLCEINPW(16),CUNEWIO
+         STOSM FLCEINPW,X'00'  Work with DAT on or OFF
+.ZCUB    ANOP
 *
          LPSW  C3RWTNER     Wait for an interrupt
          DC    H'0'
@@ -903,8 +909,14 @@ CUCONT   DS    0H           Interrupt will automatically come here
 * something more sophisticated in PDOS than this continual
 * initialization.
 *
+         AIF   ('&ZSYS' EQ 'ZARCH').ZC3A
          MVC   FLCINPSW(8),C3NEWIO
          STOSM FLCINPSW,X'00'  Work with DAT on or OFF
+         AGO   .ZC3B
+.ZC3A    ANOP
+         MVC   FLCEINPW(16),C3NEWIO
+         STOSM FLCEINPW,X'00'  Work with DAT on or OFF
+.ZC3B    ANOP
 * R3 points to CCW chain
          LA    R3,C3RCHN
          ST    R3,FLCCAW    Store in CAW
@@ -969,12 +981,26 @@ C3RCHN   CCW1  X'06',0,X'20',0    20 = ignore length issues
 .C3R390J ANOP
 C3RFCHN  EQU   *
          DS    0D
+         AIF   ('&ZSYS' EQ 'ZARCH').ZCCCA
 C3RWTNER DC    X'060E0000'  I/O, machine check, EC, wait, DAT on
          DC    A(AMBIT)     no error
 C3NEWIO  DC    X'000C0000'  machine check, EC, DAT off
          DC    A(AMBIT+C3RCONT)  continuation after I/O request
 CUNEWIO  DC    X'000C0000'  machine check, EC, DAT off
          DC    A(AMBIT+CUCONT)  continuation after I/O request
+         AGO   .ZCCCB
+.ZCCCA   ANOP
+C3RWTNER DC    X'060E0001'  I/O, machine check, EC, wait, DAT on
+         DC    A(AMBIT)     no error
+C3NEWIO  DC    X'000C0001'  machine check, EC, DAT off
+         DC    A(AMBIT)
+         DC    A(0)
+         DC    A(C3RCONT)  continuation after I/O request
+CUNEWIO  DC    X'000C0001'  machine check, EC, DAT off
+         DC    A(AMBIT)
+         DC    A(0)
+         DC    A(CUCONT)  continuation after I/O request
+.ZCCCB   ANOP
 *
          DROP  ,
 *

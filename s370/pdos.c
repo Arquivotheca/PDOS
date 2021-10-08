@@ -2003,6 +2003,14 @@ static void pdosProcessSVC(PDOS *pdos)
             *pdos->context->postecb = 0;
             pdos->context->regs[15] = 0;
         }
+        else if (memcmp(prog, "MEMTEST", 7) == 0)
+        {
+            printf("writing 4 bytes to address X'7FFFFFFE'\n");
+            memcpy((char *)0x7ffffffe, "\x01\x02\x03\x04", 4);
+            printf("done!\n");
+            *pdos->context->postecb = 0;
+            pdos->context->regs[15] = 0;
+        }
         else if ((newcont = pdosLoadExe(pdos, prog, parm)) != 0)
         {
             /* +++ not sure what proper return code is */

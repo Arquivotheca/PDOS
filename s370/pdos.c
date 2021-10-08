@@ -1033,8 +1033,15 @@ static int pdosDispatchUntilInterrupt(PDOS *pdos)
         memcpy(pdos->context->regs,
                pdos->psa->flcgrsav,               
                sizeof pdos->context->regs);
+#ifdef ZARCH
+        pdos->context->psw1 = 0x000C0000U;
+        pdos->context->psw1 |= (*(unsigned int *)0x140 & 1);
+        pdos->context->psw2 = *(unsigned int *)0x14C;
+        pdos->context->psw2 |= (*(unsigned int *)0x144 & 0x80000000U);
+#else
         pdos->context->psw1 = pdos->psa->svcopsw[0];
         pdos->context->psw2 = pdos->psa->svcopsw[1];
+#endif
         
         if (ret == 0) break;
 

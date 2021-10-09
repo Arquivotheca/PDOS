@@ -693,7 +693,7 @@ typedef UINT4 PAGE_ENTRY;
 
 typedef struct {
 
-#if !defined(S370)
+#if !defined(S370) && !defined(ZARCH)
 #if SEG_64K
     SEG_ENTRY segtable[MAXASIZE*16]; /* needs 4096-byte alignment */
     PAGE_ENTRY pagetable[MAXASIZE*16][MAXPAGE]; /* needs 64-byte alignment */
@@ -704,7 +704,7 @@ typedef struct {
 #endif
 #endif
 
-#if !defined(S390)
+#if !defined(S390) && !defined(ZARCH)
 #if SEG_64K
     SEG_ENT370 seg370[S370_MAXMB*16]; /* needs 64-byte alignment */
     PAGE_ENT370 page370[S370_MAXMB*16][MAXPAGE]; /* needs 8-byte alignment */

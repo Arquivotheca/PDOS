@@ -65,7 +65,7 @@ MVSSUPA  TITLE 'M V S S U P A  ***  MVS VERSION OF PDPCLIB SUPPORT'
 .*         Expands nothing or label for S370 or S390
 .*         Required after SAM24 call to return data to caller
 .*
-         AIF   ('&ZSYS' NE 'S380').OTHSYS
+         AIF   ('&ZSYS' NE 'S380' AND '&ZSYS' NE 'ZARCH').OTHSYS
 &NM      L     &WRK1,4(,R13)      Old save area
          L     &WRK1,12(,&WRK1)   Caller's mode in high bit
          N     &WRK1,=X'80000000'   Kill address
@@ -205,7 +205,7 @@ ZZ&SYSNDX.X DS 0H
 &I       SETA  ((&I)/2*2+1)       NEED ODD LENGTH FOR STM ALIGN
 &LBL     SETC  '&NM'
 &ZZSETAM SETB  ('&AM' NE 'NO')
-&ZZSETAM SETB  (&ZZSETAM AND '&ZSYS' EQ 'S380')
+&ZZSETAM SETB  (&ZZSETAM AND ('&ZSYS' EQ 'S380' OR '&ZSYS' EQ 'ZARCH'))
 &ZZSETSA SETC  ''
 &ZZSETSL SETC  ''
 &ZZSETSP SETC  ''
@@ -267,7 +267,7 @@ ZZ&SYSNDX.X DS 0H
 .*   GAM24 sets addressing mode to 24 for S380
 .*         expands nothing or label for S370 AND S390
 .*
-         AIF   ('&ZSYS' NE 'S380').OLDSYS
+         AIF   ('&ZSYS' NE 'S380' AND '&ZSYS' NE 'ZARCH').OLDSYS
 &NM      LA    &WORK,*+6     GET PAST BSM WITH BIT 0 OFF
          BSM   R0,&WORK      CONTINUE IN 24-BIT MODE
          MEXIT ,
@@ -284,7 +284,7 @@ ZZ&SYSNDX.X DS 0H
 .*   GAM31 sets addressing mode to 31 for S380.
 .*         expands nothing or label for S370  AND S390
 .*
-         AIF   ('&ZSYS' NE 'S380').OLDSYS
+         AIF   ('&ZSYS' NE 'S380' AND '&ZSYS' NE 'ZARCH').OLDSYS
 &NM      LA    &WORK,*+10    GET PAST BSM WITH BIT 0 ON
          O     &WORK,=X'80000000'  SET MODE BIT
          BSM   R0,&WORK            CONTINUE IN 31-BIT MODE
@@ -330,7 +330,7 @@ ZZ&SYSNDX.X DS 0H
 .*   Otherwise it expands as BALR r1,r2 (instead of BSM r1,r2)
 .*   Unless r1 = 0, in which case, a simple BR r2 is done instead
 .*
-         AIF   ('&ZSYS' NE 'S380').OTHSYS
+         AIF   ('&ZSYS' NE 'S380' AND '&ZSYS' NE 'ZARCH').OTHSYS
 &NM      BSM   &F1,&F2
          MEXIT ,
 .OTHSYS  AIF   ('&F1' EQ '0' OR '&F1' EQ 'R0').BR
@@ -3271,7 +3271,7 @@ TRUNCOEX L     R13,4(,R13)
 *
          AL    R3,=A(8+(64-1))    OVERHEAD PLUS ROUNDING
          N     R3,=X'FFFFFFC0'    MULTIPLE OF 64
-         AIF   ('&ZSYS' NE 'S380').NOANY
+         AIF   ('&ZSYS' NE 'S380' AND '&ZSYS' NE 'ZARCH').NOANY
          GETMAIN RC,LV=(R3),SP=SUBPOOL,LOC=ANY
          AGO   .FINANY
 .NOANY   GETMAIN RC,LV=(R3),SP=SUBPOOL
@@ -4493,6 +4493,9 @@ HARDLOOP B     HARDLOOP
 *  2 GiB bar which means the other functions will succeed in         *
 *  switching to AM31.                                                *
 *                                                                    *
+*  Exception - to work on z/PDOS which is pure AM64, if you discover *
+*  you are in AM64 then no step-down will be done.                   *
+*                                                                    *
 **********************************************************************
          ENTRY @@SETUP
 @@SETUP  DS    0H
@@ -4538,6 +4541,13 @@ IS32     DS    0H
          LR    R2,R12
          N     R2,=X'80000000'
          BNZ   RETURNSU No amode switching possible
+* !!! EXCEPTION !!!
+* Don't step down when we are in AM64 so that z/PDOS works
+* (z/Arch model only)
+         AIF   ('&ZSYS' NE 'ZARCH').ZSTEPD
+         B     RETURNSU
+.ZSTEPD  ANOP
+* !!! EXCEPTION !!!
 * Now see if we are running in RM31 space
          LR    R2,R12
          N     R2,=X'7F000000'

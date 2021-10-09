@@ -2158,6 +2158,8 @@ static void pdosSVC99(PDOS *pdos)
     int new = -1;
 
     svc99rb = *(SVC99RB **)pdos->context->regs[1];
+    /* the rb can have the high bit set, so it needs to be cleared */
+    svc99rb = (SVC99RB *)((unsigned int)svc99rb & 0x7fffffffU);
     if (svc99rb->verb == 2) /* unallocate */
     {
         /* unconditional success */

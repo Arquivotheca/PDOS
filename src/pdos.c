@@ -229,7 +229,7 @@ char msvcrt[] = "?:\\MSVCRT.DLL";
 
 /* warn of any application errors in case application
    doesn't adequately report them. */
-static int warnerror = 1;
+static int warnerror = 0;
 
 static int ff_handle;
 static DTA origdta;

@@ -43,6 +43,8 @@ int main(int argc, char **argv)
 
     putline(comm, "LIST");
 
+    fseek(comm, 0, SEEK_CUR);
+
     while (1)
     {
         getline(comm, buf, sizeof buf);

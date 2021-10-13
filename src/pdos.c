@@ -133,6 +133,7 @@ static int fileWrite(int fno, const void *buf, size_t szbuf,
 static int fileDelete(const char *fnm);
 static int dirDelete(const char *dnm);
 static int fileSeek(int fno, long offset, int whence, long *newpos);
+static int opencomm(int num, int *handle);
 static int fileClose(int fno);
 static int fileRead(int fno, void *buf, size_t szbuf, size_t *readbytes);
 static void accessDisk(int drive);
@@ -218,6 +219,7 @@ static struct {
     FAT *fatptr;
     int inuse;
     int special;
+    int comm;
 } fhandle[MAXFILES];
 
 static char ff_path[FILENAME_MAX];
@@ -1122,11 +1124,13 @@ static void initfiles(void)
     {
         fhandle[x].inuse = 1;
         fhandle[x].special = 1;
+        fhandle[x].comm = 0;
     }
     for (x = NUM_SPECIAL_FILES; x < MAXFILES; x++)
     {
         fhandle[x].inuse = 0;
         fhandle[x].special = 0;
+        fhandle[x].comm = 0;
     }
     return;
 }
@@ -1483,6 +1487,12 @@ int PosOpenFile(const char *name, int mode, int *handle)
     char filename[MAX_PATH];
     int ret;
 
+    if (((strncmp(name, "COM", 3) == 0)
+         || (strncmp(name, "com", 3) == 0))
+        && isdigit((unsigned char)name[3]))
+    {
+        return (opencomm(atoi(name + 3), handle));
+    }
     ret = formatcwd(name, filename);
     if (ret) return (ret);
     ret = fileOpen(filename, handle);
@@ -1547,6 +1557,22 @@ int PosReadFile(int fh, void *data, size_t bytes, size_t *readbytes)
         *readbytes = x;
         ret = 0;
     }
+    else if (fhandle[fh].comm)
+    {
+        int c;
+        int port;
+
+        port = fhandle[fh].comm - 1;
+        while (1)
+        {
+            c = BosSerialReadChar(port);
+            if ((c & 0x8000U) == 0) break;
+        }
+        c &= 0xff;
+        *(char *)data = c;
+        *readbytes = 1;
+        ret = 0;
+    }
     else
     {
         ret = fileRead(fh, data, bytes, readbytes);
@@ -1573,6 +1599,20 @@ int PosWriteFile(int fh, const void *data, size_t len, size_t *writtenbytes)
             pdosWriteText(p[x]);
         }
         *writtenbytes = len;
+        ret = 0;
+    }
+    else if (fhandle[fh].comm)
+    {
+        const char *buf = data;
+        int port;
+        size_t x;
+
+        port = fhandle[fh].comm - 1;
+        for (x = 0; x < len; x++)
+        {
+            BosSerialWriteChar(port, buf[x]);
+        }
+        *writtenbytes = x;
         ret = 0;
     }
     else
@@ -3402,9 +3442,33 @@ static int fileOpen(const char *fnm, int *handle)
     return (0);
 }
 
+static int opencomm(int num, int *handle)
+{
+    int x;
+
+    if (num == 0) return (-1); /* +++ need proper return value */
+    for (x = NUM_SPECIAL_FILES; x < MAXFILES; x++)
+    {
+        if (!fhandle[x].inuse)
+        {
+            break;
+        }
+    }
+    if (x == MAXFILES) return (-POS_ERR_MANY_OPEN_FILES);
+    fhandle[x].inuse = 1;
+    fhandle[x].comm = num;
+    *handle = x;
+    return (0);
+}
+
 static int fileClose(int fno)
 {
-    if (!fhandle[fno].special)
+    if (fhandle[fno].comm)
+    {
+        fhandle[fno].comm = 0;
+        fhandle[fno].inuse = 0;
+    }
+    else if (!fhandle[fno].special)
     {
         fhandle[fno].inuse = 0;
     }

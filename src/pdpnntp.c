@@ -29,7 +29,11 @@ int main(int argc, char **argv)
         return (EXIT_FAILURE);
     }
 
+#ifdef __MVS__
+    comm = fopen(*(argv + 1), "rb");
+#else
     comm = fopen(*(argv + 1), "r+b");
+#endif
     if (comm == NULL)
     {
         printf("can't open %s\n", *(argv + 1));
@@ -41,6 +45,7 @@ int main(int argc, char **argv)
     getline(comm, buf, sizeof buf); 
     printf("%s\n", buf);
 
+#ifndef __MVS__
     fseek(comm, 0, SEEK_CUR);
 
     putline(comm, "LIST");
@@ -53,6 +58,7 @@ int main(int argc, char **argv)
         if (buf[0] == '.') break;
         printf("%s\n", buf);
     }
+#endif
 
     fclose(comm);
     return (0);

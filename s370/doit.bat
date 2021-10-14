@@ -81,8 +81,8 @@ zip -0X -j pdpi.zip ..\pdpclib\*.h
 rem build DASD. Put a copy into MVS/380 area for no particular reason
 
 del pdos00.cckd
-rem dasdload -bz2 ctl.txt pdos00.cckd
-dasdload ctl.txt pdos00.cckd
+dasdload -bz2 ctl.txt pdos00.cckd
+rem dasdload ctl.txt pdos00.cckd
 copy pdos00.cckd %MVS380%\dasd\pdos00.199
 
 

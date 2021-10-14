@@ -18,9 +18,9 @@ CNSLPORT             3270
 # terminal. Or an EBCDIC ANSI terminal (1052 repurposed for this).
 # The address can be anything.
 
-#0009      3215-C     / noprompt
+0009      3215-C     / noprompt
 #0009      3215       noprompt
-0009      3270
+#0009      3270
 #0009      1052       noprompt
 #0009      1052-C      / noprompt
 
